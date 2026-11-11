@@ -5,12 +5,12 @@ Statuses: Not Started · Planning · In Progress · Blocked · Implemented · Te
 | Module | Rel | Agent | Status | Backend | Frontend | DB | Unit | Integration | Playwright | Review | Open defects | % |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | db/RLS | A | database | Implemented | n/a | n/a | done | 76 pass | 76 pass | - | reviewed+fixed | 0 | 70 |
-| IAM | A | - | Planning | - | - | - | - | - | - | - | 0 | 0 |
-| AUD | A | - | Planning | - | - | - | - | - | - | - | 0 | 0 |
-| TEN/OPS | A | - | Planning | - | - | - | - | - | - | - | 0 | 0 |
-| IMP | A | - | Planning | - | - | - | - | - | - | - | 0 | 0 |
-| CPL reports | A | compensation | In Progress | pure pkg done | - | done | 109 pass | - | - | reviewed+fixed | 0 | 40 |
-| PRV-004 | A | - | Planning | - | - | - | - | - | - | - | 0 | 0 |
+| IAM | A | backend | Implemented | done | - | done | pass | pass | - | reviewed+fixed | BUG-001..004 | 75 |
+| AUD | A | backend | Implemented | done | - | done | pass | pass | - | reviewed+fixed | 0 | 75 |
+| TEN/OPS | A | backend | Implemented | done | - | done | pass | pass | - | reviewed+fixed | 0 | 75 |
+| IMP | A | backend | Implemented | done | - | done | pass | pass | - | reviewed+fixed | 0 | 75 |
+| CPL reports | A | compensation | Implemented | done | - | done | pass | pass | - | reviewed+fixed | 0 | 75 |
+| PRV-004 | A | backend | Implemented | done | - | done | pass | pass | - | reviewed+fixed | 0 | 75 |
 | Web (A screens) | A | - | Planning | - | - | - | - | - | - | - | 0 | 0 |
 | B1 foundations | B | - | Not Started | - | - | - | - | - | - | - | 0 | 0 |
 | PAR/GEN | B | - | Not Started | - | - | - | - | - | - | - | 0 | 0 |

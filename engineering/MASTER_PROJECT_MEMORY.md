@@ -15,5 +15,8 @@ Consolidated facts every session needs. Newest first. Keep under 150 lines.
 - `engineering/reference/phase_a/prototype/{analytics.py,report.json,data_synthetic/}`: R1–R5 expected values. Run with `python3 -I analytics.py data_synthetic out.json`.
 - `product-documentation/08-qa/verification/verify_calculations.py`: 55 engine/ledger expected values (B).
 
+## Standing instructions
+- Founder (2026-11-12): build the whole PRD, all 122 FRs, and do not ask permission between stages. Still stop for real money movement, deploys, pushes, paid services.
+
 ## Decisions
 See `ARCHITECTURE_DECISION_LOG.md` (E-ADR-01..13).

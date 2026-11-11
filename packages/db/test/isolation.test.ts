@@ -10,7 +10,7 @@ const TENANT_ID_TABLES = [
   'market', 'tenant_setting_version', 'user_account', 'role', 'role_assignment', 'approval', 'support_session',
   'session', 'audit.audit_event', 'document', 'import_batch', 'import_row_error', 'import_mapping',
   'cpl_fact_participant', 'cpl_fact_order', 'cpl_fact_payout_line', 'compliance_report_snapshot',
-  'compliance_figure', 'outbox_event', 'export_job', 'idempotency_key',
+  'compliance_figure', 'outbox_event', 'export_job', 'idempotency_key', 'role_grant_request', 'user_invitation',
 ]
 // No tenant_id column: rows follow their user.
 const USER_OWNED_TABLES = ['password_credential', 'mfa_credential']

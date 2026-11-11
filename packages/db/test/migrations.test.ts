@@ -13,6 +13,7 @@ const RELEASE_A_TABLES = [
 ]
 const ENGINEERING_TABLES = [
   'session', 'password_credential', 'mfa_credential', 'login_attempt', 'idempotency_key', 'audit.vendor_event',
+  'role_grant_request', 'user_invitation',
 ]
 const INSERT_ONLY_TABLES = [
   'audit.audit_event', 'audit.vendor_event', 'outbox_event', 'approval', 'tenant_setting_version',
@@ -58,6 +59,7 @@ const KEYS_WITHOUT_TENANT_ID = [
   'mfa_credential_user_id_fkey', // no tenant_id column: policy owner_visible
   'password_credential_user_id_fkey', // no tenant_id column: policy owner_visible
   'role_assignment_role_id_fkey', // base roles have no tenant: trigger role_assignment_role_in_tenant
+  'role_grant_request_role_id_fkey', // base roles have no tenant: trigger role_grant_request_role_in_tenant
   'session_user_id_realm_fkey', // realm match; session_tenant_id_user_id_fkey carries the tenant
   'support_session_requester_id_fkey', // a vendor user: policy vendor_request
 ]

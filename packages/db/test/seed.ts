@@ -36,6 +36,12 @@ export function seedTenantRows(ctx: TenantContext, secondUserId: string): Promis
     await insertRow(tx, 'role_assignment', {
       tenant_id, user_id: secondUserId, role_id: roleId, valid_from: new Date(), approval_id: approvalId,
     })
+    await insertRow(tx, 'role_grant_request', {
+      tenant_id, user_id: secondUserId, role_id: roleId, requested_by: ctx.userId, state: 'pending',
+    })
+    await insertRow(tx, 'user_invitation', {
+      tenant_id, user_id: secondUserId, token_hash: randomBytes(32), expires_at: inOneHour(), created_by: ctx.userId,
+    })
     const settingsVersionId = await insertRow(tx, 'tenant_setting_version', {
       tenant_id, version: 1, effective_from: new Date(), settings: {}, reason: 'seed', created_by: ctx.userId,
       approval_id: approvalId,
@@ -46,7 +52,7 @@ export function seedTenantRows(ctx: TenantContext, secondUserId: string): Promis
     })
     const mappingId = await insertRow(tx, 'import_mapping', { tenant_id, version: 1, mappings: {}, state: 'draft' })
     const batchId = await insertRow(tx, 'import_batch', {
-      tenant_id, market_id: marketId, kind: 'overlay', ...PERIOD, state: 'loaded', mapping_id: mappingId,
+      tenant_id, market_id: marketId, kind: 'overlay', ...PERIOD, state: 'mapped', mapping_id: mappingId,
       uploaded_by: ctx.userId,
     })
     await insertRow(tx, 'import_row_error', { tenant_id, batch_id: batchId, file: 'orders.csv', code: 'E1' })
@@ -62,6 +68,8 @@ export function seedTenantRows(ctx: TenantContext, secondUserId: string): Promis
       tenant_id, source: 'import', batch_id: batchId, line_ref: 'l1', pay_month: '2026-01-01', payee_ref: 'p1',
       bonus_type: 'retail', source_kind: 'retail_sale', amount_minor: 500,
     })
+    // Facts are written while the batch is mapped, as the load does (migration 0031).
+    await tx.query(`UPDATE import_batch SET state = 'loaded' WHERE id = $1`, [batchId])
     const snapshotId = await insertRow(tx, 'compliance_report_snapshot', {
       tenant_id, market_id: marketId, ...PERIOD, method_version: 'm1', mapping_id: mappingId,
       settings_version_id: settingsVersionId, input_refs: {}, state: 'computing', created_by: ctx.userId,

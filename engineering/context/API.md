@@ -229,7 +229,8 @@ Sub-features inside an endpoint that ship later (from FR releases):
 |---|---|
 | API-03 | `POST /v1/import-mappings/{id}/approve` (`mapping.approve`) |
 | API-07 | sign-in, MFA verification, step-up, refresh, sign-out (paths not named) |
-| API-08 | `POST /v1/support-sessions/{id}/decision` (`vendor_access.decide`), `GET /v1/support-sessions/{id}/log` |
+| API-08 | `POST /v1/support-sessions/{id}/decision` (`vendor_access.decide`, step-up, Idempotency-Key), `GET /v1/support-sessions/{id}/log`; built also: `GET /v1/support-sessions` (vendor: all; tenant: `vendor_access.decide`), `GET /v1/support-sessions/{id}`, `POST /v1/support-sessions/{id}/end` (requester or tenant); in-session reads send header `X-Support-Session: {id}` |
+| API-39 (provisioning, E-ADR-23) | vendor realm: `GET /v1/tenants`, `GET /v1/tenants/{id}`, `POST /v1/tenants` (Idempotency-Key), `POST /v1/tenants/{id}/approve` (second vendor user, step-up, Idempotency-Key), `POST /v1/tenants/{id}/go-live`, `GET /v1/tenants/{id}/breach-contacts` |
 | API-12 | `PATCH /v1/participants/{id}/type`, `PATCH /v1/participants/{id}/status` |
 | API-15 | `POST /v1/genealogy-cases/{id}/decision` |
 | API-16 | `POST /v1/plans/{id}/versions/{v}/submit`, `…/approve`, `…/schedule` |
@@ -423,9 +424,9 @@ Sub-features inside an endpoint that ship later (from FR releases):
 ### 4.11 API-08 support sessions — A
 
 Flow:
-1. Vendor engineer `POST /v1/support-sessions {tenant, reason, scope, minutes}` (vendor realm) ⇒ tenant admin notified.
+1. Vendor engineer `POST /v1/support-sessions {tenant, reason, scope, minutes}` (vendor realm) ⇒ tenant admin notified. The requester's region is never in the body: it is `user_account.work_region` (E-ADR-24).
 2. Tenant admin `POST /v1/support-sessions/{id}/decision {approved, minutes}` (`vendor_access.decide`) ⇒ vendor gets scoped, time-boxed credential.
-3. During session: GET tenant data (read-only scope); each access ⇒ audit event with `support_session_id`, visible to tenant.
+3. During session: GET tenant data (read-only scope, header `X-Support-Session`); each access ⇒ audit event with `support_session_id` (method, route, params, query), visible to tenant; any 401/403 inside the session ⇒ `SUPPORT_SESSION.ACCESS_REFUSED` in both logs; without a session ⇒ vendor log only (E-ADR-22).
 4. Expiry ⇒ credential invalid ⇒ session report to tenant admin.
 - Entity `support_session`: `state in (requested, approved, denied, active, expired, ended)`; `ends_at − starts_at` ≤ tenant maximum; cols `requester_id`, `reason`, `scope jsonb`, `requested_minutes`, `decided_by`, `starts_at`, `ends_at`.
 - Out-of-region session needs explicit region approval (TS-57, BR-DAT-09). BR-SEC-01, ADR-12.
