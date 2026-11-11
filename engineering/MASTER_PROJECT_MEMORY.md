@@ -5,7 +5,7 @@ Consolidated facts every session needs. Newest first. Keep under 150 lines.
 ## State (2026-11-12)
 - Greenfield. Git initialised; docs on `main`; work on `feat/mvp-a-foundation`.
 - Docs digested into `engineering/context/` (verified). Use those.
-- Docs gate MVP-B behind business evidence; founder confirmation pending (E-ADR-07).
+- Founder confirmed 2026-11-12: build MVP-B after MVP-A, ahead of the docs evidence gate (E-ADR-07). Sandboxes only; no real payouts; tax and plan values are configuration.
 
 ## Machine
 - Apple M4, 16 GB, tight memory. No Docker (daemon hangs). PostgreSQL 16 on 5432 (superuser = OS user), Redis on 6379. Ports 5000, 7000, 3599 are taken; use api 4000, web 3100.

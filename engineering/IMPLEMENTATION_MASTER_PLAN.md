@@ -11,8 +11,8 @@ Scope and order follow PRD-07. Each increment ends with: migrations applied from
 | A4 | Breach contacts, export limits | FR-PRV-004, FR-AUD-002 | — |
 | A5 | Web: SC-10, 14, 24–28, 30, 39, 46 | all A | full MVP-A browser workflow, two tenants, no console errors |
 | A6 | Review: security audit, code review, fix | — | no Critical/High open |
-| — | **Gate: founder confirms MVP-B** | E-ADR-07 | — |
+| — | Gate: founder confirmed MVP-B on 2026-11-12 | E-ADR-07 | done |
 | S | Spike: tree generator, engine benchmark, ledger prototype | OQ-05, TS-29 | numbers recorded against NFR-PERF-04/05 |
 | B1–B6 | per PRD-07 §3 | 81 FRs | each increment as above |
 
-Not planned: B-MKT (needs counsel/tax answers), V1, anything in the refusal list.
+After B6: **B-MKT** (4 FRs; pack values shipped as "sourced, not confirmed", E-ADR-15), then **V1** (19 FRs: FR-LIC-001..003, FR-FIN-006/007, FR-CPL-009..011, FR-PAR-004, FR-ORD-006, FR-COMP-011, FR-PRV-003, FR-INT-004, FR-TEN-005, FR-CRM-003, FR-DIST-009, FR-AI-001/002, FR-IMP-004). Never: the refusal list (E-ADR-16).

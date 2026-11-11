@@ -1,0 +1,22 @@
+{
+  "name": "nmp",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@9.15.4",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "db:migrate": "pnpm --filter @nmp/db migrate",
+    "db:reset": "pnpm --filter @nmp/db reset",
+    "test": "vitest run",
+    "typecheck": "tsc -b",
+    "dev:api": "pnpm --filter @nmp/api dev",
+    "dev:web": "pnpm --filter @nmp/web dev",
+    "seed": "pnpm --filter @nmp/api seed"
+  },
+  "devDependencies": {
+    "@types/node": "^24",
+    "tsx": "^4",
+    "typescript": "^5.9",
+    "vitest": "^3"
+  }
+}
