@@ -1,0 +1,1219 @@
+@FR-COMP-001 | B | Must | Calendars and period lifecycle | COMP
+desc: Each period of each calendar has a state: Open, Calculating, Calculated, Committed, Paid, Closed. Inputs and outputs are frozen at Committed. A transaction is assigned to a period by its crediting event and the calendar's cut-off time zone.
+why: Without a lifecycle a late order either silently changes paid history or is lost.
+trace: GAP-023, F-09, ENT-12
+br: BR-PER-01, BR-PER-02, BR-PER-03, BR-PER-04
+persona: Commission analyst
+pre: Calendar configured.
+trigger: Cut-off time reached; analyst actions.
+in: Period id; action.
+logic: State machine with guarded transitions; Calculated is re-runnable and disposable; Committed requires approval; Paid when all batches for the period are settled or resolved; Closed after reconciliation sign-off.
+out: Period state; events PeriodCutOff, PeriodCommitted, PeriodClosed.
+valid: Transition allowed from current state; ingestion sync healthy before Calculating.
+err: Sync behind (calculation blocked with last sync time); illegal transition (409).
+perm: Commission analyst operates; Finance approver commits.
+dep: FR-INT-002
+us: US-06
+scr: SC-01
+api: API-18
+ent: calendar, period
+
+@FR-COMP-002 | B | Must | Run execution with snapshot, lock and idempotency | COMP
+desc: A run binds one period, one plan version, one settings version and one input snapshot (orders, order events, genealogy as known at an instant, prior qualification state). It executes on a worker pool, is idempotent per run request id and locked per tenant, calendar and period.
+why: Two analysts pressing run, or a retry, must not create two results.
+trace: GAP-023, GAP-060, ENT-13
+br: BR-PER-06, BR-CMP-01
+persona: Commission analyst
+pre: Period at cut-off, state Open or Calculated.
+trigger: Analyst requests a run.
+in: Period; run request id; plan version (by effective date).
+logic: Acquire advisory lock; write snapshot reference; load tree and facts into memory; calculate; write result lines, qualification state candidates and control totals in one transaction; release lock; progress reported.
+out: Run in state Calculated with totals; duplicate request returns the same run id.
+valid: Plan version active for the period; snapshot complete.
+err: Worker crash (run marked Failed; resumable from snapshot; no partial results visible); lock held (returns the running run id).
+perm: Commission analyst.
+dep: FR-COMP-001, FR-PLN-001
+us: US-06
+scr: SC-01
+api: API-18
+ent: run, run_snapshot, result_line
+
+@FR-COMP-003 | B | Must | Multi-pass calculation order | COMP
+desc: Passes run in a fixed order: volumes per line and per position; qualification and paid-as rank; individual bonuses; matching; pools; per-participant constraints; caps; netting of clawbacks; minimums; rounding once per payout line; withholding.
+why: Matching depends on others' bonuses, pools on company volume, caps on everything before them.
+trace: GAP-022, GAP-021, 13 §7.2
+br: BR-CAP-02, BR-MNY-02, BR-TAX-02
+persona: System
+pre: Snapshot loaded.
+trigger: Run.
+in: Snapshot; plan rules.
+logic: Topological order of rule dependencies inside each pass; high-precision arithmetic until the rounding pass; allocation by largest remainder where a total is split.
+out: Result lines with pass and rule ids.
+valid: Engine invariants: lines sum to run total; caps not exceeded; allocations sum to their totals.
+err: Invariant breach (run fails; nothing committed).
+perm: System.
+dep: FR-COMP-012
+us: US-14
+scr: SC-02
+api: API-18
+ent: result_line
+
+@FR-COMP-004 | B | Must | Qualification state across periods | COMP
+desc: Per position and period the engine stores paid-as rank, highest title per ladder, counters, streaks, carry balances, banked points and one-time flags. State is an output of a committed run and an input to the next; it is never edited directly.
+why: Rank is the main driver of pay; mutable fields make disputes unprovable.
+trace: GAP-025, ENT-15
+br: BR-RNK-05, BR-RNK-06, BR-RNK-07, BR-RNK-08, BR-RNK-09
+persona: Commission analyst; Distributor
+pre: Prior committed state or migration import.
+trigger: Run commit.
+in: Run results.
+logic: Candidate state written with the run; becomes authoritative at commit; corrections only through restatement or migration import with approval.
+out: Qualification state rows.
+valid: One row per position, period, calendar.
+err: Missing prior state (period cannot be calculated; migration required).
+perm: System; read by staff and by the owner.
+dep: FR-COMP-006
+us: US-46
+scr: SC-43, SC-19
+api: API-19
+ent: qualification_state
+
+@FR-COMP-005 | B | Must | Run review | COMP
+desc: Before commit the analyst sees totals against the previous run, variance by bonus type, top movers, exception list (invariant warnings, guardrail warnings, held payees, unusually large lines) and what changed in inputs and plan version.
+why: A wrong approval pays thousands of people.
+trace: GAP-023, F-10
+br: BR-PER-03
+persona: Commission analyst; Finance manager
+pre: Run Calculated.
+trigger: Analyst opens review.
+in: Run id; comparison run.
+logic: Deterministic diff queries; thresholds for exceptions from tenant settings.
+out: Review dataset; export.
+valid: Totals equal control totals of the run.
+err: Sync became stale after the run (banner; commit blocked until re-run or acknowledged by rule).
+perm: Commission analyst, Finance approver.
+dep: FR-COMP-002
+us: US-06
+scr: SC-02
+api: API-19
+ent: run, result_line
+
+@FR-COMP-006 | B | Must | Commit with second-person approval | COMP
+desc: Committing a run freezes inputs and outputs, makes qualification state authoritative and posts the ledger entry; it requires an approver who did not prepare the run.
+why: Reproducibility and separation of duties.
+trace: GAP-023, GAP-065, F-10
+br: BR-PER-03, BR-ADJ-02
+persona: Finance approver
+pre: Run Calculated; review opened; no blocking exceptions.
+trigger: Approver commits.
+in: Run id; step-up factor.
+logic: Single database transaction: mark run and period Committed, write state, post balanced journal entry (expense, payables, withholding, residue), write outbox events.
+out: Committed run; journal entry; RunCommitted event.
+valid: Ledger entry balances; sum of payables plus withholding plus residue equals run total.
+err: Approver equals preparer (refused); invariant fails (transaction rolled back).
+perm: Finance approver with MFA step-up.
+dep: FR-IAM-004, FR-FIN-001
+us: US-07
+scr: SC-02
+api: API-20
+ent: run, period, journal_entry, posting, approval, outbox_event
+
+@FR-COMP-007 | B | Must | Per-line provenance and trace | COMP
+desc: Every result line stores run id, plan version, rule id, pass, payee position, compact inputs (order line ids or aggregate keys, volume, rate, rank as evaluated, tree snapshot reference), intermediate values and rounding. A full trace is regenerated by replay.
+why: Proving why a commission was calculated; disputes and support cost.
+trace: GAP-027, F-12, ENT-14
+br: BR-PAY-06
+persona: Support agent; Commission analyst
+pre: Run exists.
+trigger: User opens a line.
+in: Result line id.
+logic: Return stored compact trace; on demand replay the rule for that payee from the snapshot and expand.
+out: Trace document.
+valid: Trace totals equal line amount.
+err: Snapshot archived to cold storage (asynchronous retrieval).
+perm: Staff with trace permission; distributors see the simplified explanation only (FR-DIST-002).
+dep: FR-COMP-008
+us: US-13
+scr: SC-02, SC-06
+api: API-21
+ent: result_line, run_snapshot
+
+@FR-COMP-008 | B | Must | Replay of committed periods | COMP
+desc: Re-running a committed period from its snapshot with its plan and settings versions reproduces every line exactly, regardless of later corrections or engine releases flagged compatible.
+why: The core audit property.
+trace: GAP-010, GAP-023
+br: BR-PER-03
+persona: Commission analyst; Auditor
+pre: Committed run.
+trigger: Replay request or CI differential test.
+in: Run id.
+logic: Engine version pinned per run; replay executes in a sandbox and compares hash of ordered lines.
+out: Match or diff.
+valid: Hash equality.
+err: Engine version retired (must remain runnable for the retention period).
+perm: Commission analyst.
+dep: FR-COMP-002
+us: US-01
+scr: SC-01
+api: API-18
+ent: run, run_snapshot
+
+@FR-COMP-009 | B | Must | Restatement of a committed period | COMP
+desc: A restatement is requested with a reason, recalculated in a sandbox copy with corrected inputs, shown as a per-payee and per-bonus diff, approved, and applied as adjustments in the open period. No posting or committed line is edited.
+why: Real errors must be corrected openly.
+trace: GAP-023, F-09, FL-07
+br: BR-PER-05
+persona: Compliance officer; Commission analyst
+pre: Committed period; triggering case.
+trigger: Restatement request.
+in: Period; corrected inputs reference; reason.
+logic: Sandbox run; diff; approval by a second person; adjustment lines created in the open run referencing the restatement; statement shows them separately.
+out: Restatement record; diff; adjustments.
+valid: Diff totals equal sum of adjustments.
+err: Approval refused; diff empty (closed with no action).
+perm: Compliance officer requests; Finance approver approves.
+dep: FR-COMP-008, FR-CAS-001
+us: US-09
+scr: SC-06
+api: API-22
+ent: restatement, result_line, case
+
+@FR-COMP-010 | B | Must | Adjustment lines from late transactions and cases | COMP
+desc: The open run includes adjustment lines generated from late transactions, clawback netting, approved manual adjustments and restatements, each linked to its origin.
+why: Everything that changes pay flows through a run and the ledger.
+trace: GAP-023, GAP-032
+br: BR-PER-04, BR-ADJ-01
+persona: Commission analyst
+pre: Origins approved where approval is required.
+trigger: Run.
+in: Queue of origins.
+logic: Generate lines with origin type and id; include in control totals by category.
+out: Adjustment lines.
+valid: Each origin consumed once (once-only key).
+err: Origin withdrawn before run (skipped, logged).
+perm: System.
+dep: FR-ORD-005, FR-CAS-002
+us: US-08
+scr: SC-02
+api: API-19
+ent: result_line, late_transaction
+
+@FR-COMP-011 | V1 | Should | Provisional runs with true-up | COMP
+desc: A calendar can declare provisional payments (weekly advances or estimated pool payouts) that a later final run trues up.
+why: Two hold-out plans pay provisionally; needs a state the MVP lifecycle does not have.
+trace: P1, GAP-023
+br: BR-PER-07
+persona: Plan administrator
+pre: Plan declares provisional component.
+trigger: Provisional calendar cut-off.
+in: Component; final period.
+logic: Provisional run commits and pays; final run computes the final amount and posts the difference.
+out: True-up lines.
+valid: Final minus provisional equals true-up per payee.
+err: Negative true-up handled by clawback policy.
+perm: As runs.
+dep: FR-COMP-001
+us:
+scr: SC-01
+api: API-18
+ent: run
+
+@FR-COMP-012 | B | Must | Money arithmetic | COMP
+desc: Amounts are integers in minor units; intermediate values use fixed-precision decimals; binary floating point is prohibited. Rounding happens once per payout line (default half-up, tenant setting); splits, pools and scaled caps are allocated by largest remainder; unavoidable residue posts to a named account; points-to-currency factors are effective-dated per market.
+why: Cents that do not reconcile break the ledger and trust.
+trace: GAP-021, F-14, ADR-06
+br: BR-MNY-01, BR-MNY-02, BR-MNY-03, BR-MNY-04, BR-MNY-05
+persona: Finance manager
+pre: Currency minor unit known.
+trigger: Calculation.
+in: Amounts; rounding mode.
+logic: Decimal library with explicit scale; deterministic tie-break in largest remainder (by fractional part descending, then payee id ascending).
+out: Exact totals.
+valid: Sum of parts equals total for every allocation.
+err: Overflow guard on extreme values (run fails).
+perm: System.
+dep: FR-TEN-003
+us: US-14
+scr: SC-02
+api: API-18
+ent: result_line, posting
+
+@FR-FIN-001 | B | Must | Double-entry obligations ledger | FIN
+desc: An append-only journal of balanced entries records what the tenant owes each payee and what payees owe back. Accounts: commission expense, payee payable, withholding payable, payout in transit, settled clearing, clawback receivable, rounding residue, breakage, write-off, and per credit type liability (SDD-09 §2). The platform never records platform-held funds.
+why: Without double entry totals cannot be proved; the word wallet is not used.
+trace: GAP-030, F-15, ADR-07, MH-REQ-01
+br: BR-LED-01, BR-LED-02, BR-MNY-04
+persona: Finance manager
+pre: Chart of ledger accounts provisioned per tenant and market.
+trigger: Run commit, payout instruction, settlement, return, clawback, write-off, adjustment.
+in: Event with amounts and references.
+logic: Posting rules per event type; entry rejected unless debits equal credits; each entry carries idempotency key, run or case reference and approver; no update or delete.
+out: Journal entry with postings.
+valid: Balanced; idempotency key unique.
+err: Duplicate key returns existing entry; unbalanced entry rejected (alert).
+perm: System only; humans act through approved cases.
+dep: FR-COMP-006
+us: US-14
+scr: SC-33
+api: API-23
+ent: ledger_account, journal_entry, posting
+
+@FR-FIN-002 | B | Must | Derived payee balances | FIN
+desc: A payee's payable, in-transit and receivable balances are sums of postings; nothing is stored as an editable balance. Displayed as earnings balance owed by the tenant.
+why: Balances that can be edited cannot be audited.
+trace: GAP-030, GAP-033
+br: BR-LED-02
+persona: Finance manager; Distributor
+pre: Postings exist.
+trigger: Balance query.
+in: Payee; as-of time.
+logic: Aggregate by account; cached projection rebuilt from postings and verified nightly.
+out: Balances.
+valid: Projection equals sum of postings.
+err: Mismatch (projection rebuilt; alert).
+perm: Finance roles; payee sees own.
+dep: FR-FIN-001
+us: US-14
+scr: SC-33, SC-18
+api: API-23, API-28
+ent: posting, ledger_account
+
+@FR-FIN-003 | B | Must | Clawback policy and receivables | FIN
+desc: Per bonus type the tenant chooses order-line clawback against future earnings or restatement; the resulting amount posts to the payee's clawback receivable and is netted in later runs; the platform never initiates a debit from a distributor's bank account.
+why: The policy decides who bears the cost of a refund; the two methods give different money.
+trace: GAP-032, F-19, FL-06
+br: BR-REV-07, BR-REV-09, BR-REV-02
+persona: Finance manager
+pre: Policy set per bonus type (default order-line).
+trigger: Refund, return or chargeback after payout.
+in: Order event; policy.
+logic: Order-line: reverse the commission lines whose source is the order. Restatement: sandbox recalculation of the original period for affected payees. Post receivable; net against payable in the next run up to the available amount; remainder carried.
+out: Clawback lines; receivable postings; statement lines.
+valid: Receivable never exceeds amounts previously paid on the affected lines (order-line) or the restated difference (restatement).
+err: Payee has no future earnings (receivable ages; write-off rule).
+perm: Policy set by Finance manager with approval.
+dep: FR-ORD-004, FR-COMP-009
+us: US-20
+scr: SC-06, SC-33
+api: API-22, API-23
+ent: posting, result_line
+
+@FR-FIN-004 | B | Must | Write-off with approval | FIN
+desc: Clawback receivables below a tenant threshold or older than an age limit may be written off with a reason and approval; the posting moves the amount to the write-off account.
+why: Receivables that will never be recovered should not sit forever.
+trace: GAP-032
+br: BR-REV-08
+persona: Finance manager
+pre: Receivable balance exists.
+trigger: Finance proposes a write-off (single or batch with preview).
+in: Payees; amounts; reason.
+logic: Case with approval; posting on approval.
+out: Write-off postings.
+valid: Amount not above receivable.
+err: Above threshold without second approver.
+perm: Finance manager proposes; Finance approver approves.
+dep: FR-CAS-002
+us: US-20
+scr: SC-33
+api: API-30
+ent: posting, case
+
+@FR-FIN-005 | B | Must | General-ledger journal export | FIN
+desc: At period end a journal export maps ledger accounts to the tenant's chart of accounts and is delivered by file and API; the tenant's ERP stays the general ledger.
+why: Building a general ledger duplicates what every tenant has.
+trace: GAP-033, F-15
+br: BR-LED-03
+persona: Finance manager
+pre: Account mapping configured.
+trigger: Period Committed or Closed; manual request.
+in: Period; mapping.
+logic: Aggregate postings by mapped account and dimension; lines reference run ids; export is itself recorded and re-downloadable.
+out: Balanced journal file.
+valid: Export balances.
+err: Unmapped account (export blocked with list).
+perm: Finance manager.
+dep: FR-FIN-001
+us: US-15
+scr: SC-33
+api: API-24
+ent: export_job, ledger_account
+
+@FR-FIN-006 | V1 | Should | Non-cash rewards ledger | FIN
+desc: Credit types with value, expiry, redemption scope and tax-treatment flag; balances are liabilities per type; expiry posts a reversal and notifies the holder in advance. The liability account type exists from MVP.
+why: Thirteen of 21 plans pay non-cash rewards.
+trace: GAP-024, F-35
+br: BR-CRD-01, BR-CRD-02
+persona: Finance manager
+pre: Credit type defined.
+trigger: Run awards credits; redemption event from commerce; expiry job.
+in: Credit type; amount.
+logic: Postings to credit liability; redemption hook API.
+out: Credit balances.
+valid: Redemption not above balance.
+err: Expired credit redemption refused.
+perm: Finance manager.
+dep: FR-FIN-001
+us:
+scr: SC-33
+api: API-23
+ent: credit_type, posting
+
+@FR-FIN-007 | V1 | Should | Multi-currency with effective-dated rates | FIN
+desc: Rate table with source and time; conversion performed once at a defined step; statements show original and converted amounts and the rate. MVP is one currency per tenant market.
+why: A plan paying on volume in several currencies is ambiguous without a defined conversion step.
+trace: GAP-034, F-36
+br: BR-CMP-09
+persona: Finance manager
+pre: Rate source configured.
+trigger: Run in a multi-currency plan.
+in: Rates.
+logic: Conversion pass; stale rate blocks conversion.
+out: Converted lines.
+valid: Rate not older than policy.
+err: Stale rate.
+perm: Finance manager.
+dep: FR-COMP-003
+us:
+scr: SC-33
+api: API-23
+ent: fx_rate
+
+@FR-PAY-001 | B | Must | Payout batch lifecycle | PAY
+desc: Payable balances above the minimum and not on hold are gathered into a batch per market, provider and currency. States: Draft, Reviewed, Approved, Instructing, Partially settled, Settled, Failed, Cancelled. Preparer and approver differ.
+why: Wrong money is the worst failure.
+trace: GAP-030, GAP-035, F-16, MH-REQ-02
+br: BR-PAY-02, BR-ADJ-02
+persona: Payout officer; Finance approver
+pre: Period Committed; provider configured and eligible.
+trigger: Payout officer prepares a batch.
+in: Period(s); market; provider; inclusion rules.
+logic: Select payees; exclude holds (bank-detail cooling-off, duplicate case, missing tax profile where required, tenant hold); show totals and exclusions; approval with step-up; on approval create instructions.
+out: Batch with instructions; approval record.
+valid: Batch total equals sum of instruction amounts; each instruction not above payee payable.
+err: Approver equals preparer; provider not eligible; payee balance changed since draft (line recalculated, batch back to Draft).
+perm: Payout officer prepares; Finance approver approves.
+dep: FR-FIN-002, FR-PAY-005, FR-PAY-006
+us: US-47
+scr: SC-03
+api: API-25
+ent: payout_batch, payout_instruction, approval
+
+@FR-PAY-002 | B | Must | Provider adapters and bank-file fallback | PAY
+desc: A provider-adapter interface (submit, query status, parse settlement report, verify webhook) with one adapter per payout provider and a bank-file adapter per file format. Tenants bring their own provider accounts; credentials are stored encrypted per tenant.
+why: Mainstream providers restrict MLM merchants; no dependence on a single provider.
+trace: GAP-004, F-16, ADR-09, MH-REQ-03
+br: BR-PAY-11
+persona: Integration developer; Payout officer
+pre: Provider record with approval evidence.
+trigger: Batch approved.
+in: Instructions.
+logic: Adapter maps instruction to provider request; stores provider reference; bank-file adapter produces a file for manual upload and accepts a result file.
+out: Provider submissions or bank file.
+valid: Provider on the tenant's allow-list for the market.
+err: Provider rejects batch (retry failed lines only); credentials invalid (batch paused).
+perm: System; Tenant admin manages provider configuration.
+dep: FR-PAY-003
+us: US-16
+scr: SC-03, SC-13
+api: API-25
+ent: provider_config, payout_instruction
+
+@FR-PAY-003 | B | Must | Signed, idempotent payout instructions through an outbox | PAY
+desc: Each instruction carries an idempotency key and signature and is sent from a transactional outbox; a retry after timeout sends the same key so that at most one payment results.
+why: Retried instructions must not pay twice.
+trace: GAP-035, SEC-06, ADR-10
+br: BR-PAY-10
+persona: System
+pre: Batch Approved.
+trigger: Outbox dispatcher.
+in: Instruction.
+logic: Ledger posting payable to in-transit and outbox row in one transaction; dispatcher sends with exponential backoff; ambiguous outcomes resolved by status query before any re-send.
+out: Instruction state Instructed or Accepted.
+valid: Signature verifies; key unique per instruction.
+err: Timeout (status query, then retry with same key); permanent rejection (state Failed, amount returned to payable).
+perm: System.
+dep: FR-FIN-001
+us: US-16
+scr: SC-03
+api: API-25
+ent: payout_instruction, outbox_event, posting
+
+@FR-PAY-004 | B | Must | Settlement reconciliation and returned payments | PAY
+desc: Provider webhooks and settlement reports are matched to instructions; settled amounts clear in-transit; returned payments move the amount back to payee payable and open a case; unmatched items go to an exceptions queue.
+why: Nobody is paid twice or not at all.
+trace: GAP-035, F-16, MH-REQ-04
+br: BR-PAY-09
+persona: Payout officer; Finance manager
+pre: Instructions sent.
+trigger: Webhook or report import.
+in: Provider reference; status; amount.
+logic: Idempotent inbound event handling; post settlement or return entries; daily reconciliation totals per provider; period moves to Paid when all instructions are terminal.
+out: Reconciliation report; cases for returns.
+valid: Amount equals instruction amount (differences are exceptions).
+err: Unknown reference; amount mismatch; duplicate webhook (acknowledged without change).
+perm: Payout officer resolves exceptions.
+dep: FR-PAY-003
+us: US-16
+scr: SC-34
+api: API-26
+ent: inbound_event, payout_instruction, posting, case
+
+@FR-PAY-005 | B | Must | Bank-detail versions and change controls | PAY
+desc: Bank details are stored as encrypted versions. A new or changed version requires re-authentication, notifies the previous contact, and starts a cooling-off before the first payout to it; payouts due inside the cooling-off are held.
+why: Bank-detail change is a classic payout-fraud vector.
+trace: GAP-035, GAP-065, F-17, SEC-05, FL-10
+br: BR-PAY-08
+persona: Distributor; Support agent
+pre: Payee authenticated.
+trigger: Payee or agent submits new details.
+in: Bank details; fresh authentication.
+logic: Validate format per market; create version; notify old and new contacts; set cooling-off-until; signal when many payees change to the same account.
+out: Bank-detail version; notifications; hold flag.
+valid: Format valid; account holder name matches payee where the market pack requires.
+err: Re-authentication failed; details shared with other payees above threshold (case).
+perm: Payee self-service; Support agent only through a case with evidence.
+dep: FR-IAM-007
+us: US-17
+scr: SC-22, SC-09
+api: API-27
+ent: bank_detail_version, notification
+
+@FR-PAY-006 | B | Must | Provider eligibility record | PAY
+desc: For each tenant and market the platform records the payment and payout providers, approval date, approved business description and who holds funds; go-live is blocked without it.
+why: Provider eligibility for MLM merchants is decided per merchant and is a launch blocker.
+trace: GAP-004, CPL-11, MH-REQ-10
+br: BR-PAY-11
+persona: Tenant admin; Compliance officer
+pre: Provider approval obtained by the tenant.
+trigger: Admin records the approval.
+in: Provider; evidence document; description; dates.
+logic: Store; show on the launch checklist; reminder before expiry or review dates.
+out: Provider record.
+valid: Evidence attached.
+err: Missing evidence (go-live blocked).
+perm: Tenant admin.
+dep: FR-TEN-004
+us: US-38
+scr: SC-17, SC-13
+api: API-39
+ent: provider_config, document
+
+@FR-PAY-007 | B | Must | Minimum payout, holds and dormant balances | PAY
+desc: A market-level minimum payout threshold keeps small payables until they accumulate; holds can be placed on a payee by rule or by an authorised user with reason; a dormant balance report lists payables with no successful payout for a configurable time.
+why: Fees make tiny payouts uneconomic; unclaimed balances may become liabilities.
+trace: GAP-035
+br: BR-PAY-12
+persona: Payout officer
+pre: Thresholds configured.
+trigger: Batch preparation; hold action.
+in: Threshold; hold reason.
+logic: Excluded payees listed with reason in the batch; holds are dated events with release.
+out: Exclusion list; dormant report.
+valid: Hold has reason and owner.
+err: None specific.
+perm: Payout officer; Compliance officer for holds.
+dep: FR-PAY-001
+us: US-47
+scr: SC-03
+api: API-25
+ent: payout_batch, case
+
+@FR-TAX-001 | B | Must | Payee tax profile | TAX
+desc: Per payee: residency status, tax identifier (stored in the sensitive store, masked on display), entity type and prior-year totals per payer where a rule needs them.
+why: Withholding changes the net amount on every payout line.
+trace: GAP-031, F-18
+br: BR-TAX-01, BR-TAX-03
+persona: Distributor; Finance manager
+pre: Payee exists.
+trigger: Payee completes the profile or staff updates through a case.
+in: Residency; tax id; documents.
+logic: Validate format per market pack; version the profile; missing id flags the payee for the higher rate where a rule sets one.
+out: Tax profile version.
+valid: Identifier format.
+err: Invalid format; missing profile (payout hold if the pack requires).
+perm: Payee; Finance manager through case.
+dep: FR-PAR-001
+us: US-48
+scr: SC-22, SC-09
+api: API-27
+ent: tax_profile
+
+@FR-TAX-002 | B-MKT | Must | Withholding rules per market | TAX
+desc: Effective-dated, market-scoped rules define rate, threshold, threshold basis, payee conditions and the rate when the tax id is missing. Withholding is computed after gross commission and before payout instruction, shown as a separate statement line and posted to a withholding liability. No rate or threshold is built into the platform; values come from the market pack confirmed by a tax adviser.
+why: Mandatory for the tenant as payer in the candidate markets.
+trace: GAP-031, F-18, CPL-10
+br: BR-TAX-01, BR-TAX-02, BR-TAX-03
+persona: Finance manager
+pre: Market pack with tax rules at counsel-confirmed status, or written risk acceptance.
+trigger: Withholding pass of a run.
+in: Payee tax profile; gross amount; rule set for the pay date.
+logic: Select applicable rule; compute withholding on the taxable base; round per rule; write tax line; ledger posting at commit.
+out: Tax lines; liability postings.
+valid: Gross equals net plus withholding per payee.
+err: No rule for market and date (zero withholding with exception flag for review).
+perm: Rules maintained in market packs; tenant Finance manager reviews.
+dep: FR-TAX-001, FR-CPL-012
+us: US-18, US-19
+scr: SC-12
+api: API-39
+ent: tax_rule, tax_line, posting
+
+@FR-TAX-003 | B-MKT | Must | Year-end statements | TAX
+desc: At year end totals per payee per form type are validated (missing tax ids listed), forms generated in the market's format, distributed to payees and exported for the tenant's filing tool.
+why: Annual reporting duty of the payer.
+trace: GAP-031, F-18, FL-14
+br: BR-TAX-04
+persona: Finance manager
+pre: Tax year closed in the ledger.
+trigger: Finance starts year end.
+in: Tax year; market.
+logic: Totals from tax lines and postings; form templates in the market pack; regeneration creates a new version, never overwrites.
+out: Forms; export file.
+valid: Form totals equal ledger totals.
+err: Missing tax ids (listed; forms for those payees held).
+perm: Finance manager.
+dep: FR-TAX-002
+us: US-18
+scr: SC-12
+api: API-36
+ent: tax_form, tax_line
+
+@FR-CAS-001 | B | Must | Case framework | CAS
+desc: One case model serves genealogy changes, duplicates, disputes, manual adjustments, restatements, returned payments, bank-detail exceptions, grievances and privacy requests: type, subject, reason code, evidence, state, assignments, approvals, deadlines and an immutable event history.
+why: Every exceptional change needs reason, evidence and approver in one place.
+trace: GAP-002, GAP-065, ENT-06
+br: BR-ADJ-01
+persona: Support agent; Commission analyst; Compliance officer
+pre: User has permission for the case type.
+trigger: User or system opens a case.
+in: Type; subject; reason; evidence.
+logic: Type-specific workflow and policy checks; SLA timers from market pack or tenant setting; effect preview before approval.
+out: Case with history.
+valid: Reason code from the type's list.
+err: Missing evidence where required.
+perm: By case type.
+dep: FR-AUD-001
+us: US-02
+scr: SC-06, SC-08
+api: API-30
+ent: case, case_event, approval, document
+
+@FR-CAS-002 | B | Must | Manual adjustments with thresholds and second approver | CAS
+desc: A manual adjustment is a case with reason code and evidence; above a tenant threshold it needs a second approver; nobody approves their own; adjustments to the approver's own or declared related accounts, or to accounts created within a configurable number of days, are blocked or escalated.
+why: Manual adjustment is the main insider-fraud vector.
+trace: GAP-065, GAP-002
+br: BR-ADJ-01, BR-ADJ-02, BR-ADJ-03
+persona: Commission analyst; Finance approver
+pre: Open period exists.
+trigger: Analyst proposes an adjustment.
+in: Payee; amount; reason; evidence.
+logic: Policy checks; effect preview; on approval the adjustment enters the open run as a line (FR-COMP-010).
+out: Approved adjustment origin.
+valid: Amount non-zero; payee in tenant.
+err: Self-approval; related account; threshold exceeded without second approver.
+perm: Commission analyst proposes; Finance approver approves.
+dep: FR-CAS-001, FR-IAM-004
+us: US-49
+scr: SC-06
+api: API-30
+ent: case, approval
+
+@FR-CAS-003 | B | Must | Commission dispute from a statement line | CAS
+desc: A distributor opens a dispute from a statement line; the trace is attached automatically; states Opened, Under review, Resolved upheld, Resolved not upheld; response time tracked per market where required.
+why: Disputes resolved with facts instead of hours of tracing.
+trace: GAP-002, GAP-027, FL-05, CMP-09
+br: BR-ADJ-04
+persona: Distributor; Commission analyst
+pre: Statement line exists.
+trigger: Distributor taps dispute.
+in: Line id; message.
+logic: Create case with trace; analyst resolves; upheld leads to adjustment or restatement request; outcome and explanation sent to the distributor.
+out: Dispute case; notification.
+valid: One open dispute per line.
+err: Dispute window passed (tenant setting; explanation shown).
+perm: Line owner opens; Commission analyst resolves.
+dep: FR-COMP-007, FR-CAS-002
+us: US-50
+scr: SC-18, SC-06
+api: API-30
+ent: case, result_line
+
+@FR-DIST-001 | B | Must | Distributor statement | DIST
+desc: Per pay period and per person: lines grouped by position and bonus, gross, withholding, clawbacks and adjustments as separate lines, net, payout status, rank used, period, and the disclosure link where one is published. No income projection appears anywhere.
+why: The statement is where distributor trust is won or lost.
+trace: GAP-027, GAP-003, F-38, MH-REQ-09, CPL-14
+br: BR-PAY-06, BR-HON-01
+persona: Distributor
+pre: Run committed.
+trigger: Distributor opens statements.
+in: Period.
+logic: Read from committed result lines, tax lines and payout status; cacheable after commit; totals per position and per person.
+out: Statement view; downloadable document.
+valid: Person total equals sum of positions; net equals gross minus withholding minus netted clawbacks plus adjustments.
+err: Period not yet committed (shows status only, no estimates).
+perm: Self only; Support agent with masked data.
+dep: FR-COMP-006
+us: US-04
+scr: SC-18, SC-37
+api: API-28
+ent: statement, result_line, tax_line
+
+@FR-DIST-002 | B | Must | Line explanation | DIST
+desc: Each statement line opens a plain-language explanation generated from the trace by template: rule name, base volume, rate, rank used, period, rounding. No other person's personal data appears.
+why: A distributor can trust or dispute a line with facts.
+trace: GAP-027, F-12
+br: BR-PAY-06, BR-DAT-03
+persona: Distributor
+pre: Trace exists.
+trigger: Distributor taps a line.
+in: Line id.
+logic: Template per rule type filled from the compact trace; downline sources shown as counts and aggregates per the visibility policy.
+out: Explanation.
+valid: Explanation amount equals line amount.
+err: Template missing for an extension rule (generic explanation with inputs listed; flagged to implementation).
+perm: Self only.
+dep: FR-COMP-007, FR-GEN-006
+us: US-12
+scr: SC-18
+api: API-29
+ent: result_line
+
+@FR-DIST-003 | B | Must | Rank status, factual | DIST
+desc: Shows paid-as rank and titles for recent periods, the requirements of the current rank with the participant's measured values, and maintenance or grace status. It states facts only; it does not project income or show what could be earned.
+why: Rank ambiguity produces disputes; the honesty policy forbids projections.
+trace: GAP-025, GAP-003, CPL-14
+br: BR-HON-01, BR-RNK-05
+persona: Distributor
+pre: Qualification state exists.
+trigger: Distributor opens rank status.
+in: Position.
+logic: Read state and plan requirements; current open period values are labelled not final.
+out: Rank view.
+valid: Values equal state rows for committed periods.
+err: Plan change in progress (transition notice).
+perm: Self only.
+dep: FR-COMP-004
+us: US-51
+scr: SC-19
+api: API-28
+ent: qualification_state
+
+@FR-DIST-004 | B | Must | Team view, privacy-limited | DIST
+desc: A leader searches their own downline and sees only the fields the visibility policy allows; beyond the depth limit only aggregates.
+why: Leaders help their team without seeing private data.
+trace: GAP-012, F-06, F-07
+br: BR-DAT-03
+persona: Team leader
+pre: Policy configured.
+trigger: Leader opens Team.
+in: Search; node.
+logic: FR-GEN-006 enforcement; explains why data is limited.
+out: Team list and node view.
+valid: Server-side filtering.
+err: Outside downline (not found).
+perm: Self downline only.
+dep: FR-GEN-006, FR-GEN-007
+us: US-05
+scr: SC-20
+api: API-34
+ent: path_node
+
+@FR-DIST-005 | B | Must | My customers | DIST
+desc: A distributor sees the customers they service with order recency and repeat-order indicator, and customers reassigned to or from them with dates.
+why: Customer-based metrics are the defensible measure of productive activity.
+trace: GAP-040, GAP-050
+br: BR-ATT-01
+persona: Distributor
+pre: Servicing relationships exist.
+trigger: Distributor opens My customers.
+in: Filters.
+logic: Read servicing rows and attributed orders; contact fields per tenant policy.
+out: Customer list.
+valid: Only current and past own servicing rows.
+err: None specific.
+perm: Self only.
+dep: FR-CRM-001
+us: US-52
+scr: SC-21
+api: API-28
+ent: customer_servicing, order
+
+@FR-DIST-006 | B | Must | Bank details and tax profile self-service | DIST
+desc: The distributor views masked bank details and tax profile, submits changes with re-authentication, and sees cooling-off status and affected payouts.
+why: Self-service reduces support load while keeping change controls.
+trace: GAP-035, GAP-031
+br: BR-PAY-08
+persona: Distributor
+pre: Signed in.
+trigger: Distributor opens Payment details.
+in: New details.
+logic: FR-PAY-005 and FR-TAX-001.
+out: Pending version; notices.
+valid: As FR-PAY-005.
+err: As FR-PAY-005.
+perm: Self only.
+dep: FR-PAY-005, FR-TAX-001
+us: US-17
+scr: SC-22
+api: API-27
+ent: bank_detail_version, tax_profile
+
+@FR-DIST-007 | B-MKT | Must | Localisation and low-bandwidth delivery | DIST
+desc: Distributor pages and statements are available in the launch market's languages, with locale-aware numbers and dates, server-rendered small payloads and readable type sizes.
+why: The user base is multilingual with a large share aged 55 and over; statement comprehension depends on language.
+trace: GAP-051
+br: BR-LOC-01
+persona: Distributor
+pre: Translations complete for the market pack languages.
+trigger: Locale selection or browser preference.
+in: Locale.
+logic: Message catalogues; no text in images; statement core readable without client-side scripts where possible.
+out: Localised pages.
+valid: No untranslated key in release.
+err: Missing translation falls back to market default language and is logged.
+perm: All portal users.
+dep: FR-DIST-001
+us: US-34
+scr: SC-18, SC-37
+api: API-28
+ent: notification
+
+@FR-DIST-008 | B | Must | Notifications | DIST
+desc: Transactional notifications by email and, where the tenant configures a provider, SMS or messaging: statement ready, payout sent or returned, bank details changed, dispute update, plan-change notice, credit expiry. In-app inbox mirrors them.
+why: Security notices and plan-change notices are required by other rules.
+trace: GAP-035, GAP-097
+br: BR-PAY-08, BR-PLN-04
+persona: Distributor
+pre: Verified contact.
+trigger: Domain event.
+in: Template; recipient; locale.
+logic: Outbox-driven; per-channel preferences except mandatory security notices; delivery status stored.
+out: Notification records.
+valid: Template exists in recipient locale or default.
+err: Delivery failure (retry; fallback channel for security notices).
+perm: System.
+dep: FR-INT-001
+us: US-17
+scr: SC-38
+api: API-28
+ent: notification, outbox_event
+
+@FR-DIST-009 | V1 | Could | Leader dashboard on customers served | DIST
+desc: Leaders see customers served, repeat-order rate, returns and time to first customer for their team within visibility limits. No recruit leaderboards.
+why: Productivity defined by retail customers, not recruits; unvalidated need.
+trace: GAP-050, F-39
+br: BR-HON-01
+persona: Team leader
+pre: Attribution data.
+trigger: Leader opens dashboard.
+in: Period.
+logic: Aggregates from attributed orders.
+out: Dashboard.
+valid: Aggregates only beyond depth limit.
+err: None specific.
+perm: Self downline.
+dep: FR-DIST-004
+us:
+scr: SC-20
+api: API-34
+ent: order
+
+@FR-PRV-001 | B | Must | Data-subject requests | PRV
+desc: Access, correction, erasure and portability requests are logged, identity-verified, fulfilled within the market deadline and closed with the legal basis for anything retained.
+why: The platform is a processor with direct duties in some markets.
+trace: GAP-085, F-33, PRV-04, FL-12
+br: BR-DAT-06
+persona: DPO; Distributor
+pre: Request received through the portal, public form or tenant staff.
+trigger: Request.
+in: Subject; type; verification evidence.
+logic: Privacy case with deadline; access export assembled from personal-data map; erasure per FR-PRV-002.
+out: Fulfilment record; export file.
+valid: Identity verified.
+err: Verification failed; deadline approaching (escalation).
+perm: DPO.
+dep: FR-CAS-001
+us: US-30
+scr: SC-15, SC-41
+api: API-31
+ent: privacy_request, case
+
+@FR-PRV-002 | B | Must | Erasure by pseudonymisation | PRV
+desc: Where ledger and tax retention applies, erasure replaces identity fields with a pseudonym and deletes sensitive documents; postings, result lines and relationships are retained.
+why: Ledger integrity and retention law versus erasure rights.
+trace: GAP-085, ADR-13
+br: BR-DAT-06
+persona: DPO
+pre: Approved erasure request.
+trigger: Fulfilment.
+in: Participant.
+logic: Irreversible replacement of identity fields; key destruction for the sensitive store entries; audit of the operation.
+out: Pseudonymised participant.
+valid: No identity field remains in primary or read models; backups age out per retention.
+err: Open payable balance or legal hold (erasure deferred with explanation).
+perm: DPO with second approver.
+dep: FR-PRV-001
+us: US-30
+scr: SC-15
+api: API-31
+ent: participant, privacy_request
+
+@FR-PRV-003 | V1 | Should | Retention timers | PRV
+desc: Retention period per data class and market; deletion jobs with logs.
+why: Mandatory in some markets from stated dates.
+trace: GAP-085, PRV-05
+br: BR-DAT-11
+persona: DPO
+pre: Retention schedule approved.
+trigger: Timer.
+in: Class; period.
+logic: Scheduled jobs; legal holds respected.
+out: Deletion log.
+valid: Schedule exists.
+err: Hold present.
+perm: DPO.
+dep: FR-PRV-002
+us:
+scr: SC-15
+api: API-31
+ent: privacy_request
+
+@FR-PRV-004 | A | Must | Breach-notification contacts and runbook data | PRV
+desc: Per tenant and market the platform stores breach contacts and notification timelines, and can produce the list of affected data subjects and data classes for a given scope.
+why: Processor duty to notify tenants without delay with the facts they need.
+trace: GAP-085, PRV-02
+br: BR-DAT-07
+persona: DPO; Vendor ops
+pre: Tenant provisioned.
+trigger: Tenant onboarding; incident.
+in: Contacts; timelines.
+logic: Stored in settings; incident tooling queries audit and data maps.
+out: Contact record; affected-subject report.
+valid: At least one contact per tenant.
+err: Missing contact blocks go-live.
+perm: Tenant admin edits; Vendor ops reads.
+dep: FR-TEN-001
+us: US-53
+scr: SC-29
+api: API-39
+ent: tenant_setting_version
+
+@FR-AUD-001 | A | Must | Immutable audit log | AUD
+desc: Every security-relevant and money-relevant action writes an audit event (actor, action, object, before and after references, tenant, time, request id) to an append-only store separate from the application tables.
+why: Investigation and attestation evidence from day one.
+trace: GAP-065, SEC-09, ENT-24
+br: BR-SEC-07
+persona: Tenant admin; Compliance officer
+pre: None.
+trigger: Any audited action.
+in: Event.
+logic: Written in the same transaction through the outbox to the audit store; hash-chained per tenant; searchable by actor, object and time.
+out: Audit event.
+valid: Chain verification job passes.
+err: Audit store unavailable (events buffered in outbox; money actions blocked if the buffer exceeds a limit).
+perm: Read: Tenant admin, Compliance officer; vendor reads only inside a support session.
+dep: None
+us: US-54
+scr: SC-30
+api: API-09
+ent: audit_event, outbox_event
+
+@FR-AUD-002 | A | Must | Export limits and logging | AUD
+desc: Exports of rows containing personal data are limited in size per role, respect visibility rules, and are logged with who, what filter and how many rows.
+why: Mass extraction is a breach path.
+trace: GAP-065, SEC-08, SEC-10
+br: BR-SEC-03
+persona: All staff roles
+pre: User has export permission.
+trigger: Export.
+in: View; filters.
+logic: Row cap per role; asynchronous for large exports; watermark with requester id.
+out: Export file; audit event.
+valid: Within cap.
+err: Above cap (refused with path to request a scheduled export).
+perm: By role.
+dep: FR-AUD-001
+us: US-54
+scr: SC-30, SC-26
+api: API-06
+ent: export_job, audit_event
+
+@FR-INT-001 | B | Must | Public API and webhooks | INT
+desc: Versioned REST API under /v1 with OpenAPI description, idempotency keys on writes, cursor pagination, per-key rate limits, and signed outbound webhooks with retries for domain events.
+why: The product is API-first behind any commerce front end.
+trace: GAP-045, GAP-060
+br: BR-SEC-03
+persona: Integration developer
+pre: API key.
+trigger: Client call; domain event.
+in: Requests.
+logic: Standards in the TRD API requirements.
+out: Responses; webhook deliveries.
+valid: Schema validation.
+err: Standard error envelope.
+perm: Scopes.
+dep: FR-IAM-006
+us: US-22
+scr: SC-13
+api: API-10, API-33
+ent: api_key, webhook_endpoint, webhook_delivery
+
+@FR-INT-002 | B | Must | Integration and sync health | INT
+desc: For each connector and provider: last successful sync, lag, error counts, reconciliation differences; runs are blocked when order sync is behind the cut-off.
+why: A run on partial data pays wrongly.
+trace: GAP-060, B1
+br: BR-ORD-05
+persona: Tenant admin; Commission analyst
+pre: Connectors installed.
+trigger: Continuous; viewed on demand.
+in: Heartbeats; reconciliation results.
+logic: Health states Healthy, Behind, Failing with thresholds; alerts.
+out: Health view; block signal.
+valid: Heartbeat fresh.
+err: Connector credentials expired (Failing; guidance).
+perm: Tenant admin; analyst read.
+dep: FR-ORD-002
+us: US-55
+scr: SC-13, SC-01
+api: API-37
+ent: provider_config, inbound_event
+
+@FR-INT-003 | B | Must | Scheduled export of the full tenant data model | INT
+desc: A documented, versioned export of the tenant's complete data (genealogy history, orders, runs, lines, traces, ledger, cases) in open formats on a schedule to the tenant's storage, with row counts that reconcile.
+why: Analysts will not adopt a platform that hides their data; exit rights lower switching risk.
+trace: GAP-062, GAP-096, F-30
+br: BR-DAT-12
+persona: Analyst; Tenant admin
+pre: Destination configured in the tenant's region.
+trigger: Schedule or manual.
+in: Scope; destination.
+logic: Snapshot-consistent export from the replica; manifest with counts and checksums.
+out: Files; manifest.
+valid: Counts equal source counts at snapshot.
+err: Destination unreachable (retry; alert).
+perm: Tenant admin.
+dep: FR-AUD-002
+us: US-32
+scr: SC-13
+api: API-32
+ent: export_job
+
+@FR-INT-004 | V1 | Should | Read-only analytical replica for dedicated tenants | INT
+desc: Dedicated-database tenants get read-only SQL access to a replica schema of their own data.
+why: Buyer expectation set by incumbents; never on shared schema or primary.
+trace: GAP-062, F-31
+br: BR-DAT-12
+persona: Analyst
+pre: Dedicated tier.
+trigger: Tenant request.
+in: Network allow-list.
+logic: Replica with documented views; credentials per user; query limits.
+out: Access.
+valid: Tier dedicated.
+err: Pooled tenant (not available).
+perm: Tenant admin grants.
+dep: FR-TEN-001
+us:
+scr: SC-13
+api: API-32
+ent: tenant
+
+@FR-RPT-001 | B | Must | Role dashboards | RPT
+desc: Executive overview (sales, active earners, payout as share of sales, retail share, market view), finance dashboard (payables, in transit, receivables, withholding, failed payouts), analyst home (periods and runs), compliance overview (report figures, guardrail warnings, open cases). Each figure has a stated definition.
+why: Different roles need different homes; owners rely on staff for numbers today.
+trace: GAP-055, GAP-050
+br: BR-CPL-01
+persona: Executive; Finance manager; Compliance officer
+pre: Data exists.
+trigger: User opens home.
+in: Period; market.
+logic: Read models refreshed on commit and on ingestion; definitions in the reporting catalogue.
+out: Dashboards.
+valid: Figures reconcile with committed runs and ledger.
+err: Partial data banner when sync is behind.
+perm: By role and market scope.
+dep: FR-COMP-006, FR-CPL-006
+us: US-56
+scr: SC-35, SC-46, SC-01
+api: API-05, API-19
+ent: compliance_report_snapshot, run
+
+@FR-RPT-002 | B | Should | Operational lists with saved views | RPT
+desc: Every large table supports server-side filtering, sorting, column choice, saved views per user and export within limits.
+why: Reviews of incumbents cite cumbersome reporting.
+trace: GAP-055, GAP-062
+br: BR-SEC-03
+persona: Commission analyst; Support agent
+pre: None.
+trigger: User saves a view.
+in: Filters; columns.
+logic: Stored per user; shareable within role.
+out: Saved view.
+valid: Columns permitted for role.
+err: None specific.
+perm: By role.
+dep: FR-AUD-002
+us: US-56
+scr: SC-31, SC-33, SC-36
+api: API-23
+ent: user_account
+
+@FR-MIG-001 | B | Must | History import | MIG
+desc: Import of genealogy history, positions, rank and title history, carry balances, counters, open balances and bank and tax profiles from a legacy system through a mapping workspace with validation reports.
+why: Switching cost is the barrier every entrant must lower.
+trace: GAP-077, F-29, FL-13
+br: BR-MIG-01
+persona: Implementation consultant
+pre: Tenant in implementation state.
+trigger: Consultant uploads legacy extracts.
+in: Files; mappings.
+logic: Staged load; validation (cycles, orphans, totals); opening qualification state and opening ledger entry posted with approval.
+out: Imported data; validation report.
+valid: Opening ledger balances equal legacy balances by payee.
+err: Cycles or orphans (listed; load blocked).
+perm: Implementation consultant; opening entry approved by tenant Finance approver.
+dep: FR-GEN-002, FR-COMP-004, FR-FIN-001
+us: US-28
+scr: SC-16
+api: API-38
+ent: import_batch, relationship, qualification_state, journal_entry
+
+@FR-MIG-002 | B | Must | Parallel-run reconciliation | MIG
+desc: For at least one full period the new platform's results are compared per payee and per bonus with the legacy system's payouts; go-live requires differences of zero or each difference explained and approved.
+why: Proof that the new system pays the same is the switching lever and the go-live safety.
+trace: GAP-077, GAP-026, F-29
+br: BR-MIG-02
+persona: Implementation consultant; Finance approver
+pre: History imported; legacy payout file for the period.
+trigger: Consultant starts a comparison.
+in: Period; legacy file.
+logic: Simulation-harness run; diff report; each difference classified (rule, data, rounding) and resolved or accepted with approver.
+out: Difference report; go-live checklist item.
+valid: Unexplained differences equal zero for sign-off.
+err: Legacy file lacks bonus detail (payee-level comparison only, flagged).
+perm: Implementation consultant; Finance approver signs off.
+dep: FR-PLN-005
+us: US-28
+scr: SC-16
+api: API-38
+ent: simulation, approval
+
+@FR-OPS-001 | A | Must | Vendor operations console | OPS
+desc: A separate application area for vendor staff: tenant list with region, tier and health; provisioning; support-session requests; market-pack maintenance. It shows no tenant business data outside an approved session.
+why: Vendor staff are a distinct, high-risk role.
+trace: GAP-065, IC-13
+br: BR-SEC-01
+persona: Vendor ops
+pre: Vendor staff account with MFA.
+trigger: Vendor user signs in.
+in: None.
+logic: Separate identity realm; all actions audited to a vendor audit log and, for tenant-affecting actions, to the tenant's log.
+out: Console views.
+valid: No tenant data without session.
+err: Attempt to open tenant data without session (blocked, logged).
+perm: Vendor ops roles.
+dep: FR-IAM-005
+us: US-57
+scr: SC-39
+api: API-08
+ent: tenant, support_session
+
+@FR-AI-001 | V1 | Could | Run variance explainer | AI
+desc: A summary of the deterministic run diff in plain language, citing the lines and inputs it summarises.
+why: Analysts trace variances by hand; only after deterministic diff reports exist.
+trace: GAP-070, F-42
+br: BR-AI-01
+persona: Commission analyst
+pre: Run review dataset.
+trigger: Analyst requests a summary.
+in: Diff dataset.
+logic: Model receives only the diff; output must cite line ids; never writes to plans or ledger.
+out: Summary with citations.
+valid: Every figure in the summary matches a cited value.
+err: Citation check fails (summary discarded).
+perm: Commission analyst.
+dep: FR-COMP-005
+us:
+scr: SC-02
+api: API-19
+ent: run
+
+@FR-AI-002 | V1 | Could | Plan-document-to-configuration assistant (internal) | AI
+desc: For implementation staff: drafts plan rules and golden cases from a plan document; every rule is confirmed by a person and by golden tests.
+why: Implementation cost decides margins; untested idea.
+trace: GAP-071, F-41
+br: BR-AI-01
+persona: Implementation consultant
+pre: Plan document; primitive library.
+trigger: Consultant uploads a plan.
+in: Document.
+logic: Draft only; human sign-off; simulation required.
+out: Draft rules; draft golden cases.
+valid: No draft can be activated without FR-PLN-006 passing.
+err: Unsupported mechanism (listed for extension).
+perm: Implementation consultant.
+dep: FR-PLN-002, FR-PLN-006
+us:
+scr: SC-04
+api: API-16
+ent: plan_rule
+
+@FR-LIC-001 | V1 | Must | Licence entitlement for the self-hosted edition | LIC
+desc: A self-hosted installation runs under a signed licence file stating licensee, edition, enabled modules, payee band, market packs, support and update entitlement and expiry. The application verifies the signature offline at start and daily. It never stops calculating or paying because a licence lapsed: on expiry it keeps running, shows a notice to administrators, and stops accepting new engine versions and market-pack updates.
+why: Founder decision DEC-17: the product is sold both as hosted SaaS and as a licensed self-hosted edition. A lapse must never cause wrong or missed pay.
+trace: DEC-17, GAP-075, GAP-096
+br: BR-LIC-01, BR-LIC-02, BR-LIC-05
+persona: Tenant admin (licensee); Vendor ops
+pre: Licence issued by the vendor for the installation id.
+trigger: Installation, start-up, daily check, licence renewal.
+in: Licence file; installation id.
+logic: Verify signature with the embedded public key; compare installation id and limits; compute entitlement; expose state Active, Grace, Lapsed; write audit events; no network call is required.
+out: Entitlement state; administrator notice; audit event.
+valid: Signature valid; installation id matches; clock rollback detected by monotonic checkpoint.
+err: Invalid signature (application starts in read-only mode with export enabled); payee band exceeded (notice and report only; no blocking of runs).
+perm: Tenant admin installs a licence; nobody can edit entitlement.
+dep: FR-AUD-001
+us: US-58
+scr: SC-47
+api: API-41
+ent: license_entitlement
+
+@FR-LIC-002 | V1 | Must | Signed updates and market-pack distribution | LIC
+desc: Application releases, engine versions and market packs for self-hosted installations are delivered as signed packages that the licensee applies deliberately. Each package states its version, compatibility, migrations and, for market packs, the basis status of every rule. An installation shows how far it is behind and which known defects affect the version it runs.
+why: An unpatched self-hosted engine or an out-of-date tax rule pays people wrongly; the vendor cannot fix it remotely.
+trace: DEC-17, GAP-031, GAP-102
+br: BR-LIC-03, BR-CPL-03
+persona: Tenant admin (licensee)
+pre: Active update entitlement.
+trigger: Licensee downloads a package or the installation checks the update feed (optional, outbound only).
+in: Signed package.
+logic: Verify signature and compatibility; run golden datasets and a replay sample against the new engine before it can be activated; apply migrations; committed runs keep their pinned engine version; market-pack changes take effect from their effective dates only.
+out: Installed version; update log; advisories list.
+valid: Package signed by the vendor; target version reachable from current version.
+err: Golden or replay check fails (update not activated, report produced); migration fails (automatic rollback to the pre-update snapshot).
+perm: Tenant admin with second approver for engine and market-pack updates.
+dep: FR-PLN-006, FR-COMP-008, FR-LIC-001
+us: US-58
+scr: SC-47
+api: API-41
+ent: license_entitlement, update_log
+
+@FR-LIC-003 | V1 | Must | Self-hosted installation, diagnostics and support bundle | LIC
+desc: The self-hosted edition installs as a single-tenant deployment from a documented package (containers with a reference configuration), with a preflight check, health diagnostics, backup and restore tooling and a support bundle that contains configuration and logs but no personal data, bank details or secrets. Vendor support works only through licensee-approved sessions or on the bundle.
+why: The licensee operates the system; the vendor has no access by default.
+trace: DEC-17, GAP-065, GAP-060
+br: BR-SEC-01, BR-LIC-04
+persona: Tenant admin (licensee); Vendor ops
+pre: Infrastructure meets the published minimum.
+trigger: Installation, upgrade, incident.
+in: Configuration; infrastructure endpoints (database, object storage, identity provider, mail).
+logic: Preflight verifies versions, extensions, encryption settings, time sync and backup target; diagnostics page shows job queues, outbox age, replication, last backup and restore-test date; support bundle generator redacts by allow-list.
+out: Running installation; diagnostics; support bundle.
+valid: Bundle passes the redaction test before it can be exported.
+err: Preflight failure (installation refuses to proceed with the list); backup target unreachable (alert; runs can be blocked by setting).
+perm: Tenant admin.
+dep: FR-LIC-001
+us: US-58
+scr: SC-47
+api: API-41
+ent: license_entitlement, update_log

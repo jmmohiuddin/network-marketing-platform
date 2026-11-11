@@ -1,0 +1,8 @@
+Code this compensation plan. First line: company; market(s); document date/effective date/version (or "undated"); plan family. Then one line per item, format "ID: Y/N/? - evidence (max 12 words)":
+A1 personal volume; A2 group/organisation volume; A3 separate qualifying vs commissionable volume; A4 retail/customer profit or commission
+B1 enrolment/sponsor tree used for pay; B2 separate placement tree (binary/matrix); B3 several positions/business centres per person
+C1 rank thresholds by volume; C2 leg rules (max % per leg, qualified legs); C3 counts of active customers or personally enrolled people in qualification; C4 rolling activity window; C5 highest/title rank vs paid-as rank; C6 rank maintenance/grace/demotion rule
+D1 percent by level (unilevel); D2 binary pairing/weaker leg; D3 differential/breakaway/override; D4 matching bonus on others' earnings; D5 generations or dynamic compression; D6 pool shared by shares; D7 pool scoped to a country/market; D8 top-N ranked allocation; D9 fixed-amount or one-time rank bonus; D10 fast-start or bonus on enrolment orders; D11 non-cash rewards (product credit, points, trips, car)
+E1 caps (state type: per order / per period / % of sales / company-level / priority); E2 carry-forward with cap, expiry or condition; E3 compression; E4 fractional roll-up of volume
+F1 mixed cadences (weekly+monthly) or special pay-date rules; F2 time windows for sponsor/placement changes; F3 points-to-currency conversion factor; F4 participant types beyond customer/distributor; F5 fees (kit, renewal, membership)
+G: list any mechanism not covered above (max 3 lines).

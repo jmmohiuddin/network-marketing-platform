@@ -1,0 +1,273 @@
+<title>Compliance Evidence Reports</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one working column (max 1080px); summary tiles, then one section per report with its method note. */
+:root {
+  --bg: #f4f6f8; --surface: #ffffff; --ink: #172033; --muted: #5b6577; --line: #d9dee6;
+  --accent: #0e6b63; --accent-soft: #e3f1ef; --warn: #a45d00; --warn-soft: #fbefdc; --ok: #2f6b2f; --ok-soft: #e6f2e4;
+  --s1: #0e6b63; --s2: #b5562b; --s3: #5a62c4; --s4: #8a8f99;
+  --f-body: "Public Sans", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --f-num: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0f141c; --surface: #161d28; --ink: #e5eaf1; --muted: #9aa6b8; --line: #2a3443;
+  --accent: #4cc1b3; --accent-soft: #15302e; --warn: #f0a94a; --warn-soft: #3a2a12; --ok: #8fd18a; --ok-soft: #1c3020;
+  --s1: #4cc1b3; --s2: #f08a5d; --s3: #9aa2ff; --s4: #9aa6b8; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0f141c; --surface: #161d28; --ink: #e5eaf1; --muted: #9aa6b8; --line: #2a3443;
+  --accent: #4cc1b3; --accent-soft: #15302e; --warn: #f0a94a; --warn-soft: #3a2a12; --ok: #8fd18a; --ok-soft: #1c3020;
+  --s1: #4cc1b3; --s2: #f08a5d; --s3: #9aa2ff; --s4: #9aa6b8; color-scheme: dark }
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 15px; line-height: 1.55; }
+.wrap { max-width: 1080px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 28px 56px; display: grid; gap: 28px; }
+h1, h2, h3 { text-wrap: balance; margin: 0; }
+h1 { font-size: 1.75rem; font-weight: 700; letter-spacing: -0.01em; }
+h2 { font-size: 1.2rem; font-weight: 700; }
+h3 { font-size: 0.95rem; font-weight: 600; }
+p { margin: 0; max-width: 68ch; }
+.muted { color: var(--muted); }
+.num { font-family: var(--f-num); font-variant-numeric: tabular-nums; }
+.label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); font-weight: 600; }
+.banner { border: 1px solid var(--warn); background: var(--warn-soft); color: var(--ink); border-radius: 8px; padding: 12px 14px; display: grid; gap: 4px; }
+.banner strong { color: var(--warn); }
+header.top { display: grid; gap: 10px; }
+.periods { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.periods button { font: 500 0.82rem var(--f-num); border: 1px solid var(--line); background: var(--surface); color: var(--ink); padding: 6px 10px; border-radius: 6px; cursor: pointer; }
+.periods button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+.periods button:focus-visible, summary:focus-visible, .copy:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+.tile { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px; display: grid; gap: 6px; align-content: start; }
+.tile .big { font: 500 1.9rem var(--f-num); letter-spacing: -0.02em; }
+.chip { justify-self: start; font-size: 0.75rem; font-weight: 600; padding: 2px 8px; border-radius: 999px; }
+.chip.review { background: var(--warn-soft); color: var(--warn); }
+.chip.within { background: var(--ok-soft); color: var(--ok); }
+section.report { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 18px; display: grid; gap: 14px; min-width: 0; }
+.report-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; align-items: baseline; }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 18px; }
+.chart { overflow-x: auto; }
+.chart svg { display: block; width: 100%; height: auto; min-width: 520px; }
+.legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 0.82rem; color: var(--muted); }
+.legend i { display: inline-block; width: 12px; height: 3px; border-radius: 2px; margin-right: 6px; vertical-align: middle; }
+.bars { display: grid; gap: 8px; }
+.bar-row { display: grid; grid-template-columns: minmax(120px, 170px) 1fr 64px; gap: 10px; align-items: center; font-size: 0.86rem; }
+.bar-track { height: 12px; background: var(--bg); border-radius: 3px; overflow: hidden; }
+.bar-fill { height: 100%; border-radius: 3px; }
+.bar-row .num { text-align: right; }
+table { border-collapse: collapse; width: 100%; font-size: 0.88rem; }
+th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); }
+th { font-weight: 600; color: var(--muted); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.06em; }
+td.num, th.num { text-align: right; }
+.table-wrap { overflow-x: auto; }
+details { border-top: 1px dashed var(--line); padding-top: 10px; }
+summary { cursor: pointer; font-weight: 600; font-size: 0.86rem; color: var(--accent); }
+details p, details ul { margin-top: 8px; color: var(--muted); font-size: 0.88rem; }
+details ul { padding-left: 18px; display: grid; gap: 4px; }
+.kv { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; }
+.kv div { display: grid; gap: 2px; }
+.kv .num { font-size: 1.15rem; }
+code { font-family: var(--f-num); font-size: 0.82rem; background: var(--bg); padding: 1px 5px; border-radius: 4px; }
+.schema { display: grid; gap: 10px; }
+.schema pre { margin: 0; font: 0.8rem/1.5 var(--f-num); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; overflow-x: auto; white-space: pre; }
+.copy { justify-self: start; font: 600 0.8rem var(--f-body); border: 1px solid var(--accent); color: var(--accent); background: transparent; padding: 5px 10px; border-radius: 6px; cursor: pointer; }
+footer { color: var(--muted); font-size: 0.82rem; display: grid; gap: 6px; }
+@media (max-width: 480px) { .bar-row { grid-template-columns: 100px 1fr 56px; } .tile .big { font-size: 1.6rem; } }
+@media (prefers-reduced-motion: no-preference) { .bar-fill { transition: width 0.25s ease; } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <span class="label">Prototype · Compliance analytics for direct-selling companies</span>
+    <h1>Compliance Evidence Reports</h1>
+    <p class="muted">Five reports computed from a company's own back-office export: who the sales went to, what the multi-level pay was earned on, what the money was paid for, how activity was reached, and what everyone actually earned.</p>
+    <div class="banner" role="note">
+      <span><strong>Synthetic data.</strong> Every figure below comes from an invented company ("Demo Co.", 1,466 participants, 12 months) generated by a script. It describes no real business.</span>
+      <span>These are indicators for a compliance reviewer, not findings that any plan is lawful or unlawful. Review thresholds are examples; your counsel sets yours.</span>
+    </div>
+  </header>
+
+  <div class="periods" id="periods" aria-label="Commission period"></div>
+
+  <div class="tiles" id="tiles"></div>
+
+  <section class="report" aria-labelledby="r-trend">
+    <div class="report-head"><h2 id="r-trend">Twelve-month trend</h2><span class="label">R1 and R2</span></div>
+    <div class="legend"><span><i style="background:var(--s1)"></i>Sales to non-participant customers</span><span><i style="background:var(--s2)"></i>Personal-use share of volume that earned multi-level pay</span></div>
+    <div class="chart" id="trend"></div>
+  </section>
+
+  <div class="grid2">
+    <section class="report" aria-labelledby="r1">
+      <div class="report-head"><h2 id="r1">Who the sales went to</h2><span class="label">R1</span></div>
+      <div class="kv" id="r1kv"></div>
+      <details><summary>Method</summary>
+        <ul>
+          <li>Net sales = order amount minus refunds, assigned to the order's month.</li>
+          <li>"Customers" are participant types your plan defines as non-participants (here: customer, preferred customer).</li>
+          <li>"Declared resale" adds distributors' orders tagged for resale. A tag is a claim, so it is shown separately.</li>
+          <li>Data quality: the share of distributor orders with no purpose tag is reported, because unknown purpose weakens both figures.</li>
+        </ul>
+      </details>
+    </section>
+
+    <section class="report" aria-labelledby="r2">
+      <div class="report-head"><h2 id="r2">What multi-level pay was earned on</h2><span class="label">R2</span></div>
+      <div class="kv" id="r2kv"></div>
+      <details><summary>Method</summary>
+        <ul>
+          <li>Rewarded volume = volume of orders that generated at least one downline-volume payout line in the month.</li>
+          <li>Personal-use share = rewarded volume from distributors' own orders tagged for personal use.</li>
+          <li>Flagged payees: people whose downline-volume pay came more than one-third from personal-use orders. One-third is an example taken from the structure of one FTC order that binds one company; it is not a general legal test.</li>
+        </ul>
+      </details>
+    </section>
+  </div>
+
+  <section class="report" aria-labelledby="r3">
+    <div class="report-head"><h2 id="r3">What the money was paid for</h2><span class="label">R3 · <span id="r3scope"></span></span></div>
+    <div class="bars" id="r3bars"></div>
+    <p class="muted" id="r3claw"></p>
+    <details><summary>Method</summary>
+      <ul>
+        <li>Every payout line carries a source: a retail sale, downline volume, an enrolment order (starter kits), a pool, or a match.</li>
+        <li>Shares are of gross pay before clawbacks; clawbacks (refunds recovered from later pay) are shown separately.</li>
+        <li>Pay linked to enrolment orders is the figure reviewers usually ask about first.</li>
+      </ul>
+    </details>
+  </section>
+
+  <section class="report" aria-labelledby="r4">
+    <div class="report-head"><h2 id="r4">How activity was reached</h2><span class="label">R4</span></div>
+    <div class="kv" id="r4kv"></div>
+    <p class="muted" id="r4note"></p>
+    <details><summary>Method</summary>
+      <ul>
+        <li>In this plan, "active" means at least 50 volume from your own orders in the month. So every active status depends on own purchases; the indicator that varies is how many active distributors served no customer that month.</li>
+        <li>Threshold orders: orders placed on day 27 or later that lifted a distributor's personal volume across the active (50) or leader (100) threshold. The report then shows how many were refunded in the next month.</li>
+      </ul>
+    </details>
+  </section>
+
+  <section class="report" aria-labelledby="r5">
+    <div class="report-head"><h2 id="r5">What everyone earned in 2025</h2><span class="label">R5 · earnings disclosure</span></div>
+    <p class="muted" id="r5pop"></p>
+    <div class="kv" id="r5kv"></div>
+    <div class="table-wrap"><table id="r5bands"><thead><tr><th>Annual earnings band</th><th class="num">Distributors</th><th class="num">Share</th></tr></thead><tbody></tbody></table></div>
+    <details><summary>Method</summary>
+      <ul>
+        <li>Population: every distributor who held an agreement at any time in the year, including people who earned nothing. Leaving out zero earners is the most common way disclosures overstate typical income.</li>
+        <li>Earnings: gross commissions and bonuses after clawbacks, before any expenses the distributor paid.</li>
+        <li>The statement is computed from the payout ledger, so it can be reproduced for the same period later.</li>
+      </ul>
+    </details>
+  </section>
+
+  <section class="report" aria-labelledby="exp">
+    <div class="report-head"><h2 id="exp">What a pilot would need from your system</h2><span class="label">Three files</span></div>
+    <p>An export of one year from your current back office, with these columns. Personal data can be replaced by IDs before it leaves your systems.</p>
+    <div class="schema">
+<pre id="schema">participants.csv  participant_id, type, enrolled_month, sponsor_id (servicing distributor for customers), market, status
+orders.csv        order_id, month, day, buyer_id, amount_cents, volume_cents, purpose (customer | personal | resale | unknown | enrolment), is_starter_kit, refunded_cents, refund_month
+payout_lines.csv  line_id, month, payee_id, bonus_type, source_kind (retail_sale | downline_volume | enrolment_order | pool | match | clawback | other), source_order_id, amount_cents</pre>
+      <button class="copy" id="copybtn" type="button">Copy column list</button>
+    </div>
+  </section>
+
+  <footer>
+    <span>Prototype built for design-partner conversations. Reports are indicators for review; they do not certify a compensation plan.</span>
+    <span>Data: synthetic export generated by <code>synth.py</code>, seed 20261111. Reports computed by <code>analytics.py</code>.</span>
+  </footer>
+</div>
+
+<script>
+const R = __DATA__;
+const months = R.months;
+let current = months[months.length - 1];
+const fmtPct = v => v == null ? "–" : v.toFixed(1) + "%";
+const fmtMoney = v => v == null ? "–" : "$" + v.toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2});
+const fmtK = c => "$" + (c / 100000).toFixed(1) + "k";
+const monthName = m => new Date(m + "-01T00:00:00").toLocaleString("en-US", {month: "short", year: "numeric"});
+const EXAMPLE = { customer_min: 50, personal_max: 33.3, enrol_max: 10, nocust_max: 50 };
+
+function chip(ok) { return `<span class="chip ${ok ? "within" : "review"}">${ok ? "Within example threshold" : "Review"}</span>`; }
+
+function renderPeriods() {
+  const el = document.getElementById("periods");
+  el.innerHTML = '<span class="label" style="margin-right:6px">Period</span>' + months.map(m =>
+    `<button type="button" data-m="${m}" aria-pressed="${m === current}">${m}</button>`).join("");
+  el.querySelectorAll("button").forEach(b => b.addEventListener("click", () => { current = b.dataset.m; render(); }));
+}
+
+function renderTiles() {
+  const r1 = R.R1[current], r2 = R.R2[current], r3 = R.R3[current], r4 = R.R4[current];
+  const enrol = r3.share_pct.enrolment_order ?? 0;
+  const tiles = [
+    ["Sales to non-participant customers", r1.customer_share_pct, `of ${fmtK(r1.net_sales_cents)} net sales`, (r1.customer_share_pct ?? 0) >= EXAMPLE.customer_min, `Example review line: below ${EXAMPLE.customer_min}%`],
+    ["Personal-use share of rewarded volume", r2.personal_use_share_pct, `${r2.payees_above_flag} of ${r2.payees_with_multilevel_pay} payees above one-third`, (r2.personal_use_share_pct ?? 0) <= EXAMPLE.personal_max, `Example review line: above ${EXAMPLE.personal_max}%`],
+    ["Pay linked to enrolment orders", enrol, `of ${fmtK(r3.gross_cents)} gross pay`, enrol <= EXAMPLE.enrol_max, `Example review line: above ${EXAMPLE.enrol_max}%`],
+    ["Active distributors with no customer order", r4.active_with_no_customer_order_pct, `${r4.active_distributors} active this month`, (r4.active_with_no_customer_order_pct ?? 0) <= EXAMPLE.nocust_max, `Example review line: above ${EXAMPLE.nocust_max}%`],
+  ];
+  document.getElementById("tiles").innerHTML = tiles.map(([t, v, sub, ok, rule]) =>
+    `<div class="tile"><span class="label">${t}</span><span class="big num">${fmtPct(v)}</span><span class="muted" style="font-size:.85rem">${sub}</span>${chip(ok)}<span class="muted" style="font-size:.75rem">${rule}</span></div>`).join("");
+}
+
+function renderTrend() {
+  const W = 760, H = 250, L = 44, Rt = 16, T = 14, B = 34;
+  const x = i => L + i * (W - L - Rt) / (months.length - 1);
+  const y = v => T + (100 - v) * (H - T - B) / 100;
+  const s1 = months.map((m, i) => [x(i), y(R.R1[m].customer_share_pct ?? 0)]);
+  const s2 = months.map((m, i) => [x(i), y(R.R2[m].personal_use_share_pct ?? 0)]);
+  const path = pts => pts.map((p, i) => (i ? "L" : "M") + p[0].toFixed(1) + " " + p[1].toFixed(1)).join(" ");
+  let g = "";
+  [0, 25, 50, 75, 100].forEach(v => {
+    g += `<line x1="${L}" x2="${W - Rt}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)" stroke-width="1"/>`;
+    g += `<text x="${L - 8}" y="${y(v) + 4}" text-anchor="end" font-size="11" fill="var(--muted)" font-family="var(--f-num)">${v}%</text>`;
+  });
+  months.forEach((m, i) => { if (i % 2 === 0 || i === months.length - 1) g += `<text x="${x(i)}" y="${H - 12}" text-anchor="middle" font-size="11" fill="var(--muted)" font-family="var(--f-num)">${m.slice(5)}/${m.slice(2, 4)}</text>`; });
+  const ci = months.indexOf(current);
+  g += `<line x1="${x(ci)}" x2="${x(ci)}" y1="${T}" y2="${H - B}" stroke="var(--muted)" stroke-dasharray="3 3"/>`;
+  g += `<path d="${path(s1)}" fill="none" stroke="var(--s1)" stroke-width="2.5"/>`;
+  g += `<path d="${path(s2)}" fill="none" stroke="var(--s2)" stroke-width="2.5"/>`;
+  [s1, s2].forEach((s, k) => { g += `<circle cx="${s[ci][0]}" cy="${s[ci][1]}" r="4.5" fill="${k ? "var(--s2)" : "var(--s1)"}" stroke="var(--surface)" stroke-width="2"/>`; });
+  document.getElementById("trend").innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Monthly customer share and personal-use share, ${months[0]} to ${months[months.length - 1]}">${g}</svg>`;
+}
+
+function kv(id, items) {
+  document.getElementById(id).innerHTML = items.map(([k, v]) => `<div><span class="label">${k}</span><span class="num">${v}</span></div>`).join("");
+}
+
+function renderReports() {
+  const r1 = R.R1[current], r2 = R.R2[current], r4 = R.R4[current];
+  kv("r1kv", [["Net sales", fmtK(r1.net_sales_cents)], ["To customers", fmtPct(r1.customer_share_pct)], ["Incl. declared resale", fmtPct(r1.customer_plus_declared_resale_pct)], ["Starter kits", fmtPct(r1.starter_kit_share_pct)], ["Orders with no purpose tag", fmtPct(r1.participant_orders_purpose_unknown_pct)]]);
+  kv("r2kv", [["Rewarded volume", fmtK(r2.rewarded_volume_cents)], ["Personal use", fmtPct(r2.personal_use_share_pct)], ["Purpose unknown", fmtPct(r2.unknown_purpose_share_pct)], ["Payees above one-third", `${r2.payees_above_flag} / ${r2.payees_with_multilevel_pay}`]]);
+  kv("r4kv", [["Active distributors", r4.active_distributors], ["Active, no customer order", fmtPct(r4.active_with_no_customer_order_pct)], ["Late threshold orders", r4.late_threshold_crossing_orders], ["Refunded next month", current === months[months.length - 1] ? "not yet known" : r4.of_which_refunded_later]]);
+  document.getElementById("r4note").textContent = current === months[months.length - 1] ? "Refunds of December orders fall in January, outside this export, so the refunded count for the last month is not yet observable." : "";
+
+  const r3 = R.R3[current];
+  document.getElementById("r3scope").textContent = monthName(current);
+  const names = { retail_sale: ["Retail sales to customers", "var(--s1)"], downline_volume: ["Downline volume (multi-level)", "var(--s3)"], enrolment_order: ["Enrolment orders and starter kits", "var(--s2)"], pool: ["Leader pool", "var(--s4)"], match: ["Matching", "var(--s4)"], other: ["Other", "var(--s4)"] };
+  const order = ["retail_sale", "downline_volume", "enrolment_order", "pool", "match", "other"].filter(k => r3.share_pct[k] != null);
+  document.getElementById("r3bars").innerHTML = order.map(k => `<div class="bar-row"><span>${names[k][0]}</span><div class="bar-track"><div class="bar-fill" style="width:${r3.share_pct[k]}%;background:${names[k][1]}"></div></div><span class="num">${fmtPct(r3.share_pct[k])}</span></div>`).join("");
+  document.getElementById("r3claw").textContent = `Gross pay ${fmtMoney(r3.gross_cents / 100)}; clawbacks recovered in this period ${fmtMoney(Math.abs(r3.clawback_cents) / 100)}.`;
+}
+
+function renderR5() {
+  const r = R.R5;
+  document.getElementById("r5pop").textContent = `${r.population}. ${r.basis}.`;
+  kv("r5kv", [["Distributors", r.count], ["Earned anything", fmtPct(r.earned_more_than_zero_pct)], ["Median", fmtMoney(r.median)], ["Mean", fmtMoney(r.mean)], ["Top 10% earned over", fmtMoney(r.p90)], ["Top 1% earned over", fmtMoney(r.p99)]]);
+  const bandLabel = { "0 or less": "Nothing (0 or less)", "0.01-100": "$0.01 to $100", "100.01-1,000": "$100.01 to $1,000", "1,000.01-10,000": "$1,000.01 to $10,000", ">10,000": "Over $10,000" };
+  document.querySelector("#r5bands tbody").innerHTML = Object.entries(r.bands).map(([b, n]) => `<tr><td>${bandLabel[b] || b}</td><td class="num">${n}</td><td class="num">${fmtPct(100 * n / r.count)}</td></tr>`).join("");
+}
+
+function render() { renderPeriods(); renderTiles(); renderTrend(); renderReports(); }
+render(); renderR5();
+
+document.getElementById("copybtn").addEventListener("click", () => {
+  const txt = document.getElementById("schema").textContent, btn = document.getElementById("copybtn");
+  const done = () => { btn.textContent = "Copied"; setTimeout(() => btn.textContent = "Copy column list", 1600); };
+  try {
+    navigator.clipboard.writeText(txt).then(done, () => { selectSchema(); btn.textContent = "Selected: press Ctrl+C"; });
+  } catch (e) { selectSchema(); btn.textContent = "Selected: press Ctrl+C"; }
+});
+function selectSchema() { const r = document.createRange(); r.selectNodeContents(document.getElementById("schema")); const s = getSelection(); s.removeAllRanges(); s.addRange(r); }
+</script>

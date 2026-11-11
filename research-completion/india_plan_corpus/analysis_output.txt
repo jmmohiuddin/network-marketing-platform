@@ -1,0 +1,40 @@
+Plan tiers
+  D02   DEF  USANA     tier=M  new=-
+  D03   DEF  Modere    tier=M  new=-
+  IN01  HOLD Amway     tier=N  new=N-GATE
+  IN02  HOLD Vestige   tier=N  new=N-EARMARK
+  IN03  HOLD Modicare  tier=M  new=-
+Hold-out coverage: O=0 M=1 N=2 of 3; extended list covers 1 of 3
+Mechanism frequency, all India plans (n=5):
+  A1: 5
+  A2: 5
+  B1: 5
+  C1: 5
+  A4: 4
+  D3: 4
+  E1: 4
+  A3: 3
+  D11: 3
+  D6: 3
+  F3: 3
+  B2: 2
+  C2: 2
+  C3: 2
+  C4: 2
+  C6: 2
+  D1: 2
+  D10: 2
+  D4: 2
+  D9: 2
+  F2: 2
+  F4: 2
+  B3: 1
+  C5: 1
+  D2: 1
+  D5: 1
+  D7: 1
+  D8: 1
+  E2: 1
+  E3: 1
+  E4: 1
+  F1: 1

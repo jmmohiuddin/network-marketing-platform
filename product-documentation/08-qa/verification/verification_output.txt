@@ -1,0 +1,57 @@
+ok   TS-01 level payouts: [Decimal('80.00'), Decimal('125.00'), Decimal('160.00'), Decimal('240.00'), Decimal('320.00')]
+ok   TS-01 total: 925.00
+ok   TS-02 without compression: 800.00
+ok   TS-02 with compression: 1040.00
+ok   TS-04 pairs, carry left, carry right: (3, 20, 0)
+ok   TS-05 carry capped then zeroed: (3000, 0)
+ok   TS-06 shares: 66
+ok   TS-06 naive rounding total: 62500.02
+ok   TS-06 largest-remainder total: 62500.00
+ok   TS-07 proposed: 9403.93
+ok   TS-07 cap: 8328.12
+ok   TS-07 naive scaled total: 8328.14
+ok   TS-07 exact scaled total: 8328.12
+ok   TS-08 priority: team, leadership: (Decimal('70000'), Decimal('30000.00'))
+ok   TS-08 proportional: team, leadership: (Decimal('60869.57'), Decimal('39130.43'))
+ok   TS-09 base, ratio<80%, cap: (Decimal('750000.0'), True, Decimal('313125.00'))
+ok   TS-09 factor on in-scope lines: 0.9210
+ok   TS-10 paid A, C: (Decimal('80.00'), Decimal('16.00'))
+ok   TS-10 order-line clawback A: 50.00
+ok   TS-10 restatement A, C: (Decimal('65.00'), Decimal('13.00'))
+ok   TS-10 left with payees under order-line: A, C: (Decimal('30.00'), Decimal('16.00'))
+ok   TS-11 payable after netting, receivable carried: (Decimal('0.00'), Decimal('15.00'))
+ok   TS-12 capped amounts: (Decimal('200'), Decimal('80'))
+ok   TS-22 person total: 400.00
+ok   TS-38 withholding, payable: (Decimal('24.69'), Decimal('1209.87'))
+ok   TS-38 entry balances: True
+ok   TS-40 payable, in transit, settled: (Decimal('0'), Decimal('0'), Decimal('98'))
+ok   TS-43 override vs differential: (Decimal('180.00'), Decimal('360.00'))
+ok   TS-44 matching: (Decimal('1.00'), Decimal('48.00'))
+ok   Tie-break 100.00 over 3 equal shares (lowest key gets the extra cent): [Decimal('33.34'), Decimal('33.33'), Decimal('33.33')]
+ok   TS-31 R1 net sales (minor units): 16000
+ok   TS-31 R1 customer share %, incl. declared resale %: (Decimal('62.50'), Decimal('62.50'))
+ok   TS-31 R2 personal-use share %: 60.00
+ok   TS-31 R2 payee above one-third flag: True
+ok   TS-31 R3 retail %, downline %: (Decimal('80.65'), Decimal('19.35'))
+ok   TS-31 R3 year clawbacks: -240
+ok   TS-31 R5 population, % above zero, median: (2, Decimal('50.00'), Decimal('14.30'))
+ok   TS-31 R4 late order crosses 100.00 threshold and was refunded: (True, True)
+ok   E2E PV: {'A': Decimal('100'), 'B': Decimal('600'), 'C': Decimal('100'), 'D': Decimal('450')}
+ok   E2E GV: {'A': Decimal('1250'), 'B': Decimal('1050'), 'C': Decimal('100'), 'D': Decimal('450')}
+ok   E2E ranks: {'A': 'R2', 'B': 'R2', 'C': 'R1', 'D': 'R1'}
+ok   E2E retail: {'B': Decimal('100.00'), 'D': Decimal('37.50')}
+ok   E2E unilevel: {'A': Decimal('78.50'), 'B': Decimal('36.00')}
+ok   E2E rank bonus before cap: {'A': Decimal('125.00'), 'B': Decimal('105.00'), 'C': Decimal('5.00'), 'D': Decimal('22.50')}
+ok   E2E matching before cap: {'A': Decimal('22.00'), 'B': Decimal('4.50')}
+ok   E2E net sales, cap, in-scope proposed: (Decimal('1250'), Decimal('250.00'), Decimal('284.00'))
+ok   E2E matching removed, rank bonus removed: (Decimal('26.50'), Decimal('7.50'))
+ok   E2E rank bonus after cap: {'A': Decimal('121.36'), 'B': Decimal('101.94'), 'C': Decimal('4.85'), 'D': Decimal('21.85')}
+ok   E2E in-scope after cap equals cap: 250.00
+ok   E2E gross per payee: {'A': Decimal('199.86'), 'B': Decimal('237.94'), 'C': Decimal('4.85'), 'D': Decimal('59.35')}
+ok   E2E run total: 502.00
+ok   E2E withholding per payee (fixture 2%): {'A': Decimal('4.00'), 'B': Decimal('4.76'), 'C': Decimal('0.10'), 'D': Decimal('1.19')}
+ok   E2E ledger: expense = payable + withholding: (Decimal('502.00'), Decimal('491.95'), Decimal('10.05'))
+ok   E2E compliance R1 customer share %: 44.00
+ok   E2E compliance R3 retail %, downline %: (Decimal('27.39'), Decimal('72.61'))
+
+55 of 55 checks passed

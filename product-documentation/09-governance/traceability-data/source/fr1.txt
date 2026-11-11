@@ -1,0 +1,579 @@
+@FR-IAM-001 | A | Must | Tenant-scoped authentication and sessions | IAM
+desc: Every human user signs in to exactly one tenant context (or the vendor console); the session carries tenant id, user id, roles and assurance level, and no request is served without it.
+why: Tenant isolation is a Critical gap; the client must never supply the tenant id.
+trace: GAP-065, SEC-01
+br: BR-SEC-04
+persona: All staff roles
+pre: User account exists and is active in the tenant.
+trigger: User opens the sign-in page or a session expires.
+in: Email or SSO assertion; password or passkey; second factor when required.
+logic: Verify credential at the identity provider; resolve tenant from the sign-in hostname; issue a short-lived access token and a rotating refresh token bound to the tenant; record an audit event.
+out: Authenticated session; audit event AUTH.SIGN_IN.
+valid: Account not locked; tenant active; clock skew within tolerance.
+err: Wrong credential (generic message, counter incremented); locked account; tenant archived (read-only notice); IdP unavailable (retry page).
+perm: Public endpoint; rate limited per IP and per account.
+dep: FR-AUD-001
+us: US-35
+scr: SC-27
+api: API-07
+ent: user_account, audit_event
+
+@FR-IAM-002 | A | Must | Multi-factor authentication for privileged roles | IAM
+desc: Tenant admins, payout preparers and approvers, plan approvers, compliance officers and all vendor staff must pass a second factor; approvals require a fresh factor (step-up) within a configurable window.
+why: Account takeover of an approver redirects money (threat T10).
+trace: GAP-065, SEC-03
+br: BR-SEC-02
+persona: Tenant admin; Finance approver; Vendor ops
+pre: Role flagged MFA-required.
+trigger: Sign-in, or an action flagged step-up (approve batch, commit run, activate plan, approve adjustment, change bank details).
+in: TOTP code or WebAuthn assertion.
+logic: Deny privileged session without enrolled factor; for step-up actions require a factor verified within the step-up window; record assurance level on the approval record.
+out: Session assurance level AAL2; approval records carry factor time.
+valid: Factor enrolled; code unused; within window.
+err: No factor enrolled (forced enrolment); invalid code (limited retries); lost device (admin-assisted reset is a logged case with second approver).
+perm: Self-service enrolment; reset needs Tenant admin plus second approver.
+dep: FR-IAM-001
+us: US-35
+scr: SC-27
+api: API-07
+ent: user_account, approval
+
+@FR-IAM-003 | A | Must | Roles, permissions and attribute scopes | IAM
+desc: Permissions are granted through roles; each assignment can be scoped by market and brand; distributor-facing access is additionally scoped by downline relationship (see FR-GEN-006). Platform-defined base roles can be cloned into tenant roles.
+why: UX requires role-specific navigation and the security model requires least privilege.
+trace: GAP-065, GAP-012, SEC-04
+br: BR-SEC-05
+persona: Tenant admin
+pre: Tenant admin signed in with MFA.
+trigger: Admin creates a role, edits permissions or assigns a user.
+in: Role name; permission set; scope (markets, brands); assignee.
+logic: Validate against the permission catalogue; reject combinations that break separation of duties (FR-IAM-004); a grant of an admin or approver role opens an approval request for a second admin; all changes audited and effective immediately on approval.
+out: Role, role assignment, audit events, alert on new admin role.
+valid: Permission exists; scope values exist; assigner cannot grant permissions they do not hold.
+err: Conflicting duty pair; sole remaining admin cannot remove own admin role.
+perm: Tenant admin (grant of admin or approver role needs second admin).
+dep: FR-IAM-001
+us: US-36
+scr: SC-28
+api: API-40
+ent: role, role_assignment, approval, audit_event
+
+@FR-IAM-004 | B | Must | Separation of duties | IAM
+desc: The person who prepares a payout batch, a run commit, a plan activation or an adjustment cannot approve it; the rule is enforced in the service layer from recorded actor ids, not by role names alone.
+why: No single person may release money or change pay rules.
+trace: GAP-065, SEC-04, MH-REQ-02
+br: BR-ADJ-02, BR-SEC-06
+persona: Finance approver; Commission analyst
+pre: An approvable object exists with a recorded preparer.
+trigger: A user attempts an approval.
+in: Object id; approver identity; step-up factor.
+logic: Compare approver with preparer and with all contributors to the object; refuse if equal; refuse if the approver is the beneficiary payee or a declared related party (adjustments); record the decision.
+out: Approval record or refusal with reason code SOD-01.
+valid: Approver holds the approval permission in scope.
+err: Self-approval; no eligible approver available (delegation rule lists eligible users; never self-approval).
+perm: Approver permission per object type.
+dep: FR-IAM-002, FR-IAM-003
+us: US-07
+scr: SC-02, SC-03
+api: API-20, API-25
+ent: approval
+
+@FR-IAM-005 | A | Must | Vendor support sessions | IAM
+desc: Vendor staff have no standing access to tenant data. Access is a request with reason and scope that a tenant admin approves for a fixed duration; sessions are read-only by default, region-bound, fully logged and visible to the tenant.
+why: The platform concentrates many tenants' payout and personal data (threat T3). In MVP-A the vendor handles a design partner's export, so the control is needed from the first tenant.
+trace: GAP-065, F-32, SEC-02
+br: BR-SEC-01
+persona: Tenant admin; Vendor ops
+pre: Vendor user has MFA; tenant has at least one admin.
+trigger: Vendor engineer requests access.
+in: Tenant; reason; scope (modules, read-only or named write action); duration.
+logic: Create request; notify tenant admins; on approval mint a time-boxed scoped credential; log every screen view, query and API call to the tenant-visible session log; expire automatically; produce a session report.
+out: Support session, session log, session report.
+valid: Duration within tenant maximum; requester outside the tenant's region needs explicit region approval.
+err: No decision before expiry of the request (auto-denied); attempted action outside scope (blocked and logged).
+perm: Request: Vendor ops. Decide: Tenant admin.
+dep: FR-AUD-001
+us: US-29
+scr: SC-14, SC-39
+api: API-08
+ent: support_session, audit_event
+
+@FR-IAM-006 | B | Must | API keys and service accounts | IAM
+desc: Integrations authenticate with scoped, rotatable keys tied to a service account with its own role, rate limit and IP allow-list.
+why: Commerce connectors and tenant systems write orders; mass extraction must be bounded (threat T11).
+trace: GAP-065, SEC-10
+br: BR-SEC-03
+persona: Integration developer; Tenant admin
+pre: Tenant admin signed in.
+trigger: Admin creates or rotates a key.
+in: Name; scopes; rate limit tier; allowed IP ranges; expiry.
+logic: Generate key, show once, store only a hash; attach scopes; enforce per-key rate limits and pagination caps; rotation keeps the old key valid for a grace period.
+out: Key id; audit event.
+valid: Scopes from the catalogue; no bulk personal-data scope without a stated purpose.
+err: Expired or revoked key (401); scope missing (403); limit exceeded (429 with Retry-After).
+perm: Tenant admin.
+dep: FR-IAM-003
+us: US-22
+scr: SC-13
+api: API-10
+ent: api_key, audit_event
+
+@FR-IAM-007 | B | Must | Distributor sign-in | IAM
+desc: Distributors sign in to the portal with email or phone one-time code or password, optional second factor, and re-authentication for sensitive changes.
+why: The distributor population is large and varied; sign-in must work on low-end phones without weakening bank-detail controls.
+trace: GAP-051, GAP-035
+br: BR-PAY-08
+persona: Distributor
+pre: Participant with type flag can-earn has a verified contact.
+trigger: Distributor opens the portal.
+in: Identifier; one-time code or password.
+logic: Issue portal session scoped to the participant and the positions they own; bank-detail and tax-profile changes require fresh re-authentication.
+out: Portal session.
+valid: Contact verified; participant not terminated (terminated participants keep read access to past statements for the retention period).
+err: Unknown identifier (generic response); code expired.
+perm: Self only.
+dep: FR-IAM-001, FR-PAR-001
+us: US-12
+scr: SC-27, SC-37
+api: API-07
+ent: user_account, participant
+
+@FR-TEN-001 | A | Must | Tenant provisioning and data region | TEN
+desc: A tenant is created with a data region, an isolation tier (pooled or dedicated database) and a routing entry; all tenant data, backups and exports stay in that region.
+why: Residency duties and large tenants must be served without re-architecture.
+trace: GAP-060, GAP-061, F-34, PRV-06
+br: BR-DAT-09
+persona: Vendor ops
+pre: Signed data-processing agreement recorded.
+trigger: Vendor ops creates a tenant.
+in: Legal name; region; isolation tier; first admin contact.
+logic: Create routing entry and database (or schema objects in the pooled database); apply row-level security policies; create first admin invitation; record DPA reference and breach contacts.
+out: Tenant, routing entry, admin invitation.
+valid: Region available; tier allowed in region.
+err: Provisioning step fails (idempotent retry; tenant stays in state Provisioning).
+perm: Vendor ops with second-person approval.
+dep: FR-IAM-003
+us: US-31
+scr: SC-39
+api: API-39
+ent: tenant, tenant_setting_version
+
+@FR-TEN-002 | B | Must | Markets, brands, currencies and calendars | TEN
+desc: A tenant defines brands and the markets it has opened; each market has a currency, time zone, language set, market pack reference and calendars with cut-off time zones.
+why: Plans, orders, tax and compliance rules are market-scoped; the brand dimension is cheap now and costly later.
+trace: GAP-095, F-43, GAP-023
+br: BR-PER-01
+persona: Tenant admin
+pre: Tenant active.
+trigger: Admin adds or edits a market, brand or calendar.
+in: Market code; currency; time zone; languages; calendar definitions.
+logic: Store as a new settings version; calendars generate periods ahead; a market cannot be deleted once referenced.
+out: Market, brand, calendar, generated periods.
+valid: ISO currency and country codes; no overlapping periods within a calendar.
+err: Change would alter a committed period (refused).
+perm: Tenant admin.
+dep: FR-TEN-003
+us: US-37
+scr: SC-29
+api: API-39
+ent: market, brand, calendar, period
+
+@FR-TEN-003 | B | Must | Versioned tenant settings | TEN
+desc: Tenant settings (rounding mode, clawback policy, visibility policy, thresholds, notice periods) are versioned and audited like plan versions; every run records the settings version it used.
+why: A run must be reproducible; a silent settings change would break replay.
+trace: GAP-060, GAP-021
+br: BR-MNY-02
+persona: Tenant admin
+pre: Tenant admin signed in.
+trigger: A setting is changed.
+in: Setting key; new value; effective date; reason.
+logic: Create a new immutable settings version effective from the date; settings that change money need a second approver.
+out: Settings version; audit event.
+valid: Value within platform bounds; effective date not inside a committed period.
+err: Back-dated change (refused); missing approver.
+perm: Tenant admin; money-affecting keys need Finance approver.
+dep: FR-IAM-004
+us: US-37
+scr: SC-29
+api: API-39
+ent: tenant_setting_version, approval
+
+@FR-TEN-004 | B | Must | Market launch checklist | TEN
+desc: A market can be switched to Live only when the checklist is complete: licence or registration evidence, payment and payout provider eligibility, tax rules, agreement versions, data region, plan variant.
+why: Operating before a licence or without an eligible provider is a launch blocker.
+trace: GAP-004, CMP-12, CPL-11, FL-09
+br: BR-PAY-11, BR-REG-04
+persona: Tenant admin; Compliance officer
+pre: Market exists in Draft.
+trigger: Admin opens the checklist or requests go-live.
+in: Evidence documents; provider approval record; tax configuration reference.
+logic: Each item has an owner, evidence and status; go-live needs all mandatory items for that market pack plus compliance sign-off; enrolment and order ingestion for the market are blocked until Live.
+out: Market status Live; checklist record.
+valid: Evidence attached for each mandatory item; provider approval names the approved business description.
+err: Missing item (blocked with list).
+perm: Tenant admin prepares; Compliance officer signs off.
+dep: FR-PAY-006, FR-TAX-002
+us: US-38
+scr: SC-17
+api: API-39
+ent: market, document, provider_config, approval
+
+@FR-TEN-005 | V1 | Should | Tenant archive and offboarding | TEN
+desc: A tenant can be moved to read-only archive after a final run and a complete export; data is retained per law and then deleted.
+why: Distributors and regulators may need records after a tenant closes.
+trace: GAP-098, GAP-096, F-44
+br: BR-DAT-10
+persona: Vendor ops; Tenant admin
+pre: Contract terminated or tenant request.
+trigger: Offboarding request.
+in: Final period; export destination; retention basis.
+logic: Run final period; produce full export; switch to archive; schedule deletion.
+out: Archive state; export manifest.
+valid: No open payout batches.
+err: Open obligations (listed).
+perm: Vendor ops with tenant confirmation.
+dep: FR-INT-003
+us:
+scr: SC-39
+api: API-32
+ent: tenant, export_job
+
+@FR-IMP-001 | A | Must | Export upload and schema validation | IMP
+desc: A design partner's back-office export (participants, orders, payout lines) is uploaded as files and validated against the published schema before any row is stored.
+why: MVP-A reads an operator's existing data; it must refuse personal or bank data it does not need.
+trace: GAP-081, F-24, P4
+br: BR-IMP-01, BR-IMP-02
+persona: Implementation consultant; Compliance officer
+pre: Tenant exists; data terms accepted.
+trigger: User uploads files or drops them in the tenant's inbound location.
+in: Three CSV files; declared period range; market; currency.
+logic: Check required columns, types, key uniqueness and referential links; reject files containing columns that look like names, contacts, addresses, identity or bank data; compute row counts and control totals; store the batch in state Validated or Rejected with a row-level error report.
+out: Import batch; validation report.
+valid: Participant ids pseudonymous; amounts are integers in minor units; months in range; every order buyer and payout payee exists.
+err: Schema mismatch; forbidden column present; orphan references above tolerance; duplicate keys.
+perm: Implementation consultant; Tenant admin.
+dep: FR-TEN-001
+us: US-39
+scr: SC-24
+api: API-01, API-02
+ent: import_batch, import_row_error
+
+@FR-IMP-002 | A | Must | Value mapping with versions | IMP
+desc: The partner's own codes are mapped to the platform vocabulary: participant types to flags (earns, counts as end customer), order purpose, payout source kind, starter-kit flag. A mapping is versioned and every report records the mapping version.
+why: Retail share depends on which types count as customers; the mapping is a judgement that must be visible.
+trace: GAP-028, F-20, CMP-01, CMP-03
+br: BR-IMP-03, BR-PTY-01
+persona: Compliance officer; Implementation consultant
+pre: A validated batch exists.
+trigger: User opens mapping.
+in: Source values; target vocabulary; notes.
+logic: List distinct source values with counts; require a target for each; unmapped values default to unknown and are reported; saving creates a new mapping version.
+out: Mapping version.
+valid: Every source value mapped or explicitly left unknown.
+err: Mapping changed after a snapshot was published (new snapshot required; old one keeps its version).
+perm: Compliance officer approves; consultant drafts.
+dep: FR-IMP-001
+us: US-40
+scr: SC-25
+api: API-03
+ent: import_mapping
+
+@FR-IMP-003 | A | Must | Import batch lifecycle and data-quality report | IMP
+desc: Batches move Uploaded, Validated, Mapped, Loaded, Superseded; loading writes compliance facts; a data-quality report states coverage and unknowns.
+why: Reports on poor data must say so.
+trace: GAP-081, GAP-102
+br: BR-IMP-04
+persona: Implementation consultant
+pre: Batch validated and mapping approved.
+trigger: User loads the batch.
+in: Batch id; mapping version.
+logic: Load into compliance fact tables in one transaction per batch; re-import of the same period supersedes the earlier batch without deleting it; compute share of orders with unknown purpose, refunds without month, payout lines without source order.
+out: Loaded facts; data-quality report.
+valid: Control totals after load equal totals at validation.
+err: Load interrupted (transaction rolled back; batch stays Mapped).
+perm: Implementation consultant.
+dep: FR-IMP-002
+us: US-39
+scr: SC-24
+api: API-01, API-02
+ent: import_batch, cpl_fact_participant, cpl_fact_order, cpl_fact_payout_line
+
+@FR-IMP-004 | V1 | Could | Read-only database connector | IMP
+desc: Instead of files, facts are pulled from the partner's back office through read-only SQL access on a schedule.
+why: Incumbents expose SQL access; removes manual export. Unvalidated demand.
+trace: GAP-062, P4
+br: BR-IMP-01
+persona: Integration developer
+pre: Connection approved by the partner.
+trigger: Schedule.
+in: Connection reference; query templates per vendor.
+logic: Run parameterised read-only queries; land rows as a batch; same validation as files.
+out: Import batch.
+valid: Queries return only schema columns.
+err: Connection refused; schema drift.
+perm: Tenant admin.
+dep: FR-IMP-001
+us:
+scr: SC-24
+api: API-01
+ent: import_batch
+
+@FR-CPL-001 | A | Must | Retail-customer share report (R1) | CPL
+desc: Per period: net sales, share bought by participant types flagged as end customers, share including declared resale, starter-kit share, and share of participant orders with unknown purpose.
+why: The share of sales to non-participants is the number regulators look at; no vendor material read computes it from transaction data.
+trace: GAP-081, F-24, CMP-01, CPL-03
+br: BR-GRD-04, BR-CPL-01
+persona: Compliance officer
+pre: Facts loaded (overlay) or period committed (engine).
+trigger: User requests a snapshot for a period range.
+in: Period range; market; mapping or settings version.
+logic: Net sales = amount minus refunded amount per order; numerator = orders whose buyer type counts as end customer; second figure adds participant orders with purpose resale; all figures stored with population counts and method version.
+out: Report snapshot with figures and method notes.
+valid: Denominator not zero, otherwise figure is null with reason.
+err: Facts superseded during computation (snapshot aborted, retried).
+perm: Compliance officer, Tenant admin, Executive (read).
+dep: FR-CPL-006
+us: US-24
+scr: SC-10, SC-46
+api: API-04, API-05
+ent: compliance_report_snapshot, compliance_figure
+
+@FR-CPL-002 | A | Must | Personal-use share of rewarded volume (R2) | CPL
+desc: Of the order volume on which multi-level pay was earned in a period, the share from orders tagged personal use and the share with unknown purpose; plus the count of payees whose multi-level pay from personal-use volume exceeds a tenant threshold.
+why: Makes a one-third style test computable; the threshold is the tenant's counsel's, not the platform's.
+trace: GAP-081, GAP-005, F-24, CMP-02, CPL-03
+br: BR-GRD-03, BR-CAP-02
+persona: Compliance officer
+pre: Payout lines carry source order references.
+trigger: Snapshot request.
+in: Period; threshold setting.
+logic: Select positive payout lines of source kind downline volume; sum volume of their distinct source orders by purpose; per payee compare pay from personal-use orders with the threshold share of that payee's multi-level pay.
+out: Figures; flagged payee list (ids only).
+valid: Lines without a source order are counted and reported as unattributable.
+err: Threshold not set (figure shown, flag count omitted).
+perm: Compliance officer.
+dep: FR-CPL-006
+us: US-24
+scr: SC-10
+api: API-04, API-05
+ent: compliance_report_snapshot, compliance_figure
+
+@FR-CPL-003 | A | Must | Payout source mix (R3) | CPL
+desc: Per period and per year: gross payouts by source kind (retail sale, downline volume, enrolment order, pool, match, other) and clawbacks shown separately.
+why: Shows what money was paid for, the basis of the "derived primarily from introducing others" analysis.
+trace: GAP-081, F-24, CMP-03, MH-REQ-09
+br: BR-GRD-04
+persona: Compliance officer; Executive
+pre: Payout lines classified by source kind.
+trigger: Snapshot request.
+in: Period range.
+logic: Sum amounts by source kind excluding clawbacks for shares; report clawbacks as a separate negative total; shares sum to 100 within rounding.
+out: Figures and chart data.
+valid: Every line has a source kind (unknown allowed, reported).
+err: None specific.
+perm: Compliance officer, Executive.
+dep: FR-CPL-006
+us: US-24
+scr: SC-10
+api: API-04, API-05
+ent: compliance_report_snapshot, compliance_figure
+
+@FR-CPL-004 | A | Must | Qualification-by-purchase and period-end threshold orders (R4) | CPL
+desc: Per period: distributors active under the plan's own-purchase rule, the share of them with no customer order, and orders placed on or after a configurable day that lift the buyer across a rank threshold, with how many were later refunded.
+why: Purchases to qualify and period-end buying are named indicators; they need operational definitions.
+trace: GAP-005, CMP-02, F-24
+br: BR-GRD-03
+persona: Compliance officer
+pre: Thresholds configured.
+trigger: Snapshot request.
+in: Active threshold; rank thresholds; late-order day.
+logic: Accumulate personal volume per distributor in day order; detect crossings by late orders; join refunds.
+out: Figures; crossing list.
+valid: Thresholds present.
+err: Missing day field in orders (indicator omitted with note).
+perm: Compliance officer.
+dep: FR-CPL-006
+us: US-24
+scr: SC-10
+api: API-04, API-05
+ent: compliance_report_snapshot, compliance_figure
+
+@FR-CPL-005 | A | Must | Earnings distribution over all participants (R5) | CPL
+desc: For a year: every participant who held an earning agreement at any time, including those who earned nothing; share earning more than zero, mean, median, percentiles, bands. Basis stated as gross commissions net of clawbacks, before expenses.
+why: Disclosures must reflect the typical participant; this is the internal computation that a published disclosure (FR-CPL-009) later uses.
+trace: GAP-003, GAP-086, F-25, CMP-05, CPL-04
+br: BR-GRD-04, BR-HON-01
+persona: Compliance officer
+pre: A full year of payout lines.
+trigger: Snapshot request.
+in: Year; population rule.
+logic: Population = earning-type participants enrolled on or before year end; earnings = sum of payout lines per participant, zero when none; compute statistics; band counts sum to the population.
+out: Distribution figures.
+valid: Population count equals band total.
+err: Partial year (labelled partial; not publishable).
+perm: Compliance officer.
+dep: FR-CPL-006
+us: US-25
+scr: SC-10
+api: API-04, API-05
+ent: compliance_report_snapshot, compliance_figure
+
+@FR-CPL-006 | A | Must | Report snapshots, method versions and drill-down | CPL
+desc: Each report run is an immutable snapshot recording inputs (batch ids or run ids), mapping or settings version, method version, figures and populations. Any figure can be opened to its population and source rows.
+why: A compliance figure that cannot be reproduced or explained is not evidence.
+trace: GAP-081, GAP-027, F-12, ENT-21
+br: BR-CPL-01
+persona: Compliance officer
+pre: Facts or committed runs exist.
+trigger: Snapshot creation or a figure is opened.
+in: Report set; period; versions.
+logic: Compute in a job; store figures with keys; drill-down query returns the rows that formed numerator and denominator, paginated, export logged.
+out: Snapshot; figure rows.
+valid: Recomputing a snapshot from the same inputs and versions gives identical figures.
+err: Inputs superseded (snapshot marked Outdated, never changed).
+perm: Compliance officer; drill-down export logged.
+dep: FR-AUD-002
+us: US-41
+scr: SC-10, SC-26
+api: API-04, API-05, API-06
+ent: compliance_report_snapshot, compliance_figure
+
+@FR-CPL-007 | B | Must | Platform guardrails | CPL
+desc: Platform-level rules, separate from tenant plan rules, evaluate plan configurations and fee configurations per market with one of three outcomes: blocked, warned and logged, or reported.
+why: Decides whether the platform helps configure an unlawful plan; default stance Moderate pending founder and counsel.
+trace: GAP-087, F-26, CPL-01, CMP-14, CMP-16
+br: BR-GRD-01, BR-GRD-02, BR-GRD-03, BR-GRD-04
+persona: Plan administrator; Compliance officer
+pre: Market pack loaded with guardrail rules and their basis status.
+trigger: Plan version saved, submitted or activated; fee configured.
+in: Plan version; market.
+logic: Evaluate each guardrail predicate over the declarative configuration; blocked outcomes refuse save with rule id and explanation; warned outcomes require acknowledgement; every decision stored immutably.
+out: Guardrail decisions.
+valid: Rule has a basis status; counsel-required rules marked provisional until confirmed.
+err: Extension module opaque to predicates (treated as warned, routed to compliance review).
+perm: System; visible to Plan administrator and Compliance officer.
+dep: FR-PLN-001, FR-CPL-012
+us: US-26
+scr: SC-04, SC-11
+api: API-16
+ent: guardrail_rule, guardrail_decision
+
+@FR-CPL-008 | B | Must | Guardrail overrides log | CPL
+desc: Where platform policy permits an override, the tenant records a written justification and approver; overrides appear in compliance reports and in the vendor's tenant review.
+why: Overrides must be visible, not silent.
+trace: GAP-087, F-26
+br: BR-GRD-05
+persona: Compliance officer
+pre: A warned or overridable decision exists.
+trigger: User requests override.
+in: Decision id; justification; evidence.
+logic: Only outcomes marked overridable can be overridden; needs Compliance officer approval; blocked-by-law outcomes are never overridable.
+out: Override record.
+valid: Justification present.
+err: Not overridable (refused).
+perm: Compliance officer.
+dep: FR-CPL-007
+us: US-26
+scr: SC-11
+api: API-16
+ent: guardrail_decision
+
+@FR-CPL-009 | V1 | Should | Earnings disclosure publication and substantiation | CPL
+desc: A disclosure document is generated from an R5 snapshot, reviewed, published with a version and kept with its method and data references for the retention period.
+why: Substantiation on demand if the US proposal is adopted; trust feature elsewhere.
+trace: GAP-086, GAP-003, F-25, CPL-04, CPL-05
+br: BR-HON-02
+persona: Compliance officer
+pre: Full-year snapshot.
+trigger: Compliance officer drafts a disclosure.
+in: Snapshot id; template; language.
+logic: Draft, review, publish; published versions immutable; public page shows the current version; statements link to it.
+out: Disclosure version; public page.
+valid: Snapshot is full-year and not outdated.
+err: Snapshot outdated (blocked).
+perm: Compliance officer publishes.
+dep: FR-CPL-005
+us: US-25
+scr: SC-23, SC-40
+api: API-05
+ent: compliance_report_snapshot, document
+
+@FR-CPL-010 | V1 | Should | Integrity signals | CPL
+desc: Documented, configurable signals with tenant thresholds: period-end threshold orders, returns after qualification, shared payment fingerprints or addresses between a distributor and their customers.
+why: Bonus buying and fake customers need measurable definitions; signals are indicators, never findings.
+trace: GAP-005, F-27
+br: BR-GRD-03
+persona: Compliance officer
+pre: Order and attribute data available.
+trigger: Period close.
+in: Thresholds.
+logic: Compute signals; list flags with evidence; open cases on request.
+out: Flag list.
+valid: Each flag labelled as indicator.
+err: Missing attributes (signal disabled with note).
+perm: Compliance officer.
+dep: FR-ORD-001
+us: US-33
+scr: SC-45
+api: API-05
+ent: integrity_signal
+
+@FR-CPL-011 | V1 | Could | Approved-claims catalogue and disclosure feed | CPL
+desc: Versioned approved claims per market and the current disclosure figures are exposed by API and webhook to claims-monitoring partners.
+why: Claims on social media are frequent; monitoring is integrated, not built.
+trace: GAP-001, F-37, CPL-12
+br: BR-HON-02
+persona: Compliance officer
+pre: Disclosure published.
+trigger: Catalogue change.
+in: Claim text; market; validity dates.
+logic: Store versions; emit change events.
+out: Feed.
+valid: Claim linked to a disclosure where it mentions earnings.
+err: None specific.
+perm: Compliance officer.
+dep: FR-CPL-009, FR-INT-001
+us:
+scr: SC-23
+api: API-33
+ent: document
+
+@FR-CPL-012 | B | Must | Rule basis status in configuration | CPL
+desc: Every market-pack rule (guardrail, tax, cooling-off, filing) stores its basis and basis status: screening, primary read, or counsel-confirmed, with source reference and review date.
+why: Legal content is screening-grade until counsel confirms; the product must not present it as settled.
+trace: GAP-102, CPL-15
+br: BR-CPL-03
+persona: Compliance officer; Vendor ops
+pre: Market pack exists.
+trigger: Rule created or reviewed.
+in: Basis text; status; reviewer; date.
+logic: Status shown wherever the rule is applied; a market cannot go Live with mandatory rules still at screening status unless the tenant accepts the risk in writing.
+out: Rule metadata.
+valid: Status in the allowed set.
+err: Go-live with screening-status mandatory rule (blocked or risk acceptance recorded).
+perm: Vendor ops maintains packs; Compliance officer accepts.
+dep: FR-TEN-004
+us: US-38
+scr: SC-17
+api: API-39
+ent: guardrail_rule, tax_rule
+
+@FR-CPL-013 | B-MKT | Should | Market-pack registers | CPL
+desc: Where a market pack requires them: grievance register with response-time tracking and a publishable delisted-seller register.
+why: Reported duties in India; included only when that pack is activated and confirmed.
+trace: CMP-09, CMP-17, CPL-08, CPL-09
+br: BR-ADJ-04
+persona: Compliance officer
+pre: Market pack with the register enabled.
+trigger: Grievance filed or seller delisted.
+in: Case details.
+logic: Grievances run on the case framework with market deadlines; delisted register is a published view of terminated participants per the pack's rule.
+out: Register entries.
+valid: Deadlines from the pack.
+err: Deadline near (escalation).
+perm: Compliance officer.
+dep: FR-CAS-001
+us:
+scr: SC-06
+api: API-30
+ent: case

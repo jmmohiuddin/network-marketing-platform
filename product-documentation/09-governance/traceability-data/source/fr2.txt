@@ -1,0 +1,639 @@
+@FR-PAR-001 | B | Must | Participant record and effective-dated participant types | PAR
+desc: A participant is a person or entity known to the tenant. Types are tenant-defined with flags (can earn, counts as end customer, can sponsor, can hold positions); a participant's type is effective-dated and a change never re-labels past orders.
+why: Real plans have affiliates, preferred customers, promoters and builders; retail share depends on the flags.
+trace: GAP-028, F-20, CPL-02
+br: BR-PTY-01, BR-PTY-02
+persona: Support agent; Compliance officer
+pre: Participant types configured.
+trigger: Enrolment, import or type change.
+in: External id; type; market; identity references; contact data.
+logic: Create participant; type assignment rows with valid-from and valid-to; sensitive documents go to the separate encrypted store.
+out: Participant; type assignment.
+valid: External id unique per tenant; market Live; one active type at any time.
+err: Duplicate suspicion (FR-PAR-003); market not Live.
+perm: Support agent creates; type definitions by Tenant admin with Compliance officer approval.
+dep: FR-TEN-002
+us: US-21
+scr: SC-09
+api: API-12
+ent: participant, participant_type, participant_type_assignment
+
+@FR-PAR-002 | B | Must | Enrolment intake with market gating | PAR
+desc: Enrolments arrive by API or connector; an enrolment is accepted only for a Live market the participant is resident in, and creates the participant, an initial position where the type holds positions, and sponsor and placement relationships.
+why: A distributor enrolling someone in an unopened market creates legal exposure.
+trace: GAP-006, F-40, CPL-13
+br: BR-REG-04
+persona: Integration developer; Support agent
+pre: Sponsor position exists and is active.
+trigger: Enrolment request.
+in: Participant data; sponsor reference; placement preference; agreement version accepted.
+logic: Validate market; run duplicate checks; create records in one transaction; household rule check where the plan declares one.
+out: Participant, position, relationships, agreement acceptance.
+valid: Sponsor can sponsor; placement target valid for the plan.
+err: Market closed (422 MARKET_NOT_LIVE); sponsor inactive; placement slot taken (retry with deterministic alternative).
+perm: API key scope enrol; Support agent.
+dep: FR-GEN-001, FR-GEN-002, FR-PAR-003
+us: US-42
+scr: SC-09
+api: API-12
+ent: participant, position, relationship, agreement_acceptance
+
+@FR-PAR-003 | B | Must | Duplicate-account detection queue | PAR
+desc: New and changed participants are compared on identity reference, payment fingerprint, address and device signals; matches create a duplicate case and, where the tenant enables it, hold activation or payouts until reviewed.
+why: Multiple accounts are legitimate in some plans and abuse in others; decisions need a trail.
+trace: GAP-002, F-04, FL-03
+br: BR-GEN-09
+persona: Support agent; Compliance officer
+pre: Matching attributes available.
+trigger: Enrolment, bank-detail change or scheduled sweep.
+in: Hashed attributes.
+logic: Deterministic matching rules with tenant thresholds; outcome merge, allow with reason, or terminate; history stays on positions.
+out: Duplicate case; hold flag.
+valid: Hash comparison only; raw payment data never stored.
+err: Merge would create a cycle or double ownership conflict (blocked).
+perm: Support agent investigates; Compliance officer decides.
+dep: FR-CAS-001
+us: US-43
+scr: SC-08
+api: API-30
+ent: case, participant
+
+@FR-PAR-004 | V1 | Should | Account types and ownership transfer | PAR
+desc: Individual, joint and business-entity accounts; succession, divorce division and sale are transfers of position ownership with documents, approval and an effective date.
+why: Transfers move future income; needs counsel per market.
+trace: GAP-002, F-05, FL-04
+br: BR-GEN-10
+persona: Support agent; Compliance officer
+pre: Request with documents.
+trigger: Transfer request.
+in: Position; new owner; documents; effective date.
+logic: Case with legal check; new ownership row; new payee needs tax profile and bank details under change controls.
+out: Ownership change.
+valid: New owner eligible.
+err: Missing documents.
+perm: Compliance officer approves.
+dep: FR-GEN-001, FR-PAY-005
+us:
+scr: SC-08
+api: API-30
+ent: position_ownership, case
+
+@FR-PAR-005 | B | Must | Participant and position status lifecycle | PAR
+desc: Statuses Pending, Active, Suspended, Terminated, with reinstatement as an event on the same position; each change is dated with reason and actor.
+why: Termination and reinstatement drive pay eligibility and must not rewrite history.
+trace: GAP-010, GAP-013
+br: BR-GEN-07, BR-GEN-11
+persona: Support agent; Compliance officer
+pre: Participant exists.
+trigger: Status change request or rule.
+in: New status; effective date; reason; evidence.
+logic: Append status row; termination for cause needs a human approver; open payouts follow tenant policy (hold or pay); customers reassigned (FR-CRM-002).
+out: Status history; events.
+valid: Effective date not before last committed period end unless handled as correction.
+err: Back-dated termination into committed period (routed to restatement policy).
+perm: Compliance officer approves terminations.
+dep: FR-CRM-002
+us: US-23
+scr: SC-09
+api: API-12
+ent: participant, position
+
+@FR-PAR-006 | B | Should | Agreement versions and acceptance records | PAR
+desc: The tenant's distributor agreement and policy documents are versioned per market; each participant's acceptance is recorded with version and time.
+why: Written agreements are required in several markets (candidate requirement, to confirm per pack).
+trace: CMP-06
+br: BR-REG-05
+persona: Compliance officer
+pre: Agreement version published.
+trigger: Enrolment or new version requiring re-acceptance.
+in: Version id; acceptance evidence.
+logic: Store acceptance; re-acceptance campaigns tracked.
+out: Acceptance record.
+valid: Version current for the market.
+err: Acceptance missing at enrolment (blocked where the pack requires).
+perm: Compliance officer publishes versions.
+dep: FR-PAR-002
+us: US-42
+scr: SC-09
+api: API-12
+ent: document, agreement_acceptance
+
+@FR-GEN-001 | B | Must | Positions separate from participants | GEN
+desc: The tree is made of positions. A participant may own one or more positions; ownership is effective-dated; volume and qualification are evaluated per position unless the plan version says per participant.
+why: Plans give several business centres per person; node equals person breaks them.
+trace: GAP-010, F-01
+br: BR-GEN-01
+persona: Commission analyst; Distributor
+pre: Participant type can hold positions.
+trigger: Enrolment or plan rule grants a position.
+in: Owner; market; brand; plan.
+logic: Create position with ownership row; statements roll positions up per owner.
+out: Position.
+valid: Plan's limit on positions per participant.
+err: Limit exceeded.
+perm: System on enrolment; Support agent by case.
+dep: FR-PAR-001
+us: US-04
+scr: SC-09, SC-07
+api: API-12
+ent: position, position_ownership
+
+@FR-GEN-002 | B | Must | Effective-dated sponsor and placement relationships | GEN
+desc: Sponsor and placement are separate relationship kinds, each row carrying valid time and recorded time; rows are never updated in place; at any valid time a child has at most one parent per kind and no cycles exist.
+why: Reproducibility, disputes and audit depend on knowing what the tree was when a period was calculated.
+trace: GAP-010, F-02, ADR-03
+br: BR-GEN-02, BR-GEN-03, BR-GEN-04
+persona: Commission analyst
+pre: Positions exist.
+trigger: Enrolment, approved change, approved correction.
+in: Kind; parent; child; valid-from; event reference.
+logic: Change closes the current row at the effective date and inserts a new one; correction supersedes the old row (recorded time) and inserts the corrected row with the original valid date; cycle and uniqueness checks run inside the transaction under a per-tree lock.
+out: Relationship rows; domain event GenealogyChanged.
+valid: No cycle; no overlap of valid ranges for the same child and kind among non-superseded rows.
+err: Cycle (409 GEN_CYCLE); overlap; parent not in same tenant and tree.
+perm: Only through enrolment or an approved case.
+dep: FR-GEN-001
+us: US-01
+scr: SC-07
+api: API-14, API-15
+ent: relationship
+
+@FR-GEN-003 | B | Must | Tree as of a date and as known at a time | GEN
+desc: Staff can view any subtree as of a valid date and optionally as known at a past recorded time; runs reference the recorded-time instant they used.
+why: Explaining a past payout after later corrections.
+trace: GAP-010, F-02
+br: BR-GEN-02
+persona: Commission analyst; Support agent
+pre: Relationship history exists.
+trigger: User selects dates in the explorer or opens a run's tree.
+in: Root position; as-of date; known-at time; depth.
+logic: Query non-superseded-as-of-known-at rows valid at the date; lazy by depth.
+out: Subtree page.
+valid: Dates not in the future for known-at.
+err: Read model rebuilding (served from the system of record with a notice, depth-limited).
+perm: Staff roles with genealogy read.
+dep: FR-GEN-002, FR-GEN-008
+us: US-01
+scr: SC-07
+api: API-14
+ent: relationship, path_node
+
+@FR-GEN-004 | B | Must | Genealogy change and correction cases | GEN
+desc: Sponsor or placement changes and corrections are requested as cases with reason and evidence, checked against the plan's change windows, reviewed, and applied with an effective date (change) or original date (correction, listing affected committed periods).
+why: A genealogy change moves future income between people.
+trace: GAP-002, F-03, FL-02
+br: BR-GEN-03, BR-GEN-04, BR-GEN-05
+persona: Support agent; Compliance officer
+pre: Requester identified.
+trigger: Agent or distributor files a request.
+in: Position; kind; proposed parent; change or correction; dates; evidence.
+logic: Policy check (window, approvals); simulate cycle and occupancy; for corrections compute affected committed periods and estimated payout impact; on approval apply through FR-GEN-002 and route affected periods to the restatement policy.
+out: Case; relationship rows; notifications; read-model rebuild job.
+valid: Evidence attached; proposed parent valid.
+err: Outside window (rejected or exception route if the plan allows); would create a cycle; target leg occupied; affects committed period (flag, FL-07).
+perm: Support agent files; Compliance officer approves.
+dep: FR-CAS-001, FR-GEN-002, FR-COMP-009
+us: US-02, US-03
+scr: SC-08
+api: API-15
+ent: case, relationship
+
+@FR-GEN-005 | B | Could | Serialised placement for binary and matrix plans | GEN
+desc: Automatic placement and spillover place a new position in a deterministic slot; concurrent enrolments into the same leg are serialised and the tie-break recorded.
+why: Two people must not land in one slot. Priority depends on the segment decision; binary appeared in 4 of 16 hold-out plans.
+trace: GAP-010, GAP-013, P1
+br: BR-GEN-06
+persona: System
+pre: Plan declares a placement tree with width.
+trigger: Enrolment with automatic placement.
+in: Sponsor position; leg preference.
+logic: Take a lock on the target leg; find the slot by the plan's rule; insert; release.
+out: Placement relationship; tie-break record.
+valid: Slot free at commit.
+err: Lock timeout (retry).
+perm: System.
+dep: FR-GEN-002
+us: US-42
+scr: SC-07
+api: API-12
+ent: relationship
+
+@FR-GEN-006 | B | Must | Downline visibility policy enforced on the server | GEN
+desc: A tenant policy states which fields a viewer may see at which depth and relationship (for example name and rank to depth n, contact data only for personally sponsored, aggregates beyond); the API returns only permitted fields and never reveals the existence of positions outside the viewer's downline.
+why: Genealogy views are the largest personal-data exposure surface.
+trace: GAP-012, F-06, SEC-08
+br: BR-DAT-03, BR-SEC-03
+persona: Team leader; DPO
+pre: Policy configured (safe default applies otherwise).
+trigger: Any distributor-facing genealogy or team request.
+in: Viewer position; target; fields.
+logic: Authorise by path read model (viewer is ancestor of target, depth d); apply the field matrix; aggregate beyond the depth limit; rate limit and log exports.
+out: Filtered response.
+valid: Policy version recorded on response logs.
+err: Target outside downline (404, same as not found).
+perm: Policy edited by Tenant admin with DPO approval.
+dep: FR-GEN-008
+us: US-05
+scr: SC-20
+api: API-13, API-34
+ent: path_node, tenant_setting_version
+
+@FR-GEN-007 | B | Must | Search-first genealogy explorer | GEN
+desc: Explorers open on search and a focused node, expand lazily, cap depth and breadth per request, and show counts for collapsed branches.
+why: Trees with thousands of nodes cannot be drawn whole.
+trace: GAP-012, GAP-055, F-07
+br: BR-DAT-03
+persona: Support agent; Commission analyst; Team leader
+pre: Read model current or marked stale.
+trigger: User searches or expands.
+in: Query; node; depth.
+logic: Search by id, name (staff), rank; subtree counts from the read model; breadcrumbs to root.
+out: Node list and counts.
+valid: Page size limits.
+err: Stale read model banner.
+perm: Staff per role; distributors per FR-GEN-006.
+dep: FR-GEN-008
+us: US-05
+scr: SC-07, SC-20
+api: API-13, API-14
+ent: path_node
+
+@FR-GEN-008 | B | Must | Path read model and rebuild | GEN
+desc: A materialised-path read model per tree kind supports ancestor tests and subtree search; it is rebuilt asynchronously from the relationship rows after changes and is marked stale meanwhile.
+why: Interactive authorisation checks must not run recursive queries on deep trees.
+trace: GAP-011, ADR-04, ENT-07
+br: BR-GEN-12
+persona: System
+pre: Relationship rows.
+trigger: GenealogyChanged event.
+in: Changed subtree root.
+logic: Recompute paths for the moved subtree in batches; version the read model; switch atomically.
+out: Updated paths; staleness flag cleared.
+valid: Path count equals active position count.
+err: Rebuild failure (retry; views keep stale notice; authorisation falls back to system-of-record check).
+perm: System.
+dep: FR-GEN-002
+us: US-05
+scr: SC-07
+api: API-13
+ent: path_node
+
+@FR-GEN-009 | B | Must | Structure is never changed to implement a pay rule | GEN
+desc: Termination changes status only. Compression, roll-up, breakaway and dynamic generations are calculation-time behaviours of a plan version; re-parenting of a terminated position's downline, where a plan requires it, is a dated change event generated by a stated rule.
+why: Mixing structure and calculation loses history or pays wrongly.
+trace: GAP-013
+br: BR-GEN-07, BR-GEN-08
+persona: Plan administrator
+pre: Plan version declares behaviours.
+trigger: Run or termination.
+in: Snapshot; plan version.
+logic: Calculation applies behaviours as pure functions of snapshot and plan; rule-generated genealogy events go through the same event path as approved cases, with the rule id as approver.
+out: Result lines; optional generated events.
+valid: Behaviours named per bonus.
+err: None specific.
+perm: System.
+dep: FR-PLN-002
+us: US-44
+scr: SC-04
+api: API-16
+ent: plan_rule, relationship
+
+@FR-ORD-001 | B | Must | Order ingestion API with idempotency | ORD
+desc: Orders, order lines and customers are upserted through a public API and webhooks from the tenant's commerce system; each write carries an idempotency key and source system id.
+why: Commerce is integrated, not built; duplicates and retries are normal.
+trace: GAP-045, F-21, ADR-08
+br: BR-ATT-02, BR-ORD-04, BR-ORD-01, BR-VOL-01
+persona: Integration developer
+pre: API key with scope orders:write; market Live.
+trigger: Commerce system posts an order.
+in: Source order id; buyer reference; lines (product, quantity, price, tax); payment status; event times; attribution hint; purpose.
+logic: Deduplicate on tenant, source system, source id; resolve buyer and attribution; compute volumes per line from the product volume map effective at the crediting event time; fix buyer type, purpose, attribution and volumes on the order; assign to period by the crediting event rule; emit OrderIngested.
+out: Order with lines; 200 on replay with the same body, 409 on same key with different body.
+valid: Totals equal sum of lines; currency equals market currency (MVP single currency); buyer exists or is created as customer.
+err: Unknown product (order held in exception queue); period committed (late queue, FR-ORD-005); market not Live.
+perm: API key scope.
+dep: FR-IAM-006, FR-CRM-001
+us: US-22
+scr: SC-31, SC-13
+api: API-10
+ent: order, order_line, inbound_event, product_volume_map
+
+@FR-ORD-002 | B | Must | Shopify and WooCommerce connectors | ORD
+desc: Packaged connectors subscribe to order, refund and customer events, map fields to the ingestion API, pass attribution from link or code, and expose sync status.
+why: The two most common commerce platforms behind which the engine can sit.
+trace: GAP-045, F-21
+br: BR-ORD-04
+persona: Operations manager; Integration developer
+pre: Store credentials authorised by tenant.
+trigger: Store event or reconciliation poll.
+in: Store events.
+logic: Verify signatures; transform; call ingestion; nightly reconciliation of counts and totals; backfill by date range.
+out: Orders; sync status.
+valid: Signature valid.
+err: Store API limit (backoff); mapping gap (exception queue).
+perm: Tenant admin installs.
+dep: FR-ORD-001, FR-INT-002
+us: US-22
+scr: SC-13
+api: API-10, API-37
+ent: provider_config, inbound_event
+
+@FR-ORD-003 | B | Must | Purpose tag and fixed order facts | ORD
+desc: Every participant order carries a purpose (resale, personal use, unspecified) where the market or tenant requires it; buyer type, purpose, attribution and line volumes are fixed at ingestion and later master-data changes do not alter them.
+why: Reports and commissions must not be recomputed from current master data.
+trace: GAP-028, F-20, CPL-02
+br: BR-PTY-03, BR-ATT-02
+persona: Compliance officer
+pre: Purpose requirement configured.
+trigger: Ingestion.
+in: Purpose from checkout or default.
+logic: Store facts; corrections arrive as new order events with reason, not edits.
+out: Immutable order facts.
+valid: Purpose in vocabulary.
+err: Purpose required but missing (stored as unspecified and counted in data-quality figures).
+perm: System.
+dep: FR-ORD-001
+us: US-21
+scr: SC-31
+api: API-10
+ent: order, order_line
+
+@FR-ORD-004 | B | Must | Returns, refunds, chargebacks and exchanges | ORD
+desc: Return events reference order lines and carry amounts and volume effects per line; an exchange flagged as equal value does not reverse and re-credit volume; chargebacks are treated like refunds for volume and pay; cooling-off and buy-back windows come from the market pack.
+why: Each case changes volume and therefore pay.
+trace: GAP-047, GAP-046, F-23, CPL-07
+br: BR-RET-01, BR-RET-02, BR-RET-03, BR-REV-06, BR-VOL-03
+persona: Integration developer; Finance manager
+pre: Original order exists.
+trigger: Commerce system posts an event.
+in: Order line references; quantities; refund amount; restocking fee; event type.
+logic: Create order event; compute volume reversal per line; if the original period is open adjust inputs, otherwise create a late transaction for the reversal policy (FR-FIN-003).
+out: Order event; late transaction when applicable.
+valid: Returned quantity not above purchased minus already returned.
+err: Unknown order (held for retry until order arrives; alert after timeout).
+perm: API key scope.
+dep: FR-ORD-001, FR-ORD-005
+us: US-45
+scr: SC-31
+api: API-11
+ent: order_event, late_transaction
+
+@FR-ORD-005 | B | Must | Late-transaction queue | ORD
+desc: Any order or order event whose crediting time falls in a committed period is queued; by default its effect posts as an adjustment in the current open period with a link to the original period.
+why: Committed periods stay reproducible while late facts are not lost.
+trace: GAP-023, F-09
+br: BR-PER-04
+persona: Commission analyst
+pre: Period committed.
+trigger: Ingestion detects a committed period.
+in: Transaction.
+logic: Queue with original period, effect estimate and proposed handling (adjust or restatement request); analyst can accept default in bulk with preview.
+out: Late transaction; adjustment inputs for the open run.
+valid: Linked original period exists.
+err: None specific.
+perm: Commission analyst.
+dep: FR-COMP-001, FR-COMP-010
+us: US-08
+scr: SC-32
+api: API-10, API-11
+ent: late_transaction
+
+@FR-ORD-006 | V1 | Should | Subscription and dispute events | ORD
+desc: Renewal succeeded, failed, cancelled, disputed, dispute won or lost are consumed from the commerce platform and drive volume and commission effects.
+why: Autoship volume often drives qualification.
+trace: GAP-046
+br: BR-REV-06
+persona: Integration developer
+pre: Commerce platform emits events.
+trigger: Event.
+in: Subscription reference; event type.
+logic: Map to order events; consent records stay with the merchant of record.
+out: Order events.
+valid: Reference known.
+err: Unknown reference.
+perm: API key scope.
+dep: FR-ORD-004
+us:
+scr: SC-31
+api: API-11
+ent: order_event
+
+@FR-CRM-001 | B | Must | Customer servicing relationship and attribution | CRM
+desc: Each customer has at most one serviced-by position at a time, effective-dated; attribution of an order is decided at ingestion from link, code, enrolment or servicing relationship by the tenant's precedence rule and stored on the order.
+why: Who a customer belongs to decides who is paid.
+trace: GAP-040, F-22
+br: BR-ATT-01, BR-ATT-02, BR-ATT-04
+persona: Support agent
+pre: Customer exists.
+trigger: First order, link visit recorded by commerce, or manual assignment.
+in: Customer; position; source of attribution.
+logic: Apply precedence; write servicing row; fractional roll-ups are plan parameters applied at calculation.
+out: Servicing row; order attribution.
+valid: One active servicer.
+err: Conflict between two claims (case opened with attribution report).
+perm: Support agent for manual changes.
+dep: FR-PAR-001
+us: US-23
+scr: SC-09, SC-21
+api: API-35
+ent: customer_servicing, order
+
+@FR-CRM-002 | B | Must | Customer reassignment on termination | CRM
+desc: When a servicing position is terminated its customers are reassigned by the tenant rule (sponsor, company or customer choice) with an effective date and optional notice; past orders keep their attribution.
+why: Customers keep being served and attribution stays correct.
+trace: GAP-040, F-22, FL-15
+br: BR-ATT-03
+persona: Support agent
+pre: Termination effective.
+trigger: Termination event.
+in: Rule; effective date.
+logic: Close servicing rows; open new ones; notify.
+out: New servicing rows.
+valid: Target eligible.
+err: No eligible target (assigned to company).
+perm: System by rule; Support agent overrides by case.
+dep: FR-PAR-005
+us: US-23
+scr: SC-09
+api: API-35
+ent: customer_servicing
+
+@FR-CRM-003 | V1 | Could | Distributor contacts and reminders | CRM
+desc: A distributor keeps private contacts and follow-up reminders; prospect data is private to that distributor by default.
+why: Small native feature tied to attribution; controllership needs counsel.
+trace: GAP-041
+br: BR-DAT-08
+persona: Distributor
+pre: Counsel view on controllership for the market.
+trigger: Distributor adds a contact.
+in: Contact data; consent flag.
+logic: Store scoped to the distributor; retention timer; deletion on request.
+out: Contact.
+valid: Consent before marketing messages.
+err: None specific.
+perm: Self only.
+dep: FR-PRV-003
+us:
+scr: SC-21
+api: API-28
+ent: participant
+
+@FR-PLN-001 | B | Must | Plan versions | PLN
+desc: A plan has versions with states Draft, In review, Approved, Scheduled, Active, Retired; an activated version is immutable; each version has an effective date, approver, justification, transition rules and per-market filing status.
+why: A run uses exactly one plan version; changes need a record of who approved what and why.
+trace: GAP-020, GAP-097, CMP-04, ENT-11
+br: BR-CMP-01, BR-PLN-01
+persona: Plan administrator
+pre: Plan exists for brand and market.
+trigger: Admin creates or edits a draft.
+in: Rules; parameters; effective date; justification.
+logic: Validate schema and references; guardrail evaluation on save; version diff available at every state.
+out: Plan version.
+valid: Effective date at a period boundary of each calendar the plan uses.
+err: Guardrail blocked; validation errors listed per rule.
+perm: Plan administrator edits; Compliance officer and second approver approve.
+dep: FR-CPL-007
+us: US-27
+scr: SC-04
+api: API-16
+ent: plan, plan_version, plan_rule
+
+@FR-PLN-002 | B | Must | Declarative primitive library | PLN
+desc: Rules are composed from versioned primitives: volume measures per order line with item rules; hierarchy selector; qualification predicates including counts and profile facts; rank ladders with paid-as, title, maintenance and grace; payout functions (percent by level, generations with compression, differential, override, matching, fast start, flat, pool by shares); limits; carry state; calendars.
+why: The most common mechanisms in the 21-plan corpus must be configuration, not code.
+trace: GAP-020, F-08, P1
+br: BR-RNK-05, BR-RNK-06, BR-RNK-09, BR-PER-01
+persona: Plan administrator; Implementation consultant
+pre: Draft version.
+trigger: Admin adds a rule.
+in: Primitive type; parameters; scope (market, participant types, bonus name).
+logic: Typed parameter validation; dependency graph between rules determines pass order; plain-language rendering of each rule.
+out: Plan rules.
+valid: No dependency cycle; every bonus names the tree and the volume measure it uses and its reversal policy.
+err: Unknown measure; cyclic dependency.
+perm: Plan administrator.
+dep: FR-PLN-001
+us: US-44
+scr: SC-04
+api: API-16
+ent: plan_rule
+
+@FR-PLN-003 | B | Must | Controlled extension point | PLN
+desc: Mechanisms outside the primitives are expressed first in a pure, typed expression language (no I/O, bounded evaluation) and, where that is insufficient, as platform-reviewed plan modules shipped in the platform codebase, versioned, parameterised and available to all tenants. Tenant-specific code branches are not allowed.
+why: 11 of 16 hold-out plans need at least one mechanism outside any fixed list.
+trace: GAP-020, P1, ADR-05
+br: BR-PLN-05
+persona: Implementation consultant; Vendor engineer
+pre: Mechanism documented with examples from the plan document.
+trigger: A rule cannot be expressed with primitives.
+in: Expression or module reference with parameters; golden cases.
+logic: Expressions are type-checked and evaluated deterministically; modules require golden tests and vendor code review before release; both are versioned and recorded in traces.
+out: Extension rule.
+valid: At least one golden case per extension rule.
+err: Type error; evaluation bound exceeded.
+perm: Implementation consultant authors expressions; modules by vendor release only.
+dep: FR-PLN-006
+us: US-44
+scr: SC-04
+api: API-16
+ent: plan_rule
+
+@FR-PLN-004 | B | Must | Caps and pools configuration | PLN
+desc: A cap has scope (set of bonus types), base expression, rate, method (proportional, priority list, per person) and residue rule; per-participant constraints are evaluated before company-level caps. Pools have a base scoped by market and an allocation rule (shares, rank-ordered, first-N).
+why: Two readings of one cap moved 9,130.43 between leader groups in the stress test.
+trace: GAP-022, F-13
+br: BR-CAP-01, BR-CAP-02, BR-CAP-03, BR-MNY-03
+persona: Plan administrator
+pre: Draft version.
+trigger: Admin configures a cap or pool.
+in: Scope; base; rate; method; priority order; residue rule.
+logic: Validate scope bonuses exist; preview on a chosen historical period shows payees affected and amounts removed.
+out: Cap or pool rule; preview.
+valid: Priority list covers the scope; residue rule set.
+err: Scope overlaps another cap without stated precedence.
+perm: Plan administrator.
+dep: FR-PLN-005
+us: US-11
+scr: SC-05
+api: API-16, API-17
+ent: plan_rule, simulation
+
+@FR-PLN-005 | B | Must | Simulation and version comparison | PLN
+desc: A draft version is run on historical input snapshots without touching live results; the comparison shows per-payee and per-bonus differences against the current version, distribution of gains and losses, cap effects and guardrail flags, with totals reconciling to each run.
+why: Table stakes for credibility; activation is blocked without it.
+trace: GAP-026, F-11
+br: BR-PLN-02
+persona: Plan administrator; Compliance officer
+pre: At least one committed period or imported history snapshot.
+trigger: Admin starts a simulation.
+in: Version; period(s).
+logic: Worker job using the same engine code path with a simulation flag; results stored separately; diff computed in the database.
+out: Simulation with comparison report.
+valid: Period is a full historical period.
+err: Snapshot missing (cannot simulate).
+perm: Plan administrator.
+dep: FR-COMP-002
+us: US-10
+scr: SC-04, SC-42
+api: API-17
+ent: simulation, result_line
+
+@FR-PLN-006 | B | Must | Golden datasets | PLN
+desc: Frozen inputs with expected payout lines are kept per plan version and per platform primitive; every engine release and every plan version must reproduce them exactly.
+why: Deterministic proof that a rule does what the plan document says.
+trace: GAP-026, F-11
+br: BR-PLN-06
+persona: Implementation consultant
+pre: Examples from the plan document or a parallel run.
+trigger: Authoring or CI.
+in: Input fixture; expected lines.
+logic: Run and compare line by line; failures block activation and release.
+out: Pass or fail report.
+valid: Expected totals equal sum of expected lines.
+err: Mismatch listed per line.
+perm: Implementation consultant.
+dep: FR-PLN-001
+us: US-10
+scr: SC-42
+api: API-17
+ent: golden_dataset
+
+@FR-PLN-007 | B | Must | Plan-change governance | PLN
+desc: A version moves through draft, simulation, compliance review with guardrails, filing status per market, field notice and effective date; activation is blocked without a full-period simulation and, where the market pack requires a filing, without recorded filing status.
+why: A change that silently wipes accrued state is a dispute and possibly a legal issue.
+trace: GAP-097, F-28, FL-08, CPL-06
+br: BR-PLN-02, BR-PLN-03, BR-PLN-04
+persona: Plan administrator; Compliance officer
+pre: Draft complete.
+trigger: Submit for review.
+in: Simulation reference; filing evidence; notice date.
+logic: Checklist per market; second-person approval; scheduled activation at period boundary; notice period from tenant setting.
+out: Scheduled version; notices.
+valid: All checklist items complete.
+err: Missing simulation; missing filing status; notice period not met.
+perm: Compliance officer approves; a second approver activates.
+dep: FR-PLN-005, FR-CPL-007
+us: US-27
+scr: SC-44
+api: API-16
+ent: plan_version, approval, document
+
+@FR-PLN-008 | B | Must | Transition rules between versions | PLN
+desc: Each new version declares how titles, carry balances, streak counters, banked points and one-time flags move from the previous version; a transition report lists every participant whose state changed.
+why: Real plans carry long-horizon state that a change would otherwise cut.
+trace: GAP-097, GAP-025
+br: BR-PLN-01, BR-RNK-07
+persona: Plan administrator
+pre: Previous version has committed state.
+trigger: Activation.
+in: Mapping functions per state item.
+logic: Apply transition functions as the first step of the first run under the new version; store before and after.
+out: Transition report.
+valid: Every state item has a declared rule (carry, map, reset with reason).
+err: Undeclared item (activation blocked).
+perm: Plan administrator.
+dep: FR-COMP-004
+us: US-27
+scr: SC-44
+api: API-16
+ent: plan_transition, qualification_state

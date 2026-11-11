@@ -1,0 +1,15 @@
+node_modules/
+.next/
+dist/
+coverage/
+.env
+.env.*
+!.env.example
+*.zip
+ruvector.db
+.DS_Store
+.claude-flow/
+playwright-report/
+test-results/
+*.log
+.turbo/

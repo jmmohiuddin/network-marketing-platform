@@ -1,0 +1,593 @@
+{
+ "months": [
+  "2025-01",
+  "2025-02",
+  "2025-03",
+  "2025-04",
+  "2025-05",
+  "2025-06",
+  "2025-07",
+  "2025-08",
+  "2025-09",
+  "2025-10",
+  "2025-11",
+  "2025-12"
+ ],
+ "config": {
+  "end_customer_types": [
+   "customer",
+   "preferred_customer"
+  ],
+  "active_pv_cents": 5000,
+  "rank_thresholds_pv_cents": {
+   "active": 5000,
+   "leader": 10000
+  },
+  "late_order_day": 27,
+  "personal_share_flag": 0.3333333333333333
+ },
+ "R1": {
+  "2025-01": {
+   "net_sales_cents": 1517950,
+   "customer_share_pct": 16.61,
+   "customer_plus_declared_resale_pct": 18.55,
+   "starter_kit_share_pct": 56.6,
+   "participant_orders_purpose_unknown_pct": 9.09
+  },
+  "2025-02": {
+   "net_sales_cents": 1651251,
+   "customer_share_pct": 31.9,
+   "customer_plus_declared_resale_pct": 39.56,
+   "starter_kit_share_pct": 31.77,
+   "participant_orders_purpose_unknown_pct": 10.2
+  },
+  "2025-03": {
+   "net_sales_cents": 2384053,
+   "customer_share_pct": 28.57,
+   "customer_plus_declared_resale_pct": 41.39,
+   "starter_kit_share_pct": 35.65,
+   "participant_orders_purpose_unknown_pct": 8.33
+  },
+  "2025-04": {
+   "net_sales_cents": 2985098,
+   "customer_share_pct": 34.22,
+   "customer_plus_declared_resale_pct": 39.03,
+   "starter_kit_share_pct": 25.87,
+   "participant_orders_purpose_unknown_pct": 10.38
+  },
+  "2025-05": {
+   "net_sales_cents": 3454971,
+   "customer_share_pct": 33.67,
+   "customer_plus_declared_resale_pct": 42.52,
+   "starter_kit_share_pct": 24.98,
+   "participant_orders_purpose_unknown_pct": 6.56
+  },
+  "2025-06": {
+   "net_sales_cents": 3864099,
+   "customer_share_pct": 40.06,
+   "customer_plus_declared_resale_pct": 49.1,
+   "starter_kit_share_pct": 17.7,
+   "participant_orders_purpose_unknown_pct": 12.41
+  },
+  "2025-07": {
+   "net_sales_cents": 4682828,
+   "customer_share_pct": 33.76,
+   "customer_plus_declared_resale_pct": 41.89,
+   "starter_kit_share_pct": 21.72,
+   "participant_orders_purpose_unknown_pct": 11.05
+  },
+  "2025-08": {
+   "net_sales_cents": 5062431,
+   "customer_share_pct": 37.61,
+   "customer_plus_declared_resale_pct": 46.9,
+   "starter_kit_share_pct": 17.43,
+   "participant_orders_purpose_unknown_pct": 8.12
+  },
+  "2025-09": {
+   "net_sales_cents": 5355646,
+   "customer_share_pct": 39.59,
+   "customer_plus_declared_resale_pct": 48.48,
+   "starter_kit_share_pct": 15.0,
+   "participant_orders_purpose_unknown_pct": 10.36
+  },
+  "2025-10": {
+   "net_sales_cents": 5934835,
+   "customer_share_pct": 42.72,
+   "customer_plus_declared_resale_pct": 53.85,
+   "starter_kit_share_pct": 10.08,
+   "participant_orders_purpose_unknown_pct": 6.75
+  },
+  "2025-11": {
+   "net_sales_cents": 6639023,
+   "customer_share_pct": 39.86,
+   "customer_plus_declared_resale_pct": 49.52,
+   "starter_kit_share_pct": 12.72,
+   "participant_orders_purpose_unknown_pct": 10.51
+  },
+  "2025-12": {
+   "net_sales_cents": 7062746,
+   "customer_share_pct": 42.06,
+   "customer_plus_declared_resale_pct": 49.82,
+   "starter_kit_share_pct": 11.1,
+   "participant_orders_purpose_unknown_pct": 8.24
+  }
+ },
+ "R2": {
+  "2025-01": {
+   "rewarded_volume_cents": 409110,
+   "personal_use_share_pct": 61.33,
+   "unknown_purpose_share_pct": 2.95,
+   "payees_with_multilevel_pay": 16,
+   "payees_above_flag": 14,
+   "flag_threshold": 0.3333,
+   "flagged_payees_sample": [
+    "P00008",
+    "P00009",
+    "P00010",
+    "P00013",
+    "P00016",
+    "P00021",
+    "P00022",
+    "P00026",
+    "P00027",
+    "P00029"
+   ]
+  },
+  "2025-02": {
+   "rewarded_volume_cents": 559965,
+   "personal_use_share_pct": 40.32,
+   "unknown_purpose_share_pct": 4.42,
+   "payees_with_multilevel_pay": 18,
+   "payees_above_flag": 10,
+   "flag_threshold": 0.3333,
+   "flagged_payees_sample": [
+    "P00002",
+    "P00010",
+    "P00011",
+    "P00013",
+    "P00014",
+    "P00018",
+    "P00027",
+    "P00038",
+    "P00052",
+    "P00168"
+   ]
+  },
+  "2025-03": {
+   "rewarded_volume_cents": 1039107,
+   "personal_use_share_pct": 35.66,
+   "unknown_purpose_share_pct": 2.05,
+   "payees_with_multilevel_pay": 32,
+   "payees_above_flag": 13,
+   "flag_threshold": 0.3333,
+   "flagged_payees_sample": [
+    "P00001",
+    "P00002",
+    "P00003",
+    "P00012",
+    "P00030",
+    "P00031",
+    "P00035",
+    "P00040",
+    "P00049",
+    "P00052"
+   ]
+  },
+  "2025-04": {
+   "rewarded_volume_cents": 1599095,
+   "personal_use_share_pct": 42.56,
+   "unknown_purpose_share_pct": 5.39,
+   "payees_with_multilevel_pay": 51,
+   "payees_above_flag": 35,
+   "flag_threshold": 0.3333,
+   "flagged_payees_sample": [
+    "P00003",
+    "P00005",
+    "P00009",
+    "P00011",
+    "P00015",
+    "P00020",
+    "P00021",
+    "P00022",
+    "P00027",
+    "P00029"
+   ]
+  },
+  "2025-05": {
+   "rewarded_volume_cents": 1969849,
+   "personal_use_share_pct": 43.29,
+   "unknown_purpose_share_pct": 4.7,
+   "payees_with_multilevel_pay": 50,
+   "payees_above_flag": 27,
+   "flag_threshold": 0.3333,
+   "flagged_payees_sample": [
+    "P00001",
+    "P00003",
+    "P00004",
+    "P00005",
+    "P00008",
+    "P00015",
+    "P00018",
+    "P00021",
+    "P00026",
+    "P00029"
+   ]
+  },
+  "2025-06": {
+   "rewarded_volume_cents": 2320233,
+   "personal_use_share_pct": 36.26,
+   "unknown_purpose_share_pct": 6.19,
+   "payees_with_multilevel_pay": 63,
+   "payees_above_flag": 36,
+   "flag_threshold": 0.3333,
+   "flagged_payees_sample": [
+    "P00002",
+    "P00003",
+    "P00011",
+    "P00012",
+    "P00024",
+    "P00034",
+    "P00037",
+    "P00038",
+    "P00045",
+    "P00051"
+   ]
+  },
+  "2025-07": {
+   "rewarded_volume_cents": 2903984,
+   "personal_use_share_pct": 43.65,
+   "unknown_purpose_share_pct": 6.33,
+   "payees_with_multilevel_pay": 81,
+   "payees_above_flag": 51,
+   "flag_threshold": 0.3333,
+   "flagged_payees_sample": [
+    "P00003",
+    "P00004",
+    "P00007",
+    "P00008",
+    "P00009",
+    "P00013",
+    "P00014",
+    "P00018",
+    "P00019",
+    "P00021"
+   ]
+  },
+  "2025-08": {
+   "rewarded_volume_cents": 3219434,
+   "personal_use_share_pct": 41.7,
+   "unknown_purpose_share_pct": 3.12,
+   "payees_with_multilevel_pay": 81,
+   "payees_above_flag": 53,
+   "flag_threshold": 0.3333,
+   "flagged_payees_sample": [
+    "P00001",
+    "P00002",
+    "P00004",
+    "P00005",
+    "P00008",
+    "P00012",
+    "P00015",
+    "P00020",
+    "P00021",
+    "P00024"
+   ]
+  },
+  "2025-09": {
+   "rewarded_volume_cents": 3670898,
+   "personal_use_share_pct": 40.15,
+   "unknown_purpose_share_pct": 6.09,
+   "payees_with_multilevel_pay": 99,
+   "payees_above_flag": 56,
+   "flag_threshold": 0.3333,
+   "flagged_payees_sample": [
+    "P00003",
+    "P00005",
+    "P00007",
+    "P00010",
+    "P00011",
+    "P00012",
+    "P00014",
+    "P00015",
+    "P00016",
+    "P00018"
+   ]
+  },
+  "2025-10": {
+   "rewarded_volume_cents": 4018023,
+   "personal_use_share_pct": 39.71,
+   "unknown_purpose_share_pct": 2.15,
+   "payees_with_multilevel_pay": 101,
+   "payees_above_flag": 63,
+   "flag_threshold": 0.3333,
+   "flagged_payees_sample": [
+    "P00007",
+    "P00008",
+    "P00011",
+    "P00015",
+    "P00021",
+    "P00028",
+    "P00029",
+    "P00030",
+    "P00032",
+    "P00034"
+   ]
+  },
+  "2025-11": {
+   "rewarded_volume_cents": 4672053,
+   "personal_use_share_pct": 43.6,
+   "unknown_purpose_share_pct": 6.05,
+   "payees_with_multilevel_pay": 122,
+   "payees_above_flag": 79,
+   "flag_threshold": 0.3333,
+   "flagged_payees_sample": [
+    "P00002",
+    "P00008",
+    "P00009",
+    "P00014",
+    "P00015",
+    "P00020",
+    "P00021",
+    "P00023",
+    "P00024",
+    "P00028"
+   ]
+  },
+  "2025-12": {
+   "rewarded_volume_cents": 4567051,
+   "personal_use_share_pct": 41.26,
+   "unknown_purpose_share_pct": 4.54,
+   "payees_with_multilevel_pay": 116,
+   "payees_above_flag": 75,
+   "flag_threshold": 0.3333,
+   "flagged_payees_sample": [
+    "P00008",
+    "P00010",
+    "P00011",
+    "P00012",
+    "P00014",
+    "P00018",
+    "P00023",
+    "P00024",
+    "P00026",
+    "P00027"
+   ]
+  }
+ },
+ "R3": {
+  "2025-01": {
+   "gross_cents": 229650,
+   "clawback_cents": 0,
+   "share_pct": {
+    "downline_volume": 14.1,
+    "enrolment_order": 57.43,
+    "retail_sale": 28.48
+   }
+  },
+  "2025-02": {
+   "gross_cents": 294525,
+   "clawback_cents": -6873,
+   "share_pct": {
+    "downline_volume": 14.05,
+    "enrolment_order": 28.45,
+    "pool": 11.69,
+    "retail_sale": 45.8
+   }
+  },
+  "2025-03": {
+   "gross_cents": 429147,
+   "clawback_cents": -10950,
+   "share_pct": {
+    "downline_volume": 16.42,
+    "enrolment_order": 30.25,
+    "pool": 11.64,
+    "retail_sale": 41.7
+   }
+  },
+  "2025-04": {
+   "gross_cents": 586498,
+   "clawback_cents": -15491,
+   "share_pct": {
+    "downline_volume": 21.56,
+    "enrolment_order": 21.31,
+    "pool": 10.99,
+    "retail_sale": 46.14
+   }
+  },
+  "2025-05": {
+   "gross_cents": 650761,
+   "clawback_cents": -35004,
+   "share_pct": {
+    "downline_volume": 19.92,
+    "enrolment_order": 21.4,
+    "pool": 11.35,
+    "retail_sale": 47.33
+   }
+  },
+  "2025-06": {
+   "gross_cents": 755063,
+   "clawback_cents": -37993,
+   "share_pct": {
+    "downline_volume": 21.41,
+    "enrolment_order": 13.91,
+    "pool": 11.06,
+    "retail_sale": 53.62
+   }
+  },
+  "2025-07": {
+   "gross_cents": 863144,
+   "clawback_cents": -35805,
+   "share_pct": {
+    "downline_volume": 22.69,
+    "enrolment_order": 17.67,
+    "pool": 11.44,
+    "retail_sale": 48.2
+   }
+  },
+  "2025-08": {
+   "gross_cents": 940275,
+   "clawback_cents": -31966,
+   "share_pct": {
+    "downline_volume": 22.4,
+    "enrolment_order": 14.07,
+    "pool": 11.25,
+    "retail_sale": 52.28
+   }
+  },
+  "2025-09": {
+   "gross_cents": 1030538,
+   "clawback_cents": -29231,
+   "share_pct": {
+    "downline_volume": 23.15,
+    "enrolment_order": 11.69,
+    "pool": 11.08,
+    "retail_sale": 54.08
+   }
+  },
+  "2025-10": {
+   "gross_cents": 1166929,
+   "clawback_cents": -45026,
+   "share_pct": {
+    "downline_volume": 24.01,
+    "enrolment_order": 8.26,
+    "pool": 10.8,
+    "retail_sale": 56.92
+   }
+  },
+  "2025-11": {
+   "gross_cents": 1290420,
+   "clawback_cents": -53301,
+   "share_pct": {
+    "downline_volume": 26.64,
+    "enrolment_order": 9.81,
+    "pool": 10.89,
+    "retail_sale": 52.66
+   }
+  },
+  "2025-12": {
+   "gross_cents": 1326685,
+   "clawback_cents": -36316,
+   "share_pct": {
+    "downline_volume": 24.53,
+    "enrolment_order": 8.86,
+    "pool": 10.65,
+    "retail_sale": 55.96
+   }
+  },
+  "year": {
+   "gross_cents": 9563635,
+   "clawback_cents": -337956,
+   "share_pct": {
+    "downline_volume": 22.55,
+    "enrolment_order": 15.27,
+    "pool": 10.8,
+    "retail_sale": 51.38
+   }
+  }
+ },
+ "R4": {
+  "2025-01": {
+   "active_distributors": 48,
+   "active_with_no_customer_order_pct": 56.25,
+   "late_threshold_crossing_orders": 3,
+   "of_which_refunded_later": 0,
+   "note": "Activity here is defined by the plan on own-purchase volume, so every active status depends on own purchases; the indicator that varies is activity without any customer order."
+  },
+  "2025-02": {
+   "active_distributors": 59,
+   "active_with_no_customer_order_pct": 50.85,
+   "late_threshold_crossing_orders": 8,
+   "of_which_refunded_later": 0,
+   "note": "Activity here is defined by the plan on own-purchase volume, so every active status depends on own purchases; the indicator that varies is activity without any customer order."
+  },
+  "2025-03": {
+   "active_distributors": 87,
+   "active_with_no_customer_order_pct": 59.77,
+   "late_threshold_crossing_orders": 5,
+   "of_which_refunded_later": 0,
+   "note": "Activity here is defined by the plan on own-purchase volume, so every active status depends on own purchases; the indicator that varies is activity without any customer order."
+  },
+  "2025-04": {
+   "active_distributors": 119,
+   "active_with_no_customer_order_pct": 52.94,
+   "late_threshold_crossing_orders": 25,
+   "of_which_refunded_later": 11,
+   "note": "Activity here is defined by the plan on own-purchase volume, so every active status depends on own purchases; the indicator that varies is activity without any customer order."
+  },
+  "2025-05": {
+   "active_distributors": 133,
+   "active_with_no_customer_order_pct": 59.4,
+   "late_threshold_crossing_orders": 26,
+   "of_which_refunded_later": 6,
+   "note": "Activity here is defined by the plan on own-purchase volume, so every active status depends on own purchases; the indicator that varies is activity without any customer order."
+  },
+  "2025-06": {
+   "active_distributors": 152,
+   "active_with_no_customer_order_pct": 46.71,
+   "late_threshold_crossing_orders": 23,
+   "of_which_refunded_later": 13,
+   "note": "Activity here is defined by the plan on own-purchase volume, so every active status depends on own purchases; the indicator that varies is activity without any customer order."
+  },
+  "2025-07": {
+   "active_distributors": 192,
+   "active_with_no_customer_order_pct": 58.33,
+   "late_threshold_crossing_orders": 26,
+   "of_which_refunded_later": 11,
+   "note": "Activity here is defined by the plan on own-purchase volume, so every active status depends on own purchases; the indicator that varies is activity without any customer order."
+  },
+  "2025-08": {
+   "active_distributors": 210,
+   "active_with_no_customer_order_pct": 56.19,
+   "late_threshold_crossing_orders": 23,
+   "of_which_refunded_later": 8,
+   "note": "Activity here is defined by the plan on own-purchase volume, so every active status depends on own purchases; the indicator that varies is activity without any customer order."
+  },
+  "2025-09": {
+   "active_distributors": 231,
+   "active_with_no_customer_order_pct": 58.44,
+   "late_threshold_crossing_orders": 29,
+   "of_which_refunded_later": 11,
+   "note": "Activity here is defined by the plan on own-purchase volume, so every active status depends on own purchases; the indicator that varies is activity without any customer order."
+  },
+  "2025-10": {
+   "active_distributors": 246,
+   "active_with_no_customer_order_pct": 53.25,
+   "late_threshold_crossing_orders": 37,
+   "of_which_refunded_later": 11,
+   "note": "Activity here is defined by the plan on own-purchase volume, so every active status depends on own purchases; the indicator that varies is activity without any customer order."
+  },
+  "2025-11": {
+   "active_distributors": 278,
+   "active_with_no_customer_order_pct": 54.32,
+   "late_threshold_crossing_orders": 47,
+   "of_which_refunded_later": 20,
+   "note": "Activity here is defined by the plan on own-purchase volume, so every active status depends on own purchases; the indicator that varies is activity without any customer order."
+  },
+  "2025-12": {
+   "active_distributors": 277,
+   "active_with_no_customer_order_pct": 55.23,
+   "late_threshold_crossing_orders": 52,
+   "of_which_refunded_later": 0,
+   "note": "Activity here is defined by the plan on own-purchase volume, so every active status depends on own purchases; the indicator that varies is activity without any customer order."
+  }
+ },
+ "R5": {
+  "population": "All distributors holding an agreement at any time in the year, including those who earned nothing",
+  "count": 449,
+  "earned_more_than_zero_pct": 73.27,
+  "mean": 205.47,
+  "median": 80.21,
+  "p75": 232.68,
+  "p90": 545.7,
+  "p99": 1630.95,
+  "max": 2306.38,
+  "bands": {
+   "0 or less": 120,
+   "0.01-100": 121,
+   "100.01-1,000": 188,
+   "1,000.01-10,000": 20,
+   ">10,000": 0
+  },
+  "basis": "Gross commissions and bonuses net of clawbacks, before expenses; currency units"
+ }
+}

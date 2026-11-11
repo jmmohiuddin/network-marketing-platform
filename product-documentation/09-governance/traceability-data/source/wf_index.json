@@ -1,0 +1,349 @@
+{
+ "SC-46": {
+  "name": "Compliance overview (MVP-A home)",
+  "file": "wireframes/SC-46.svg",
+  "group": "admin",
+  "notes": [
+   "Each card opens the report at that figure (SC-10).",
+   "States: empty (no data \u2192 'Upload an export to begin' with link to SC-24), computing (progress), outdated snapshot (badge, figures unchanged).",
+   "Responsive: cards wrap 2 per row below 900 px; chart above data status."
+  ]
+ },
+ "SC-24": {
+  "name": "Data imports",
+  "file": "wireframes/SC-24.svg",
+  "group": "admin",
+  "notes": [
+   "Primary action changes with the batch state: Upload \u2192 View report \u2192 Open mapping \u2192 Load.",
+   "States: validating (job progress), rejected (banner + row report download), superseded (greyed row, still readable).",
+   "A re-import of a loaded period supersedes the earlier batch (BR-IMP-04)."
+  ]
+ },
+ "SC-25": {
+  "name": "Import mapping",
+  "file": "wireframes/SC-25.svg",
+  "group": "admin",
+  "notes": [
+   "Approve is available to the compliance officer only; the consultant can save drafts.",
+   "Validation: every value mapped or explicitly left unknown."
+  ]
+ },
+ "SC-10": {
+  "name": "Compliance reports",
+  "file": "wireframes/SC-10.svg",
+  "group": "admin",
+  "notes": [
+   "Every figure and table cell is a link to its drill-down (SC-26).",
+   "The method panel is always visible beside the figures.",
+   "States: snapshot outdated (badge), partial year for R5 (labelled, not publishable), denominator zero (figure shows '\u2014' with reason)."
+  ]
+ },
+ "SC-26": {
+  "name": "Figure drill-down",
+  "file": "wireframes/SC-26.svg",
+  "group": "admin",
+  "notes": [
+   "Sums of row sets must equal the figure's components (AC-41.1).",
+   "Export above the role cap is refused with a path to a scheduled export."
+  ]
+ },
+ "SC-27": {
+  "name": "Sign in",
+  "file": "wireframes/SC-27.svg",
+  "group": "admin",
+  "notes": [
+   "Generic error messages; lockout after repeated failures (AC-35.2).",
+   "Tenant resolved from the hostname; no tenant picker."
+  ],
+  "mobile": "wireframes/SC-27-mobile.svg",
+  "mnotes": [
+   "Distributor sign-in: one-time code by default; numeric keyboard for the code; generic error text."
+  ]
+ },
+ "SC-28": {
+  "name": "Users and roles",
+  "file": "wireframes/SC-28.svg",
+  "group": "admin",
+  "notes": [
+   "Role editor shows the permission matrix; conflicting duty pairs are refused with an explanation.",
+   "The sole remaining admin cannot remove their own admin role."
+  ]
+ },
+ "SC-14": {
+  "name": "Vendor access sessions",
+  "file": "wireframes/SC-14.svg",
+  "group": "admin",
+  "notes": [
+   "The second table is the per-session log, visible to the tenant.",
+   "States: pending, active (countdown + End now), expired, denied, auto-denied (no decision)."
+  ]
+ },
+ "SC-39": {
+  "name": "Vendor operations console",
+  "file": "wireframes/SC-39.svg",
+  "group": "admin",
+  "notes": [
+   "No route leads to participant, order or payout data.",
+   "An approved session opens the tenant's staff application in a marked read-only frame with a countdown."
+  ]
+ },
+ "SC-01": {
+  "name": "Periods and runs",
+  "file": "wireframes/SC-01.svg",
+  "group": "admin",
+  "notes": [
+   "The only primary button is the next valid action for the newest unfinished period.",
+   "States: empty (no periods \u2192 connect store or import history), running (stages, safe to leave), failed (diagnostics + Resume), locked (committed: lock icon, 'Request restatement').",
+   "Responsive (\u22651024 px): table scrolls horizontally inside its container; state timeline wraps."
+  ]
+ },
+ "SC-02": {
+  "name": "Run review",
+  "file": "wireframes/SC-02.svg",
+  "group": "admin",
+  "notes": [
+   "Commit opens a critical-approval dialog: totals, variance, exceptions acknowledged one by one, step-up authentication.",
+   "States: stale sync after run (banner, commit blocked), superseded by a newer run (read-only), permission-limited (preparer sees commit disabled with reason)."
+  ]
+ },
+ "SC-32": {
+  "name": "Late-transaction queue",
+  "file": "wireframes/SC-32.svg",
+  "group": "admin",
+  "notes": [
+   "Bulk accept shows a preview: count, total effect, affected payees.",
+   "Items whose bonus policy is 'restatement' propose a restatement request instead."
+  ]
+ },
+ "SC-04": {
+  "name": "Plan versions",
+  "file": "wireframes/SC-04.svg",
+  "group": "admin",
+  "notes": [
+   "Diff view shows changed rules side by side in plain language.",
+   "States: guardrail blocked (save refused with rule id), activation blocked (no simulation, failing golden case, missing filing), immutable (approved or active: read-only)."
+  ]
+ },
+ "SC-05": {
+  "name": "Cap configuration",
+  "file": "wireframes/SC-05.svg",
+  "group": "admin",
+  "notes": [
+   "Changing the method re-computes the preview so the difference between proportional and priority is visible before saving.",
+   "Validation: priority list must cover the scope; residue rule required."
+  ]
+ },
+ "SC-42": {
+  "name": "Simulation results",
+  "file": "wireframes/SC-42.svg",
+  "group": "admin",
+  "notes": [
+   "Totals reconcile to each run (AC-10.1).",
+   "A failing golden case lists the failing lines and blocks submission."
+  ]
+ },
+ "SC-44": {
+  "name": "Plan change workflow",
+  "file": "wireframes/SC-44.svg",
+  "group": "admin",
+  "notes": [
+   "Each check row explains what is missing; a blocked step cannot be skipped.",
+   "Filing row appears only where the market pack requires a filing."
+  ]
+ },
+ "SC-07": {
+  "name": "Genealogy explorer",
+  "file": "wireframes/SC-07.svg",
+  "group": "admin",
+  "notes": [
+   "Never renders a whole tree: focused node, breadcrumb, first level, lazy expansion, counts on collapsed branches.",
+   "States: read model rebuilding (notice; depth-limited view from the system of record).",
+   "Keyboard: arrow keys move, right expands, left collapses; an indented-list alternative is always available."
+  ]
+ },
+ "SC-08": {
+  "name": "Genealogy change request",
+  "file": "wireframes/SC-08.svg",
+  "group": "admin",
+  "notes": [
+   "Change = effective from a date onward; correction = from the original date, listing affected committed periods.",
+   "Errors: outside window, would create a cycle, target slot taken.",
+   "The duplicate-case variant shows two records side by side with matching attributes highlighted."
+  ]
+ },
+ "SC-09": {
+  "name": "Participant record",
+  "file": "wireframes/SC-09.svg",
+  "group": "admin",
+  "notes": [
+   "Sensitive fields are masked; 'Show' is a separate audited action with step-up.",
+   "All history tabs are read-only tables of effective-dated rows."
+  ]
+ },
+ "SC-06": {
+  "name": "Case: manual adjustment",
+  "file": "wireframes/SC-06.svg",
+  "group": "admin",
+  "notes": [
+   "The same case layout serves disputes (trace attached automatically) and restatements (diff per payee and bonus).",
+   "States: approval pending, rejected (reason), blocked by policy (escalation path)."
+  ]
+ },
+ "SC-03": {
+  "name": "Payout batch",
+  "file": "wireframes/SC-03.svg",
+  "group": "admin",
+  "notes": [
+   "After approval the Instructions tab shows per-line state: instructed, accepted, settled, returned, failed; 'Retry failed lines' only.",
+   "States: balance changed since draft (affected line recalculated, batch back to Draft), provider not eligible (blocked)."
+  ]
+ },
+ "SC-33": {
+  "name": "Ledger",
+  "file": "wireframes/SC-33.svg",
+  "group": "admin",
+  "notes": [
+   "Every row links to its origin (run, batch, case).",
+   "No edit or delete control exists anywhere on this screen.",
+   "Export blocked with a list when an account has no mapping to the tenant's chart of accounts."
+  ]
+ },
+ "SC-13": {
+  "name": "Integrations and sync health",
+  "file": "wireframes/SC-13.svg",
+  "group": "admin",
+  "notes": [
+   "API key creation shows the key once; only a hash is stored.",
+   "Payout connections show the provider approval evidence and date (FR-PAY-006)."
+  ]
+ },
+ "SC-16": {
+  "name": "Migration and parallel run",
+  "file": "wireframes/SC-16.svg",
+  "group": "admin",
+  "notes": [
+   "Import validation blocks on cycles, orphans and balance mismatches.",
+   "Each difference is classified and either fixed or explained and approved."
+  ]
+ },
+ "SC-17": {
+  "name": "Market launch checklist",
+  "file": "wireframes/SC-17.svg",
+  "group": "admin",
+  "notes": [
+   "Each row opens an evidence uploader.",
+   "Blocked items are named in the go-live refusal."
+  ]
+ },
+ "SC-35": {
+  "name": "Executive overview",
+  "file": "wireframes/SC-35.svg",
+  "group": "admin",
+  "notes": [
+   "Every figure has an (i) popover with its definition and links to its source.",
+   "Partial-data banner when sync is behind.",
+   "No income projection or recruit count appears."
+  ]
+ },
+ "SC-47": {
+  "name": "Licence, updates and diagnostics (self-hosted)",
+  "file": "wireframes/SC-47.svg",
+  "group": "admin",
+  "notes": [
+   "Diagnostics: job queues, outbox age, replication, last backup, last restore test, time sync.",
+   "The support bundle shows a redaction summary before export."
+  ]
+ },
+ "SC-37": {
+  "name": "Distributor home",
+  "file": "wireframes/SC-37.svg",
+  "group": "distributor",
+  "notes": [
+   "No targets, projections or recruit counts.",
+   "States: no committed period yet (explains when the first statement appears), payout held (reason and end date)."
+  ],
+  "mobile": "wireframes/SC-37-mobile.svg",
+  "mnotes": [
+   "One column; primary action in thumb reach; at most five bottom-navigation items.",
+   "Offline: last loaded content with its time."
+  ]
+ },
+ "SC-18": {
+  "name": "Statement",
+  "file": "wireframes/SC-18.svg",
+  "group": "distributor",
+  "notes": [
+   "Net = gross \u2212 withholding \u2212 clawback \u00b1 adjustment, always shown as lines.",
+   "Committed periods only; an open period shows status, never an estimate.",
+   "No other person's personal data in explanations."
+  ],
+  "mobile": "wireframes/SC-18-mobile.svg",
+  "mnotes": [
+   "Tapping a line opens the explanation as a bottom sheet.",
+   "Net first; withholding and clawbacks as separate labelled lines.",
+   "Server-rendered; readable without scripts."
+  ]
+ },
+ "SC-19": {
+  "name": "Rank status",
+  "file": "wireframes/SC-19.svg",
+  "group": "distributor",
+  "notes": [
+   "States: grace period active (explained with end period), plan change in progress (transition notice)."
+  ],
+  "mobile": "wireframes/SC-19-mobile.svg",
+  "mnotes": [
+   "Facts only: requirements and measured values. No 'earn up to', no next-rank prompts."
+  ]
+ },
+ "SC-20": {
+  "name": "Team",
+  "file": "wireframes/SC-20.svg",
+  "group": "distributor",
+  "notes": [
+   "Outside your own downline nothing is returned, identical to 'not found'."
+  ],
+  "mobile": "wireframes/SC-20-mobile.svg",
+  "mnotes": [
+   "List drill-in instead of a drawn tree on phones.",
+   "The API returns only permitted fields; nothing is hidden client-side."
+  ]
+ },
+ "SC-21": {
+  "name": "My customers",
+  "file": "wireframes/SC-21.svg",
+  "group": "distributor",
+  "notes": [
+   "Contact fields appear only if the tenant's policy allows."
+  ],
+  "mobile": "wireframes/SC-21-mobile.svg",
+  "mnotes": [
+   "Table becomes a card list with the three most important fields."
+  ]
+ },
+ "SC-22": {
+  "name": "Payment details and tax profile",
+  "file": "wireframes/SC-22.svg",
+  "group": "distributor",
+  "notes": [
+   "The cooling-off length is a tenant setting; the screen shows the actual date.",
+   "States: cooling-off active, change refused (re-authentication failed), under review (shared-account signal)."
+  ],
+  "mobile": "wireframes/SC-22-mobile.svg",
+  "mnotes": [
+   "One question group per screen; numeric keyboard for account number; re-authentication first."
+  ]
+ },
+ "SC-41": {
+  "name": "Public privacy request",
+  "file": "wireframes/SC-41.svg",
+  "group": "customer",
+  "notes": [
+   "Confirmation page shows a reference number only."
+  ],
+  "mobile": "wireframes/SC-41-mobile.svg",
+  "mnotes": [
+   "Rate limited and bot-protected; the response never confirms whether a person exists."
+  ]
+ }
+}

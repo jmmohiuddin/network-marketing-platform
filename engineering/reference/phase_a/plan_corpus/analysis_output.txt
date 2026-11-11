@@ -1,0 +1,73 @@
+Plans: 21 total; 16 hold-out; 5 used to derive M1-M19 (DEF)
+
+Hold-out plans by tier needed:
+  O:  0  (original 10 blocks suffice)
+  M:  5  (need extended list M1-M19 / audit rules)
+  N: 11  (need a primitive new in this corpus)
+  Coverage by original blocks alone: 0/16
+  Coverage by original + extended list: 5/16
+   H01 Avon                         tier N  N-BANK N-CREDIT N-ITEM
+   H02 doTERRA                      tier N  N-PROV N-QUOTA
+   H03 LifeVantage                  tier N  N-HOUSE
+   H04 Amway                        tier N  N-GATE
+   H05 Poofy Organics               tier N  N-BREAK
+   H06 Color Street                 tier M  
+   H07 Multipure                    tier N  N-GATE N-ITEM N-ROT
+   H08 Crunchi                      tier N  N-ITEM
+   H09 Mannatech (10-K summary)     tier M  
+   H10 MarketPlace Global           tier M  
+   H11 YOR Health                   tier N  N-GATE N-SELL
+   H12 Qyral                        tier M  
+   H13 PURVii                       tier M  
+   H14 Rodan + Fields               tier N  N-ITEM
+   H15 Shaklee                      tier N  N-PROV N-RULEGEN N-XFER
+   H16 Nu Skin (one bonus)          tier N  N-BANK
+
+New mechanism classes (hold-out only):
+  N-ITEM     4  Item-level and derived volume rules (exclusions, tax-exclusive base, category crediting, netting of already-commissioned volume)
+  N-GATE     3  Eligibility from non-volume facts (business/tax registration, certification test, social-media followers, paid subscription)
+  N-BANK     2  Requirement banking or substitution points (protection bank, Flex Points)
+  N-PROV     2  Provisional payments with later true-up (advances, estimated pool payouts)
+  N-BREAK    1  Breakage: unpaid amounts retained by the company
+  N-CREDIT   1  Credit-risk gating of bonuses and offset of trade receivables
+  N-HOUSE    1  Household / one-business-per-family rule
+  N-QUOTA    1  First-N qualifier quotas
+  N-ROT      1  Rotation-based assignment of unassigned customers or orders
+  N-RULEGEN  1  Genealogy change triggered by a rule (loss of sponsorship rights if not qualified in time)
+  N-SELL     1  Inventory sell-through gate before reorders (needs reported retail sales)
+  N-XFER     1  Volume transfers between participants (capped, with fee)
+
+Mechanism frequency (all plans / hold-out):
+  A1 [O] 19/21  14/16
+  A2 [O] 21/21  16/16
+  A3 [O] 19/21  15/16
+  A4 [O] 19/21  14/16
+  B1 [O] 21/21  16/16
+  B2 [O]  7/21   4/16
+  B3 [M]  2/21   1/16
+  C1 [O] 21/21  16/16
+  C2 [O] 15/21  11/16
+  C3 [M] 14/21  11/16
+  C4 [M]  8/21   7/16
+  C5 [M]  9/21   7/16
+  C6 [O] 13/21  11/16
+  D1 [O] 16/21  13/16
+  D10 [O] 16/21  13/16
+  D11 [M] 13/21   9/16
+  D2 [O]  5/21   3/16
+  D3 [O] 10/21   8/16
+  D4 [O] 10/21   7/16
+  D5 [O] 16/21  13/16
+  D6 [O]  5/21   3/16
+  D7 [M]  2/21   1/16
+  D8 [M]  2/21   1/16
+  D9 [M] 10/21   8/16
+  E1 [O] 13/21  10/16
+  E2 [M]  8/21   6/16
+  E3 [O]  8/21   7/16
+  E4 [M]  4/21   3/16
+  F1 [M] 11/21   9/16
+  F2 [M]  7/21   5/16
+  F3 [M]  4/21   2/16
+  F4 [M] 18/21  14/16
+  F5 [M] 10/21   9/16

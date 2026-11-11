@@ -1,0 +1,507 @@
+@US-01 | B | Commission analyst | to see the tree exactly as it was on any past date | I can explain a past payout after later corrections
+value: Reproducibility of paid history; faster dispute handling.
+pre: Relationship history exists; analyst has genealogy read.
+main: Open the genealogy explorer; search a position; set the as-of date; optionally set known-at; expand branches; open the run that used this tree.
+alt: Read model rebuilding: depth-limited view from the system of record with a notice.
+dep: FR-GEN-008
+ac: AC-01.1 | A correction to B's sponsor recorded today with valid date 1 March | The analyst views the tree as of 15 March, as known on 1 April | B appears under the old sponsor; viewing as known today shows the new sponsor
+ac: AC-01.2 | Period March committed before the correction | March is replayed | Output equals the committed output exactly (all lines, minor units)
+
+@US-02 | B | Support agent | to file a sponsor-change request with reason and evidence | changes are reviewed instead of edited directly
+value: Trail for every structural change.
+pre: Agent has case-create permission.
+main: Open the participant; choose Request genealogy change; pick change or correction; choose proposed parent; attach evidence; submit.
+alt: Outside the plan's change window: rejected with the rule shown, or routed to the exception approver if the plan allows.
+dep: FR-CAS-001
+ac: AC-02.1 | A sponsor change requested outside the plan's change window | The agent submits it | It is rejected with the window rule shown, or routed to the exception approver if the plan allows
+ac: AC-02.2 | A proposed parent that is a descendant of the position | The agent submits it | The request is refused with reason GEN_CYCLE and no relationship row is written
+
+@US-03 | B | Compliance officer | to approve or reject genealogy corrections and see which committed periods they affect | corrections do not silently change paid history
+value: Paid history changes only through an open, approved path.
+pre: Case awaiting review.
+main: Open the case; read evidence; review affected periods and estimated impact; approve or reject with reason; system applies rows and queues read-model rebuild.
+alt: Affects committed periods: choose adjust in open period or raise a restatement request.
+dep: FR-COMP-009
+ac: AC-03.1 | A correction affecting committed periods | The compliance officer opens it | The affected periods and estimated payout impact are listed before approval
+ac: AC-03.2 | An approved change with a future effective date | The date arrives | The new relationship row becomes valid and no committed period output changes on replay
+
+@US-04 | B | Distributor | to hold several positions and see one combined statement | my earnings are clear even with several business centres
+value: Trust in pay for multi-position plans.
+pre: Run committed.
+main: Open Earnings; choose period; read totals per person; expand each position.
+alt: Single position: no grouping level shown.
+dep: FR-GEN-001
+ac: AC-04.1 | A distributor with three positions | The statement is generated | Lines are grouped per position with a per-person total; the total equals the sum of positions
+ac: AC-04.2 | A statement with withholding and a netted clawback | It is displayed | Gross, withholding, clawback and net are separate lines and net equals gross minus withholding minus clawback
+
+@US-05 | B | Team leader | to search my downline and see only the fields the company allows | I can help my team without seeing private data
+value: Coaching without a privacy breach.
+pre: Visibility policy configured.
+main: Open Team; search by name or id; open a member; see permitted fields; expand lazily.
+alt: Beyond the depth limit: counts and volume aggregates only, with an explanation.
+dep: FR-GEN-008
+ac: AC-05.1 | Visibility policy names to depth n, aggregates beyond | A leader opens a node at depth n+1 | Only aggregates are returned by the API (not hidden in the client)
+ac: AC-05.2 | A leader requests a node outside their downline by id | The request is made | The response is 404 and does not reveal whether the node exists
+
+@US-06 | B | Commission analyst | to run a period, review variance against the last run and send it for approval | mistakes are caught before money moves
+value: Controlled period close.
+pre: Cut-off reached; sync healthy.
+main: Open Periods and runs; start calculation; watch progress; open review; inspect variance, movers and exceptions; fix inputs and re-run if needed; request commit.
+alt: Sync behind: calculation blocked with last sync time. Run fails: resume from snapshot.
+dep: FR-INT-002
+ac: AC-06.1 | A calculated run | The analyst opens review | Variance against the previous run by bonus type, top k movers and the exception list are shown
+ac: AC-06.2 | Order sync lag above the tenant threshold at cut-off | The analyst starts calculation | The run is refused with the last successful sync time
+ac: AC-06.3 | Two run requests for the same period arrive concurrently | Both are processed | One run executes and both callers receive the same run id
+
+@US-07 | B | Finance approver | to approve a committed run only if I did not prepare it | no single person can release payouts
+value: Separation of duties.
+pre: Run Calculated and reviewed.
+main: Open approvals; read review summary; pass step-up; commit.
+alt: Approver is preparer: refused; eligible approvers listed.
+dep: FR-IAM-002
+ac: AC-07.1 | User X prepared the run | X tries to approve | Approval is refused; a different authorised user can approve
+ac: AC-07.2 | An approver without a factor verified inside the step-up window | They press commit | A second-factor prompt appears and commit proceeds only after it passes
+
+@US-08 | B | Commission analyst | late orders after commit to land in a queue and post as adjustments | committed periods stay reproducible
+value: Nothing lost, nothing silently changed.
+pre: Period committed.
+main: Open late-transaction queue; review items and estimated effects; accept default handling; adjustments appear in the open run.
+alt: Material item: raise a restatement request instead.
+dep: FR-COMP-010
+ac: AC-08.1 | Period committed | An order dated inside it arrives | It is queued; its effect posts as an adjustment in the open period with a link to the original period
+
+@US-09 | B | Compliance officer | to request a restatement with a reason and see the diff before approval | real errors can be corrected openly
+value: Open correction path.
+pre: Committed period; evidence of error.
+main: Open Cases; create restatement; system recalculates in a sandbox; review diff per payee and bonus; send for approval; adjustments post in the open period.
+alt: Diff empty: case closed with no action.
+dep: FR-COMP-008
+ac: AC-09.1 | A restatement request | Approved | A diff per payee and per bonus is stored; payouts are corrected by adjustments; no posting is edited
+
+@US-10 | B | Plan administrator | to compare a new plan version with the current one on last period's data, payee by payee | I know who gains and loses before release
+value: Predictable change.
+pre: Draft version; a committed period.
+main: Open the draft; choose Simulate; pick period; read totals, distribution and payee-level differences; export.
+alt: No full historical period available: activation remains blocked.
+dep: FR-COMP-002
+ac: AC-10.1 | Plan version v2 drafted | Simulation runs on period P | A per-payee comparison v1 against v2 is produced with totals reconciling to each run
+ac: AC-10.2 | No simulation run on a full historical period | Activation is attempted | Activation is blocked (BR-PLN-02)
+ac: AC-10.3 | A golden dataset attached to the version | The version is submitted for review | All golden cases reproduce exactly or submission is blocked with the failing lines
+
+@US-11 | B | Plan administrator | to configure a cap with scope, base, method and see who is cut | the cap behaves as the plan document says
+value: Caps applied to the right lines.
+pre: Draft version.
+main: Open caps; set scope, base, rate, method, priority, residue rule; preview on a period; save.
+alt: Overlapping caps: precedence must be stated.
+dep: FR-PLN-005
+ac: AC-11.1 | Cap 10% of sales on team bonus and leadership bonus, method priority = leadership | Proposed amounts exceed the cap | Only the leadership bonus is reduced; team bonus unchanged; totals match test TS-08
+ac: AC-11.2 | A proportional cap that scales 8 lines | Applied | The scaled lines sum exactly to the cap (TS-07)
+
+@US-12 | B | Distributor | to open any statement line and see how it was calculated | I can trust or dispute it with facts
+value: Fewer support contacts; trust.
+pre: Statement exists.
+main: Open statement; tap a line; read rule, base, rate, rank, period, rounding; optionally open a dispute.
+alt: Extension rule without template: generic explanation listing inputs.
+dep: FR-COMP-007
+ac: AC-12.1 | A statement line | The distributor taps how calculated | Rule name, base volume, rate, rank used, period and rounding are shown; no other person's personal data appears
+
+@US-13 | B | Support agent | to see the full calculation trace for a payout line | I can answer pay questions without engineering
+value: Lower handling time.
+pre: Agent has trace permission.
+main: Search the payee; open statement; open line trace; read source orders, plan version, rule and intermediate values.
+alt: Snapshot in cold storage: trace requested and delivered asynchronously.
+dep: FR-COMP-008
+ac: AC-13.1 | A payout line | Support opens the trace | The trace lists source order ids, plan version, rule and intermediate values; the same trace is reproduced by replay
+
+@US-14 | B | Finance manager | the sum of payout lines, residues and withholding to equal the run total to the minor unit | the ledger reconciles
+value: Zero unexplained difference.
+pre: Committed run.
+main: Open ledger for the period; compare control totals; open residue account.
+alt: Projection mismatch: rebuilt automatically and alerted.
+dep: FR-FIN-001
+ac: AC-14.1 | A pool of 62,500.00 split over 66 shares | Allocated | Allocations sum to 62,500.00 exactly (TS-06)
+ac: AC-14.2 | Any committed run | Ledger totals are checked | Expense equals payable plus withholding plus residue; zero unexplained difference
+ac: AC-14.3 | Any attempt to update or delete a posting | Executed by any database role used by the application | The statement fails and an alert is raised
+
+@US-15 | B | Finance manager | a journal export mapped to our chart of accounts at period end | our ERP stays the general ledger
+value: No duplicate accounting system.
+pre: Mapping configured.
+main: Open Ledger and exports; choose period; generate; download or fetch by API.
+alt: Unmapped account: export blocked with the list.
+dep: FR-FIN-001
+ac: AC-15.1 | A tenant chart-of-accounts mapping | Period export runs | Journal lines balance and reference run ids
+
+@US-16 | B | Payout officer | failed and returned payments to come back to a queue and be re-instructed safely | nobody is paid twice or not at all
+value: Payout integrity.
+pre: Batch instructed.
+main: Open reconciliation; see settled, returned, failed, unmatched; open a returned item; fix cause through a case; include in next batch.
+alt: Provider rejects whole batch: retry failed lines only.
+dep: FR-PAY-003
+ac: AC-16.1 | A payout instruction times out | It is retried | The provider receives the same idempotency key; at most one payment results
+ac: AC-16.2 | A payment is returned by the bank | Reconciliation runs | The amount returns to payee payable; a case opens; the payee is notified
+ac: AC-16.3 | The same settlement webhook is delivered twice | Both are processed | One settlement posting exists and the second delivery is acknowledged without change
+
+@US-17 | B | Distributor | to be told when my bank details change, and payouts to wait before using new details | a takeover cannot redirect my money
+value: Payout fraud control.
+pre: Signed in.
+main: Open Payment details; submit new details; re-authenticate; see cooling-off date; receive notices on old and new contacts.
+alt: Payout due inside cooling-off: held, shown on statement.
+dep: FR-IAM-007
+ac: AC-17.1 | Bank details changed | Next payout due within the cooling-off | Payout is held; old contact and new contact are notified
+ac: AC-17.2 | A bank-detail change submitted without fresh re-authentication | The request is made | It is refused and no version is created
+
+@US-18 | B-MKT | Finance manager (withholding market) | withholding applied to payees who meet the market rule and year-end statements produced | we meet our withholding duty
+value: Mandatory duty of the payer. Example pack: Malaysia (rate and threshold to be confirmed by a tax adviser).
+pre: Market pack tax rules confirmed.
+main: Review tax rules; run period; see withholding lines; at year end generate forms; export.
+alt: Missing tax ids: listed; forms held for those payees.
+dep: FR-TAX-001
+ac: AC-18.1 | Payee meets the rule's conditions (for example prior-year total from this payer above the threshold) | Payout computed | Withholding at the configured rate is a separate line and posts to the liability account; rate and threshold come from effective-dated configuration
+ac: AC-18.2 | Year end | Forms generated | One statement per payee in the market format with totals equal to ledger totals
+
+@US-19 | B-MKT | Finance manager (missing-tax-id rule market) | the higher rate applied when no tax id is held | we meet the rule in force
+value: Mandatory duty. Example pack: India (provision and rates to be confirmed by a chartered accountant).
+pre: Market pack rule with missing-id rate.
+main: Run period; payees without tax id carry the higher rate; statement shows it.
+alt: Tax id supplied later: applies from the next pay date; no retroactive change without the market's rule.
+dep: FR-TAX-001
+ac: AC-19.1 | Payee without a tax id in a market whose rule sets a higher rate | Payout computed | The higher configured rate applies and is shown
+
+@US-20 | B | Finance manager | to choose a clawback policy per bonus type and see receivables and write-offs | refunds are recovered consistently
+value: Consistent, explainable recovery.
+pre: Plan bonuses defined.
+main: Open settings; choose policy per bonus; view receivables ageing; propose write-offs; get approval.
+alt: Payee has no future earnings: receivable ages until written off.
+dep: FR-FIN-001
+ac: AC-20.1 | Refund after payout; policy = order-line clawback | Next run | The clawback line equals commission paid on that order; receivable reduced accordingly
+ac: AC-20.2 | Policy = restatement for a rank-dependent bonus | Next run | Adjustment equals restated minus paid for every affected payee, including matching bonus earners (TS-10)
+ac: AC-20.3 | A clawback larger than the payee's next earnings | Netted | Payable reaches zero, the remainder stays in clawback receivable, and no debit instruction is created
+
+@US-21 | B | Compliance officer | to define participant types and order purposes | the retail-customer share is measured on the right population
+value: Correct compliance population.
+pre: Tenant settings access.
+main: Define types with flags; define purpose requirement; approve.
+alt: Type change for a participant: effective-dated; past orders keep labels.
+dep: FR-TEN-003
+ac: AC-21.1 | Participant types configured | Retail share report runs | Only types flagged counts as end customer are in the numerator
+ac: AC-21.2 | A customer becomes a distributor on 10 June | Reports for May are recomputed | Their May orders still count as customer orders
+
+@US-22 | B | Operations manager | orders, refunds and customers from our Shopify or WooCommerce store to flow in automatically and idempotently | we do not re-key orders
+value: Data in without manual work.
+pre: Connector installed.
+main: Install connector; authorise store; map products to volume; watch sync health.
+alt: Unknown product: order held in the exception queue.
+dep: FR-IAM-006
+ac: AC-22.1 | Same order webhook delivered twice | Ingested | One order exists; second delivery acknowledged without change
+ac: AC-22.2 | Order edited in the store after period commit | Ingested | Treated as a late change (AC-08.1)
+ac: AC-22.3 | An API key without scope orders:write | It posts an order | The response is 403 and nothing is stored
+
+@US-23 | B | Support agent | to reassign a terminated distributor's customers by the company's rule | customers keep being served and attribution stays correct
+value: Continuity and correct attribution.
+pre: Termination approved.
+main: Terminate through case; system applies reassignment rule; review list; override single customers through a case if needed.
+alt: No eligible target: customers assigned to the company.
+dep: FR-PAR-005
+ac: AC-23.1 | Distributor terminated | Reassignment rule = sponsor | Customers move with an effective date; past orders keep original attribution
+
+@US-24 | A | Compliance officer | reports on retail-customer share, personal-consumption share and payout sources per period | I can answer a regulator or counsel from the system
+value: The differentiator candidate; the demand test of MVP-A.
+pre: Facts loaded or period committed.
+main: Open Compliance reports; choose period range; create snapshot; read figures with method notes; open a figure to its rows; export.
+alt: Data-quality warnings: shown beside affected figures.
+dep: FR-CPL-006
+ac: AC-24.1 | A period | Reports run | Each figure links to its population and method; totals reconcile with the committed run or the loaded batch control totals
+ac: AC-24.2 | The hand-checked fixture of three participants, three orders and four payout lines (QA TS-31) | Reports run | R1 customer share is 62.50%, R2 personal-use share is 60.00%, R3 retail share is 80.65% and downline share 19.35%
+
+@US-25 | A | Compliance officer | an earnings distribution computed from all participants' payouts, including zero earners, and kept with its method | our claims are substantiated
+value: Honest disclosure basis.
+pre: Full year of payout lines.
+main: Create yearly snapshot; read distribution; (V1) draft and publish disclosure.
+alt: Partial year: labelled partial and not publishable.
+dep: FR-CPL-006
+ac: AC-25.1 | A year | Distribution generated | It includes all participants who held an earning agreement in the year, including those with zero earnings; method and version are stored
+ac: AC-25.2 | The fixture of TS-31 | Distribution generated | Population is 2, share earning more than zero is 50.00%, median is 14.30
+
+@US-26 | B | Tenant owner | the platform to block plan components that pay solely for enrolment in markets that ban them, and tell me why | we do not configure an unlawful plan by accident
+value: Reduced legal exposure for tenant and vendor.
+pre: Market pack guardrails loaded.
+main: Plan admin saves a rule; guardrail evaluates; blocked with rule id and explanation, or warned with acknowledgement.
+alt: Overridable warning: justification and compliance approval recorded.
+dep: FR-CPL-012
+ac: AC-26.1 | Market rule blocks pay solely for enrolment | Admin configures such a bonus | Save is refused with the rule id and an explanation; an override path exists only if the platform policy allows (BR-GRD-05)
+ac: AC-26.2 | A starter kit configured to carry commissionable volume | The version is saved | A warning is logged as a guardrail decision and acknowledgement is required
+
+@US-27 | B | Plan administrator | a plan change to move through simulation, compliance review, filing status, notice and an effective date, with a transition report | the field is treated fairly and filings are not missed
+value: Governed change.
+pre: Draft complete.
+main: Submit; simulation attached; compliance review; record filing status; set notice; approver schedules activation; transition report produced at first run.
+alt: Filing required and missing: blocked.
+dep: FR-PLN-005
+ac: AC-27.1 | Market requires plan-amendment filing | Activation attempted without filing status | Blocked (BR-PLN-03)
+ac: AC-27.2 | Version change | Activated | Transition report lists every participant whose carry, streak or title changed
+
+@US-28 | B | Implementation consultant | to import history and run old and new systems in parallel with a per-payee difference report | go-live happens only when payouts match
+value: Safe switching.
+pre: Legacy extracts.
+main: Map and import history; validate; configure plan; run parallel period; classify differences; obtain sign-off.
+alt: Differences outstanding: go-live blocked.
+dep: FR-PLN-005
+ac: AC-28.1 | Parallel run for period P | Comparison runs | Per-payee difference report; go-live checklist requires differences = 0 or each explained and approved
+ac: AC-28.2 | Imported genealogy containing a cycle | Validation runs | The load is blocked and the cycle members are listed
+
+@US-29 | A | Tenant admin | to approve or deny a vendor support session and see everything done in it | the vendor cannot access our data silently
+value: Trust in the vendor.
+pre: Request raised.
+main: Receive request; read reason and scope; approve for a duration or deny; later read the session report.
+alt: No decision before request expiry: auto-denied.
+dep: FR-AUD-001
+ac: AC-29.1 | Vendor engineer requests access | Tenant approves for a set number of hours read-only | Access expires automatically; every query and screen view is logged and visible to the tenant
+ac: AC-29.2 | Any API request | Tenant A's token is used to read Tenant B's object id | The request fails; an automated suite covers every endpoint for this
+ac: AC-29.3 | A vendor user without an approved session | They request tenant business data | The request is refused and logged in both vendor and tenant audit logs
+
+@US-30 | B | Distributor | to request access to or erasure of my data | my privacy rights are honoured
+value: Mandatory processor support.
+pre: Identity verifiable.
+main: Submit request in portal or public form; verify identity; receive export or confirmation; see what is retained and why.
+alt: Open payable balance or legal hold: erasure deferred with explanation.
+dep: FR-CAS-001
+ac: AC-30.1 | Erasure request from a payee with ledger history | Processed | Identity fields pseudonymised; postings retained; request logged with legal basis
+
+@US-31 | A | Tenant admin | to keep our data in a chosen region | we meet residency duties
+value: Mandatory where the market requires.
+pre: Region offered.
+main: Region chosen at provisioning; shown in settings; support access from outside needs explicit approval.
+alt: Region change: migration project, not a setting.
+dep: FR-TEN-001
+ac: AC-31.1 | Tenant region set | Data written | Personal data and backups stay in the configured region; vendor support from outside the region needs explicit approval
+
+@US-32 | B | Analyst | a scheduled export of our full data model | we can analyse in our own tools and leave if we choose
+value: Adoption and exit right.
+pre: Destination configured.
+main: Configure schedule; receive files and manifest; reconcile counts.
+alt: Destination unreachable: retried and alerted.
+dep: FR-AUD-002
+ac: AC-32.1 | Export scheduled | Runs | Export matches the published data model; row counts reconcile
+
+@US-33 | V1 | Compliance officer | integrity signals with my thresholds | I can investigate bonus buying
+value: Indicators for investigation.
+pre: Attributes available.
+main: Set thresholds; read flags after period close; open case.
+alt: Missing attribute: signal disabled with note.
+dep: FR-ORD-001
+ac: AC-33.1 | Threshold rule orders in the last d days lifting a position above a rank threshold | Period closes | Flag list produced with evidence; flags are labelled as indicators, not findings
+
+@US-34 | B-MKT | Distributor (multilingual market) | my statement and key pages in my language and readable on a slow phone | I understand what I am paid
+value: Comprehension and lower support cost.
+pre: Market languages translated.
+main: Choose language; open statement on a phone.
+alt: Missing key: market default language shown and logged.
+dep: FR-DIST-001
+ac: AC-34.1 | Locale of the market's second language | Statement opened on a 3G-class connection | Page usable within the page-weight and time budget in NFR-PERF-06; all labels translated; numbers formatted for locale
+
+@US-35 | A | Staff user | to sign in to my company's workspace with a second factor when my role requires it | only authorised people reach our data
+value: Baseline access control.
+pre: Account invited.
+main: Open tenant sign-in; enter credential; pass second factor; land on role home.
+alt: No factor enrolled for a privileged role: forced enrolment.
+dep: None
+ac: AC-35.1 | A user with the Finance approver role and no enrolled factor | They sign in | They cannot reach any page until a factor is enrolled
+ac: AC-35.2 | Five failed sign-ins inside the lockout window | A sixth attempt is made | The account is temporarily locked and the response does not reveal whether the account exists
+
+@US-36 | A | Tenant admin | to give each colleague only the permissions their job needs | mistakes and fraud are contained
+value: Least privilege.
+pre: Admin with MFA.
+main: Open Users and roles; invite user; assign role and market scope; second admin approves privileged grants.
+alt: Conflicting duties: refused with explanation.
+dep: FR-IAM-002
+ac: AC-36.1 | A role assignment that grants admin or approver permissions | Submitted by one admin | It takes effect only after a second admin approves; both actions are audited
+ac: AC-36.2 | A user scoped to market X | They request data of market Y in the same tenant | The API returns no rows for market Y
+
+@US-37 | B | Tenant admin | to configure markets, brands, calendars and policies with a history of changes | every run can be tied to the settings it used
+value: Reproducibility and audit.
+pre: Admin role.
+main: Open Settings; edit; set effective date and reason; approval for money-affecting keys.
+alt: Back-dated change into a committed period: refused.
+dep: FR-IAM-004
+ac: AC-37.1 | A change to the rounding mode with an effective date inside a committed period | Saved | It is refused; a date at the next period boundary is accepted and creates a new settings version
+
+@US-38 | B | Compliance officer | a market to go live only when licence evidence, provider approval and tax rules are in place | we do not operate before we are allowed to
+value: Launch blockers enforced.
+pre: Market in Draft.
+main: Open launch checklist; attach evidence; record provider approval; confirm tax rules status; sign off.
+alt: Mandatory rule still at screening status: blocked or written risk acceptance.
+dep: FR-CPL-012
+ac: AC-38.1 | A market with no recorded payout-provider approval | Go-live is requested | It is blocked and the missing item is named
+ac: AC-38.2 | A market not Live | An enrolment or order for that market arrives | It is rejected with MARKET_NOT_LIVE
+
+@US-39 | A | Implementation consultant | to upload a company's export and get a validation report before anything is stored | reports rest on clean, minimal data
+value: Safe, fast start of the demand test.
+pre: Data terms accepted.
+main: Open Data imports; upload three files; read validation report; fix and re-upload; load.
+alt: Forbidden column detected: batch rejected, nothing stored.
+dep: None
+ac: AC-39.1 | A participants file containing a column named email or bank_account | Uploaded | The batch is rejected, no row is stored and the offending columns are named
+ac: AC-39.2 | A valid batch loaded for a period already loaded | Load completes | The earlier batch is marked Superseded, remains readable and existing snapshots keep pointing to it
+ac: AC-39.3 | A payout line whose payee id is not in the participants file | Validated | The row is reported and the batch is not loadable until resolved or the tolerance setting allows it
+
+@US-40 | A | Compliance officer | to decide how our own codes map to customer, personal use and payout source categories | the reports reflect our real structure
+value: The mapping is the judgement behind the numbers.
+pre: Validated batch.
+main: Open mapping; review distinct values with counts; set targets; note reasons; approve.
+alt: Value left unknown: counted and shown in data-quality figures.
+dep: FR-IMP-001
+ac: AC-40.1 | A mapping version used by a published snapshot | The mapping is edited | A new version is created; the published snapshot still shows the old version and is marked Outdated
+
+@US-41 | A | Compliance officer | to open any figure and see the rows behind it | I can defend it to counsel
+value: Evidence, not assertion.
+pre: Snapshot exists.
+main: Click a figure; read population definition; page through rows; export within limits.
+alt: Export above the cap: refused with a path to a scheduled export.
+dep: FR-AUD-002
+ac: AC-41.1 | A figure in a snapshot | The user opens drill-down | Numerator and denominator row sets are returned, their sums equal the figure's components, and the export is logged
+
+@US-42 | B | Integration developer | to enrol participants through the API with sponsor and placement | our website stays the front end
+value: API-first enrolment.
+pre: API key; market Live.
+main: Post enrolment; receive participant and position ids; handle duplicate-case response.
+alt: Placement slot taken: deterministic alternative returned.
+dep: FR-IAM-006
+ac: AC-42.1 | Two concurrent enrolments targeting the same binary slot | Both are processed | Exactly one takes the slot and the other is placed by the plan's rule with the tie-break recorded
+ac: AC-42.2 | An enrolment without acceptance of the current agreement version in a market whose pack requires it | Posted | It is rejected
+
+@US-43 | B | Compliance officer | suspected duplicate accounts to be held and reviewed | abuse is caught without blocking legitimate multiple positions
+value: Account integrity.
+pre: Matching enabled.
+main: Open duplicate queue; compare records; decide merge, allow with reason or terminate.
+alt: Plan allows several positions per person: flagged as informational only.
+dep: FR-CAS-001
+ac: AC-43.1 | A new participant sharing a hashed payment fingerprint with an existing distributor, with holds enabled | Enrolled | A duplicate case opens and activation is held until a decision is recorded
+
+@US-44 | B | Plan administrator | to build our plan from standard building blocks and declare anything special explicitly | changes do not need custom code
+value: Lower cost of change.
+pre: Plan document.
+main: Create plan; add measures, ladders, bonuses; add extension expressions where needed with golden cases; read plain-language rendering.
+alt: Mechanism not expressible: logged as an extension request to the vendor.
+dep: FR-PLN-006
+ac: AC-44.1 | A unilevel bonus of 8, 5, 4, 4, 4 percent on five levels | Run on level volumes 1,000; 2,500; 4,000; 6,000; 8,000 | Payout is 925.00 (TS-01)
+ac: AC-44.2 | A terminated mid-tree position and a plan with compression | Run | The tree rows are unchanged and compression is applied only in the calculation (TS-02)
+
+@US-45 | B | Finance manager | returns and exchanges to adjust volume line by line | pay follows what was really sold
+value: Correct reversals.
+pre: Orders ingested.
+main: Commerce posts return; system computes line volume effect; open period adjusted or late transaction created.
+alt: Exchange of equal value flagged: no reversal.
+dep: FR-ORD-001
+ac: AC-45.1 | An order of two lines, one line returned | Processed | Only that line's volume is reversed
+ac: AC-45.2 | An exchange flagged equal value | Processed | No volume reversal and no re-credit are created
+
+@US-46 | B | Commission analyst | to see each position's paid-as rank, title, counters and carry for any period | I can answer rank questions and check transitions
+value: Rank disputes resolved with facts.
+pre: Committed runs.
+main: Open participant; open qualification tab; pick period; compare with previous.
+alt: Imported opening state: labelled as migration.
+dep: FR-COMP-006
+ac: AC-46.1 | A position paid at a lower rank than its highest title | State is displayed | Paid-as rank and highest title are shown separately for the period
+ac: AC-46.2 | Any attempt to change qualification state outside a run commit, restatement or approved migration import | Made through the API | It is refused
+
+@US-47 | B | Payout officer | to prepare a payout batch and see who is excluded and why | approvers decide on a complete picture
+value: Controlled release.
+pre: Period committed.
+main: Create batch; review inclusion and exclusions; send for approval; after approval watch instruction progress.
+alt: Balance changed since draft: batch returns to Draft for the affected line.
+dep: FR-FIN-002
+ac: AC-47.1 | A payee below the minimum payout and a payee inside bank-detail cooling-off | Batch prepared | Both are excluded with their reasons and their payables remain
+ac: AC-47.2 | An approved batch | Instructions are created | Batch total equals the sum of instructions and equals the amount moved from payable to in transit
+
+@US-48 | B | Distributor | to give my tax details once and see what is withheld | my net pay is understandable
+value: Fewer pay questions.
+pre: Signed in.
+main: Open tax profile; enter residency and tax id; see masked value; see withholding lines on statements.
+alt: Invalid format: inline error.
+dep: FR-IAM-007
+ac: AC-48.1 | A stored tax id | Displayed to the payee or to staff | It is masked except the last characters and unmasking by staff is audited
+
+@US-49 | B | Commission analyst | to propose a manual adjustment with reason and evidence that someone else approves | corrections are possible but controlled
+value: Fraud control.
+pre: Open period.
+main: Open Cases; new adjustment; pick payee, amount, reason; attach evidence; preview effect; submit; approver decides.
+alt: Above threshold: second approver required.
+dep: FR-CAS-001
+ac: AC-49.1 | An adjustment to the proposer's own account or a declared related account | Submitted | It is blocked or escalated per tenant setting and cannot be approved by the proposer
+ac: AC-49.2 | An approved adjustment | The open run is calculated | One adjustment line with the case reference appears and is not created again on re-run
+
+@US-50 | B | Distributor | to dispute a statement line from my phone and get an explained answer | I am heard without calling support
+value: Trust; measured response time.
+pre: Statement line.
+main: Tap line; choose Dispute; write message; submit; receive outcome with explanation.
+alt: Dispute window passed: explanation shown.
+dep: FR-DIST-002
+ac: AC-50.1 | A dispute opened from a line | The analyst opens the case | The line's trace is already attached and the response-time clock is running
+
+@US-51 | B | Distributor | to see my rank, what it required and whether I am in a grace period | I know where I stand without guessing
+value: Fewer rank disputes; no projections.
+pre: Qualification state.
+main: Open Rank; read current and past periods; read requirements with measured values.
+alt: Open period: values labelled not final.
+dep: FR-COMP-004
+ac: AC-51.1 | The rank status page | Rendered for any distributor | It contains no projected or potential income figure and no recruiting target
+
+@US-52 | B | Distributor | to see the customers I serve and who has reordered | I can look after them
+value: Customer-centred activity.
+pre: Servicing rows.
+main: Open My customers; filter by last order; open customer.
+alt: Customer reassigned away: shown in history with date.
+dep: FR-CRM-001
+ac: AC-52.1 | A customer reassigned from distributor A to B on a date | A and B open My customers | B sees the customer as current; A sees them as past with the end date; neither sees the other's remaining customers
+
+@US-53 | A | DPO | breach contacts and timelines recorded per tenant and market | we can notify without delay
+value: Mandatory processor duty.
+pre: Tenant provisioned.
+main: Open settings; enter contacts and timelines; confirm.
+alt: Missing contact: go-live blocked.
+dep: FR-TEN-001
+ac: AC-53.1 | A tenant without a breach contact | Go-live or first data load is attempted | It is blocked until a contact is recorded
+
+@US-54 | A | Compliance officer | to search an audit log of who did what and who exported what | I can investigate and evidence controls
+value: Investigation and attestation.
+pre: Audit read permission.
+main: Open Audit log; filter by actor, object, action, time; open event.
+alt: Vendor staff: readable only inside an approved session.
+dep: None
+ac: AC-54.1 | An export of rows with personal data | Performed | An audit event records actor, view, filters and row count
+ac: AC-54.2 | The audit chain verification job | Run after any event is altered in storage | It reports the break
+
+@US-55 | B | Tenant admin | to see whether order sync and providers are healthy | runs are not started on partial data
+value: Avoid wrong pay.
+pre: Connectors installed.
+main: Open Integrations; read status, lag, errors; open reconciliation differences; re-authorise if needed.
+alt: Failing: guidance and alert.
+dep: FR-ORD-002
+ac: AC-55.1 | Connector heartbeat older than the threshold | The page is opened | Status shows Behind or Failing with the last successful sync time and the period run screen shows the same block
+
+@US-56 | B | Executive | one overview of sales, payouts as a share of sales and retail share by market, with definitions | I see the business without asking staff
+value: Owner visibility.
+pre: Committed data.
+main: Open overview; choose period and market; open a figure's definition.
+alt: Sync behind: partial-data banner.
+dep: FR-CPL-006
+ac: AC-56.1 | The executive overview for a committed period | Displayed | Payout total equals the committed run total and retail share equals the compliance snapshot figure for the same period
+
+@US-57 | A | Vendor operations engineer | a console that shows tenant health without tenant business data | I can operate the platform without standing access
+value: Operability with least privilege.
+pre: Vendor account with MFA.
+main: Open console; see tenants, region, tier, health; request a support session when data access is needed.
+alt: No session: business data endpoints refuse.
+dep: FR-IAM-005
+ac: AC-57.1 | The vendor console tenant list | Opened without a support session | It shows operational metadata only (status, region, tier, job health) and no participant, order or payout data
+
+@US-58 | V1 | Licensee administrator | to run the product on our own servers under a licence, apply signed updates when we choose, and get support without giving the vendor standing access | we keep control of our data and still stay correct and current
+value: Opens buyers who will not use hosted software; founder decision DEC-17.
+pre: Self-hosted edition purchased.
+main: Run preflight; install; load licence; configure; later download a signed update; let the pre-activation checks run; approve with a second person; generate a support bundle when needed.
+alt: Licence lapsed: system keeps calculating and paying, shows notices, refuses new engine and market-pack versions until renewed.
+dep: FR-AUD-001
+ac: AC-58.1 | A self-hosted installation whose licence expired yesterday | A period is calculated, committed and paid | All three succeed; administrators see a lapse notice; installing a newer engine or market pack is refused
+ac: AC-58.2 | An update package with an invalid signature, or one whose engine fails a golden dataset | The licensee tries to activate it | Activation is refused, the running version is unchanged and a report names the cause
+ac: AC-58.3 | A support bundle generated on an installation with participants, bank details and provider credentials | The bundle is scanned | It contains no personal data, bank details or secrets
+ac: AC-58.4 | A self-hosted installation with no outbound network access | It starts and runs a period | Licence verification and all functions work offline

@@ -1,0 +1,452 @@
+# @table | owner module | research entity | release | tenant-scoped (Y/N) | purpose
+# c: column type flags ; ...   (flags: PK, NN, UQ, FK>table)
+# i: indexes   k: constraints and invariants   a: audit requirement
+@tenant | TEN | ENT-01 | A | N | One customer company; routing and isolation tier
+c: id uuid PK ; legal_name text NN ; slug text NN UQ ; region text NN ; isolation_tier text NN ; db_route text NN ; state text NN ; dpa_document_id uuid ; created_at timestamptz NN
+i: slug
+k: state in (provisioning, implementation, live, archived); region immutable after first data load
+a: all changes to vendor audit log and tenant audit log
+
+@market | TEN | ENT-02 | A | Y | A country or region the tenant has opened, with currency, time zone and market pack
+c: id uuid PK ; tenant_id uuid NN FK>tenant ; code text NN ; currency char(3) NN ; minor_unit smallint NN ; time_zone text NN ; languages text[] NN ; market_pack text NN ; state text NN
+i: (tenant_id, code) UQ
+k: state in (draft, live, suspended); cannot delete once referenced
+a: state changes audited with approver
+
+@brand | TEN | ENT-02 | B | Y | Brand dimension on plans, positions and orders
+c: id uuid PK ; tenant_id uuid NN FK>tenant ; name text NN
+i: (tenant_id, name) UQ
+k: —
+a: standard
+
+@tenant_setting_version | TEN | — | A | Y | Immutable version of tenant settings, effective from a date
+c: id uuid PK ; tenant_id uuid NN FK>tenant ; version int NN ; effective_from timestamptz NN ; settings jsonb NN ; reason text NN ; created_by uuid NN FK>user_account ; approval_id uuid FK>approval
+i: (tenant_id, version) UQ ; (tenant_id, effective_from)
+k: no update or delete; effective_from not inside a committed period
+a: every version is itself the audit record
+
+@user_account | IAM | — | A | Y | A human user of a tenant or the vendor realm, linked to the identity provider subject
+c: id uuid PK ; tenant_id uuid FK>tenant ; realm text NN ; idp_subject text NN ; email text NN ; display_name text ; mfa_enrolled boolean NN ; state text NN ; participant_id uuid FK>participant ; last_sign_in_at timestamptz
+i: (realm, idp_subject) UQ ; (tenant_id, email) UQ
+k: realm in (tenant, portal, vendor); vendor users have null tenant_id
+a: sign-in, lock, role changes audited
+
+@role | IAM | — | A | Y | Named permission set; platform base roles have null tenant_id
+c: id uuid PK ; tenant_id uuid FK>tenant ; name text NN ; permissions text[] NN ; is_base boolean NN ; mfa_required boolean NN
+i: (tenant_id, name) UQ
+k: permissions must exist in the permission catalogue
+a: changes audited
+
+@role_assignment | IAM | — | A | Y | Role granted to a user with market and brand scope
+c: id uuid PK ; tenant_id uuid NN FK>tenant ; user_id uuid NN FK>user_account ; role_id uuid NN FK>role ; market_ids uuid[] ; brand_ids uuid[] ; valid_from timestamptz NN ; valid_to timestamptz ; approval_id uuid FK>approval
+i: (tenant_id, user_id)
+k: privileged roles require approval_id
+a: grant and revoke audited; alert on new admin
+
+@api_key | IAM | — | B | Y | Hashed credential of a service account
+c: id uuid PK ; tenant_id uuid NN FK>tenant ; name text NN ; key_hash text NN ; scopes text[] NN ; rate_tier text NN ; ip_allow cidr[] ; expires_at timestamptz ; revoked_at timestamptz
+i: key_hash UQ
+k: plaintext never stored
+a: creation, rotation, revocation audited
+
+@approval | IAM | — | A | Y | A decision by a person on an approvable object
+c: id uuid PK ; tenant_id uuid NN FK>tenant ; object_type text NN ; object_id uuid NN ; preparer_id uuid NN FK>user_account ; approver_id uuid NN FK>user_account ; decision text NN ; reason text ; factor_verified_at timestamptz ; decided_at timestamptz NN
+i: (tenant_id, object_type, object_id)
+k: CHECK approver_id <> preparer_id; decision in (approved, rejected)
+a: is an audit record; immutable
+
+@support_session | IAM | ENT-23 | A | Y | Time-boxed vendor access approved by the tenant
+c: id uuid PK ; tenant_id uuid NN FK>tenant ; requester_id uuid NN FK>user_account ; reason text NN ; scope jsonb NN ; requested_minutes int NN ; state text NN ; decided_by uuid FK>user_account ; starts_at timestamptz ; ends_at timestamptz
+i: (tenant_id, state)
+k: state in (requested, approved, denied, active, expired, ended); ends_at - starts_at within tenant maximum
+a: every action in session written to audit_event with session id
+
+@audit_event | AUD | ENT-24 | A | Y | Append-only record of an action (separate store, hash-chained)
+c: id uuid PK ; tenant_id uuid NN ; seq bigint NN ; occurred_at timestamptz NN ; actor_type text NN ; actor_id uuid ; support_session_id uuid ; action text NN ; object_type text ; object_id uuid ; before_ref text ; after_ref text ; request_id text ; prev_hash bytea ; hash bytea NN
+i: (tenant_id, seq) UQ ; (tenant_id, object_type, object_id) ; (tenant_id, actor_id, occurred_at)
+k: insert only; hash = H(prev_hash, payload)
+a: chain verified daily
+
+@document | AUD | — | A | Y | Reference to a file in object storage (evidence, agreements, forms); sensitive class uses the separate encrypted store
+c: id uuid PK ; tenant_id uuid NN FK>tenant ; class text NN ; storage_key text NN ; sha256 bytea NN ; mime text NN ; size_bytes bigint NN ; uploaded_by uuid FK>user_account ; version int NN
+i: (tenant_id, class)
+k: class in (evidence, agreement, tax_form, export, sensitive_id, disclosure)
+a: access to sensitive class logged per read
+
+@import_batch | IMP | — | A | Y | One uploaded export (overlay) or migration extract
+c: id uuid PK ; tenant_id uuid NN FK>tenant ; market_id uuid NN FK>market ; kind text NN ; period_from date NN ; period_to date NN ; state text NN ; mapping_id uuid FK>import_mapping ; row_counts jsonb ; control_totals jsonb ; superseded_by uuid FK>import_batch ; uploaded_by uuid NN FK>user_account
+i: (tenant_id, market_id, period_from, state)
+k: state in (uploaded, rejected, validated, mapped, loaded, superseded); kind in (overlay, migration)
+a: state changes audited
+
+@import_row_error | IMP | — | A | Y | Row-level validation finding
+c: id uuid PK ; tenant_id uuid NN FK>tenant ; batch_id uuid NN FK>import_batch ; file text NN ; row_no int ; column_name text ; code text NN ; detail text
+i: (batch_id, code)
+k: —
+a: none (derived)
+
+@import_mapping | IMP | — | A | Y | Versioned mapping of source codes to platform vocabulary
+c: id uuid PK ; tenant_id uuid NN FK>tenant ; version int NN ; mappings jsonb NN ; notes text ; state text NN ; approved_by uuid FK>user_account
+i: (tenant_id, version) UQ
+k: approved versions immutable
+a: approval audited
+
+@cpl_fact_participant | CPL | — | A | Y | Compliance fact: one participant as seen by the reports (from import or from native data)
+c: id uuid PK ; tenant_id uuid NN FK>tenant ; source text NN ; batch_id uuid FK>import_batch ; participant_ref text NN ; type_code text NN ; counts_as_end_customer boolean NN ; can_earn boolean NN ; enrolled_month date NN ; servicing_ref text ; market_id uuid NN FK>market
+i: (tenant_id, batch_id, participant_ref) UQ
+k: source in (import, native); participant_ref is pseudonymous for imports
+a: none (reproducible)
+
+@cpl_fact_order | CPL | — | A | Y | Compliance fact: one order
+c: id uuid PK ; tenant_id uuid NN FK>tenant ; source text NN ; batch_id uuid FK>import_batch ; order_ref text NN ; order_date date NN ; buyer_ref text NN ; amount_minor bigint NN ; volume_minor bigint NN ; purpose text NN ; is_starter_kit boolean NN ; refunded_minor bigint NN ; refund_month date
+i: (tenant_id, batch_id, order_ref) UQ ; (tenant_id, order_date)
+k: purpose in (customer, personal, resale, enrolment, unknown); refunded_minor <= amount_minor
+a: none
+
+@cpl_fact_payout_line | CPL | — | A | Y | Compliance fact: one payout line with its source kind
+c: id uuid PK ; tenant_id uuid NN FK>tenant ; source text NN ; batch_id uuid FK>import_batch ; line_ref text NN ; pay_month date NN ; payee_ref text NN ; bonus_type text NN ; source_kind text NN ; source_order_ref text ; amount_minor bigint NN
+i: (tenant_id, batch_id, line_ref) UQ ; (tenant_id, pay_month, source_kind)
+k: source_kind in (retail_sale, downline_volume, enrolment_order, pool, match, clawback, other, unknown)
+a: none
+
+@compliance_report_snapshot | CPL | ENT-21 | A | Y | Immutable result of one report run with its inputs and versions
+c: id uuid PK ; tenant_id uuid NN FK>tenant ; market_id uuid NN FK>market ; period_from date NN ; period_to date NN ; method_version text NN ; mapping_id uuid FK>import_mapping ; settings_version_id uuid FK>tenant_setting_version ; input_refs jsonb NN ; state text NN ; created_by uuid NN FK>user_account ; inputs_hash bytea NN
+i: (tenant_id, market_id, period_from, period_to)
+k: no update except state to outdated; state in (computing, ready, outdated, failed)
+a: creation audited
+
+@compliance_figure | CPL | ENT-21 | A | Y | One figure of a snapshot with its components and population
+c: id uuid PK ; tenant_id uuid NN FK>tenant ; snapshot_id uuid NN FK>compliance_report_snapshot ; report text NN ; period date ; key text NN ; value_num numeric(20,6) ; numerator bigint ; denominator bigint ; population_count int ; note text
+i: (snapshot_id, report, period, key) UQ
+k: report in (R1, R2, R3, R4, R5)
+a: none
+
+@guardrail_rule | CPL | ENT-22 | B | N | Platform guardrail in a market pack
+c: id text PK ; market_pack text NN ; outcome text NN ; predicate jsonb NN ; overridable boolean NN ; basis text NN ; basis_status text NN ; reviewed_at date ; effective_from date NN ; effective_to date
+i: (market_pack, effective_from)
+k: outcome in (blocked, warned, reported); basis_status in (screening, primary_read, counsel_confirmed)
+a: pack releases versioned in source control and vendor audit log
+
+@guardrail_decision | CPL | ENT-22 | B | Y | Immutable outcome of a guardrail on a plan version or configuration
+c: id uuid PK ; tenant_id uuid NN FK>tenant ; rule_id text NN FK>guardrail_rule ; object_type text NN ; object_id uuid NN ; outcome text NN ; detail jsonb ; acknowledged_by uuid FK>user_account ; override_justification text ; override_approval_id uuid FK>approval ; decided_at timestamptz NN
+i: (tenant_id, object_type, object_id)
+k: insert only (override is a new row referencing the first)
+a: is an audit record
+
+@participant | PAR | ENT-03 | B | Y | A person or entity known to the tenant (distributor, customer, affiliate…)
+c: id uuid PK ; tenant_id uuid NN FK>tenant ; external_ref text NN ; account_type text NN ; market_id uuid NN FK>market ; display_name text ; contact jsonb ; identity_doc_id uuid FK>document ; status text NN ; pseudonymised_at timestamptz ; enrolled_at timestamptz NN
+i: (tenant_id, external_ref) UQ ; trigram on display_name (staff search)
+k: account_type in (individual, joint, entity); contact and display_name null after pseudonymisation
+a: reads of unmasked fields logged; changes audited
+
+@participant_type | PAR | ENT-03 | B | Y | Tenant-defined type with flags
+c: id uuid PK ; tenant_id uuid NN FK>tenant ; code text NN ; can_earn boolean NN ; counts_as_end_customer boolean NN ; can_sponsor boolean NN ; can_hold_positions boolean NN
+i: (tenant_id, code) UQ
+k: flags immutable once referenced by a committed run (new code instead)
+a: changes audited with approver
+
+@participant_type_assignment | PAR | ENT-03 | B | Y | Effective-dated type of a participant
+c: id uuid PK ; tenant_id uuid NN FK>tenant ; participant_id uuid NN FK>participant ; type_id uuid NN FK>participant_type ; valid_from timestamptz NN ; valid_to timestamptz
+i: (participant_id, valid_from)
+k: EXCLUDE overlapping valid ranges per participant
+a: standard
+
+@agreement_acceptance | PAR | — | B | Y | Acceptance of an agreement version by a participant
+c: id uuid PK ; tenant_id uuid NN FK>tenant ; participant_id uuid NN FK>participant ; document_id uuid NN FK>document ; accepted_at timestamptz NN ; evidence jsonb
+i: (participant_id, document_id) UQ
+k: insert only
+a: standard
+
+@position | GEN | ENT-04 | B | Y | A node in the tree (business centre); owned by a participant
+c: id uuid PK ; tenant_id uuid NN FK>tenant ; position_ref text NN ; market_id uuid NN FK>market ; brand_id uuid FK>brand ; plan_id uuid FK>plan ; status text NN ; status_from timestamptz NN ; created_at timestamptz NN
+i: (tenant_id, position_ref) UQ
+k: status in (pending, active, suspended, terminated); status history kept in position_status_history (same columns plus reason, actor)
+a: status changes audited with reason
+
+@position_ownership | GEN | ENT-04 | B | Y | Effective-dated owner of a position
+c: id uuid PK ; tenant_id uuid NN FK>tenant ; position_id uuid NN FK>position ; participant_id uuid NN FK>participant ; valid_from timestamptz NN ; valid_to timestamptz ; case_id uuid FK>case
+i: (position_id, valid_from) ; (participant_id)
+k: EXCLUDE overlapping valid ranges per position
+a: transfers audited through the case
+
+@relationship | GEN | ENT-05 | B | Y | Bitemporal sponsor or placement edge between positions
+c: id uuid PK ; tenant_id uuid NN FK>tenant ; kind text NN ; parent_position_id uuid NN FK>position ; child_position_id uuid NN FK>position ; leg text ; valid_from timestamptz NN ; valid_to timestamptz ; recorded_at timestamptz NN ; superseded_at timestamptz ; event_type text NN ; case_id uuid FK>case
+i: (tenant_id, kind, child_position_id, valid_from) ; (tenant_id, kind, parent_position_id) WHERE superseded_at IS NULL
+k: kind in (sponsor, placement); insert only except setting valid_to and superseded_at once; EXCLUDE overlapping valid ranges per (kind, child) among rows with superseded_at IS NULL; no cycles (checked in transaction under tree lock); event_type in (enrolment, change, correction, rule, migration)
+a: every row links to enrolment, case or rule
+
+@path_node | GEN | ENT-07 | B | Y | Materialised-path read model per tree kind (rebuildable)
+c: tenant_id uuid NN FK>tenant ; kind text NN ; position_id uuid NN FK>position ; path ltree NN ; depth int NN ; model_version bigint NN ; subtree_count int
+i: PK (tenant_id, kind, position_id) ; GiST on path
+k: derived only; never a source of truth
+a: none
+
+@customer_servicing | CRM | ENT-08 | B | Y | Effective-dated serviced-by relationship of a customer
+c: id uuid PK ; tenant_id uuid NN FK>tenant ; customer_id uuid NN FK>participant ; servicing_position_id uuid FK>position ; source text NN ; valid_from timestamptz NN ; valid_to timestamptz ; case_id uuid FK>case
+i: (customer_id, valid_from) ; (servicing_position_id)
+k: EXCLUDE overlapping valid ranges per customer; null servicing position means the company
+a: reassignments audited
+
+@product_volume_map | ORD | — | B | Y | Effective-dated volume values and item rules per product
+c: id uuid PK ; tenant_id uuid NN FK>tenant ; market_id uuid NN FK>market ; sku text NN ; item_class text NN ; volumes jsonb NN ; valid_from timestamptz NN ; valid_to timestamptz
+i: (tenant_id, market_id, sku, valid_from)
+k: volumes holds named measures (for example qv, cv) in minor units per unit
+a: changes audited
+
+@order | ORD | ENT-09 | B | Y | Ingested order with facts fixed at ingestion (table name sales_order in SQL)
+c: id uuid PK ; tenant_id uuid NN FK>tenant ; source_system text NN ; source_order_id text NN ; market_id uuid NN FK>market ; brand_id uuid FK>brand ; buyer_id uuid NN FK>participant ; buyer_type_id uuid NN FK>participant_type ; purpose text NN ; attributed_position_id uuid FK>position ; attribution_source text ; credited_at timestamptz NN ; period_id uuid FK>period ; amount_minor bigint NN ; tax_minor bigint NN ; currency char(3) NN ; payload_hash bytea NN
+i: (tenant_id, source_system, source_order_id) UQ ; (tenant_id, period_id) ; (tenant_id, buyer_id, credited_at)
+k: no update of fact columns after insert; purpose in (resale, personal, unspecified, customer)
+a: none beyond inbound_event (immutable facts)
+
+@order_line | ORD | ENT-09 | B | Y | Line of an order with volumes per measure
+c: id uuid PK ; tenant_id uuid NN FK>tenant ; order_id uuid NN FK>order ; line_no int NN ; sku text NN ; item_class text NN ; quantity int NN ; amount_minor bigint NN ; volumes jsonb NN
+i: (order_id, line_no) UQ
+k: insert only
+a: none
+
+@order_event | ORD | ENT-10 | B | Y | Refund, return, exchange, chargeback or subscription event referencing order lines
+c: id uuid PK ; tenant_id uuid NN FK>tenant ; order_id uuid NN FK>order ; source_event_id text NN ; type text NN ; occurred_at timestamptz NN ; lines jsonb NN ; refund_minor bigint NN ; fee_minor bigint NN ; volume_effect jsonb NN ; period_id uuid FK>period
+i: (tenant_id, source_event_id) UQ ; (order_id)
+k: type in (refund, return, exchange, chargeback, chargeback_reversed, renewal_failed, cancelled); returned quantity <= purchased - already returned
+a: none
+
+@late_transaction | ORD | — | B | Y | Order or event that arrived after its period was committed
+c: id uuid PK ; tenant_id uuid NN FK>tenant ; origin_type text NN ; origin_id uuid NN ; original_period_id uuid NN FK>period ; effect_estimate jsonb ; handling text NN ; state text NN ; consumed_by_run_id uuid FK>run ; decided_by uuid FK>user_account
+i: (tenant_id, state)
+k: handling in (adjust, restatement); consumed once
+a: decisions audited
+
+@inbound_event | INT | — | B | Y | Raw inbound webhook or API write with idempotency key (deduplication and replay)
+c: id uuid PK ; tenant_id uuid NN FK>tenant ; source text NN ; idempotency_key text NN ; payload_hash bytea NN ; received_at timestamptz NN ; processed_at timestamptz ; result jsonb
+i: (tenant_id, source, idempotency_key) UQ
+k: same key with different hash is rejected
+a: none
+
+@plan | PLN | ENT-11 | B | Y | A compensation plan for a brand and market set
+c: id uuid PK ; tenant_id uuid NN FK>tenant ; name text NN ; brand_id uuid FK>brand ; market_ids uuid[] NN
+i: (tenant_id, name) UQ
+k: —
+a: standard
+
+@plan_version | PLN | ENT-11 | B | Y | Immutable-after-activation version of a plan
+c: id uuid PK ; tenant_id uuid NN FK>tenant ; plan_id uuid NN FK>plan ; version int NN ; state text NN ; effective_from timestamptz ; justification text ; engine_version text NN ; filing_status jsonb ; notice_sent_at timestamptz ; approval_id uuid FK>approval ; content_hash bytea
+i: (plan_id, version) UQ ; (plan_id, effective_from)
+k: state in (draft, in_review, approved, scheduled, active, retired); rules immutable from approved onward
+a: every transition audited
+
+@plan_rule | PLN | ENT-11 | B | Y | One declarative rule or extension of a plan version
+c: id uuid PK ; tenant_id uuid NN FK>tenant ; plan_version_id uuid NN FK>plan_version ; rule_key text NN ; kind text NN ; pass text NN ; params jsonb NN ; depends_on text[] ; reversal_policy text
+i: (plan_version_id, rule_key) UQ
+k: kind from the primitive catalogue or expression or module; dependency graph acyclic
+a: diffed between versions
+
+@plan_transition | PLN | — | B | Y | Declared transition of a state item between two versions
+c: id uuid PK ; tenant_id uuid NN FK>tenant ; to_version_id uuid NN FK>plan_version ; state_item text NN ; rule text NN ; params jsonb
+i: (to_version_id, state_item) UQ
+k: rule in (carry, map, reset)
+a: standard
+
+@golden_dataset | PLN | — | B | Y | Frozen input and expected lines for a plan version or primitive
+c: id uuid PK ; tenant_id uuid FK>tenant ; plan_version_id uuid FK>plan_version ; name text NN ; input_doc_id uuid NN FK>document ; expected_doc_id uuid NN FK>document ; last_result text
+i: (plan_version_id)
+k: platform-level datasets have null tenant_id
+a: standard
+
+@simulation | PLN | — | B | Y | A sandbox run of a version on a period, with comparison
+c: id uuid PK ; tenant_id uuid NN FK>tenant ; plan_version_id uuid NN FK>plan_version ; period_id uuid NN FK>period ; baseline_run_id uuid FK>run ; kind text NN ; state text NN ; totals jsonb ; requested_by uuid NN FK>user_account
+i: (plan_version_id, period_id)
+k: kind in (simulation, parallel_run, restatement_sandbox); results stored in sim_result_line (same shape as result_line)
+a: standard
+
+@calendar | COMP | ENT-12 | B | Y | A pay calendar (weekly, monthly…) with cut-off time zone
+c: id uuid PK ; tenant_id uuid NN FK>tenant ; market_id uuid NN FK>market ; name text NN ; cadence text NN ; cutoff_time_zone text NN
+i: (tenant_id, market_id, name) UQ
+k: —
+a: standard
+
+@period | COMP | ENT-12 | B | Y | One period of a calendar with lifecycle state
+c: id uuid PK ; tenant_id uuid NN FK>tenant ; calendar_id uuid NN FK>calendar ; starts_at timestamptz NN ; ends_at timestamptz NN ; state text NN ; committed_run_id uuid FK>run
+i: (calendar_id, starts_at) UQ
+k: state in (open, calculating, calculated, committed, paid, closed); EXCLUDE overlapping ranges per calendar; at most one committed run
+a: transitions audited
+
+@run | COMP | ENT-13 | B | Y | One calculation of a period
+c: id uuid PK ; tenant_id uuid NN FK>tenant ; period_id uuid NN FK>period ; run_request_id text NN ; plan_version_id uuid NN FK>plan_version ; settings_version_id uuid NN FK>tenant_setting_version ; snapshot_id uuid NN FK>run_snapshot ; engine_version text NN ; state text NN ; totals jsonb ; lines_hash bytea ; prepared_by uuid NN FK>user_account ; approval_id uuid FK>approval ; started_at timestamptz ; finished_at timestamptz
+i: (tenant_id, period_id, run_request_id) UQ
+k: state in (queued, running, failed, calculated, committed, discarded); only one committed per period
+a: start, commit, discard audited
+
+@run_snapshot | COMP | ENT-13 | B | Y | Reference to the frozen inputs of a run
+c: id uuid PK ; tenant_id uuid NN FK>tenant ; period_id uuid NN FK>period ; known_at timestamptz NN ; order_watermark bigint NN ; prior_state_run_id uuid FK>run ; manifest_doc_id uuid FK>document ; inputs_hash bytea NN
+i: (period_id)
+k: immutable; committed snapshots retained for the legal retention period
+a: none
+
+@result_line | COMP | ENT-14 | B | Y | One payout or adjustment line of a run with compact trace (partitioned by period)
+c: id uuid PK ; tenant_id uuid NN FK>tenant ; run_id uuid NN FK>run ; payee_position_id uuid NN FK>position ; payee_participant_id uuid NN FK>participant ; rule_key text NN ; bonus_type text NN ; source_kind text NN ; pass text NN ; amount_minor bigint NN ; currency char(3) NN ; origin_type text ; origin_id uuid ; trace jsonb NN
+i: (run_id, payee_participant_id) ; (tenant_id, payee_participant_id, run_id)
+k: insert only; sum(amount_minor) per run equals run.totals.gross; (run_id, origin_type, origin_id) unique where origin_id is not null
+a: none (immutable)
+
+@qualification_state | COMP | ENT-15 | B | Y | Cross-period state of a position, output of a run
+c: tenant_id uuid NN FK>tenant ; run_id uuid NN FK>run ; position_id uuid NN FK>position ; paid_as_rank jsonb NN ; highest_titles jsonb NN ; counters jsonb NN ; carry jsonb NN ; one_time_flags text[] NN ; banked jsonb
+i: PK (run_id, position_id) ; (tenant_id, position_id)
+k: authoritative only when run is committed; insert only
+a: none
+
+@restatement | COMP | — | B | Y | Approved recalculation of a committed period applied as adjustments
+c: id uuid PK ; tenant_id uuid NN FK>tenant ; period_id uuid NN FK>period ; case_id uuid NN FK>case ; simulation_id uuid NN FK>simulation ; diff_doc_id uuid FK>document ; state text NN ; applied_in_run_id uuid FK>run
+i: (period_id)
+k: state in (requested, calculated, approved, applied, rejected)
+a: through case and approval
+
+@ledger_account | FIN | ENT-16 | B | Y | An account of the obligations sub-ledger
+c: id uuid PK ; tenant_id uuid NN FK>tenant ; market_id uuid NN FK>market ; type text NN ; payee_participant_id uuid FK>participant ; credit_type_id uuid ; currency char(3) NN ; gl_code text
+i: (tenant_id, market_id, type, payee_participant_id, credit_type_id) UQ
+k: type in (commission_expense, payee_payable, withholding_payable, payout_in_transit, clawback_receivable, rounding_residue, write_off, credit_liability, breakage, settled_clearing)
+a: gl_code changes audited
+
+@journal_entry | FIN | ENT-16 | B | Y | A balanced set of postings for one event
+c: id uuid PK ; tenant_id uuid NN FK>tenant ; event_type text NN ; origin_type text NN ; origin_id uuid NN ; idempotency_key text NN ; approval_id uuid FK>approval ; posted_at timestamptz NN
+i: (tenant_id, idempotency_key) UQ ; (tenant_id, origin_type, origin_id)
+k: insert only; deferred constraint: sum(debit) = sum(credit) over its postings
+a: is the financial audit record
+
+@posting | FIN | ENT-16 | B | Y | One debit or credit (partitioned by posted month)
+c: id uuid PK ; tenant_id uuid NN FK>tenant ; entry_id uuid NN FK>journal_entry ; account_id uuid NN FK>ledger_account ; debit_minor bigint NN ; credit_minor bigint NN ; currency char(3) NN
+i: (account_id, id) ; (entry_id)
+k: insert only (UPDATE and DELETE revoked and blocked by trigger); exactly one of debit, credit non-zero; amounts >= 0
+a: none (immutable)
+
+@payout_batch | PAY | ENT-17 | B | Y | A group of payout instructions for one provider and market
+c: id uuid PK ; tenant_id uuid NN FK>tenant ; market_id uuid NN FK>market ; provider_config_id uuid NN FK>provider_config ; state text NN ; total_minor bigint NN ; currency char(3) NN ; exclusions jsonb ; prepared_by uuid NN FK>user_account ; approval_id uuid FK>approval
+i: (tenant_id, state)
+k: state in (draft, reviewed, approved, instructing, partially_settled, settled, failed, cancelled)
+a: transitions audited
+
+@payout_instruction | PAY | ENT-17 | B | Y | One payment instruction to a provider
+c: id uuid PK ; tenant_id uuid NN FK>tenant ; batch_id uuid NN FK>payout_batch ; payee_participant_id uuid NN FK>participant ; bank_detail_version_id uuid NN FK>bank_detail_version ; amount_minor bigint NN ; idempotency_key text NN ; signature bytea NN ; state text NN ; provider_ref text ; attempts int NN ; last_error text
+i: (tenant_id, idempotency_key) UQ ; (batch_id, state) ; (provider_ref)
+k: state in (pending, instructed, accepted, settled, returned, failed, cancelled); amount > 0
+a: state changes via ledger entries and inbound events
+
+@provider_config | PAY | — | B | Y | A tenant's provider or connector account with eligibility evidence
+c: id uuid PK ; tenant_id uuid NN FK>tenant ; market_id uuid FK>market ; kind text NN ; provider text NN ; credentials_secret_ref text NN ; approved_description text ; approval_document_id uuid FK>document ; approved_at date ; funds_holder text ; state text NN ; last_ok_at timestamptz
+i: (tenant_id, kind, provider, market_id) UQ
+k: kind in (payout, payment, commerce, messaging); secrets live in the secrets manager, never in this table
+a: changes audited
+
+@bank_detail_version | PAY | ENT-19 | B | Y | Encrypted bank details of a payee, versioned
+c: id uuid PK ; tenant_id uuid NN FK>tenant ; participant_id uuid NN FK>participant ; details_ciphertext bytea NN ; fingerprint bytea NN ; masked text NN ; created_via text NN ; cooling_off_until timestamptz NN ; verified_at timestamptz ; superseded_at timestamptz
+i: (participant_id, superseded_at) ; (tenant_id, fingerprint)
+k: insert only except superseded_at; created_via in (self, case, migration)
+a: creation audited; notices recorded
+
+@tax_profile | TAX | ENT-18 | B | Y | Versioned tax facts of a payee
+c: id uuid PK ; tenant_id uuid NN FK>tenant ; participant_id uuid NN FK>participant ; residency text ; entity_type text ; tax_id_document_id uuid FK>document ; tax_id_masked text ; prior_year_totals jsonb ; valid_from timestamptz NN ; valid_to timestamptz
+i: (participant_id, valid_from)
+k: EXCLUDE overlapping ranges per participant
+a: unmask logged
+
+@tax_rule | TAX | ENT-18 | B | N | Market-pack withholding or reporting rule
+c: id text PK ; market_pack text NN ; kind text NN ; conditions jsonb NN ; rate numeric(9,6) ; threshold_minor bigint ; threshold_basis text ; missing_id_rate numeric(9,6) ; rounding text NN ; effective_from date NN ; effective_to date ; basis text NN ; basis_status text NN
+i: (market_pack, effective_from)
+k: no values ship without a basis; basis_status in (screening, primary_read, counsel_confirmed)
+a: pack releases versioned
+
+@tax_line | TAX | ENT-18 | B | Y | Withholding computed for a payee in a run
+c: id uuid PK ; tenant_id uuid NN FK>tenant ; run_id uuid NN FK>run ; payee_participant_id uuid NN FK>participant ; rule_id text NN FK>tax_rule ; taxable_minor bigint NN ; withheld_minor bigint NN
+i: (run_id, payee_participant_id)
+k: insert only
+a: none
+
+@tax_form | TAX | — | B | Y | Generated year-end statement
+c: id uuid PK ; tenant_id uuid NN FK>tenant ; market_id uuid NN FK>market ; tax_year int NN ; form_type text NN ; participant_id uuid NN FK>participant ; totals jsonb NN ; document_id uuid NN FK>document ; version int NN
+i: (tenant_id, tax_year, form_type, participant_id, version) UQ
+k: regeneration creates a new version
+a: generation audited
+
+@case | CAS | ENT-06 | B | Y | An exception handled with reason, evidence and approval (table name case_file in SQL)
+c: id uuid PK ; tenant_id uuid NN FK>tenant ; type text NN ; subject_type text NN ; subject_id uuid NN ; reason_code text NN ; state text NN ; payload jsonb NN ; effect_preview jsonb ; due_at timestamptz ; opened_by uuid FK>user_account ; assigned_to uuid FK>user_account ; approval_id uuid FK>approval
+i: (tenant_id, type, state) ; (tenant_id, subject_type, subject_id)
+k: type in (genealogy_change, genealogy_correction, duplicate, transfer, adjustment, dispute, restatement, returned_payment, write_off, bank_detail, grievance, privacy)
+a: every change is a case_event
+
+@case_event | CAS | ENT-06 | B | Y | Immutable history of a case
+c: id uuid PK ; tenant_id uuid NN FK>tenant ; case_id uuid NN FK>case ; occurred_at timestamptz NN ; actor_id uuid FK>user_account ; kind text NN ; data jsonb
+i: (case_id, occurred_at)
+k: insert only
+a: is the audit record
+
+@statement | DIST | — | B | Y | Rendered statement of a payee for a committed run (cacheable projection)
+c: id uuid PK ; tenant_id uuid NN FK>tenant ; run_id uuid NN FK>run ; participant_id uuid NN FK>participant ; gross_minor bigint NN ; withheld_minor bigint NN ; clawback_minor bigint NN ; adjustment_minor bigint NN ; net_minor bigint NN ; document_id uuid FK>document
+i: (participant_id, run_id) UQ
+k: derived from result_line and tax_line; net = gross - withheld - clawback + adjustment
+a: none
+
+@notification | DIST | — | B | Y | A message to a participant or user with delivery status
+c: id uuid PK ; tenant_id uuid NN FK>tenant ; recipient_participant_id uuid FK>participant ; recipient_user_id uuid FK>user_account ; template text NN ; locale text NN ; channel text NN ; mandatory boolean NN ; state text NN ; sent_at timestamptz
+i: (recipient_participant_id, sent_at)
+k: channel in (email, sms, messaging, in_app)
+a: security notices retained as evidence
+
+@privacy_request | PRV | ENT-25 | B | Y | Data-subject request
+c: id uuid PK ; tenant_id uuid NN FK>tenant ; case_id uuid NN FK>case ; type text NN ; subject_participant_id uuid FK>participant ; verified_at timestamptz ; due_at timestamptz NN ; outcome text ; retention_basis text
+i: (tenant_id, due_at)
+k: type in (access, correction, erasure, portability)
+a: through case
+
+@outbox_event | INT | — | A | Y | Transactional outbox for external effects and domain events
+c: id uuid PK ; tenant_id uuid NN FK>tenant ; seq bigserial NN ; topic text NN ; key text NN ; payload jsonb NN ; available_at timestamptz NN ; attempts int NN ; dispatched_at timestamptz ; dead boolean NN
+i: (dispatched_at, available_at) WHERE dispatched_at IS NULL
+k: written in the same transaction as the state change
+a: none
+
+@webhook_endpoint | INT | — | B | Y | Tenant-configured outbound webhook target
+c: id uuid PK ; tenant_id uuid NN FK>tenant ; url text NN ; secret_ref text NN ; topics text[] NN ; state text NN
+i: (tenant_id)
+k: https only
+a: changes audited
+
+@webhook_delivery | INT | — | B | Y | Delivery attempt log for outbound webhooks
+c: id uuid PK ; tenant_id uuid NN FK>tenant ; endpoint_id uuid NN FK>webhook_endpoint ; outbox_event_id uuid NN FK>outbox_event ; status int ; attempt int NN ; next_attempt_at timestamptz
+i: (endpoint_id, next_attempt_at)
+k: —
+a: none
+
+@export_job | INT | — | A | Y | A logged export (drill-down, journal, full data model)
+c: id uuid PK ; tenant_id uuid NN FK>tenant ; kind text NN ; filters jsonb ; row_count bigint ; document_id uuid FK>document ; destination text ; requested_by uuid FK>user_account ; state text NN
+i: (tenant_id, kind)
+k: destination must be in the tenant's region
+a: creation audited with row count
+
+@credit_type | FIN | ENT-20 | V1 | Y | Non-cash reward type
+c: id uuid PK ; tenant_id uuid NN FK>tenant ; code text NN ; unit_value_minor bigint ; expiry_days int ; redemption_scope jsonb ; taxable boolean
+i: (tenant_id, code) UQ
+k: balances are postings on credit_liability accounts
+a: standard
+
+@fx_rate | FIN | — | V1 | Y | Effective-dated exchange rate
+c: id uuid PK ; tenant_id uuid NN FK>tenant ; base char(3) NN ; quote char(3) NN ; rate numeric(20,10) NN ; source text NN ; valid_from timestamptz NN
+i: (tenant_id, base, quote, valid_from) UQ
+k: —
+a: standard
+
+@integrity_signal | CPL | — | V1 | Y | A computed indicator flag
+c: id uuid PK ; tenant_id uuid NN FK>tenant ; period_id uuid FK>period ; signal text NN ; subject_id uuid NN ; evidence jsonb NN ; case_id uuid FK>case
+i: (tenant_id, period_id, signal)
+k: label is always indicator
+a: none
+
+@license_entitlement | LIC | — | V1 | N | Verified content of the installed licence file (self-hosted edition)
+c: id uuid PK ; installation_id uuid NN ; licensee text NN ; edition text NN ; modules text[] NN ; payee_band int ; market_packs text[] ; updates_until date ; support_until date ; signature bytea NN ; state text NN ; loaded_at timestamptz NN
+i: (installation_id, loaded_at)
+k: state in (active, grace, lapsed, invalid); insert only (a new licence is a new row)
+a: load and state changes audited
+
+@update_log | LIC | — | V1 | N | Applied and refused update packages with their check results
+c: id uuid PK ; package_kind text NN ; from_version text ; to_version text NN ; signature_ok boolean NN ; golden_result text ; replay_result text ; outcome text NN ; approved_by uuid FK>user_account ; applied_at timestamptz NN
+i: (applied_at)
+k: package_kind in (application, engine, market_pack); outcome in (applied, refused, rolled_back)
+a: is the audit record

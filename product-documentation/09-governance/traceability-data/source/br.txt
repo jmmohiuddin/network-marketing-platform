@@ -1,0 +1,144 @@
+# group | title | note
+# ID | rule | At | Basis | Status | Release
+#G GEN | Genealogy | GAP-002, GAP-010, GAP-013
+BR-GEN-01 | A participant may own one or more positions; volume and qualification are evaluated per position unless the plan says per participant | V | G-S25 | R | B
+BR-GEN-02 | Sponsor and placement relationships are separate, each with valid-from and valid-to dates and recorded time, and are never updated in place | P | Audit 08 §4 | D | B
+BR-GEN-03 | A change takes effect from an approved current or future date and never alters committed periods | P | Audit 08 §4 | D | B
+BR-GEN-04 | A correction records the original valid date; committed periods it affects are flagged and handled by the restatement policy (BR-PER-05) | P, T | Audit 08 §4 | D | B
+BR-GEN-05 | Change windows and approval requirements for sponsor and placement changes are plan-version parameters | V | G-S25, G-S26 | R | B
+BR-GEN-06 | Placement into a binary or matrix position is serialised per target leg; the tie-break is deterministic and recorded | P | Audit 08 S6 | D | B
+BR-GEN-07 | Termination changes position status; the tree structure is not modified to implement compression, roll-up or breakaway | P | GAP-013 | D | B
+BR-GEN-08 | Re-parenting of a terminated position's downline, if the plan requires it, is a dated change event with a stated rule per plan version | V | Original BR-TRM-03 | D | B
+BR-GEN-09 | Duplicate-account suspicion blocks activation pending review where the tenant enables it | T | GAP-002, T8 | D | B
+BR-GEN-10 | Succession, divorce division and sale of a distributorship are transfers of position ownership with documents and approval; history stays with the position | T | GAP-002 | C | V1
+BR-GEN-11 | Reinstatement is an event on the same position; rank and placement after return follow a rule per plan version | V | Audit 08 S11 | D | B
+BR-GEN-12 | Authorisation checks use the path read model when current and fall back to the system of record when it is stale; a stale read model never widens access | P | This documentation (SDD) | D | B
+#G PER | Periods and retroactivity | GAP-023
+BR-PER-01 | Each plan defines one or more calendars and the time zone of each cut-off | V | G-S25, G-S28 | R | B
+BR-PER-02 | A transaction is assigned to a period by its defined crediting event (payment, shipment or end of cooling-off). UNRESOLVED: which event (D-R1) | V, M | Original BR-VOL-02 | C | B
+BR-PER-03 | Period states are Open, Calculating, Calculated, Committed, Paid, Closed; inputs and outputs are frozen at Committed | P | Incumbent pattern G-S30 | D | B
+BR-PER-04 | Transactions arriving after Committed post as adjustments in the current open period by default | P | Incumbent pattern G-S29 | D | B
+BR-PER-05 | A restatement reopens nothing: it recalculates a committed period in a sandbox with approval, a reason and a stored diff; paid amounts are corrected by adjustments, never by editing postings | T | GAP-023 | D | B
+BR-PER-06 | A run is idempotent per tenant, calendar, period and run request id and locked against concurrent runs | P | Audit 15 B4 | D | B
+BR-PER-07 | A provisional run is paid and later trued up by a final run that posts only the difference | V | Phase A P1 (N-PROV) | R | V1
+#G MNY | Money arithmetic | GAP-021
+BR-MNY-01 | Amounts are held in minor units or fixed-precision decimals; binary floating point is prohibited | P | Audit 09 T1 | D | B
+BR-MNY-02 | Rounding happens once per payout line at a defined step; the rounding mode is a tenant setting with platform default half-up | P, T | Audit 09 | D | B
+BR-MNY-03 | Splits, pools and scaled caps are allocated so that parts sum exactly to the total (largest remainder; ties by payee id ascending) | P | Audit 09 T1, T2 | D | B
+BR-MNY-04 | Any unavoidable residue posts to a named residue account | P | Audit 10 §3 | D | B
+BR-MNY-05 | Points-to-currency factors are effective-dated per market and shown on statements | V, M | G-S26 | R | B
+#G CAP | Caps | GAP-022
+BR-CAP-01 | A cap has a scope (bonus types), a base expression, a rate, a method (proportional, priority list, per person) and a residue rule | V, M | G-S02, G-S26 | R | B
+BR-CAP-02 | Per-participant constraints are evaluated before company-level caps | V | G-S02 §I.A.1 | R/C | B
+BR-CAP-03 | Simulation shows, for each cap, the payees affected and amounts removed | P | Audit 09 T3 | D | B
+#G RNK | Rank and qualification state | GAP-025 (BR-RNK-01..04 are in the original catalogue 15, which is not in the repository; see OQ-22)
+BR-RNK-05 | Each position has a paid-as rank per period and a highest-achieved title, stored separately | V | G-S26, G-S28 | R | B
+BR-RNK-06 | Qualification windows (period-end, rolling n periods, per order) are declared per requirement | V | G-S25 | R | B
+BR-RNK-07 | Cross-period state is an output of a committed run and an input to the next; it is never edited directly | P | GAP-025 | D | B
+BR-RNK-08 | Carry-forward has optional conditions, caps and expiry | V | G-S25, G-S28 | R | B
+BR-RNK-09 | Several rank ladders may exist per participant | V | G-S26 | R | B
+#G PTY | Participant types | GAP-028
+BR-PTY-01 | Participant types are tenant-defined with flags: can earn, counts as end customer, can sponsor, can hold positions | T | G-S25, G-S26, G-S28 | R | A
+BR-PTY-02 | Type changes are effective-dated and do not re-label past orders | P | GAP-028 | D | B
+BR-PTY-03 | Every participant order carries a purpose (resale, personal use, unspecified) where the market or tenant requires it | T, M | G-S02 | R/C | B
+#G ATT | Attribution and ownership | GAP-040
+BR-ATT-01 | Each customer has one serviced-by relationship at a time, effective-dated | T | GAP-040 | D | B
+BR-ATT-02 | Attribution, buyer type, purpose and line volumes are fixed on the order at ingestion | P | Audit 22 §5 | D | B
+BR-ATT-03 | On termination of the servicing distributor, customers are reassigned by a tenant rule with notice | T | GAP-040 | D | B
+BR-ATT-04 | Fractional roll-ups of customer volume are plan parameters | V | G-S25 | R | B
+#G ORD | Orders and volume | GAP-045, GAP-047 (BR-ORD-01, -03 and BR-VOL-01..03 are from the original catalogue; content reconstructed from citations)
+BR-ORD-01 | Every order records the buyer's participant type at the time of the order (replaces the original binary buyer type, IC-14) | P | Original 15; GAP-028 | D | B
+BR-ORD-04 | An order is unique per tenant, source system and source order id; replays with the same content are no-ops | P | Audit 15 B1 | D | B
+BR-ORD-05 | A run may not start while order sync lag exceeds the tenant threshold at cut-off | P, T | Audit 14 §4 | D | B
+BR-VOL-01 | Volume per order line comes from a product-to-volume map effective at the crediting event time | T | Original 15 (cited in audit 12) | D | B
+BR-VOL-03 | Reversal of volume is proportional to the returned lines (see BR-RET-01) | P | Original 15 (cited in audit 12) | D | B
+#G RET | Returns and exchanges | GAP-047
+BR-RET-01 | Returns reverse volume per returned line, not per order | P | GAP-047 | D | B
+BR-RET-02 | An exchange of equal value flagged as such does not reverse and re-credit volume | T | GAP-047 | D | B
+BR-RET-03 | Restocking fees reduce the refund; their effect on volume is a tenant setting | T | S-122 | D | B
+#G REV | Reversal policy | GAP-032 (BR-REV-01, -03..-05 are in the original catalogue; see OQ-22)
+BR-REV-02 | Whether a reversal changes a closed period or posts an adjustment is a tenant policy within platform rules. UNRESOLVED legally (D-R2) | T, M | Original 15; 13 EX-8 | C | B
+BR-REV-06 | A chargeback is treated like a refund for volume and pay | P | Original 15 (cited in audit 12) | D | B
+BR-REV-07 | Default clawback method is order-line clawback against future earnings; restatement is available per bonus type | T | G-S29; audit 09 T5 | D/C | B
+BR-REV-08 | Clawback receivables below a tenant threshold may be written off with approval | T | Audit 10 §3 | D | B
+BR-REV-09 | The platform never initiates a debit from a distributor's bank account | P | A-02 | D | B
+#G TAX | Withholding and reporting | GAP-031
+BR-TAX-01 | Withholding rules are effective-dated and market-scoped: rate, threshold, threshold basis, payee conditions | M | G-S12, G-S13 | S/C | B-MKT
+BR-TAX-02 | Withholding is computed after gross commission and before payout instruction and posts to a withholding liability | P | Audit 10 §3 | D | B
+BR-TAX-03 | Missing tax id applies the market's higher rate where the law sets one | M | G-S13 | S/C | B-MKT
+BR-TAX-04 | Year-end statements are generated per market form with thresholds per tax year | M | G-S05, G-S12 | S/C | B-MKT
+#G PAY | Payout integrity | GAP-035 (BR-PAY-01, -03..-05 are in the original catalogue; see OQ-22)
+BR-PAY-02 | Payout batches have separate preparer and approver and an audit trail (reconstructed from MH-REQ-02) | P | 51 MH-REQ-02 | D | B
+BR-PAY-06 | Statements itemise each payout line by source (reconstructed from MH-REQ-09) | P | 51 MH-REQ-09 | D | B
+BR-PAY-08 | New or changed bank details trigger re-authentication, notice to the previous contact, and a cooling-off before the first payout | T | Audit 16 T5 | D | B
+BR-PAY-09 | Returned payments move the amount back to the payee's payable balance and open a case | P | Audit 10 §3 | D | B
+BR-PAY-10 | Payout instructions carry idempotency keys and are signed | P | Audit 16 T13 | D | B
+BR-PAY-11 | Payment and payout providers must be confirmed eligible for the tenant's business type in the market before go-live | T, M | G-S04, G-S20 | R | B
+BR-PAY-12 | Payables below the market's minimum payout accumulate; holds are dated events with reason and owner | T, M | 13 §3; GAP-035 | D | B
+#G LED | Ledger | GAP-030
+BR-LED-01 | Every journal entry balances (sum of debits equals sum of credits) and carries an idempotency key, origin reference and approver where a human decided | P | Audit 10 §3 | D | B
+BR-LED-02 | Postings are append-only; balances are sums of postings and are never edited | P | Audit 10 §2 | D | B
+BR-LED-03 | The ledger records obligations of the tenant, never funds held by the platform; the word wallet is not used for anything the platform records | P | 51 MH-REQ-01; audit 10 §1 | D | B
+#G ADJ | Manual adjustments and disputes | GAP-002, GAP-065
+BR-ADJ-01 | Every manual adjustment has a reason code, evidence and a case | P | Incumbent pattern G-S30 | D | B
+BR-ADJ-02 | Approvals above a tenant threshold need a second approver; nobody approves what they prepared | T | Audit 16 T6 | D | B
+BR-ADJ-03 | Adjustments to accounts of the approver, declared relatives or accounts created in the last n days are blocked or escalated | T | Audit 16 T6 | D | B
+BR-ADJ-04 | A commission dispute has states opened, under review, resolved upheld, resolved not upheld, and a response time per market where required | T, M | CMP-09 | S | B
+#G GRD | Platform guardrails | GAP-087. Default proposal (stance Moderate, FD-06); needs founder and counsel
+BR-GRD-01 | Blocked: a payout component whose only trigger is enrolling a person, in markets that ban it | P, M | S-020, G-S02, CMP-03 | C | B
+BR-GRD-02 | Blocked: fees or deposits from participants where the market prohibits them | P, M | S-048, CMP-14 | C | B
+BR-GRD-03 | Warned and logged: starter kits carrying commissionable volume; personal-consumption share above a tenant threshold | P | S-141, G-S02 | D | B
+BR-GRD-04 | Reported: retail-customer share, payout-source mix, earnings distribution | P | CMP-01, CMP-05 | D | A
+BR-GRD-05 | Guardrail overrides need a written justification from the tenant and are visible in compliance reports | P | GAP-087 | D | B
+#G PLN | Plan versions and transitions | GAP-097, GAP-020
+BR-CMP-01 | A run uses exactly one plan version, chosen by effective date (original catalogue) | P | Original 15; audit 09 §3 | D | B
+BR-CMP-09 | Currency conversion follows a tenant policy with an effective-dated rate table (original catalogue, narrowed by BR-MNY) | T | Original 15 | D | V1
+BR-PLN-01 | Each new plan version declares transition rules for titles, carry balances, streaks and one-time flags | V | G-S28 | D | B
+BR-PLN-02 | A version cannot be activated without a simulation on at least one full historical period | P | GAP-026 | D | B
+BR-PLN-03 | Where a market requires a filing, activation is blocked until the filing status is recorded | M | S-043 | S | B-MKT
+BR-PLN-04 | Field notice period before activation is a tenant setting | T | GAP-097 | D | B
+BR-PLN-05 | Tenant-specific code branches are prohibited; extensions are expressions or platform-reviewed modules available to all tenants | P | GAP-020; 23 §2 | D | B
+BR-PLN-06 | Every plan version and every engine release must reproduce its golden datasets exactly | P | GAP-026 | D | B
+#G CRD | Non-cash rewards | GAP-024
+BR-CRD-01 | Each credit type has value, expiry, redemption scope and tax treatment flag | T | G-S26, G-S28 | R | V1
+BR-CRD-02 | Expiry posts a reversal of the credit liability and notifies the holder in advance | T | GAP-024 | D | V1
+#G SEC | Access | GAP-065
+BR-SEC-01 | Vendor staff have no standing access to tenant data; access is a tenant-approved, time-boxed session, logged and visible to the tenant | P | Audit 16 T3 | D | A
+BR-SEC-02 | Payout approvers, tenant admins and vendor staff use multi-factor authentication | P | Audit 16 T10 | D | A
+BR-SEC-03 | Exports and API extraction of personal data are limited, logged and attributed | P | Audit 16 T11 | D | A
+BR-SEC-04 | The tenant id is taken from the authenticated session and enforced in the data layer; it is never accepted from the client | P | Audit 16 T1 | D | A
+BR-SEC-05 | A grant of an admin or approver role needs a second admin; a user cannot grant permissions they do not hold | P | Audit 16 T2 | D | A
+BR-SEC-06 | Separation of duties is evaluated from recorded actor ids on the object, not from role names | P | This documentation (SDD) | D | B
+BR-SEC-07 | Audit events are append-only, stored separately from application tables and hash-chained per tenant | P | SEC-09 | D | A
+#G DAT | Privacy as processor | GAP-085, GAP-061 (BR-DAT-01, -02, -04, -05 are in the original catalogue; see OQ-22)
+BR-DAT-03 | Downline visibility follows a field-by-depth policy enforced on the server (original rule made specific by GAP-012) | T | Original 15; GAP-012 | D | B
+BR-DAT-06 | Erasure requests pseudonymise payee identity in the ledger rather than deleting postings, where retention law allows | P, M | GAP-085 | C | B
+BR-DAT-07 | Breach-notification timelines and contacts are configured per market and per tenant | M | G-S14, G-S10 | S | A
+BR-DAT-08 | Prospect data entered by a distributor is private to that distributor by default | T | GAP-041 | D | V1
+BR-DAT-09 | Personal data, backups and exports stay in the tenant's configured region | P, M | GAP-061 | D/C | A
+BR-DAT-10 | An archived tenant is read-only; data is retained per law and then deleted | P | GAP-098 | D | V1
+BR-DAT-11 | Each data class has a retention period per market; deletion jobs are logged | M | PRV-05 | S | V1
+BR-DAT-12 | A tenant can export its complete data in a documented open format at any time | P | GAP-096 | D | B
+#G IMP | Overlay import (new in this documentation) | P4, Phase A prototype
+BR-IMP-01 | An overlay export may not contain names, contact details, addresses, identity numbers or bank data; a file with such columns is rejected whole | P | Phase A validate_export.py; P4 data terms | D | A
+BR-IMP-02 | Imported amounts are integers in minor units; participant ids are pseudonymous | P | Phase A analytics.py schema | D | A
+BR-IMP-03 | Every compliance figure records the mapping version that produced it | P | This documentation | D | A
+BR-IMP-04 | A re-import supersedes, never deletes, the earlier batch | P | This documentation | D | A
+#G CPL | Compliance reporting (new and original)
+BR-CPL-01 | Every compliance figure stores its population, method version and inputs and can be recomputed identically | P | ENT-21; GAP-081 | D | A
+BR-CPL-03 | Every market-pack rule stores its basis and basis status (screening, primary read, counsel-confirmed) | P | CPL-15 | D | B
+BR-HON-01 | The product contains no income projection, potential-earnings calculator or recruit leaderboard | P | CPL-14; FD-09 | D | A
+BR-HON-02 | Wherever earnings are shown to participants or prospects, the published disclosure is linked when one exists | P | CPL-14 | D | V1
+BR-REG-04 | Enrolment and shipping are restricted to markets the tenant has opened (original catalogue) | T, M | Original 15; GAP-006 | D | B
+BR-REG-05 | Where the market pack requires it, enrolment needs acceptance of the current agreement version | M | CMP-06 | S | B-MKT
+#G OTH | Other
+BR-LOC-01 | Distributor-facing text is delivered in the market's configured languages with locale-aware formats | M | GAP-051 | D | B-MKT
+BR-MIG-01 | Opening balances and opening qualification state from a migration are posted once, with approval, and are identifiable as migration entries | P | GAP-077 | D | B
+BR-MIG-02 | Go-live requires a parallel run with zero unexplained differences | P | GAP-077; audit 31 Phase D | D | B
+BR-AI-01 | No model output may write to plans or the ledger; any AI text that mentions money must cite the lines it summarises | P | GAP-070 | D | V1
+#G LIC | Editions and licensing (new; founder decision DEC-17) | Both editions are the same codebase; the self-hosted edition is a single-tenant deployment
+BR-LIC-01 | A licence lapse never blocks calculation, commit, payout, statements or export; it only stops new engine versions, market-pack updates and support | P | DEC-17 | D | V1
+BR-LIC-02 | Licence verification works offline from a signed file; the product does not require a call to the vendor to run | P | DEC-17 | D | V1
+BR-LIC-03 | Releases, engine versions and market packs are signed; an engine update is activated only after golden and replay checks pass on the installation | P | DEC-17; GAP-026 | D | V1
+BR-LIC-04 | The self-hosted edition gives the vendor no access path; support uses licensee-approved sessions or a redacted bundle | P | DEC-17; GAP-065 | D | V1
+BR-LIC-05 | Both editions are built from one codebase with the same guardrails, honesty policy and ledger invariants; no edition removes them and no source-code edition is offered | P | DEC-17; BR-PLN-05 | D | V1
