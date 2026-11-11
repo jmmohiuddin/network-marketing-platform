@@ -13,3 +13,6 @@ playwright-report/
 test-results/
 *.log
 .turbo/
+agentdb.rvf*
+**/ruvector.db
+var/
