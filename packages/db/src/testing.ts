@@ -3,7 +3,8 @@ import { randomUUID } from 'node:crypto'
 import pg from 'pg'
 import { migrate } from './migrate.js'
 
-const TEST_DATABASE = /^nmp_(test|e2e)$/
+// nmp_test_1..4: one private database per parallel agent slot (NMP_TEST_DB)
+const TEST_DATABASE = /^nmp_(test(_[1-4])?|e2e)$/
 
 let ownerPool: pg.Pool | undefined
 let prepared: Promise<void> | undefined
@@ -31,7 +32,7 @@ async function prepare(): Promise<void> {
   const { rows } = await getOwnerPool().query<{ name: string }>('SELECT current_database() AS name')
   const database = rows[0]?.name ?? ''
   if (!TEST_DATABASE.test(database)) {
-    throw new Error(`Refusing to reset database "${database}": test helpers run only on nmp_test or nmp_e2e`)
+    throw new Error(`Refusing to reset database "${database}": test helpers run only on nmp_test, nmp_test_1..4 or nmp_e2e`)
   }
   await migrate(migrateUrl())
 }

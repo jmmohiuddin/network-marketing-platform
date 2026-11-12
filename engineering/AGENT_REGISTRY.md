@@ -1,6 +1,12 @@
 # Agent Registry
 
-Concurrency policy (16 GB machine): max 2 heavy coding agents + 1 light (review/QA/research). Only ONE process may run builds, the test suite or a browser at a time. Reduce to 1 coding agent when `memory_pressure` free < 20 %.
+Concurrency policy (revised 2026-11-12 after measurement: 16 GB, swap 7.3/8 GB used, CPU load ~3 of 10 cores — RAM is the limit, not CPU or agents):
+- Up to **5 agents at once** (agents run on the API; local cost is the commands they run).
+- Each agent gets a private test database slot `nmp_test_1..4` via `NMP_TEST_DB` (vitest.config.ts); `nmp_test` is for the main session only.
+- Heavy commands (test suite, typecheck, benchmarks) go through `scripts/heavy.sh` — 2 machine-wide slots.
+- `next build` only via `scripts/next-build.sh` — 1 at a time.
+- 1 browser (Playwright MCP) and 1 API+web pair on ports 4000/3100 with nmp_e2e at a time.
+- Drop to 2 agents if `memory_pressure` reports < 20 % free. Quitting Docker Desktop (not needed here) frees ~2–4 GB.
 
 | Agent | Owns (may modify) | Must not modify | Memory |
 |---|---|---|---|
