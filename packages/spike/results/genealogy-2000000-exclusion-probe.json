@@ -1,0 +1,12 @@
+{
+  "note": "Measured 2026-11-12 on 2,029,774 relationship rows (2M positions), psql via scripts/heavy.sh, 2,000 random children per probe, uuid bound to a variable (an earlier loop with uid(random()) in the WHERE clause was invalid: volatile -> seq scan; discarded).",
+  "bulkAddConstraintExclude_childFirst": "cancelled at statement_timeout 900 s (did not finish)",
+  "gistIndexBuild_childFirst_noExclusionCheck_ms": [12243, 13995],
+  "gistIndexSizeMb": 470,
+  "gistExclusionProbeAvgUs": [3065.0, 3035.8],
+  "gistSingleProbeExplainMs": 23.7,
+  "btreeUniqueOneOpenParentIndexBuildMs": 2408,
+  "btreeUniqueOneOpenParentIndexSizeMb": 113,
+  "btreeOverlapProbeAvgUs_via_rel_child_idx": 436.4,
+  "at100k": { "addConstraint_databaseMdOrder_ms": 89838, "addConstraint_childFirst_ms": [19790, 19198, 19499], "createIndex_childFirst_noCheck_ms": 1268 }
+}

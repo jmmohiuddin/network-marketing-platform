@@ -1,0 +1,87 @@
+{
+ "lines": 100000,
+ "batchSize": 5000,
+ "seed": 42,
+ "commit": {
+  "entries": 100000,
+  "postings": 299990,
+  "totalMs": 24534.1,
+  "postMs": 14654.7,
+  "commitMs": 9831.9,
+  "linesPerSec": 4076,
+  "postingsPerSec": 12227,
+  "nodePeakRssMb": 118.5,
+  "pgBackendPeakRssMb": 187.5,
+  "expenseEqualsPayablePlusWithholding": true
+ },
+ "doubleCommit": {
+  "lines": 10000,
+  "outcomes": [
+   "already_committed",
+   "committed"
+  ],
+  "entriesPosted": 10000,
+  "ms": 1909
+ },
+ "balanceLatencyMs": {
+  "payeeDerivedFresh": {
+   "n": 2000,
+   "p50": 0.107,
+   "p95": 0.151,
+   "p99": 0.192,
+   "max": 1.93
+  },
+  "payeeDerivedVacuumed": {
+   "n": 2000,
+   "p50": 0.102,
+   "p95": 0.117,
+   "p99": 0.171,
+   "max": 0.795
+  },
+  "payeeProjection": {
+   "n": 2000,
+   "p50": 0.042,
+   "p95": 0.06,
+   "p99": 0.091,
+   "max": 0.281
+  },
+  "hotExpenseDerivedFresh": {
+   "n": 5,
+   "p50": 12.218,
+   "p95": 23.326,
+   "p99": 23.326,
+   "max": 23.326
+  },
+  "hotExpenseDerivedVacuumed": {
+   "n": 5,
+   "p50": 4.322,
+   "p95": 5.612,
+   "p99": 5.612,
+   "max": 5.612
+  },
+  "hotExpenseProjection": {
+   "n": 100,
+   "p50": 0.038,
+   "p95": 0.054,
+   "p99": 0.198,
+   "max": 0.198
+  },
+  "vacuumAnalyzeMs": 75.1
+ },
+ "reconciliation": {
+  "ms": 253.2,
+  "accounts": 100002,
+  "mismatchedAccounts": 0,
+  "unbalancedEntries": 0,
+  "emptyEntries": 0,
+  "debitEqualsCredit": true,
+  "pgBackendPeakRssMb": 0
+ },
+ "sizeMb": {
+  "ledger_account": 24.6,
+  "journal_entry": 40.8,
+  "posting": 85.9,
+  "account_balance": 11.4
+ },
+ "nodeFinalRssMb": 138.1
+}

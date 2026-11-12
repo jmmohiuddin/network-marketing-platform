@@ -1,0 +1,258 @@
+{
+  "spec": {
+    "size": 2000000,
+    "seed": 42,
+    "deepChain": 5000,
+    "changeRate": 0.01,
+    "correctionRate": 0.005,
+    "days": 730
+  },
+  "k": 128,
+  "samples": 200,
+  "node": "v26.0.0",
+  "startedAt": "2026-11-12T17:00:23.644Z",
+  "machine": {
+    "totalMemGb": 16,
+    "freeMemGb": 0.08,
+    "cpus": 10
+  },
+  "baseline": {
+    "rssMb": 90.92,
+    "heapMb": 7.49,
+    "peakRssMb": 90.92
+  },
+  "generate": {
+    "ms": 37.8,
+    "rssMb": 172.47,
+    "rssDeltaMb": 81.53,
+    "heapMb": 7.55,
+    "peakRssMb": 172.47
+  },
+  "rows": {
+    "total": 2029774,
+    "enrolment": 1999999,
+    "change": 19895,
+    "correction": 9880
+  },
+  "shape": {
+    "maxDepth": 5000,
+    "leaves": 1322306,
+    "maxChildrenNonRoot": 1891,
+    "rootChildren": 4966,
+    "meanChildren": 1,
+    "largestNonChainSubtree": 643085
+  },
+  "db.write": {
+    "ms": 72222.71,
+    "rssMb": 308.78,
+    "rssDeltaMb": 104.98,
+    "heapMb": 6.82,
+    "peakRssMb": 320.73
+  },
+  "db.index.rel_child_idx": {
+    "ms": 24116.35,
+    "rssMb": 245.64,
+    "rssDeltaMb": -63.14,
+    "heapMb": 6.83,
+    "peakRssMb": 320.73
+  },
+  "db.index.rel_parent_current_idx": {
+    "ms": 3078.58,
+    "rssMb": 245.39,
+    "rssDeltaMb": 0,
+    "heapMb": 6.83,
+    "peakRssMb": 320.73
+  },
+  "db.index.rel_no_overlap_excl": "skipped (--excl skip)",
+  "db.pathModel.build": {
+    "ms": 38585.41,
+    "rssMb": 220.25,
+    "rssDeltaMb": -25.16,
+    "heapMb": 6.84,
+    "peakRssMb": 320.73
+  },
+  "plainGist": {
+    "ok": false,
+    "error": "index row requires 8664 bytes, maximum size is 8191"
+  },
+  "db.index.path_node_plain_gist": {
+    "ms": 8721.34,
+    "rssMb": 220.3,
+    "rssDeltaMb": 0.03,
+    "heapMb": 6.84,
+    "peakRssMb": 320.73
+  },
+  "db.index.path_node_prefix_gist": {
+    "ms": 13611.82,
+    "rssMb": 222.45,
+    "rssDeltaMb": 2.15,
+    "heapMb": 6.85,
+    "peakRssMb": 320.73
+  },
+  "db.sizesMb": {
+    "path_node": 303.07,
+    "path_node_pkey": 146.62,
+    "path_node_prefix_gist": 318.05,
+    "position": 114.53,
+    "position_label_key": 76.06,
+    "position_pkey": 60.18,
+    "position_seq_key": 42.86,
+    "rel_child_idx": 131.05,
+    "rel_parent_current_idx": 50.4,
+    "relationship": 273.28,
+    "relationship_pkey": 76.94
+  },
+  "db.totalMb": 1635.95,
+  "ltree": {
+    "deepest": {
+      "levels": 5001,
+      "text_bytes": 18671,
+      "stored_bytes": 16474,
+      "prefix_bytes": 1032
+    },
+    "avgStoredBytes": 90.42,
+    "avgDepth": 13.33,
+    "sumStoredMb": 172.47
+  },
+  "mem.loadFromDb": {
+    "ms": 25961.79,
+    "rssMb": 574.34,
+    "rssDeltaMb": 353.59,
+    "heapMb": 136.35,
+    "peakRssMb": 658.34
+  },
+  "mem.loadVerified": true,
+  "mem.rollUp": {
+    "p50": 12.684,
+    "p95": 40.107,
+    "max": 40.107,
+    "n": 5,
+    "runs": 5,
+    "rootGroupMinor": "49978490453"
+  },
+  "mem.uplineFull.ms": {
+    "p50": 0.001,
+    "p95": 0.001,
+    "max": 0.008,
+    "n": 200
+  },
+  "mem.uplineDeepTail": {
+    "levels": 5000,
+    "ms": 0.0121
+  },
+  "mem.upline1MWalks10Levels": {
+    "ms": 64.5,
+    "levelsWalked": 6885001
+  },
+  "plan.subtreeCount": [
+    "Aggregate  (cost=35616.85..35616.86 rows=1 width=4)",
+    "  ->  Nested Loop  (cost=1783.10..35616.68 rows=67 width=0)",
+    "        ->  Index Scan using path_node_pkey on path_node  (cost=0.55..8.57 rows=1 width=74)",
+    "              Index Cond: ((tenant_id = '11111111-1111-4111-8111-111111111111'::uuid) AND (kind = 'sponsor'::text) AND (position_id = '00000000-0000-4000-8000-000000000000'::uuid))",
+    "        ->  Bitmap Heap Scan on path_node n  (cost=1782.55..35607.44 rows=67 width=74)",
+    "              Recheck Cond: (CASE WHEN (nlevel(path) <= 128) THEN path ELSE subpath(path, 0, 128) END <@ CASE WHEN (nlevel(path_node.path) <= 128) THEN path_node.path ELSE subpath(path_node.path, 0, 128) END)",
+    "              Filter: ((tenant_id = '11111111-1111-4111-8111-111111111111'::uuid) AND (kind = 'sponsor'::text) AND (depth >= path_node.depth) AND (path <@ path_node.path))",
+    "              ->  Bitmap Index Scan on path_node_prefix_gist  (cost=0.00..1782.53 rows=20015 width=0)",
+    "                    Index Cond: (CASE WHEN (nlevel(path) <= 128) THEN path ELSE subpath(path, 0, 128) END <@ CASE WHEN (nlevel(path_node.path) <= 128) THEN path_node.path ELSE subpath(path_node.path, 0, 128) END)"
+  ],
+  "sql.authz.ms": {
+    "p50": 0.161,
+    "p95": 0.989,
+    "max": 1.751,
+    "n": 200
+  },
+  "sql.subtreeCount.ms": {
+    "p50": 2.6,
+    "p95": 14.874,
+    "max": 26.464,
+    "n": 200
+  },
+  "sql.subtreePage.ms": {
+    "p50": 2.312,
+    "p95": 2.785,
+    "max": 78.357,
+    "n": 200
+  },
+  "sql.ancestors.ms": {
+    "p50": 1.589,
+    "p95": 3.547,
+    "max": 530.235,
+    "n": 200
+  },
+  "sql.case.root": {
+    "depth": 0,
+    "subtreeSize": 2000000,
+    "countMs": 448.54,
+    "pageMs": 388.33,
+    "ancestorsMs": 0.61
+  },
+  "sql.case.chainMid": {
+    "depth": 2500,
+    "subtreeSize": 2501,
+    "countMs": 100.18,
+    "pageMs": 96.93,
+    "ancestorsMs": 17.03
+  },
+  "sql.case.chainTail": {
+    "depth": 5000,
+    "subtreeSize": 1,
+    "countMs": 5.17,
+    "pageMs": 4.49,
+    "ancestorsMs": 35.61
+  },
+  "sql.asOfParent.ms": {
+    "p50": 0.128,
+    "p95": 1.423,
+    "max": 2.072,
+    "n": 200
+  },
+  "sql.asOfUpline.ms": {
+    "p50": 1.063,
+    "p95": 3.269,
+    "max": 4.079,
+    "n": 200
+  },
+  "sql.asOfUplineDeepTail": {
+    "levels": 5000,
+    "ms": 23.21
+  },
+  "sql.asOfSnapshotCount": {
+    "d": 365,
+    "t": 547,
+    "edges": 1002739,
+    "ms": 333.29
+  },
+  "db.move.10000": {
+    "ms": 795.68,
+    "rssMb": 651.7,
+    "rssDeltaMb": 0.15,
+    "heapMb": 136.51,
+    "peakRssMb": 658.34
+  },
+  "db.move.10000.detail": {
+    "subtreeSize": 10011,
+    "relationshipMs": 4.67,
+    "pathUpdateMs": 790.52,
+    "oldDepth": 2,
+    "newParentDepth": 7
+  },
+  "db.move.100000": {
+    "ms": 3392.28,
+    "rssMb": 624.77,
+    "rssDeltaMb": -42.26,
+    "heapMb": 136.49,
+    "peakRssMb": 667.03
+  },
+  "db.move.100000.detail": {
+    "subtreeSize": 101088,
+    "relationshipMs": 2.37,
+    "pathUpdateMs": 3389.54,
+    "oldDepth": 5,
+    "newParentDepth": 9
+  },
+  "final": {
+    "rssMb": 600.47,
+    "heapMb": 7.18,
+    "peakRssMb": 667.03
+  }
+}

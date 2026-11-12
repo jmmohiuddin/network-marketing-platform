@@ -1,0 +1,3 @@
+{ "name": "@nmp/spike", "version": "0.0.0", "private": true, "type": "module",
+  "description": "Phase C technical spike (OQ-05, TS-29, ADR-04, OQ-29). Disposable; not part of the product build.",
+  "dependencies": { "pg": "^8" }, "devDependencies": { "@types/pg": "^8" } }
