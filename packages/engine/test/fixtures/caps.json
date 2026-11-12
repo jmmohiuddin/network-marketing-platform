@@ -1,0 +1,179 @@
+{
+ "id": "TS-07/TS-08",
+ "release": "B",
+ "owner": "limits+run (caps.ts)",
+ "provenance": "product-documentation/08-qa/verification/verify_calculations.py (55/55); hypothetical values, not recommendations (DEC-14)",
+ "description": "Company cap allocation on given in-scope lines (minor units, payee ids in canonical order). capMinor = roundRaw(base x rate).",
+ "cases": [
+  {
+   "name": "ts07-proportional",
+   "lines": [
+    {
+     "payeePositionId": "P1",
+     "ruleKey": "bonus",
+     "amountMinor": "123457"
+    },
+    {
+     "payeePositionId": "P2",
+     "ruleKey": "bonus",
+     "amountMinor": "98765"
+    },
+    {
+     "payeePositionId": "P3",
+     "ruleKey": "bonus",
+     "amountMinor": "4567"
+    },
+    {
+     "payeePositionId": "P4",
+     "ruleKey": "bonus",
+     "amountMinor": "37"
+    },
+    {
+     "payeePositionId": "P5",
+     "ruleKey": "bonus",
+     "amountMinor": "1234"
+    },
+    {
+     "payeePositionId": "P6",
+     "ruleKey": "bonus",
+     "amountMinor": "678901"
+    },
+    {
+     "payeePositionId": "P7",
+     "ruleKey": "bonus",
+     "amountMinor": "33333"
+    },
+    {
+     "payeePositionId": "P8",
+     "ruleKey": "bonus",
+     "amountMinor": "99"
+    }
+   ],
+   "baseMinor": "940393",
+   "rate": "0.8856",
+   "method": {
+    "type": "proportional"
+   },
+   "expected": {
+    "capMinor": "832812",
+    "naiveScaledTotalMinor": "832814",
+    "lines": [
+     {
+      "payeePositionId": "P1",
+      "ruleKey": "bonus",
+      "amountMinor": "109333"
+     },
+     {
+      "payeePositionId": "P2",
+      "ruleKey": "bonus",
+      "amountMinor": "87466"
+     },
+     {
+      "payeePositionId": "P3",
+      "ruleKey": "bonus",
+      "amountMinor": "4044"
+     },
+     {
+      "payeePositionId": "P4",
+      "ruleKey": "bonus",
+      "amountMinor": "33"
+     },
+     {
+      "payeePositionId": "P5",
+      "ruleKey": "bonus",
+      "amountMinor": "1093"
+     },
+     {
+      "payeePositionId": "P6",
+      "ruleKey": "bonus",
+      "amountMinor": "601235"
+     },
+     {
+      "payeePositionId": "P7",
+      "ruleKey": "bonus",
+      "amountMinor": "29520"
+     },
+     {
+      "payeePositionId": "P8",
+      "ruleKey": "bonus",
+      "amountMinor": "88"
+     }
+    ]
+   }
+  },
+  {
+   "name": "ts08-priority",
+   "lines": [
+    {
+     "payeePositionId": "T",
+     "ruleKey": "team",
+     "amountMinor": "7000000"
+    },
+    {
+     "payeePositionId": "T",
+     "ruleKey": "leadership",
+     "amountMinor": "4500000"
+    }
+   ],
+   "baseMinor": "100000000",
+   "rate": "0.10",
+   "method": {
+    "type": "priority",
+    "reduce": [
+     "leadership"
+    ]
+   },
+   "expected": {
+    "capMinor": "10000000",
+    "lines": [
+     {
+      "payeePositionId": "T",
+      "ruleKey": "team",
+      "amountMinor": "7000000"
+     },
+     {
+      "payeePositionId": "T",
+      "ruleKey": "leadership",
+      "amountMinor": "3000000"
+     }
+    ]
+   }
+  },
+  {
+   "name": "ts08-proportional",
+   "lines": [
+    {
+     "payeePositionId": "T",
+     "ruleKey": "team",
+     "amountMinor": "7000000"
+    },
+    {
+     "payeePositionId": "T",
+     "ruleKey": "leadership",
+     "amountMinor": "4500000"
+    }
+   ],
+   "baseMinor": "100000000",
+   "rate": "0.10",
+   "method": {
+    "type": "proportional"
+   },
+   "expected": {
+    "capMinor": "10000000",
+    "lines": [
+     {
+      "payeePositionId": "T",
+      "ruleKey": "team",
+      "amountMinor": "6086957"
+     },
+     {
+      "payeePositionId": "T",
+      "ruleKey": "leadership",
+      "amountMinor": "3913043"
+     }
+    ],
+    "movedMinor": "913043"
+   }
+  }
+ ]
+}

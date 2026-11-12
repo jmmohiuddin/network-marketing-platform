@@ -2,6 +2,33 @@
 
 _Agent: compensation. Read before every task; update after every task. Keep concise — facts and decisions, not transcripts._
 
+## B engine review fixes (2026-11-13) — supersedes older lines where they differ
+- BLOCKED on product semantics (finding 8, catalogue gaps; not built, not "done"): banked points (no accrue/redeem rule; state passes through), carry balance readable by measures/requirements/payouts, `limit.max_per_order` (per order of what: pay or volume?), tier-2 expression language (FR-PLN-003 Must; grammar unwritten), cross-calendar state (BR-PER-01), pass-10 "minimums" (ENGINE_GENEALOGY Open). Binary pairing (Could) absent.
+- Order-line clawback origin: for group/generation measures the orders are cited only in a full trace; the clawback component must replay the paid run with fullTraceFor = the order_line lines whose payee is the refunded order's credit position or an ancestor in the rule's tree.
+- Withholding on gross - netted is PROVISIONAL (MONEY O-5, tax adviser); pinned by the TS-38 + receivable test, so a change is an engine version bump.
+- Compression "active" = earner && eligibleIf (finding 6) — record in ENGINE_GENEALOGY open item (outside my edit scope).
+- max_share is not re-checked after rounding (rounded lines carry no purpose part); it is exact in pass 7.
+- Static test still allows Math.max/min (integer rank indexes in rank.ts) and number `/`; money fields are guarded at runtime by inputsHash (non-bigint *Minor/*Us refused).
+
+## B engine pass 3 rank.ts (2026-11-13)
+- run.ts (run owner) must add new one_time flags from pass-4 `pay.one_time` lines to the committed state rows; pass 3 only carries prior oneTimeFlags/banked through.
+- Readings to confirm with product: demotion goes straight to the qualified rank (no step-down); leg rule on period window only; whole-balance carry expiry (not FIFO); negative carry clamped to 0; non-earner/terminated positions still get ranks (compression via holdsRank sees them).
+- "Change windows" (BR-GEN-05) are genealogy-case policy, not an engine input: nothing in pass 3 for them.
+- snapshot.history PeriodSummary with duplicate position ids would double-count a rolling window (not validated).
+
+## B engine payout primitives (2026-11-13)
+- Contract gap: nothing records a paid one_time onceKey into the next state row (pass 3 runs before pass 4). run.ts (or a pass after 4) must add `onceKey` to `oneTimeFlags` of the state candidate for every pay.one_time line, else TS-25 pays twice.
+- Shared payout helpers sit in primitives/unilevel.ts; proposal: move them to primitives/payout-lines.ts (owner decision; retail/percent-of-measure owner may duplicate them).
+- retail.ts / percent-of-measure.ts not in this agent's ownership and absent at hand-off: run.ts fails tsc until they land.
+- Readings to confirm with product: differential source keeps own rate (level 0 unpaid); matching cites no order ids even under order_line; fast-start window half-open; pool parts without holders unpaid.
+
+## B engine contracts (2026-11-13)
+- Not built (no owner): binary pairing + leg measures (Could, OQ-13; TS-04 fixture kept), tier-2 expression language and tier-3 modules other than CapBase order_structure (grammar unwritten), banked-points rule, cross-calendar state dependencies, pass-10 "minimums" (meaning open), provisional runs (V1).
+- Order-line clawback amount (TS-10 A -50.00) is an adjustment-origin input; which component computes it from committed traces is undecided (needs fullTraceFor replay).
+- Assumed readings to confirm with product: pool `rank_order` (part per exact rank, equal split) and `first_n` (top n by measure desc); restockingFeeAffectsVolume semantics; taxable base after netting (tax adviser); differential/override multi-level semantics beyond TS-43's single source.
+- run.ts imports every primitive: until they land the run owner must stub registry entries.
+- Root tsconfig now references packages/engine; `tsc -b` was not run (would rebuild other packages' dist).
+
 
 ## T-A10 (2026-11-12)
 - R5 assumes 100 minor units per currency unit (constant `MINOR_PER_UNIT` in r5.ts); needs a per-market exponent before a 0- or 3-decimal currency is onboarded.

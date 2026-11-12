@@ -1,0 +1,226 @@
+{
+ "id": "RANK-GOLDEN",
+ "provenance": "Hand-derived from the pass-3 semantics stated in src/primitives/rank.ts; hypothetical values, not recommendations (DEC-14). Fields ending in Minor/Us are bigint strings.",
+ "cases": [
+  {
+   "name": "ts63-two-ladders-rolling-title",
+   "description": "TS-63: two ladders; R2 needs pv >= 1,000.00 over a rolling window of 4 periods (this + 3 history periods; the 4th history period of 5,000.00 must be ignored). A: 300+200+250+260 = 1,010.00 -> R2. B: 300+200+250+240 = 990.00 -> R1 while its title stays R2. Ladder leader L1 requires paid-as main R2.",
+   "measures": [{ "kind": "volume.personal", "key": "pv", "unit": "currency", "source": { "from": "amount" }, "items": { "excludeItemClasses": [], "categories": null }, "orders": "all" }],
+   "ladders": [
+    { "key": "main", "ranks": [
+     { "key": "R1", "requires": [{ "kind": "measure", "measure": "pv", "atLeastMinor": "10000", "window": { "type": "period" }, "maxPerLegShare": null }], "maintenance": null },
+     { "key": "R2", "requires": [{ "kind": "measure", "measure": "pv", "atLeastMinor": "100000", "window": { "type": "rolling", "periods": 4 }, "maxPerLegShare": null }], "maintenance": null }
+    ] },
+    { "key": "leader", "ranks": [{ "key": "L1", "requires": [{ "kind": "rank", "rank": { "ladder": "main", "rank": "R2" } }], "maintenance": null }] }
+   ],
+   "positions": [{ "positionId": "A", "sponsor": null }, { "positionId": "B", "sponsor": null }],
+   "values": [{ "measure": "pv", "positionId": "A", "valueMinor": "30000" }, { "measure": "pv", "positionId": "B", "valueMinor": "30000" }],
+   "history": [
+    { "periodId": "2027-02", "startsAtUs": "1801440000000000", "endsAtUs": "1803859200000000", "positions": [
+     { "positionId": "A", "measures": [{ "measure": "pv", "valueMinor": "20000" }], "paidAs": [] },
+     { "positionId": "B", "measures": [{ "measure": "pv", "valueMinor": "20000" }], "paidAs": [] }] },
+    { "periodId": "2027-01", "startsAtUs": "1798761600000000", "endsAtUs": "1801440000000000", "positions": [
+     { "positionId": "A", "measures": [{ "measure": "pv", "valueMinor": "25000" }], "paidAs": [] },
+     { "positionId": "B", "measures": [{ "measure": "pv", "valueMinor": "25000" }], "paidAs": [] }] },
+    { "periodId": "2026-12", "startsAtUs": "1796083200000000", "endsAtUs": "1798761600000000", "positions": [
+     { "positionId": "A", "measures": [{ "measure": "pv", "valueMinor": "26000" }], "paidAs": [] },
+     { "positionId": "B", "measures": [{ "measure": "pv", "valueMinor": "24000" }], "paidAs": [] }] },
+    { "periodId": "2026-11", "startsAtUs": "1793404800000000", "endsAtUs": "1796083200000000", "positions": [
+     { "positionId": "A", "measures": [{ "measure": "pv", "valueMinor": "500000" }], "paidAs": [] },
+     { "positionId": "B", "measures": [{ "measure": "pv", "valueMinor": "500000" }], "paidAs": [] }] }
+   ],
+   "prior": [{ "positionId": "B", "paidAs": [{ "ladder": "main", "rank": "R2" }], "titles": [{ "ladder": "main", "rank": "R2" }] }],
+   "expected": {
+    "state": [
+     { "positionId": "A", "paidAs": [{ "ladder": "leader", "rank": "L1" }, { "ladder": "main", "rank": "R2" }], "titles": [{ "ladder": "leader", "rank": "L1" }, { "ladder": "main", "rank": "R2" }] },
+     { "positionId": "B", "paidAs": [{ "ladder": "leader", "rank": null }, { "ladder": "main", "rank": "R1" }], "titles": [{ "ladder": "leader", "rank": null }, { "ladder": "main", "rank": "R2" }] }
+    ],
+    "evaluations": [
+     { "positionId": "A", "ladder": "main", "paidAs": "R2", "byGrace": false, "checked": [{ "rank": "R2", "requirement": 0, "valueMinor": "101000", "atLeastMinor": "100000", "met": true }] },
+     { "positionId": "A", "ladder": "leader", "paidAs": "L1", "byGrace": false, "checked": [{ "rank": "L1", "requirement": 0, "valueMinor": "1", "atLeastMinor": "1", "met": true }] },
+     { "positionId": "B", "ladder": "main", "paidAs": "R1", "byGrace": false, "checked": [
+      { "rank": "R2", "requirement": 0, "valueMinor": "99000", "atLeastMinor": "100000", "met": false },
+      { "rank": "R1", "requirement": 0, "valueMinor": "30000", "atLeastMinor": "10000", "met": true }] },
+     { "positionId": "B", "ladder": "leader", "paidAs": null, "byGrace": false, "checked": [{ "rank": "L1", "requirement": 0, "valueMinor": "0", "atLeastMinor": "1", "met": false }] }
+    ]
+   }
+  },
+  {
+   "name": "maintenance-grace",
+   "description": "R2 (pv >= 500.00) has 1 grace period. C: prior R2, grace 0, qualifies R1 -> paid-as R2 by grace, grace 1. D: prior R2, grace 1 used -> demoted to R1. E: prior R2, grace 1, qualifies R2 -> R2, grace 0. F: prior R2, grace 1, pv 0 -> no rank. Titles stay R2.",
+   "measures": [{ "kind": "volume.personal", "key": "pv", "unit": "currency", "source": { "from": "amount" }, "items": { "excludeItemClasses": [], "categories": null }, "orders": "all" }],
+   "ladders": [{ "key": "main", "ranks": [
+    { "key": "R1", "requires": [{ "kind": "measure", "measure": "pv", "atLeastMinor": "10000", "window": { "type": "period" }, "maxPerLegShare": null }], "maintenance": null },
+    { "key": "R2", "requires": [{ "kind": "measure", "measure": "pv", "atLeastMinor": "50000", "window": { "type": "period" }, "maxPerLegShare": null }], "maintenance": { "gracePeriods": 1 } }
+   ] }],
+   "positions": [{ "positionId": "C", "sponsor": null }, { "positionId": "D", "sponsor": null }, { "positionId": "E", "sponsor": null }, { "positionId": "F", "sponsor": null }],
+   "values": [
+    { "measure": "pv", "positionId": "C", "valueMinor": "20000" }, { "measure": "pv", "positionId": "D", "valueMinor": "20000" },
+    { "measure": "pv", "positionId": "E", "valueMinor": "60000" }
+   ],
+   "prior": [
+    { "positionId": "C", "paidAs": [{ "ladder": "main", "rank": "R2" }], "titles": [{ "ladder": "main", "rank": "R2" }], "graceUsed": [{ "ladder": "main", "periods": 0 }] },
+    { "positionId": "D", "paidAs": [{ "ladder": "main", "rank": "R2" }], "titles": [{ "ladder": "main", "rank": "R2" }], "graceUsed": [{ "ladder": "main", "periods": 1 }] },
+    { "positionId": "E", "paidAs": [{ "ladder": "main", "rank": "R2" }], "titles": [{ "ladder": "main", "rank": "R2" }], "graceUsed": [{ "ladder": "main", "periods": 1 }] },
+    { "positionId": "F", "paidAs": [{ "ladder": "main", "rank": "R2" }], "titles": [{ "ladder": "main", "rank": "R2" }], "graceUsed": [{ "ladder": "main", "periods": 1 }] }
+   ],
+   "expected": {
+    "state": [
+     { "positionId": "C", "paidAs": [{ "ladder": "main", "rank": "R2" }], "titles": [{ "ladder": "main", "rank": "R2" }], "graceUsed": [{ "ladder": "main", "periods": 1 }] },
+     { "positionId": "D", "paidAs": [{ "ladder": "main", "rank": "R1" }], "titles": [{ "ladder": "main", "rank": "R2" }], "graceUsed": [{ "ladder": "main", "periods": 0 }] },
+     { "positionId": "E", "paidAs": [{ "ladder": "main", "rank": "R2" }], "titles": [{ "ladder": "main", "rank": "R2" }], "graceUsed": [{ "ladder": "main", "periods": 0 }] },
+     { "positionId": "F", "paidAs": [{ "ladder": "main", "rank": null }], "titles": [{ "ladder": "main", "rank": "R2" }], "graceUsed": [{ "ladder": "main", "periods": 0 }] }
+    ],
+    "evaluations": [
+     { "positionId": "C", "ladder": "main", "paidAs": "R2", "byGrace": true },
+     { "positionId": "D", "ladder": "main", "paidAs": "R1", "byGrace": false },
+     { "positionId": "E", "ladder": "main", "paidAs": "R2", "byGrace": false },
+     { "positionId": "F", "ladder": "main", "paidAs": null, "byGrace": false }
+    ]
+   }
+  },
+  {
+   "name": "leg-rule",
+   "description": "R2 needs gv >= 1,000.00 with each direct sponsor leg counting at most 50% (500.00). X: 100 + min(800, 500) + 200 = 800.00 -> R1 (plain gv 1,100.00 would qualify). W: 100 + 450 + 450 = 1,000.00 -> R2.",
+   "measures": [
+    { "kind": "volume.personal", "key": "pv", "unit": "currency", "source": { "from": "amount" }, "items": { "excludeItemClasses": [], "categories": null }, "orders": "all" },
+    { "kind": "volume.group", "key": "gv", "of": "pv", "tree": "sponsor", "includeSelf": true }
+   ],
+   "ladders": [{ "key": "main", "ranks": [
+    { "key": "R1", "requires": [{ "kind": "measure", "measure": "pv", "atLeastMinor": "10000", "window": { "type": "period" }, "maxPerLegShare": null }], "maintenance": null },
+    { "key": "R2", "requires": [{ "kind": "measure", "measure": "gv", "atLeastMinor": "100000", "window": { "type": "period" }, "maxPerLegShare": "0.5" }], "maintenance": null }
+   ] }],
+   "positions": [
+    { "positionId": "X", "sponsor": null }, { "positionId": "Y", "sponsor": "X" }, { "positionId": "Z", "sponsor": "X" },
+    { "positionId": "W", "sponsor": null }, { "positionId": "U", "sponsor": "W" }, { "positionId": "V", "sponsor": "W" }
+   ],
+   "values": [
+    { "measure": "pv", "positionId": "X", "valueMinor": "10000" }, { "measure": "pv", "positionId": "Y", "valueMinor": "80000" },
+    { "measure": "pv", "positionId": "Z", "valueMinor": "20000" }, { "measure": "pv", "positionId": "W", "valueMinor": "10000" },
+    { "measure": "pv", "positionId": "U", "valueMinor": "45000" }, { "measure": "pv", "positionId": "V", "valueMinor": "45000" },
+    { "measure": "gv", "positionId": "X", "valueMinor": "110000" }, { "measure": "gv", "positionId": "Y", "valueMinor": "80000" },
+    { "measure": "gv", "positionId": "Z", "valueMinor": "20000" }, { "measure": "gv", "positionId": "W", "valueMinor": "100000" },
+    { "measure": "gv", "positionId": "U", "valueMinor": "45000" }, { "measure": "gv", "positionId": "V", "valueMinor": "45000" }
+   ],
+   "expected": {
+    "state": [
+     { "positionId": "U", "paidAs": [{ "ladder": "main", "rank": "R1" }] }, { "positionId": "V", "paidAs": [{ "ladder": "main", "rank": "R1" }] },
+     { "positionId": "W", "paidAs": [{ "ladder": "main", "rank": "R2" }] }, { "positionId": "X", "paidAs": [{ "ladder": "main", "rank": "R1" }] },
+     { "positionId": "Y", "paidAs": [{ "ladder": "main", "rank": "R1" }] }, { "positionId": "Z", "paidAs": [{ "ladder": "main", "rank": "R1" }] }
+    ],
+    "evaluations": [
+     { "positionId": "W", "ladder": "main", "paidAs": "R2", "checked": [{ "rank": "R2", "requirement": 0, "valueMinor": "100000", "atLeastMinor": "100000", "met": true }] },
+     { "positionId": "X", "ladder": "main", "paidAs": "R1", "checked": [
+      { "rank": "R2", "requirement": 0, "valueMinor": "80000", "atLeastMinor": "100000", "met": false },
+      { "rank": "R1", "requirement": 0, "valueMinor": "10000", "atLeastMinor": "10000", "met": true }] }
+    ]
+   }
+  },
+  {
+   "name": "qualified-legs-bottom-up",
+   "description": "R2 = 2 sponsor legs holding R1 anywhere in the leg; R3 = 2 legs holding R2 (same ladder, evaluated bottom-up). T's leg U is unranked but U1 below it is R1, so T has 2 qualified legs. Ladder exec E1 = 1 leg holding main R2: only S.",
+   "measures": [{ "kind": "volume.personal", "key": "pv", "unit": "currency", "source": { "from": "amount" }, "items": { "excludeItemClasses": [], "categories": null }, "orders": "all" }],
+   "ladders": [
+    { "key": "main", "ranks": [
+     { "key": "R1", "requires": [{ "kind": "measure", "measure": "pv", "atLeastMinor": "10000", "window": { "type": "period" }, "maxPerLegShare": null }], "maintenance": null },
+     { "key": "R2", "requires": [{ "kind": "legs", "tree": "sponsor", "count": 2, "rank": { "ladder": "main", "rank": "R1" } }], "maintenance": null },
+     { "key": "R3", "requires": [{ "kind": "legs", "tree": "sponsor", "count": 2, "rank": { "ladder": "main", "rank": "R2" } }], "maintenance": null }
+    ] },
+    { "key": "exec", "ranks": [{ "key": "E1", "requires": [{ "kind": "legs", "tree": "sponsor", "count": 1, "rank": { "ladder": "main", "rank": "R2" } }], "maintenance": null }] }
+   ],
+   "positions": [
+    { "positionId": "S", "sponsor": null }, { "positionId": "T", "sponsor": "S" }, { "positionId": "T2", "sponsor": "S" },
+    { "positionId": "U", "sponsor": "T" }, { "positionId": "V", "sponsor": "T" }, { "positionId": "U1", "sponsor": "U" },
+    { "positionId": "P", "sponsor": "T2" }, { "positionId": "Q", "sponsor": "T2" }
+   ],
+   "values": [
+    { "measure": "pv", "positionId": "U1", "valueMinor": "10000" }, { "measure": "pv", "positionId": "V", "valueMinor": "10000" },
+    { "measure": "pv", "positionId": "P", "valueMinor": "10000" }, { "measure": "pv", "positionId": "Q", "valueMinor": "10000" }
+   ],
+   "expected": {
+    "state": [
+     { "positionId": "P", "paidAs": [{ "ladder": "exec", "rank": null }, { "ladder": "main", "rank": "R1" }] },
+     { "positionId": "Q", "paidAs": [{ "ladder": "exec", "rank": null }, { "ladder": "main", "rank": "R1" }] },
+     { "positionId": "S", "paidAs": [{ "ladder": "exec", "rank": "E1" }, { "ladder": "main", "rank": "R3" }] },
+     { "positionId": "T", "paidAs": [{ "ladder": "exec", "rank": null }, { "ladder": "main", "rank": "R2" }] },
+     { "positionId": "T2", "paidAs": [{ "ladder": "exec", "rank": null }, { "ladder": "main", "rank": "R2" }] },
+     { "positionId": "U", "paidAs": [{ "ladder": "exec", "rank": null }, { "ladder": "main", "rank": null }] },
+     { "positionId": "U1", "paidAs": [{ "ladder": "exec", "rank": null }, { "ladder": "main", "rank": "R1" }] },
+     { "positionId": "V", "paidAs": [{ "ladder": "exec", "rank": null }, { "ladder": "main", "rank": "R1" }] }
+    ],
+    "evaluations": [
+     { "positionId": "T", "ladder": "main", "paidAs": "R2", "checked": [
+      { "rank": "R3", "requirement": 0, "valueMinor": "0", "atLeastMinor": "2", "met": false },
+      { "rank": "R2", "requirement": 0, "valueMinor": "2", "atLeastMinor": "2", "met": true }] }
+    ]
+   }
+  },
+  {
+   "name": "per-order-and-profile",
+   "description": "FS needs one order of pv >= 500.00 (per_order window) and profile fact kyc = verified. G: two orders of 300.00 -> not met. H: one order of two 300.00 lines -> FS. I: order 600.00 but kyc pending -> none.",
+   "measures": [{ "kind": "volume.personal", "key": "pv", "unit": "currency", "source": { "from": "amount" }, "items": { "excludeItemClasses": [], "categories": null }, "orders": "all" }],
+   "ladders": [{ "key": "fast", "ranks": [{ "key": "FS", "requires": [
+    { "kind": "measure", "measure": "pv", "atLeastMinor": "50000", "window": { "type": "per_order" }, "maxPerLegShare": null },
+    { "kind": "profile", "fact": "kyc", "equals": "verified" }
+   ], "maintenance": null }] }],
+   "positions": [
+    { "positionId": "G", "sponsor": null, "facts": [{ "key": "kyc", "value": "verified" }] },
+    { "positionId": "H", "sponsor": null, "facts": [{ "key": "kyc", "value": "verified" }] },
+    { "positionId": "I", "sponsor": null, "facts": [{ "key": "kyc", "value": "pending" }] }
+   ],
+   "values": [{ "measure": "pv", "positionId": "G", "valueMinor": "60000" }, { "measure": "pv", "positionId": "H", "valueMinor": "60000" }, { "measure": "pv", "positionId": "I", "valueMinor": "60000" }],
+   "orderLines": [
+    { "orderId": "o1", "lineId": "1", "positionId": "G", "measure": "pv", "valueMinor": "30000" },
+    { "orderId": "o2", "lineId": "1", "positionId": "G", "measure": "pv", "valueMinor": "30000" },
+    { "orderId": "o3", "lineId": "1", "positionId": "H", "measure": "pv", "valueMinor": "30000" },
+    { "orderId": "o3", "lineId": "2", "positionId": "H", "measure": "pv", "valueMinor": "30000" },
+    { "orderId": "o4", "lineId": "1", "positionId": "I", "measure": "pv", "valueMinor": "60000" }
+   ],
+   "expected": {
+    "state": [
+     { "positionId": "G", "paidAs": [{ "ladder": "fast", "rank": null }] },
+     { "positionId": "H", "paidAs": [{ "ladder": "fast", "rank": "FS" }] },
+     { "positionId": "I", "paidAs": [{ "ladder": "fast", "rank": null }] }
+    ],
+    "evaluations": [
+     { "positionId": "G", "ladder": "fast", "checked": [
+      { "rank": "FS", "requirement": 0, "valueMinor": "30000", "atLeastMinor": "50000", "met": false },
+      { "rank": "FS", "requirement": 1, "valueMinor": "1", "atLeastMinor": "1", "met": true }] },
+     { "positionId": "I", "ladder": "fast", "checked": [
+      { "rank": "FS", "requirement": 0, "valueMinor": "60000", "atLeastMinor": "50000", "met": true },
+      { "rank": "FS", "requirement": 1, "valueMinor": "0", "atLeastMinor": "1", "met": false }] }
+    ]
+   }
+  },
+  {
+   "name": "counters-and-carry",
+   "description": "TS-24 streak: J holds R1, prior 24 -> 25; K does not -> 0; L new -> 1. TS-05 carry (cap 30.00, kept while R1): J 28.00 + 9.00 -> 30.00; K loses 30.00. Expiring carry (no cap, kept always, expires after 2 periods held): J's 5.00 held 2 expires -> 9.00 held 1; K 4.00 held 1 + 1.00 -> 5.00 held 2.",
+   "measures": [
+    { "kind": "volume.personal", "key": "pv", "unit": "currency", "source": { "from": "amount" }, "items": { "excludeItemClasses": [], "categories": null }, "orders": "all" },
+    { "kind": "volume.personal", "key": "cv", "unit": "currency", "source": { "from": "amount" }, "items": { "excludeItemClasses": [], "categories": null }, "orders": "all" }
+   ],
+   "ladders": [{ "key": "main", "ranks": [{ "key": "R1", "requires": [{ "kind": "measure", "measure": "pv", "atLeastMinor": "10000", "window": { "type": "period" }, "maxPerLegShare": null }], "maintenance": null }] }],
+   "counters": [{ "key": "streak", "incrementIf": { "ladder": "main", "rank": "R1" } }],
+   "carries": [
+    { "key": "bank", "measure": "cv", "capMinor": "3000", "keepIf": { "ladder": "main", "rank": "R1" }, "expiresAfterPeriods": null },
+    { "key": "expiring", "measure": "cv", "capMinor": null, "keepIf": null, "expiresAfterPeriods": 2 }
+   ],
+   "positions": [{ "positionId": "J", "sponsor": null }, { "positionId": "K", "sponsor": null }, { "positionId": "L", "sponsor": null }],
+   "values": [
+    { "measure": "pv", "positionId": "J", "valueMinor": "10000" }, { "measure": "pv", "positionId": "L", "valueMinor": "10000" },
+    { "measure": "cv", "positionId": "J", "valueMinor": "900" }, { "measure": "cv", "positionId": "K", "valueMinor": "100" }
+   ],
+   "prior": [
+    { "positionId": "J", "counters": [{ "key": "streak", "value": 24 }], "carry": [{ "key": "bank", "amountMinor": "2800", "periodsHeld": 1 }, { "key": "expiring", "amountMinor": "500", "periodsHeld": 2 }], "oneTimeFlags": ["welcome"], "banked": [{ "key": "pts", "amountMinor": "7" }] },
+    { "positionId": "K", "counters": [{ "key": "streak", "value": 5 }], "carry": [{ "key": "bank", "amountMinor": "3000", "periodsHeld": 3 }, { "key": "expiring", "amountMinor": "400", "periodsHeld": 1 }] }
+   ],
+   "expected": {
+    "state": [
+     { "positionId": "J", "counters": [{ "key": "streak", "value": 25 }], "carry": [{ "key": "bank", "amountMinor": "3000", "periodsHeld": 2 }, { "key": "expiring", "amountMinor": "900", "periodsHeld": 1 }], "oneTimeFlags": ["welcome"], "banked": [{ "key": "pts", "amountMinor": "7" }] },
+     { "positionId": "K", "counters": [{ "key": "streak", "value": 0 }], "carry": [{ "key": "bank", "amountMinor": "0", "periodsHeld": 0 }, { "key": "expiring", "amountMinor": "500", "periodsHeld": 2 }], "oneTimeFlags": [], "banked": [] },
+     { "positionId": "L", "counters": [{ "key": "streak", "value": 1 }], "carry": [{ "key": "bank", "amountMinor": "0", "periodsHeld": 0 }, { "key": "expiring", "amountMinor": "0", "periodsHeld": 0 }] }
+    ]
+   }
+  }
+ ]
+}

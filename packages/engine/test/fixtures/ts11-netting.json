@@ -1,0 +1,176 @@
+{
+ "id": "TS-11",
+ "release": "B",
+ "owner": "run",
+ "provenance": "product-documentation/08-qa/verification/verify_calculations.py (55/55); hypothetical values, not recommendations (DEC-14)",
+ "description": "Clawback receivable 40.00 against earnings 25.00 (retail 25% of 100.00): payable 0.00, receivable 15.00 carried; no debit. Withholding rate 0 keeps the netting/withholding order question out of this case.",
+ "cases": [
+  {
+   "name": "ts11",
+   "input": {
+    "plan": {
+     "planVersionId": "plan-ts11",
+     "version": 1,
+     "contentHash": "fixture",
+     "effectiveFromUs": "1803859200000000",
+     "calendars": [
+      "monthly"
+     ],
+     "measures": [
+      {
+       "kind": "volume.personal",
+       "key": "retail_base",
+       "unit": "currency",
+       "source": {
+        "from": "amount"
+       },
+       "items": {
+        "excludeItemClasses": [],
+        "categories": null
+       },
+       "orders": "customer"
+      }
+     ],
+     "ladders": [],
+     "bonuses": [
+      {
+       "key": "retail",
+       "kind": "pay.retail_margin",
+       "sourceKind": "retail_sale",
+       "reversalPolicy": "order_line",
+       "eligibleIf": null,
+       "rate": "0.25",
+       "measure": "retail_base"
+      }
+     ],
+     "constraints": [],
+     "caps": [],
+     "carries": [],
+     "counters": [],
+     "transitions": [],
+     "pointsToCurrency": [],
+     "customerRollUp": null
+    },
+    "settings": {
+     "settingsVersionId": "settings-fixture",
+     "roundingMode": "half_up",
+     "restockingFeeAffectsVolume": false
+    },
+    "snapshot": {
+     "snapshotId": "snap-ts11",
+     "market": {
+      "marketId": "MKT",
+      "currency": "XXX",
+      "minorDigits": 2
+     },
+     "period": {
+      "periodId": "2027-03",
+      "calendar": "monthly",
+      "startsAtUs": "1803859200000000",
+      "endsAtUs": "1806537600000000"
+     },
+     "knownAtUs": "1806537600000000",
+     "participantTypes": [
+      {
+       "code": "distributor",
+       "canEarn": true,
+       "countsAsEndCustomer": false,
+       "canSponsor": true,
+       "canHoldPositions": true
+      },
+      {
+       "code": "customer",
+       "canEarn": false,
+       "countsAsEndCustomer": true,
+       "canSponsor": false,
+       "canHoldPositions": false
+      }
+     ],
+     "participants": [
+      {
+       "participantId": "P1",
+       "typeCode": "distributor",
+       "enrolledAtUs": "1767225600000000",
+       "facts": []
+      },
+      {
+       "participantId": "K",
+       "typeCode": "customer",
+       "enrolledAtUs": "1767225600000000",
+       "facts": []
+      }
+     ],
+     "positions": [
+      {
+       "positionId": "X",
+       "ownerParticipantId": "P1",
+       "status": "active",
+       "statusFromUs": "1767225600000000"
+      }
+     ],
+     "relationships": [],
+     "orders": [
+      {
+       "orderId": "o-X",
+       "buyerParticipantId": "K",
+       "buyerTypeCode": "customer",
+       "purpose": "customer",
+       "creditPositionId": "X",
+       "creditedAtUs": "1803945600000000",
+       "lines": [
+        {
+         "lineId": "1",
+         "productId": "SKU",
+         "itemClass": "product",
+         "category": "general",
+         "quantity": 1,
+         "amountMinor": "10000",
+         "taxMinor": "0",
+         "volumes": []
+        }
+       ]
+      }
+     ],
+     "orderEvents": [],
+     "history": [],
+     "priorState": null,
+     "adjustments": [],
+     "receivables": [
+      {
+       "participantId": "P1",
+       "amountMinor": "4000"
+      }
+     ],
+     "withholding": [
+      {
+       "participantId": "P1",
+       "ruleId": "fixture-wh-0",
+       "rate": "0",
+       "rounding": "half_up"
+      }
+     ]
+    }
+   },
+   "expected": {
+    "lines": [
+     {
+      "payeePositionId": "X",
+      "ruleKey": "retail",
+      "amountMinor": "2500"
+     }
+    ],
+    "payees": [
+     {
+      "participantId": "P1",
+      "grossMinor": "2500",
+      "receivableBeforeMinor": "4000",
+      "nettedMinor": "2500",
+      "withheldMinor": "0",
+      "netPayableMinor": "0",
+      "receivableAfterMinor": "1500"
+     }
+    ]
+   }
+  }
+ ]
+}

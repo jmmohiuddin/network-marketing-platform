@@ -1,0 +1,478 @@
+{
+ "id": "TS-01",
+ "release": "B",
+ "owner": "payout",
+ "provenance": "product-documentation/08-qa/verification/verify_calculations.py (55/55); hypothetical values, not recommendations (DEC-14)",
+ "description": "Unilevel 8/5/4/4/4 % over a 5-level chain; P0 total 925.00 (80+125+160+240+320). Other payees derived with the same rule.",
+ "cases": [
+  {
+   "name": "ts01",
+   "input": {
+    "plan": {
+     "planVersionId": "plan-ts01",
+     "version": 1,
+     "contentHash": "fixture",
+     "effectiveFromUs": "1803859200000000",
+     "calendars": [
+      "monthly"
+     ],
+     "measures": [
+      {
+       "kind": "volume.personal",
+       "key": "cv",
+       "unit": "currency",
+       "source": {
+        "from": "volume",
+        "name": "cv"
+       },
+       "items": {
+        "excludeItemClasses": [],
+        "categories": null
+       },
+       "orders": "all"
+      }
+     ],
+     "ladders": [],
+     "bonuses": [
+      {
+       "key": "unilevel",
+       "kind": "pay.percent_by_level",
+       "sourceKind": "downline_volume",
+       "reversalPolicy": "order_line",
+       "eligibleIf": null,
+       "tree": "sponsor",
+       "measure": "cv",
+       "levels": [
+        "0.08",
+        "0.05",
+        "0.04",
+        "0.04",
+        "0.04"
+       ],
+       "compression": "none"
+      }
+     ],
+     "constraints": [],
+     "caps": [],
+     "carries": [],
+     "counters": [],
+     "transitions": [],
+     "pointsToCurrency": [],
+     "customerRollUp": null
+    },
+    "settings": {
+     "settingsVersionId": "settings-fixture",
+     "roundingMode": "half_up",
+     "restockingFeeAffectsVolume": false
+    },
+    "snapshot": {
+     "snapshotId": "snap-ts01",
+     "market": {
+      "marketId": "MKT",
+      "currency": "XXX",
+      "minorDigits": 2
+     },
+     "period": {
+      "periodId": "2027-03",
+      "calendar": "monthly",
+      "startsAtUs": "1803859200000000",
+      "endsAtUs": "1806537600000000"
+     },
+     "knownAtUs": "1806537600000000",
+     "participantTypes": [
+      {
+       "code": "distributor",
+       "canEarn": true,
+       "countsAsEndCustomer": false,
+       "canSponsor": true,
+       "canHoldPositions": true
+      },
+      {
+       "code": "customer",
+       "canEarn": false,
+       "countsAsEndCustomer": true,
+       "canSponsor": false,
+       "canHoldPositions": false
+      }
+     ],
+     "participants": [
+      {
+       "participantId": "pP0",
+       "typeCode": "distributor",
+       "enrolledAtUs": "1767225600000000",
+       "facts": []
+      },
+      {
+       "participantId": "pL1",
+       "typeCode": "distributor",
+       "enrolledAtUs": "1767225600000000",
+       "facts": []
+      },
+      {
+       "participantId": "pL2",
+       "typeCode": "distributor",
+       "enrolledAtUs": "1767225600000000",
+       "facts": []
+      },
+      {
+       "participantId": "pL3",
+       "typeCode": "distributor",
+       "enrolledAtUs": "1767225600000000",
+       "facts": []
+      },
+      {
+       "participantId": "pL4",
+       "typeCode": "distributor",
+       "enrolledAtUs": "1767225600000000",
+       "facts": []
+      },
+      {
+       "participantId": "pL5",
+       "typeCode": "distributor",
+       "enrolledAtUs": "1767225600000000",
+       "facts": []
+      }
+     ],
+     "positions": [
+      {
+       "positionId": "P0",
+       "ownerParticipantId": "pP0",
+       "status": "active",
+       "statusFromUs": "1767225600000000"
+      },
+      {
+       "positionId": "L1",
+       "ownerParticipantId": "pL1",
+       "status": "active",
+       "statusFromUs": "1767225600000000"
+      },
+      {
+       "positionId": "L2",
+       "ownerParticipantId": "pL2",
+       "status": "active",
+       "statusFromUs": "1767225600000000"
+      },
+      {
+       "positionId": "L3",
+       "ownerParticipantId": "pL3",
+       "status": "active",
+       "statusFromUs": "1767225600000000"
+      },
+      {
+       "positionId": "L4",
+       "ownerParticipantId": "pL4",
+       "status": "active",
+       "statusFromUs": "1767225600000000"
+      },
+      {
+       "positionId": "L5",
+       "ownerParticipantId": "pL5",
+       "status": "active",
+       "statusFromUs": "1767225600000000"
+      }
+     ],
+     "relationships": [
+      {
+       "kind": "sponsor",
+       "parentPositionId": "P0",
+       "childPositionId": "L1",
+       "leg": null,
+       "validFromUs": "1767225600000000",
+       "validToUs": null,
+       "recordedAtUs": "1767225600000000",
+       "supersededAtUs": null
+      },
+      {
+       "kind": "sponsor",
+       "parentPositionId": "L1",
+       "childPositionId": "L2",
+       "leg": null,
+       "validFromUs": "1767225600000000",
+       "validToUs": null,
+       "recordedAtUs": "1767225600000000",
+       "supersededAtUs": null
+      },
+      {
+       "kind": "sponsor",
+       "parentPositionId": "L2",
+       "childPositionId": "L3",
+       "leg": null,
+       "validFromUs": "1767225600000000",
+       "validToUs": null,
+       "recordedAtUs": "1767225600000000",
+       "supersededAtUs": null
+      },
+      {
+       "kind": "sponsor",
+       "parentPositionId": "L3",
+       "childPositionId": "L4",
+       "leg": null,
+       "validFromUs": "1767225600000000",
+       "validToUs": null,
+       "recordedAtUs": "1767225600000000",
+       "supersededAtUs": null
+      },
+      {
+       "kind": "sponsor",
+       "parentPositionId": "L4",
+       "childPositionId": "L5",
+       "leg": null,
+       "validFromUs": "1767225600000000",
+       "validToUs": null,
+       "recordedAtUs": "1767225600000000",
+       "supersededAtUs": null
+      }
+     ],
+     "orders": [
+      {
+       "orderId": "o-P0",
+       "buyerParticipantId": "pP0",
+       "buyerTypeCode": "distributor",
+       "purpose": "personal",
+       "creditPositionId": "P0",
+       "creditedAtUs": "1803945600000000",
+       "lines": [
+        {
+         "lineId": "1",
+         "productId": "SKU",
+         "itemClass": "product",
+         "category": "general",
+         "quantity": 1,
+         "amountMinor": "0",
+         "taxMinor": "0",
+         "volumes": [
+          {
+           "name": "qv",
+           "perUnitMinor": "100"
+          },
+          {
+           "name": "cv",
+           "perUnitMinor": "0"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "orderId": "o-L1",
+       "buyerParticipantId": "pL1",
+       "buyerTypeCode": "distributor",
+       "purpose": "personal",
+       "creditPositionId": "L1",
+       "creditedAtUs": "1803945600000000",
+       "lines": [
+        {
+         "lineId": "1",
+         "productId": "SKU",
+         "itemClass": "product",
+         "category": "general",
+         "quantity": 1,
+         "amountMinor": "100000",
+         "taxMinor": "0",
+         "volumes": [
+          {
+           "name": "qv",
+           "perUnitMinor": "100"
+          },
+          {
+           "name": "cv",
+           "perUnitMinor": "100000"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "orderId": "o-L2",
+       "buyerParticipantId": "pL2",
+       "buyerTypeCode": "distributor",
+       "purpose": "personal",
+       "creditPositionId": "L2",
+       "creditedAtUs": "1803945600000000",
+       "lines": [
+        {
+         "lineId": "1",
+         "productId": "SKU",
+         "itemClass": "product",
+         "category": "general",
+         "quantity": 1,
+         "amountMinor": "250000",
+         "taxMinor": "0",
+         "volumes": [
+          {
+           "name": "qv",
+           "perUnitMinor": "100"
+          },
+          {
+           "name": "cv",
+           "perUnitMinor": "250000"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "orderId": "o-L3",
+       "buyerParticipantId": "pL3",
+       "buyerTypeCode": "distributor",
+       "purpose": "personal",
+       "creditPositionId": "L3",
+       "creditedAtUs": "1803945600000000",
+       "lines": [
+        {
+         "lineId": "1",
+         "productId": "SKU",
+         "itemClass": "product",
+         "category": "general",
+         "quantity": 1,
+         "amountMinor": "400000",
+         "taxMinor": "0",
+         "volumes": [
+          {
+           "name": "qv",
+           "perUnitMinor": "100"
+          },
+          {
+           "name": "cv",
+           "perUnitMinor": "400000"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "orderId": "o-L4",
+       "buyerParticipantId": "pL4",
+       "buyerTypeCode": "distributor",
+       "purpose": "personal",
+       "creditPositionId": "L4",
+       "creditedAtUs": "1803945600000000",
+       "lines": [
+        {
+         "lineId": "1",
+         "productId": "SKU",
+         "itemClass": "product",
+         "category": "general",
+         "quantity": 1,
+         "amountMinor": "600000",
+         "taxMinor": "0",
+         "volumes": [
+          {
+           "name": "qv",
+           "perUnitMinor": "100"
+          },
+          {
+           "name": "cv",
+           "perUnitMinor": "600000"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "orderId": "o-L5",
+       "buyerParticipantId": "pL5",
+       "buyerTypeCode": "distributor",
+       "purpose": "personal",
+       "creditPositionId": "L5",
+       "creditedAtUs": "1803945600000000",
+       "lines": [
+        {
+         "lineId": "1",
+         "productId": "SKU",
+         "itemClass": "product",
+         "category": "general",
+         "quantity": 1,
+         "amountMinor": "800000",
+         "taxMinor": "0",
+         "volumes": [
+          {
+           "name": "qv",
+           "perUnitMinor": "100"
+          },
+          {
+           "name": "cv",
+           "perUnitMinor": "800000"
+          }
+         ]
+        }
+       ]
+      }
+     ],
+     "orderEvents": [],
+     "history": [],
+     "priorState": null,
+     "adjustments": [],
+     "receivables": [],
+     "withholding": [
+      {
+       "participantId": "pP0",
+       "ruleId": "fixture-wh-0",
+       "rate": "0",
+       "rounding": "half_up"
+      },
+      {
+       "participantId": "pL1",
+       "ruleId": "fixture-wh-0",
+       "rate": "0",
+       "rounding": "half_up"
+      },
+      {
+       "participantId": "pL2",
+       "ruleId": "fixture-wh-0",
+       "rate": "0",
+       "rounding": "half_up"
+      },
+      {
+       "participantId": "pL3",
+       "ruleId": "fixture-wh-0",
+       "rate": "0",
+       "rounding": "half_up"
+      },
+      {
+       "participantId": "pL4",
+       "ruleId": "fixture-wh-0",
+       "rate": "0",
+       "rounding": "half_up"
+      },
+      {
+       "participantId": "pL5",
+       "ruleId": "fixture-wh-0",
+       "rate": "0",
+       "rounding": "half_up"
+      }
+     ]
+    }
+   },
+   "expected": {
+    "lines": [
+     {
+      "payeePositionId": "P0",
+      "ruleKey": "unilevel",
+      "amountMinor": "92500"
+     },
+     {
+      "payeePositionId": "L1",
+      "ruleKey": "unilevel",
+      "amountMinor": "96000"
+     },
+     {
+      "payeePositionId": "L2",
+      "ruleKey": "unilevel",
+      "amountMinor": "94000"
+     },
+     {
+      "payeePositionId": "L3",
+      "ruleKey": "unilevel",
+      "amountMinor": "88000"
+     },
+     {
+      "payeePositionId": "L4",
+      "ruleKey": "unilevel",
+      "amountMinor": "64000"
+     }
+    ]
+   }
+  }
+ ]
+}

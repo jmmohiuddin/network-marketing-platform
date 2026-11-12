@@ -1,0 +1,10 @@
+// Public surface of @nmp/engine: contracts, run(), replay(), explain() and the limit helpers.
+export * from './errors.js'
+export * from './money.js'
+export * from './pipeline.js'
+export * from './tree.js'
+export type * from './types.js'
+export * from './explain.js'
+export * from './replay.js'
+export * from './run.js'
+export { allocateCap, capAmountMinor, capPass, constraintPass, orderStructureBaseRaw } from './primitives/caps.js'

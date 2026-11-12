@@ -1,0 +1,35 @@
+{
+ "id": "TS-09",
+ "release": "B",
+ "owner": "limits+run (caps.ts)",
+ "provenance": "product-documentation/08-qa/verification/verify_calculations.py (55/55); hypothetical values, not recommendations (DEC-14)",
+ "description": "CapBase order_structure: second/(first+second) = 37.5% > 1/3 so base = 1.5 x first = 750,000.00 (75% of net sales, < 80%); cap = r2(750,000.00 x 41.75%) = 313,125.00; in-scope 340,000.00 scaled by 0.9210; out-of-scope lines untouched.",
+ "cases": [
+  {
+   "name": "ts09",
+   "firstMinor": "50000000",
+   "secondMinor": "30000000",
+   "netSalesMinor": "100000000",
+   "inScopeMinor": "34000000",
+   "outOfScopeMinor": "1000000",
+   "base": {
+    "kind": "order_structure",
+    "first": "g1",
+    "second": "g2",
+    "secondShareAbove": {
+     "num": 1,
+     "den": 3
+    },
+    "firstMultiplier": "1.5"
+   },
+   "rate": "0.4175",
+   "expected": {
+    "baseMinor": "75000000",
+    "capMinor": "31312500",
+    "baseShareOfNetSalesBelow": "0.8",
+    "factor4dp": "0.9210",
+    "outOfScopeMinor": "1000000"
+   }
+  }
+ ]
+}

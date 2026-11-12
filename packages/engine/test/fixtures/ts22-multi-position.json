@@ -1,0 +1,232 @@
+{
+ "id": "TS-22",
+ "release": "B",
+ "owner": "run",
+ "provenance": "product-documentation/08-qa/verification/verify_calculations.py (55/55); hypothetical values, not recommendations (DEC-14)",
+ "description": "One participant owns 3 positions; lines stay per position, the payee settlement rolls them up to 400.00.",
+ "cases": [
+  {
+   "name": "ts22",
+   "input": {
+    "plan": {
+     "planVersionId": "plan-ts22",
+     "version": 1,
+     "contentHash": "fixture",
+     "effectiveFromUs": "1803859200000000",
+     "calendars": [
+      "monthly"
+     ],
+     "measures": [
+      {
+       "kind": "volume.personal",
+       "key": "retail_base",
+       "unit": "currency",
+       "source": {
+        "from": "amount"
+       },
+       "items": {
+        "excludeItemClasses": [],
+        "categories": null
+       },
+       "orders": "customer"
+      }
+     ],
+     "ladders": [],
+     "bonuses": [
+      {
+       "key": "retail",
+       "kind": "pay.retail_margin",
+       "sourceKind": "retail_sale",
+       "reversalPolicy": "order_line",
+       "eligibleIf": null,
+       "rate": "1",
+       "measure": "retail_base"
+      }
+     ],
+     "constraints": [],
+     "caps": [],
+     "carries": [],
+     "counters": [],
+     "transitions": [],
+     "pointsToCurrency": [],
+     "customerRollUp": null
+    },
+    "settings": {
+     "settingsVersionId": "settings-fixture",
+     "roundingMode": "half_up",
+     "restockingFeeAffectsVolume": false
+    },
+    "snapshot": {
+     "snapshotId": "snap-ts22",
+     "market": {
+      "marketId": "MKT",
+      "currency": "XXX",
+      "minorDigits": 2
+     },
+     "period": {
+      "periodId": "2027-03",
+      "calendar": "monthly",
+      "startsAtUs": "1803859200000000",
+      "endsAtUs": "1806537600000000"
+     },
+     "knownAtUs": "1806537600000000",
+     "participantTypes": [
+      {
+       "code": "distributor",
+       "canEarn": true,
+       "countsAsEndCustomer": false,
+       "canSponsor": true,
+       "canHoldPositions": true
+      },
+      {
+       "code": "customer",
+       "canEarn": false,
+       "countsAsEndCustomer": true,
+       "canSponsor": false,
+       "canHoldPositions": false
+      }
+     ],
+     "participants": [
+      {
+       "participantId": "P1",
+       "typeCode": "distributor",
+       "enrolledAtUs": "1767225600000000",
+       "facts": []
+      },
+      {
+       "participantId": "K",
+       "typeCode": "customer",
+       "enrolledAtUs": "1767225600000000",
+       "facts": []
+      }
+     ],
+     "positions": [
+      {
+       "positionId": "X1",
+       "ownerParticipantId": "P1",
+       "status": "active",
+       "statusFromUs": "1767225600000000"
+      },
+      {
+       "positionId": "X2",
+       "ownerParticipantId": "P1",
+       "status": "active",
+       "statusFromUs": "1767225600000000"
+      },
+      {
+       "positionId": "X3",
+       "ownerParticipantId": "P1",
+       "status": "active",
+       "statusFromUs": "1767225600000000"
+      }
+     ],
+     "relationships": [],
+     "orders": [
+      {
+       "orderId": "o-X1",
+       "buyerParticipantId": "K",
+       "buyerTypeCode": "customer",
+       "purpose": "customer",
+       "creditPositionId": "X1",
+       "creditedAtUs": "1803945600000000",
+       "lines": [
+        {
+         "lineId": "1",
+         "productId": "SKU",
+         "itemClass": "product",
+         "category": "general",
+         "quantity": 1,
+         "amountMinor": "10010",
+         "taxMinor": "0",
+         "volumes": []
+        }
+       ]
+      },
+      {
+       "orderId": "o-X2",
+       "buyerParticipantId": "K",
+       "buyerTypeCode": "customer",
+       "purpose": "customer",
+       "creditPositionId": "X2",
+       "creditedAtUs": "1803945600000000",
+       "lines": [
+        {
+         "lineId": "1",
+         "productId": "SKU",
+         "itemClass": "product",
+         "category": "general",
+         "quantity": 1,
+         "amountMinor": "25025",
+         "taxMinor": "0",
+         "volumes": []
+        }
+       ]
+      },
+      {
+       "orderId": "o-X3",
+       "buyerParticipantId": "K",
+       "buyerTypeCode": "customer",
+       "purpose": "customer",
+       "creditPositionId": "X3",
+       "creditedAtUs": "1803945600000000",
+       "lines": [
+        {
+         "lineId": "1",
+         "productId": "SKU",
+         "itemClass": "product",
+         "category": "general",
+         "quantity": 1,
+         "amountMinor": "4965",
+         "taxMinor": "0",
+         "volumes": []
+        }
+       ]
+      }
+     ],
+     "orderEvents": [],
+     "history": [],
+     "priorState": null,
+     "adjustments": [],
+     "receivables": [],
+     "withholding": [
+      {
+       "participantId": "P1",
+       "ruleId": "fixture-wh-0",
+       "rate": "0",
+       "rounding": "half_up"
+      }
+     ]
+    }
+   },
+   "expected": {
+    "lines": [
+     {
+      "payeePositionId": "X1",
+      "ruleKey": "retail",
+      "amountMinor": "10010"
+     },
+     {
+      "payeePositionId": "X2",
+      "ruleKey": "retail",
+      "amountMinor": "25025"
+     },
+     {
+      "payeePositionId": "X3",
+      "ruleKey": "retail",
+      "amountMinor": "4965"
+     }
+    ],
+    "payees": [
+     {
+      "participantId": "P1",
+      "grossMinor": "40000",
+      "nettedMinor": "0",
+      "withheldMinor": "0",
+      "netPayableMinor": "40000",
+      "receivableAfterMinor": "0"
+     }
+    ]
+   }
+  }
+ ]
+}

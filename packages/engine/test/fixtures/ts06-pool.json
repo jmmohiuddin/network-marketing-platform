@@ -1,0 +1,3258 @@
+{
+ "id": "TS-06",
+ "release": "B",
+ "owner": "payout",
+ "provenance": "product-documentation/08-qa/verification/verify_calculations.py (55/55); hypothetical values, not recommendations (DEC-14)",
+ "description": "Pool 6.25% of market sales 1,000,000.00 = 62,500.00 over 66 shares (40x1, 10x2, 2x3 by paid-as rank). Largest remainder sums to 62,500.00; naive per-share rounding gives 62,500.02.",
+ "cases": [
+  {
+   "name": "ts06",
+   "input": {
+    "plan": {
+     "planVersionId": "plan-ts06",
+     "version": 1,
+     "contentHash": "fixture",
+     "effectiveFromUs": "1803859200000000",
+     "calendars": [
+      "monthly"
+     ],
+     "measures": [
+      {
+       "kind": "volume.personal",
+       "key": "sales",
+       "unit": "currency",
+       "source": {
+        "from": "amount"
+       },
+       "items": {
+        "excludeItemClasses": [],
+        "categories": null
+       },
+       "orders": "all"
+      },
+      {
+       "kind": "volume.personal",
+       "key": "qv",
+       "unit": "currency",
+       "source": {
+        "from": "volume",
+        "name": "qv"
+       },
+       "items": {
+        "excludeItemClasses": [],
+        "categories": null
+       },
+       "orders": "all"
+      }
+     ],
+     "ladders": [
+      {
+       "key": "main",
+       "ranks": [
+        {
+         "key": "R1",
+         "requires": [
+          {
+           "kind": "measure",
+           "measure": "qv",
+           "atLeastMinor": "1",
+           "window": {
+            "type": "period"
+           },
+           "maxPerLegShare": null
+          }
+         ],
+         "maintenance": null
+        },
+        {
+         "key": "R2",
+         "requires": [
+          {
+           "kind": "measure",
+           "measure": "qv",
+           "atLeastMinor": "2",
+           "window": {
+            "type": "period"
+           },
+           "maxPerLegShare": null
+          }
+         ],
+         "maintenance": null
+        },
+        {
+         "key": "R3",
+         "requires": [
+          {
+           "kind": "measure",
+           "measure": "qv",
+           "atLeastMinor": "3",
+           "window": {
+            "type": "period"
+           },
+           "maxPerLegShare": null
+          }
+         ],
+         "maintenance": null
+        }
+       ]
+      }
+     ],
+     "bonuses": [
+      {
+       "key": "pool",
+       "kind": "pay.pool",
+       "sourceKind": "pool",
+       "reversalPolicy": "restatement",
+       "eligibleIf": null,
+       "baseMeasure": "sales",
+       "rate": "0.0625",
+       "allocation": {
+        "type": "shares",
+        "ladder": "main",
+        "shares": [
+         {
+          "rank": "R1",
+          "shares": 1
+         },
+         {
+          "rank": "R2",
+          "shares": 2
+         },
+         {
+          "rank": "R3",
+          "shares": 3
+         }
+        ]
+       }
+      }
+     ],
+     "constraints": [],
+     "caps": [],
+     "carries": [],
+     "counters": [],
+     "transitions": [],
+     "pointsToCurrency": [],
+     "customerRollUp": null
+    },
+    "settings": {
+     "settingsVersionId": "settings-fixture",
+     "roundingMode": "half_up",
+     "restockingFeeAffectsVolume": false
+    },
+    "snapshot": {
+     "snapshotId": "snap-ts06",
+     "market": {
+      "marketId": "MKT",
+      "currency": "XXX",
+      "minorDigits": 2
+     },
+     "period": {
+      "periodId": "2027-03",
+      "calendar": "monthly",
+      "startsAtUs": "1803859200000000",
+      "endsAtUs": "1806537600000000"
+     },
+     "knownAtUs": "1806537600000000",
+     "participantTypes": [
+      {
+       "code": "distributor",
+       "canEarn": true,
+       "countsAsEndCustomer": false,
+       "canSponsor": true,
+       "canHoldPositions": true
+      },
+      {
+       "code": "customer",
+       "canEarn": false,
+       "countsAsEndCustomer": true,
+       "canSponsor": false,
+       "canHoldPositions": false
+      }
+     ],
+     "participants": [
+      {
+       "participantId": "pROOT",
+       "typeCode": "distributor",
+       "enrolledAtUs": "1767225600000000",
+       "facts": []
+      },
+      {
+       "participantId": "KC",
+       "typeCode": "customer",
+       "enrolledAtUs": "1767225600000000",
+       "facts": []
+      },
+      {
+       "participantId": "pH01",
+       "typeCode": "distributor",
+       "enrolledAtUs": "1767225600000000",
+       "facts": []
+      },
+      {
+       "participantId": "pH02",
+       "typeCode": "distributor",
+       "enrolledAtUs": "1767225600000000",
+       "facts": []
+      },
+      {
+       "participantId": "pH03",
+       "typeCode": "distributor",
+       "enrolledAtUs": "1767225600000000",
+       "facts": []
+      },
+      {
+       "participantId": "pH04",
+       "typeCode": "distributor",
+       "enrolledAtUs": "1767225600000000",
+       "facts": []
+      },
+      {
+       "participantId": "pH05",
+       "typeCode": "distributor",
+       "enrolledAtUs": "1767225600000000",
+       "facts": []
+      },
+      {
+       "participantId": "pH06",
+       "typeCode": "distributor",
+       "enrolledAtUs": "1767225600000000",
+       "facts": []
+      },
+      {
+       "participantId": "pH07",
+       "typeCode": "distributor",
+       "enrolledAtUs": "1767225600000000",
+       "facts": []
+      },
+      {
+       "participantId": "pH08",
+       "typeCode": "distributor",
+       "enrolledAtUs": "1767225600000000",
+       "facts": []
+      },
+      {
+       "participantId": "pH09",
+       "typeCode": "distributor",
+       "enrolledAtUs": "1767225600000000",
+       "facts": []
+      },
+      {
+       "participantId": "pH10",
+       "typeCode": "distributor",
+       "enrolledAtUs": "1767225600000000",
+       "facts": []
+      },
+      {
+       "participantId": "pH11",
+       "typeCode": "distributor",
+       "enrolledAtUs": "1767225600000000",
+       "facts": []
+      },
+      {
+       "participantId": "pH12",
+       "typeCode": "distributor",
+       "enrolledAtUs": "1767225600000000",
+       "facts": []
+      },
+      {
+       "participantId": "pH13",
+       "typeCode": "distributor",
+       "enrolledAtUs": "1767225600000000",
+       "facts": []
+      },
+      {
+       "participantId": "pH14",
+       "typeCode": "distributor",
+       "enrolledAtUs": "1767225600000000",
+       "facts": []
+      },
+      {
+       "participantId": "pH15",
+       "typeCode": "distributor",
+       "enrolledAtUs": "1767225600000000",
+       "facts": []
+      },
+      {
+       "participantId": "pH16",
+       "typeCode": "distributor",
+       "enrolledAtUs": "1767225600000000",
+       "facts": []
+      },
+      {
+       "participantId": "pH17",
+       "typeCode": "distributor",
+       "enrolledAtUs": "1767225600000000",
+       "facts": []
+      },
+      {
+       "participantId": "pH18",
+       "typeCode": "distributor",
+       "enrolledAtUs": "1767225600000000",
+       "facts": []
+      },
+      {
+       "participantId": "pH19",
+       "typeCode": "distributor",
+       "enrolledAtUs": "1767225600000000",
+       "facts": []
+      },
+      {
+       "participantId": "pH20",
+       "typeCode": "distributor",
+       "enrolledAtUs": "1767225600000000",
+       "facts": []
+      },
+      {
+       "participantId": "pH21",
+       "typeCode": "distributor",
+       "enrolledAtUs": "1767225600000000",
+       "facts": []
+      },
+      {
+       "participantId": "pH22",
+       "typeCode": "distributor",
+       "enrolledAtUs": "1767225600000000",
+       "facts": []
+      },
+      {
+       "participantId": "pH23",
+       "typeCode": "distributor",
+       "enrolledAtUs": "1767225600000000",
+       "facts": []
+      },
+      {
+       "participantId": "pH24",
+       "typeCode": "distributor",
+       "enrolledAtUs": "1767225600000000",
+       "facts": []
+      },
+      {
+       "participantId": "pH25",
+       "typeCode": "distributor",
+       "enrolledAtUs": "1767225600000000",
+       "facts": []
+      },
+      {
+       "participantId": "pH26",
+       "typeCode": "distributor",
+       "enrolledAtUs": "1767225600000000",
+       "facts": []
+      },
+      {
+       "participantId": "pH27",
+       "typeCode": "distributor",
+       "enrolledAtUs": "1767225600000000",
+       "facts": []
+      },
+      {
+       "participantId": "pH28",
+       "typeCode": "distributor",
+       "enrolledAtUs": "1767225600000000",
+       "facts": []
+      },
+      {
+       "participantId": "pH29",
+       "typeCode": "distributor",
+       "enrolledAtUs": "1767225600000000",
+       "facts": []
+      },
+      {
+       "participantId": "pH30",
+       "typeCode": "distributor",
+       "enrolledAtUs": "1767225600000000",
+       "facts": []
+      },
+      {
+       "participantId": "pH31",
+       "typeCode": "distributor",
+       "enrolledAtUs": "1767225600000000",
+       "facts": []
+      },
+      {
+       "participantId": "pH32",
+       "typeCode": "distributor",
+       "enrolledAtUs": "1767225600000000",
+       "facts": []
+      },
+      {
+       "participantId": "pH33",
+       "typeCode": "distributor",
+       "enrolledAtUs": "1767225600000000",
+       "facts": []
+      },
+      {
+       "participantId": "pH34",
+       "typeCode": "distributor",
+       "enrolledAtUs": "1767225600000000",
+       "facts": []
+      },
+      {
+       "participantId": "pH35",
+       "typeCode": "distributor",
+       "enrolledAtUs": "1767225600000000",
+       "facts": []
+      },
+      {
+       "participantId": "pH36",
+       "typeCode": "distributor",
+       "enrolledAtUs": "1767225600000000",
+       "facts": []
+      },
+      {
+       "participantId": "pH37",
+       "typeCode": "distributor",
+       "enrolledAtUs": "1767225600000000",
+       "facts": []
+      },
+      {
+       "participantId": "pH38",
+       "typeCode": "distributor",
+       "enrolledAtUs": "1767225600000000",
+       "facts": []
+      },
+      {
+       "participantId": "pH39",
+       "typeCode": "distributor",
+       "enrolledAtUs": "1767225600000000",
+       "facts": []
+      },
+      {
+       "participantId": "pH40",
+       "typeCode": "distributor",
+       "enrolledAtUs": "1767225600000000",
+       "facts": []
+      },
+      {
+       "participantId": "pH41",
+       "typeCode": "distributor",
+       "enrolledAtUs": "1767225600000000",
+       "facts": []
+      },
+      {
+       "participantId": "pH42",
+       "typeCode": "distributor",
+       "enrolledAtUs": "1767225600000000",
+       "facts": []
+      },
+      {
+       "participantId": "pH43",
+       "typeCode": "distributor",
+       "enrolledAtUs": "1767225600000000",
+       "facts": []
+      },
+      {
+       "participantId": "pH44",
+       "typeCode": "distributor",
+       "enrolledAtUs": "1767225600000000",
+       "facts": []
+      },
+      {
+       "participantId": "pH45",
+       "typeCode": "distributor",
+       "enrolledAtUs": "1767225600000000",
+       "facts": []
+      },
+      {
+       "participantId": "pH46",
+       "typeCode": "distributor",
+       "enrolledAtUs": "1767225600000000",
+       "facts": []
+      },
+      {
+       "participantId": "pH47",
+       "typeCode": "distributor",
+       "enrolledAtUs": "1767225600000000",
+       "facts": []
+      },
+      {
+       "participantId": "pH48",
+       "typeCode": "distributor",
+       "enrolledAtUs": "1767225600000000",
+       "facts": []
+      },
+      {
+       "participantId": "pH49",
+       "typeCode": "distributor",
+       "enrolledAtUs": "1767225600000000",
+       "facts": []
+      },
+      {
+       "participantId": "pH50",
+       "typeCode": "distributor",
+       "enrolledAtUs": "1767225600000000",
+       "facts": []
+      },
+      {
+       "participantId": "pH51",
+       "typeCode": "distributor",
+       "enrolledAtUs": "1767225600000000",
+       "facts": []
+      },
+      {
+       "participantId": "pH52",
+       "typeCode": "distributor",
+       "enrolledAtUs": "1767225600000000",
+       "facts": []
+      }
+     ],
+     "positions": [
+      {
+       "positionId": "ROOT",
+       "ownerParticipantId": "pROOT",
+       "status": "active",
+       "statusFromUs": "1767225600000000"
+      },
+      {
+       "positionId": "H01",
+       "ownerParticipantId": "pH01",
+       "status": "active",
+       "statusFromUs": "1767225600000000"
+      },
+      {
+       "positionId": "H02",
+       "ownerParticipantId": "pH02",
+       "status": "active",
+       "statusFromUs": "1767225600000000"
+      },
+      {
+       "positionId": "H03",
+       "ownerParticipantId": "pH03",
+       "status": "active",
+       "statusFromUs": "1767225600000000"
+      },
+      {
+       "positionId": "H04",
+       "ownerParticipantId": "pH04",
+       "status": "active",
+       "statusFromUs": "1767225600000000"
+      },
+      {
+       "positionId": "H05",
+       "ownerParticipantId": "pH05",
+       "status": "active",
+       "statusFromUs": "1767225600000000"
+      },
+      {
+       "positionId": "H06",
+       "ownerParticipantId": "pH06",
+       "status": "active",
+       "statusFromUs": "1767225600000000"
+      },
+      {
+       "positionId": "H07",
+       "ownerParticipantId": "pH07",
+       "status": "active",
+       "statusFromUs": "1767225600000000"
+      },
+      {
+       "positionId": "H08",
+       "ownerParticipantId": "pH08",
+       "status": "active",
+       "statusFromUs": "1767225600000000"
+      },
+      {
+       "positionId": "H09",
+       "ownerParticipantId": "pH09",
+       "status": "active",
+       "statusFromUs": "1767225600000000"
+      },
+      {
+       "positionId": "H10",
+       "ownerParticipantId": "pH10",
+       "status": "active",
+       "statusFromUs": "1767225600000000"
+      },
+      {
+       "positionId": "H11",
+       "ownerParticipantId": "pH11",
+       "status": "active",
+       "statusFromUs": "1767225600000000"
+      },
+      {
+       "positionId": "H12",
+       "ownerParticipantId": "pH12",
+       "status": "active",
+       "statusFromUs": "1767225600000000"
+      },
+      {
+       "positionId": "H13",
+       "ownerParticipantId": "pH13",
+       "status": "active",
+       "statusFromUs": "1767225600000000"
+      },
+      {
+       "positionId": "H14",
+       "ownerParticipantId": "pH14",
+       "status": "active",
+       "statusFromUs": "1767225600000000"
+      },
+      {
+       "positionId": "H15",
+       "ownerParticipantId": "pH15",
+       "status": "active",
+       "statusFromUs": "1767225600000000"
+      },
+      {
+       "positionId": "H16",
+       "ownerParticipantId": "pH16",
+       "status": "active",
+       "statusFromUs": "1767225600000000"
+      },
+      {
+       "positionId": "H17",
+       "ownerParticipantId": "pH17",
+       "status": "active",
+       "statusFromUs": "1767225600000000"
+      },
+      {
+       "positionId": "H18",
+       "ownerParticipantId": "pH18",
+       "status": "active",
+       "statusFromUs": "1767225600000000"
+      },
+      {
+       "positionId": "H19",
+       "ownerParticipantId": "pH19",
+       "status": "active",
+       "statusFromUs": "1767225600000000"
+      },
+      {
+       "positionId": "H20",
+       "ownerParticipantId": "pH20",
+       "status": "active",
+       "statusFromUs": "1767225600000000"
+      },
+      {
+       "positionId": "H21",
+       "ownerParticipantId": "pH21",
+       "status": "active",
+       "statusFromUs": "1767225600000000"
+      },
+      {
+       "positionId": "H22",
+       "ownerParticipantId": "pH22",
+       "status": "active",
+       "statusFromUs": "1767225600000000"
+      },
+      {
+       "positionId": "H23",
+       "ownerParticipantId": "pH23",
+       "status": "active",
+       "statusFromUs": "1767225600000000"
+      },
+      {
+       "positionId": "H24",
+       "ownerParticipantId": "pH24",
+       "status": "active",
+       "statusFromUs": "1767225600000000"
+      },
+      {
+       "positionId": "H25",
+       "ownerParticipantId": "pH25",
+       "status": "active",
+       "statusFromUs": "1767225600000000"
+      },
+      {
+       "positionId": "H26",
+       "ownerParticipantId": "pH26",
+       "status": "active",
+       "statusFromUs": "1767225600000000"
+      },
+      {
+       "positionId": "H27",
+       "ownerParticipantId": "pH27",
+       "status": "active",
+       "statusFromUs": "1767225600000000"
+      },
+      {
+       "positionId": "H28",
+       "ownerParticipantId": "pH28",
+       "status": "active",
+       "statusFromUs": "1767225600000000"
+      },
+      {
+       "positionId": "H29",
+       "ownerParticipantId": "pH29",
+       "status": "active",
+       "statusFromUs": "1767225600000000"
+      },
+      {
+       "positionId": "H30",
+       "ownerParticipantId": "pH30",
+       "status": "active",
+       "statusFromUs": "1767225600000000"
+      },
+      {
+       "positionId": "H31",
+       "ownerParticipantId": "pH31",
+       "status": "active",
+       "statusFromUs": "1767225600000000"
+      },
+      {
+       "positionId": "H32",
+       "ownerParticipantId": "pH32",
+       "status": "active",
+       "statusFromUs": "1767225600000000"
+      },
+      {
+       "positionId": "H33",
+       "ownerParticipantId": "pH33",
+       "status": "active",
+       "statusFromUs": "1767225600000000"
+      },
+      {
+       "positionId": "H34",
+       "ownerParticipantId": "pH34",
+       "status": "active",
+       "statusFromUs": "1767225600000000"
+      },
+      {
+       "positionId": "H35",
+       "ownerParticipantId": "pH35",
+       "status": "active",
+       "statusFromUs": "1767225600000000"
+      },
+      {
+       "positionId": "H36",
+       "ownerParticipantId": "pH36",
+       "status": "active",
+       "statusFromUs": "1767225600000000"
+      },
+      {
+       "positionId": "H37",
+       "ownerParticipantId": "pH37",
+       "status": "active",
+       "statusFromUs": "1767225600000000"
+      },
+      {
+       "positionId": "H38",
+       "ownerParticipantId": "pH38",
+       "status": "active",
+       "statusFromUs": "1767225600000000"
+      },
+      {
+       "positionId": "H39",
+       "ownerParticipantId": "pH39",
+       "status": "active",
+       "statusFromUs": "1767225600000000"
+      },
+      {
+       "positionId": "H40",
+       "ownerParticipantId": "pH40",
+       "status": "active",
+       "statusFromUs": "1767225600000000"
+      },
+      {
+       "positionId": "H41",
+       "ownerParticipantId": "pH41",
+       "status": "active",
+       "statusFromUs": "1767225600000000"
+      },
+      {
+       "positionId": "H42",
+       "ownerParticipantId": "pH42",
+       "status": "active",
+       "statusFromUs": "1767225600000000"
+      },
+      {
+       "positionId": "H43",
+       "ownerParticipantId": "pH43",
+       "status": "active",
+       "statusFromUs": "1767225600000000"
+      },
+      {
+       "positionId": "H44",
+       "ownerParticipantId": "pH44",
+       "status": "active",
+       "statusFromUs": "1767225600000000"
+      },
+      {
+       "positionId": "H45",
+       "ownerParticipantId": "pH45",
+       "status": "active",
+       "statusFromUs": "1767225600000000"
+      },
+      {
+       "positionId": "H46",
+       "ownerParticipantId": "pH46",
+       "status": "active",
+       "statusFromUs": "1767225600000000"
+      },
+      {
+       "positionId": "H47",
+       "ownerParticipantId": "pH47",
+       "status": "active",
+       "statusFromUs": "1767225600000000"
+      },
+      {
+       "positionId": "H48",
+       "ownerParticipantId": "pH48",
+       "status": "active",
+       "statusFromUs": "1767225600000000"
+      },
+      {
+       "positionId": "H49",
+       "ownerParticipantId": "pH49",
+       "status": "active",
+       "statusFromUs": "1767225600000000"
+      },
+      {
+       "positionId": "H50",
+       "ownerParticipantId": "pH50",
+       "status": "active",
+       "statusFromUs": "1767225600000000"
+      },
+      {
+       "positionId": "H51",
+       "ownerParticipantId": "pH51",
+       "status": "active",
+       "statusFromUs": "1767225600000000"
+      },
+      {
+       "positionId": "H52",
+       "ownerParticipantId": "pH52",
+       "status": "active",
+       "statusFromUs": "1767225600000000"
+      }
+     ],
+     "relationships": [
+      {
+       "kind": "sponsor",
+       "parentPositionId": "ROOT",
+       "childPositionId": "H01",
+       "leg": null,
+       "validFromUs": "1767225600000000",
+       "validToUs": null,
+       "recordedAtUs": "1767225600000000",
+       "supersededAtUs": null
+      },
+      {
+       "kind": "sponsor",
+       "parentPositionId": "ROOT",
+       "childPositionId": "H02",
+       "leg": null,
+       "validFromUs": "1767225600000000",
+       "validToUs": null,
+       "recordedAtUs": "1767225600000000",
+       "supersededAtUs": null
+      },
+      {
+       "kind": "sponsor",
+       "parentPositionId": "ROOT",
+       "childPositionId": "H03",
+       "leg": null,
+       "validFromUs": "1767225600000000",
+       "validToUs": null,
+       "recordedAtUs": "1767225600000000",
+       "supersededAtUs": null
+      },
+      {
+       "kind": "sponsor",
+       "parentPositionId": "ROOT",
+       "childPositionId": "H04",
+       "leg": null,
+       "validFromUs": "1767225600000000",
+       "validToUs": null,
+       "recordedAtUs": "1767225600000000",
+       "supersededAtUs": null
+      },
+      {
+       "kind": "sponsor",
+       "parentPositionId": "ROOT",
+       "childPositionId": "H05",
+       "leg": null,
+       "validFromUs": "1767225600000000",
+       "validToUs": null,
+       "recordedAtUs": "1767225600000000",
+       "supersededAtUs": null
+      },
+      {
+       "kind": "sponsor",
+       "parentPositionId": "ROOT",
+       "childPositionId": "H06",
+       "leg": null,
+       "validFromUs": "1767225600000000",
+       "validToUs": null,
+       "recordedAtUs": "1767225600000000",
+       "supersededAtUs": null
+      },
+      {
+       "kind": "sponsor",
+       "parentPositionId": "ROOT",
+       "childPositionId": "H07",
+       "leg": null,
+       "validFromUs": "1767225600000000",
+       "validToUs": null,
+       "recordedAtUs": "1767225600000000",
+       "supersededAtUs": null
+      },
+      {
+       "kind": "sponsor",
+       "parentPositionId": "ROOT",
+       "childPositionId": "H08",
+       "leg": null,
+       "validFromUs": "1767225600000000",
+       "validToUs": null,
+       "recordedAtUs": "1767225600000000",
+       "supersededAtUs": null
+      },
+      {
+       "kind": "sponsor",
+       "parentPositionId": "ROOT",
+       "childPositionId": "H09",
+       "leg": null,
+       "validFromUs": "1767225600000000",
+       "validToUs": null,
+       "recordedAtUs": "1767225600000000",
+       "supersededAtUs": null
+      },
+      {
+       "kind": "sponsor",
+       "parentPositionId": "ROOT",
+       "childPositionId": "H10",
+       "leg": null,
+       "validFromUs": "1767225600000000",
+       "validToUs": null,
+       "recordedAtUs": "1767225600000000",
+       "supersededAtUs": null
+      },
+      {
+       "kind": "sponsor",
+       "parentPositionId": "ROOT",
+       "childPositionId": "H11",
+       "leg": null,
+       "validFromUs": "1767225600000000",
+       "validToUs": null,
+       "recordedAtUs": "1767225600000000",
+       "supersededAtUs": null
+      },
+      {
+       "kind": "sponsor",
+       "parentPositionId": "ROOT",
+       "childPositionId": "H12",
+       "leg": null,
+       "validFromUs": "1767225600000000",
+       "validToUs": null,
+       "recordedAtUs": "1767225600000000",
+       "supersededAtUs": null
+      },
+      {
+       "kind": "sponsor",
+       "parentPositionId": "ROOT",
+       "childPositionId": "H13",
+       "leg": null,
+       "validFromUs": "1767225600000000",
+       "validToUs": null,
+       "recordedAtUs": "1767225600000000",
+       "supersededAtUs": null
+      },
+      {
+       "kind": "sponsor",
+       "parentPositionId": "ROOT",
+       "childPositionId": "H14",
+       "leg": null,
+       "validFromUs": "1767225600000000",
+       "validToUs": null,
+       "recordedAtUs": "1767225600000000",
+       "supersededAtUs": null
+      },
+      {
+       "kind": "sponsor",
+       "parentPositionId": "ROOT",
+       "childPositionId": "H15",
+       "leg": null,
+       "validFromUs": "1767225600000000",
+       "validToUs": null,
+       "recordedAtUs": "1767225600000000",
+       "supersededAtUs": null
+      },
+      {
+       "kind": "sponsor",
+       "parentPositionId": "ROOT",
+       "childPositionId": "H16",
+       "leg": null,
+       "validFromUs": "1767225600000000",
+       "validToUs": null,
+       "recordedAtUs": "1767225600000000",
+       "supersededAtUs": null
+      },
+      {
+       "kind": "sponsor",
+       "parentPositionId": "ROOT",
+       "childPositionId": "H17",
+       "leg": null,
+       "validFromUs": "1767225600000000",
+       "validToUs": null,
+       "recordedAtUs": "1767225600000000",
+       "supersededAtUs": null
+      },
+      {
+       "kind": "sponsor",
+       "parentPositionId": "ROOT",
+       "childPositionId": "H18",
+       "leg": null,
+       "validFromUs": "1767225600000000",
+       "validToUs": null,
+       "recordedAtUs": "1767225600000000",
+       "supersededAtUs": null
+      },
+      {
+       "kind": "sponsor",
+       "parentPositionId": "ROOT",
+       "childPositionId": "H19",
+       "leg": null,
+       "validFromUs": "1767225600000000",
+       "validToUs": null,
+       "recordedAtUs": "1767225600000000",
+       "supersededAtUs": null
+      },
+      {
+       "kind": "sponsor",
+       "parentPositionId": "ROOT",
+       "childPositionId": "H20",
+       "leg": null,
+       "validFromUs": "1767225600000000",
+       "validToUs": null,
+       "recordedAtUs": "1767225600000000",
+       "supersededAtUs": null
+      },
+      {
+       "kind": "sponsor",
+       "parentPositionId": "ROOT",
+       "childPositionId": "H21",
+       "leg": null,
+       "validFromUs": "1767225600000000",
+       "validToUs": null,
+       "recordedAtUs": "1767225600000000",
+       "supersededAtUs": null
+      },
+      {
+       "kind": "sponsor",
+       "parentPositionId": "ROOT",
+       "childPositionId": "H22",
+       "leg": null,
+       "validFromUs": "1767225600000000",
+       "validToUs": null,
+       "recordedAtUs": "1767225600000000",
+       "supersededAtUs": null
+      },
+      {
+       "kind": "sponsor",
+       "parentPositionId": "ROOT",
+       "childPositionId": "H23",
+       "leg": null,
+       "validFromUs": "1767225600000000",
+       "validToUs": null,
+       "recordedAtUs": "1767225600000000",
+       "supersededAtUs": null
+      },
+      {
+       "kind": "sponsor",
+       "parentPositionId": "ROOT",
+       "childPositionId": "H24",
+       "leg": null,
+       "validFromUs": "1767225600000000",
+       "validToUs": null,
+       "recordedAtUs": "1767225600000000",
+       "supersededAtUs": null
+      },
+      {
+       "kind": "sponsor",
+       "parentPositionId": "ROOT",
+       "childPositionId": "H25",
+       "leg": null,
+       "validFromUs": "1767225600000000",
+       "validToUs": null,
+       "recordedAtUs": "1767225600000000",
+       "supersededAtUs": null
+      },
+      {
+       "kind": "sponsor",
+       "parentPositionId": "ROOT",
+       "childPositionId": "H26",
+       "leg": null,
+       "validFromUs": "1767225600000000",
+       "validToUs": null,
+       "recordedAtUs": "1767225600000000",
+       "supersededAtUs": null
+      },
+      {
+       "kind": "sponsor",
+       "parentPositionId": "ROOT",
+       "childPositionId": "H27",
+       "leg": null,
+       "validFromUs": "1767225600000000",
+       "validToUs": null,
+       "recordedAtUs": "1767225600000000",
+       "supersededAtUs": null
+      },
+      {
+       "kind": "sponsor",
+       "parentPositionId": "ROOT",
+       "childPositionId": "H28",
+       "leg": null,
+       "validFromUs": "1767225600000000",
+       "validToUs": null,
+       "recordedAtUs": "1767225600000000",
+       "supersededAtUs": null
+      },
+      {
+       "kind": "sponsor",
+       "parentPositionId": "ROOT",
+       "childPositionId": "H29",
+       "leg": null,
+       "validFromUs": "1767225600000000",
+       "validToUs": null,
+       "recordedAtUs": "1767225600000000",
+       "supersededAtUs": null
+      },
+      {
+       "kind": "sponsor",
+       "parentPositionId": "ROOT",
+       "childPositionId": "H30",
+       "leg": null,
+       "validFromUs": "1767225600000000",
+       "validToUs": null,
+       "recordedAtUs": "1767225600000000",
+       "supersededAtUs": null
+      },
+      {
+       "kind": "sponsor",
+       "parentPositionId": "ROOT",
+       "childPositionId": "H31",
+       "leg": null,
+       "validFromUs": "1767225600000000",
+       "validToUs": null,
+       "recordedAtUs": "1767225600000000",
+       "supersededAtUs": null
+      },
+      {
+       "kind": "sponsor",
+       "parentPositionId": "ROOT",
+       "childPositionId": "H32",
+       "leg": null,
+       "validFromUs": "1767225600000000",
+       "validToUs": null,
+       "recordedAtUs": "1767225600000000",
+       "supersededAtUs": null
+      },
+      {
+       "kind": "sponsor",
+       "parentPositionId": "ROOT",
+       "childPositionId": "H33",
+       "leg": null,
+       "validFromUs": "1767225600000000",
+       "validToUs": null,
+       "recordedAtUs": "1767225600000000",
+       "supersededAtUs": null
+      },
+      {
+       "kind": "sponsor",
+       "parentPositionId": "ROOT",
+       "childPositionId": "H34",
+       "leg": null,
+       "validFromUs": "1767225600000000",
+       "validToUs": null,
+       "recordedAtUs": "1767225600000000",
+       "supersededAtUs": null
+      },
+      {
+       "kind": "sponsor",
+       "parentPositionId": "ROOT",
+       "childPositionId": "H35",
+       "leg": null,
+       "validFromUs": "1767225600000000",
+       "validToUs": null,
+       "recordedAtUs": "1767225600000000",
+       "supersededAtUs": null
+      },
+      {
+       "kind": "sponsor",
+       "parentPositionId": "ROOT",
+       "childPositionId": "H36",
+       "leg": null,
+       "validFromUs": "1767225600000000",
+       "validToUs": null,
+       "recordedAtUs": "1767225600000000",
+       "supersededAtUs": null
+      },
+      {
+       "kind": "sponsor",
+       "parentPositionId": "ROOT",
+       "childPositionId": "H37",
+       "leg": null,
+       "validFromUs": "1767225600000000",
+       "validToUs": null,
+       "recordedAtUs": "1767225600000000",
+       "supersededAtUs": null
+      },
+      {
+       "kind": "sponsor",
+       "parentPositionId": "ROOT",
+       "childPositionId": "H38",
+       "leg": null,
+       "validFromUs": "1767225600000000",
+       "validToUs": null,
+       "recordedAtUs": "1767225600000000",
+       "supersededAtUs": null
+      },
+      {
+       "kind": "sponsor",
+       "parentPositionId": "ROOT",
+       "childPositionId": "H39",
+       "leg": null,
+       "validFromUs": "1767225600000000",
+       "validToUs": null,
+       "recordedAtUs": "1767225600000000",
+       "supersededAtUs": null
+      },
+      {
+       "kind": "sponsor",
+       "parentPositionId": "ROOT",
+       "childPositionId": "H40",
+       "leg": null,
+       "validFromUs": "1767225600000000",
+       "validToUs": null,
+       "recordedAtUs": "1767225600000000",
+       "supersededAtUs": null
+      },
+      {
+       "kind": "sponsor",
+       "parentPositionId": "ROOT",
+       "childPositionId": "H41",
+       "leg": null,
+       "validFromUs": "1767225600000000",
+       "validToUs": null,
+       "recordedAtUs": "1767225600000000",
+       "supersededAtUs": null
+      },
+      {
+       "kind": "sponsor",
+       "parentPositionId": "ROOT",
+       "childPositionId": "H42",
+       "leg": null,
+       "validFromUs": "1767225600000000",
+       "validToUs": null,
+       "recordedAtUs": "1767225600000000",
+       "supersededAtUs": null
+      },
+      {
+       "kind": "sponsor",
+       "parentPositionId": "ROOT",
+       "childPositionId": "H43",
+       "leg": null,
+       "validFromUs": "1767225600000000",
+       "validToUs": null,
+       "recordedAtUs": "1767225600000000",
+       "supersededAtUs": null
+      },
+      {
+       "kind": "sponsor",
+       "parentPositionId": "ROOT",
+       "childPositionId": "H44",
+       "leg": null,
+       "validFromUs": "1767225600000000",
+       "validToUs": null,
+       "recordedAtUs": "1767225600000000",
+       "supersededAtUs": null
+      },
+      {
+       "kind": "sponsor",
+       "parentPositionId": "ROOT",
+       "childPositionId": "H45",
+       "leg": null,
+       "validFromUs": "1767225600000000",
+       "validToUs": null,
+       "recordedAtUs": "1767225600000000",
+       "supersededAtUs": null
+      },
+      {
+       "kind": "sponsor",
+       "parentPositionId": "ROOT",
+       "childPositionId": "H46",
+       "leg": null,
+       "validFromUs": "1767225600000000",
+       "validToUs": null,
+       "recordedAtUs": "1767225600000000",
+       "supersededAtUs": null
+      },
+      {
+       "kind": "sponsor",
+       "parentPositionId": "ROOT",
+       "childPositionId": "H47",
+       "leg": null,
+       "validFromUs": "1767225600000000",
+       "validToUs": null,
+       "recordedAtUs": "1767225600000000",
+       "supersededAtUs": null
+      },
+      {
+       "kind": "sponsor",
+       "parentPositionId": "ROOT",
+       "childPositionId": "H48",
+       "leg": null,
+       "validFromUs": "1767225600000000",
+       "validToUs": null,
+       "recordedAtUs": "1767225600000000",
+       "supersededAtUs": null
+      },
+      {
+       "kind": "sponsor",
+       "parentPositionId": "ROOT",
+       "childPositionId": "H49",
+       "leg": null,
+       "validFromUs": "1767225600000000",
+       "validToUs": null,
+       "recordedAtUs": "1767225600000000",
+       "supersededAtUs": null
+      },
+      {
+       "kind": "sponsor",
+       "parentPositionId": "ROOT",
+       "childPositionId": "H50",
+       "leg": null,
+       "validFromUs": "1767225600000000",
+       "validToUs": null,
+       "recordedAtUs": "1767225600000000",
+       "supersededAtUs": null
+      },
+      {
+       "kind": "sponsor",
+       "parentPositionId": "ROOT",
+       "childPositionId": "H51",
+       "leg": null,
+       "validFromUs": "1767225600000000",
+       "validToUs": null,
+       "recordedAtUs": "1767225600000000",
+       "supersededAtUs": null
+      },
+      {
+       "kind": "sponsor",
+       "parentPositionId": "ROOT",
+       "childPositionId": "H52",
+       "leg": null,
+       "validFromUs": "1767225600000000",
+       "validToUs": null,
+       "recordedAtUs": "1767225600000000",
+       "supersededAtUs": null
+      }
+     ],
+     "orders": [
+      {
+       "orderId": "o-company",
+       "buyerParticipantId": "KC",
+       "buyerTypeCode": "customer",
+       "purpose": "customer",
+       "creditPositionId": null,
+       "creditedAtUs": "1803945600000000",
+       "lines": [
+        {
+         "lineId": "1",
+         "productId": "SKU",
+         "itemClass": "product",
+         "category": "general",
+         "quantity": 1,
+         "amountMinor": "100000000",
+         "taxMinor": "0",
+         "volumes": []
+        }
+       ]
+      },
+      {
+       "orderId": "o-H01",
+       "buyerParticipantId": "pH01",
+       "buyerTypeCode": "distributor",
+       "purpose": "personal",
+       "creditPositionId": "H01",
+       "creditedAtUs": "1803945600000000",
+       "lines": [
+        {
+         "lineId": "1",
+         "productId": "SKU",
+         "itemClass": "product",
+         "category": "general",
+         "quantity": 1,
+         "amountMinor": "0",
+         "taxMinor": "0",
+         "volumes": [
+          {
+           "name": "qv",
+           "perUnitMinor": "1"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "orderId": "o-H02",
+       "buyerParticipantId": "pH02",
+       "buyerTypeCode": "distributor",
+       "purpose": "personal",
+       "creditPositionId": "H02",
+       "creditedAtUs": "1803945600000000",
+       "lines": [
+        {
+         "lineId": "1",
+         "productId": "SKU",
+         "itemClass": "product",
+         "category": "general",
+         "quantity": 1,
+         "amountMinor": "0",
+         "taxMinor": "0",
+         "volumes": [
+          {
+           "name": "qv",
+           "perUnitMinor": "1"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "orderId": "o-H03",
+       "buyerParticipantId": "pH03",
+       "buyerTypeCode": "distributor",
+       "purpose": "personal",
+       "creditPositionId": "H03",
+       "creditedAtUs": "1803945600000000",
+       "lines": [
+        {
+         "lineId": "1",
+         "productId": "SKU",
+         "itemClass": "product",
+         "category": "general",
+         "quantity": 1,
+         "amountMinor": "0",
+         "taxMinor": "0",
+         "volumes": [
+          {
+           "name": "qv",
+           "perUnitMinor": "1"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "orderId": "o-H04",
+       "buyerParticipantId": "pH04",
+       "buyerTypeCode": "distributor",
+       "purpose": "personal",
+       "creditPositionId": "H04",
+       "creditedAtUs": "1803945600000000",
+       "lines": [
+        {
+         "lineId": "1",
+         "productId": "SKU",
+         "itemClass": "product",
+         "category": "general",
+         "quantity": 1,
+         "amountMinor": "0",
+         "taxMinor": "0",
+         "volumes": [
+          {
+           "name": "qv",
+           "perUnitMinor": "1"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "orderId": "o-H05",
+       "buyerParticipantId": "pH05",
+       "buyerTypeCode": "distributor",
+       "purpose": "personal",
+       "creditPositionId": "H05",
+       "creditedAtUs": "1803945600000000",
+       "lines": [
+        {
+         "lineId": "1",
+         "productId": "SKU",
+         "itemClass": "product",
+         "category": "general",
+         "quantity": 1,
+         "amountMinor": "0",
+         "taxMinor": "0",
+         "volumes": [
+          {
+           "name": "qv",
+           "perUnitMinor": "1"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "orderId": "o-H06",
+       "buyerParticipantId": "pH06",
+       "buyerTypeCode": "distributor",
+       "purpose": "personal",
+       "creditPositionId": "H06",
+       "creditedAtUs": "1803945600000000",
+       "lines": [
+        {
+         "lineId": "1",
+         "productId": "SKU",
+         "itemClass": "product",
+         "category": "general",
+         "quantity": 1,
+         "amountMinor": "0",
+         "taxMinor": "0",
+         "volumes": [
+          {
+           "name": "qv",
+           "perUnitMinor": "1"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "orderId": "o-H07",
+       "buyerParticipantId": "pH07",
+       "buyerTypeCode": "distributor",
+       "purpose": "personal",
+       "creditPositionId": "H07",
+       "creditedAtUs": "1803945600000000",
+       "lines": [
+        {
+         "lineId": "1",
+         "productId": "SKU",
+         "itemClass": "product",
+         "category": "general",
+         "quantity": 1,
+         "amountMinor": "0",
+         "taxMinor": "0",
+         "volumes": [
+          {
+           "name": "qv",
+           "perUnitMinor": "1"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "orderId": "o-H08",
+       "buyerParticipantId": "pH08",
+       "buyerTypeCode": "distributor",
+       "purpose": "personal",
+       "creditPositionId": "H08",
+       "creditedAtUs": "1803945600000000",
+       "lines": [
+        {
+         "lineId": "1",
+         "productId": "SKU",
+         "itemClass": "product",
+         "category": "general",
+         "quantity": 1,
+         "amountMinor": "0",
+         "taxMinor": "0",
+         "volumes": [
+          {
+           "name": "qv",
+           "perUnitMinor": "1"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "orderId": "o-H09",
+       "buyerParticipantId": "pH09",
+       "buyerTypeCode": "distributor",
+       "purpose": "personal",
+       "creditPositionId": "H09",
+       "creditedAtUs": "1803945600000000",
+       "lines": [
+        {
+         "lineId": "1",
+         "productId": "SKU",
+         "itemClass": "product",
+         "category": "general",
+         "quantity": 1,
+         "amountMinor": "0",
+         "taxMinor": "0",
+         "volumes": [
+          {
+           "name": "qv",
+           "perUnitMinor": "1"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "orderId": "o-H10",
+       "buyerParticipantId": "pH10",
+       "buyerTypeCode": "distributor",
+       "purpose": "personal",
+       "creditPositionId": "H10",
+       "creditedAtUs": "1803945600000000",
+       "lines": [
+        {
+         "lineId": "1",
+         "productId": "SKU",
+         "itemClass": "product",
+         "category": "general",
+         "quantity": 1,
+         "amountMinor": "0",
+         "taxMinor": "0",
+         "volumes": [
+          {
+           "name": "qv",
+           "perUnitMinor": "1"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "orderId": "o-H11",
+       "buyerParticipantId": "pH11",
+       "buyerTypeCode": "distributor",
+       "purpose": "personal",
+       "creditPositionId": "H11",
+       "creditedAtUs": "1803945600000000",
+       "lines": [
+        {
+         "lineId": "1",
+         "productId": "SKU",
+         "itemClass": "product",
+         "category": "general",
+         "quantity": 1,
+         "amountMinor": "0",
+         "taxMinor": "0",
+         "volumes": [
+          {
+           "name": "qv",
+           "perUnitMinor": "1"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "orderId": "o-H12",
+       "buyerParticipantId": "pH12",
+       "buyerTypeCode": "distributor",
+       "purpose": "personal",
+       "creditPositionId": "H12",
+       "creditedAtUs": "1803945600000000",
+       "lines": [
+        {
+         "lineId": "1",
+         "productId": "SKU",
+         "itemClass": "product",
+         "category": "general",
+         "quantity": 1,
+         "amountMinor": "0",
+         "taxMinor": "0",
+         "volumes": [
+          {
+           "name": "qv",
+           "perUnitMinor": "1"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "orderId": "o-H13",
+       "buyerParticipantId": "pH13",
+       "buyerTypeCode": "distributor",
+       "purpose": "personal",
+       "creditPositionId": "H13",
+       "creditedAtUs": "1803945600000000",
+       "lines": [
+        {
+         "lineId": "1",
+         "productId": "SKU",
+         "itemClass": "product",
+         "category": "general",
+         "quantity": 1,
+         "amountMinor": "0",
+         "taxMinor": "0",
+         "volumes": [
+          {
+           "name": "qv",
+           "perUnitMinor": "1"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "orderId": "o-H14",
+       "buyerParticipantId": "pH14",
+       "buyerTypeCode": "distributor",
+       "purpose": "personal",
+       "creditPositionId": "H14",
+       "creditedAtUs": "1803945600000000",
+       "lines": [
+        {
+         "lineId": "1",
+         "productId": "SKU",
+         "itemClass": "product",
+         "category": "general",
+         "quantity": 1,
+         "amountMinor": "0",
+         "taxMinor": "0",
+         "volumes": [
+          {
+           "name": "qv",
+           "perUnitMinor": "1"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "orderId": "o-H15",
+       "buyerParticipantId": "pH15",
+       "buyerTypeCode": "distributor",
+       "purpose": "personal",
+       "creditPositionId": "H15",
+       "creditedAtUs": "1803945600000000",
+       "lines": [
+        {
+         "lineId": "1",
+         "productId": "SKU",
+         "itemClass": "product",
+         "category": "general",
+         "quantity": 1,
+         "amountMinor": "0",
+         "taxMinor": "0",
+         "volumes": [
+          {
+           "name": "qv",
+           "perUnitMinor": "1"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "orderId": "o-H16",
+       "buyerParticipantId": "pH16",
+       "buyerTypeCode": "distributor",
+       "purpose": "personal",
+       "creditPositionId": "H16",
+       "creditedAtUs": "1803945600000000",
+       "lines": [
+        {
+         "lineId": "1",
+         "productId": "SKU",
+         "itemClass": "product",
+         "category": "general",
+         "quantity": 1,
+         "amountMinor": "0",
+         "taxMinor": "0",
+         "volumes": [
+          {
+           "name": "qv",
+           "perUnitMinor": "1"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "orderId": "o-H17",
+       "buyerParticipantId": "pH17",
+       "buyerTypeCode": "distributor",
+       "purpose": "personal",
+       "creditPositionId": "H17",
+       "creditedAtUs": "1803945600000000",
+       "lines": [
+        {
+         "lineId": "1",
+         "productId": "SKU",
+         "itemClass": "product",
+         "category": "general",
+         "quantity": 1,
+         "amountMinor": "0",
+         "taxMinor": "0",
+         "volumes": [
+          {
+           "name": "qv",
+           "perUnitMinor": "1"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "orderId": "o-H18",
+       "buyerParticipantId": "pH18",
+       "buyerTypeCode": "distributor",
+       "purpose": "personal",
+       "creditPositionId": "H18",
+       "creditedAtUs": "1803945600000000",
+       "lines": [
+        {
+         "lineId": "1",
+         "productId": "SKU",
+         "itemClass": "product",
+         "category": "general",
+         "quantity": 1,
+         "amountMinor": "0",
+         "taxMinor": "0",
+         "volumes": [
+          {
+           "name": "qv",
+           "perUnitMinor": "1"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "orderId": "o-H19",
+       "buyerParticipantId": "pH19",
+       "buyerTypeCode": "distributor",
+       "purpose": "personal",
+       "creditPositionId": "H19",
+       "creditedAtUs": "1803945600000000",
+       "lines": [
+        {
+         "lineId": "1",
+         "productId": "SKU",
+         "itemClass": "product",
+         "category": "general",
+         "quantity": 1,
+         "amountMinor": "0",
+         "taxMinor": "0",
+         "volumes": [
+          {
+           "name": "qv",
+           "perUnitMinor": "1"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "orderId": "o-H20",
+       "buyerParticipantId": "pH20",
+       "buyerTypeCode": "distributor",
+       "purpose": "personal",
+       "creditPositionId": "H20",
+       "creditedAtUs": "1803945600000000",
+       "lines": [
+        {
+         "lineId": "1",
+         "productId": "SKU",
+         "itemClass": "product",
+         "category": "general",
+         "quantity": 1,
+         "amountMinor": "0",
+         "taxMinor": "0",
+         "volumes": [
+          {
+           "name": "qv",
+           "perUnitMinor": "1"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "orderId": "o-H21",
+       "buyerParticipantId": "pH21",
+       "buyerTypeCode": "distributor",
+       "purpose": "personal",
+       "creditPositionId": "H21",
+       "creditedAtUs": "1803945600000000",
+       "lines": [
+        {
+         "lineId": "1",
+         "productId": "SKU",
+         "itemClass": "product",
+         "category": "general",
+         "quantity": 1,
+         "amountMinor": "0",
+         "taxMinor": "0",
+         "volumes": [
+          {
+           "name": "qv",
+           "perUnitMinor": "1"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "orderId": "o-H22",
+       "buyerParticipantId": "pH22",
+       "buyerTypeCode": "distributor",
+       "purpose": "personal",
+       "creditPositionId": "H22",
+       "creditedAtUs": "1803945600000000",
+       "lines": [
+        {
+         "lineId": "1",
+         "productId": "SKU",
+         "itemClass": "product",
+         "category": "general",
+         "quantity": 1,
+         "amountMinor": "0",
+         "taxMinor": "0",
+         "volumes": [
+          {
+           "name": "qv",
+           "perUnitMinor": "1"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "orderId": "o-H23",
+       "buyerParticipantId": "pH23",
+       "buyerTypeCode": "distributor",
+       "purpose": "personal",
+       "creditPositionId": "H23",
+       "creditedAtUs": "1803945600000000",
+       "lines": [
+        {
+         "lineId": "1",
+         "productId": "SKU",
+         "itemClass": "product",
+         "category": "general",
+         "quantity": 1,
+         "amountMinor": "0",
+         "taxMinor": "0",
+         "volumes": [
+          {
+           "name": "qv",
+           "perUnitMinor": "1"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "orderId": "o-H24",
+       "buyerParticipantId": "pH24",
+       "buyerTypeCode": "distributor",
+       "purpose": "personal",
+       "creditPositionId": "H24",
+       "creditedAtUs": "1803945600000000",
+       "lines": [
+        {
+         "lineId": "1",
+         "productId": "SKU",
+         "itemClass": "product",
+         "category": "general",
+         "quantity": 1,
+         "amountMinor": "0",
+         "taxMinor": "0",
+         "volumes": [
+          {
+           "name": "qv",
+           "perUnitMinor": "1"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "orderId": "o-H25",
+       "buyerParticipantId": "pH25",
+       "buyerTypeCode": "distributor",
+       "purpose": "personal",
+       "creditPositionId": "H25",
+       "creditedAtUs": "1803945600000000",
+       "lines": [
+        {
+         "lineId": "1",
+         "productId": "SKU",
+         "itemClass": "product",
+         "category": "general",
+         "quantity": 1,
+         "amountMinor": "0",
+         "taxMinor": "0",
+         "volumes": [
+          {
+           "name": "qv",
+           "perUnitMinor": "1"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "orderId": "o-H26",
+       "buyerParticipantId": "pH26",
+       "buyerTypeCode": "distributor",
+       "purpose": "personal",
+       "creditPositionId": "H26",
+       "creditedAtUs": "1803945600000000",
+       "lines": [
+        {
+         "lineId": "1",
+         "productId": "SKU",
+         "itemClass": "product",
+         "category": "general",
+         "quantity": 1,
+         "amountMinor": "0",
+         "taxMinor": "0",
+         "volumes": [
+          {
+           "name": "qv",
+           "perUnitMinor": "1"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "orderId": "o-H27",
+       "buyerParticipantId": "pH27",
+       "buyerTypeCode": "distributor",
+       "purpose": "personal",
+       "creditPositionId": "H27",
+       "creditedAtUs": "1803945600000000",
+       "lines": [
+        {
+         "lineId": "1",
+         "productId": "SKU",
+         "itemClass": "product",
+         "category": "general",
+         "quantity": 1,
+         "amountMinor": "0",
+         "taxMinor": "0",
+         "volumes": [
+          {
+           "name": "qv",
+           "perUnitMinor": "1"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "orderId": "o-H28",
+       "buyerParticipantId": "pH28",
+       "buyerTypeCode": "distributor",
+       "purpose": "personal",
+       "creditPositionId": "H28",
+       "creditedAtUs": "1803945600000000",
+       "lines": [
+        {
+         "lineId": "1",
+         "productId": "SKU",
+         "itemClass": "product",
+         "category": "general",
+         "quantity": 1,
+         "amountMinor": "0",
+         "taxMinor": "0",
+         "volumes": [
+          {
+           "name": "qv",
+           "perUnitMinor": "1"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "orderId": "o-H29",
+       "buyerParticipantId": "pH29",
+       "buyerTypeCode": "distributor",
+       "purpose": "personal",
+       "creditPositionId": "H29",
+       "creditedAtUs": "1803945600000000",
+       "lines": [
+        {
+         "lineId": "1",
+         "productId": "SKU",
+         "itemClass": "product",
+         "category": "general",
+         "quantity": 1,
+         "amountMinor": "0",
+         "taxMinor": "0",
+         "volumes": [
+          {
+           "name": "qv",
+           "perUnitMinor": "1"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "orderId": "o-H30",
+       "buyerParticipantId": "pH30",
+       "buyerTypeCode": "distributor",
+       "purpose": "personal",
+       "creditPositionId": "H30",
+       "creditedAtUs": "1803945600000000",
+       "lines": [
+        {
+         "lineId": "1",
+         "productId": "SKU",
+         "itemClass": "product",
+         "category": "general",
+         "quantity": 1,
+         "amountMinor": "0",
+         "taxMinor": "0",
+         "volumes": [
+          {
+           "name": "qv",
+           "perUnitMinor": "1"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "orderId": "o-H31",
+       "buyerParticipantId": "pH31",
+       "buyerTypeCode": "distributor",
+       "purpose": "personal",
+       "creditPositionId": "H31",
+       "creditedAtUs": "1803945600000000",
+       "lines": [
+        {
+         "lineId": "1",
+         "productId": "SKU",
+         "itemClass": "product",
+         "category": "general",
+         "quantity": 1,
+         "amountMinor": "0",
+         "taxMinor": "0",
+         "volumes": [
+          {
+           "name": "qv",
+           "perUnitMinor": "1"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "orderId": "o-H32",
+       "buyerParticipantId": "pH32",
+       "buyerTypeCode": "distributor",
+       "purpose": "personal",
+       "creditPositionId": "H32",
+       "creditedAtUs": "1803945600000000",
+       "lines": [
+        {
+         "lineId": "1",
+         "productId": "SKU",
+         "itemClass": "product",
+         "category": "general",
+         "quantity": 1,
+         "amountMinor": "0",
+         "taxMinor": "0",
+         "volumes": [
+          {
+           "name": "qv",
+           "perUnitMinor": "1"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "orderId": "o-H33",
+       "buyerParticipantId": "pH33",
+       "buyerTypeCode": "distributor",
+       "purpose": "personal",
+       "creditPositionId": "H33",
+       "creditedAtUs": "1803945600000000",
+       "lines": [
+        {
+         "lineId": "1",
+         "productId": "SKU",
+         "itemClass": "product",
+         "category": "general",
+         "quantity": 1,
+         "amountMinor": "0",
+         "taxMinor": "0",
+         "volumes": [
+          {
+           "name": "qv",
+           "perUnitMinor": "1"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "orderId": "o-H34",
+       "buyerParticipantId": "pH34",
+       "buyerTypeCode": "distributor",
+       "purpose": "personal",
+       "creditPositionId": "H34",
+       "creditedAtUs": "1803945600000000",
+       "lines": [
+        {
+         "lineId": "1",
+         "productId": "SKU",
+         "itemClass": "product",
+         "category": "general",
+         "quantity": 1,
+         "amountMinor": "0",
+         "taxMinor": "0",
+         "volumes": [
+          {
+           "name": "qv",
+           "perUnitMinor": "1"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "orderId": "o-H35",
+       "buyerParticipantId": "pH35",
+       "buyerTypeCode": "distributor",
+       "purpose": "personal",
+       "creditPositionId": "H35",
+       "creditedAtUs": "1803945600000000",
+       "lines": [
+        {
+         "lineId": "1",
+         "productId": "SKU",
+         "itemClass": "product",
+         "category": "general",
+         "quantity": 1,
+         "amountMinor": "0",
+         "taxMinor": "0",
+         "volumes": [
+          {
+           "name": "qv",
+           "perUnitMinor": "1"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "orderId": "o-H36",
+       "buyerParticipantId": "pH36",
+       "buyerTypeCode": "distributor",
+       "purpose": "personal",
+       "creditPositionId": "H36",
+       "creditedAtUs": "1803945600000000",
+       "lines": [
+        {
+         "lineId": "1",
+         "productId": "SKU",
+         "itemClass": "product",
+         "category": "general",
+         "quantity": 1,
+         "amountMinor": "0",
+         "taxMinor": "0",
+         "volumes": [
+          {
+           "name": "qv",
+           "perUnitMinor": "1"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "orderId": "o-H37",
+       "buyerParticipantId": "pH37",
+       "buyerTypeCode": "distributor",
+       "purpose": "personal",
+       "creditPositionId": "H37",
+       "creditedAtUs": "1803945600000000",
+       "lines": [
+        {
+         "lineId": "1",
+         "productId": "SKU",
+         "itemClass": "product",
+         "category": "general",
+         "quantity": 1,
+         "amountMinor": "0",
+         "taxMinor": "0",
+         "volumes": [
+          {
+           "name": "qv",
+           "perUnitMinor": "1"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "orderId": "o-H38",
+       "buyerParticipantId": "pH38",
+       "buyerTypeCode": "distributor",
+       "purpose": "personal",
+       "creditPositionId": "H38",
+       "creditedAtUs": "1803945600000000",
+       "lines": [
+        {
+         "lineId": "1",
+         "productId": "SKU",
+         "itemClass": "product",
+         "category": "general",
+         "quantity": 1,
+         "amountMinor": "0",
+         "taxMinor": "0",
+         "volumes": [
+          {
+           "name": "qv",
+           "perUnitMinor": "1"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "orderId": "o-H39",
+       "buyerParticipantId": "pH39",
+       "buyerTypeCode": "distributor",
+       "purpose": "personal",
+       "creditPositionId": "H39",
+       "creditedAtUs": "1803945600000000",
+       "lines": [
+        {
+         "lineId": "1",
+         "productId": "SKU",
+         "itemClass": "product",
+         "category": "general",
+         "quantity": 1,
+         "amountMinor": "0",
+         "taxMinor": "0",
+         "volumes": [
+          {
+           "name": "qv",
+           "perUnitMinor": "1"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "orderId": "o-H40",
+       "buyerParticipantId": "pH40",
+       "buyerTypeCode": "distributor",
+       "purpose": "personal",
+       "creditPositionId": "H40",
+       "creditedAtUs": "1803945600000000",
+       "lines": [
+        {
+         "lineId": "1",
+         "productId": "SKU",
+         "itemClass": "product",
+         "category": "general",
+         "quantity": 1,
+         "amountMinor": "0",
+         "taxMinor": "0",
+         "volumes": [
+          {
+           "name": "qv",
+           "perUnitMinor": "1"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "orderId": "o-H41",
+       "buyerParticipantId": "pH41",
+       "buyerTypeCode": "distributor",
+       "purpose": "personal",
+       "creditPositionId": "H41",
+       "creditedAtUs": "1803945600000000",
+       "lines": [
+        {
+         "lineId": "1",
+         "productId": "SKU",
+         "itemClass": "product",
+         "category": "general",
+         "quantity": 1,
+         "amountMinor": "0",
+         "taxMinor": "0",
+         "volumes": [
+          {
+           "name": "qv",
+           "perUnitMinor": "2"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "orderId": "o-H42",
+       "buyerParticipantId": "pH42",
+       "buyerTypeCode": "distributor",
+       "purpose": "personal",
+       "creditPositionId": "H42",
+       "creditedAtUs": "1803945600000000",
+       "lines": [
+        {
+         "lineId": "1",
+         "productId": "SKU",
+         "itemClass": "product",
+         "category": "general",
+         "quantity": 1,
+         "amountMinor": "0",
+         "taxMinor": "0",
+         "volumes": [
+          {
+           "name": "qv",
+           "perUnitMinor": "2"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "orderId": "o-H43",
+       "buyerParticipantId": "pH43",
+       "buyerTypeCode": "distributor",
+       "purpose": "personal",
+       "creditPositionId": "H43",
+       "creditedAtUs": "1803945600000000",
+       "lines": [
+        {
+         "lineId": "1",
+         "productId": "SKU",
+         "itemClass": "product",
+         "category": "general",
+         "quantity": 1,
+         "amountMinor": "0",
+         "taxMinor": "0",
+         "volumes": [
+          {
+           "name": "qv",
+           "perUnitMinor": "2"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "orderId": "o-H44",
+       "buyerParticipantId": "pH44",
+       "buyerTypeCode": "distributor",
+       "purpose": "personal",
+       "creditPositionId": "H44",
+       "creditedAtUs": "1803945600000000",
+       "lines": [
+        {
+         "lineId": "1",
+         "productId": "SKU",
+         "itemClass": "product",
+         "category": "general",
+         "quantity": 1,
+         "amountMinor": "0",
+         "taxMinor": "0",
+         "volumes": [
+          {
+           "name": "qv",
+           "perUnitMinor": "2"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "orderId": "o-H45",
+       "buyerParticipantId": "pH45",
+       "buyerTypeCode": "distributor",
+       "purpose": "personal",
+       "creditPositionId": "H45",
+       "creditedAtUs": "1803945600000000",
+       "lines": [
+        {
+         "lineId": "1",
+         "productId": "SKU",
+         "itemClass": "product",
+         "category": "general",
+         "quantity": 1,
+         "amountMinor": "0",
+         "taxMinor": "0",
+         "volumes": [
+          {
+           "name": "qv",
+           "perUnitMinor": "2"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "orderId": "o-H46",
+       "buyerParticipantId": "pH46",
+       "buyerTypeCode": "distributor",
+       "purpose": "personal",
+       "creditPositionId": "H46",
+       "creditedAtUs": "1803945600000000",
+       "lines": [
+        {
+         "lineId": "1",
+         "productId": "SKU",
+         "itemClass": "product",
+         "category": "general",
+         "quantity": 1,
+         "amountMinor": "0",
+         "taxMinor": "0",
+         "volumes": [
+          {
+           "name": "qv",
+           "perUnitMinor": "2"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "orderId": "o-H47",
+       "buyerParticipantId": "pH47",
+       "buyerTypeCode": "distributor",
+       "purpose": "personal",
+       "creditPositionId": "H47",
+       "creditedAtUs": "1803945600000000",
+       "lines": [
+        {
+         "lineId": "1",
+         "productId": "SKU",
+         "itemClass": "product",
+         "category": "general",
+         "quantity": 1,
+         "amountMinor": "0",
+         "taxMinor": "0",
+         "volumes": [
+          {
+           "name": "qv",
+           "perUnitMinor": "2"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "orderId": "o-H48",
+       "buyerParticipantId": "pH48",
+       "buyerTypeCode": "distributor",
+       "purpose": "personal",
+       "creditPositionId": "H48",
+       "creditedAtUs": "1803945600000000",
+       "lines": [
+        {
+         "lineId": "1",
+         "productId": "SKU",
+         "itemClass": "product",
+         "category": "general",
+         "quantity": 1,
+         "amountMinor": "0",
+         "taxMinor": "0",
+         "volumes": [
+          {
+           "name": "qv",
+           "perUnitMinor": "2"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "orderId": "o-H49",
+       "buyerParticipantId": "pH49",
+       "buyerTypeCode": "distributor",
+       "purpose": "personal",
+       "creditPositionId": "H49",
+       "creditedAtUs": "1803945600000000",
+       "lines": [
+        {
+         "lineId": "1",
+         "productId": "SKU",
+         "itemClass": "product",
+         "category": "general",
+         "quantity": 1,
+         "amountMinor": "0",
+         "taxMinor": "0",
+         "volumes": [
+          {
+           "name": "qv",
+           "perUnitMinor": "2"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "orderId": "o-H50",
+       "buyerParticipantId": "pH50",
+       "buyerTypeCode": "distributor",
+       "purpose": "personal",
+       "creditPositionId": "H50",
+       "creditedAtUs": "1803945600000000",
+       "lines": [
+        {
+         "lineId": "1",
+         "productId": "SKU",
+         "itemClass": "product",
+         "category": "general",
+         "quantity": 1,
+         "amountMinor": "0",
+         "taxMinor": "0",
+         "volumes": [
+          {
+           "name": "qv",
+           "perUnitMinor": "2"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "orderId": "o-H51",
+       "buyerParticipantId": "pH51",
+       "buyerTypeCode": "distributor",
+       "purpose": "personal",
+       "creditPositionId": "H51",
+       "creditedAtUs": "1803945600000000",
+       "lines": [
+        {
+         "lineId": "1",
+         "productId": "SKU",
+         "itemClass": "product",
+         "category": "general",
+         "quantity": 1,
+         "amountMinor": "0",
+         "taxMinor": "0",
+         "volumes": [
+          {
+           "name": "qv",
+           "perUnitMinor": "3"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "orderId": "o-H52",
+       "buyerParticipantId": "pH52",
+       "buyerTypeCode": "distributor",
+       "purpose": "personal",
+       "creditPositionId": "H52",
+       "creditedAtUs": "1803945600000000",
+       "lines": [
+        {
+         "lineId": "1",
+         "productId": "SKU",
+         "itemClass": "product",
+         "category": "general",
+         "quantity": 1,
+         "amountMinor": "0",
+         "taxMinor": "0",
+         "volumes": [
+          {
+           "name": "qv",
+           "perUnitMinor": "3"
+          }
+         ]
+        }
+       ]
+      }
+     ],
+     "orderEvents": [],
+     "history": [],
+     "priorState": null,
+     "adjustments": [],
+     "receivables": [],
+     "withholding": [
+      {
+       "participantId": "pROOT",
+       "ruleId": "fixture-wh-0",
+       "rate": "0",
+       "rounding": "half_up"
+      },
+      {
+       "participantId": "pH01",
+       "ruleId": "fixture-wh-0",
+       "rate": "0",
+       "rounding": "half_up"
+      },
+      {
+       "participantId": "pH02",
+       "ruleId": "fixture-wh-0",
+       "rate": "0",
+       "rounding": "half_up"
+      },
+      {
+       "participantId": "pH03",
+       "ruleId": "fixture-wh-0",
+       "rate": "0",
+       "rounding": "half_up"
+      },
+      {
+       "participantId": "pH04",
+       "ruleId": "fixture-wh-0",
+       "rate": "0",
+       "rounding": "half_up"
+      },
+      {
+       "participantId": "pH05",
+       "ruleId": "fixture-wh-0",
+       "rate": "0",
+       "rounding": "half_up"
+      },
+      {
+       "participantId": "pH06",
+       "ruleId": "fixture-wh-0",
+       "rate": "0",
+       "rounding": "half_up"
+      },
+      {
+       "participantId": "pH07",
+       "ruleId": "fixture-wh-0",
+       "rate": "0",
+       "rounding": "half_up"
+      },
+      {
+       "participantId": "pH08",
+       "ruleId": "fixture-wh-0",
+       "rate": "0",
+       "rounding": "half_up"
+      },
+      {
+       "participantId": "pH09",
+       "ruleId": "fixture-wh-0",
+       "rate": "0",
+       "rounding": "half_up"
+      },
+      {
+       "participantId": "pH10",
+       "ruleId": "fixture-wh-0",
+       "rate": "0",
+       "rounding": "half_up"
+      },
+      {
+       "participantId": "pH11",
+       "ruleId": "fixture-wh-0",
+       "rate": "0",
+       "rounding": "half_up"
+      },
+      {
+       "participantId": "pH12",
+       "ruleId": "fixture-wh-0",
+       "rate": "0",
+       "rounding": "half_up"
+      },
+      {
+       "participantId": "pH13",
+       "ruleId": "fixture-wh-0",
+       "rate": "0",
+       "rounding": "half_up"
+      },
+      {
+       "participantId": "pH14",
+       "ruleId": "fixture-wh-0",
+       "rate": "0",
+       "rounding": "half_up"
+      },
+      {
+       "participantId": "pH15",
+       "ruleId": "fixture-wh-0",
+       "rate": "0",
+       "rounding": "half_up"
+      },
+      {
+       "participantId": "pH16",
+       "ruleId": "fixture-wh-0",
+       "rate": "0",
+       "rounding": "half_up"
+      },
+      {
+       "participantId": "pH17",
+       "ruleId": "fixture-wh-0",
+       "rate": "0",
+       "rounding": "half_up"
+      },
+      {
+       "participantId": "pH18",
+       "ruleId": "fixture-wh-0",
+       "rate": "0",
+       "rounding": "half_up"
+      },
+      {
+       "participantId": "pH19",
+       "ruleId": "fixture-wh-0",
+       "rate": "0",
+       "rounding": "half_up"
+      },
+      {
+       "participantId": "pH20",
+       "ruleId": "fixture-wh-0",
+       "rate": "0",
+       "rounding": "half_up"
+      },
+      {
+       "participantId": "pH21",
+       "ruleId": "fixture-wh-0",
+       "rate": "0",
+       "rounding": "half_up"
+      },
+      {
+       "participantId": "pH22",
+       "ruleId": "fixture-wh-0",
+       "rate": "0",
+       "rounding": "half_up"
+      },
+      {
+       "participantId": "pH23",
+       "ruleId": "fixture-wh-0",
+       "rate": "0",
+       "rounding": "half_up"
+      },
+      {
+       "participantId": "pH24",
+       "ruleId": "fixture-wh-0",
+       "rate": "0",
+       "rounding": "half_up"
+      },
+      {
+       "participantId": "pH25",
+       "ruleId": "fixture-wh-0",
+       "rate": "0",
+       "rounding": "half_up"
+      },
+      {
+       "participantId": "pH26",
+       "ruleId": "fixture-wh-0",
+       "rate": "0",
+       "rounding": "half_up"
+      },
+      {
+       "participantId": "pH27",
+       "ruleId": "fixture-wh-0",
+       "rate": "0",
+       "rounding": "half_up"
+      },
+      {
+       "participantId": "pH28",
+       "ruleId": "fixture-wh-0",
+       "rate": "0",
+       "rounding": "half_up"
+      },
+      {
+       "participantId": "pH29",
+       "ruleId": "fixture-wh-0",
+       "rate": "0",
+       "rounding": "half_up"
+      },
+      {
+       "participantId": "pH30",
+       "ruleId": "fixture-wh-0",
+       "rate": "0",
+       "rounding": "half_up"
+      },
+      {
+       "participantId": "pH31",
+       "ruleId": "fixture-wh-0",
+       "rate": "0",
+       "rounding": "half_up"
+      },
+      {
+       "participantId": "pH32",
+       "ruleId": "fixture-wh-0",
+       "rate": "0",
+       "rounding": "half_up"
+      },
+      {
+       "participantId": "pH33",
+       "ruleId": "fixture-wh-0",
+       "rate": "0",
+       "rounding": "half_up"
+      },
+      {
+       "participantId": "pH34",
+       "ruleId": "fixture-wh-0",
+       "rate": "0",
+       "rounding": "half_up"
+      },
+      {
+       "participantId": "pH35",
+       "ruleId": "fixture-wh-0",
+       "rate": "0",
+       "rounding": "half_up"
+      },
+      {
+       "participantId": "pH36",
+       "ruleId": "fixture-wh-0",
+       "rate": "0",
+       "rounding": "half_up"
+      },
+      {
+       "participantId": "pH37",
+       "ruleId": "fixture-wh-0",
+       "rate": "0",
+       "rounding": "half_up"
+      },
+      {
+       "participantId": "pH38",
+       "ruleId": "fixture-wh-0",
+       "rate": "0",
+       "rounding": "half_up"
+      },
+      {
+       "participantId": "pH39",
+       "ruleId": "fixture-wh-0",
+       "rate": "0",
+       "rounding": "half_up"
+      },
+      {
+       "participantId": "pH40",
+       "ruleId": "fixture-wh-0",
+       "rate": "0",
+       "rounding": "half_up"
+      },
+      {
+       "participantId": "pH41",
+       "ruleId": "fixture-wh-0",
+       "rate": "0",
+       "rounding": "half_up"
+      },
+      {
+       "participantId": "pH42",
+       "ruleId": "fixture-wh-0",
+       "rate": "0",
+       "rounding": "half_up"
+      },
+      {
+       "participantId": "pH43",
+       "ruleId": "fixture-wh-0",
+       "rate": "0",
+       "rounding": "half_up"
+      },
+      {
+       "participantId": "pH44",
+       "ruleId": "fixture-wh-0",
+       "rate": "0",
+       "rounding": "half_up"
+      },
+      {
+       "participantId": "pH45",
+       "ruleId": "fixture-wh-0",
+       "rate": "0",
+       "rounding": "half_up"
+      },
+      {
+       "participantId": "pH46",
+       "ruleId": "fixture-wh-0",
+       "rate": "0",
+       "rounding": "half_up"
+      },
+      {
+       "participantId": "pH47",
+       "ruleId": "fixture-wh-0",
+       "rate": "0",
+       "rounding": "half_up"
+      },
+      {
+       "participantId": "pH48",
+       "ruleId": "fixture-wh-0",
+       "rate": "0",
+       "rounding": "half_up"
+      },
+      {
+       "participantId": "pH49",
+       "ruleId": "fixture-wh-0",
+       "rate": "0",
+       "rounding": "half_up"
+      },
+      {
+       "participantId": "pH50",
+       "ruleId": "fixture-wh-0",
+       "rate": "0",
+       "rounding": "half_up"
+      },
+      {
+       "participantId": "pH51",
+       "ruleId": "fixture-wh-0",
+       "rate": "0",
+       "rounding": "half_up"
+      },
+      {
+       "participantId": "pH52",
+       "ruleId": "fixture-wh-0",
+       "rate": "0",
+       "rounding": "half_up"
+      }
+     ]
+    }
+   },
+   "expected": {
+    "lines": [
+     {
+      "payeePositionId": "H01",
+      "ruleKey": "pool",
+      "amountMinor": "94697"
+     },
+     {
+      "payeePositionId": "H02",
+      "ruleKey": "pool",
+      "amountMinor": "94697"
+     },
+     {
+      "payeePositionId": "H03",
+      "ruleKey": "pool",
+      "amountMinor": "94697"
+     },
+     {
+      "payeePositionId": "H04",
+      "ruleKey": "pool",
+      "amountMinor": "94697"
+     },
+     {
+      "payeePositionId": "H05",
+      "ruleKey": "pool",
+      "amountMinor": "94697"
+     },
+     {
+      "payeePositionId": "H06",
+      "ruleKey": "pool",
+      "amountMinor": "94697"
+     },
+     {
+      "payeePositionId": "H07",
+      "ruleKey": "pool",
+      "amountMinor": "94697"
+     },
+     {
+      "payeePositionId": "H08",
+      "ruleKey": "pool",
+      "amountMinor": "94697"
+     },
+     {
+      "payeePositionId": "H09",
+      "ruleKey": "pool",
+      "amountMinor": "94697"
+     },
+     {
+      "payeePositionId": "H10",
+      "ruleKey": "pool",
+      "amountMinor": "94697"
+     },
+     {
+      "payeePositionId": "H11",
+      "ruleKey": "pool",
+      "amountMinor": "94697"
+     },
+     {
+      "payeePositionId": "H12",
+      "ruleKey": "pool",
+      "amountMinor": "94697"
+     },
+     {
+      "payeePositionId": "H13",
+      "ruleKey": "pool",
+      "amountMinor": "94697"
+     },
+     {
+      "payeePositionId": "H14",
+      "ruleKey": "pool",
+      "amountMinor": "94697"
+     },
+     {
+      "payeePositionId": "H15",
+      "ruleKey": "pool",
+      "amountMinor": "94697"
+     },
+     {
+      "payeePositionId": "H16",
+      "ruleKey": "pool",
+      "amountMinor": "94697"
+     },
+     {
+      "payeePositionId": "H17",
+      "ruleKey": "pool",
+      "amountMinor": "94697"
+     },
+     {
+      "payeePositionId": "H18",
+      "ruleKey": "pool",
+      "amountMinor": "94697"
+     },
+     {
+      "payeePositionId": "H19",
+      "ruleKey": "pool",
+      "amountMinor": "94697"
+     },
+     {
+      "payeePositionId": "H20",
+      "ruleKey": "pool",
+      "amountMinor": "94697"
+     },
+     {
+      "payeePositionId": "H21",
+      "ruleKey": "pool",
+      "amountMinor": "94697"
+     },
+     {
+      "payeePositionId": "H22",
+      "ruleKey": "pool",
+      "amountMinor": "94697"
+     },
+     {
+      "payeePositionId": "H23",
+      "ruleKey": "pool",
+      "amountMinor": "94697"
+     },
+     {
+      "payeePositionId": "H24",
+      "ruleKey": "pool",
+      "amountMinor": "94697"
+     },
+     {
+      "payeePositionId": "H25",
+      "ruleKey": "pool",
+      "amountMinor": "94697"
+     },
+     {
+      "payeePositionId": "H26",
+      "ruleKey": "pool",
+      "amountMinor": "94697"
+     },
+     {
+      "payeePositionId": "H27",
+      "ruleKey": "pool",
+      "amountMinor": "94697"
+     },
+     {
+      "payeePositionId": "H28",
+      "ruleKey": "pool",
+      "amountMinor": "94697"
+     },
+     {
+      "payeePositionId": "H29",
+      "ruleKey": "pool",
+      "amountMinor": "94697"
+     },
+     {
+      "payeePositionId": "H30",
+      "ruleKey": "pool",
+      "amountMinor": "94697"
+     },
+     {
+      "payeePositionId": "H31",
+      "ruleKey": "pool",
+      "amountMinor": "94697"
+     },
+     {
+      "payeePositionId": "H32",
+      "ruleKey": "pool",
+      "amountMinor": "94697"
+     },
+     {
+      "payeePositionId": "H33",
+      "ruleKey": "pool",
+      "amountMinor": "94697"
+     },
+     {
+      "payeePositionId": "H34",
+      "ruleKey": "pool",
+      "amountMinor": "94697"
+     },
+     {
+      "payeePositionId": "H35",
+      "ruleKey": "pool",
+      "amountMinor": "94697"
+     },
+     {
+      "payeePositionId": "H36",
+      "ruleKey": "pool",
+      "amountMinor": "94697"
+     },
+     {
+      "payeePositionId": "H37",
+      "ruleKey": "pool",
+      "amountMinor": "94697"
+     },
+     {
+      "payeePositionId": "H38",
+      "ruleKey": "pool",
+      "amountMinor": "94697"
+     },
+     {
+      "payeePositionId": "H39",
+      "ruleKey": "pool",
+      "amountMinor": "94697"
+     },
+     {
+      "payeePositionId": "H40",
+      "ruleKey": "pool",
+      "amountMinor": "94697"
+     },
+     {
+      "payeePositionId": "H41",
+      "ruleKey": "pool",
+      "amountMinor": "189394"
+     },
+     {
+      "payeePositionId": "H42",
+      "ruleKey": "pool",
+      "amountMinor": "189394"
+     },
+     {
+      "payeePositionId": "H43",
+      "ruleKey": "pool",
+      "amountMinor": "189394"
+     },
+     {
+      "payeePositionId": "H44",
+      "ruleKey": "pool",
+      "amountMinor": "189394"
+     },
+     {
+      "payeePositionId": "H45",
+      "ruleKey": "pool",
+      "amountMinor": "189394"
+     },
+     {
+      "payeePositionId": "H46",
+      "ruleKey": "pool",
+      "amountMinor": "189394"
+     },
+     {
+      "payeePositionId": "H47",
+      "ruleKey": "pool",
+      "amountMinor": "189394"
+     },
+     {
+      "payeePositionId": "H48",
+      "ruleKey": "pool",
+      "amountMinor": "189394"
+     },
+     {
+      "payeePositionId": "H49",
+      "ruleKey": "pool",
+      "amountMinor": "189394"
+     },
+     {
+      "payeePositionId": "H50",
+      "ruleKey": "pool",
+      "amountMinor": "189394"
+     },
+     {
+      "payeePositionId": "H51",
+      "ruleKey": "pool",
+      "amountMinor": "284090"
+     },
+     {
+      "payeePositionId": "H52",
+      "ruleKey": "pool",
+      "amountMinor": "284090"
+     }
+    ],
+    "controlTotals": {
+     "grossMinor": "6250000"
+    }
+   }
+  }
+ ]
+}

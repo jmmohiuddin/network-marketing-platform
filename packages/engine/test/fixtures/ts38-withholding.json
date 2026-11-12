@@ -1,0 +1,171 @@
+{
+ "id": "TS-38",
+ "release": "B",
+ "owner": "run",
+ "provenance": "product-documentation/08-qa/verification/verify_calculations.py (55/55); hypothetical values, not recommendations (DEC-14)",
+ "description": "Gross 1,234.56, withholding 2.00% fixture: withheld 24.69, payable 1,209.87, gross = net + withholding.",
+ "cases": [
+  {
+   "name": "ts38",
+   "input": {
+    "plan": {
+     "planVersionId": "plan-ts38",
+     "version": 1,
+     "contentHash": "fixture",
+     "effectiveFromUs": "1803859200000000",
+     "calendars": [
+      "monthly"
+     ],
+     "measures": [
+      {
+       "kind": "volume.personal",
+       "key": "retail_base",
+       "unit": "currency",
+       "source": {
+        "from": "amount"
+       },
+       "items": {
+        "excludeItemClasses": [],
+        "categories": null
+       },
+       "orders": "customer"
+      }
+     ],
+     "ladders": [],
+     "bonuses": [
+      {
+       "key": "retail",
+       "kind": "pay.retail_margin",
+       "sourceKind": "retail_sale",
+       "reversalPolicy": "order_line",
+       "eligibleIf": null,
+       "rate": "1",
+       "measure": "retail_base"
+      }
+     ],
+     "constraints": [],
+     "caps": [],
+     "carries": [],
+     "counters": [],
+     "transitions": [],
+     "pointsToCurrency": [],
+     "customerRollUp": null
+    },
+    "settings": {
+     "settingsVersionId": "settings-fixture",
+     "roundingMode": "half_up",
+     "restockingFeeAffectsVolume": false
+    },
+    "snapshot": {
+     "snapshotId": "snap-ts38",
+     "market": {
+      "marketId": "MKT",
+      "currency": "XXX",
+      "minorDigits": 2
+     },
+     "period": {
+      "periodId": "2027-03",
+      "calendar": "monthly",
+      "startsAtUs": "1803859200000000",
+      "endsAtUs": "1806537600000000"
+     },
+     "knownAtUs": "1806537600000000",
+     "participantTypes": [
+      {
+       "code": "distributor",
+       "canEarn": true,
+       "countsAsEndCustomer": false,
+       "canSponsor": true,
+       "canHoldPositions": true
+      },
+      {
+       "code": "customer",
+       "canEarn": false,
+       "countsAsEndCustomer": true,
+       "canSponsor": false,
+       "canHoldPositions": false
+      }
+     ],
+     "participants": [
+      {
+       "participantId": "P1",
+       "typeCode": "distributor",
+       "enrolledAtUs": "1767225600000000",
+       "facts": []
+      },
+      {
+       "participantId": "K",
+       "typeCode": "customer",
+       "enrolledAtUs": "1767225600000000",
+       "facts": []
+      }
+     ],
+     "positions": [
+      {
+       "positionId": "X",
+       "ownerParticipantId": "P1",
+       "status": "active",
+       "statusFromUs": "1767225600000000"
+      }
+     ],
+     "relationships": [],
+     "orders": [
+      {
+       "orderId": "o-X",
+       "buyerParticipantId": "K",
+       "buyerTypeCode": "customer",
+       "purpose": "customer",
+       "creditPositionId": "X",
+       "creditedAtUs": "1803945600000000",
+       "lines": [
+        {
+         "lineId": "1",
+         "productId": "SKU",
+         "itemClass": "product",
+         "category": "general",
+         "quantity": 1,
+         "amountMinor": "123456",
+         "taxMinor": "0",
+         "volumes": []
+        }
+       ]
+      }
+     ],
+     "orderEvents": [],
+     "history": [],
+     "priorState": null,
+     "adjustments": [],
+     "receivables": [],
+     "withholding": [
+      {
+       "participantId": "P1",
+       "ruleId": "fixture-wh-0.02",
+       "rate": "0.02",
+       "rounding": "half_up"
+      }
+     ]
+    }
+   },
+   "expected": {
+    "lines": [
+     {
+      "payeePositionId": "X",
+      "ruleKey": "retail",
+      "amountMinor": "123456"
+     }
+    ],
+    "payees": [
+     {
+      "participantId": "P1",
+      "grossMinor": "123456",
+      "nettedMinor": "0",
+      "taxableMinor": "123456",
+      "withheldMinor": "2469",
+      "netPayableMinor": "120987",
+      "receivableAfterMinor": "0"
+     }
+    ]
+   }
+  }
+ ]
+}

@@ -2,6 +2,8 @@
 
 _Agent: compensation. Read before every task; update after every task. Keep concise — facts and decisions, not transcripts._
 
+## B engine contracts — @nmp/engine package, types, money, tree, pipeline, fixtures (2026-11-13) — DONE
+
 
 ## T-A10 — @nmp/compliance pure reports (2026-11-12) — DONE
 - src: types, percent, stats, figure, context, validate, r1..r5, index (812 lines, largest file 132).

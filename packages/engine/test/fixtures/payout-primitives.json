@@ -1,0 +1,46 @@
+{
+ "id": "TS-43/TS-44",
+ "release": "B",
+ "owner": "payout",
+ "provenance": "product-documentation/08-qa/verification/verify_calculations.py (55/55); hypothetical values, not recommendations (DEC-14)",
+ "description": "Single-source primitive values: override rate x measure; differential (own - downline rate) x measure; matching rate x matched bonus.",
+ "cases": [
+  {
+   "name": "ts43-override",
+   "kind": "pay.override",
+   "measureMinor": "600000",
+   "rate": "0.03",
+   "expected": {
+    "amountMinor": "18000"
+   }
+  },
+  {
+   "name": "ts43-differential",
+   "kind": "pay.differential",
+   "measureMinor": "600000",
+   "ownRate": "0.21",
+   "downlineRate": "0.15",
+   "expected": {
+    "amountMinor": "36000"
+   }
+  },
+  {
+   "name": "ts44-matching-small",
+   "kind": "pay.matching",
+   "matchedMinor": "1000",
+   "rate": "0.10",
+   "expected": {
+    "amountMinor": "100"
+   }
+  },
+  {
+   "name": "ts44-matching-large",
+   "kind": "pay.matching",
+   "matchedMinor": "48000",
+   "rate": "0.10",
+   "expected": {
+    "amountMinor": "4800"
+   }
+  }
+ ]
+}

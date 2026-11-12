@@ -2,6 +2,23 @@
 
 _Agent: compensation. Read before every task; update after every task. Keep concise — facts and decisions, not transcripts._
 
+## B engine review fixes (2026-11-13)
+- Purpose split is a line field (RawLine.purposeRaw) computed in pass 4-6 from per-purpose measures (pass 2), not from the trace: trace display limits never change money.
+- Order attribution: source raw split over orders by their value in the measure (largestRemainder, ties order id asc); aggregate measures attributed in full traces only (bounded trace size).
+- A limit binds when Σ roundRaw(line) exceeds it; bound totals: cap = roundRaw(base x rate), max_per_period = maxMinor, max_share = roundRaw(kept raw); then largestRemainder.
+- Tree-walking primitives (percent_by_level, override, differential, generations) take volume.personal only; TS-43 pinned on a three-level personal tree (A 360).
+- Points pools convert the pool total once (pass 6, 'points' step before 'allocation'); a points line with an allocation is an INVARIANT error in pass 10.
+- inputsHash sorts snapshot rows (row order carries no meaning); plan arrays keep order. resultHash includes volume summaries ('V').
+
+## B engine contracts (2026-11-13)
+- Pass order = SDD-07 (C1). Pass 11: netting first, then withholding on gross - netted (FR-COMP-003 and MONEY 4.3 both put netting before withholding); gross = netted + withheld + netPayable; negative gross becomes receivable.
+- Result-line grain: (payee position, rule) per run, plus one per adjustment origin; compact trace keeps <= TRACE_SOURCE_LIMIT (16) sources + omitted {count, raw}; RunOptions.fullTraceFor expands a line (FR-COMP-007).
+- Matching base = pre-cap raw of the named pass-4 lines (spike choice; E2E identical either way).
+- Pools and caps produce `allocatedMinor` via largestRemainder; pass 10 never re-rounds those.
+- eligibleIf (RankRef, ">= rank") is both payee eligibility and the compression "active" predicate; payees also need ctx.earner (owner type canEarn, not terminated before the period).
+- Customer fractional roll-up (BR-ATT-04) belongs to pass 1 (volume.ts), not pools.ts: it must precede GV and qualification.
+- Fixture money as minor-unit strings; rates as decimal strings; instants as µs strings.
+
 
 ## T-A10 (2026-11-12)
 - Rounding: half up on magnitude (= Decimal ROUND_HALF_UP) in bigint; reproduces report.json exactly. `percent()` → "62.50" | null.

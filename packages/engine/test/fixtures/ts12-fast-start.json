@@ -1,0 +1,227 @@
+{
+ "id": "TS-12",
+ "release": "B",
+ "owner": "payout",
+ "provenance": "product-documentation/08-qa/verification/verify_calculations.py (55/55); hypothetical values, not recommendations (DEC-14)",
+ "description": "New enrollee X orders 1,200.00: sponsor S tier 0 20% capped at 200.00 per order (240 -> 200.00); upline U tier 1 10% capped at 80.00 (120 -> 80.00).",
+ "cases": [
+  {
+   "name": "ts12",
+   "input": {
+    "plan": {
+     "planVersionId": "plan-ts12",
+     "version": 1,
+     "contentHash": "fixture",
+     "effectiveFromUs": "1803859200000000",
+     "calendars": [
+      "monthly"
+     ],
+     "measures": [
+      {
+       "kind": "volume.personal",
+       "key": "sales",
+       "unit": "currency",
+       "source": {
+        "from": "amount"
+       },
+       "items": {
+        "excludeItemClasses": [],
+        "categories": null
+       },
+       "orders": "all"
+      }
+     ],
+     "ladders": [],
+     "bonuses": [
+      {
+       "key": "fast_start",
+       "kind": "pay.fast_start",
+       "sourceKind": "enrolment_order",
+       "reversalPolicy": "order_line",
+       "eligibleIf": null,
+       "tree": "sponsor",
+       "measure": "sales",
+       "buyerEnrolledWithinUs": "2592000000000",
+       "tiers": [
+        {
+         "rate": "0.20",
+         "perOrderCapMinor": "20000"
+        },
+        {
+         "rate": "0.10",
+         "perOrderCapMinor": "8000"
+        }
+       ]
+      }
+     ],
+     "constraints": [],
+     "caps": [],
+     "carries": [],
+     "counters": [],
+     "transitions": [],
+     "pointsToCurrency": [],
+     "customerRollUp": null
+    },
+    "settings": {
+     "settingsVersionId": "settings-fixture",
+     "roundingMode": "half_up",
+     "restockingFeeAffectsVolume": false
+    },
+    "snapshot": {
+     "snapshotId": "snap-ts12",
+     "market": {
+      "marketId": "MKT",
+      "currency": "XXX",
+      "minorDigits": 2
+     },
+     "period": {
+      "periodId": "2027-03",
+      "calendar": "monthly",
+      "startsAtUs": "1803859200000000",
+      "endsAtUs": "1806537600000000"
+     },
+     "knownAtUs": "1806537600000000",
+     "participantTypes": [
+      {
+       "code": "distributor",
+       "canEarn": true,
+       "countsAsEndCustomer": false,
+       "canSponsor": true,
+       "canHoldPositions": true
+      },
+      {
+       "code": "customer",
+       "canEarn": false,
+       "countsAsEndCustomer": true,
+       "canSponsor": false,
+       "canHoldPositions": false
+      }
+     ],
+     "participants": [
+      {
+       "participantId": "pU",
+       "typeCode": "distributor",
+       "enrolledAtUs": "1767225600000000",
+       "facts": []
+      },
+      {
+       "participantId": "pS",
+       "typeCode": "distributor",
+       "enrolledAtUs": "1767225600000000",
+       "facts": []
+      },
+      {
+       "participantId": "pX",
+       "typeCode": "distributor",
+       "enrolledAtUs": "1803859200000000",
+       "facts": []
+      }
+     ],
+     "positions": [
+      {
+       "positionId": "U",
+       "ownerParticipantId": "pU",
+       "status": "active",
+       "statusFromUs": "1767225600000000"
+      },
+      {
+       "positionId": "S",
+       "ownerParticipantId": "pS",
+       "status": "active",
+       "statusFromUs": "1767225600000000"
+      },
+      {
+       "positionId": "X",
+       "ownerParticipantId": "pX",
+       "status": "active",
+       "statusFromUs": "1767225600000000"
+      }
+     ],
+     "relationships": [
+      {
+       "kind": "sponsor",
+       "parentPositionId": "U",
+       "childPositionId": "S",
+       "leg": null,
+       "validFromUs": "1767225600000000",
+       "validToUs": null,
+       "recordedAtUs": "1767225600000000",
+       "supersededAtUs": null
+      },
+      {
+       "kind": "sponsor",
+       "parentPositionId": "S",
+       "childPositionId": "X",
+       "leg": null,
+       "validFromUs": "1767225600000000",
+       "validToUs": null,
+       "recordedAtUs": "1767225600000000",
+       "supersededAtUs": null
+      }
+     ],
+     "orders": [
+      {
+       "orderId": "o-X",
+       "buyerParticipantId": "pX",
+       "buyerTypeCode": "distributor",
+       "purpose": "personal",
+       "creditPositionId": "X",
+       "creditedAtUs": "1803945600000000",
+       "lines": [
+        {
+         "lineId": "1",
+         "productId": "SKU",
+         "itemClass": "product",
+         "category": "general",
+         "quantity": 1,
+         "amountMinor": "120000",
+         "taxMinor": "0",
+         "volumes": []
+        }
+       ]
+      }
+     ],
+     "orderEvents": [],
+     "history": [],
+     "priorState": null,
+     "adjustments": [],
+     "receivables": [],
+     "withholding": [
+      {
+       "participantId": "pU",
+       "ruleId": "fixture-wh-0",
+       "rate": "0",
+       "rounding": "half_up"
+      },
+      {
+       "participantId": "pS",
+       "ruleId": "fixture-wh-0",
+       "rate": "0",
+       "rounding": "half_up"
+      },
+      {
+       "participantId": "pX",
+       "ruleId": "fixture-wh-0",
+       "rate": "0",
+       "rounding": "half_up"
+      }
+     ]
+    }
+   },
+   "expected": {
+    "lines": [
+     {
+      "payeePositionId": "S",
+      "ruleKey": "fast_start",
+      "amountMinor": "20000"
+     },
+     {
+      "payeePositionId": "U",
+      "ruleKey": "fast_start",
+      "amountMinor": "8000"
+     }
+    ]
+   }
+  }
+ ]
+}

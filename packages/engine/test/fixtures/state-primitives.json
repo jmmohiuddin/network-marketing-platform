@@ -1,0 +1,42 @@
+{
+ "id": "TS-04/TS-05",
+ "provenance": "product-documentation/08-qa/verification/verify_calculations.py (55/55); hypothetical values, not recommendations (DEC-14)",
+ "description": "Unit-agnostic state values. TS-05 carry: min(prev + new, cap) if qualified else 0 (owner qualification, rank.ts). TS-04 binary pairing is Could (OQ-13): no owner, kept for when it ships.",
+ "cases": [
+  {
+   "name": "ts05-carry",
+   "release": "B",
+   "owner": "qualification",
+   "capMinor": "3000",
+   "steps": [
+    {
+     "prevMinor": "2800",
+     "newMinor": "900",
+     "qualified": true,
+     "expectedMinor": "3000"
+    },
+    {
+     "prevMinor": "3000",
+     "newMinor": "100",
+     "qualified": false,
+     "expectedMinor": "0"
+    }
+   ]
+  },
+  {
+   "name": "ts04-pairing",
+   "release": "Could",
+   "owner": null,
+   "leftMinor": "620",
+   "rightMinor": "900",
+   "leftUnits": 2,
+   "rightUnits": 3,
+   "unitMinor": "100",
+   "expected": {
+    "pairs": 3,
+    "carryLeftMinor": "20",
+    "carryRightMinor": "0"
+   }
+  }
+ ]
+}

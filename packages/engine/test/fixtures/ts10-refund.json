@@ -1,0 +1,608 @@
+{
+ "id": "TS-10",
+ "release": "B",
+ "owner": "run",
+ "provenance": "product-documentation/08-qa/verification/verify_calculations.py (55/55); hypothetical values, not recommendations (DEC-14)",
+ "description": "A's GV 800 includes order O2 (500.00) refunded after payout; C matches 20% of A's rank bonus. 'paid' = original run; 'restated' = same period with the refund. Restatement diff = restated - paid. Order-line clawback (the adjustment origin amount for A) = 10% x 500.00; it is computed outside run() and fed to pass 9.",
+ "cases": [
+  {
+   "name": "paid",
+   "input": {
+    "plan": {
+     "planVersionId": "plan-ts10",
+     "version": 1,
+     "contentHash": "fixture",
+     "effectiveFromUs": "1803859200000000",
+     "calendars": [
+      "monthly"
+     ],
+     "measures": [
+      {
+       "kind": "volume.personal",
+       "key": "pv",
+       "unit": "currency",
+       "source": {
+        "from": "amount"
+       },
+       "items": {
+        "excludeItemClasses": [],
+        "categories": null
+       },
+       "orders": "all"
+      },
+      {
+       "kind": "volume.group",
+       "key": "gv",
+       "of": "pv",
+       "tree": "sponsor",
+       "includeSelf": true
+      }
+     ],
+     "ladders": [
+      {
+       "key": "main",
+       "ranks": [
+        {
+         "key": "R1",
+         "requires": [
+          {
+           "kind": "measure",
+           "measure": "pv",
+           "atLeastMinor": "1",
+           "window": {
+            "type": "period"
+           },
+           "maxPerLegShare": null
+          }
+         ],
+         "maintenance": null
+        },
+        {
+         "key": "R2",
+         "requires": [
+          {
+           "kind": "measure",
+           "measure": "pv",
+           "atLeastMinor": "1",
+           "window": {
+            "type": "period"
+           },
+           "maxPerLegShare": null
+          },
+          {
+           "kind": "measure",
+           "measure": "gv",
+           "atLeastMinor": "70000",
+           "window": {
+            "type": "period"
+           },
+           "maxPerLegShare": null
+          }
+         ],
+         "maintenance": null
+        }
+       ]
+      }
+     ],
+     "bonuses": [
+      {
+       "key": "rank_bonus",
+       "kind": "pay.percent_of_measure",
+       "sourceKind": "downline_volume",
+       "reversalPolicy": "restatement",
+       "eligibleIf": null,
+       "measure": "gv",
+       "byRank": {
+        "ladder": "main",
+        "rates": [
+         {
+          "rank": "R1",
+          "rate": "0.05"
+         },
+         {
+          "rank": "R2",
+          "rate": "0.10"
+         }
+        ]
+       }
+      },
+      {
+       "key": "match",
+       "kind": "pay.matching",
+       "sourceKind": "match",
+       "reversalPolicy": "restatement",
+       "eligibleIf": null,
+       "tree": "sponsor",
+       "of": [
+        "rank_bonus"
+       ],
+       "rates": [
+        "0.20"
+       ]
+      }
+     ],
+     "constraints": [],
+     "caps": [],
+     "carries": [],
+     "counters": [],
+     "transitions": [],
+     "pointsToCurrency": [],
+     "customerRollUp": null
+    },
+    "settings": {
+     "settingsVersionId": "settings-fixture",
+     "roundingMode": "half_up",
+     "restockingFeeAffectsVolume": false
+    },
+    "snapshot": {
+     "snapshotId": "snap-paid",
+     "market": {
+      "marketId": "MKT",
+      "currency": "XXX",
+      "minorDigits": 2
+     },
+     "period": {
+      "periodId": "2027-03",
+      "calendar": "monthly",
+      "startsAtUs": "1803859200000000",
+      "endsAtUs": "1806537600000000"
+     },
+     "knownAtUs": "1806537600000000",
+     "participantTypes": [
+      {
+       "code": "distributor",
+       "canEarn": true,
+       "countsAsEndCustomer": false,
+       "canSponsor": true,
+       "canHoldPositions": true
+      },
+      {
+       "code": "customer",
+       "canEarn": false,
+       "countsAsEndCustomer": true,
+       "canSponsor": false,
+       "canHoldPositions": false
+      }
+     ],
+     "participants": [
+      {
+       "participantId": "pA",
+       "typeCode": "distributor",
+       "enrolledAtUs": "1767225600000000",
+       "facts": []
+      },
+      {
+       "participantId": "pC",
+       "typeCode": "distributor",
+       "enrolledAtUs": "1767225600000000",
+       "facts": []
+      }
+     ],
+     "positions": [
+      {
+       "positionId": "A",
+       "ownerParticipantId": "pA",
+       "status": "active",
+       "statusFromUs": "1767225600000000"
+      },
+      {
+       "positionId": "C",
+       "ownerParticipantId": "pC",
+       "status": "active",
+       "statusFromUs": "1767225600000000"
+      }
+     ],
+     "relationships": [
+      {
+       "kind": "sponsor",
+       "parentPositionId": "C",
+       "childPositionId": "A",
+       "leg": null,
+       "validFromUs": "1767225600000000",
+       "validToUs": null,
+       "recordedAtUs": "1767225600000000",
+       "supersededAtUs": null
+      }
+     ],
+     "orders": [
+      {
+       "orderId": "O1",
+       "buyerParticipantId": "pA",
+       "buyerTypeCode": "distributor",
+       "purpose": "personal",
+       "creditPositionId": "A",
+       "creditedAtUs": "1803945600000000",
+       "lines": [
+        {
+         "lineId": "1",
+         "productId": "SKU",
+         "itemClass": "product",
+         "category": "general",
+         "quantity": 1,
+         "amountMinor": "30000",
+         "taxMinor": "0",
+         "volumes": []
+        }
+       ]
+      },
+      {
+       "orderId": "O2",
+       "buyerParticipantId": "pA",
+       "buyerTypeCode": "distributor",
+       "purpose": "personal",
+       "creditPositionId": "A",
+       "creditedAtUs": "1803945600000000",
+       "lines": [
+        {
+         "lineId": "1",
+         "productId": "SKU",
+         "itemClass": "product",
+         "category": "general",
+         "quantity": 1,
+         "amountMinor": "50000",
+         "taxMinor": "0",
+         "volumes": []
+        }
+       ]
+      }
+     ],
+     "orderEvents": [],
+     "history": [],
+     "priorState": null,
+     "adjustments": [],
+     "receivables": [],
+     "withholding": [
+      {
+       "participantId": "pA",
+       "ruleId": "fixture-wh-0",
+       "rate": "0",
+       "rounding": "half_up"
+      },
+      {
+       "participantId": "pC",
+       "ruleId": "fixture-wh-0",
+       "rate": "0",
+       "rounding": "half_up"
+      }
+     ]
+    }
+   },
+   "expected": {
+    "lines": [
+     {
+      "payeePositionId": "A",
+      "ruleKey": "rank_bonus",
+      "amountMinor": "8000"
+     },
+     {
+      "payeePositionId": "C",
+      "ruleKey": "match",
+      "amountMinor": "1600"
+     }
+    ]
+   }
+  },
+  {
+   "name": "restated",
+   "input": {
+    "plan": {
+     "planVersionId": "plan-ts10",
+     "version": 1,
+     "contentHash": "fixture",
+     "effectiveFromUs": "1803859200000000",
+     "calendars": [
+      "monthly"
+     ],
+     "measures": [
+      {
+       "kind": "volume.personal",
+       "key": "pv",
+       "unit": "currency",
+       "source": {
+        "from": "amount"
+       },
+       "items": {
+        "excludeItemClasses": [],
+        "categories": null
+       },
+       "orders": "all"
+      },
+      {
+       "kind": "volume.group",
+       "key": "gv",
+       "of": "pv",
+       "tree": "sponsor",
+       "includeSelf": true
+      }
+     ],
+     "ladders": [
+      {
+       "key": "main",
+       "ranks": [
+        {
+         "key": "R1",
+         "requires": [
+          {
+           "kind": "measure",
+           "measure": "pv",
+           "atLeastMinor": "1",
+           "window": {
+            "type": "period"
+           },
+           "maxPerLegShare": null
+          }
+         ],
+         "maintenance": null
+        },
+        {
+         "key": "R2",
+         "requires": [
+          {
+           "kind": "measure",
+           "measure": "pv",
+           "atLeastMinor": "1",
+           "window": {
+            "type": "period"
+           },
+           "maxPerLegShare": null
+          },
+          {
+           "kind": "measure",
+           "measure": "gv",
+           "atLeastMinor": "70000",
+           "window": {
+            "type": "period"
+           },
+           "maxPerLegShare": null
+          }
+         ],
+         "maintenance": null
+        }
+       ]
+      }
+     ],
+     "bonuses": [
+      {
+       "key": "rank_bonus",
+       "kind": "pay.percent_of_measure",
+       "sourceKind": "downline_volume",
+       "reversalPolicy": "restatement",
+       "eligibleIf": null,
+       "measure": "gv",
+       "byRank": {
+        "ladder": "main",
+        "rates": [
+         {
+          "rank": "R1",
+          "rate": "0.05"
+         },
+         {
+          "rank": "R2",
+          "rate": "0.10"
+         }
+        ]
+       }
+      },
+      {
+       "key": "match",
+       "kind": "pay.matching",
+       "sourceKind": "match",
+       "reversalPolicy": "restatement",
+       "eligibleIf": null,
+       "tree": "sponsor",
+       "of": [
+        "rank_bonus"
+       ],
+       "rates": [
+        "0.20"
+       ]
+      }
+     ],
+     "constraints": [],
+     "caps": [],
+     "carries": [],
+     "counters": [],
+     "transitions": [],
+     "pointsToCurrency": [],
+     "customerRollUp": null
+    },
+    "settings": {
+     "settingsVersionId": "settings-fixture",
+     "roundingMode": "half_up",
+     "restockingFeeAffectsVolume": false
+    },
+    "snapshot": {
+     "snapshotId": "snap-restated",
+     "market": {
+      "marketId": "MKT",
+      "currency": "XXX",
+      "minorDigits": 2
+     },
+     "period": {
+      "periodId": "2027-03",
+      "calendar": "monthly",
+      "startsAtUs": "1803859200000000",
+      "endsAtUs": "1806537600000000"
+     },
+     "knownAtUs": "1806537600000000",
+     "participantTypes": [
+      {
+       "code": "distributor",
+       "canEarn": true,
+       "countsAsEndCustomer": false,
+       "canSponsor": true,
+       "canHoldPositions": true
+      },
+      {
+       "code": "customer",
+       "canEarn": false,
+       "countsAsEndCustomer": true,
+       "canSponsor": false,
+       "canHoldPositions": false
+      }
+     ],
+     "participants": [
+      {
+       "participantId": "pA",
+       "typeCode": "distributor",
+       "enrolledAtUs": "1767225600000000",
+       "facts": []
+      },
+      {
+       "participantId": "pC",
+       "typeCode": "distributor",
+       "enrolledAtUs": "1767225600000000",
+       "facts": []
+      }
+     ],
+     "positions": [
+      {
+       "positionId": "A",
+       "ownerParticipantId": "pA",
+       "status": "active",
+       "statusFromUs": "1767225600000000"
+      },
+      {
+       "positionId": "C",
+       "ownerParticipantId": "pC",
+       "status": "active",
+       "statusFromUs": "1767225600000000"
+      }
+     ],
+     "relationships": [
+      {
+       "kind": "sponsor",
+       "parentPositionId": "C",
+       "childPositionId": "A",
+       "leg": null,
+       "validFromUs": "1767225600000000",
+       "validToUs": null,
+       "recordedAtUs": "1767225600000000",
+       "supersededAtUs": null
+      }
+     ],
+     "orders": [
+      {
+       "orderId": "O1",
+       "buyerParticipantId": "pA",
+       "buyerTypeCode": "distributor",
+       "purpose": "personal",
+       "creditPositionId": "A",
+       "creditedAtUs": "1803945600000000",
+       "lines": [
+        {
+         "lineId": "1",
+         "productId": "SKU",
+         "itemClass": "product",
+         "category": "general",
+         "quantity": 1,
+         "amountMinor": "30000",
+         "taxMinor": "0",
+         "volumes": []
+        }
+       ]
+      },
+      {
+       "orderId": "O2",
+       "buyerParticipantId": "pA",
+       "buyerTypeCode": "distributor",
+       "purpose": "personal",
+       "creditPositionId": "A",
+       "creditedAtUs": "1803945600000000",
+       "lines": [
+        {
+         "lineId": "1",
+         "productId": "SKU",
+         "itemClass": "product",
+         "category": "general",
+         "quantity": 1,
+         "amountMinor": "50000",
+         "taxMinor": "0",
+         "volumes": []
+        }
+       ]
+      }
+     ],
+     "orderEvents": [
+      {
+       "eventId": "ev-refund-O2",
+       "orderId": "O2",
+       "lineId": "1",
+       "type": "refund",
+       "quantity": 1,
+       "refundMinor": "50000",
+       "restockingFeeMinor": "0",
+       "atUs": "1804032000000000"
+      }
+     ],
+     "history": [],
+     "priorState": null,
+     "adjustments": [],
+     "receivables": [],
+     "withholding": [
+      {
+       "participantId": "pA",
+       "ruleId": "fixture-wh-0",
+       "rate": "0",
+       "rounding": "half_up"
+      },
+      {
+       "participantId": "pC",
+       "ruleId": "fixture-wh-0",
+       "rate": "0",
+       "rounding": "half_up"
+      }
+     ]
+    }
+   },
+   "expected": {
+    "lines": [
+     {
+      "payeePositionId": "A",
+      "ruleKey": "rank_bonus",
+      "amountMinor": "1500"
+     },
+     {
+      "payeePositionId": "C",
+      "ruleKey": "match",
+      "amountMinor": "300"
+     }
+    ]
+   }
+  }
+ ],
+ "restatementDiff": [
+  {
+   "payeePositionId": "A",
+   "ruleKey": "rank_bonus",
+   "amountMinor": "-6500"
+  },
+  {
+   "payeePositionId": "C",
+   "ruleKey": "match",
+   "amountMinor": "-1300"
+  }
+ ],
+ "orderLineClawback": {
+  "orderId": "O2",
+  "lines": [
+   {
+    "payeePositionId": "A",
+    "ruleKey": "rank_bonus",
+    "amountMinor": "-5000"
+   }
+  ],
+  "leavesPaid": [
+   {
+    "payeePositionId": "A",
+    "ruleKey": "rank_bonus",
+    "amountMinor": "3000"
+   },
+   {
+    "payeePositionId": "C",
+    "ruleKey": "match",
+    "amountMinor": "1600"
+   }
+  ]
+ }
+}
