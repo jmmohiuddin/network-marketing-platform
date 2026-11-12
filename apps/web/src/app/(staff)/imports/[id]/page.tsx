@@ -1,6 +1,5 @@
 import type { Metadata } from 'next'
 import { BatchDetail } from '../../../../features/data/batch-detail'
-import '../../../../features/data/data.css'
 
 export const metadata: Metadata = { title: 'Import batch' }
 

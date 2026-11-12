@@ -10,9 +10,16 @@ describe('admin format helpers', () => {
 
   it('counts down to the end of a session, rounding up to the minute', () => {
     const now = Date.parse('2026-11-12T10:00:00Z')
-    expect(remainingLabel('2026-11-12T12:41:00Z', now)).toBe('2 h 41 min')
-    expect(remainingLabel('2026-11-12T10:00:30Z', now)).toBe('1 min')
-    expect(remainingLabel('2026-11-12T09:59:00Z', now)).toBe('Ended')
+    expect(remainingLabel('2026-11-12T12:41:00Z', now, null)).toBe('2 h 41 min')
+    expect(remainingLabel('2026-11-12T10:00:30Z', now, null)).toBe('1 min')
+    expect(remainingLabel('2026-11-12T09:59:00Z', now, null)).toBe('Ended')
+  })
+
+  it('never states more time left than the session window, even with a clock that lags (BUG-038)', () => {
+    // A 60-minute session approved 19 s after the page's clock last ticked.
+    const now = Date.parse('2026-11-12T03:33:00.000Z')
+    expect(remainingLabel('2026-11-12T04:33:19.885Z', now, '2026-11-12T03:33:19.885Z')).toBe('1 h')
+    expect(remainingLabel('2026-11-12T04:33:19.885Z', Date.parse('2026-11-12T03:43:19.885Z'), '2026-11-12T03:33:19.885Z')).toBe('50 min')
   })
 
   it('round-trips datetime-local values through ISO timestamps', () => {

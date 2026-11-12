@@ -5,6 +5,7 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { apiError, fetchReturning, ok, requestBody } from '../../test/fetch'
 import { renderWithProviders } from '../../test/render'
+import { adminMe } from '../admin/test-support'
 import { MfaEnrolment, MfaVerification } from './mfa'
 
 const navigation = vi.hoisted(() => ({ search: 'next=%2Fimports', router: { replace: vi.fn() } }))
@@ -49,19 +50,26 @@ describe('MfaVerification', () => {
 
   it('checks the code format before sending and shows a wrong code on the field', async () => {
     const user = userEvent.setup()
-    const fetchMock = fetchReturning(apiError(422, 'MFA_CODE_INVALID', 'The code is not valid. Enter the current code from your app.'), ok({ assurance: 'aal2' }))
+    const fetchMock = fetchReturning(ok(adminMe()), apiError(422, 'MFA_CODE_INVALID', 'The code is not valid. Enter the current code from your app.'), ok({ assurance: 'aal2' }))
     renderWithProviders(<MfaVerification />, fetchMock)
     const field = screen.getByLabelText('Verification code')
     await user.type(field, '123')
     await user.click(screen.getByRole('button', { name: 'Verify code' }))
     expect(screen.getByText('The code has 6 digits.')).toBeTruthy()
-    expect(fetchMock).not.toHaveBeenCalled()
+    expect(fetchMock).toHaveBeenCalledTimes(1)
     await user.type(field, '456')
     await user.click(screen.getByRole('button', { name: 'Verify code' }))
     expect(await screen.findByText('The code is not valid. Enter the current code from your app.')).toBeTruthy()
     expect(field.getAttribute('aria-invalid')).toBe('true')
     await user.click(screen.getByRole('button', { name: 'Verify code' }))
     await waitFor(() => expect(navigation.router.replace).toHaveBeenCalledWith('/imports'))
-    expect(fetchMock.mock.calls[0]?.[0]).toBe('/v1/auth/sessions/current/mfa')
+    expect(fetchMock.mock.calls[1]?.[0]).toBe('/v1/auth/sessions/current/mfa')
+  })
+
+  it('shows who is signing in, from GET /v1/me (sc_27 identity box)', async () => {
+    renderWithProviders(<MfaVerification />, fetchReturning(ok(adminMe())))
+    expect(await screen.findByText('Ada Admin')).toBeTruthy()
+    expect(screen.getByText('ada@acme.example')).toBeTruthy()
+    expect(screen.getByText('Step 2 / 2')).toBeTruthy()
   })
 })

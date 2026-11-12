@@ -2,8 +2,9 @@
 
 import { useState } from 'react'
 import { Button } from '../../../components/button'
-import { TextField } from '../../../components/form-field'
+import { TextInput } from '../../../components/form-field'
 import type { SummaryItem } from '../../../components/error-summary'
+import { ACTIONS, GROUP, NOTE, PAIR } from '../ui'
 import { minorUnitsError, SettingDialog, type SettingDialogProps } from './setting-dialog'
 
 /** What every threshold dialog gets from the page: version, title and close/saved callbacks. */
@@ -35,7 +36,7 @@ export function ActivePvDialog({ current, ...props }: ThresholdDialogProps<strin
   }
   return (
     <SettingDialog {...props} settingKey="compliance.active_pv_minor" build={build}>
-      <TextField
+      <TextInput
         id={ACTIVE_ID}
         label="Personal volume that makes an earner active"
         helper="In the minor units of the volume columns of your import files, for example cents."
@@ -61,7 +62,7 @@ export function LateOrderDayDialog({ current, ...props }: ThresholdDialogProps<n
   }
   return (
     <SettingDialog {...props} settingKey="compliance.late_order_day" build={build}>
-      <TextField
+      <TextInput
         id={DAY_ID}
         label="Day of the month from which an order counts as late"
         helper="Orders on this day or later are checked for crossing a rank threshold at the end of the period."
@@ -97,11 +98,11 @@ export function PersonalShareDialog({ current, ...props }: ThresholdDialogProps<
   return (
     <SettingDialog {...props} settingKey="compliance.personal_share_flag" build={build}>
       <p>A payee is flagged when more than this share of their multi-level pay comes from orders bought for personal use.</p>
-      <div className="admin-pair">
-        <TextField id={NUMERATOR_ID} label="Share" inputMode="numeric" data-autofocus value={share.numerator} error={errors.numerator} onChange={(event) => setShare({ ...share, numerator: event.target.value })} />
-        <TextField id={DENOMINATOR_ID} label="Out of" inputMode="numeric" value={share.denominator} error={errors.denominator} onChange={(event) => setShare({ ...share, denominator: event.target.value })} />
+      <div className={PAIR}>
+        <TextInput id={NUMERATOR_ID} label="Share" inputMode="numeric" data-autofocus value={share.numerator} error={errors.numerator} onChange={(event) => setShare({ ...share, numerator: event.target.value })} />
+        <TextInput id={DENOMINATOR_ID} label="Out of" inputMode="numeric" value={share.denominator} error={errors.denominator} onChange={(event) => setShare({ ...share, denominator: event.target.value })} />
       </div>
-      <p className="admin-note">For example 1 out of 3, or 30 out of 100. The fraction is kept exactly.</p>
+      <p className={NOTE}>For example 1 out of 3, or 30 out of 100. The fraction is kept exactly.</p>
     </SettingDialog>
   )
 }
@@ -147,12 +148,12 @@ export function RankThresholdsDialog({ current, ...props }: ThresholdDialogProps
     <SettingDialog {...props} settingKey="compliance.rank_thresholds_pv_minor" build={build}>
       <p>Personal volume at which each rank is reached, in the minor units of your import files.</p>
       {rows.map((row, index) => (
-        <div key={row.id} className="admin-group">
-          <div className="admin-pair">
-            <TextField id={`rank-${index}-name`} label={`Rank ${index + 1} name`} maxLength={RANK_NAME_MAX} value={row.name} error={errors[`rank-${index}-name`]} onChange={(event) => update(row.id, { name: event.target.value })} />
-            <TextField id={`rank-${index}-threshold`} label={`Rank ${index + 1} personal volume`} inputMode="numeric" value={row.threshold} error={errors[`rank-${index}-threshold`]} onChange={(event) => update(row.id, { threshold: event.target.value })} />
+        <div key={row.id} className={GROUP}>
+          <div className={PAIR}>
+            <TextInput id={`rank-${index}-name`} label={`Rank ${index + 1} name`} maxLength={RANK_NAME_MAX} value={row.name} error={errors[`rank-${index}-name`]} onChange={(event) => update(row.id, { name: event.target.value })} />
+            <TextInput id={`rank-${index}-threshold`} label={`Rank ${index + 1} personal volume`} inputMode="numeric" value={row.threshold} error={errors[`rank-${index}-threshold`]} onChange={(event) => update(row.id, { threshold: event.target.value })} />
           </div>
-          <div className="form-actions">
+          <div className={ACTIONS}>
             <Button variant="tertiary" onClick={() => setRows((current) => current.filter((other) => other.id !== row.id))}>Remove rank {index + 1}</Button>
           </div>
         </div>

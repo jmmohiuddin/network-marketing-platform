@@ -1,21 +1,22 @@
 'use client'
 
 import { countLabel } from '../../lib/format'
-import { Table, type TableColumn } from '../../components/table'
+import { DataTable, type DataTableColumn } from '../../components/data-table'
 import { useCursorPages } from '../../lib/cursor-pages'
 import { errorMessage } from '../../lib/messages'
 import { integer } from './format'
 import type { Finding, PageMeta } from './types'
 import { useResource } from '../../lib/use-resource'
+import { CODE } from './ui'
 
 const PAGE_SIZE = 50
 
 // Details come from the API, which never echoes personal data (email-like values are withheld there).
-const COLUMNS: readonly TableColumn<Finding>[] = [
+const COLUMNS: readonly DataTableColumn<Finding>[] = [
   { key: 'file', header: 'File', cell: (finding) => finding.file },
   { key: 'row', header: 'Row', align: 'end', cell: (finding) => (finding.row_no === null ? 'Whole file' : integer(finding.row_no)) },
   { key: 'column', header: 'Column', cell: (finding) => finding.column_name ?? '—' },
-  { key: 'code', header: 'Code', cell: (finding) => <span className="data-code">{finding.code}</span> },
+  { key: 'code', header: 'Code', cell: (finding) => <span className={CODE}>{finding.code}</span> },
   { key: 'detail', header: 'What to fix', cell: (finding) => finding.detail ?? '—' },
 ]
 
@@ -28,7 +29,8 @@ export function BatchFindings({ batchId, errorCount, stored }: { readonly batchI
     ? `${countLabel(errorCount, 'validation error')}; the first ${integer(stored)} are listed. Rows count the header as row 1.`
     : `${countLabel(errorCount, 'validation error')}. Rows count the header as row 1.`
   return (
-    <Table
+    <DataTable
+      bare
       caption={caption}
       columns={COLUMNS}
       rows={data ?? []}

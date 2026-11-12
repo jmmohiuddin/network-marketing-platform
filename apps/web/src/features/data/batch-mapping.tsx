@@ -4,13 +4,14 @@ import { useState } from 'react'
 import { useApi } from '../../components/api-provider'
 import { Banner } from '../../components/banner'
 import { Button, LinkButton } from '../../components/button'
-import { SelectField } from '../../components/form-field'
+import { Select } from '../../components/form-field'
 import { LoadingState } from '../../components/states'
 import { useToast } from '../../components/toast'
 import { isApiError } from '../../lib/api'
 import { errorMessage } from '../../lib/messages'
 import type { Batch, MappingVersion } from './types'
 import { useResource } from '../../lib/use-resource'
+import { CONTROLS } from './ui'
 
 // shortcut: the newest 200 versions (one API page) are offered; page through the list if a tenant ever has more.
 const VERSIONS_LIMIT = 200
@@ -39,7 +40,7 @@ export function BatchMapping({ batch, primary, onAttached }: BatchMappingProps) 
   const [chosen, setChosen] = useState('')
   const [busy, setBusy] = useState(false)
   const [failure, setFailure] = useState<unknown>(null)
-  const mappingLink = <LinkButton href={`/imports/mappings?batch=${batch.id}`}>Open mapping</LinkButton>
+  const mappingLink = <LinkButton href={`/imports/mappings?batch=${batch.id}`} icon="route">Open mapping</LinkButton>
 
   if (versions.loading) return <LoadingState label="Loading mapping versions" />
   if (versions.error !== null) return <Banner tone="danger" action={<Button onClick={versions.reload}>Try again</Button>}>{errorMessage(versions.error)}</Banner>
@@ -69,14 +70,14 @@ export function BatchMapping({ batch, primary, onAttached }: BatchMappingProps) 
 
   const uncovered = uncoveredCodes(failure)
   return (
-    <div className="data-stack">
-      <div className="data-row">
-        <SelectField
+    <div className="flex flex-col gap-space-sm">
+      <div className={CONTROLS}>
+        <Select
           label="Approved mapping version" value={selected}
           options={approved.map((version) => ({ value: version.id, label: `Version ${version.version}` }))}
           onChange={(event) => setChosen(event.target.value)}
         />
-        <Button variant={primary ? 'primary' : 'secondary'} loading={busy} onClick={attach}>Attach mapping version</Button>
+        <Button variant={primary ? 'primary' : 'secondary'} icon="link" loading={busy} onClick={attach} data-testid={primary ? 'primary-action' : undefined}>Attach mapping version</Button>
         {mappingLink}
       </div>
       {failure !== null && (

@@ -21,6 +21,14 @@ describe('SignInForm', () => {
     navigation.router.replace.mockClear()
   })
 
+  it('renders the sc_27 card header and one full-width primary submit', () => {
+    renderWithProviders(<SignInForm realm="vendor" />, fetchReturning())
+    expect(screen.getByRole('heading', { level: 1, name: 'Sign in to the operations console' })).toBeTruthy()
+    expect(screen.getByText('Operations console')).toBeTruthy()
+    expect(screen.getByTestId('primary-action').textContent).toContain('Sign in')
+    expect(screen.queryByLabelText('Company')).toBeNull()
+  })
+
   it('lists missing fields in a focused summary without calling the API', async () => {
     const user = userEvent.setup()
     const fetchMock = fetchReturning()
@@ -78,6 +86,6 @@ describe('SignInForm', () => {
   it('confirms a sign-out', () => {
     navigation.search = 'reason=signed_out'
     renderWithProviders(<SignInForm realm="tenant" />, fetchReturning())
-    expect(screen.getByText('You are signed out.').closest('[role="status"]')?.className).toBe('banner banner-info')
+    expect(screen.getByText('You are signed out.').closest('[role="status"]')?.getAttribute('data-tone')).toBe('info')
   })
 })

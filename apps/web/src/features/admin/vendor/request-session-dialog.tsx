@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useApi } from '../../../components/api-provider'
-import { Checkbox, SelectField, TextField } from '../../../components/form-field'
+import { Checkbox, FieldError, Select, TextInput } from '../../../components/form-field'
 import type { SummaryItem } from '../../../components/error-summary'
 import { useToast } from '../../../components/toast'
 import { errorMessage } from '../../../lib/messages'
@@ -11,6 +11,7 @@ import { durationLabel, supportScopeLabel } from '../format'
 import { FormDialog, TextAreaField } from '../form-dialog'
 import { useResource } from '../../../lib/use-resource'
 import type { TenantView } from '../types'
+import { CHECK_GRID, FIELDSET, LEGEND, MetaGrid, NOTE } from '../ui'
 
 const TENANT_ID = 'session-tenant'
 const REASON_ID = 'session-reason'
@@ -93,7 +94,7 @@ export function RequestSessionDialog({ tenant, onClose, onRequested }: RequestSe
       <p>The tenant’s admins see your reason and what you ask for. Access is read-only, time-boxed and every view is logged for them.</p>
       {tenant === undefined
         ? (
-          <SelectField
+          <Select
             id={TENANT_ID}
             label="Tenant"
             placeholder={tenants.loading ? 'Loading tenants…' : 'Choose a tenant'}
@@ -105,21 +106,21 @@ export function RequestSessionDialog({ tenant, onClose, onRequested }: RequestSe
             onChange={(event) => setTenantId(event.target.value)}
           />
         )
-        : <p>Tenant: {tenant.legal_name} ({tenant.slug})</p>}
+        : <MetaGrid items={[{ label: 'Tenant', value: `${tenant.legal_name} (${tenant.slug})` }, { label: 'Data region', value: tenant.region }]} />}
       <TextAreaField id={REASON_ID} label="Reason" helper="For example the ticket number and what you need to check." value={reason} error={errors.reason} onChange={setReason} />
-      <fieldset className="admin-fieldset" id={SCOPE_ID} tabIndex={-1} aria-describedby={errors.scope ? `${SCOPE_ID}-error` : undefined}>
-        <legend>Areas you need to see</legend>
-        <p className="admin-note">View only: nothing can be changed in a support session.</p>
-        {errors.scope && <p id={`${SCOPE_ID}-error`} className="field-error">{errors.scope}</p>}
-        {limits.loading && <p className="admin-note">Loading the areas you may ask for…</p>}
-        {limits.error !== null && <p className="field-error">{errorMessage(limits.error)}</p>}
-        <div className="admin-check-grid">
+      <fieldset className={FIELDSET} id={SCOPE_ID} tabIndex={-1} aria-describedby={errors.scope ? `${SCOPE_ID}-error` : undefined}>
+        <legend className={LEGEND}>Areas you need to see</legend>
+        <p className={NOTE}>View only: nothing can be changed in a support session.</p>
+        {errors.scope && <FieldError id={`${SCOPE_ID}-error`} message={errors.scope} />}
+        {limits.loading && <p className={NOTE}>Loading the areas you may ask for…</p>}
+        {limits.error !== null && <FieldError message={errorMessage(limits.error)} />}
+        <div className={CHECK_GRID}>
           {scopes.map((permission) => (
             <Checkbox key={permission} label={supportScopeLabel(permission)} checked={scope.has(permission)} onChange={(event) => toggle(permission, event.target.checked)} />
           ))}
         </div>
       </fieldset>
-      <TextField
+      <TextInput
         id={MINUTES_ID}
         label="Duration in minutes"
         helper={limits.data === null

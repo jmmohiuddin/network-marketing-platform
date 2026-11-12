@@ -2,15 +2,16 @@
 
 import { countLabel } from '../../lib/format'
 import { useId, useState } from 'react'
-import { SelectField } from '../../components/form-field'
-import { Table, type TableColumn } from '../../components/table'
-import { ChartBlock, Legend, LineChart, PairedBarChart, type BarValue, type LinePoint, type PairedRow } from './charts'
+import { Select } from '../../components/form-field'
+import { DataTable, type DataTableColumn } from '../../components/data-table'
+import { ChartCard, Legend, LineChart, PairedBarChart, type BarValue, type LinePoint, type PairedRow } from '../../components/charts'
 import { changeLabel, compareDecimal, figureLabel, figureValue, HEADLINE_KEYS, integer, UNIT_NAMES } from './format'
 import type { Figure, PeriodResult } from './types'
+import { CONTROLS, SECTION_HEADING } from './ui'
 
 export interface PeriodChoice {
-  /** The period shown, or null for every period of the report. */
-  readonly period: string | null
+  /** The period shown (the latest when the URL names none). */
+  readonly period: string
   /** A second period compared with it, or null. */
   readonly compare: string | null
 }
@@ -22,21 +23,19 @@ export function PeriodFilters({ periods, choice, onChange }: {
   readonly onChange: (choice: PeriodChoice) => void
 }) {
   return (
-    <div className="data-row" role="group" aria-label="Periods">
-      <SelectField
+    <div className={`${CONTROLS} bg-surface-container-lowest rounded shadow-sm p-space-sm`} role="group" aria-label="Periods">
+      <Select
         label="Period"
-        value={choice.period ?? ''}
-        options={[{ value: '', label: 'All periods' }, ...periods.map((period) => ({ value: period, label: period }))]}
-        onChange={(event) => onChange({ period: event.target.value === '' ? null : event.target.value, compare: null })}
+        value={choice.period}
+        options={periods.map((period) => ({ value: period, label: period }))}
+        onChange={(event) => onChange({ period: event.target.value, compare: null })}
       />
-      {choice.period !== null && (
-        <SelectField
-          label="Compare with"
-          value={choice.compare ?? ''}
-          options={[{ value: '', label: 'No comparison' }, ...periods.filter((period) => period !== choice.period).map((period) => ({ value: period, label: period }))]}
-          onChange={(event) => onChange({ ...choice, compare: event.target.value === '' ? null : event.target.value })}
-        />
-      )}
+      <Select
+        label="Compare with"
+        value={choice.compare ?? ''}
+        options={[{ value: '', label: 'No comparison' }, ...periods.filter((period) => period !== choice.period).map((period) => ({ value: period, label: period }))]}
+        onChange={(event) => onChange({ ...choice, compare: event.target.value === '' ? null : event.target.value })}
+      />
     </div>
   )
 }
@@ -78,7 +77,7 @@ export function TrendChart({ results, figureKey }: { readonly results: readonly 
   if (points.length < 2) return null
   const unit = rows.find((row) => row.figure !== undefined)?.figure?.unit ?? 'count'
   const label = figureLabel(figureKey)
-  const columns: TableColumn<TrendRow>[] = [
+  const columns: DataTableColumn<TrendRow>[] = [
     { key: 'period', header: 'Period', cell: (row) => row.period },
     { key: 'value', header: label, align: 'end', cell: (row) => (row.figure === undefined ? 'Not computed' : figureValue(row.figure)) },
     { key: 'numerator', header: 'Numerator', align: 'end', cell: (row) => (row.figure?.numerator == null ? '—' : integer(row.figure.numerator)) },
@@ -86,13 +85,13 @@ export function TrendChart({ results, figureKey }: { readonly results: readonly 
   ]
   const missing = rows.length - points.length
   return (
-    <ChartBlock
+    <ChartCard
       title={`${label} by period`}
       summary={`${trendSummary(points)}${missing > 0 ? ` ${countLabel(missing, 'period')} ${missing === 1 ? 'has' : 'have'} no value and ${missing === 1 ? 'is' : 'are'} left out of the line.` : ''}`}
-      table={<Table caption={`${label} in each period`} columns={columns} rows={rows} rowKey={(row) => row.period} empty={{ title: 'No periods.' }} density="compact" />}
+      table={<DataTable caption={`${label} in each period`} columns={columns} rows={rows} rowKey={(row) => row.period} empty={{ title: 'No periods.' }} density="compact" bare />}
     >
       <LineChart name={label} unit={UNIT_NAMES[unit]} points={points} />
-    </ChartBlock>
+    </ChartCard>
   )
 }
 
@@ -105,10 +104,10 @@ export function TrendSection({ results }: { readonly results: readonly PeriodRes
   if (keys.length === 0 || report === undefined) return null
   const key = chosen !== null && keys.includes(chosen) ? chosen : keys.includes(HEADLINE_KEYS[report]) ? HEADLINE_KEYS[report] : keys[0]!
   return (
-    <section className="data-section" aria-labelledby={titleId}>
-      <h2 id={titleId}>Trend</h2>
-      <div className="data-row">
-        <SelectField label="Figure" value={key} options={keys.map((option) => ({ value: option, label: figureLabel(option) }))} onChange={(event) => setChosen(event.target.value)} />
+    <section className="flex flex-col gap-space-sm" aria-labelledby={titleId}>
+      <h2 id={titleId} className={SECTION_HEADING}>Trend</h2>
+      <div className={CONTROLS}>
+        <Select label="Figure" value={key} options={keys.map((option) => ({ value: option, label: figureLabel(option) }))} onChange={(event) => setChosen(event.target.value)} />
       </div>
       <TrendChart results={results} figureKey={key} />
     </section>
@@ -131,7 +130,7 @@ export function CompareSection({ a, b }: { readonly a: PeriodResult; readonly b:
     key, a: a.figures.find((figure) => figure.key === key), b: b.figures.find((figure) => figure.key === key),
   }))
   const value = (figure: Figure | undefined) => (figure === undefined ? 'Not computed' : figureValue(figure))
-  const columns: TableColumn<CompareRow>[] = [
+  const columns: DataTableColumn<CompareRow>[] = [
     { key: 'figure', header: 'Figure', cell: (row) => figureLabel(row.key) },
     { key: 'a', header: a.period, align: 'end', cell: (row) => value(row.a) },
     { key: 'b', header: b.period, align: 'end', cell: (row) => value(row.b) },
@@ -143,20 +142,20 @@ export function CompareSection({ a, b }: { readonly a: PeriodResult; readonly b:
   // One axis per chart: only the percentages share a scale. Every figure, with its exact difference, is in the table.
   const percentRows = rows.filter((row) => row.a?.unit === 'percent' || row.b?.unit === 'percent')
   const bars: PairedRow[] = percentRows.map((row) => ({ key: row.key, label: figureLabel(row.key), a: barOf(row.a), b: barOf(row.b) }))
-  const tableOf = (items: readonly CompareRow[], caption: string) =>
-    <Table caption={caption} columns={columns} rows={items} rowKey={(row) => row.key} empty={{ title: 'No figures.' }} density="compact" />
+  const tableOf = (items: readonly CompareRow[], caption: string, bare = false) =>
+    <DataTable caption={caption} columns={columns} rows={items} rowKey={(row) => row.key} empty={{ title: 'No figures.' }} density="compact" bare={bare} />
   return (
-    <section className="data-section" aria-labelledby={titleId}>
-      <h2 id={titleId}>{`Compare ${a.period} with ${b.period}`}</h2>
+    <section className="flex flex-col gap-space-sm" aria-labelledby={titleId}>
+      <h2 id={titleId} className={SECTION_HEADING}>{`Compare ${a.period} with ${b.period}`}</h2>
       {bars.length > 0 && (
-        <ChartBlock
+        <ChartCard
           title="Percentages in both periods"
           summary={`${bars.length === 1 ? 'The percentage figure' : `The ${bars.length} percentage figures`}, on one axis from zero. The table below lists every figure with the exact difference.`}
           legend={<Legend items={[{ name: a.period, series: 'a' }, { name: b.period, series: 'b' }]} />}
-          table={tableOf(percentRows, `${countLabel(percentRows.length, 'percentage figure')} in ${a.period} and ${b.period}`)}
+          table={tableOf(percentRows, `${countLabel(percentRows.length, 'percentage figure')} in ${a.period} and ${b.period}`, true)}
         >
           <PairedBarChart name={`Percentages in ${a.period} and ${b.period}`} unit={UNIT_NAMES.percent} series={{ a: a.period, b: b.period }} rows={bars} />
-        </ChartBlock>
+        </ChartCard>
       )}
       {tableOf(rows, `${countLabel(keys.length, 'figure')} in ${a.period} and ${b.period}`)}
     </section>

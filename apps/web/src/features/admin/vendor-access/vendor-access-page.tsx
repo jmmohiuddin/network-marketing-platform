@@ -2,31 +2,35 @@
 
 import { useState } from 'react'
 import { useApi } from '../../../components/api-provider'
-import { Button } from '../../../components/button'
-import { ConfirmDialog } from '../../../components/dialog'
+import { Button, LinkButton } from '../../../components/button'
+import { DataTable, PaginationBar, type DataTableColumn } from '../../../components/data-table'
+import { Icon } from '../../../components/icon'
+import { KpiCard } from '../../../components/kpi-card'
+import { ConfirmDialog } from '../../../components/modal'
 import { PageHeader } from '../../../components/page-header'
+import { RequestCard } from '../../../components/request-card'
 import { EmptyState, LoadingState } from '../../../components/states'
-import { StatusChip } from '../../../components/status-chip'
-import { Table, type TableColumn } from '../../../components/table'
-import { TabPanel, Tabs } from '../../../components/tabs'
+import { StatusBadge } from '../../../components/status-badge'
 import { useToast } from '../../../components/toast'
 import { useSession } from '../../../lib/session'
-import { actorLabel, durationLabel, formatDateTime, remainingLabel, supportScopeText } from '../format'
-import { LoadFailure, useTabParam } from '../page-states'
 import { useNow } from '../../../lib/use-now'
-import { useResource } from '../../../lib/use-resource'
+import { useResource, type Resource } from '../../../lib/use-resource'
+import { actorLabel, durationLabel, formatDateTime, remainingLabel, shortId, supportScopeText } from '../format'
+import { LoadFailure } from '../page-states'
 import { tableError, usePagedList, type PagedList } from '../resource'
-import type { SupportSession } from '../types'
+import type { AuditEvent, SupportSession } from '../types'
+import { MONO, NOTE, NoticeCard, NumberedHeading } from '../ui'
 import { outOfRegion, SupportDecisionDialog } from './decision-dialog'
-import { SessionLogDialog } from './session-log-dialog'
+import { logDetails, SessionLogDialog } from './session-log-dialog'
 
-const ID_PREFIX = 'vendor-access'
-const TABS = [{ id: 'requests', label: 'Requests' }, { id: 'active', label: 'Active' }, { id: 'history', label: 'History' }]
 const COUNTDOWN_TICK_MS = 30_000
 // shortcut: open (approved or active) sessions are read as one page of up to 200 each; page them if a tenant ever
 // has more open at once.
 const OPEN_PAGE_SIZE = 200
+// The live trace shows the newest entries; the full log is one click away.
+const TRACE_SIZE = 5
 const PATH = '/v1/support-sessions'
+const AUDIT_PATH = '/settings/audit'
 const NO_NAMES: ReadonlyMap<string, string> = new Map()
 
 type Dialogs =
@@ -38,116 +42,203 @@ function scopeText(session: SupportSession): string {
   return supportScopeText(session.scope.permissions)
 }
 
-function RequestCard({ session, tenantRegion, onDecide }: {
-  readonly session: SupportSession
-  readonly tenantRegion: string | null
-  readonly onDecide: (approve: boolean) => void
+/** Approved and active sessions, soonest end first. */
+function useOpenSessions() {
+  const active = useResource<SupportSession[]>(PATH, { state: 'active', limit: OPEN_PAGE_SIZE })
+  const approved = useResource<SupportSession[]>(PATH, { state: 'approved', limit: OPEN_PAGE_SIZE })
+  const rows = [...(active.data ?? []), ...(approved.data ?? [])].sort((left, right) => (left.ends_at ?? '').localeCompare(right.ends_at ?? ''))
+  return {
+    rows,
+    loading: active.loading || approved.loading,
+    error: active.error ?? approved.error,
+    reload: () => {
+      active.reload()
+      approved.reload()
+    },
+  }
+}
+
+/** sc_14 KPI cards: open sessions with the soonest end (the support-session countdown is the one allowed), requests, region. */
+function AccessKpis({ open, requests, region, now }: {
+  readonly open: ReturnType<typeof useOpenSessions>
+  readonly requests: PagedList<SupportSession>
+  readonly region: string | null
+  readonly now: number
 }) {
-  const { readOnly } = useSession()
-  const titleId = `support-request-${session.id}`
+  const soonest = open.rows.find((session) => session.ends_at !== null)
+  const requestCount = requests.loading || requests.error !== null ? null : `${requests.rows.length}${requests.pagination.hasNext ? '+' : ''}`
   return (
-    <li className="admin-card" aria-labelledby={titleId}>
-      <div className="admin-card-header">
-        <h2 id={titleId} className="admin-card-title">Vendor support request</h2>
-        <StatusChip state="requested" label="Waiting for your decision" />
-      </div>
-      <dl className="admin-details">
-        {/* shortcut: the tenant cannot read vendor users, so the requester shows as in the audit log; name them once the
-            session view carries the requester's name. */}
-        <dt>Asked by</dt><dd>{actorLabel({ actor_type: 'vendor_user', actor_id: session.requester_id }, NO_NAMES)}</dd>
-        <dt>Reason</dt><dd>{session.reason}</dd>
-        <dt>Areas asked for (view only)</dt><dd>{scopeText(session)}</dd>
-        <dt>Duration asked for</dt><dd>{durationLabel(session.requested_minutes)}</dd>
-        <dt>Data region</dt>
-        <dd>{outOfRegion(session, tenantRegion) ? 'The requester works outside your data region. Approving needs your explicit region approval.' : 'Same as your data'}</dd>
-        <dt>Asked at</dt><dd>{formatDateTime(session.created_at)}</dd>
-      </dl>
-      <p className="admin-note">Nothing can be accessed until you approve. Access ends automatically. A request nobody decides in time is denied automatically.</p>
-      {!readOnly && <div className="form-actions">
-        <Button variant="destructive" onClick={() => onDecide(false)}>Deny</Button>
-        {/* One primary action per view: with several requests listed, no card's Approve is the primary. */}
-        <Button variant="secondary" onClick={() => onDecide(true)}>Approve</Button>
-      </div>}
-    </li>
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-space-md">
+      <KpiCard
+        label="Open vendor sessions"
+        icon="lock_clock"
+        value={open.loading || open.error !== null ? null : String(open.rows.length)}
+        detail={soonest?.ends_at == null ? 'Nothing open now' : `First one ends in ${remainingLabel(soonest.ends_at, now, soonest.starts_at)}`}
+      />
+      <KpiCard label="Requests waiting" icon="hourglass_top" value={requestCount} detail="Denied automatically if nobody decides in time" />
+      <KpiCard label="Your data region" icon="public" value={region} detail={region === null ? 'Not recorded' : 'Requests from elsewhere need your explicit approval'} />
+    </div>
   )
 }
 
-function RequestsTab({ requests, tenantRegion, onDecide }: {
+function DecisionQueue({ requests, tenantRegion, onDecide }: {
   readonly requests: PagedList<SupportSession>
   readonly tenantRegion: string | null
   readonly onDecide: (session: SupportSession, approve: boolean) => void
 }) {
+  const { readOnly } = useSession()
   if (requests.error !== null) return <LoadFailure error={requests.error} onRetry={requests.reload} section />
   if (requests.loading) return <LoadingState label="Loading requests" />
   if (requests.rows.length === 0) return <EmptyState title="No requests. When vendor staff ask for access, the request appears here." />
   const { pagination } = requests
   return (
-    <div className="admin-section">
-      <ul className="admin-cards">
+    <>
+      <ul className="flex flex-col gap-space-md">
         {requests.rows.map((session) => (
-          <RequestCard key={session.id} session={session} tenantRegion={tenantRegion} onDecide={(approve) => onDecide(session, approve)} />
+          <li key={session.id}>
+            <RequestCard
+              reference={shortId(session.id)}
+              title="Vendor support request"
+              state={<StatusBadge state="requested" label="Waiting for your decision" />}
+              fields={[
+                // shortcut: the tenant cannot read vendor users, so the requester shows as in the audit log; name them once the
+                // session view carries the requester's name.
+                { label: 'Asked by', icon: 'badge', value: actorLabel({ actor_type: 'vendor_user', actor_id: session.requester_id }, NO_NAMES), detail: `Asked at ${formatDateTime(session.created_at)}` },
+                { label: 'Areas asked for (view only)', icon: 'visibility', value: scopeText(session) },
+                { label: 'Duration asked for', icon: 'timer', value: durationLabel(session.requested_minutes), detail: 'Starts when you approve and ends automatically' },
+                {
+                  label: 'Data region',
+                  icon: 'public',
+                  value: outOfRegion(session, tenantRegion) ? 'The requester works outside your data region. Approving needs your explicit region approval.' : 'Same as your data',
+                },
+              ]}
+              reason={session.reason}
+              actions={readOnly ? undefined : (
+                <>
+                  <Button variant="destructive" onClick={() => onDecide(session, false)}>Deny</Button>
+                  {/* One primary action per view: only a single listed request's Approve is the primary. */}
+                  {requests.rows.length === 1
+                    ? <Button variant="primary" icon="verified_user" data-testid="primary-action" onClick={() => onDecide(session, true)}>Approve</Button>
+                    : <Button icon="verified_user" onClick={() => onDecide(session, true)}>Approve</Button>}
+                </>
+              )}
+            >
+              <div className="p-space-md rounded bg-surface-container-lowest shadow-sm flex items-start gap-space-sm">
+                <Icon name="shield_lock" size={20} className="text-tertiary shrink-0 mt-0.5" />
+                <p className="font-body-sm text-body-sm text-on-surface-variant">Nothing can be accessed until you approve. Access is read-only and every view is logged here. A request nobody decides in time is denied automatically.</p>
+              </div>
+            </RequestCard>
+          </li>
         ))}
       </ul>
-      {(pagination.hasPrevious || pagination.hasNext) && (
-        <nav className="pagination" aria-label="Pages of requests">
-          <Button onClick={pagination.onPrevious} disabled={!pagination.hasPrevious}>Previous page</Button>
-          <Button onClick={pagination.onNext} disabled={!pagination.hasNext}>Next page</Button>
-        </nav>
-      )}
+      {(pagination.hasPrevious || pagination.hasNext) && <div className="rounded overflow-hidden"><PaginationBar label="Pages of requests" pagination={pagination} /></div>}
+    </>
+  )
+}
+
+/** sc_14 read-only request trace: the newest log entries of one session on the inverse surface. */
+function Trace({ log }: { readonly log: Resource<AuditEvent[]> }) {
+  if (log.error !== null) return <p className={NOTE}>The log could not be loaded. Open the full log to try again.</p>
+  const events = (log.data ?? []).slice(0, TRACE_SIZE)
+  return (
+    <div className="bg-inverse-surface text-inverse-on-surface rounded p-space-sm font-data-mono-sm text-[11px] flex flex-col gap-1.5 overflow-x-auto" aria-busy={log.loading || undefined}>
+      {log.loading && <span>Loading the log</span>}
+      {!log.loading && events.length === 0 && <span>Nothing has been logged for this session yet.</span>}
+      {events.map((event) => (
+        <div key={event.seq} className="flex items-start gap-2">
+          <span className="text-outline-variant shrink-0">{formatDateTime(event.occurred_at)}</span>
+          <span className="truncate">{logDetails(event) || event.action}</span>
+        </div>
+      ))}
     </div>
   )
 }
 
-function ActiveTab({ onEnd, onLog }: { readonly onEnd: (session: SupportSession) => void; readonly onLog: (session: SupportSession) => void }) {
-  const active = useResource<SupportSession[]>(PATH, { state: 'active', limit: OPEN_PAGE_SIZE })
-  const approved = useResource<SupportSession[]>(PATH, { state: 'approved', limit: OPEN_PAGE_SIZE })
-  const now = useNow(COUNTDOWN_TICK_MS)
-  const { readOnly } = useSession()
-  const failed = active.error ?? approved.error
-  const rows = [...(active.data ?? []), ...(approved.data ?? [])].sort((left, right) => (left.ends_at ?? '').localeCompare(right.ends_at ?? ''))
-  const columns: readonly TableColumn<SupportSession>[] = [
-    { key: 'reason', header: 'Reason', cell: (session) => session.reason },
-    { key: 'scope', header: 'Areas (view only)', cell: scopeText },
-    { key: 'start', header: 'Window started', cell: (session) => formatDateTime(session.starts_at) },
-    { key: 'ends', header: 'Ends', cell: (session) => (session.ends_at === null ? '—' : `${formatDateTime(session.ends_at)} (in ${remainingLabel(session.ends_at, now)})`) },
-    { key: 'state', header: 'State', cell: (session) => <StatusChip state={session.state} label={session.state === 'approved' ? 'Approved, not used yet' : undefined} /> },
-    {
-      key: 'actions',
-      header: 'Actions',
-      align: 'end',
-      cell: (session) => (
-        <div className="admin-row-actions">
-          <Button variant="tertiary" onClick={() => onLog(session)}>View log</Button>
-          {!readOnly && <Button variant="destructive" onClick={() => onEnd(session)}>End now</Button>}
-        </div>
-      ),
-    },
-  ]
+/** sc_14 active session monitor card. */
+function OpenSessionCard({ session, now, onEnd, onLog }: {
+  readonly session: SupportSession
+  readonly now: number
+  readonly onEnd?: () => void
+  readonly onLog: () => void
+}) {
+  const log = useResource<AuditEvent[]>(`${PATH}/${session.id}/log`, { limit: TRACE_SIZE })
+  const titleId = `open-session-${session.id}`
   return (
-    <Table
-      caption="Vendor sessions that are open now. Each ends automatically at the time shown."
-      columns={columns}
-      rows={rows}
-      rowKey={(session) => session.id}
-      loading={active.loading || approved.loading}
-      error={failed === null ? null : tableError({ error: failed, reload: () => { active.reload(); approved.reload() } })}
-      empty={{ title: 'No vendor session is open.' }}
-    />
+    <li aria-labelledby={titleId} className="bg-surface-container-lowest rounded shadow-md overflow-hidden flex flex-col">
+      <div className="p-space-md bg-surface-container flex flex-wrap items-center justify-between gap-space-sm">
+        <div className="flex items-center gap-space-sm min-w-0">
+          <span className="px-2 py-0.5 rounded bg-primary-container text-on-primary font-data-mono-sm text-caption font-bold">{shortId(session.id)}</span>
+          <h3 id={titleId} className="font-body-sm text-body-sm text-on-surface font-semibold">Vendor session</h3>
+        </div>
+        <StatusBadge state={session.state} label={session.state === 'approved' ? 'Approved, not used yet' : undefined} />
+      </div>
+      <div className="p-space-md flex flex-col gap-space-md">
+        <div className="p-space-md rounded bg-surface-container-low flex flex-wrap items-center justify-between gap-space-sm">
+          <div className="flex flex-col gap-0.5">
+            <span className="font-caption text-caption text-on-surface-variant uppercase font-semibold">Session window</span>
+            <span className={`${MONO} text-on-surface`}>Started {formatDateTime(session.starts_at)} · Ends {formatDateTime(session.ends_at)}</span>
+          </div>
+          {session.ends_at !== null && (
+            <div className="text-right">
+              <div className="font-data-mono-lg text-data-mono-lg text-on-surface font-bold">{remainingLabel(session.ends_at, now, session.starts_at)}</div>
+              <span className="font-caption text-caption text-on-surface-variant">Time left</span>
+            </div>
+          )}
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-space-xs font-caption text-caption">
+          <div className="bg-surface-container px-3 py-2 rounded">
+            <span className="text-on-surface-variant block">Areas (view only)</span>
+            <span className="font-body-sm text-body-sm text-on-surface font-semibold block">{scopeText(session)}</span>
+          </div>
+          <div className="bg-surface-container px-3 py-2 rounded">
+            <span className="text-on-surface-variant block">Reason given</span>
+            <span className="font-body-sm text-body-sm text-on-surface font-semibold block">{session.reason}</span>
+          </div>
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <div className="flex items-center justify-between gap-space-sm font-caption text-caption">
+            <span className="text-on-surface-variant font-semibold uppercase tracking-wider flex items-center gap-1"><Icon name="terminal" size={14} />Read-only request trace</span>
+            <Button variant="tertiary" size="sm" onClick={onLog}>View log</Button>
+          </div>
+          <Trace log={log} />
+        </div>
+        {onEnd !== undefined && <Button variant="destructive" icon="cancel" className="w-full" onClick={onEnd}>End now</Button>}
+      </div>
+    </li>
   )
 }
 
-function HistoryTab({ onLog }: { readonly onLog: (session: SupportSession) => void }) {
+function SessionMonitor({ open, now, onEnd, onLog }: {
+  readonly open: ReturnType<typeof useOpenSessions>
+  readonly now: number
+  readonly onEnd: (session: SupportSession) => void
+  readonly onLog: (session: SupportSession) => void
+}) {
+  const { readOnly } = useSession()
+  if (open.error !== null) return <LoadFailure error={open.error} onRetry={open.reload} section />
+  if (open.loading) return <LoadingState label="Loading open sessions" />
+  if (open.rows.length === 0) return <EmptyState title="No vendor session is open." />
+  return (
+    <ul className="flex flex-col gap-space-md">
+      {open.rows.map((session) => (
+        <OpenSessionCard key={session.id} session={session} now={now} onLog={() => onLog(session)} onEnd={readOnly ? undefined : () => onEnd(session)} />
+      ))}
+    </ul>
+  )
+}
+
+function HistoryTable({ onLog }: { readonly onLog: (session: SupportSession) => void }) {
   const sessions = usePagedList<SupportSession>(PATH)
-  const columns: readonly TableColumn<SupportSession>[] = [
-    { key: 'asked', header: 'Asked at', cell: (session) => formatDateTime(session.created_at) },
+  const columns: readonly DataTableColumn<SupportSession>[] = [
+    { key: 'asked', header: 'Asked at', cell: (session) => <span className={`${MONO} text-primary`}>{formatDateTime(session.created_at)}</span> },
     { key: 'reason', header: 'Reason', cell: (session) => session.reason },
     { key: 'scope', header: 'Areas (view only)', cell: scopeText },
-    { key: 'window', header: 'Window', cell: (session) => (session.starts_at === null ? '—' : `${formatDateTime(session.starts_at)} to ${formatDateTime(session.ends_at)}`) },
-    { key: 'state', header: 'State', cell: (session) => <StatusChip state={session.state} /> },
-    { key: 'log', header: 'Log', align: 'end', cell: (session) => <Button variant="tertiary" onClick={() => onLog(session)}>View log</Button> },
+    { key: 'window', header: 'Window', cell: (session) => (session.starts_at === null ? '—' : <span className={MONO}>{formatDateTime(session.starts_at)} to {formatDateTime(session.ends_at)}</span>) },
+    { key: 'state', header: 'State', cell: (session) => <StatusBadge state={session.state} /> },
+    { key: 'log', header: 'Log', align: 'end', cell: (session) => <Button variant="tertiary" size="sm" onClick={() => onLog(session)}>View log</Button> },
   ]
   return (
-    <Table
+    <DataTable
       caption="All vendor access requests and sessions, newest first"
       columns={columns}
       rows={sessions.rows}
@@ -165,28 +256,45 @@ export function VendorAccessPage() {
   const { me } = useSession()
   const api = useApi()
   const toast = useToast()
-  const [tab, selectTab] = useTabParam(TABS)
   const requests = usePagedList<SupportSession>(PATH, { state: 'requested' })
+  const open = useOpenSessions()
+  const now = useNow(COUNTDOWN_TICK_MS)
   const [dialog, setDialog] = useState<Dialogs | null>(null)
   const [version, setVersion] = useState(0)
   const tenantRegion = me.tenant?.region ?? null
   const changed = () => {
     setDialog(null)
     requests.reload()
+    open.reload()
     setVersion((count) => count + 1)
   }
+  const canReadAudit = me.navigation.some((entry) => entry.path === AUDIT_PATH)
   return (
     <>
       <PageHeader
         title="Vendor access"
-        summary="Vendor staff have no standing access to your data. They ask, you decide, and every view in a session is logged here."
+        display
+        summary="Vendor staff ask, you decide, and every view in a session is logged here."
+        actions={canReadAudit ? <LinkButton href={AUDIT_PATH} icon="history_edu">View audit log</LinkButton> : undefined}
       />
-      <Tabs label="Vendor access" idPrefix={ID_PREFIX} tabs={TABS} selected={tab} onSelect={selectTab} />
-      <TabPanel idPrefix={ID_PREFIX} tabId={tab}>
-        {tab === 'requests' && <RequestsTab requests={requests} tenantRegion={tenantRegion} onDecide={(session, approve) => setDialog({ kind: 'decide', session, approve })} />}
-        {tab === 'active' && <ActiveTab key={version} onEnd={(session) => setDialog({ kind: 'end', session })} onLog={(session) => setDialog({ kind: 'log', session })} />}
-        {tab === 'history' && <HistoryTab key={version} onLog={(session) => setDialog({ kind: 'log', session })} />}
-      </TabPanel>
+      <NoticeCard icon="policy" title="Vendor staff have no standing access to your data">
+        A support session is read-only, limited in time and starts only after one of your admins approves it. You can end it at any time.
+      </NoticeCard>
+      <AccessKpis open={open} requests={requests} region={tenantRegion} now={now} />
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-space-lg items-start">
+        <section aria-labelledby="access-requests" className="xl:col-span-7 flex flex-col gap-space-md">
+          <NumberedHeading id="access-requests" number={1} title="Requests waiting for your decision" />
+          <DecisionQueue requests={requests} tenantRegion={tenantRegion} onDecide={(session, approve) => setDialog({ kind: 'decide', session, approve })} />
+        </section>
+        <section aria-labelledby="access-open" className="xl:col-span-5 flex flex-col gap-space-md">
+          <NumberedHeading id="access-open" number={2} title="Open sessions" />
+          <SessionMonitor open={open} now={now} onEnd={(session) => setDialog({ kind: 'end', session })} onLog={(session) => setDialog({ kind: 'log', session })} />
+        </section>
+      </div>
+      <section aria-labelledby="access-history" className="flex flex-col gap-space-md">
+        <NumberedHeading id="access-history" number={3} title="Session history" />
+        <HistoryTable key={version} onLog={(session) => setDialog({ kind: 'log', session })} />
+      </section>
       {dialog?.kind === 'decide' && (
         <SupportDecisionDialog session={dialog.session} approve={dialog.approve} tenantRegion={tenantRegion} onClose={() => setDialog(null)} onDecided={changed} />
       )}

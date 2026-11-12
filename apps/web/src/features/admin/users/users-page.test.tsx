@@ -52,10 +52,13 @@ describe('UsersPage', () => {
 
   it('lists users with roles, scopes and grants waiting for a second admin', async () => {
     renderAs(ME, <UsersPage />, routes())
-    const bob = (await screen.findByText('Bob Builder (bob@acme.example)')).closest('tr')!
-    expect(within(bob).getByText('Commission analyst · All markets')).toBeTruthy()
+    const bob = (await screen.findByText('Bob Builder')).closest('tr')!
+    expect(within(bob).getByText('bob@acme.example')).toBeTruthy()
+    expect(within(bob).getByText('Commission analyst').closest('li')?.textContent).toContain('All markets')
     expect(within(bob).getByText('Waiting for a second admin')).toBeTruthy()
-    expect(screen.getByRole('tab', { name: 'Pending approvals (2)' })).toBeTruthy()
+    expect(within(bob).getByText('Set up')).toBeTruthy()
+    expect(screen.getByRole('tab', { name: 'Pending approvals 2' })).toBeTruthy()
+    expect(screen.getByRole('heading', { name: 'Admin and approver roles need a second admin' })).toBeTruthy()
     const cy = screen.getByText('cy@acme.example').closest('tr')!
     expect(within(cy).getByRole('button', { name: 'Resend invitation to cy@acme.example' })).toBeTruthy()
   })
@@ -82,7 +85,7 @@ describe('UsersPage', () => {
     renderAs(ME, <UsersPage />, fetchMock)
     await user.click(await screen.findByRole('button', { name: 'Assign role to bob@acme.example' }))
     await user.selectOptions(screen.getByLabelText('Role'), 'r-admin')
-    expect(screen.getByText(/takes effect only after another admin approves it/)).toBeTruthy()
+    expect(within(screen.getByRole('dialog')).getByText(/takes effect only after another admin approves it/)).toBeTruthy()
     await user.click(screen.getByLabelText('Only some markets'))
     await user.click(screen.getByRole('button', { name: 'Assign role' }))
     expect(screen.getByRole('alert').textContent).toContain('Choose at least one market, or all markets.')
@@ -119,9 +122,11 @@ describe('UsersPage', () => {
     const refusal = 'A grant must be decided by an admin who neither requested nor receives it.'
     const fetchMock = routes({ 'POST /v1/role-grant-requests/g2/decision': () => apiError(422, 'SOD_SELF_APPROVAL', refusal) })
     renderAs(ME, <UsersPage />, fetchMock)
-    const own = (await screen.findByText('You asked for this grant. Another admin must decide it.')).closest('tr')!
+    const own = (await screen.findByText('You asked for this grant. Another admin must decide it.')).closest('li')!
     expect(within(own).queryByRole('button')).toBeNull()
-    expect(await screen.findByText('Tenant admin · DE')).toBeTruthy()
+    const other = (await screen.findByText('DE')).closest('li')!
+    expect(within(other).getByText('Tenant admin')).toBeTruthy()
+    expect(within(other).getByText('Privileged grant pending')).toBeTruthy()
     await user.click(screen.getByRole('button', { name: 'Approve Tenant admin grant' }))
     await user.click(screen.getByRole('button', { name: 'Approve grant' }))
     expect(await screen.findByText(refusal)).toBeTruthy()
@@ -139,7 +144,8 @@ describe('UsersPage roles tab (SC-28 permission matrix)', () => {
     const matrix = await screen.findByRole('table', { name: /Permission matrix/ })
     expect(within(matrix).getByRole('columnheader', { name: 'Tenant admin (base role)' })).toBeTruthy()
     const row = within(matrix).getByText('Read compliance reports').closest('tr')!
-    expect([...row.querySelectorAll('td')].map((cell) => cell.textContent)).toEqual(['No', 'Yes'])
+    // Each cell is an icon (hidden from assistive technology) followed by the word.
+    expect([...row.querySelectorAll('td')].map((cell) => cell.firstElementChild?.lastChild?.textContent)).toEqual(['No', 'Yes'])
     await user.click(screen.getByRole('button', { name: 'Create role' }))
     const dialog = screen.getByRole('dialog', { name: 'Create role' })
     await user.selectOptions(within(dialog).getByLabelText(/Start from the permissions of/), 'r-admin')

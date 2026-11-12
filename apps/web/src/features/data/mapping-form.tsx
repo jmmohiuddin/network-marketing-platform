@@ -4,14 +4,17 @@ import { countLabel } from '../../lib/format'
 import { useState, type FormEvent, type ReactNode } from 'react'
 import { useApi } from '../../components/api-provider'
 import { Banner } from '../../components/banner'
-import { Button } from '../../components/button'
+import { Button, FOCUS_RING } from '../../components/button'
 import { ErrorSummary, type SummaryItem } from '../../components/error-summary'
-import { FormField } from '../../components/form-field'
-import { Table, type TableColumn } from '../../components/table'
+import { FormField, TEXTAREA_CLASS } from '../../components/form-field'
+import { DataTable, type DataTableColumn } from '../../components/data-table'
+import { Icon } from '../../components/icon'
+import { TabPanel, Tabs } from '../../components/tabs'
 import { errorMessage, fieldErrors } from '../../lib/messages'
 import { humanize, integer } from './format'
 import { draftFrom, PUBLISHED_STARTER_KIT_CODES, toMappings, unmappedCodes, type Choice, type Draft, type ParticipantChoice } from './mapping-model'
 import { PURPOSES, SOURCE_KINDS, type Mappings, type MappingVersion, type SourceValues } from './types'
+import { CODE, NOTE, Panel, SECTION_HEADING } from './ui'
 
 const NOTES_MAX = 2000
 
@@ -33,6 +36,9 @@ const kitOptions = (code: string): readonly Option[] => [
   { value: 'no', label: 'Not a starter kit' },
 ]
 
+const SELECT_CELL = `h-7 w-full min-w-[11rem] pl-2 pr-6 bg-surface-container-lowest text-on-surface rounded font-body-sm text-[12px] border border-outline-variant focus:border-primary focus:outline-none ${FOCUS_RING}`
+const CHIP = 'px-2 py-0.5 rounded text-[11px] font-caption font-semibold bg-surface-container text-secondary whitespace-nowrap'
+
 interface ChoiceCellProps {
   readonly label: string
   readonly value: string
@@ -41,37 +47,65 @@ interface ChoiceCellProps {
   readonly onChange: (value: string) => void
 }
 
-/** A select in edit mode, the chosen label as text when read-only (approved versions, readers). */
+/** sc_25 l.266 inline select in edit mode; the chosen label as a chip when read-only (approved versions, readers). */
 function ChoiceCell({ label, value, options, editable, onChange }: ChoiceCellProps) {
-  if (!editable) return options.find((option) => option.value === value)?.label ?? value
+  if (!editable) return <span className={CHIP}>{options.find((option) => option.value === value)?.label ?? value}</span>
   return (
-    <select className="input select data-cell-select" aria-label={label} value={value} onChange={(event) => onChange(event.target.value)}>
+    <select className={SELECT_CELL} aria-label={label} value={value} onChange={(event) => onChange(event.target.value)}>
       {options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
     </select>
   )
 }
 
-function VocabularyTable({ title, codes, counts, columns }: {
+/** The four vocabularies of a mapping, one tab each (sc_25 l.74 domain tabs). */
+export const DOMAINS = [
+  { id: 'participant_types', label: 'Participant types', icon: 'groups' },
+  { id: 'purposes', label: 'Order purposes', icon: 'shopping_cart' },
+  { id: 'source_kinds', label: 'Payout source kinds', icon: 'payments' },
+  { id: 'starter_kits', label: 'Starter-kit codes', icon: 'inventory_2' },
+] as const
+export type Domain = (typeof DOMAINS)[number]['id']
+export const isDomain = (value: string | null): value is Domain => DOMAINS.some((domain) => domain.id === value)
+const TABS_ID = 'mapping-domain'
+
+function VocabularyTable({ title, codes, unmapped, counts, columns }: {
   readonly title: string
   readonly codes: readonly string[]
+  readonly unmapped: ReadonlySet<string>
   readonly counts: Readonly<Record<string, number>> | undefined
-  readonly columns: readonly TableColumn<string>[]
+  readonly columns: readonly DataTableColumn<string>[]
 }) {
   const rowsOf = (code: string) => (counts !== undefined && Object.hasOwn(counts, code) ? integer(counts[code]!) : '—')
+  const open = codes.filter((code) => unmapped.has(code)).length
   return (
-    <section className="data-section" aria-label={title}>
-      <h2>{title}</h2>
-      <Table
+    <section aria-label={title} className="flex flex-col">
+      <div className="px-space-sm pb-space-sm flex items-center gap-space-xs">
+        <h2 className={SECTION_HEADING}>{title}</h2>
+      </div>
+      <DataTable
+        bare
         caption={countLabel(codes.length, 'partner code')}
         columns={[
-          { key: 'code', header: 'Partner code', cell: (code) => <span className="data-code">{code === '' ? '(empty)' : code}</span> },
-          { key: 'rows', header: 'Rows in batch', align: 'end', cell: rowsOf },
+          {
+            key: 'code', header: 'Partner code',
+            cell: (code) => (
+              <span className={`inline-flex items-center gap-1 font-data-mono-md text-data-mono-md font-semibold ${unmapped.has(code) ? 'text-error' : 'text-primary'}`}>
+                {unmapped.has(code) && <Icon name="error" size={14} />}
+                {code === '' ? '(empty)' : code}
+              </span>
+            ),
+          },
+          { key: 'rows', header: 'Rows in batch', align: 'end', cell: (code) => <span className="font-data-mono-sm text-data-mono-sm font-medium">{rowsOf(code)}</span> },
           ...columns,
         ]}
         rows={codes}
         rowKey={(code) => code}
         empty={{ title: 'No partner codes of this kind in this version or batch.' }}
       />
+      <div className="px-space-sm py-2 bg-surface-container-low flex flex-wrap items-center justify-between gap-space-sm font-data-mono-sm text-data-mono-sm text-secondary">
+        <span>{countLabel(codes.length, 'partner code')}</span>
+        <span>{`${integer(codes.length - open)} mapped · ${integer(open)} not mapped`}</span>
+      </div>
     </section>
   )
 }
@@ -86,10 +120,14 @@ export interface MappingFormProps {
   readonly editable: boolean
   readonly saveVariant: 'primary' | 'secondary'
   readonly onSaved: (created: MappingVersion) => void
+  /** The vocabulary tab shown first (?domain=). */
+  readonly domain: Domain
+  /** Keeps the chosen tab in the URL. */
+  readonly onDomain: (domain: Domain) => void
 }
 
 /** SC-25 mapping table per vocabulary; saving always creates the next version as a draft (PUT /v1/import-mappings). */
-export function MappingForm({ version, sourceValues, latest, editable: mayEdit, saveVariant, onSaved }: MappingFormProps) {
+export function MappingForm({ version, sourceValues, latest, editable: mayEdit, saveVariant, onSaved, domain: initialDomain, onDomain }: MappingFormProps) {
   const api = useApi()
   const [draft, setDraft] = useState<Draft>(() => draftFrom(version?.mappings ?? null, sourceValues))
   // An approved version is shown read-only; editing it starts the next version from its content.
@@ -98,6 +136,8 @@ export function MappingForm({ version, sourceValues, latest, editable: mayEdit, 
   const [notes, setNotes] = useState('')
   const [summary, setSummary] = useState<readonly SummaryItem[]>([])
   const [busy, setBusy] = useState(false)
+  // Shown at once; the URL follows so a link reproduces the view.
+  const [domain, setDomain] = useState<Domain>(initialDomain)
 
   function set<V extends keyof Draft>(vocab: V, code: string, value: Draft[V][string]) {
     setDraft((current) => ({ ...current, [vocab]: { ...current[vocab], [code]: value } }))
@@ -127,55 +167,80 @@ export function MappingForm({ version, sourceValues, latest, editable: mayEdit, 
   const cell = (label: string, value: string, options: readonly Option[], onChange: (value: string) => void): ReactNode =>
     <ChoiceCell label={label} value={value} options={options} editable={editable} onChange={onChange} />
   const unmapped = unmappedCodes(draft)
+  const open = new Set([...unmapped.unknown, ...unmapped.blocking])
   const codes = (record: object) => Object.keys(record).sort()
-
-  return (
-    <form className="data-stack" onSubmit={save} noValidate>
-      <ErrorSummary items={summary} />
-      {mayEdit && !editable && version !== null && (
-        <div className="data-row">
-          <p className="data-note">Version {version.version} is approved and cannot change.</p>
-          <Button variant={saveVariant} onClick={() => setStartedDraft(true)}>Start a new draft from version {version.version}</Button>
-        </div>
-      )}
-      {(unmapped.unknown.length > 0 || unmapped.blocking.length > 0) && (
-        <Banner tone="warning" title={`${countLabel(unmapped.unknown.length + unmapped.blocking.length, 'partner code')} ${unmapped.unknown.length + unmapped.blocking.length === 1 ? 'is' : 'are'} not mapped`}>
-          {unmapped.unknown.length > 0 && <p>Order purposes and payout source kinds left unmapped load as unknown and are counted in the data-quality report: <span className="data-code">{unmapped.unknown.join(', ')}</span>.</p>}
-          {unmapped.blocking.length > 0 && <p>Participant types and starter-kit codes have no safe default: a batch that uses these cannot be loaded until they are mapped: <span className="data-code">{unmapped.blocking.join(', ')}</span>.</p>}
-        </Banner>
-      )}
+  const chooseDomain = (id: string) => {
+    if (!isDomain(id)) return
+    setDomain(id)
+    onDomain(id)
+  }
+  const tables: Readonly<Record<Domain, ReactNode>> = {
+    participant_types: (
       <VocabularyTable
-        title="Participant types" codes={codes(draft.participant_types)} counts={sourceValues?.participant_types}
+        title="Participant types" codes={codes(draft.participant_types)} unmapped={open} counts={sourceValues?.participant_types}
         columns={[
           { key: 'earn', header: 'Can earn?', cell: (code) => cell(`Can earn: ${code}`, draft.participant_types[code]!.can_earn, YES_NO, (value) => setFlag(code, 'can_earn', value)) },
           { key: 'customer', header: 'Counts as end customer?', cell: (code) => cell(`Counts as end customer: ${code}`, draft.participant_types[code]!.counts_as_end_customer, YES_NO, (value) => setFlag(code, 'counts_as_end_customer', value)) },
         ]}
       />
+    ),
+    purposes: (
       <VocabularyTable
-        title="Order purposes" codes={codes(draft.purposes)} counts={sourceValues?.purposes}
+        title="Order purposes" codes={codes(draft.purposes)} unmapped={open} counts={sourceValues?.purposes}
         columns={[{ key: 'purpose', header: 'Purpose', cell: (code) => cell(`Purpose: ${code}`, draft.purposes[code]!, PURPOSE_OPTIONS, (value) => set('purposes', code, value as Draft['purposes'][string])) }]}
       />
+    ),
+    source_kinds: (
       <VocabularyTable
-        title="Payout source kinds" codes={codes(draft.source_kinds)} counts={sourceValues?.source_kinds}
+        title="Payout source kinds" codes={codes(draft.source_kinds)} unmapped={open} counts={sourceValues?.source_kinds}
         columns={[{ key: 'kind', header: 'Source kind', cell: (code) => cell(`Source kind: ${code}`, draft.source_kinds[code]!, SOURCE_KIND_OPTIONS, (value) => set('source_kinds', code, value as Draft['source_kinds'][string])) }]}
       />
+    ),
+    starter_kits: (
       <VocabularyTable
-        title="Starter-kit codes" codes={codes(draft.starter_kits)} counts={sourceValues?.starter_kits}
+        title="Starter-kit codes" codes={codes(draft.starter_kits)} unmapped={open} counts={sourceValues?.starter_kits}
         columns={[{ key: 'kit', header: 'Starter kit', cell: (code) => cell(`Starter kit: ${code}`, draft.starter_kits[code]!, kitOptions(code), (value) => set('starter_kits', code, value as Choice)) }]}
       />
-      {editable && (
-        <section className="data-section" aria-label="Save">
-          <FormField label="Note for this version" optional helper="Why the codes are mapped this way; kept with the version.">
-            {(control) => <textarea {...control} className="input" rows={3} maxLength={NOTES_MAX} value={notes} onChange={(event) => setNotes(event.target.value)} />}
-          </FormField>
-          <p className="data-note">
-            Saving creates version {latest + 1} as a draft; no saved version changes. Snapshots made with an earlier mapping version are marked Outdated, and their figures stay as they were.
-          </p>
-          <div className="form-actions">
-            <Button type="submit" variant={saveVariant} loading={busy}>Save draft</Button>
-          </div>
-        </section>
+    ),
+  }
+  const count = (id: Domain) => Object.keys(draft[id]).length
+
+  return (
+    <form className="flex flex-col gap-space-md" onSubmit={save} noValidate>
+      <ErrorSummary items={summary} />
+      {(unmapped.unknown.length > 0 || unmapped.blocking.length > 0) && (
+        <Banner tone="warning" title={`${countLabel(unmapped.unknown.length + unmapped.blocking.length, 'partner code')} ${unmapped.unknown.length + unmapped.blocking.length === 1 ? 'is' : 'are'} not mapped`}>
+          {unmapped.unknown.length > 0 && <p>Order purposes and payout source kinds left unmapped load as unknown and are counted in the data-quality report: <span className={CODE}>{unmapped.unknown.join(', ')}</span>.</p>}
+          {unmapped.blocking.length > 0 && <p>Participant types and starter-kit codes have no safe default: a batch that uses these cannot be loaded until they are mapped: <span className={CODE}>{unmapped.blocking.join(', ')}</span>.</p>}
+        </Banner>
       )}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-space-md items-start">
+        <div data-testid="card" className="lg:col-span-8 bg-surface-container-lowest rounded-lg shadow-sm overflow-hidden">
+          <Tabs label="Vocabularies" idPrefix={TABS_ID} tabs={DOMAINS.map((item) => ({ id: item.id, label: item.label, count: count(item.id) }))} selected={domain} onSelect={chooseDomain} />
+          <TabPanel idPrefix={TABS_ID} tabId={domain}>{tables[domain]}</TabPanel>
+        </div>
+        <div className="lg:col-span-4 flex flex-col gap-space-md">
+          {mayEdit && !editable && version !== null && (
+            <Panel title="Approved version" icon="lock">
+              <p className={NOTE}>Version {version.version} is approved and cannot change.</p>
+              <Button variant={saveVariant} icon="edit_note" onClick={() => setStartedDraft(true)} data-testid={saveVariant === 'primary' ? 'primary-action' : undefined}>Start a new draft from version {version.version}</Button>
+            </Panel>
+          )}
+          {editable && (
+            <Panel title="Save a new version" icon="save">
+              <FormField label="Note for this version" optional helper="Why the codes are mapped this way; kept with the version.">
+                {(control) => <textarea {...control} className={TEXTAREA_CLASS} rows={3} maxLength={NOTES_MAX} value={notes} onChange={(event) => setNotes(event.target.value)} />}
+              </FormField>
+              <p className={NOTE}>
+                Saving creates version {latest + 1} as a draft; no saved version changes. Snapshots made with an earlier mapping version are marked Outdated, and their figures stay as they were.
+              </p>
+              <div className="flex justify-end">
+                <Button type="submit" variant={saveVariant} icon="save" loading={busy} data-testid={saveVariant === 'primary' ? 'primary-action' : undefined}>Save draft</Button>
+              </div>
+            </Panel>
+          )}
+        </div>
+      </div>
     </form>
   )
 }

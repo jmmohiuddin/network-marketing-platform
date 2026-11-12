@@ -85,6 +85,42 @@ describe('AppShell', () => {
     await waitFor(() => expect(navigation.router.replace).toHaveBeenCalledWith('/'))
   })
 
+  it('shows the user as initials, name and roles, with an icon per known navigation key', async () => {
+    renderWithProviders(<AppShell realm="tenant"><Page /></AppShell>, fetchReturning(ok(me({ roles: [{ assignment_id: 'a1', role_id: 'r1', name: 'Tenant admin', market_ids: null }] }))))
+    await screen.findByText('May invite users')
+    expect(screen.getByText('AA').getAttribute('aria-hidden')).toBe('true')
+    expect(screen.getByText('Ada Admin')).toBeTruthy()
+    expect(screen.getByText('Tenant admin')).toBeTruthy()
+    const link = screen.getByRole('link', { name: 'Users and roles' })
+    expect(link.getAttribute('title')).toBe('Users and roles')
+    expect(link.querySelector('.material-symbols-outlined')?.textContent).toBe('admin_panel_settings')
+  })
+
+  it('opens the navigation as an overlay from Menu and closes it with Escape', async () => {
+    const user = userEvent.setup()
+    renderWithProviders(<AppShell realm="tenant"><Page /></AppShell>, fetchReturning(ok(me())))
+    const menu = await screen.findByRole('button', { name: 'Menu' })
+    const aside = document.getElementById('shell-nav')!
+    expect(menu.getAttribute('aria-expanded')).toBe('false')
+    expect(aside.className).toContain('hidden')
+    await user.click(menu)
+    expect(menu.getAttribute('aria-expanded')).toBe('true')
+    expect(aside.className).toContain('flex shadow-xl')
+    screen.getByRole('link', { name: 'Audit log' }).focus()
+    await user.keyboard('{Escape}')
+    expect(menu.getAttribute('aria-expanded')).toBe('false')
+  })
+
+  it('gives the vendor console its sections instead of the single API entry', async () => {
+    navigation.pathname = '/vendor/users'
+    const vendor = me({ realm: 'vendor', tenant: null, navigation: [{ key: 'console', path: '/vendor', label: 'Operations console' }] })
+    renderWithProviders(<AppShell realm="vendor"><Page /></AppShell>, fetchReturning(ok(vendor)))
+    const nav = await screen.findByRole('navigation', { name: 'Console' })
+    expect([...nav.querySelectorAll('a')].map((link) => link.textContent)).toEqual(['corporate_fareTenants', 'vpn_keySupport sessions', 'admin_panel_settingsVendor users', 'history_eduAudit log'])
+    expect(screen.getByRole('link', { name: 'Vendor users' }).getAttribute('aria-current')).toBe('page')
+    expect(screen.getByText('Operations console')).toBeTruthy()
+  })
+
   it('signs out and reloads the sign-in page', async () => {
     const user = userEvent.setup()
     const fetchMock = fetchReturning(ok(me()), noContent())

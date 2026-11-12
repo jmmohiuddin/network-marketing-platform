@@ -1,0 +1,1130 @@
+{
+  "when": "2026-11-12T04:47:54.916Z",
+  "screenId": "SC-14",
+  "stitch": "sc_14_vendor_access_sessions_authorizations",
+  "module": "settings",
+  "screen": "vendor-access",
+  "route": "/settings/vendor-access",
+  "role": "tenant-admin",
+  "url": "http://127.0.0.1:3100/settings/vendor-access",
+  "self": false,
+  "patched": [],
+  "viewports": [
+    {
+      "viewport": "1440x900",
+      "screenshot": "testing/ui-screenshots/app/settings/vendor-access/tenant-admin/1440x900.png",
+      "reference": "testing/ui-screenshots/reference/sc_14_vendor_access_sessions_authorizations/1440x900.png",
+      "diffImage": "testing/ui-screenshots/app/settings/vendor-access/tenant-admin/1440x900.diff.png",
+      "mismatchPercent": 8.55,
+      "diffPixels": 272769,
+      "referenceSize": "1440x2216",
+      "actualSize": "1440x1214",
+      "landmarks": [
+        {
+          "landmark": "header",
+          "stitchText": "AuditLedgerAcrobex Global(TEN-842)arrow_drop_downUS - United",
+          "appText": "menuMenuAcme Direct LtdTATenant AdminTenant adminlogoutSign ",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "height",
+              "stitch": "48px",
+              "app": "48px",
+              "match": true
+            },
+            {
+              "prop": "background",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "sidebar",
+          "stitchText": "dashboardOverviewhistory_toggle_offPeriods & RunsschemaCompe",
+          "appText": "verified_userCompliancesync_altData importsadmin_panel_setti",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "width",
+              "stitch": "208px",
+              "app": "208px",
+              "match": true
+            },
+            {
+              "prop": "background",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "page",
+          "stitchText": "Settings chevron_right Vendor Access Sessions Vendor Support",
+          "appText": "Vendor accessVendor staff ask, you decide, and every view in",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "background",
+              "stitch": "rgb(248, 249, 255)",
+              "app": "rgb(248, 249, 255)",
+              "match": true
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "16px",
+              "app": "16px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "title",
+          "stitchText": "Vendor Support Sessions & Data Boundary Control",
+          "appText": "Vendor access",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "32px",
+              "app": "32px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            },
+            {
+              "prop": "line-height",
+              "stitch": "40px",
+              "app": "40px",
+              "match": true
+            },
+            {
+              "prop": "letter-spacing",
+              "stitch": "-0.8px",
+              "app": "-0.64px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "sectionHeading",
+          "stitchText": "Authorization Decision Queue",
+          "appText": "Requests waiting for your decision",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "24px",
+              "app": "24px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            },
+            {
+              "prop": "line-height",
+              "stitch": "32px",
+              "app": "32px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "primaryButton",
+          "stitchText": "verified_user Approve & Sign (Requires MFA)",
+          "appText": "",
+          "status": "missing-in-app",
+          "severity": "high",
+          "props": [
+            {
+              "prop": "background-color",
+              "stitch": "rgb(0, 56, 131)",
+              "app": null,
+              "match": false
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": null,
+              "match": false
+            },
+            {
+              "prop": "border-radius",
+              "stitch": "2px",
+              "app": null,
+              "match": false
+            },
+            {
+              "prop": "height",
+              "stitch": "34px",
+              "app": null,
+              "match": false
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": null,
+              "match": false
+            },
+            {
+              "prop": "font-size",
+              "stitch": "13px",
+              "app": null,
+              "match": false
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": null,
+              "match": false
+            }
+          ]
+        },
+        {
+          "landmark": "tableHeader",
+          "stitchText": "Session ID",
+          "appText": "Asked at",
+          "status": "mismatch",
+          "severity": "medium",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "12px",
+              "app": "11px",
+              "match": false
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "700",
+              "app": "600",
+              "match": false
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(86, 94, 116)",
+              "match": false
+            },
+            {
+              "prop": "text-transform",
+              "stitch": "uppercase",
+              "app": "uppercase",
+              "match": true
+            },
+            {
+              "prop": "letter-spacing",
+              "stitch": "0.6px",
+              "app": "0.55px",
+              "match": true
+            },
+            {
+              "prop": "background",
+              "stitch": "rgb(220, 233, 255)",
+              "app": "rgb(239, 244, 255)",
+              "match": false
+            }
+          ]
+        },
+        {
+          "landmark": "card",
+          "stitchText": "policy BR-SEC-01 INVARIANT ACTIVE STRICT BOUNDARY LOCK Platf",
+          "appText": "policyVendor staff have no standing access to your dataA sup",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "border-radius",
+              "stitch": "2px",
+              "app": "2px",
+              "match": true
+            },
+            {
+              "prop": "box-shadow",
+              "stitch": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+              "app": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+              "match": true
+            },
+            {
+              "prop": "background-color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "viewport": "1280x800",
+      "screenshot": "testing/ui-screenshots/app/settings/vendor-access/tenant-admin/1280x800.png",
+      "reference": "testing/ui-screenshots/reference/sc_14_vendor_access_sessions_authorizations/1280x800.png",
+      "diffImage": "testing/ui-screenshots/app/settings/vendor-access/tenant-admin/1280x800.diff.png",
+      "mismatchPercent": 7.93,
+      "diffPixels": 258577,
+      "referenceSize": "1280x2546",
+      "actualSize": "1280x1232",
+      "landmarks": [
+        {
+          "landmark": "header",
+          "stitchText": "AuditLedgerAcrobex Global(TEN-842)arrow_drop_downUS - United",
+          "appText": "menuMenuAcme Direct LtdTATenant AdminTenant adminlogoutSign ",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "height",
+              "stitch": "48px",
+              "app": "48px",
+              "match": true
+            },
+            {
+              "prop": "background",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "sidebar",
+          "stitchText": "dashboardOverviewhistory_toggle_offPeriods & RunsschemaCompe",
+          "appText": "verified_userCompliancesync_altData importsadmin_panel_setti",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "width",
+              "stitch": "208px",
+              "app": "208px",
+              "match": true
+            },
+            {
+              "prop": "background",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "page",
+          "stitchText": "Settings chevron_right Vendor Access Sessions Vendor Support",
+          "appText": "Vendor accessVendor staff ask, you decide, and every view in",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "background",
+              "stitch": "rgb(248, 249, 255)",
+              "app": "rgb(248, 249, 255)",
+              "match": true
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "16px",
+              "app": "16px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "title",
+          "stitchText": "Vendor Support Sessions & Data Boundary Control",
+          "appText": "Vendor access",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "32px",
+              "app": "32px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            },
+            {
+              "prop": "line-height",
+              "stitch": "40px",
+              "app": "40px",
+              "match": true
+            },
+            {
+              "prop": "letter-spacing",
+              "stitch": "-0.8px",
+              "app": "-0.64px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "sectionHeading",
+          "stitchText": "Authorization Decision Queue",
+          "appText": "Requests waiting for your decision",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "24px",
+              "app": "24px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            },
+            {
+              "prop": "line-height",
+              "stitch": "32px",
+              "app": "32px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "primaryButton",
+          "stitchText": "verified_user Approve & Sign (Requires MFA)",
+          "appText": "",
+          "status": "missing-in-app",
+          "severity": "high",
+          "props": [
+            {
+              "prop": "background-color",
+              "stitch": "rgb(0, 56, 131)",
+              "app": null,
+              "match": false
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": null,
+              "match": false
+            },
+            {
+              "prop": "border-radius",
+              "stitch": "2px",
+              "app": null,
+              "match": false
+            },
+            {
+              "prop": "height",
+              "stitch": "34px",
+              "app": null,
+              "match": false
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": null,
+              "match": false
+            },
+            {
+              "prop": "font-size",
+              "stitch": "13px",
+              "app": null,
+              "match": false
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": null,
+              "match": false
+            }
+          ]
+        },
+        {
+          "landmark": "tableHeader",
+          "stitchText": "Session ID",
+          "appText": "Asked at",
+          "status": "mismatch",
+          "severity": "medium",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "12px",
+              "app": "11px",
+              "match": false
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "700",
+              "app": "600",
+              "match": false
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(86, 94, 116)",
+              "match": false
+            },
+            {
+              "prop": "text-transform",
+              "stitch": "uppercase",
+              "app": "uppercase",
+              "match": true
+            },
+            {
+              "prop": "letter-spacing",
+              "stitch": "0.6px",
+              "app": "0.55px",
+              "match": true
+            },
+            {
+              "prop": "background",
+              "stitch": "rgb(220, 233, 255)",
+              "app": "rgb(239, 244, 255)",
+              "match": false
+            }
+          ]
+        },
+        {
+          "landmark": "card",
+          "stitchText": "policy BR-SEC-01 INVARIANT ACTIVE STRICT BOUNDARY LOCK Platf",
+          "appText": "policyVendor staff have no standing access to your dataA sup",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "border-radius",
+              "stitch": "2px",
+              "app": "2px",
+              "match": true
+            },
+            {
+              "prop": "box-shadow",
+              "stitch": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+              "app": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+              "match": true
+            },
+            {
+              "prop": "background-color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "viewport": "768x1024",
+      "screenshot": "testing/ui-screenshots/app/settings/vendor-access/tenant-admin/768x1024.png",
+      "reference": "testing/ui-screenshots/reference/sc_14_vendor_access_sessions_authorizations/768x1024.png",
+      "diffImage": "testing/ui-screenshots/app/settings/vendor-access/tenant-admin/768x1024.diff.png",
+      "mismatchPercent": 10.18,
+      "diffPixels": 300201,
+      "referenceSize": "768x3840",
+      "actualSize": "768x1644",
+      "landmarks": [
+        {
+          "landmark": "page",
+          "stitchText": "Settings chevron_right Vendor Access Sessions Vendor Support",
+          "appText": "Vendor accessVendor staff ask, you decide, and every view in",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "background",
+              "stitch": "rgb(248, 249, 255)",
+              "app": "rgb(248, 249, 255)",
+              "match": true
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "16px",
+              "app": "16px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "title",
+          "stitchText": "Vendor Support Sessions & Data Boundary Control",
+          "appText": "Vendor access",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "32px",
+              "app": "32px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            },
+            {
+              "prop": "line-height",
+              "stitch": "40px",
+              "app": "40px",
+              "match": true
+            },
+            {
+              "prop": "letter-spacing",
+              "stitch": "-0.8px",
+              "app": "-0.64px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "sectionHeading",
+          "stitchText": "Authorization Decision Queue",
+          "appText": "Requests waiting for your decision",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "24px",
+              "app": "24px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            },
+            {
+              "prop": "line-height",
+              "stitch": "32px",
+              "app": "32px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "primaryButton",
+          "stitchText": "verified_user Approve & Sign (Requires MFA)",
+          "appText": "",
+          "status": "missing-in-app",
+          "severity": "high",
+          "props": [
+            {
+              "prop": "background-color",
+              "stitch": "rgb(0, 56, 131)",
+              "app": null,
+              "match": false
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": null,
+              "match": false
+            },
+            {
+              "prop": "border-radius",
+              "stitch": "2px",
+              "app": null,
+              "match": false
+            },
+            {
+              "prop": "height",
+              "stitch": "34px",
+              "app": null,
+              "match": false
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": null,
+              "match": false
+            },
+            {
+              "prop": "font-size",
+              "stitch": "13px",
+              "app": null,
+              "match": false
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": null,
+              "match": false
+            }
+          ]
+        },
+        {
+          "landmark": "tableHeader",
+          "stitchText": "Session ID",
+          "appText": "Asked at",
+          "status": "mismatch",
+          "severity": "medium",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "12px",
+              "app": "11px",
+              "match": false
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "700",
+              "app": "600",
+              "match": false
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(86, 94, 116)",
+              "match": false
+            },
+            {
+              "prop": "text-transform",
+              "stitch": "uppercase",
+              "app": "uppercase",
+              "match": true
+            },
+            {
+              "prop": "letter-spacing",
+              "stitch": "0.6px",
+              "app": "0.55px",
+              "match": true
+            },
+            {
+              "prop": "background",
+              "stitch": "rgb(220, 233, 255)",
+              "app": "rgb(239, 244, 255)",
+              "match": false
+            }
+          ]
+        },
+        {
+          "landmark": "card",
+          "stitchText": "policy BR-SEC-01 INVARIANT ACTIVE STRICT BOUNDARY LOCK Platf",
+          "appText": "policyVendor staff have no standing access to your dataA sup",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "border-radius",
+              "stitch": "2px",
+              "app": "2px",
+              "match": true
+            },
+            {
+              "prop": "box-shadow",
+              "stitch": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+              "app": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+              "match": true
+            },
+            {
+              "prop": "background-color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "viewport": "390x844",
+      "screenshot": "testing/ui-screenshots/app/settings/vendor-access/tenant-admin/390x844.png",
+      "reference": "testing/ui-screenshots/reference/sc_14_vendor_access_sessions_authorizations/390x844.png",
+      "diffImage": "testing/ui-screenshots/app/settings/vendor-access/tenant-admin/390x844.diff.png",
+      "mismatchPercent": 2.86,
+      "diffPixels": 140154,
+      "referenceSize": "608x8049",
+      "actualSize": "390x2181",
+      "landmarks": [
+        {
+          "landmark": "page",
+          "stitchText": "Settings chevron_right Vendor Access Sessions Vendor Support",
+          "appText": "Vendor accessVendor staff ask, you decide, and every view in",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "background",
+              "stitch": "rgb(248, 249, 255)",
+              "app": "rgb(248, 249, 255)",
+              "match": true
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "16px",
+              "app": "16px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "title",
+          "stitchText": "Vendor Support Sessions & Data Boundary Control",
+          "appText": "Vendor access",
+          "status": "mismatch",
+          "severity": "medium",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "32px",
+              "app": "26px",
+              "match": false
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            },
+            {
+              "prop": "line-height",
+              "stitch": "40px",
+              "app": "32px",
+              "match": false
+            },
+            {
+              "prop": "letter-spacing",
+              "stitch": "-0.8px",
+              "app": "-0.65px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "sectionHeading",
+          "stitchText": "Authorization Decision Queue",
+          "appText": "Requests waiting for your decision",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "24px",
+              "app": "24px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            },
+            {
+              "prop": "line-height",
+              "stitch": "32px",
+              "app": "32px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "primaryButton",
+          "stitchText": "verified_user Approve & Sign (Requires MFA)",
+          "appText": "",
+          "status": "missing-in-app",
+          "severity": "high",
+          "props": [
+            {
+              "prop": "background-color",
+              "stitch": "rgb(0, 56, 131)",
+              "app": null,
+              "match": false
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": null,
+              "match": false
+            },
+            {
+              "prop": "border-radius",
+              "stitch": "2px",
+              "app": null,
+              "match": false
+            },
+            {
+              "prop": "height",
+              "stitch": "88px",
+              "app": null,
+              "match": false
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": null,
+              "match": false
+            },
+            {
+              "prop": "font-size",
+              "stitch": "13px",
+              "app": null,
+              "match": false
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": null,
+              "match": false
+            }
+          ]
+        },
+        {
+          "landmark": "tableHeader",
+          "stitchText": "Session ID",
+          "appText": "Asked at",
+          "status": "mismatch",
+          "severity": "medium",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "12px",
+              "app": "11px",
+              "match": false
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "700",
+              "app": "600",
+              "match": false
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(86, 94, 116)",
+              "match": false
+            },
+            {
+              "prop": "text-transform",
+              "stitch": "uppercase",
+              "app": "uppercase",
+              "match": true
+            },
+            {
+              "prop": "letter-spacing",
+              "stitch": "0.6px",
+              "app": "0.55px",
+              "match": true
+            },
+            {
+              "prop": "background",
+              "stitch": "rgb(220, 233, 255)",
+              "app": "rgb(239, 244, 255)",
+              "match": false
+            }
+          ]
+        },
+        {
+          "landmark": "card",
+          "stitchText": "policy BR-SEC-01 INVARIANT ACTIVE STRICT BOUNDARY LOCK Platf",
+          "appText": "policyVendor staff have no standing access to your dataA sup",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "border-radius",
+              "stitch": "2px",
+              "app": "2px",
+              "match": true
+            },
+            {
+              "prop": "box-shadow",
+              "stitch": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+              "app": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+              "match": true
+            },
+            {
+              "prop": "background-color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

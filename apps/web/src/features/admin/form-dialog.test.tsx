@@ -4,7 +4,7 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { useState } from 'react'
 import { describe, expect, it, vi } from 'vitest'
-import { TextField } from '../../components/form-field'
+import { TextInput } from '../../components/form-field'
 import { ApiError } from '../../lib/api'
 import { FormDialog } from './form-dialog'
 
@@ -23,7 +23,7 @@ function Probe({ keys }: { readonly keys: string[] }) {
         },
       })}
     >
-      <TextField label="Name" value={name} onChange={(event) => setName(event.target.value)} />
+      <TextInput label="Name" value={name} onChange={(event) => setName(event.target.value)} />
     </FormDialog>
   )
 }

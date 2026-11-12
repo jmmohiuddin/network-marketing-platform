@@ -39,12 +39,14 @@ describe('MappingEditor', () => {
     const fetchMock = fetchRoutes(...routes(), ['PUT', /^\/v1\/import-mappings$/, () => ok(created, 201)])
     renderWithProviders(withSession(<MappingEditor />, ['mapping.edit', 'import.manage']), fetchMock)
     expect(await screen.findByRole('heading', { name: 'Import mapping, version 3' })).toBeTruthy()
-    const warning = screen.getByText('3 partner codes are not mapped').closest('.banner') as HTMLElement
+    const warning = screen.getByText('3 partner codes are not mapped').closest('[data-tone]') as HTMLElement
     expect(warning.textContent).toContain('R, DL')
     expect(warning.textContent).toContain('customer')
     expect(screen.queryByRole('button', { name: /Approve/ })).toBeNull()
     await user.selectOptions(screen.getByLabelText('Can earn: customer'), 'no')
     await user.selectOptions(screen.getByLabelText('Counts as end customer: customer'), 'yes')
+    await user.click(screen.getByRole('tab', { name: /^Payout source kinds/ }))
+    expect(router.replace).toHaveBeenCalledWith('/imports/mappings?version=m3&batch=b1&domain=source_kinds')
     await user.selectOptions(screen.getByLabelText('Source kind: DL'), 'downline_volume')
     await user.click(screen.getByRole('button', { name: 'Save draft' }))
     const put = callsOf(fetchMock).findIndex((call) => call.startsWith('PUT'))
@@ -78,7 +80,9 @@ describe('MappingEditor', () => {
     renderWithProviders(withSession(<MappingEditor />, ['mapping.approve', 'compliance.read']), fetchMock)
     await screen.findByRole('heading', { name: 'Import mapping, version 3' })
     expect(screen.getAllByRole('table').every((table) => within(table).queryByRole('combobox') === null)).toBe(true)
+    await user.click(screen.getByRole('tab', { name: /^Order purposes/ }))
     expect(screen.getByRole('cell', { name: 'Personal' })).toBeTruthy()
+    expect(within(screen.getByRole('region', { name: 'Approval' })).getByText('Saved by another user')).toBeTruthy()
     expect(screen.queryByRole('button', { name: 'Save draft' })).toBeNull()
     await user.click(screen.getByRole('button', { name: 'Approve version 3' }))
     const dialog = screen.getByRole('dialog', { name: 'Approve mapping version 3' })
@@ -94,6 +98,15 @@ describe('MappingEditor', () => {
     renderWithProviders(withSession(<MappingEditor />, ['mapping.approve', 'mapping.edit']), fetchMock)
     expect(await screen.findByText('You saved this version, so another user with approval rights must approve it.')).toBeTruthy()
     expect(screen.queryByRole('button', { name: /Approve/ })).toBeNull()
+    expect(within(screen.getByRole('region', { name: 'Approval' })).getByText('Another user must approve this version.')).toBeTruthy()
+  })
+
+  it('opens the vocabulary named in the URL', async () => {
+    search.value = 'batch=b1&domain=purposes'
+    renderWithProviders(withSession(<MappingEditor />, ['mapping.edit']), fetchRoutes(...routes()))
+    expect((await screen.findByRole('tab', { name: /^Order purposes/ })).getAttribute('aria-selected')).toBe('true')
+    expect(screen.getByLabelText('Purpose: R')).toBeTruthy()
+    expect(screen.queryByLabelText('Can earn: customer')).toBeNull()
   })
 })
 
@@ -104,6 +117,8 @@ describe('MappingEditor on an approved version', () => {
     const approved = { ...DRAFT, state: 'approved', approved_by: 'someone' }
     renderWithProviders(withSession(<MappingEditor />, ['mapping.edit']), fetchRoutes(...routes(approved).slice(0, 2)))
     await user.click(await screen.findByRole('button', { name: 'Start a new draft from version 3' }))
+    expect(screen.queryByRole('region', { name: 'Approval' })).toBeNull()
+    await user.click(screen.getByRole('tab', { name: /^Order purposes/ }))
     expect(screen.getByLabelText('Purpose: P')).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Save draft' })).toBeTruthy()
   })

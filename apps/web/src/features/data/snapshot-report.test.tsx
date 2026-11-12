@@ -59,7 +59,10 @@ describe('SnapshotReport', () => {
     renderWithProviders(withSession(<SnapshotReport snapshotId="s1" />, ['compliance.read']), fetchRoutes(['GET', /snapshots\/s1$/, () => json(200, { data: SNAPSHOT, meta: { notice: NOTICE } })]))
     expect(await screen.findByText('Population: 4 participants of an earning type enrolled by the year end, including 2 whose earnings were zero or less.')).toBeTruthy()
     expect(screen.getByText('Partial year, not publishable')).toBeTruthy()
-    expect(screen.getByText('14.30 currency units')).toBeTruthy()
+    // The unit sits beside the hero number, not inside it (BUG-036).
+    const median = screen.getByRole('article', { name: 'Median earnings in the year' })
+    expect(within(median).getByText('14.30').className).toContain('font-data-mono-lg')
+    expect(within(median).getByText('currency units').className).not.toContain('font-data-mono-lg')
     expect(screen.getByText('99th percentile of earnings in the year: Not stated for so small a population.')).toBeTruthy()
   })
 
@@ -70,6 +73,21 @@ describe('SnapshotReport', () => {
     expect(await screen.findByText(/Its figures are unchanged and still reproducible/)).toBeTruthy()
     await user.click(screen.getByRole('tab', { name: 'R5 Earnings distribution' }))
     expect(router.replace).toHaveBeenCalledWith('/compliance/snapshots/s1?report=R5')
+  })
+
+  it('opens Create snapshot filled in with this snapshot\'s market and months', async () => {
+    search.value = ''
+    const user = userEvent.setup()
+    renderWithProviders(withSession(<SnapshotReport snapshotId="s1" />, ['compliance.read', 'snapshot.create']), fetchRoutes(
+      ['GET', /snapshots\/s1$/, () => json(200, { data: { ...SNAPSHOT, state: 'outdated' }, meta: { notice: NOTICE } })],
+      ['GET', /^\/v1\/markets$/, () => json(200, { data: [{ id: 'mk', code: 'DE', name: 'Germany', currency: 'EUR' }], meta: {} })],
+    ))
+    expect(within(await screen.findByRole('region', { name: 'Method and inputs' })).getByText('cpl-method-1.0.0')).toBeTruthy()
+    await user.click(screen.getByRole('button', { name: 'Create snapshot' }))
+    const dialog = screen.getByRole('dialog', { name: 'Create snapshot' })
+    await within(dialog).findByRole('option', { name: 'Germany (DE)' })
+    expect((within(dialog).getByLabelText('Market') as HTMLSelectElement).value).toBe('DE')
+    expect((within(dialog).getByLabelText('Last month') as HTMLInputElement).value).toBe('2025-12')
   })
 
   const r1 = (period: string, value: string) => ({
@@ -100,6 +118,17 @@ describe('SnapshotReport', () => {
     expect(within(chart).getByRole('button', { name: 'View as table' }).getAttribute('aria-pressed')).toBe('true')
   })
 
+  it('opens on the latest period only, with the trend for the history (BUG-033)', async () => {
+    search.value = ''
+    showThreeMonths()
+    expect(await screen.findByRole('region', { name: 'R1 · 2025-03' })).toBeTruthy()
+    expect(screen.queryByRole('region', { name: 'R1 · 2025-01' })).toBeNull()
+    expect(screen.getAllByRole('article', { name: 'Customer share of net sales' })).toHaveLength(1)
+    expect((screen.getByLabelText('Period') as HTMLSelectElement).value).toBe('2025-03')
+    expect(screen.queryByRole('option', { name: 'All periods' })).toBeNull()
+    expect(screen.getByRole('region', { name: 'Trend' })).toBeTruthy()
+  })
+
   it('keeps the chosen period in the URL', async () => {
     search.value = ''
     const user = userEvent.setup()
@@ -120,5 +149,61 @@ describe('SnapshotReport', () => {
     expect(screen.getByRole('region', { name: 'R1 · 2025-03' })).toBeTruthy()
     expect(screen.queryByRole('region', { name: 'R1 · 2025-01' })).toBeNull()
     expect(screen.queryByRole('region', { name: 'Trend' })).toBeNull()
+  })
+
+  const r = (report: string, period: string, kind: string, figures: object[]) => ({ report, period, period_kind: kind, partial: false, notes: [], omitted: [], figures })
+  const at = (report: string, period: string, key: string, unit: string, value: string, extra: object = {}) =>
+    ({ ...figure(key, unit, value, extra), id: `${report}.${period}.${key}` })
+  const drawn = {
+    ...SNAPSHOT, reports: ['R1', 'R3', 'R5'],
+    results: [
+      r('R1', '2025-12', 'month', [
+        at('R1', '2025-12', 'net_sales_cents', 'minor', '1000', { numerator: '1000' }),
+        at('R1', '2025-12', 'customer_share_pct', 'percent', '60.00', { numerator: '600', denominator: '1000' }),
+        at('R1', '2025-12', 'customer_plus_declared_resale_pct', 'percent', '75.00', { numerator: '750', denominator: '1000' }),
+      ]),
+      r('R3', '2025-12', 'month', [
+        at('R3', '2025-12', 'gross_cents', 'minor', '800', { numerator: '800' }),
+        at('R3', '2025-12', 'share_pct.retail_sale', 'percent', '75.00', { numerator: '600', denominator: '800' }),
+        at('R3', '2025-12', 'share_pct.downline_volume', 'percent', '25.00', { numerator: '200', denominator: '800' }),
+      ]),
+      r('R5', '2025', 'year', [
+        at('R5', '2025', 'count', 'count', '3', { numerator: '3' }),
+        at('R5', '2025', 'bands.0 or less', 'count', '2', { numerator: '2', denominator: '3' }),
+        at('R5', '2025', 'bands.0.01-100', 'count', '1', { numerator: '1', denominator: '3' }),
+      ]),
+    ],
+  }
+  const showDrawn = (report: string) => {
+    search.value = `report=${report}`
+    renderWithProviders(withSession(<SnapshotReport snapshotId="s1" />, ['compliance.read']), fetchRoutes(['GET', /snapshots\/s1$/, () => json(200, { data: drawn, meta: {} })]))
+  }
+
+  it('draws the R1 net sales split by buyer from the figures\' numerators (BUG-032)', async () => {
+    showDrawn('R1')
+    const card = await screen.findByRole('article', { name: 'Net sales by buyer' })
+    expect(within(card).getByRole('img').getAttribute('aria-label'))
+      .toBe('Net sales by buyer: End-customer buyers 60.00 %, Participant orders declared as resale 15.00 %, Other participant orders 25.00 %')
+    expect(within(card).getByText(`${(150).toLocaleString()} minor units (15.00 %)`)).toBeTruthy()
+    expect(card.querySelectorAll('rect')).toHaveLength(3)
+  })
+
+  it('lists R3 payouts by source kind in a table instead of one card per share (BUG-032)', async () => {
+    showDrawn('R3')
+    const table = await screen.findByRole('table', { name: 'Payouts by source kind, 2025-12' })
+    const row = within(table).getByRole('link', { name: /^Retail sale: open the rows/ }).closest('tr')!
+    expect([...row.querySelectorAll('td')].map((cell) => cell.textContent)).toEqual(['600', '75.00 %'])
+    expect(within(table).getByRole('link', { name: /^Retail sale/ }).getAttribute('href')).toBe('/compliance/snapshots/s1/rows?figure=R3.2025-12.share_pct.retail_sale')
+    expect(screen.queryByRole('article', { name: 'Share of payouts from retail sale' })).toBeNull()
+    expect(screen.getByRole('article', { name: 'Payouts excluding clawbacks' })).toBeTruthy()
+  })
+
+  it('draws R5 participants per earnings band with their exact share (BUG-032)', async () => {
+    showDrawn('R5')
+    const card = await screen.findByRole('article', { name: 'Participants by yearly earnings' })
+    expect(within(card).getByText('66.67 % (2)')).toBeTruthy()
+    expect(within(card).getByRole('img', { name: 'Participants with earnings 0.01-100: 1, 33.33 %' })).toBeTruthy()
+    expect(within(card).getByRole('link', { name: /^0 or less: open the rows/ }).getAttribute('href')).toBe('/compliance/snapshots/s1/rows?figure=R5.2025.bands.0%20or%20less')
+    expect(screen.queryByRole('article', { name: 'Participants with earnings 0 or less' })).toBeNull()
   })
 })

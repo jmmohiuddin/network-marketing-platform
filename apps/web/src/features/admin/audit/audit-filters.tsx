@@ -3,8 +3,9 @@
 import { useState, type FormEvent } from 'react'
 import { Button } from '../../../components/button'
 import { ErrorSummary, type SummaryItem } from '../../../components/error-summary'
-import { TextField } from '../../../components/form-field'
-import { fromLocalInput, isUuid, toLocalInput } from '../format'
+import { FiltersBar } from '../../../components/filters-bar'
+import { TextInput } from '../../../components/form-field'
+import { formatDateTime, fromLocalInput, isUuid, toLocalInput } from '../format'
 
 /** FR-AUD-001 search fields (aud/events.ts auditFilterSchema); from inclusive, to exclusive. */
 export const FILTER_KEYS = ['actor_id', 'action', 'object_type', 'object_id', 'from', 'to'] as const
@@ -12,6 +13,7 @@ export type FilterKey = (typeof FILTER_KEYS)[number]
 export type AuditFilters = Readonly<Partial<Record<FilterKey, string>>>
 
 const TEXT_MAX_LENGTH = 100
+const CHIP_LABELS: Readonly<Record<FilterKey, string>> = { actor_id: 'Actor', action: 'Action', object_type: 'Object type', object_id: 'Object', from: 'From', to: 'Before' }
 const fieldId = (key: FilterKey) => `audit-filter-${key}`
 
 /** The applied filters, read from the URL (the URL always reflects the filter, UX-05 6.3). */
@@ -57,7 +59,7 @@ export interface AuditFilterBarProps {
   readonly onApply: (filters: AuditFilters) => void
 }
 
-/** SC-30 filter bar: by actor, action, object and time range; applied with Search (the page's primary action). */
+/** SC-30 filter bar: by actor, action, object and time range; applied with Search; the applied ones are chips to remove one by one. */
 export function AuditFilterBar({ applied, onApply }: AuditFilterBarProps) {
   const [draft, setDraft] = useState<Draft>(() => draftOf(applied))
   const [errors, setErrors] = useState<Partial<Record<FilterKey, string>>>({})
@@ -77,7 +79,7 @@ export function AuditFilterBar({ applied, onApply }: AuditFilterBarProps) {
     onApply({})
   }
   const field = (key: FilterKey, label: string, extra: { type?: string; helper?: string } = {}) => (
-    <TextField
+    <TextInput
       id={fieldId(key)}
       label={label}
       optional
@@ -89,19 +91,29 @@ export function AuditFilterBar({ applied, onApply }: AuditFilterBarProps) {
       onChange={(event) => setDraft((current) => ({ ...current, [key]: event.target.value }))}
     />
   )
+  const chips = FILTER_KEYS.flatMap((key) => {
+    const value = applied[key]
+    if (value === undefined) return []
+    const rest = Object.fromEntries(Object.entries(applied).filter(([other]) => other !== key)) as AuditFilters
+    return [{ key, label: `${CHIP_LABELS[key]}: ${key === 'from' || key === 'to' ? formatDateTime(value) : value}`, onRemove: () => onApply(rest) }]
+  })
   return (
-    <form className="admin-filters" onSubmit={submit} noValidate aria-label="Filter audit events">
+    <form onSubmit={submit} noValidate className="flex flex-col gap-space-sm">
       <ErrorSummary items={summary} />
-      {field('action', 'Action', { helper: 'Exact name, for example USER.INVITED' })}
-      {field('object_type', 'Object type', { helper: 'For example user_account' })}
-      {field('object_id', 'Object ID')}
-      {field('actor_id', 'Actor ID')}
-      {field('from', 'From', { type: 'datetime-local' })}
-      {field('to', 'Before', { type: 'datetime-local' })}
-      <div className="form-actions">
-        <Button onClick={clear}>Clear all</Button>
-        <Button type="submit" variant="primary">Search</Button>
-      </div>
+      <FiltersBar
+        label="Filter audit events"
+        chips={chips}
+        onClear={clear}
+        // Secondary: the page's one primary action is the chain verification (sc_30).
+        actions={<Button type="submit" icon="search">Search</Button>}
+      >
+        {field('action', 'Action', { helper: 'Exact name, for example USER.INVITED' })}
+        {field('object_type', 'Object type', { helper: 'For example user_account' })}
+        {field('object_id', 'Object ID')}
+        {field('actor_id', 'Actor ID')}
+        {field('from', 'From', { type: 'datetime-local' })}
+        {field('to', 'Before', { type: 'datetime-local' })}
+      </FiltersBar>
     </form>
   )
 }

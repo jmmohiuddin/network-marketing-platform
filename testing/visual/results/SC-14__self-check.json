@@ -1,0 +1,1130 @@
+{
+  "when": "2026-11-12T02:48:13.214Z",
+  "screenId": "SC-14",
+  "stitch": "sc_14_vendor_access_sessions_authorizations",
+  "module": "settings",
+  "screen": "vendor-access",
+  "route": "/settings/vendor-access",
+  "role": "self-check",
+  "url": null,
+  "self": true,
+  "patched": [],
+  "viewports": [
+    {
+      "viewport": "1440x900",
+      "screenshot": "testing/ui-screenshots/self-check/settings/vendor-access/self-check/1440x900.png",
+      "reference": "testing/ui-screenshots/reference/sc_14_vendor_access_sessions_authorizations/1440x900.png",
+      "diffImage": "testing/ui-screenshots/self-check/settings/vendor-access/self-check/1440x900.diff.png",
+      "mismatchPercent": 0,
+      "diffPixels": 0,
+      "referenceSize": "1440x2216",
+      "actualSize": "1440x2216",
+      "landmarks": [
+        {
+          "landmark": "header",
+          "stitchText": "AuditLedgerAcrobex Global(TEN-842)arrow_drop_downUS - United",
+          "appText": "AuditLedgerAcrobex Global(TEN-842)arrow_drop_downUS - United",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "height",
+              "stitch": "48px",
+              "app": "48px",
+              "match": true
+            },
+            {
+              "prop": "background",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "sidebar",
+          "stitchText": "dashboardOverviewhistory_toggle_offPeriods & RunsschemaCompe",
+          "appText": "dashboardOverviewhistory_toggle_offPeriods & RunsschemaCompe",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "width",
+              "stitch": "208px",
+              "app": "208px",
+              "match": true
+            },
+            {
+              "prop": "background",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "page",
+          "stitchText": "Settings chevron_right Vendor Access Sessions Vendor Support",
+          "appText": "Settings chevron_right Vendor Access Sessions Vendor Support",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "background",
+              "stitch": "rgb(248, 249, 255)",
+              "app": "rgb(248, 249, 255)",
+              "match": true
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "Inter",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "16px",
+              "app": "16px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "title",
+          "stitchText": "Vendor Support Sessions & Data Boundary Control",
+          "appText": "Vendor Support Sessions & Data Boundary Control",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "Inter",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "32px",
+              "app": "32px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            },
+            {
+              "prop": "line-height",
+              "stitch": "40px",
+              "app": "40px",
+              "match": true
+            },
+            {
+              "prop": "letter-spacing",
+              "stitch": "-0.8px",
+              "app": "-0.8px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "sectionHeading",
+          "stitchText": "Authorization Decision Queue",
+          "appText": "Authorization Decision Queue",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "Inter",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "24px",
+              "app": "24px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            },
+            {
+              "prop": "line-height",
+              "stitch": "32px",
+              "app": "32px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "primaryButton",
+          "stitchText": "verified_user Approve & Sign (Requires MFA)",
+          "appText": "verified_user Approve & Sign (Requires MFA)",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "background-color",
+              "stitch": "rgb(0, 56, 131)",
+              "app": "rgb(0, 56, 131)",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            },
+            {
+              "prop": "border-radius",
+              "stitch": "2px",
+              "app": "2px",
+              "match": true
+            },
+            {
+              "prop": "height",
+              "stitch": "34px",
+              "app": "34px",
+              "match": true
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "Inter",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "13px",
+              "app": "13px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "tableHeader",
+          "stitchText": "Session ID",
+          "appText": "Session ID",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "Inter",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "12px",
+              "app": "12px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "700",
+              "app": "700",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            },
+            {
+              "prop": "text-transform",
+              "stitch": "uppercase",
+              "app": "uppercase",
+              "match": true
+            },
+            {
+              "prop": "letter-spacing",
+              "stitch": "0.6px",
+              "app": "0.6px",
+              "match": true
+            },
+            {
+              "prop": "background",
+              "stitch": "rgb(220, 233, 255)",
+              "app": "rgb(220, 233, 255)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "card",
+          "stitchText": "policy BR-SEC-01 INVARIANT ACTIVE STRICT BOUNDARY LOCK Platf",
+          "appText": "policy BR-SEC-01 INVARIANT ACTIVE STRICT BOUNDARY LOCK Platf",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "border-radius",
+              "stitch": "2px",
+              "app": "2px",
+              "match": true
+            },
+            {
+              "prop": "box-shadow",
+              "stitch": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+              "app": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+              "match": true
+            },
+            {
+              "prop": "background-color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "viewport": "1280x800",
+      "screenshot": "testing/ui-screenshots/self-check/settings/vendor-access/self-check/1280x800.png",
+      "reference": "testing/ui-screenshots/reference/sc_14_vendor_access_sessions_authorizations/1280x800.png",
+      "diffImage": "testing/ui-screenshots/self-check/settings/vendor-access/self-check/1280x800.diff.png",
+      "mismatchPercent": 0,
+      "diffPixels": 0,
+      "referenceSize": "1280x2546",
+      "actualSize": "1280x2546",
+      "landmarks": [
+        {
+          "landmark": "header",
+          "stitchText": "AuditLedgerAcrobex Global(TEN-842)arrow_drop_downUS - United",
+          "appText": "AuditLedgerAcrobex Global(TEN-842)arrow_drop_downUS - United",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "height",
+              "stitch": "48px",
+              "app": "48px",
+              "match": true
+            },
+            {
+              "prop": "background",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "sidebar",
+          "stitchText": "dashboardOverviewhistory_toggle_offPeriods & RunsschemaCompe",
+          "appText": "dashboardOverviewhistory_toggle_offPeriods & RunsschemaCompe",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "width",
+              "stitch": "208px",
+              "app": "208px",
+              "match": true
+            },
+            {
+              "prop": "background",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "page",
+          "stitchText": "Settings chevron_right Vendor Access Sessions Vendor Support",
+          "appText": "Settings chevron_right Vendor Access Sessions Vendor Support",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "background",
+              "stitch": "rgb(248, 249, 255)",
+              "app": "rgb(248, 249, 255)",
+              "match": true
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "Inter",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "16px",
+              "app": "16px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "title",
+          "stitchText": "Vendor Support Sessions & Data Boundary Control",
+          "appText": "Vendor Support Sessions & Data Boundary Control",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "Inter",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "32px",
+              "app": "32px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            },
+            {
+              "prop": "line-height",
+              "stitch": "40px",
+              "app": "40px",
+              "match": true
+            },
+            {
+              "prop": "letter-spacing",
+              "stitch": "-0.8px",
+              "app": "-0.8px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "sectionHeading",
+          "stitchText": "Authorization Decision Queue",
+          "appText": "Authorization Decision Queue",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "Inter",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "24px",
+              "app": "24px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            },
+            {
+              "prop": "line-height",
+              "stitch": "32px",
+              "app": "32px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "primaryButton",
+          "stitchText": "verified_user Approve & Sign (Requires MFA)",
+          "appText": "verified_user Approve & Sign (Requires MFA)",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "background-color",
+              "stitch": "rgb(0, 56, 131)",
+              "app": "rgb(0, 56, 131)",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            },
+            {
+              "prop": "border-radius",
+              "stitch": "2px",
+              "app": "2px",
+              "match": true
+            },
+            {
+              "prop": "height",
+              "stitch": "34px",
+              "app": "34px",
+              "match": true
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "Inter",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "13px",
+              "app": "13px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "tableHeader",
+          "stitchText": "Session ID",
+          "appText": "Session ID",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "Inter",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "12px",
+              "app": "12px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "700",
+              "app": "700",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            },
+            {
+              "prop": "text-transform",
+              "stitch": "uppercase",
+              "app": "uppercase",
+              "match": true
+            },
+            {
+              "prop": "letter-spacing",
+              "stitch": "0.6px",
+              "app": "0.6px",
+              "match": true
+            },
+            {
+              "prop": "background",
+              "stitch": "rgb(220, 233, 255)",
+              "app": "rgb(220, 233, 255)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "card",
+          "stitchText": "policy BR-SEC-01 INVARIANT ACTIVE STRICT BOUNDARY LOCK Platf",
+          "appText": "policy BR-SEC-01 INVARIANT ACTIVE STRICT BOUNDARY LOCK Platf",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "border-radius",
+              "stitch": "2px",
+              "app": "2px",
+              "match": true
+            },
+            {
+              "prop": "box-shadow",
+              "stitch": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+              "app": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+              "match": true
+            },
+            {
+              "prop": "background-color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "viewport": "768x1024",
+      "screenshot": "testing/ui-screenshots/self-check/settings/vendor-access/self-check/768x1024.png",
+      "reference": "testing/ui-screenshots/reference/sc_14_vendor_access_sessions_authorizations/768x1024.png",
+      "diffImage": "testing/ui-screenshots/self-check/settings/vendor-access/self-check/768x1024.diff.png",
+      "mismatchPercent": 0,
+      "diffPixels": 0,
+      "referenceSize": "768x3840",
+      "actualSize": "768x3840",
+      "landmarks": [
+        {
+          "landmark": "page",
+          "stitchText": "Settings chevron_right Vendor Access Sessions Vendor Support",
+          "appText": "Settings chevron_right Vendor Access Sessions Vendor Support",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "background",
+              "stitch": "rgb(248, 249, 255)",
+              "app": "rgb(248, 249, 255)",
+              "match": true
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "Inter",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "16px",
+              "app": "16px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "title",
+          "stitchText": "Vendor Support Sessions & Data Boundary Control",
+          "appText": "Vendor Support Sessions & Data Boundary Control",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "Inter",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "32px",
+              "app": "32px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            },
+            {
+              "prop": "line-height",
+              "stitch": "40px",
+              "app": "40px",
+              "match": true
+            },
+            {
+              "prop": "letter-spacing",
+              "stitch": "-0.8px",
+              "app": "-0.8px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "sectionHeading",
+          "stitchText": "Authorization Decision Queue",
+          "appText": "Authorization Decision Queue",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "Inter",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "24px",
+              "app": "24px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            },
+            {
+              "prop": "line-height",
+              "stitch": "32px",
+              "app": "32px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "primaryButton",
+          "stitchText": "verified_user Approve & Sign (Requires MFA)",
+          "appText": "verified_user Approve & Sign (Requires MFA)",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "background-color",
+              "stitch": "rgb(0, 56, 131)",
+              "app": "rgb(0, 56, 131)",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            },
+            {
+              "prop": "border-radius",
+              "stitch": "2px",
+              "app": "2px",
+              "match": true
+            },
+            {
+              "prop": "height",
+              "stitch": "34px",
+              "app": "34px",
+              "match": true
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "Inter",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "13px",
+              "app": "13px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "tableHeader",
+          "stitchText": "Session ID",
+          "appText": "Session ID",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "Inter",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "12px",
+              "app": "12px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "700",
+              "app": "700",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            },
+            {
+              "prop": "text-transform",
+              "stitch": "uppercase",
+              "app": "uppercase",
+              "match": true
+            },
+            {
+              "prop": "letter-spacing",
+              "stitch": "0.6px",
+              "app": "0.6px",
+              "match": true
+            },
+            {
+              "prop": "background",
+              "stitch": "rgb(220, 233, 255)",
+              "app": "rgb(220, 233, 255)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "card",
+          "stitchText": "policy BR-SEC-01 INVARIANT ACTIVE STRICT BOUNDARY LOCK Platf",
+          "appText": "policy BR-SEC-01 INVARIANT ACTIVE STRICT BOUNDARY LOCK Platf",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "border-radius",
+              "stitch": "2px",
+              "app": "2px",
+              "match": true
+            },
+            {
+              "prop": "box-shadow",
+              "stitch": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+              "app": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+              "match": true
+            },
+            {
+              "prop": "background-color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "viewport": "390x844",
+      "screenshot": "testing/ui-screenshots/self-check/settings/vendor-access/self-check/390x844.png",
+      "reference": "testing/ui-screenshots/reference/sc_14_vendor_access_sessions_authorizations/390x844.png",
+      "diffImage": "testing/ui-screenshots/self-check/settings/vendor-access/self-check/390x844.diff.png",
+      "mismatchPercent": 0,
+      "diffPixels": 0,
+      "referenceSize": "608x8049",
+      "actualSize": "608x8049",
+      "landmarks": [
+        {
+          "landmark": "page",
+          "stitchText": "Settings chevron_right Vendor Access Sessions Vendor Support",
+          "appText": "Settings chevron_right Vendor Access Sessions Vendor Support",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "background",
+              "stitch": "rgb(248, 249, 255)",
+              "app": "rgb(248, 249, 255)",
+              "match": true
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "Inter",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "16px",
+              "app": "16px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "title",
+          "stitchText": "Vendor Support Sessions & Data Boundary Control",
+          "appText": "Vendor Support Sessions & Data Boundary Control",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "Inter",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "32px",
+              "app": "32px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            },
+            {
+              "prop": "line-height",
+              "stitch": "40px",
+              "app": "40px",
+              "match": true
+            },
+            {
+              "prop": "letter-spacing",
+              "stitch": "-0.8px",
+              "app": "-0.8px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "sectionHeading",
+          "stitchText": "Authorization Decision Queue",
+          "appText": "Authorization Decision Queue",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "Inter",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "24px",
+              "app": "24px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            },
+            {
+              "prop": "line-height",
+              "stitch": "32px",
+              "app": "32px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "primaryButton",
+          "stitchText": "verified_user Approve & Sign (Requires MFA)",
+          "appText": "verified_user Approve & Sign (Requires MFA)",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "background-color",
+              "stitch": "rgb(0, 56, 131)",
+              "app": "rgb(0, 56, 131)",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            },
+            {
+              "prop": "border-radius",
+              "stitch": "2px",
+              "app": "2px",
+              "match": true
+            },
+            {
+              "prop": "height",
+              "stitch": "88px",
+              "app": "88px",
+              "match": true
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "Inter",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "13px",
+              "app": "13px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "tableHeader",
+          "stitchText": "Session ID",
+          "appText": "Session ID",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "Inter",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "12px",
+              "app": "12px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "700",
+              "app": "700",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            },
+            {
+              "prop": "text-transform",
+              "stitch": "uppercase",
+              "app": "uppercase",
+              "match": true
+            },
+            {
+              "prop": "letter-spacing",
+              "stitch": "0.6px",
+              "app": "0.6px",
+              "match": true
+            },
+            {
+              "prop": "background",
+              "stitch": "rgb(220, 233, 255)",
+              "app": "rgb(220, 233, 255)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "card",
+          "stitchText": "policy BR-SEC-01 INVARIANT ACTIVE STRICT BOUNDARY LOCK Platf",
+          "appText": "policy BR-SEC-01 INVARIANT ACTIVE STRICT BOUNDARY LOCK Platf",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "border-radius",
+              "stitch": "2px",
+              "app": "2px",
+              "match": true
+            },
+            {
+              "prop": "box-shadow",
+              "stitch": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+              "app": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+              "match": true
+            },
+            {
+              "prop": "background-color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

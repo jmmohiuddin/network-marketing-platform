@@ -5,11 +5,12 @@ import { useState } from 'react'
 import { useApi } from '../../../components/api-provider'
 import { Banner } from '../../../components/banner'
 import { Button } from '../../../components/button'
-import { ConfirmDialog } from '../../../components/dialog'
-import { SelectField } from '../../../components/form-field'
+import { ConfirmDialog } from '../../../components/modal'
+import { FiltersBar } from '../../../components/filters-bar'
+import { Select } from '../../../components/form-field'
 import { PageHeader } from '../../../components/page-header'
-import { StatusChip } from '../../../components/status-chip'
-import { Table, type TableColumn } from '../../../components/table'
+import { StatusBadge } from '../../../components/status-badge'
+import { DataTable, type DataTableColumn } from '../../../components/data-table'
 import { useToast } from '../../../components/toast'
 import { leavePage } from '../../../lib/leave-page'
 import { isNotAvailable } from '../../../lib/messages'
@@ -20,7 +21,7 @@ import { LoadFailure } from '../page-states'
 import { useNow } from '../../../lib/use-now'
 import { tableError, usePagedList } from '../resource'
 import type { SupportSession } from '../types'
-import { ConsoleNav } from './console-nav'
+import { MONO, NoticeCard, ROW_ACTIONS } from '../ui'
 import { RequestSessionDialog } from './request-session-dialog'
 
 const PATH = '/v1/support-sessions'
@@ -42,7 +43,7 @@ export function canOpen(session: SupportSession, userId: string, now: number): b
 function windowLabel(session: SupportSession, now: number): string {
   if (session.starts_at === null || session.ends_at === null) return `${durationLabel(session.requested_minutes)} asked for`
   const open = session.state === 'active' || session.state === 'approved'
-  return open ? `Ends ${formatDateTime(session.ends_at)} (in ${remainingLabel(session.ends_at, now)})` : `${formatDateTime(session.starts_at)} to ${formatDateTime(session.ends_at)}`
+  return open ? `Ends ${formatDateTime(session.ends_at)} (in ${remainingLabel(session.ends_at, now, session.starts_at)})` : `${formatDateTime(session.starts_at)} to ${formatDateTime(session.ends_at)}`
 }
 
 function SessionsTable({ state, onEnd }: { readonly state: string; readonly onEnd: (session: SupportSession) => void }) {
@@ -50,23 +51,24 @@ function SessionsTable({ state, onEnd }: { readonly state: string; readonly onEn
   const sessions = usePagedList<SupportSession>(PATH, { state: state === '' ? undefined : state })
   const now = useNow(COUNTDOWN_TICK_MS)
   if (isNotAvailable(sessions.error)) return <LoadFailure error={sessions.error} onRetry={sessions.reload} section />
-  const columns: readonly TableColumn<SupportSession>[] = [
-    { key: 'tenant', header: 'Tenant', cell: (session) => session.tenant_slug },
+  const columns: readonly DataTableColumn<SupportSession>[] = [
+    { key: 'tenant', header: 'Tenant', cell: (session) => <span className="font-data-mono-md text-data-mono-md font-semibold text-primary">{session.tenant_slug}</span> },
     { key: 'reason', header: 'Reason', cell: (session) => session.reason },
     { key: 'scope', header: 'Areas (view only)', cell: (session) => supportScopeText(session.scope.permissions) },
     { key: 'by', header: 'Requested by', cell: (session) => (session.requester_id === me.user.id ? 'You' : 'Another vendor user') },
-    { key: 'state', header: 'State', cell: (session) => <StatusChip state={session.state} /> },
-    { key: 'window', header: 'Window', cell: (session) => windowLabel(session, now) },
+    { key: 'state', header: 'State', cell: (session) => <StatusBadge state={session.state} /> },
+    { key: 'window', header: 'Window', cell: (session) => <span className={MONO}>{windowLabel(session, now)}</span> },
     {
       key: 'actions',
       header: 'Actions',
       align: 'end',
       cell: (session) => {
         return (
-        <div className="admin-row-actions">
+        <div className={ROW_ACTIONS}>
           {canOpen(session, me.user.id, now) && (
             <Button
-              variant="tertiary"
+              icon="open_in_new"
+              size="sm"
               aria-label={`Open the tenant app of ${session.tenant_slug} (read-only)`}
               onClick={() => {
                 enterSupportSession(session.id)
@@ -77,7 +79,7 @@ function SessionsTable({ state, onEnd }: { readonly state: string; readonly onEn
             </Button>
           )}
           {canEnd(session, me.user.id) && (
-            <Button variant="destructive" aria-label={`End session for ${session.tenant_slug}`} onClick={() => onEnd(session)}>End session</Button>
+            <Button variant="destructive" size="sm" aria-label={`End session for ${session.tenant_slug}`} onClick={() => onEnd(session)}>End session</Button>
           )}
         </div>
         )
@@ -85,7 +87,7 @@ function SessionsTable({ state, onEnd }: { readonly state: string; readonly onEn
     },
   ]
   return (
-    <Table
+    <DataTable
       caption="Support session requests and sessions of all tenants, newest first"
       columns={columns}
       rows={sessions.rows}
@@ -110,26 +112,26 @@ export function VendorSessionsPage() {
   const refresh = () => setVersion((count) => count + 1)
   return (
     <>
-      <ConsoleNav />
-      <div className="admin-stack">
-        <PageHeader
-          title="Support sessions"
-          summary="You have no standing access to tenant data. Ask a tenant for a read-only, time-boxed session; its admins decide."
-          actions={<Button variant="primary" onClick={() => setRequesting(true)}>Request support session</Button>}
+      <PageHeader
+        title="Support sessions"
+        summary="Ask a tenant for a read-only, time-boxed session; its admins decide."
+        actions={<Button variant="primary" icon="add_moderator" data-testid="primary-action" onClick={() => setRequesting(true)}>Request support session</Button>}
+      />
+      <NoticeCard icon="vpn_key" heading="h2" title="You have no standing access to tenant data">
+        A session is read-only and starts only when the tenant’s admins approve it. It ends at the approved time, and the tenant sees every view in its log.
+      </NoticeCard>
+      {params.get('reason') === 'session_closed' && (
+        <Banner tone="info" title="Your support session is no longer open">The tenant ended it or its window closed. Ask for a new session if you still need access.</Banner>
+      )}
+      <FiltersBar label="Filter support sessions">
+        <Select
+          label="State"
+          value={state}
+          options={[{ value: '', label: 'All states' }, ...STATES.map((value) => ({ value, label: value.charAt(0).toUpperCase() + value.slice(1) }))]}
+          onChange={(event) => setState(event.target.value)}
         />
-        {params.get('reason') === 'session_closed' && (
-          <Banner tone="info" title="Your support session is no longer open">The tenant ended it or its window closed. Ask for a new session if you still need access.</Banner>
-        )}
-        <div className="admin-toolbar">
-          <SelectField
-            label="State"
-            value={state}
-            options={[{ value: '', label: 'All states' }, ...STATES.map((value) => ({ value, label: value.charAt(0).toUpperCase() + value.slice(1) }))]}
-            onChange={(event) => setState(event.target.value)}
-          />
-        </div>
-        <SessionsTable key={`${state}:${version}`} state={state} onEnd={setEnding} />
-      </div>
+      </FiltersBar>
+      <SessionsTable key={`${state}:${version}`} state={state} onEnd={setEnding} />
       {requesting && (
         <RequestSessionDialog
           onClose={() => setRequesting(false)}

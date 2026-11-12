@@ -1,21 +1,24 @@
 // @vitest-environment jsdom
 import '../test/dom'
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
+import { KpiCard } from './kpi-card'
+import { PageHeader } from './page-header'
 import { QrCode, qrPath } from './qr-code'
 import { SecretText } from './secret-text'
-import { StatusChip, toneOf } from './status-chip'
+import { StatusBadge, toneOf } from './status-badge'
 import { ErrorState, NotAvailable } from './states'
 import { TabPanel, Tabs } from './tabs'
+import { Stepper } from './stepper'
 
-describe('StatusChip', () => {
+describe('StatusBadge', () => {
   it('maps states to families with an icon and a label', () => {
     expect([toneOf('loaded'), toneOf('approved'), toneOf('auto_denied'), toneOf('outdated'), toneOf('something_new')])
       .toEqual(['success', 'locked', 'danger', 'warning', 'neutral'])
-    const { container } = render(<StatusChip state="auto_denied" />)
-    expect(screen.getByText('Auto denied').className).toBe('chip chip-danger')
-    expect(container.querySelector('svg[aria-hidden="true"]')).not.toBeNull()
+    const { container } = render(<StatusBadge state="auto_denied" />)
+    expect(screen.getByText('Auto denied').getAttribute('data-tone')).toBe('danger')
+    expect(container.querySelector('.material-symbols-outlined[aria-hidden="true"]')).not.toBeNull()
   })
 })
 
@@ -52,8 +55,8 @@ describe('ErrorState and NotAvailable inside a section', () => {
     expect(screen.getByRole('heading', { level: 2, name: 'This section could not be loaded' })).toBeTruthy()
     expect(screen.getByRole('heading', { level: 2, name: 'Not found or not available to you' })).toBeTruthy()
     expect(screen.queryByRole('heading', { level: 1 })).toBeNull()
-    expect(screen.getByRole('button', { name: 'Try again' }).className).toContain('btn-secondary')
-    expect(screen.getByRole('link', { name: 'Go to your home page' }).className).toContain('btn-secondary')
+    expect(screen.getByRole('button', { name: 'Try again' }).className).toContain('bg-surface-container hover:bg-surface-container-high')
+    expect(screen.getByRole('link', { name: 'Go to your home page' }).className).toContain('bg-surface-container hover:bg-surface-container-high')
   })
 })
 
@@ -78,5 +81,32 @@ describe('SecretText', () => {
     await user.click(screen.getByRole('button', { name: 'Copy key' }))
     expect(writeText).toHaveBeenCalledWith('JBSWY3DPEHPK3PXP')
     expect(screen.getByRole('status').textContent).toBe('Key copied.')
+  })
+})
+
+describe('PageHeader and Breadcrumbs', () => {
+  it('render one h1 and a breadcrumb trail whose last item is the current page', () => {
+    render(<PageHeader title="Batch 12" eyebrow="2025-01" breadcrumbs={[{ label: 'Data imports', href: '/imports' }, { label: 'Batch 12' }]} />)
+    expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1)
+    const trail = screen.getByRole('navigation', { name: 'Breadcrumb' })
+    expect(within(trail).getByRole('link', { name: 'Data imports' }).getAttribute('href')).toBe('/imports')
+    expect(within(trail).getByText('Batch 12').getAttribute('aria-current')).toBe('page')
+  })
+})
+
+describe('KpiCard and Stepper', () => {
+  it('show a missing value as a dash with its reason', () => {
+    render(<KpiCard label="Customer share" value={null} unit="%" detail="No snapshot for this market yet." />)
+    expect(screen.getByText('—')).toBeTruthy()
+    expect(screen.queryByText('%')).toBeNull()
+    expect(screen.getByText('No snapshot for this market yet.')).toBeTruthy()
+  })
+
+  it('state each step in text and mark the current one', () => {
+    render(<Stepper label="Go-live" steps={[{ label: 'Provisioned', status: 'done' }, { label: 'Approved', status: 'current' }, { label: 'Live', status: 'blocked', detail: 'Needs a second admin.' }]} />)
+    const steps = within(screen.getByRole('list', { name: 'Go-live' })).getAllByRole('listitem')
+    expect(steps[1]?.getAttribute('aria-current')).toBe('step')
+    expect(steps[2]?.textContent).toContain('Step 3 · blocked')
+    expect(steps[2]?.textContent).toContain('Needs a second admin.')
   })
 })

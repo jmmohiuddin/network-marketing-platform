@@ -1,0 +1,41 @@
+{
+  "properties": {
+    "header": ["height", "background"],
+    "sidebar": ["width", "background"],
+    "page": ["background", "font-family", "font-size", "color"],
+    "title": ["font-family", "font-size", "font-weight", "line-height", "letter-spacing", "color"],
+    "sectionHeading": ["font-family", "font-size", "font-weight", "line-height", "color"],
+    "primaryButton": ["background-color", "color", "border-radius", "height", "font-family", "font-size", "font-weight"],
+    "tableHeader": ["font-family", "font-size", "font-weight", "color", "text-transform", "letter-spacing", "background"],
+    "card": ["border-radius", "box-shadow", "background-color"]
+  },
+  "landmarks": {
+    "header": { "stitch": "header", "app": "[data-testid=\"app-header\"]", "source": "sc_01_periods_runs_analyst_home", "viewports": ["1440x900", "1280x800"] },
+    "sidebar": { "stitch": "aside", "app": "[data-testid=\"app-sidebar\"]", "source": "sc_01_periods_runs_analyst_home", "viewports": ["1440x900", "1280x800"] },
+    "page": { "stitch": "main", "app": "main" },
+    "title": { "stitch": "h1", "app": "h1" },
+    "sectionHeading": { "stitch": "main h2", "app": "main h2" },
+    "primaryButton": { "stitch": "main button.text-on-primary", "app": "[data-testid=\"primary-action\"]" },
+    "tableHeader": { "stitch": "thead th", "app": "thead th" },
+    "card": { "stitch": "main div.shadow-sm.bg-surface-container-lowest", "app": "[data-testid=\"card\"]" }
+  },
+  "screens": {
+    "SC-10": { "stitch": "sc_10_compliance_reports", "module": "compliance", "screen": "compliance-reports", "route": "/compliance/snapshots/[id]",
+      "landmarks": { "sectionHeading": { "stitch": "main span.text-section-heading.text-on-surface" }, "card": { "stitch": "main div.rounded.border.border-outline-variant.shadow-sm.overflow-hidden" } } },
+    "SC-14": { "stitch": "sc_14_vendor_access_sessions_authorizations", "module": "settings", "screen": "vendor-access", "route": "/settings/vendor-access" },
+    "SC-24": { "stitch": "sc_24_data_imports", "module": "data", "screen": "imports", "route": "/imports" },
+    "SC-25": { "stitch": "sc_25_import_mapping", "module": "data", "screen": "import-mapping", "route": "/imports/mappings" },
+    "SC-26": { "stitch": "sc_26_figure_drill_down", "module": "compliance", "screen": "figure-drill-down", "route": "/compliance/snapshots/[id]/rows",
+      "landmarks": { "sectionHeading": { "stitch": "main .text-section-heading.text-on-surface" } } },
+    "SC-27": { "stitch": "sc_27_sign_in_and_second_factor", "module": "auth", "screen": "sign-in", "route": "/signin",
+      "landmarks": { "header": null, "sidebar": null, "sectionHeading": null, "tableHeader": null, "card": { "stitch": "main div.rounded-xl.shadow-md" } } },
+    "SC-28": { "stitch": "sc_28_users_and_roles", "module": "settings", "screen": "users-and-roles", "route": "/settings/users",
+      "landmarks": { "sectionHeading": { "stitch": "main span.text-section-heading" } } },
+    "SC-29": { "stitch": "sc_29_tenant_settings", "module": "settings", "screen": "tenant-settings", "route": "/settings",
+      "landmarks": { "title": { "stitch": "main span.text-title-lg" }, "sectionHeading": { "stitch": "main span.text-title-md" } } },
+    "SC-30": { "stitch": "sc_30_immutable_audit_log_verification", "module": "settings", "screen": "audit-log", "route": "/settings/audit",
+      "landmarks": { "title": { "stitch": "main span.text-title-lg" }, "sectionHeading": { "stitch": "main span.text-section-heading" } } },
+    "SC-39": { "stitch": "sc_39_vendor_operations_console", "module": "vendor", "screen": "operations-console", "route": "/vendor" },
+    "SC-46": { "stitch": "sc_46_compliance_overview_overlay_home", "module": "compliance", "screen": "compliance-overview", "route": "/compliance" }
+  }
+}

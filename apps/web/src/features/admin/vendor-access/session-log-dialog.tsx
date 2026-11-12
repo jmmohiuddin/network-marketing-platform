@@ -1,10 +1,11 @@
 'use client'
 
-import { Dialog } from '../../../components/dialog'
-import { Table, type TableColumn } from '../../../components/table'
+import { Modal } from '../../../components/modal'
+import { DataTable, type DataTableColumn } from '../../../components/data-table'
 import { formatDateTime, shortId } from '../format'
 import { tableError, usePagedList } from '../resource'
 import type { AuditEvent, SupportSession } from '../types'
+import { MONO, NOTE } from '../ui'
 
 interface AccessDetails {
   readonly method?: unknown
@@ -39,20 +40,21 @@ export function logDetails(event: Pick<AuditEvent, 'after'>): string {
   return request
 }
 
-const COLUMNS: readonly TableColumn<AuditEvent>[] = [
-  { key: 'time', header: 'Time', cell: (event) => formatDateTime(event.occurred_at) },
+const COLUMNS: readonly DataTableColumn<AuditEvent>[] = [
+  { key: 'time', header: 'Time', cell: (event) => <span className={MONO}>{formatDateTime(event.occurred_at)}</span> },
   { key: 'action', header: 'Action', cell: (event) => event.action },
   { key: 'object', header: 'Object', cell: (event) => (event.object_type === null ? '—' : `${event.object_type}${event.object_id === null ? '' : ` ${shortId(event.object_id)}`}`) },
-  { key: 'details', header: 'Details', cell: logDetails },
+  { key: 'details', header: 'Details', cell: (event) => <span className={MONO}>{logDetails(event)}</span> },
 ]
 
 /** SC-14 per-session log (AC-29.1, SEC-37): every event written in the session or about it, newest first. */
 export function SessionLogDialog({ session, onClose }: { readonly session: SupportSession; readonly onClose: () => void }) {
   const log = usePagedList<AuditEvent>(`/v1/support-sessions/${session.id}/log`)
   return (
-    <Dialog open onClose={onClose} title="Support session log" size="lg">
-      <p>Reason given: {session.reason}</p>
-      <Table
+    <Modal open onClose={onClose} title="Support session log" size="lg">
+      <p className={NOTE}>Reason given: {session.reason}</p>
+      <DataTable
+        bare
         caption="Every screen view, query and decision of this session, newest first"
         columns={COLUMNS}
         rows={log.rows}
@@ -63,6 +65,6 @@ export function SessionLogDialog({ session, onClose }: { readonly session: Suppo
         pagination={log.pagination}
         density="compact"
       />
-    </Dialog>
+    </Modal>
   )
 }

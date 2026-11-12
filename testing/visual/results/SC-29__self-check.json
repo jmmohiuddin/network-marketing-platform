@@ -1,0 +1,1130 @@
+{
+  "when": "2026-11-12T02:53:48.182Z",
+  "screenId": "SC-29",
+  "stitch": "sc_29_tenant_settings",
+  "module": "settings",
+  "screen": "tenant-settings",
+  "route": "/settings",
+  "role": "self-check",
+  "url": null,
+  "self": true,
+  "patched": [],
+  "viewports": [
+    {
+      "viewport": "1440x900",
+      "screenshot": "testing/ui-screenshots/self-check/settings/tenant-settings/self-check/1440x900.png",
+      "reference": "testing/ui-screenshots/reference/sc_29_tenant_settings/1440x900.png",
+      "diffImage": "testing/ui-screenshots/self-check/settings/tenant-settings/self-check/1440x900.diff.png",
+      "mismatchPercent": 0,
+      "diffPixels": 0,
+      "referenceSize": "1440x1818",
+      "actualSize": "1440x1818",
+      "landmarks": [
+        {
+          "landmark": "header",
+          "stitchText": "AuditLedgerAcrobex Global(TEN-842)arrow_drop_downUS - United",
+          "appText": "AuditLedgerAcrobex Global(TEN-842)arrow_drop_downUS - United",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "height",
+              "stitch": "48px",
+              "app": "48px",
+              "match": true
+            },
+            {
+              "prop": "background",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "sidebar",
+          "stitchText": "dashboardOverviewhistory_toggle_offPeriods & RunsschemaCompe",
+          "appText": "dashboardOverviewhistory_toggle_offPeriods & RunsschemaCompe",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "width",
+              "stitch": "208px",
+              "app": "208px",
+              "match": true
+            },
+            {
+              "prop": "background",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "page",
+          "stitchText": "Tenant Settings & Governed Policies verified Active Settings",
+          "appText": "Tenant Settings & Governed Policies verified Active Settings",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "background",
+              "stitch": "rgb(248, 249, 255)",
+              "app": "rgb(248, 249, 255)",
+              "match": true
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "Inter",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "16px",
+              "app": "16px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "title",
+          "stitchText": "Tenant Settings & Governed Policies",
+          "appText": "Tenant Settings & Governed Policies",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "Inter",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "24px",
+              "app": "24px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            },
+            {
+              "prop": "line-height",
+              "stitch": "32px",
+              "app": "32px",
+              "match": true
+            },
+            {
+              "prop": "letter-spacing",
+              "stitch": "-0.36px",
+              "app": "-0.36px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "sectionHeading",
+          "stitchText": "1. Financial & Monetary Precision Invariants",
+          "appText": "1. Financial & Monetary Precision Invariants",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "Inter",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "20px",
+              "app": "20px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            },
+            {
+              "prop": "line-height",
+              "stitch": "28px",
+              "app": "28px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "primaryButton",
+          "stitchText": "save_as Save New Version with Effective Date",
+          "appText": "save_as Save New Version with Effective Date",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "background-color",
+              "stitch": "rgb(30, 79, 163)",
+              "app": "rgb(30, 79, 163)",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            },
+            {
+              "prop": "border-radius",
+              "stitch": "2px",
+              "app": "2px",
+              "match": true
+            },
+            {
+              "prop": "height",
+              "stitch": "32px",
+              "app": "32px",
+              "match": true
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "Inter",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "13px",
+              "app": "13px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "500",
+              "app": "500",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "tableHeader",
+          "stitchText": "Version Ref",
+          "appText": "Version Ref",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "Inter",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "12px",
+              "app": "12px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "700",
+              "app": "700",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(86, 94, 116)",
+              "app": "rgb(86, 94, 116)",
+              "match": true
+            },
+            {
+              "prop": "text-transform",
+              "stitch": "uppercase",
+              "app": "uppercase",
+              "match": true
+            },
+            {
+              "prop": "letter-spacing",
+              "stitch": "0.6px",
+              "app": "0.6px",
+              "match": true
+            },
+            {
+              "prop": "background",
+              "stitch": "rgb(239, 244, 255)",
+              "app": "rgb(239, 244, 255)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "card",
+          "stitchText": "Tenant Settings & Governed Policies verified Active Settings",
+          "appText": "Tenant Settings & Governed Policies verified Active Settings",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "border-radius",
+              "stitch": "0px",
+              "app": "0px",
+              "match": true
+            },
+            {
+              "prop": "box-shadow",
+              "stitch": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+              "app": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+              "match": true
+            },
+            {
+              "prop": "background-color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "viewport": "1280x800",
+      "screenshot": "testing/ui-screenshots/self-check/settings/tenant-settings/self-check/1280x800.png",
+      "reference": "testing/ui-screenshots/reference/sc_29_tenant_settings/1280x800.png",
+      "diffImage": "testing/ui-screenshots/self-check/settings/tenant-settings/self-check/1280x800.diff.png",
+      "mismatchPercent": 0,
+      "diffPixels": 51,
+      "referenceSize": "1280x1992",
+      "actualSize": "1280x1992",
+      "landmarks": [
+        {
+          "landmark": "header",
+          "stitchText": "AuditLedgerAcrobex Global(TEN-842)arrow_drop_downUS - United",
+          "appText": "AuditLedgerAcrobex Global(TEN-842)arrow_drop_downUS - United",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "height",
+              "stitch": "48px",
+              "app": "48px",
+              "match": true
+            },
+            {
+              "prop": "background",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "sidebar",
+          "stitchText": "dashboardOverviewhistory_toggle_offPeriods & RunsschemaCompe",
+          "appText": "dashboardOverviewhistory_toggle_offPeriods & RunsschemaCompe",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "width",
+              "stitch": "208px",
+              "app": "208px",
+              "match": true
+            },
+            {
+              "prop": "background",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "page",
+          "stitchText": "Tenant Settings & Governed Policies verified Active Settings",
+          "appText": "Tenant Settings & Governed Policies verified Active Settings",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "background",
+              "stitch": "rgb(248, 249, 255)",
+              "app": "rgb(248, 249, 255)",
+              "match": true
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "Inter",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "16px",
+              "app": "16px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "title",
+          "stitchText": "Tenant Settings & Governed Policies",
+          "appText": "Tenant Settings & Governed Policies",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "Inter",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "24px",
+              "app": "24px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            },
+            {
+              "prop": "line-height",
+              "stitch": "32px",
+              "app": "32px",
+              "match": true
+            },
+            {
+              "prop": "letter-spacing",
+              "stitch": "-0.36px",
+              "app": "-0.36px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "sectionHeading",
+          "stitchText": "1. Financial & Monetary Precision Invariants",
+          "appText": "1. Financial & Monetary Precision Invariants",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "Inter",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "20px",
+              "app": "20px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            },
+            {
+              "prop": "line-height",
+              "stitch": "28px",
+              "app": "28px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "primaryButton",
+          "stitchText": "save_as Save New Version with Effective Date",
+          "appText": "save_as Save New Version with Effective Date",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "background-color",
+              "stitch": "rgb(30, 79, 163)",
+              "app": "rgb(30, 79, 163)",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            },
+            {
+              "prop": "border-radius",
+              "stitch": "2px",
+              "app": "2px",
+              "match": true
+            },
+            {
+              "prop": "height",
+              "stitch": "32px",
+              "app": "32px",
+              "match": true
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "Inter",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "13px",
+              "app": "13px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "500",
+              "app": "500",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "tableHeader",
+          "stitchText": "Version Ref",
+          "appText": "Version Ref",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "Inter",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "12px",
+              "app": "12px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "700",
+              "app": "700",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(86, 94, 116)",
+              "app": "rgb(86, 94, 116)",
+              "match": true
+            },
+            {
+              "prop": "text-transform",
+              "stitch": "uppercase",
+              "app": "uppercase",
+              "match": true
+            },
+            {
+              "prop": "letter-spacing",
+              "stitch": "0.6px",
+              "app": "0.6px",
+              "match": true
+            },
+            {
+              "prop": "background",
+              "stitch": "rgb(239, 244, 255)",
+              "app": "rgb(239, 244, 255)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "card",
+          "stitchText": "Tenant Settings & Governed Policies verified Active Settings",
+          "appText": "Tenant Settings & Governed Policies verified Active Settings",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "border-radius",
+              "stitch": "0px",
+              "app": "0px",
+              "match": true
+            },
+            {
+              "prop": "box-shadow",
+              "stitch": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+              "app": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+              "match": true
+            },
+            {
+              "prop": "background-color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "viewport": "768x1024",
+      "screenshot": "testing/ui-screenshots/self-check/settings/tenant-settings/self-check/768x1024.png",
+      "reference": "testing/ui-screenshots/reference/sc_29_tenant_settings/768x1024.png",
+      "diffImage": "testing/ui-screenshots/self-check/settings/tenant-settings/self-check/768x1024.diff.png",
+      "mismatchPercent": 0,
+      "diffPixels": 0,
+      "referenceSize": "982x3723",
+      "actualSize": "982x3723",
+      "landmarks": [
+        {
+          "landmark": "page",
+          "stitchText": "Tenant Settings & Governed Policies verified Active Settings",
+          "appText": "Tenant Settings & Governed Policies verified Active Settings",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "background",
+              "stitch": "rgb(248, 249, 255)",
+              "app": "rgb(248, 249, 255)",
+              "match": true
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "Inter",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "16px",
+              "app": "16px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "title",
+          "stitchText": "Tenant Settings & Governed Policies",
+          "appText": "Tenant Settings & Governed Policies",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "Inter",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "24px",
+              "app": "24px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            },
+            {
+              "prop": "line-height",
+              "stitch": "32px",
+              "app": "32px",
+              "match": true
+            },
+            {
+              "prop": "letter-spacing",
+              "stitch": "-0.36px",
+              "app": "-0.36px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "sectionHeading",
+          "stitchText": "1. Financial & Monetary Precision Invariants",
+          "appText": "1. Financial & Monetary Precision Invariants",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "Inter",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "20px",
+              "app": "20px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            },
+            {
+              "prop": "line-height",
+              "stitch": "28px",
+              "app": "28px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "primaryButton",
+          "stitchText": "save_as Save New Version with Effective Date",
+          "appText": "save_as Save New Version with Effective Date",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "background-color",
+              "stitch": "rgb(30, 79, 163)",
+              "app": "rgb(30, 79, 163)",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            },
+            {
+              "prop": "border-radius",
+              "stitch": "2px",
+              "app": "2px",
+              "match": true
+            },
+            {
+              "prop": "height",
+              "stitch": "32px",
+              "app": "32px",
+              "match": true
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "Inter",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "13px",
+              "app": "13px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "500",
+              "app": "500",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "tableHeader",
+          "stitchText": "Version Ref",
+          "appText": "Version Ref",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "Inter",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "12px",
+              "app": "12px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "700",
+              "app": "700",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(86, 94, 116)",
+              "app": "rgb(86, 94, 116)",
+              "match": true
+            },
+            {
+              "prop": "text-transform",
+              "stitch": "uppercase",
+              "app": "uppercase",
+              "match": true
+            },
+            {
+              "prop": "letter-spacing",
+              "stitch": "0.6px",
+              "app": "0.6px",
+              "match": true
+            },
+            {
+              "prop": "background",
+              "stitch": "rgb(239, 244, 255)",
+              "app": "rgb(239, 244, 255)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "card",
+          "stitchText": "Tenant Settings & Governed Policies verified Active Settings",
+          "appText": "Tenant Settings & Governed Policies verified Active Settings",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "border-radius",
+              "stitch": "0px",
+              "app": "0px",
+              "match": true
+            },
+            {
+              "prop": "box-shadow",
+              "stitch": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+              "app": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+              "match": true
+            },
+            {
+              "prop": "background-color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "viewport": "390x844",
+      "screenshot": "testing/ui-screenshots/self-check/settings/tenant-settings/self-check/390x844.png",
+      "reference": "testing/ui-screenshots/reference/sc_29_tenant_settings/390x844.png",
+      "diffImage": "testing/ui-screenshots/self-check/settings/tenant-settings/self-check/390x844.diff.png",
+      "mismatchPercent": 0,
+      "diffPixels": 0,
+      "referenceSize": "982x8578",
+      "actualSize": "982x8578",
+      "landmarks": [
+        {
+          "landmark": "page",
+          "stitchText": "Tenant Settings & Governed Policies verified Active Settings",
+          "appText": "Tenant Settings & Governed Policies verified Active Settings",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "background",
+              "stitch": "rgb(248, 249, 255)",
+              "app": "rgb(248, 249, 255)",
+              "match": true
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "Inter",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "16px",
+              "app": "16px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "title",
+          "stitchText": "Tenant Settings & Governed Policies",
+          "appText": "Tenant Settings & Governed Policies",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "Inter",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "24px",
+              "app": "24px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            },
+            {
+              "prop": "line-height",
+              "stitch": "32px",
+              "app": "32px",
+              "match": true
+            },
+            {
+              "prop": "letter-spacing",
+              "stitch": "-0.36px",
+              "app": "-0.36px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "sectionHeading",
+          "stitchText": "1. Financial & Monetary Precision Invariants",
+          "appText": "1. Financial & Monetary Precision Invariants",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "Inter",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "20px",
+              "app": "20px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            },
+            {
+              "prop": "line-height",
+              "stitch": "28px",
+              "app": "28px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "primaryButton",
+          "stitchText": "save_as Save New Version with Effective Date",
+          "appText": "save_as Save New Version with Effective Date",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "background-color",
+              "stitch": "rgb(30, 79, 163)",
+              "app": "rgb(30, 79, 163)",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            },
+            {
+              "prop": "border-radius",
+              "stitch": "2px",
+              "app": "2px",
+              "match": true
+            },
+            {
+              "prop": "height",
+              "stitch": "32px",
+              "app": "32px",
+              "match": true
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "Inter",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "13px",
+              "app": "13px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "500",
+              "app": "500",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "tableHeader",
+          "stitchText": "Version Ref",
+          "appText": "Version Ref",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "Inter",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "12px",
+              "app": "12px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "700",
+              "app": "700",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(86, 94, 116)",
+              "app": "rgb(86, 94, 116)",
+              "match": true
+            },
+            {
+              "prop": "text-transform",
+              "stitch": "uppercase",
+              "app": "uppercase",
+              "match": true
+            },
+            {
+              "prop": "letter-spacing",
+              "stitch": "0.6px",
+              "app": "0.6px",
+              "match": true
+            },
+            {
+              "prop": "background",
+              "stitch": "rgb(239, 244, 255)",
+              "app": "rgb(239, 244, 255)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "card",
+          "stitchText": "Tenant Settings & Governed Policies verified Active Settings",
+          "appText": "Tenant Settings & Governed Policies verified Active Settings",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "border-radius",
+              "stitch": "0px",
+              "app": "0px",
+              "match": true
+            },
+            {
+              "prop": "box-shadow",
+              "stitch": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+              "app": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+              "match": true
+            },
+            {
+              "prop": "background-color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

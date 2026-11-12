@@ -29,14 +29,14 @@ export function ErrorSummary({ items, title = 'There is a problem' }: ErrorSumma
   }, [items])
   if (items.length === 0) return null
   return (
-    <div ref={ref} className="error-summary" role="alert" tabIndex={-1}>
-      <h2 className="error-summary-title">{title}</h2>
-      <ul>
+    <div ref={ref} className="p-space-sm bg-surface-container-lowest border-l-4 border-l-error border border-outline-variant rounded-sm flex flex-col gap-space-xs focus:outline focus:outline-2 focus:outline-primary" role="alert" tabIndex={-1}>
+      <h2 className="font-section-heading text-section-heading text-error">{title}</h2>
+      <ul className="list-disc pl-space-md font-body-sm text-body-sm text-on-surface space-y-0.5">
         {items.map((item) => (
           <li key={`${item.fieldId ?? 'form'}:${item.message}`}>
             {item.fieldId === undefined
               ? item.message
-              : <a href={`#${item.fieldId}`} onClick={(event) => focusField(event, item.fieldId!)}>{item.message}</a>}
+              : <a className="text-primary underline" href={`#${item.fieldId}`} onClick={(event) => focusField(event, item.fieldId!)}>{item.message}</a>}
           </li>
         ))}
       </ul>

@@ -1,11 +1,11 @@
 'use client'
 
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { useApi } from '../../components/api-provider'
 import { Banner } from '../../components/banner'
 import { Button } from '../../components/button'
-import { CodeForm } from '../../components/code-form'
+import { CodeInput } from '../../components/code-input'
 import { QrCode } from '../../components/qr-code'
 import { SecretText } from '../../components/secret-text'
 import { SignOutButton } from '../../components/sign-out-button'
@@ -13,6 +13,8 @@ import { useToast } from '../../components/toast'
 import { isApiError } from '../../lib/api'
 import { errorMessage } from '../../lib/messages'
 import { MFA_VERIFY_PATH, realmOf, safeNext, withNext } from '../../lib/navigation'
+import { useMe } from '../../lib/session'
+import { AUTH_TEXT, AuthFooter, AuthHeader, IdentityBox } from './auth-card'
 
 /** The page to continue to (from ?next=), its realm, and the MFA pages' shared redirect. */
 function useTarget() {
@@ -24,19 +26,37 @@ function useTarget() {
 export function MfaVerification() {
   const router = useRouter()
   const { realm, destination } = useTarget()
+  // Who is signing in; the box is left out while loading or if it cannot be read (the code step works without it).
+  const { me } = useMe()
   return (
     <>
-      <h1 className="card-title">Enter your verification code</h1>
-      <p>Open your authenticator app and enter the 6-digit code it shows for this account.</p>
-      <CodeForm
+      <AuthHeader eyebrow="Second factor" icon="lock" title="Enter your verification code" step="Step 2 / 2">
+        Open your authenticator app and enter the 6-digit code it shows for this account.
+      </AuthHeader>
+      {me !== null && <IdentityBox me={me} />}
+      <CodeInput
         idPrefix="mfa"
         endpoint="/v1/auth/sessions/current/mfa"
         autoFocus
         submitLabel="Verify code"
         onVerified={() => router.replace(destination)}
-        secondaryAction={<SignOutButton realm={realm} />}
       />
+      <AuthFooter><SignOutButton realm={realm} /></AuthFooter>
     </>
+  )
+}
+
+/** One enrolment step in the sc_27 inner-panel look (bg-surface-container-low, rounded-lg). */
+function EnrolStep({ number, title, text, children }: { readonly number: number; readonly title: string; readonly text?: string; readonly children: ReactNode }) {
+  return (
+    <li className="p-space-md bg-surface-container-low rounded-lg flex flex-col gap-space-sm">
+      <div className="flex items-center gap-space-sm">
+        <span aria-hidden="true" className="w-6 h-6 rounded bg-primary text-on-primary flex items-center justify-center font-caption text-caption font-bold shrink-0">{number}</span>
+        <h2 className="font-section-heading text-section-heading text-on-surface">{title}</h2>
+      </div>
+      {text !== undefined && <p className={AUTH_TEXT}>{text}</p>}
+      {children}
+    </li>
   )
 }
 
@@ -84,34 +104,32 @@ export function MfaEnrolment() {
   if (enrolment === null) {
     return (
       <>
-        <h1 className="card-title">Set up your authenticator app</h1>
-        <p>Your role needs a second factor. You can open pages after you set up an authenticator app on your phone, one that shows 6-digit time-based codes.</p>
+        <AuthHeader eyebrow="Second factor" icon="phonelink_lock" title="Set up your authenticator app">
+          Your role needs a second factor. You can open pages after you set up an authenticator app on your phone, one that shows 6-digit time-based codes.
+        </AuthHeader>
         {error !== null && <Banner tone="danger">{error}</Banner>}
-        <div className="form-actions">
-          <SignOutButton realm={realm} />
-          <Button variant="primary" loading={busy} onClick={start}>Set up authenticator app</Button>
-        </div>
+        <Button variant="primary" size="lg" icon="qr_code_2" loading={busy} onClick={start} className="w-full" data-testid="primary-action">Set up authenticator app</Button>
+        <AuthFooter><SignOutButton realm={realm} /></AuthFooter>
       </>
     )
   }
   return (
     <>
-      <h1 className="card-title">Set up your authenticator app</h1>
-      <ol className="steps">
-        <li>
-          <h2 className="step-title">Scan the QR code</h2>
-          <p>In your authenticator app, add an account and scan this code.</p>
-          <QrCode value={enrolment.otpauth_uri} label="QR code that adds this account to your authenticator app. The same key is shown as text below." />
-        </li>
-        <li>
-          <h2 className="step-title">Or type the setup key</h2>
-          <p>If you cannot scan, add the account by typing this key. Do not share it.</p>
+      <AuthHeader eyebrow="Second factor" icon="phonelink_lock" title="Set up your authenticator app">
+        Add this account to your authenticator app, then enter the code it shows.
+      </AuthHeader>
+      <ol className="flex flex-col gap-space-md">
+        <EnrolStep number={1} title="Scan the QR code" text="In your authenticator app, add an account and scan this code.">
+          <div className="flex justify-center">
+            <QrCode value={enrolment.otpauth_uri} label="QR code that adds this account to your authenticator app. The same key is shown as text below." />
+          </div>
+        </EnrolStep>
+        <EnrolStep number={2} title="Or type the setup key" text="If you cannot scan, add the account by typing this key. Do not share it.">
           <SecretText label="Setup key" value={enrolment.secret} />
-        </li>
-        <li>
-          <h2 className="step-title">Enter the code from the app</h2>
-          <CodeForm idPrefix="enrol" endpoint="/v1/auth/mfa/totp/confirm" submitLabel="Confirm code" onVerified={verified} />
-        </li>
+        </EnrolStep>
+        <EnrolStep number={3} title="Enter the code from the app">
+          <CodeInput idPrefix="enrol" endpoint="/v1/auth/mfa/totp/confirm" submitLabel="Confirm code" onVerified={verified} />
+        </EnrolStep>
       </ol>
     </>
   )

@@ -27,6 +27,8 @@ describe('ImportsList', () => {
     expect((await screen.findByRole('link', { name: 'DE · 2025-01 to 2025-03' })).getAttribute('href')).toBe('/imports/b1')
     expect(within(screen.getByRole('table')).getByText('Superseded')).toBeTruthy()
     expect(screen.getByText('3 / 3 / 4')).toBeTruthy()
+    expect(screen.getByRole('link', { name: 'View details: DE · 2025-01 to 2025-03' }).getAttribute('href')).toBe('/imports/b1')
+    expect(screen.queryByRole('link', { name: 'Open mapping' })).toBeNull()
     expect(screen.getByRole('link', { name: 'Upload export' }).getAttribute('href')).toBe('/imports/new')
     await user.selectOptions(screen.getByLabelText('State'), 'loaded')
     expect(router.replace).toHaveBeenCalledWith('/imports?state=loaded')

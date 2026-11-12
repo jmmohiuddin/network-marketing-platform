@@ -4,9 +4,9 @@ import { useRouter } from 'next/navigation'
 import { useState, type FormEvent } from 'react'
 import { useApi } from '../../components/api-provider'
 import { Button } from '../../components/button'
-import { Dialog } from '../../components/dialog'
+import { Modal } from '../../components/modal'
 import { ErrorSummary, type SummaryItem } from '../../components/error-summary'
-import { Checkbox, SelectField, TextField } from '../../components/form-field'
+import { Checkbox, FieldError, LABEL_CLASS, Select, TextInput } from '../../components/form-field'
 import { useToast } from '../../components/toast'
 import { isApiError, newIdempotencyKey } from '../../lib/api'
 import { errorMessage, fieldErrors } from '../../lib/messages'
@@ -15,6 +15,7 @@ import { useResource } from '../../lib/use-resource'
 import { REPORT_NAMES } from './format'
 import { periodErrors } from './period'
 import { REPORT_CODES, type ReportCode, type Snapshot } from './types'
+import { NOTE } from './ui'
 
 type Field = 'market' | 'period_from' | 'period_to' | 'reports'
 type Errors = Readonly<Partial<Record<Field, string>>>
@@ -104,7 +105,7 @@ export function CreateSnapshotDialog({ open, onClose, initial }: CreateSnapshotD
   }
 
   const month = (field: 'period_from' | 'period_to', label: string) => (
-    <TextField
+    <TextInput
       id={fieldId(field)} label={label} type="month" placeholder="2025-01" helper="Year and month, for example 2025-01."
       value={request[field]} error={errors[field]} onChange={(event) => change(field === 'period_from' ? { period_from: event.target.value } : { period_to: event.target.value })}
     />
@@ -116,11 +117,11 @@ export function CreateSnapshotDialog({ open, onClose, initial }: CreateSnapshotD
     </>
   )
   return (
-    <Dialog open={open} onClose={busy ? () => undefined : onClose} title="Create snapshot" footer={footer}>
-      <form id={FORM_ID} className="form" onSubmit={submit} noValidate>
+    <Modal open={open} onClose={busy ? () => undefined : onClose} title="Create snapshot" icon="add_task" footer={footer}>
+      <form id={FORM_ID} className="flex flex-col gap-space-md" onSubmit={submit} noValidate>
         <ErrorSummary items={summary} />
-        <p className="data-note">Every month of the range must be covered by a loaded import of the market. The snapshot is computed from that data and never changes afterwards.</p>
-        <SelectField
+        <p className={NOTE}>Every month of the range must be covered by a loaded import of the market. The snapshot is computed from that data and never changes afterwards.</p>
+        <Select
           id={fieldId('market')} label="Market" data-autofocus
           placeholder={markets.loading ? 'Loading markets…' : 'Choose a market'}
           helper={markets.error === null ? undefined : errorMessage(markets.error)}
@@ -129,14 +130,14 @@ export function CreateSnapshotDialog({ open, onClose, initial }: CreateSnapshotD
         />
         {month('period_from', 'First month')}
         {month('period_to', 'Last month')}
-        <fieldset className="data-fieldset" id={fieldId('reports')} tabIndex={-1}>
-          <legend>Reports</legend>
+        <fieldset className="flex flex-col gap-space-xs border-0 m-0 p-0" id={fieldId('reports')} tabIndex={-1}>
+          <legend className={`${LABEL_CLASS} mb-space-xs`}>Reports</legend>
           {REPORT_CODES.map((code) => (
             <Checkbox key={code} label={`${code} ${REPORT_NAMES[code]}`} checked={request.reports.includes(code)} onChange={(event) => toggle(code, event.target.checked)} />
           ))}
-          {errors.reports !== undefined && <p className="field-error">{errors.reports}</p>}
+          {errors.reports !== undefined && <FieldError message={errors.reports} />}
         </fieldset>
       </form>
-    </Dialog>
+    </Modal>
   )
 }

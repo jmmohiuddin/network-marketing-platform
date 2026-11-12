@@ -2,11 +2,12 @@
 
 import { useId, useState, type FormEvent, type ReactNode } from 'react'
 import { Button, type ButtonVariant } from '../../components/button'
-import { Dialog, type DialogSize } from '../../components/dialog'
+import { Modal, type ModalSize } from '../../components/modal'
 import { ErrorSummary, type SummaryItem } from '../../components/error-summary'
-import { FormField, type FieldLabelProps } from '../../components/form-field'
+import { FormField, TEXTAREA_CLASS, type FieldLabelProps } from '../../components/form-field'
 import { newIdempotencyKey } from '../../lib/api'
 import { errorMessage, fieldErrors } from '../../lib/messages'
+import { FORM } from './ui'
 
 /**
  * Summary items for a failed request: VALIDATION_FAILED issues linked to their fields (body path -> field id),
@@ -32,7 +33,7 @@ export interface FormSubmission {
 
 export interface FormDialogProps {
   readonly title: string
-  readonly size?: DialogSize
+  readonly size?: ModalSize
   readonly submitLabel: string
   readonly submitVariant?: ButtonVariant
   readonly onClose: () => void
@@ -76,12 +77,12 @@ export function FormDialog({ title, size = 'md', submitLabel, submitVariant = 'p
     </>
   )
   return (
-    <Dialog open onClose={busy ? () => undefined : onClose} title={title} size={size} footer={footer}>
-      <form id={formId} className="form" onSubmit={submit} onChange={() => setIdempotencyKey(null)} noValidate>
+    <Modal open onClose={busy ? () => undefined : onClose} title={title} size={size} footer={footer}>
+      <form id={formId} className={FORM} onSubmit={submit} onChange={() => setIdempotencyKey(null)} noValidate>
         <ErrorSummary items={summary} />
         {children}
       </form>
-    </Dialog>
+    </Modal>
   )
 }
 
@@ -100,7 +101,7 @@ export function TextAreaField({ value, onChange, maxLength = REASON_MAX_LENGTH, 
   return (
     <FormField {...field}>
       {(control) => (
-        <textarea {...control} className="input admin-textarea" value={value} maxLength={maxLength} onChange={(event) => onChange(event.target.value)} />
+        <textarea {...control} className={`${TEXTAREA_CLASS} min-h-20 resize-y`} value={value} maxLength={maxLength} onChange={(event) => onChange(event.target.value)} />
       )}
     </FormField>
   )

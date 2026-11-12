@@ -4,9 +4,7 @@ import { createContext, use, useCallback, useMemo, useRef, useState, type ReactN
 import { createApiClient, type ApiClient } from '../lib/api'
 import { leavePage } from '../lib/leave-page'
 import { leaveSupportSession, SUPPORT_SESSIONS_PATH, supportSessionFor } from '../lib/support-session'
-import { Button } from './button'
-import { CodeForm } from './code-form'
-import { Dialog } from './dialog'
+import { StepUpModal } from './step-up-modal'
 
 const ApiContext = createContext<ApiClient | null>(null)
 
@@ -17,30 +15,8 @@ export function useApi(): ApiClient {
   return api
 }
 
-export interface StepUpDialogProps {
-  readonly open: boolean
-  /** true: the code was verified; false: the user cancelled. */
-  readonly onDone: (verified: boolean) => void
-}
-
-/** Asks for a fresh second factor before a sensitive action (SEC-20); the action is then retried once. */
-export function StepUpDialog({ open, onDone }: StepUpDialogProps) {
-  return (
-    <Dialog open={open} onClose={() => onDone(false)} title="Confirm with your authenticator app" size="sm">
-      <p>This action needs a fresh code from your authenticator app. Nothing has been changed yet.</p>
-      <CodeForm
-        idPrefix="step-up"
-        endpoint="/v1/auth/sessions/current/step-up"
-        submitLabel="Confirm and continue"
-        onVerified={() => onDone(true)}
-        secondaryAction={<Button onClick={() => onDone(false)}>Cancel</Button>}
-      />
-    </Dialog>
-  )
-}
-
 /**
- * Provides the API client: auth errors leave the page (leavePage), STEP_UP_REQUIRED opens the step-up dialog.
+ * Provides the API client: auth errors leave the page (leavePage), STEP_UP_REQUIRED opens StepUpModal.
  * Requests that need step-up at the same time share one dialog.
  */
 export function ApiProvider({ children }: { readonly children: ReactNode }) {
@@ -70,7 +46,7 @@ export function ApiProvider({ children }: { readonly children: ReactNode }) {
   return (
     <ApiContext value={api}>
       {children}
-      <StepUpDialog open={resolveStepUp !== null} onDone={finish} />
+      <StepUpModal open={resolveStepUp !== null} onDone={finish} />
     </ApiContext>
   )
 }

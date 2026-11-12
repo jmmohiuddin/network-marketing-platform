@@ -4,12 +4,13 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { useApi } from '../../components/api-provider'
 import { LinkButton, Button } from '../../components/button'
 import { ErrorSummary, type SummaryItem } from '../../components/error-summary'
-import { TextField } from '../../components/form-field'
+import { TextInput } from '../../components/form-field'
 import { LoadingState } from '../../components/states'
 import { isApiError } from '../../lib/api'
 import { errorMessage, fieldErrors } from '../../lib/messages'
 import { tenantSignInPath, tenantSlug, VENDOR_SIGN_IN_PATH } from '../../lib/navigation'
 import { PASSWORD_MIN_LENGTH, passwordError } from '../../lib/validation'
+import { AuthHeader } from './auth-card'
 
 const PASSWORD_ID = 'invitation-password'
 const CONFIRM_ID = 'invitation-confirm'
@@ -24,9 +25,8 @@ export function tokenFromHash(hash: string): string | null {
 function Outcome({ title, children, signIn }: { readonly title: string; readonly children: string; readonly signIn?: string }) {
   return (
     <>
-      <h1 className="card-title">{title}</h1>
-      <p>{children}</p>
-      {signIn !== undefined && <div className="form-actions"><LinkButton href={signIn} variant="primary">Go to sign-in</LinkButton></div>}
+      <AuthHeader eyebrow="Invitation" icon={signIn === undefined ? 'link_off' : 'how_to_reg'} title={title}>{children}</AuthHeader>
+      {signIn !== undefined && <LinkButton href={signIn} variant="primary" size="lg" icon="login" className="w-full" data-testid="primary-action">Go to sign-in</LinkButton>}
     </>
   )
 }
@@ -99,11 +99,12 @@ export function InvitationForm() {
   }
   return (
     <>
-      <h1 className="card-title">Choose your password</h1>
-      <p>You were invited to sign in to {vendor ? 'the vendor operations console' : 'your company’s staff application'}. Choose a password to activate your account.</p>
-      <form className="form" onSubmit={submit} noValidate>
+      <AuthHeader eyebrow="Invitation" icon="key" title="Choose your password">
+        You were invited to sign in to {vendor ? 'the vendor operations console' : 'your company’s staff application'}. Choose a password to activate your account.
+      </AuthHeader>
+      <form className="flex flex-col gap-space-md" onSubmit={submit} noValidate>
         <ErrorSummary items={summary} />
-        <TextField
+        <TextInput
           id={PASSWORD_ID}
           label="New password"
           type="password"
@@ -114,7 +115,7 @@ export function InvitationForm() {
           onChange={(event) => setPassword(event.target.value)}
           onBlur={() => password !== '' && setErrors((current) => ({ ...current, password: passwordError(password) }))}
         />
-        <TextField
+        <TextInput
           id={CONFIRM_ID}
           label="Repeat the password"
           type="password"
@@ -123,9 +124,7 @@ export function InvitationForm() {
           error={errors.confirm}
           onChange={(event) => setConfirm(event.target.value)}
         />
-        <div className="form-actions">
-          <Button type="submit" variant="primary" loading={busy}>Set password</Button>
-        </div>
+        <Button type="submit" variant="primary" size="lg" icon="check" loading={busy} className="w-full" data-testid="primary-action">Set password</Button>
       </form>
     </>
   )

@@ -57,3 +57,19 @@ _Agent: qa. Read before every task; update after every task. Keep concise — fa
 | W9 isolation | pass | globex admin: acme snapshot/batch/mapping/rows pages NotAvailable; API ids 404 incl. grant decision and deactivate writes; analyst nav Compliance only, admin pages NotAvailable, admin APIs 403, /vendor redirects to /compliance |
 | W10 responsive/a11y | pass | 390x844: approvals stacked (table 17–358, buttons visible), overview no overflow; keyboard sign-in; Create snapshot dialog focus in, trapped, Escape returns to trigger |
 - New: BUG-030 LOW. No 5xx; console errors only intended 4xx from probes/refusals (list in var/e2e-fixtures/exports-r3/mcp-console). Screens var/e2e-screens/R3-*.png (27).
+
+## 2026-11-12 — UI testing round 1 (Stitch re-skin; Levels 1–3)
+- L1 W1–W10 all pass (known BUG-023/025/027/028/029 still present). Figures = report.json; totals 1466/4775/7442. Not executed: export row cap, step-up dialog (all actions < 10 min after MFA), BUG-030 retest, support-session expiry, go-live.
+- L2 harness: 11 screens x 4 viewports, results testing/visual/results/*.json; shell matches sc_01; most `high` flags are canonical-catalogue values (design notes). Real: SC-10 composition/tabs/charts, SC-25 390 overflow, SC-46 card wrap, visible captions.
+- L3: scripted a11y pass on 14 routes clean except BUG-040/041 (+ known 028); detector: only side-tab border-l-4 (Stitch banner anatomy, note). Score 12/16 (performance not scored).
+- New: BUG-032..034 MEDIUM, BUG-035..043 LOW. Reports: testing/UI_TESTING_REPORT.md, testing/VISUAL_REGRESSION_REPORT.md. Screens var/e2e-screens/R4-*.png; exports var/e2e-fixtures/exports-r4.
+
+## 2026-11-12 — UI testing round 2 (retest)
+- Fix checks: BUG-032..043 all verified fixed; BUG-030 not reproduced; 023, 025–029 still present.
+- L1 W1–W10 pass (figures = report.json; 1466/4775/7442; export cap "66 rows; limit 10" with API restarted EXPORT_ROW_CAP=10; step-up dialog seen). L2 harness 11 screens x 4 widths: no page overflow anywhere; remaining flags are canonical values. L3 scripted a11y on 23 routes clean; detector source/rendered as round 1. Score 14/16.
+- New: BUG-044 MEDIUM (dialogs stretch to 90vh at ≥640 px: `sm:h-auto` on `<dialog>`), BUG-045..048 LOW. Evidence var/e2e-screens/R5-*.png, var/e2e-fixtures/exports-r5.
+
+## 2026-11-12 — UI testing round 3 (retest)
+- Fix check: BUG-044 verified fixed (dialogs = content height, centred; long content caps at 90vh with scrolling body + visible footer, also 1280x720). BUG-030 not reproduced; 023, 025–029, 045–048 still present (028 also after Reject grant and End now).
+- L1 W1–W10 pass (figures = report.json; 1466/4775/7442; export cap "40 rows; limit 10"; step-up seen on Approve vendor access; first grant rejection exercised). L2 harness 11 x 4: same flags as round 2, captures viewport-wide. L3: detector source (2 side-tab notes) + rendered /signin,/signin/vendor clean; scripted a11y 25 routes clean. Score 15/16.
+- No new defects. Evidence var/e2e-screens/R6-*.png, var/e2e-fixtures/exports-r6. No 5xx.

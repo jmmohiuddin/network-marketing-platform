@@ -1,0 +1,1130 @@
+{
+  "when": "2026-11-12T04:47:41.789Z",
+  "screenId": "SC-10",
+  "stitch": "sc_10_compliance_reports",
+  "module": "compliance",
+  "screen": "compliance-reports",
+  "route": "/compliance/snapshots/[id]",
+  "role": "compliance-officer",
+  "url": "http://127.0.0.1:3100/compliance/snapshots/0215ba51-9f4f-4462-b9f2-cbf453012b04?report=R1",
+  "self": false,
+  "patched": [],
+  "viewports": [
+    {
+      "viewport": "1440x900",
+      "screenshot": "testing/ui-screenshots/app/compliance/compliance-reports/compliance-officer/1440x900.png",
+      "reference": "testing/ui-screenshots/reference/sc_10_compliance_reports/1440x900.png",
+      "diffImage": "testing/ui-screenshots/app/compliance/compliance-reports/compliance-officer/1440x900.diff.png",
+      "mismatchPercent": 7.36,
+      "diffPixels": 242531,
+      "referenceSize": "1440x1757",
+      "actualSize": "1440x2289",
+      "landmarks": [
+        {
+          "landmark": "header",
+          "stitchText": "AuditLedgerAcrobex Global(TEN-842)arrow_drop_downUS - United",
+          "appText": "menuMenuAcme Direct LtdCOCompliance OfficerCompliance office",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "height",
+              "stitch": "48px",
+              "app": "48px",
+              "match": true
+            },
+            {
+              "prop": "background",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "sidebar",
+          "stitchText": "dashboardOverviewhistory_toggle_offPeriods & RunsschemaCompe",
+          "appText": "verified_userCompliancehistory_eduAudit log",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "width",
+              "stitch": "208px",
+              "app": "208px",
+              "match": true
+            },
+            {
+              "prop": "background",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "page",
+          "stitchText": "policy Compliance Reports & Regulatory Defensibility verifie",
+          "appText": "Compliancechevron_rightSnapshotschevron_rightDEMO · 2025-01 ",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "background",
+              "stitch": "rgb(248, 249, 255)",
+              "app": "rgb(248, 249, 255)",
+              "match": true
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "16px",
+              "app": "16px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "title",
+          "stitchText": "Compliance Reports & Regulatory Defensibility",
+          "appText": "Snapshot · DEMO · 2025-01 to 2025-12",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "24px",
+              "app": "24px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            },
+            {
+              "prop": "line-height",
+              "stitch": "32px",
+              "app": "32px",
+              "match": true
+            },
+            {
+              "prop": "letter-spacing",
+              "stitch": "-0.6px",
+              "app": "-0.36px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "sectionHeading",
+          "stitchText": "Retail Customer Share of Net Sales",
+          "appText": "Trend",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "16px",
+              "app": "16px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            },
+            {
+              "prop": "line-height",
+              "stitch": "24px",
+              "app": "24px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "primaryButton",
+          "stitchText": "add_task Create New Snapshot",
+          "appText": "add_taskCreate snapshot",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "background-color",
+              "stitch": "rgb(0, 56, 131)",
+              "app": "rgb(0, 56, 131)",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            },
+            {
+              "prop": "border-radius",
+              "stitch": "2px",
+              "app": "2px",
+              "match": true
+            },
+            {
+              "prop": "height",
+              "stitch": "32px",
+              "app": "32px",
+              "match": true
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "13px",
+              "app": "13px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "tableHeader",
+          "stitchText": "Earning Mechanism",
+          "appText": "",
+          "status": "missing-in-app",
+          "severity": "high",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": null,
+              "match": false
+            },
+            {
+              "prop": "font-size",
+              "stitch": "12px",
+              "app": null,
+              "match": false
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "700",
+              "app": null,
+              "match": false
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(86, 94, 116)",
+              "app": null,
+              "match": false
+            },
+            {
+              "prop": "text-transform",
+              "stitch": "none",
+              "app": null,
+              "match": false
+            },
+            {
+              "prop": "letter-spacing",
+              "stitch": "0.12px",
+              "app": null,
+              "match": false
+            },
+            {
+              "prop": "background",
+              "stitch": "rgb(230, 238, 255)",
+              "app": null,
+              "match": false
+            }
+          ]
+        },
+        {
+          "landmark": "card",
+          "stitchText": "R1 Retail Customer Share of Net Sales (FR-CPL-001) BENCHMARK",
+          "appText": "R1Net sales7,062,746 minor unitsNumerator7,062,746Population",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "border-radius",
+              "stitch": "2px",
+              "app": "2px",
+              "match": true
+            },
+            {
+              "prop": "box-shadow",
+              "stitch": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+              "app": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+              "match": true
+            },
+            {
+              "prop": "background-color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "viewport": "1280x800",
+      "screenshot": "testing/ui-screenshots/app/compliance/compliance-reports/compliance-officer/1280x800.png",
+      "reference": "testing/ui-screenshots/reference/sc_10_compliance_reports/1280x800.png",
+      "diffImage": "testing/ui-screenshots/app/compliance/compliance-reports/compliance-officer/1280x800.diff.png",
+      "mismatchPercent": 7.59,
+      "diffPixels": 236302,
+      "referenceSize": "1280x1817",
+      "actualSize": "1280x2433",
+      "landmarks": [
+        {
+          "landmark": "header",
+          "stitchText": "AuditLedgerAcrobex Global(TEN-842)arrow_drop_downUS - United",
+          "appText": "menuMenuAcme Direct LtdCOCompliance OfficerCompliance office",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "height",
+              "stitch": "48px",
+              "app": "48px",
+              "match": true
+            },
+            {
+              "prop": "background",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "sidebar",
+          "stitchText": "dashboardOverviewhistory_toggle_offPeriods & RunsschemaCompe",
+          "appText": "verified_userCompliancehistory_eduAudit log",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "width",
+              "stitch": "208px",
+              "app": "208px",
+              "match": true
+            },
+            {
+              "prop": "background",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "page",
+          "stitchText": "policy Compliance Reports & Regulatory Defensibility verifie",
+          "appText": "Compliancechevron_rightSnapshotschevron_rightDEMO · 2025-01 ",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "background",
+              "stitch": "rgb(248, 249, 255)",
+              "app": "rgb(248, 249, 255)",
+              "match": true
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "16px",
+              "app": "16px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "title",
+          "stitchText": "Compliance Reports & Regulatory Defensibility",
+          "appText": "Snapshot · DEMO · 2025-01 to 2025-12",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "24px",
+              "app": "24px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            },
+            {
+              "prop": "line-height",
+              "stitch": "32px",
+              "app": "32px",
+              "match": true
+            },
+            {
+              "prop": "letter-spacing",
+              "stitch": "-0.6px",
+              "app": "-0.36px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "sectionHeading",
+          "stitchText": "Retail Customer Share of Net Sales",
+          "appText": "Trend",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "16px",
+              "app": "16px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            },
+            {
+              "prop": "line-height",
+              "stitch": "24px",
+              "app": "24px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "primaryButton",
+          "stitchText": "add_task Create New Snapshot",
+          "appText": "add_taskCreate snapshot",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "background-color",
+              "stitch": "rgb(0, 56, 131)",
+              "app": "rgb(0, 56, 131)",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            },
+            {
+              "prop": "border-radius",
+              "stitch": "2px",
+              "app": "2px",
+              "match": true
+            },
+            {
+              "prop": "height",
+              "stitch": "32px",
+              "app": "32px",
+              "match": true
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "13px",
+              "app": "13px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "tableHeader",
+          "stitchText": "Earning Mechanism",
+          "appText": "",
+          "status": "missing-in-app",
+          "severity": "high",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": null,
+              "match": false
+            },
+            {
+              "prop": "font-size",
+              "stitch": "12px",
+              "app": null,
+              "match": false
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "700",
+              "app": null,
+              "match": false
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(86, 94, 116)",
+              "app": null,
+              "match": false
+            },
+            {
+              "prop": "text-transform",
+              "stitch": "none",
+              "app": null,
+              "match": false
+            },
+            {
+              "prop": "letter-spacing",
+              "stitch": "0.12px",
+              "app": null,
+              "match": false
+            },
+            {
+              "prop": "background",
+              "stitch": "rgb(230, 238, 255)",
+              "app": null,
+              "match": false
+            }
+          ]
+        },
+        {
+          "landmark": "card",
+          "stitchText": "R1 Retail Customer Share of Net Sales (FR-CPL-001) BENCHMARK",
+          "appText": "R1Net sales7,062,746 minor unitsNumerator7,062,746Population",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "border-radius",
+              "stitch": "2px",
+              "app": "2px",
+              "match": true
+            },
+            {
+              "prop": "box-shadow",
+              "stitch": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+              "app": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+              "match": true
+            },
+            {
+              "prop": "background-color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "viewport": "768x1024",
+      "screenshot": "testing/ui-screenshots/app/compliance/compliance-reports/compliance-officer/768x1024.png",
+      "reference": "testing/ui-screenshots/reference/sc_10_compliance_reports/768x1024.png",
+      "diffImage": "testing/ui-screenshots/app/compliance/compliance-reports/compliance-officer/768x1024.diff.png",
+      "mismatchPercent": 9.8,
+      "diffPixels": 231810,
+      "referenceSize": "768x3080",
+      "actualSize": "768x2772",
+      "landmarks": [
+        {
+          "landmark": "page",
+          "stitchText": "policy Compliance Reports & Regulatory Defensibility verifie",
+          "appText": "Compliancechevron_rightSnapshotschevron_rightDEMO · 2025-01 ",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "background",
+              "stitch": "rgb(248, 249, 255)",
+              "app": "rgb(248, 249, 255)",
+              "match": true
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "16px",
+              "app": "16px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "title",
+          "stitchText": "Compliance Reports & Regulatory Defensibility",
+          "appText": "Snapshot · DEMO · 2025-01 to 2025-12",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "24px",
+              "app": "24px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            },
+            {
+              "prop": "line-height",
+              "stitch": "32px",
+              "app": "32px",
+              "match": true
+            },
+            {
+              "prop": "letter-spacing",
+              "stitch": "-0.6px",
+              "app": "-0.36px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "sectionHeading",
+          "stitchText": "Retail Customer Share of Net Sales",
+          "appText": "Trend",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "16px",
+              "app": "16px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            },
+            {
+              "prop": "line-height",
+              "stitch": "24px",
+              "app": "24px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "primaryButton",
+          "stitchText": "add_task Create New Snapshot",
+          "appText": "add_taskCreate snapshot",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "background-color",
+              "stitch": "rgb(0, 56, 131)",
+              "app": "rgb(0, 56, 131)",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            },
+            {
+              "prop": "border-radius",
+              "stitch": "2px",
+              "app": "2px",
+              "match": true
+            },
+            {
+              "prop": "height",
+              "stitch": "32px",
+              "app": "32px",
+              "match": true
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "13px",
+              "app": "13px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "tableHeader",
+          "stitchText": "Earning Mechanism",
+          "appText": "",
+          "status": "missing-in-app",
+          "severity": "high",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": null,
+              "match": false
+            },
+            {
+              "prop": "font-size",
+              "stitch": "12px",
+              "app": null,
+              "match": false
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "700",
+              "app": null,
+              "match": false
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(86, 94, 116)",
+              "app": null,
+              "match": false
+            },
+            {
+              "prop": "text-transform",
+              "stitch": "none",
+              "app": null,
+              "match": false
+            },
+            {
+              "prop": "letter-spacing",
+              "stitch": "0.12px",
+              "app": null,
+              "match": false
+            },
+            {
+              "prop": "background",
+              "stitch": "rgb(230, 238, 255)",
+              "app": null,
+              "match": false
+            }
+          ]
+        },
+        {
+          "landmark": "card",
+          "stitchText": "R1 Retail Customer Share of Net Sales (FR-CPL-001) BENCHMARK",
+          "appText": "R1Net sales7,062,746 minor unitsNumerator7,062,746Population",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "border-radius",
+              "stitch": "2px",
+              "app": "2px",
+              "match": true
+            },
+            {
+              "prop": "box-shadow",
+              "stitch": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+              "app": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+              "match": true
+            },
+            {
+              "prop": "background-color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "viewport": "390x844",
+      "screenshot": "testing/ui-screenshots/app/compliance/compliance-reports/compliance-officer/390x844.png",
+      "reference": "testing/ui-screenshots/reference/sc_10_compliance_reports/390x844.png",
+      "diffImage": "testing/ui-screenshots/app/compliance/compliance-reports/compliance-officer/390x844.diff.png",
+      "mismatchPercent": 4.86,
+      "diffPixels": 186809,
+      "referenceSize": "545x7057",
+      "actualSize": "390x4151",
+      "landmarks": [
+        {
+          "landmark": "page",
+          "stitchText": "policy Compliance Reports & Regulatory Defensibility verifie",
+          "appText": "Compliancechevron_rightSnapshotschevron_rightDEMO · 2025-01 ",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "background",
+              "stitch": "rgb(248, 249, 255)",
+              "app": "rgb(248, 249, 255)",
+              "match": true
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "16px",
+              "app": "16px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "title",
+          "stitchText": "Compliance Reports & Regulatory Defensibility",
+          "appText": "Snapshot · DEMO · 2025-01 to 2025-12",
+          "status": "mismatch",
+          "severity": "medium",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "24px",
+              "app": "20px",
+              "match": false
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            },
+            {
+              "prop": "line-height",
+              "stitch": "32px",
+              "app": "28px",
+              "match": false
+            },
+            {
+              "prop": "letter-spacing",
+              "stitch": "-0.6px",
+              "app": "-0.5px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "sectionHeading",
+          "stitchText": "Retail Customer Share of Net Sales",
+          "appText": "Trend",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "16px",
+              "app": "16px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            },
+            {
+              "prop": "line-height",
+              "stitch": "24px",
+              "app": "24px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "primaryButton",
+          "stitchText": "add_task Create New Snapshot",
+          "appText": "add_taskCreate snapshot",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "background-color",
+              "stitch": "rgb(0, 56, 131)",
+              "app": "rgb(0, 56, 131)",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            },
+            {
+              "prop": "border-radius",
+              "stitch": "2px",
+              "app": "2px",
+              "match": true
+            },
+            {
+              "prop": "height",
+              "stitch": "32px",
+              "app": "32px",
+              "match": true
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "13px",
+              "app": "13px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "tableHeader",
+          "stitchText": "Earning Mechanism",
+          "appText": "",
+          "status": "missing-in-app",
+          "severity": "high",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": null,
+              "match": false
+            },
+            {
+              "prop": "font-size",
+              "stitch": "12px",
+              "app": null,
+              "match": false
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "700",
+              "app": null,
+              "match": false
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(86, 94, 116)",
+              "app": null,
+              "match": false
+            },
+            {
+              "prop": "text-transform",
+              "stitch": "none",
+              "app": null,
+              "match": false
+            },
+            {
+              "prop": "letter-spacing",
+              "stitch": "0.12px",
+              "app": null,
+              "match": false
+            },
+            {
+              "prop": "background",
+              "stitch": "rgb(230, 238, 255)",
+              "app": null,
+              "match": false
+            }
+          ]
+        },
+        {
+          "landmark": "card",
+          "stitchText": "R1 Retail Customer Share of Net Sales (FR-CPL-001) BENCHMARK",
+          "appText": "R1Net sales7,062,746 minor unitsNumerator7,062,746Population",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "border-radius",
+              "stitch": "2px",
+              "app": "2px",
+              "match": true
+            },
+            {
+              "prop": "box-shadow",
+              "stitch": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+              "app": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+              "match": true
+            },
+            {
+              "prop": "background-color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -3,8 +3,8 @@
 import { useState } from 'react'
 import { useApi } from '../../../components/api-provider'
 import { Banner } from '../../../components/banner'
-import { Button } from '../../../components/button'
-import { Dialog } from '../../../components/dialog'
+import { Button, buttonClass } from '../../../components/button'
+import { Modal } from '../../../components/modal'
 import { isApiError } from '../../../lib/api'
 import { errorMessage } from '../../../lib/messages'
 import { useIdempotencyKey } from '../resource'
@@ -68,7 +68,7 @@ export function AuditExportDialog({ filters, onClose }: { readonly filters: Audi
     )
     : <Button onClick={onClose}>Close</Button>
   return (
-    <Dialog open onClose={busy ? () => undefined : onClose} title="Export audit events" size="sm" footer={footer}>
+    <Modal open onClose={busy ? () => undefined : onClose} title="Export audit events" size="sm" footer={footer}>
       {outcome === null && (
         <>
           <p>{filterCount === 0 ? 'The export contains every event of the audit log.' : `The export contains the events that match ${filterCount === 1 ? 'the filter' : `the ${filterCount} filters`} applied.`}</p>
@@ -79,7 +79,7 @@ export function AuditExportDialog({ filters, onClose }: { readonly filters: Audi
       {outcome?.kind === 'ready' && (
         <>
           <Banner tone="success" title="Export ready">{NUMBER.format(Number(outcome.file.row_count))} events. Each download is recorded too.</Banner>
-          <a className="btn btn-primary btn-md" href={outcome.file.download} download>Download CSV</a>
+          <a className={buttonClass('primary')} href={outcome.file.download} download>Download CSV</a>
         </>
       )}
       {outcome?.kind === 'refused' && (
@@ -87,6 +87,6 @@ export function AuditExportDialog({ filters, onClose }: { readonly filters: Audi
           <RefusedText rowCount={outcome.rowCount} rowCap={outcome.rowCap} />
         </Banner>
       )}
-    </Dialog>
+    </Modal>
   )
 }

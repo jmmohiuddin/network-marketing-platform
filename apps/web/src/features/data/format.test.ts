@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { changeLabel, compareDecimal, figureLabel, figureValue, humanize, integer, parseFigureId, periodRange } from './format'
+import { changeLabel, compareDecimal, figureAmount, figureLabel, figureUnit, figureValue, humanize, integer, parseFigureId, periodRange, sharePercent } from './format'
 
 describe('data formatting', () => {
   it('names periods, columns and figures for readers', () => {
@@ -23,6 +23,25 @@ describe('data formatting', () => {
     expect(figureValue({ unit: 'minor', value: '16000' })).toBe(`${integer('16000')} minor units`)
     expect(figureValue({ unit: 'percent', value: null })).toBe('Not stated')
     expect(integer('90071992547409930')).toBe(90071992547409930n.toLocaleString())
+  })
+
+  it('splits a hero value into its number and the unit words shown beside it (BUG-036)', () => {
+    expect(figureAmount({ unit: 'minor', value: '1517950' })).toBe(integer('1517950'))
+    expect(figureUnit({ unit: 'minor', value: '1517950' })).toBe('minor units')
+    expect(figureAmount({ unit: 'percent', value: '16.61' })).toBe('16.61 %')
+    expect(figureUnit({ unit: 'percent', value: '16.61' })).toBeUndefined()
+    expect(figureUnit({ unit: 'currency', value: null })).toBeUndefined()
+  })
+
+  it('states a share of a whole exactly, rounded half up to hundredths', () => {
+    expect(sharePercent('2', '4')).toBe('50.00')
+    expect(sharePercent('1', '3')).toBe('33.33')
+    expect(sharePercent('2', '3')).toBe('66.67')
+    expect(sharePercent('1', '8')).toBe('12.50')
+    expect(sharePercent(1n, 80000n)).toBe('0.00')
+    expect(sharePercent('9007199254740993', '9007199254740993')).toBe('100.00')
+    expect(sharePercent('1', '0')).toBeNull()
+    expect(sharePercent('-1', '4')).toBeNull()
   })
 
   it('splits figure ids whose key holds dots', () => {

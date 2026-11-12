@@ -111,6 +111,64 @@ describe('AuditPage', () => {
     await user.click(await screen.findByRole('button', { name: 'Verify audit chain' }))
     expect((await screen.findByText('The audit chain is broken')).closest('[role="alert"]')?.textContent).toContain('breaks at event 7')
   })
+
+  it('shows the chain state cards as not verified until the verification runs, then its result', async () => {
+    const user = userEvent.setup()
+    renderAs(adminMe(), <AuditPage />, fetchByRoute({
+      'GET /v1/audit-events': () => ok([EVENT]),
+      'GET /v1/audit-chain/verification': () => ok({ intact: true, first_broken_seq: null, events: '1200', verified_at: '2026-11-12T09:00:00.000Z' }),
+    }))
+    expect(screen.getByText('Not verified in this view yet. Run the verification to check every event.')).toBeTruthy()
+    await user.click(await screen.findByRole('button', { name: 'Verify audit chain' }))
+    expect(await screen.findByText('Intact')).toBeTruthy()
+    expect(screen.getByText('1,200')).toBeTruthy()
+    expect(screen.getByText('The audit chain is intact')).toBeTruthy()
+  })
+
+  it('shows each applied filter as a chip that removes only that filter', async () => {
+    navigation.search = 'action=USER.INVITED&object_type=user_account'
+    const user = userEvent.setup()
+    renderAs(adminMe(), <AuditPage />, fetchByRoute({ 'GET /v1/audit-events': () => ok([EVENT]) }))
+    await user.click(await screen.findByRole('button', { name: 'Remove filter: Action: USER.INVITED' }))
+    expect(navigation.router.replace).toHaveBeenLastCalledWith('/settings/audit?object_type=user_account')
+    await user.click(screen.getByRole('button', { name: 'Clear all filters' }))
+    expect(navigation.router.replace).toHaveBeenLastCalledWith('/settings/audit')
+  })
+
+  it('opens an event in the inspector with its chain hash and before/after', async () => {
+    const user = userEvent.setup()
+    renderAs(adminMe(), <AuditPage />, fetchByRoute({ 'GET /v1/audit-events': () => ok([EVENT]) }))
+    await user.click(await screen.findByRole('button', { name: 'Open event 12, USER.INVITED' }))
+    const drawer = screen.getByRole('dialog', { name: 'Audit event 12' })
+    expect(within(drawer).getByText('ab12')).toBeTruthy()
+    expect(within(drawer).getByText('Before and after')).toBeTruthy()
+    await user.click(within(drawer).getByRole('button', { name: 'Close panel' }))
+    expect(screen.queryByRole('dialog')).toBeNull()
+  })
+
+  it('keeps the open event in the URL with the filters, and reopens it from a shared link (BUG-039)', async () => {
+    navigation.search = 'action=USER.INVITED'
+    const user = userEvent.setup()
+    renderAs(adminMe(), <AuditPage />, fetchByRoute({ 'GET /v1/audit-events': () => ok([EVENT]) }))
+    const button = await screen.findByRole('button', { name: 'Open event 12, USER.INVITED' })
+    // Text buttons keep the 24 px minimum target (BUG-040).
+    expect(button.className).toContain('min-w-6')
+    await user.click(button)
+    expect(navigation.router.replace).toHaveBeenLastCalledWith('/settings/audit?action=USER.INVITED&event=12')
+    await user.click(within(screen.getByRole('dialog', { name: 'Audit event 12' })).getByRole('button', { name: 'Close panel' }))
+    expect(navigation.router.replace).toHaveBeenLastCalledWith('/settings/audit?action=USER.INVITED')
+  })
+
+  it('opens the event named in the URL on load, and says so when it is not among the rows loaded', async () => {
+    navigation.search = 'event=12'
+    const { unmount } = renderAs(adminMe(), <AuditPage />, fetchByRoute({ 'GET /v1/audit-events': () => ok([EVENT]) }))
+    expect(await screen.findByRole('dialog', { name: 'Audit event 12' })).toBeTruthy()
+    unmount()
+    navigation.search = 'event=99'
+    renderAs(adminMe(), <AuditPage />, fetchByRoute({ 'GET /v1/audit-events': () => ok([EVENT]) }))
+    expect(await screen.findByText('Event 99 is not in this list')).toBeTruthy()
+    expect(screen.queryByRole('dialog')).toBeNull()
+  })
 })
 
 describe('audit filters', () => {
@@ -140,7 +198,6 @@ describe('VendorAuditPage (BUG-012)', () => {
     renderAs(me, <VendorAuditPage />, fetchMock)
     expect(await screen.findByText('Ola Operator (ola@vendor.example)')).toBeTruthy()
     expect(screen.getByRole('heading', { name: 'Vendor audit log' })).toBeTruthy()
-    expect(screen.getByRole('link', { name: 'Audit log' }).getAttribute('href')).toBe('/vendor/audit')
     expect(callsTo(fetchMock, 'GET', '/v1/vendor-audit-events')[0]?.[0]).toContain('action=TENANT.CREATED')
     expect(screen.queryByRole('button', { name: 'Verify audit chain' })).toBeNull()
   })

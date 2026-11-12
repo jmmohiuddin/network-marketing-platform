@@ -3,12 +3,13 @@
 import { useState } from 'react'
 import { useApi } from '../../../components/api-provider'
 import { Banner } from '../../../components/banner'
-import { Checkbox, TextField } from '../../../components/form-field'
+import { Checkbox, TextInput } from '../../../components/form-field'
 import type { SummaryItem } from '../../../components/error-summary'
 import { useToast } from '../../../components/toast'
 import { durationLabel } from '../format'
 import { FormDialog, TextAreaField } from '../form-dialog'
 import type { SupportSession } from '../types'
+import { NOTE } from '../ui'
 
 const MINUTES_ID = 'support-decision-minutes'
 const REGION_ID = 'support-decision-region'
@@ -88,7 +89,7 @@ export function SupportDecisionDialog({ session, approve, tenantRegion, onClose,
     >
       <p>{approve ? 'Vendor staff can read, not change, what the request names until the window ends or you end it.' : 'Vendor staff get no access. They can send a new request.'}</p>
       {approve && (
-        <TextField
+        <TextInput
           id={MINUTES_ID}
           label="Access window in minutes"
           inputMode="numeric"
@@ -114,7 +115,7 @@ export function SupportDecisionDialog({ session, approve, tenantRegion, onClose,
         </>
       )}
       <TextAreaField id={REASON_ID} label="Note for the log" optional value={reason} onChange={setReason} />
-      <p className="admin-note">You will be asked for a code from your authenticator app.</p>
+      <p className={NOTE}>You will be asked for a code from your authenticator app.</p>
     </FormDialog>
   )
 }

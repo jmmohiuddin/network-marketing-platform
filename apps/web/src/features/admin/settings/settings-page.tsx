@@ -3,16 +3,17 @@
 import { useState, type ReactNode } from 'react'
 import { Banner } from '../../../components/banner'
 import { Button } from '../../../components/button'
+import { Icon } from '../../../components/icon'
 import { PageHeader } from '../../../components/page-header'
 import { LoadingState } from '../../../components/states'
-import { StatusChip } from '../../../components/status-chip'
-import { Table, type TableColumn } from '../../../components/table'
+import { StatusBadge } from '../../../components/status-badge'
 import { isNotAvailable } from '../../../lib/messages'
 import { formatDateTime } from '../format'
 import { LoadFailure } from '../page-states'
 import { useSession } from '../../../lib/session'
 import { useResource, type Resource } from '../../../lib/use-resource'
 import type { BreachContact, SettingRead } from '../types'
+import { MONO, NOTE, NoticeCard, SECTION_CARD, SectionTitle } from '../ui'
 import { BreachContactsDialog } from './breach-contacts-dialog'
 import type { SettingKey } from './setting-dialog'
 import { ActivePvDialog, LateOrderDayDialog, PersonalShareDialog, RankThresholdsDialog, type PersonalShare } from './threshold-dialogs'
@@ -33,41 +34,52 @@ interface RowProps {
   readonly onChange: () => void
 }
 
+/** sc_29 policy row: name and explanation on the left, the value in force and Change on the right. */
 function SettingRow({ title, description, whenUnset, setting, show, onChange }: RowProps) {
   const { readOnly } = useSession()
   const titleId = `setting-${title.replace(/\W+/g, '-').toLowerCase()}`
   const read = setting.data
   return (
-    <li className="admin-card" aria-labelledby={titleId}>
-      <div className="admin-card-header">
-        <h3 id={titleId} className="admin-card-title">{title}</h3>
-        {!readOnly && read !== null && <Button aria-label={`Change ${title.toLowerCase()}`} onClick={onChange}>Change</Button>}
+    <li className="p-space-md rounded bg-surface-container-low flex flex-col md:flex-row md:items-center justify-between gap-space-md" aria-labelledby={titleId}>
+      <div className="max-w-md flex flex-col gap-1">
+        <h3 id={titleId} className="font-section-heading text-section-heading text-on-surface">{title}</h3>
+        <p className={NOTE}>{description}</p>
+        {read !== null && read.value !== null && (
+          <p className="font-caption text-caption text-secondary">In force since {formatDateTime(read.effective_from)} (version {read.version}).</p>
+        )}
       </div>
-      <p>{description}</p>
-      {setting.loading && <LoadingState label={`Loading ${title.toLowerCase()}`} />}
-      {setting.error !== null && <LoadFailure error={setting.error} onRetry={setting.reload} section />}
-      {read !== null && read.value === null && (
-        <div className="admin-role-line">
-          <StatusChip state="draft" label="Not set" />
-          <span>{whenUnset}</span>
-        </div>
-      )}
-      {read !== null && read.value !== null && (
-        <>
-          <div>{show(read.value as never)}</div>
-          <p className="admin-note">In force since {formatDateTime(read.effective_from)} (version {read.version}).</p>
-        </>
-      )}
+      <div className="flex flex-col md:items-end gap-space-sm shrink-0 md:max-w-xs">
+        {setting.loading && <LoadingState label={`Loading ${title.toLowerCase()}`} />}
+        {setting.error !== null && <LoadFailure error={setting.error} onRetry={setting.reload} section />}
+        {read !== null && read.value === null && (
+          <div className="flex flex-col md:items-end gap-1">
+            <StatusBadge state="draft" label="Not set" />
+            <span className="font-caption text-caption text-secondary md:text-right">{whenUnset}</span>
+          </div>
+        )}
+        {read !== null && read.value !== null && <div className="font-data-mono-md text-data-mono-md text-on-surface font-semibold md:text-right">{show(read.value as never)}</div>}
+        {!readOnly && read !== null && <Button size="sm" icon="edit" aria-label={`Change ${title.toLowerCase()}`} onClick={onChange}>Change</Button>}
+      </div>
     </li>
   )
 }
 
-const CONTACT_COLUMNS: readonly TableColumn<BreachContact>[] = [
-  { key: 'name', header: 'Name', cell: (contact) => contact.name },
-  { key: 'role', header: 'Role', cell: (contact) => contact.role },
-  { key: 'email', header: 'Email address', cell: (contact) => contact.email },
-  { key: 'phone', header: 'Phone number', cell: (contact) => contact.phone },
-]
+/** sc_29 breach contact card: role caption, name, email and phone in mono. */
+function ContactCard({ contact }: { readonly contact: BreachContact }) {
+  return (
+    <li className="p-space-md rounded bg-surface-container-low flex items-start justify-between gap-space-sm">
+      <div className="min-w-0">
+        <span className="font-caption text-caption uppercase tracking-wider text-secondary">{contact.role}</span>
+        <h3 className="font-section-heading text-section-heading text-on-surface font-semibold mt-0.5">{contact.name}</h3>
+        <p className={`${MONO} text-primary mt-1 break-all`}>{contact.email}</p>
+        <p className={`${MONO} text-primary break-all`}>{contact.phone}</p>
+      </div>
+      <div className="w-8 h-8 rounded bg-surface-container flex items-center justify-center text-primary shrink-0">
+        <Icon name="contact_phone" size={18} />
+      </div>
+    </li>
+  )
+}
 
 const PATH = '/v1/settings/'
 
@@ -102,16 +114,20 @@ export function SettingsPage() {
   const contactList = (contacts.data?.value ?? null) as readonly BreachContact[] | null
   const unsetTitle = unsetThresholdsTitle([activePv, ranks, lateDay, share])
   return (
-    <div className="admin-stack">
+    <>
       <PageHeader title="Settings" summary="Values your reports and your vendor depend on. Each change is kept as a new version with its reason." />
-      <section className="admin-section" aria-labelledby="thresholds-title">
-        <h2 id="thresholds-title" className="admin-section-title">Compliance thresholds</h2>
+      <NoticeCard icon="shield_with_heart" title="Every change is a new version">
+        A change applies from the moment you save it and is recorded in the audit log with your reason. Earlier versions stay on record.
+      </NoticeCard>
+      <section className={SECTION_CARD} aria-labelledby="thresholds-title">
+        <SectionTitle id="thresholds-title" icon="tune" title="Compliance thresholds" />
+        <p className={NOTE}>The values the compliance reports apply. The product ships no default values.</p>
         {unsetTitle !== null && (
           <Banner tone="info" title={unsetTitle}>
-            The product ships no default values. While a threshold is not set, reports leave out the indicator that needs it and say so. Agree each value with your compliance adviser or counsel.
+            While a threshold is not set, reports leave out the indicator that needs it and say so. Agree each value with your compliance adviser or counsel.
           </Banner>
         )}
-        <ul className="admin-cards">
+        <ul className="flex flex-col gap-space-md">
           <SettingRow
             title="Active earner threshold"
             description="Personal volume in a month at which an earner counts as active (report R4)."
@@ -126,7 +142,7 @@ export function SettingsPage() {
             whenUnset="Report R4 leaves out the count of late orders crossing a rank threshold."
             setting={ranks}
             show={(value: Readonly<Record<string, string>>) => (
-              <ul className="admin-plain-list">{Object.entries(value).map(([name, threshold]) => <li key={name}>{name}: {volume(threshold)}</li>)}</ul>
+              <ul className="flex flex-col gap-0.5">{Object.entries(value).map(([name, threshold]) => <li key={name}>{name}: {volume(threshold)}</li>)}</ul>
             )}
             onChange={() => setEditing('compliance.rank_thresholds_pv_minor')}
           />
@@ -148,26 +164,27 @@ export function SettingsPage() {
           />
         </ul>
       </section>
-      <section className="admin-section" aria-labelledby="breach-title">
-        <div className="admin-toolbar">
-          <h2 id="breach-title" className="admin-section-title">Breach-notification contacts</h2>
-          {!readOnly && contacts.data !== null && <Button onClick={() => setEditing('privacy.breach_contacts')}>{contactList === null ? 'Add contacts' : 'Change contacts'}</Button>}
-        </div>
+      <section className={SECTION_CARD} aria-labelledby="breach-title">
+        <SectionTitle
+          id="breach-title"
+          icon="contact_phone"
+          title="Breach-notification contacts"
+          action={!readOnly && contacts.data !== null
+            ? <Button icon="edit" onClick={() => setEditing('privacy.breach_contacts')}>{contactList === null ? 'Add contacts' : 'Change contacts'}</Button>
+            : undefined}
+        />
+        <p className={NOTE}>People to notify when personal data may have been breached.</p>
+        {contacts.loading && <LoadingState label="Loading breach-notification contacts" />}
         {contacts.error !== null && <LoadFailure error={contacts.error} onRetry={contacts.reload} section />}
         {contacts.data !== null && contactList === null && (
           <Banner tone="warning" title="No breach contact recorded">
             Go-live and the first data load are blocked until at least one contact is recorded.
           </Banner>
         )}
-        {(contacts.loading || contactList !== null) && (
-          <Table
-            caption="People to notify when personal data may have been breached"
-            columns={CONTACT_COLUMNS}
-            rows={contactList ?? []}
-            rowKey={(contact) => `${contact.email}|${contact.name}`}
-            loading={contacts.loading}
-            empty={{ title: 'No contacts.' }}
-          />
+        {contactList !== null && (
+          <ul aria-label="Breach-notification contacts" className="grid grid-cols-1 md:grid-cols-2 gap-space-md">
+            {contactList.map((contact) => <ContactCard key={`${contact.email}|${contact.name}`} contact={contact} />)}
+          </ul>
         )}
       </section>
       {editing === 'compliance.active_pv_minor' && <ActivePvDialog {...dialog} title="Active earner threshold" current={activePv.data?.value as string | null} />}
@@ -175,6 +192,6 @@ export function SettingsPage() {
       {editing === 'compliance.late_order_day' && <LateOrderDayDialog {...dialog} title="Late-order day" current={lateDay.data?.value as number | null} />}
       {editing === 'compliance.personal_share_flag' && <PersonalShareDialog {...dialog} title="Personal-use flag" current={share.data?.value as PersonalShare | null} />}
       {editing === 'privacy.breach_contacts' && <BreachContactsDialog {...dialog} title="Breach-notification contacts" current={contactList} />}
-    </div>
+    </>
   )
 }

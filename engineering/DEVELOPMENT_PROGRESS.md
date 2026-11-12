@@ -11,7 +11,7 @@ Statuses: Not Started · Planning · In Progress · Blocked · Implemented · Te
 | IMP | A | backend | Implemented | done | - | done | pass | pass | - | reviewed+fixed | 0 | 75 |
 | CPL reports | A | compensation | Implemented | done | - | done | pass | pass | - | reviewed+fixed | 0 | 75 |
 | PRV-004 | A | backend | Implemented | done | - | done | pass | pass | - | reviewed+fixed | 0 | 75 |
-| Web (A screens) | A | frontend | Testing (re-skin to Stitch pending, E-ADR-30) | - | built | - | pass | - | W1–W10 pass (round 3) | reviewed+fixed | LOW: BUG-025..030 | 80 |
+| Web (A screens, Stitch) | A | frontend | Completed | - | Stitch re-skin done | - | 251 pass | - | W1–W10 + visual 4 viewports pass (round 3) | reviewed+Impeccable | LOW: BUG-023,025–029,045–048 | 95 |
 | B1 foundations | B | - | Not Started | - | - | - | - | - | - | - | 0 | 0 |
 | PAR/GEN | B | - | Not Started | - | - | - | - | - | - | - | 0 | 0 |
 | ORD/CRM | B | - | Not Started | - | - | - | - | - | - | - | 0 | 0 |

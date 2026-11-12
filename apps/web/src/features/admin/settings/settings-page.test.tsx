@@ -113,6 +113,18 @@ describe('SettingsPage', () => {
     expect(screen.getAllByText('Not set')).toHaveLength(3)
     expect(screen.getByText('3 thresholds are not set')).toBeTruthy()
   })
+
+  it('shows each breach contact as a card with role, name, email and phone', async () => {
+    const contact = { name: 'Dee Pio', role: 'Data protection officer', email: 'dpo@acme.example', phone: '+44 20 7946 0000' }
+    renderAs(adminMe(), <SettingsPage />, unsetRoutes({ 'GET /v1/settings/privacy.breach_contacts': setting('privacy.breach_contacts', [contact]) }))
+    const list = await screen.findByRole('list', { name: 'Breach-notification contacts' })
+    const card = within(list).getByRole('heading', { name: 'Dee Pio' }).closest('li')!
+    expect(within(card).getByText('Data protection officer')).toBeTruthy()
+    expect(within(card).getByText('dpo@acme.example')).toBeTruthy()
+    expect(within(card).getByText('+44 20 7946 0000')).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Change contacts' })).toBeTruthy()
+    expect(screen.queryByText('No breach contact recorded')).toBeNull()
+  })
 })
 
 describe('setting checks', () => {

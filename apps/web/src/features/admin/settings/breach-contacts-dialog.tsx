@@ -2,9 +2,10 @@
 
 import { useState } from 'react'
 import { Button } from '../../../components/button'
-import { TextField } from '../../../components/form-field'
+import { TextInput } from '../../../components/form-field'
 import { emailError, requiredError } from '../../../lib/validation'
 import type { BreachContact } from '../types'
+import { ACTIONS, GROUP, LEGEND, NOTE, PAIR } from '../ui'
 import { SettingDialog } from './setting-dialog'
 import type { ThresholdDialogProps } from './threshold-dialogs'
 
@@ -67,11 +68,11 @@ export function BreachContactsDialog({ current, ...props }: ThresholdDialogProps
     <SettingDialog {...props} settingKey="privacy.breach_contacts" build={build}>
       <p>The people to notify when personal data may have been breached. Your vendor’s operations staff can read this list.</p>
       {rows.map((row, index) => (
-        <fieldset key={row.id} className="admin-group admin-fieldset">
-          <legend>Contact {index + 1}</legend>
-          <div className="admin-pair">
+        <fieldset key={row.id} className={GROUP}>
+          <legend className={LEGEND}>Contact {index + 1}</legend>
+          <div className={PAIR}>
             {FIELDS.map((field) => (
-              <TextField
+              <TextInput
                 key={field}
                 id={fieldId(index, field)}
                 label={LABELS[field]}
@@ -83,13 +84,13 @@ export function BreachContactsDialog({ current, ...props }: ThresholdDialogProps
               />
             ))}
           </div>
-          <div className="form-actions">
+          <div className={ACTIONS}>
             <Button variant="tertiary" onClick={() => setRows((list) => list.filter((other) => other.id !== row.id))}>Remove contact {index + 1}</Button>
           </div>
         </fieldset>
       ))}
       {rows.length < MAX_CONTACTS && <div><Button id="contact-add" onClick={add}>Add contact</Button></div>}
-      <p className="admin-note">Saving asks for a code from your authenticator app.</p>
+      <p className={NOTE}>Saving asks for a code from your authenticator app.</p>
     </SettingDialog>
   )
 }

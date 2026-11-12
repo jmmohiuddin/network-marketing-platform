@@ -1,11 +1,12 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { Fragment, useState, type FormEvent } from 'react'
+import { useState, type FormEvent } from 'react'
+import { Banner } from '../../components/banner'
 import { Button, LinkButton } from '../../components/button'
 import { ErrorSummary, type SummaryItem } from '../../components/error-summary'
-import { FileInput, formatMegabytes } from '../../components/file-input'
-import { SelectField, TextField } from '../../components/form-field'
+import { FileDropZone, formatMegabytes } from '../../components/file-drop-zone'
+import { Select, TextInput } from '../../components/form-field'
 import { PageHeader } from '../../components/page-header'
 import { useToast } from '../../components/toast'
 import { isApiError, newIdempotencyKey } from '../../lib/api'
@@ -15,6 +16,7 @@ import { useResource } from '../../lib/use-resource'
 import { periodErrors } from './period'
 import { uploadForm, type UploadProgress } from './transfer'
 import { IMPORT_FILES, type Batch, type ImportFile } from './types'
+import { CODE, FactRow, FactRows, Panel } from './ui'
 
 
 const FILE_LABELS: Readonly<Record<ImportFile, string>> = {
@@ -74,9 +76,12 @@ function formOf(values: Values, files: Files): FormData {
 function Progress({ progress }: { readonly progress: UploadProgress }) {
   const done = progress.loaded >= progress.total
   return (
-    <div className="data-progress">
-      <progress max={progress.total} value={progress.loaded} aria-label="Upload progress" />
-      <p role="status">
+    <div className="p-space-sm bg-surface-container rounded flex flex-col gap-1">
+      <progress
+        max={progress.total} value={progress.loaded} aria-label="Upload progress"
+        className="w-full h-2 rounded overflow-hidden appearance-none bg-surface-container-highest [&::-webkit-progress-bar]:bg-surface-container-highest [&::-webkit-progress-value]:bg-primary [&::-moz-progress-bar]:bg-primary"
+      />
+      <p role="status" className="font-data-mono-sm text-data-mono-sm text-on-surface">
         {done
           ? 'Files sent. Checking them against the published format…'
           : `Sending files: ${formatMegabytes(progress.loaded)} of ${formatMegabytes(progress.total)}`}
@@ -136,7 +141,7 @@ export function NewImportForm() {
   }
 
   const month = (name: 'period_from' | 'period_to', label: string) => (
-    <TextField
+    <TextInput
       id={fieldId(name)} label={label} type="month" placeholder="2025-01" helper="Year and month, for example 2025-01."
       value={values[name]} error={errors[name]} disabled={busy}
       onChange={(event) => setValue(name, event.target.value)}
@@ -145,39 +150,44 @@ export function NewImportForm() {
 
   return (
     <>
-      <PageHeader title="Upload export" summary="The files are checked before any row is stored. Files with names, contacts, addresses, identity or bank data are rejected." />
-      <form className="form" onSubmit={submit} noValidate>
-        <ErrorSummary items={summary} />
-        <SelectField
-          id={fieldId('market')} label="Market"
-          placeholder={markets.loading ? 'Loading markets…' : 'Choose a market'}
-          helper={markets.error === null ? undefined : errorMessage(markets.error)}
-          options={(markets.data ?? []).map((market) => ({ value: market.code, label: marketName(market) }))}
-          value={values.market} error={errors.market} disabled={busy} onChange={(event) => setValue('market', event.target.value)}
-        />
-        {month('period_from', 'First month')}
-        {month('period_to', 'Last month')}
-        {IMPORT_FILES.map((file) => (
-          <FileInput
-            key={file} id={fieldId(file)} label={FILE_LABELS[file]} name={file} extensions={['.csv']} maxBytes={limits.data?.max_file_bytes}
-            error={errors[file]} disabled={busy} onFiles={(chosen) => setFile(file, chosen)}
-          />
-        ))}
-        <details>
-          <summary>Required columns</summary>
-          <dl className="data-facts">
-            {IMPORT_FILES.map((file) => (
-              <Fragment key={file}>
-                <dt>{file}.csv</dt>
-                <dd className="data-code">{REQUIRED_COLUMNS[file]}</dd>
-              </Fragment>
-            ))}
-          </dl>
-        </details>
-        {progress !== null && <Progress progress={progress} />}
-        <div className="form-actions">
-          <LinkButton href="/imports">Cancel</LinkButton>
-          <Button type="submit" variant="primary" loading={busy}>Upload and validate</Button>
+      <PageHeader title="Upload export" summary="The three export files of one market and period are checked before any row is stored." />
+      <Banner tone="info" title="Personal data is refused">
+        Files with names, contacts, addresses, identity or bank data are rejected. Participant ids must be pseudonymous.
+      </Banner>
+      <form className="grid grid-cols-1 xl:grid-cols-12 gap-space-md items-start" onSubmit={submit} noValidate>
+        <div className="xl:col-span-12"><ErrorSummary items={summary} /></div>
+        <Panel first title="Export files" icon="inventory_2" meta={limits.data === null ? undefined : `Up to ${formatMegabytes(limits.data.max_file_bytes)} per file`} className="xl:col-span-7">
+          {IMPORT_FILES.map((file) => (
+            <FileDropZone
+              key={file} id={fieldId(file)} label={FILE_LABELS[file]} name={file} extensions={['.csv']} maxBytes={limits.data?.max_file_bytes}
+              error={errors[file]} disabled={busy} onFiles={(chosen) => setFile(file, chosen)}
+            />
+          ))}
+        </Panel>
+        <div className="xl:col-span-5 flex flex-col gap-space-md">
+          <Panel title="Market and period" icon="calendar_month">
+            <Select
+              id={fieldId('market')} label="Market"
+              placeholder={markets.loading ? 'Loading markets…' : 'Choose a market'}
+              helper={markets.error === null ? undefined : errorMessage(markets.error)}
+              options={(markets.data ?? []).map((market) => ({ value: market.code, label: marketName(market) }))}
+              value={values.market} error={errors.market} disabled={busy} onChange={(event) => setValue('market', event.target.value)}
+            />
+            {month('period_from', 'First month')}
+            {month('period_to', 'Last month')}
+            {progress !== null && <Progress progress={progress} />}
+            <div className="pt-space-sm border-t border-surface-container flex items-center justify-end gap-space-xs">
+              <LinkButton href="/imports">Cancel</LinkButton>
+              <Button type="submit" variant="primary" icon="cloud_upload" loading={busy} data-testid="primary-action">Upload and validate</Button>
+            </div>
+          </Panel>
+          <Panel title="Required columns" icon="fact_check">
+            <FactRows label="Required columns">
+              {IMPORT_FILES.map((file) => (
+                <FactRow key={file} label={`${file}.csv`} detail={<span className={CODE}>{REQUIRED_COLUMNS[file]}</span>} />
+              ))}
+            </FactRows>
+          </Panel>
         </div>
       </form>
     </>

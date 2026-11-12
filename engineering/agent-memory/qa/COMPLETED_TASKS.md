@@ -24,3 +24,15 @@ _Agent: qa. Read before every task; update after every task. Keep concise — fa
 
 ## 2026-11-12 — Browser retest R3 (Playwright MCP)
 - BUG-024 verified fixed; W1–W10 re-run, no regressions; 1 new defect (BUG-030 LOW). BUG_REGISTER statuses of 024–029 updated. No code changed, no DB inserts.
+
+## 2026-11-12 — UI testing round 1 (functional + Stitch visual + Impeccable/a11y), read-only
+- Seeded nmp_e2e, ran W1–W10 in one MCP browser, harness on 11 screens, scripted a11y + Impeccable detect; servers stopped by PID. 12 defects registered (BUG-032..043). No code changed.
+
+## 2026-11-12 — UI testing round 2 (retest, Levels 1–3), read-only
+- Verified BUG-032..043 fixed, re-ran W1–W10, harness 11 screens, a11y + Impeccable audit; 5 defects registered (BUG-044..048); reports updated. Servers stopped by PID. No code changed.
+
+## 2026-11-12 — UI testing round 3 (retest, Levels 1–3), read-only
+- Verified BUG-044 fixed, re-ran W1–W10, harness 11 screens x 4, Impeccable audit + scripted a11y; register statuses and both reports updated; no new defects. Servers stopped by PID. No code changed.
+
+## 2026-11-12 — UI reports finalised (docs only)
+- Final status sections in testing/UI_TESTING_REPORT.md and VISUAL_REGRESSION_REPORT.md (root causes + corrections filled in); round-table cells aligned with round results; inventory §2 MVP-A statuses; MASTER_PROJECT_MEMORY design status section. Web unit tests 38 files / 262 passed. No code changed.

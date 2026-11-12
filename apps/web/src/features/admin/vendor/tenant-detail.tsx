@@ -6,11 +6,11 @@ import { useState } from 'react'
 import { useApi } from '../../../components/api-provider'
 import { Banner } from '../../../components/banner'
 import { Button } from '../../../components/button'
-import { ConfirmDialog } from '../../../components/dialog'
+import { ConfirmDialog } from '../../../components/modal'
 import { PageHeader } from '../../../components/page-header'
 import { LoadingState } from '../../../components/states'
-import { StatusChip } from '../../../components/status-chip'
-import { Table, type TableColumn } from '../../../components/table'
+import { StatusBadge } from '../../../components/status-badge'
+import { DataTable, type DataTableColumn } from '../../../components/data-table'
 import { useToast } from '../../../components/toast'
 import { errorMessage } from '../../../lib/messages'
 import { formatDateTime, jobHealthLabel } from '../format'
@@ -18,16 +18,16 @@ import { LoadFailure } from '../page-states'
 import { useResource } from '../../../lib/use-resource'
 import { useIdempotencyKey } from '../resource'
 import type { BreachContact, MarketView, TenantDetail } from '../types'
-import { ConsoleNav } from './console-nav'
+import { MetaGrid, MONO, NOTE, SECTION_CARD, SectionTitle } from '../ui'
 import { RequestSessionDialog } from './request-session-dialog'
 
-const MARKET_COLUMNS: readonly TableColumn<MarketView>[] = [
-  { key: 'code', header: 'Market', cell: (market) => market.code },
+const MARKET_COLUMNS: readonly DataTableColumn<MarketView>[] = [
+  { key: 'code', header: 'Market', cell: (market) => <span className="font-data-mono-md text-data-mono-md text-primary">{market.code}</span> },
   { key: 'currency', header: 'Currency', cell: (market) => `${market.currency} (${market.minor_unit} decimals)` },
   { key: 'zone', header: 'Time zone', cell: (market) => market.time_zone },
   { key: 'languages', header: 'Languages', cell: (market) => market.languages.join(', ') },
   { key: 'pack', header: 'Market pack', cell: (market) => market.market_pack },
-  { key: 'state', header: 'State', cell: (market) => <StatusChip state={market.state} /> },
+  { key: 'state', header: 'State', cell: (market) => <StatusBadge state={market.state} /> },
 ]
 
 const SUPPORTED_STATES = new Set(['implementation', 'live'])
@@ -69,18 +69,24 @@ function BreachContacts({ tenantId }: { readonly tenantId: string }) {
     }
   }
   return (
-    <section className="admin-section" aria-labelledby="breach-title">
-      <div className="admin-toolbar">
-        <h2 id="breach-title" className="admin-section-title">Breach-notification contacts</h2>
-        <Button loading={state.busy === true} onClick={load}>Show contacts</Button>
-      </div>
-      <p className="admin-note">Showing the contacts is recorded in your log and in the tenant’s audit log.</p>
+    <section className={SECTION_CARD} aria-labelledby="breach-title">
+      <SectionTitle
+        id="breach-title"
+        icon="contact_phone"
+        title="Breach-notification contacts"
+        action={<Button icon="visibility" loading={state.busy === true} onClick={load}>Show contacts</Button>}
+      />
+      <p className={NOTE}>Showing the contacts is recorded in your log and in the tenant’s audit log.</p>
       {state.error !== undefined && <Banner tone="danger">{state.error}</Banner>}
       {state.contacts === null && <Banner tone="warning">The tenant has not recorded a breach contact. Go-live stays blocked until it does.</Banner>}
       {state.contacts !== undefined && state.contacts !== null && (
-        <ul className="admin-plain-list">
+        <ul className="grid grid-cols-1 md:grid-cols-2 gap-space-md">
           {state.contacts.map((contact) => (
-            <li key={`${contact.email}|${contact.name}`}>{contact.name}, {contact.role}: {contact.email}, {contact.phone}</li>
+            <li key={`${contact.email}|${contact.name}`} className="p-space-md rounded bg-surface-container-low flex flex-col">
+              <span className="font-caption text-caption uppercase tracking-wider text-secondary">{contact.role}</span>
+              <span className="font-section-heading text-section-heading text-on-surface">{contact.name}</span>
+              <span className={`${MONO} text-primary break-all`}>{contact.email}, {contact.phone}</span>
+            </li>
           ))}
         </ul>
       )}
@@ -92,10 +98,12 @@ function Actions({ tenant, onStep }: { readonly tenant: TenantDetail; readonly o
   return (
     <>
       {SUPPORTED_STATES.has(tenant.state) && (
-        <Button variant={tenant.state === 'live' ? 'primary' : 'secondary'} onClick={() => onStep('session')}>Request support session</Button>
+        tenant.state === 'live'
+          ? <Button variant="primary" icon="vpn_key" data-testid="primary-action" onClick={() => onStep('session')}>Request support session</Button>
+          : <Button icon="vpn_key" onClick={() => onStep('session')}>Request support session</Button>
       )}
-      {tenant.state === 'provisioning' && <Button variant="primary" onClick={() => onStep('approve')}>Approve provisioning</Button>}
-      {tenant.state === 'implementation' && <Button variant="primary" onClick={() => onStep('go-live')}>Go live</Button>}
+      {tenant.state === 'provisioning' && <Button variant="primary" icon="verified_user" data-testid="primary-action" onClick={() => onStep('approve')}>Approve provisioning</Button>}
+      {tenant.state === 'implementation' && <Button variant="primary" icon="rocket_launch" data-testid="primary-action" onClick={() => onStep('go-live')}>Go live</Button>}
     </>
   )
 }
@@ -110,32 +118,36 @@ export function TenantDetailPage({ tenantId }: { readonly tenantId: string }) {
     setStep(null)
     tenant.reload()
   }
-  if (tenant.error !== null) return <><ConsoleNav /><LoadFailure error={tenant.error} onRetry={tenant.reload} /></>
-  if (tenant.data === null) return <><ConsoleNav /><LoadingState label="Loading the tenant" /></>
+  if (tenant.error !== null) return <LoadFailure error={tenant.error} onRetry={tenant.reload} />
+  if (tenant.data === null) return <LoadingState label="Loading the tenant" />
   const detail = tenant.data
   return (
     <>
-      <ConsoleNav />
-      <div className="admin-stack">
-        <PageHeader
-          title={detail.legal_name}
-          state={<StatusChip state={detail.state} />}
-          summary={detail.state === 'provisioning'
-            ? <>Waiting for a second vendor user to approve. Nothing reaches its admins before that. If nobody else can, invite one under <Link href="/vendor/users">Vendor users</Link>.</>
-            : 'Operational metadata only. Business data needs a support session the tenant approves.'}
-          actions={<Actions tenant={detail} onStep={setStep} />}
+      <PageHeader
+        title={detail.legal_name}
+        eyebrow={detail.slug}
+        breadcrumbs={[{ label: 'Tenants', href: '/vendor' }, { label: detail.legal_name }]}
+        state={<StatusBadge state={detail.state} />}
+        summary={detail.state === 'provisioning'
+          ? <>Waiting for a second vendor user to approve. Nothing reaches its admins before that. If nobody else can, invite one under <Link className="text-primary hover:underline" href="/vendor/users">Vendor users</Link>.</>
+          : 'Operational metadata only. Business data needs a support session the tenant approves.'}
+        actions={<Actions tenant={detail} onStep={setStep} />}
+      />
+      <section className={SECTION_CARD} aria-labelledby="tenant-meta" data-testid="card">
+        <SectionTitle id="tenant-meta" icon="corporate_fare" title="Tenant" />
+        <MetaGrid
+          items={[
+            { label: 'Slug', value: <span className="font-data-mono-md text-data-mono-md text-primary">{detail.slug}</span> },
+            { label: 'Data region', value: detail.region },
+            { label: 'Isolation tier', value: detail.isolation_tier },
+            { label: 'Signed DPA document', value: <span className={`${MONO} break-all`}>{detail.dpa_document_id ?? '—'}</span> },
+            { label: 'Created', value: formatDateTime(detail.created_at) },
+            { label: 'Background jobs', value: jobHealthLabel(detail.job_health) },
+          ]}
         />
-        <dl className="admin-details">
-          <dt>Slug</dt><dd>{detail.slug}</dd>
-          <dt>Data region</dt><dd>{detail.region}</dd>
-          <dt>Isolation tier</dt><dd>{detail.isolation_tier}</dd>
-          <dt>Signed DPA document</dt><dd className="admin-mono">{detail.dpa_document_id ?? '—'}</dd>
-          <dt>Created</dt><dd>{formatDateTime(detail.created_at)}</dd>
-          <dt>Background jobs</dt><dd>{jobHealthLabel(detail.job_health)}</dd>
-        </dl>
-        <Table caption={countLabel(detail.markets.length, 'market')} columns={MARKET_COLUMNS} rows={detail.markets} rowKey={(market) => market.id} empty={{ title: 'No markets.' }} />
-        {detail.state !== 'provisioning' && <BreachContacts tenantId={detail.id} />}
-      </div>
+      </section>
+      <DataTable caption={countLabel(detail.markets.length, 'market')} columns={MARKET_COLUMNS} rows={detail.markets} rowKey={(market) => market.id} empty={{ title: 'No markets.' }} />
+      {detail.state !== 'provisioning' && <BreachContacts tenantId={detail.id} />}
       {step === 'approve' && <ApproveDialog tenant={detail} onClose={() => setStep(null)} onDone={done} />}
       {step === 'session' && <RequestSessionDialog tenant={detail} onClose={() => setStep(null)} onRequested={() => setStep(null)} />}
       <ConfirmDialog

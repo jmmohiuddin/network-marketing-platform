@@ -1,8 +1,8 @@
 'use client'
 
-import { Copy } from 'lucide-react'
 import { useId, useState } from 'react'
 import { Button } from './button'
+import { LABEL_CLASS } from './form-field'
 
 const GROUP = 4
 
@@ -26,16 +26,13 @@ export function SecretText({ label, value }: SecretTextProps) {
     }
   }
   return (
-    <div className="secret">
-      <span id={labelId} className="field-label">{label}</span>
-      <div className="secret-row">
-        <code className="secret-value" aria-labelledby={labelId}>{grouped}</code>
-        <Button onClick={copy}>
-          <Copy size={16} aria-hidden="true" />
-          Copy key
-        </Button>
+    <div className="flex flex-col gap-space-xs">
+      <span id={labelId} className={LABEL_CLASS}>{label}</span>
+      <div className="flex flex-wrap items-center gap-space-sm">
+        <code className="px-space-sm py-space-xs rounded bg-surface-container-low font-data-mono-md text-data-mono-md text-on-surface select-all" aria-labelledby={labelId}>{grouped}</code>
+        <Button icon="content_copy" onClick={copy}>Copy key</Button>
       </div>
-      <p className="field-helper" role="status">
+      <p className="font-caption text-caption text-secondary" role="status">
         {status === 'copied' && 'Key copied.'}
         {status === 'failed' && 'The key could not be copied. Select it and copy it, or type it.'}
       </p>

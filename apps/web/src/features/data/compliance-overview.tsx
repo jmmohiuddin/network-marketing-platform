@@ -7,22 +7,27 @@ import { Banner } from '../../components/banner'
 import { Button, LinkButton } from '../../components/button'
 import { PageHeader } from '../../components/page-header'
 import { EmptyState, ErrorState, LoadingState, NotAvailable } from '../../components/states'
-import { StatusChip } from '../../components/status-chip'
+import { StatusBadge } from '../../components/status-badge'
 import { errorMessage, isNotAvailable } from '../../lib/messages'
 import { useSession } from '../../lib/session'
 import { useResource } from '../../lib/use-resource'
 import { marketName } from '../../lib/markets'
-import { Sparkline } from './charts'
+import { MeterBar, Sparkline } from '../../components/charts'
+import { DataTable } from '../../components/data-table'
+import { Icon } from '../../components/icon'
 import { CreateSnapshotDialog, type SnapshotRequest } from './create-snapshot-dialog'
-import { changeLabel, dateTime, figureLabel, HEADLINE_KEYS, periodRange, REPORT_NAMES, SNAPSHOTS_PATH } from './format'
+import { changeLabel, dateTime, figureAmount, figureLabel, figureUnit, figureValue, HEADLINE_KEYS, integer, periodRange, REPORT_NAMES, SNAPSHOTS_PATH } from './format'
 import { TrendChart } from './period-views'
-import { FigureCard, qualityWarnings } from './snapshot-report'
-import { computing } from './snapshots-list'
+import { qualityWarnings, rowsHref } from './snapshot-report'
+import { computing, SNAPSHOT_COLUMNS } from './snapshots-list'
+import { FactRow, FactRows, LIST, Panel, SECTION_HEADING, TableSection } from './ui'
 import type { Figure, PeriodResult, ReportCode, Snapshot, SnapshotDetail } from './types'
 
 // shortcut: the overview reads the newest 200 snapshots; a market whose last usable snapshot is older is listed
 // only in the snapshot list. Page through when a tenant keeps more.
 const RECENT_LIMIT = 200
+/** Rows of the recent snapshots table; the snapshot list has the rest. */
+const RECENT_ROWS = 10
 
 const usable = (snapshot: Snapshot) => snapshot.state === 'ready' || snapshot.state === 'outdated'
 
@@ -44,7 +49,7 @@ function headlineOf(results: readonly PeriodResult[], report: ReportCode) {
   }
 }
 
-/** SC-46 trend sparkline (decorative) and the change since the previous period of the report, in words. */
+/** SC-46 change since the previous period (under the value, as sc_46 l.92) and the decorative sparkline. */
 function HeadlineTrend({ results, figure }: { readonly results: readonly PeriodResult[]; readonly figure: Figure }) {
   if (figure.value === null) return null
   const series = results
@@ -57,26 +62,70 @@ function HeadlineTrend({ results, figure }: { readonly results: readonly PeriodR
   const previous = series.at(-2)
   if (previous === undefined) return null
   return (
-    <div className="kpi-trend">
-      <Sparkline values={series.map((point) => point.value)} />
-      <p>Change since {previous.period}: {changeLabel(figure.unit, figure.value, previous.value)}</p>
-    </div>
+    <>
+      <p className="mt-0.5 flex flex-wrap items-baseline gap-x-space-xs">
+        <span className="font-data-mono-sm text-data-mono-sm text-on-surface font-semibold">{changeLabel(figure.unit, figure.value, previous.value)}</span>{' '}
+        <span className="font-caption text-caption text-secondary">since {previous.period}</span>
+      </p>
+      <div className="mt-space-xs"><Sparkline values={series.map((point) => point.value)} /></div>
+    </>
   )
 }
 
-function Headline({ snapshot, report }: { readonly snapshot: SnapshotDetail; readonly report: ReportCode }) {
+/** sc_46 l.77 headline card: report, figure, value, change; the components strip with a share bar for percentages. */
+function HeadlineCard({ snapshotId, results, figure, context, first }: {
+  readonly snapshotId: string
+  readonly results: readonly PeriodResult[]
+  readonly figure: Figure
+  readonly context: string
+  readonly first: boolean
+}) {
+  const label = figureLabel(figure.key)
+  // Bar position only; the exact value is the text above it.
+  const share = figure.unit === 'percent' && figure.value !== null ? Number(figure.value) : null
+  return (
+    <article aria-label={`${context}: ${label}`} data-testid={first ? 'card' : undefined} className="bg-surface-container-lowest rounded p-space-md shadow-sm flex flex-col justify-between gap-space-md">
+      <div className="flex flex-col">
+        <span className="font-caption text-caption text-secondary uppercase font-semibold tracking-wider mb-space-xs">{context}</span>
+        <h3 className="font-section-heading text-section-heading text-on-surface font-medium">{label}</h3>
+        <p className="mt-space-sm flex flex-wrap items-baseline gap-x-space-xs">
+          <span className="font-data-mono-lg text-data-mono-lg text-primary font-bold tabular-nums break-all">{figureAmount(figure)}</span>
+          {figureUnit(figure) !== undefined && ' '}
+          {figureUnit(figure) !== undefined && <span className="font-caption text-caption text-secondary">{figureUnit(figure)}</span>}
+        </p>
+        <HeadlineTrend results={results} figure={figure} />
+      </div>
+      <div className="flex flex-col gap-space-sm">
+        {(figure.numerator !== null || share !== null) && (
+          <div className="bg-surface-container-low rounded p-2 flex flex-col gap-1 font-caption text-caption text-secondary">
+            {figure.numerator !== null && figure.denominator !== null && (
+              <div className="flex justify-between gap-space-xs"><span>Numerator / denominator</span><span className="font-data-mono-sm font-semibold text-on-surface">{integer(figure.numerator)} / {integer(figure.denominator)}</span></div>
+            )}
+            {share !== null && <MeterBar percent={share} label={`${label} ${figureValue(figure)}`} />}
+          </div>
+        )}
+        <Link href={rowsHref(snapshotId, figure.id)} className="text-primary font-body-sm text-body-sm font-semibold hover:underline inline-flex items-center gap-0.5">
+          Open the rows behind this figure
+          <Icon name="arrow_forward" size={14} />
+        </Link>
+      </div>
+    </article>
+  )
+}
+
+function Headline({ snapshot, report, first }: { readonly snapshot: SnapshotDetail; readonly report: ReportCode; readonly first: boolean }) {
   const headline = headlineOf(snapshot.results, report)
   const context = `${report} ${REPORT_NAMES[report]} · ${headline?.result.period ?? 'no period'}${headline?.result.partial === true ? ' · partial year, not publishable' : ''}`
   if (headline?.figure != null) {
-    const trend = <HeadlineTrend results={snapshot.results.filter((result) => result.report === report)} figure={headline.figure} />
-    return <FigureCard snapshotId={snapshot.id} figure={headline.figure} context={context} trend={trend} />
+    return <HeadlineCard snapshotId={snapshot.id} results={snapshot.results.filter((result) => result.report === report)} figure={headline.figure} context={context} first={first} />
   }
   const reason = headline === null ? 'No period of this report has data in the snapshot.' : (headline.omitted?.reason ?? 'Not computed.')
   return (
-    <article className="figure-card" aria-label={`${context}: ${figureLabel(HEADLINE_KEYS[report])}`}>
-      <p className="data-note">{context}</p>
-      <h3>{figureLabel(HEADLINE_KEYS[report])}</h3>
-      <p>{reason}</p>
+    <article aria-label={`${context}: ${figureLabel(HEADLINE_KEYS[report])}`} data-testid={first ? 'card' : undefined} className="bg-surface-container-lowest rounded p-space-md shadow-sm flex flex-col gap-space-xs">
+      <span className="font-caption text-caption text-secondary uppercase font-semibold tracking-wider">{context}</span>
+      <h3 className="font-section-heading text-section-heading text-on-surface font-medium">{figureLabel(HEADLINE_KEYS[report])}</h3>
+      <span className="font-data-mono-lg text-data-mono-lg text-on-surface font-bold">—</span>
+      <p className="font-body-sm text-body-sm text-on-surface-variant">{reason}</p>
     </article>
   )
 }
@@ -103,10 +152,12 @@ interface MarketOverviewProps {
   readonly snapshotId: string
   /** Present when the user may create snapshots: opens Create snapshot for this market and range. */
   readonly onRecreate?: (request: Partial<SnapshotRequest>) => void
+  /** The first market's first card carries the visual-harness test id. */
+  readonly first: boolean
 }
 
 /** One market: its latest usable snapshot's headline figures, data coverage, warnings and what to do about them. */
-function MarketOverview({ snapshotId, onRecreate }: MarketOverviewProps) {
+function MarketOverview({ snapshotId, onRecreate, first }: MarketOverviewProps) {
   const { can } = useSession()
   const { data: snapshot, meta, error, reload } = useResource<SnapshotDetail>(`/v1/compliance/snapshots/${snapshotId}`)
   if (error !== null) return <ErrorState message={errorMessage(error)} onRetry={reload} section />
@@ -118,18 +169,20 @@ function MarketOverview({ snapshotId, onRecreate }: MarketOverviewProps) {
   // SC-46 chart: the first monthly report's headline by month (R1 retail-customer share when computed).
   const monthly = [...snapshot.results].filter((result) => result.period_kind === 'month').sort((a, b) => a.period.localeCompare(b.period))
   const trendReport = snapshot.reports.find((report) => monthly.some((result) => result.report === report))
+  const trend = trendReport === undefined ? null : <TrendChart results={monthly.filter((result) => result.report === trendReport)} figureKey={HEADLINE_KEYS[trendReport]} />
   const recreate = onRecreate === undefined ? undefined : (
     <Button onClick={() => onRecreate({ market: snapshot.market.code, period_from: snapshot.period_from, period_to: snapshot.period_to })}>
       Create a new snapshot
     </Button>
   )
   return (
-    <section className="data-section" aria-label={title}>
-      <h2>{title} {snapshot.state === 'outdated' && <StatusChip state="outdated" label="Outdated: figures unchanged, inputs changed since" />}</h2>
-      <p>
-        Data coverage: {countLabel(snapshot.input_batch_ids.length, 'loaded import batch', 'loaded import batches')} · {coverageOf(snapshot.results)} · mapping {versions} ·
-        method {snapshot.method_version} · computed {dateTime(snapshot.created_at)}. <Link href={`/compliance/snapshots/${snapshot.id}`}>Open the full report</Link>
-      </p>
+    <section className="flex flex-col gap-space-md" aria-label={title}>
+      <div className="flex flex-wrap items-center justify-between gap-space-sm">
+        <h2 className={`${SECTION_HEADING} flex flex-wrap items-center gap-space-xs`}>{title} {snapshot.state === 'outdated' && <StatusBadge state="outdated" label="Outdated: figures unchanged, inputs changed since" />}</h2>
+        <Link href={`/compliance/snapshots/${snapshot.id}`} className="text-primary font-body-sm text-body-sm font-medium hover:underline inline-flex items-center gap-0.5">
+          Open the full report <Icon name="arrow_forward" size={14} />
+        </Link>
+      </div>
       {typeof meta.notice === 'string' && <Banner tone="info">{meta.notice}</Banner>}
       {snapshot.state === 'outdated' && (
         <Banner tone="warning" title="Outdated snapshot" action={recreate}>
@@ -138,25 +191,35 @@ function MarketOverview({ snapshotId, onRecreate }: MarketOverviewProps) {
       )}
       {warnings.length > 0 && (
         <Banner tone="warning" title="Data-quality warnings">
-          <ul className="data-list">{warnings.map((warning) => <li key={warning}>{warning}</li>)}</ul>
+          <ul className={LIST}>{warnings.map((warning) => <li key={warning}>{warning}</li>)}</ul>
         </Banner>
       )}
       {omitted.length > 0 && (
         <Banner
           tone="warning"
           title="Indicators not computed"
-          action={can('settings.manage') ? <LinkButton href="/settings">Open thresholds in settings</LinkButton> : undefined}
+          action={can('settings.manage') ? <LinkButton href="/settings" icon="tune">Open thresholds in settings</LinkButton> : undefined}
         >
-          <ul className="data-list">{omitted.map((line) => <li key={line}>{line}</li>)}</ul>
+          <ul className={LIST}>{omitted.map((line) => <li key={line}>{line}</li>)}</ul>
           {!can('settings.manage') && <p>Thresholds are tenant settings with no default; a tenant admin sets them.</p>}
         </Banner>
       )}
-      <div className="kpi-grid">
-        {snapshot.reports.map((report) => <Headline key={report} snapshot={snapshot} report={report} />)}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-space-md">
+        {snapshot.reports.map((report, index) => <Headline key={report} snapshot={snapshot} report={report} first={first && index === 0} />)}
       </div>
-      {trendReport !== undefined && (
-        <TrendChart results={monthly.filter((result) => result.report === trendReport)} figureKey={HEADLINE_KEYS[trendReport]} />
-      )}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-space-md items-start">
+        {trend !== null && <div className="lg:col-span-8">{trend}</div>}
+        <Panel title={`Data coverage: ${snapshot.market.code}`} icon="fact_check" className={trend === null ? 'lg:col-span-12' : 'lg:col-span-4'}>
+          <FactRows label="Data coverage">
+            <FactRow icon="database" label="Loaded import batches" value={integer(snapshot.input_batch_ids.length)} />
+            <FactRow icon="calendar_month" label="Periods with figures" detail={coverageOf(snapshot.results)} />
+            <FactRow icon="route" label="Mapping versions" value={versions} />
+            <FactRow icon="menu_book" label="Method version" value={snapshot.method_version} />
+            <FactRow icon="schedule" label="Computed" detail={dateTime(snapshot.created_at)} />
+            <FactRow icon="rule" label="Data-quality warnings" value={integer(warnings.length)} />
+          </FactRows>
+        </Panel>
+      </div>
     </section>
   )
 }
@@ -167,9 +230,8 @@ function DataStatus({ snapshots }: { readonly snapshots: readonly Snapshot[] }) 
   const newest = snapshots.filter((snapshot, index) => !snapshots.slice(0, index).some((earlier) => earlier.market_id === snapshot.market_id))
   const failed = newest.filter((snapshot) => snapshot.state === 'failed')
   return (
-    <section className="data-section" aria-labelledby="data-status-title">
-      <h2 id="data-status-title">Data status</h2>
-      <ul className="data-list">
+    <Panel title="Data status" icon="sync">
+      <ul className={`${LIST} font-body-sm text-body-sm text-on-surface`}>
         <li>{running === 0 ? 'No snapshot is being computed.' : `${countLabel(running, 'snapshot')} ${running === 1 ? 'is' : 'are'} being computed. This page updates every few seconds.`}</li>
         {failed.map((snapshot) => (
           <li key={snapshot.id}>
@@ -177,7 +239,7 @@ function DataStatus({ snapshots }: { readonly snapshots: readonly Snapshot[] }) 
           </li>
         ))}
       </ul>
-    </section>
+    </Panel>
   )
 }
 
@@ -190,15 +252,20 @@ export function ComplianceOverview() {
   if (error !== null && isNotAvailable(error)) return <NotAvailable />
 
   const mayCreate = !readOnly && can('snapshot.create')
-  const imports = can('import.manage') ? <LinkButton href="/imports">Open imports</LinkButton> : undefined
+  const imports = can('import.manage') ? <LinkButton href="/imports" icon="database">Open imports</LinkButton> : undefined
   const snapshots = data ?? []
   const latest = latestPerMarket(snapshots)
+  const recent = snapshots.slice(0, RECENT_ROWS)
   return (
     <>
       <PageHeader
         title="Compliance overview"
         summary="The latest indicator figures of each market, from its newest snapshot. Figures describe past periods only."
-        actions={<><LinkButton href={SNAPSHOTS_PATH}>Open reports</LinkButton>{imports}{mayCreate && <Button variant="primary" onClick={() => setCreating({})}>Create snapshot</Button>}</>}
+        actions={<>
+          <LinkButton href={SNAPSHOTS_PATH} icon="description">Open reports</LinkButton>
+          {imports}
+          {mayCreate && <Button variant="primary" icon="add_circle" onClick={() => setCreating({})} data-testid="primary-action">Create snapshot</Button>}
+        </>}
       />
       {error !== null && <ErrorState message={errorMessage(error)} onRetry={reload} section />}
       {loading && <LoadingState label="Loading the latest snapshots" />}
@@ -208,9 +275,22 @@ export function ComplianceOverview() {
           action={imports}
         />
       )}
-      {data !== null && snapshots.length > 0 && latest.length === 0 && <p>No snapshot has figures yet.</p>}
-      {latest.map((snapshot) => <MarketOverview key={snapshot.id} snapshotId={snapshot.id} onRecreate={mayCreate ? setCreating : undefined} />)}
-      {data !== null && snapshots.length > 0 && <DataStatus snapshots={snapshots} />}
+      {data !== null && snapshots.length > 0 && latest.length === 0 && <p className="font-body-sm text-body-sm text-secondary">No snapshot has figures yet.</p>}
+      {latest.map((snapshot, index) => <MarketOverview key={snapshot.id} snapshotId={snapshot.id} first={index === 0} onRecreate={mayCreate ? setCreating : undefined} />)}
+      {data !== null && snapshots.length > 0 && (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-space-md items-start">
+          <div className="lg:col-span-8">
+            <TableSection
+              title="Recent snapshots"
+              summary={`The newest ${countLabel(recent.length, 'snapshot')}; the snapshot list has every one.`}
+              controls={<LinkButton href={SNAPSHOTS_PATH} size="sm" icon="history_edu">All snapshots</LinkButton>}
+            >
+              <DataTable caption={`Recent snapshots, newest first: ${recent.length} shown`} columns={SNAPSHOT_COLUMNS} rows={recent} rowKey={(snapshot) => snapshot.id} empty={{ title: 'No snapshots yet.' }} bare />
+            </TableSection>
+          </div>
+          <div className="lg:col-span-4"><DataStatus snapshots={snapshots} /></div>
+        </div>
+      )}
       {mayCreate && creating !== null && <CreateSnapshotDialog open initial={creating} onClose={() => setCreating(null)} />}
     </>
   )

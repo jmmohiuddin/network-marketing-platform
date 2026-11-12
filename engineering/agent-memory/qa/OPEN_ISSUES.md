@@ -29,3 +29,19 @@ _Agent: qa. Read before every task; update after every task. Keep concise — fa
 - Open web defects: BUG-023 (requester name, needs API), 025, 026, 027, 028, 029, 030.
 - Observation (not registered): a mapping draft link /imports/mappings?version=… is "Not found" for the approver (no import.manage); the approver must use /compliance/mappings?version=…. The editor tells the author another user must approve, but gives no shareable link that works for them.
 - Still not exercised: support-session auto-expiry, go-live, >50,000-row export, LAST_ADMIN (unreachable while two admins exist: SECOND_ADMIN_REQUIRED first).
+
+## 2026-11-12 — After UI round 1
+- Open web defects: BUG-032..043 (SC-10 needs most work), plus 023, 025..030.
+- Ask API owner: in a support session scoped to "Compliance reports", GET /v1/settings/compliance.* returns 200 (other settings refused) — intended?
+- Round 2 must cover: step-up dialog (act > 10 min after MFA), BUG-030, export cap, SC-14 capture with a pending request, SC-28 approvals tab capture.
+
+## 2026-11-12 — After UI round 2
+- Open web defects: BUG-044 (MEDIUM), 045–048, plus 023, 025–029. BUG-030 not reproduced (status left Open for the owner to close).
+- Still not exercised: support-session auto-expiry, go-live, >50,000-row export, grant rejection.
+
+## 2026-11-12 — After UI round 3
+- Open web defects: 023, 025–029, 045–048 (BUG-030 not reproduced twice; owner to close). No new ones.
+- Still not exercised: support-session auto-expiry, go-live, >50,000-row export.
+
+## 2026-11-12 — Final (after reports finalised)
+- Unchanged from round 3: open LOW web defects 023, 025–029, 045–048; BUG-030 to be closed by its owner. Not exercised: auto-expiry, go-live, >50,000-row export, Impeccable Performance.

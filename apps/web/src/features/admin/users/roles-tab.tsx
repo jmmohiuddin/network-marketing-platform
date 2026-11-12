@@ -4,8 +4,9 @@ import { useState } from 'react'
 import { useApi } from '../../../components/api-provider'
 import { useSession } from '../../../lib/session'
 import { Button } from '../../../components/button'
-import { Checkbox, SelectField, TextField } from '../../../components/form-field'
-import { Table, type TableColumn } from '../../../components/table'
+import { Checkbox, Select, TextInput } from '../../../components/form-field'
+import { DataTable, type DataTableColumn } from '../../../components/data-table'
+import { Icon } from '../../../components/icon'
 import { useToast } from '../../../components/toast'
 import { requiredError } from '../../../lib/validation'
 import { permissionLabel } from '../format'
@@ -13,6 +14,7 @@ import { FormDialog } from '../form-dialog'
 import type { Resource } from '../../../lib/use-resource'
 import { tableError } from '../resource'
 import type { RoleView } from '../types'
+import { CHECK_GRID, FIELDSET, LEGEND, NOTE } from '../ui'
 
 const NAME_ID = 'role-name'
 const NAME_MAX_LENGTH = 100
@@ -24,19 +26,26 @@ interface MatrixRow {
   readonly holds: (role: RoleView) => boolean
 }
 
+/** A matrix cell: check or dash icon with the word, so the answer is never colour or shape alone. */
+function Holds({ yes }: { readonly yes: boolean }) {
+  return yes
+    ? <span className="inline-flex items-center gap-1 text-tertiary font-medium"><Icon name="check_circle" size={16} />Yes</span>
+    : <span className="inline-flex items-center gap-1 text-secondary"><Icon name="remove" size={16} />No</span>
+}
+
 /** Permission matrix (UI-04): capability rows by role columns; extra rows for the MFA and second-admin rules. */
-function matrixOf(roles: readonly RoleView[], catalogue: readonly string[]): { columns: TableColumn<MatrixRow>[]; rows: MatrixRow[] } {
+function matrixOf(roles: readonly RoleView[], catalogue: readonly string[]): { columns: DataTableColumn<MatrixRow>[]; rows: MatrixRow[] } {
   const rows: MatrixRow[] = [
     ...catalogue.map((permission) => ({ key: permission, label: permissionLabel(permission), holds: (role: RoleView) => role.permissions.includes(permission) })),
     { key: 'mfa', label: 'Needs authenticator app', holds: (role) => role.mfa_required },
     { key: 'second', label: 'Granting needs a second admin', holds: (role) => role.privileged },
   ]
-  const columns: TableColumn<MatrixRow>[] = [
+  const columns: DataTableColumn<MatrixRow>[] = [
     { key: 'capability', header: 'Capability', cell: (row) => row.label },
     ...roles.map((role) => ({
       key: role.id,
       header: role.is_base ? `${role.name} (base role)` : role.name,
-      cell: (row: MatrixRow) => (row.holds(role) ? 'Yes' : 'No'),
+      cell: (row: MatrixRow) => <Holds yes={row.holds(role)} />,
     })),
   ]
   return { columns, rows }
@@ -58,7 +67,7 @@ function RoleDiff({ source, chosen }: { readonly source: RoleView; readonly chos
   const { added, removed } = permissionDiff(source.permissions, chosen)
   const list = (items: readonly string[]) => items.map(permissionLabel).join(', ')
   return (
-    <div className="admin-note" role="status">
+    <div className={NOTE} role="status">
       {added.length === 0 && removed.length === 0
         ? `Same permissions as ${source.name}.`
         : <>Changes from {source.name}: {added.length > 0 && <>adds {list(added)}. </>}{removed.length > 0 && <>removes {list(removed)}.</>}</>}
@@ -107,8 +116,8 @@ function CreateRoleDialog({ roles, catalogue, onClose, onCreated }: CreateRoleDi
   }
   return (
     <FormDialog title="Create role" size="lg" submitLabel="Create role" onClose={onClose} onSubmit={submit}>
-      <TextField id={NAME_ID} label="Role name" data-autofocus maxLength={NAME_MAX_LENGTH} value={name} error={nameError} onChange={(event) => setName(event.target.value)} />
-      <SelectField
+      <TextInput id={NAME_ID} label="Role name" data-autofocus maxLength={NAME_MAX_LENGTH} value={name} error={nameError} onChange={(event) => setName(event.target.value)} />
+      <Select
         label="Start from the permissions of"
         optional
         placeholder="No role"
@@ -116,9 +125,9 @@ function CreateRoleDialog({ roles, catalogue, onClose, onCreated }: CreateRoleDi
         options={roles.map((role) => ({ value: role.id, label: role.name }))}
         onChange={(event) => copy(event.target.value)}
       />
-      <fieldset className="admin-fieldset">
-        <legend>Permissions</legend>
-        <div className="admin-check-grid">
+      <fieldset className={FIELDSET}>
+        <legend className={LEGEND}>Permissions</legend>
+        <div className={CHECK_GRID}>
           {catalogue.map((permission) => (
             <Checkbox
               key={permission}
@@ -136,7 +145,7 @@ function CreateRoleDialog({ roles, catalogue, onClose, onCreated }: CreateRoleDi
         checked={mfaRequired}
         onChange={(event) => setMfaRequired(event.target.checked)}
       />
-      <p className="admin-note">Creating a role grants nothing. Granting a role with admin or approver permissions needs a second admin.</p>
+      <p className={NOTE}>Creating a role grants nothing. Granting a role with admin or approver permissions needs a second admin.</p>
     </FormDialog>
   )
 }
@@ -149,12 +158,12 @@ export function RolesTab({ roles, onChanged }: { readonly roles: Resource<readon
   const rows = roles.data ?? []
   const matrix = matrixOf(rows, catalogue)
   return (
-    <div className="admin-section">
-      <div className="admin-toolbar">
-        <p className="admin-note">Base roles are the same for every tenant and cannot be changed. Start a tenant role from one to adjust it.</p>
-        {!readOnly && roles.data !== null && <Button onClick={() => setCreating(true)}>Create role</Button>}
+    <div className="flex flex-col gap-space-md">
+      <div className="flex flex-wrap items-center justify-between gap-space-sm">
+        <p className={NOTE}>Base roles are the same for every tenant and cannot be changed. Start a tenant role from one to adjust it.</p>
+        {!readOnly && roles.data !== null && <Button icon="add" onClick={() => setCreating(true)}>Create role</Button>}
       </div>
-      <Table
+      <DataTable
         caption={`Permission matrix: what ${rows.length === 1 ? 'the role' : `each of the ${rows.length} roles`} may do`}
         columns={matrix.columns}
         rows={matrix.rows}
@@ -162,6 +171,8 @@ export function RolesTab({ roles, onChanged }: { readonly roles: Resource<readon
         loading={roles.loading}
         error={tableError(roles)}
         empty={{ title: 'No roles.' }}
+        stickyFirstColumn
+        density="compact"
       />
       {creating && (
         <CreateRoleDialog

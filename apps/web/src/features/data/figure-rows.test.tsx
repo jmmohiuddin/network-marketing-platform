@@ -32,6 +32,9 @@ describe('FigureRows', () => {
     renderWithProviders(withSession(<FigureRows snapshotId="s1" />, ['compliance.read']), fetchMock)
     expect(await screen.findByRole('heading', { name: 'R1 Retail-customer share · Customer share of net sales · 2025-01' })).toBeTruthy()
     expect(screen.getByRole('table', { name: '1 orders in the numerator set' })).toBeTruthy()
+    const definition = screen.getByRole('region', { name: 'Definition' })
+    expect(within(definition).getAllByText('16,000').length).toBeGreaterThan(0)
+    expect(within(screen.getByRole('region', { name: 'Method' })).getByText('Net sales share.')).toBeTruthy()
     expect(screen.getByRole('columnheader', { name: 'Amount (minor units)' })).toBeTruthy()
     expect(screen.getByRole('cell', { name: 'No' })).toBeTruthy()
     expect(callsOf(fetchMock)[0]).toContain('set=numerator')
@@ -80,7 +83,7 @@ describe('FigureRows', () => {
       ...PAGE, meta: { ...PAGE.meta, sums: { amount_minor: '10000', volume_minor: '9000' }, component: { key: 'numerator', expected_minor: expected } },
     })
     const { unmount } = renderWithProviders(withSession(<FigureRows snapshotId="s1" />, ['compliance.read']), fetchRoutes(['GET', ROWS_PATH, () => withSums('10000')]))
-    const match = (await screen.findByText('Sums match the figure')).closest('.banner')!
+    const match = (await screen.findByText('Sums match the figure')).closest('[data-tone]')!
     expect(match.textContent).toContain('Sums over the whole numerator set: Amount (minor units) 10,000 · Volume (minor units) 9,000.')
     expect(match.textContent).toContain("Amount (minor units) equals the figure's numerator, 10,000 minor units.")
     unmount()

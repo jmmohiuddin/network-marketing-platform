@@ -2,7 +2,6 @@ import type { Metadata } from 'next'
 import { Suspense } from 'react'
 import { LoadingState } from '../../../../../../components/states'
 import { FigureRows } from '../../../../../../features/data/figure-rows'
-import '../../../../../../features/data/data.css'
 
 export const metadata: Metadata = { title: 'Figure rows' }
 

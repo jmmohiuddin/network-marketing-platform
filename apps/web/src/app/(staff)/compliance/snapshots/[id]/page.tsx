@@ -2,7 +2,6 @@ import type { Metadata } from 'next'
 import { Suspense } from 'react'
 import { LoadingState } from '../../../../../components/states'
 import { SnapshotReport } from '../../../../../features/data/snapshot-report'
-import '../../../../../features/data/data.css'
 
 export const metadata: Metadata = { title: 'Compliance snapshot' }
 

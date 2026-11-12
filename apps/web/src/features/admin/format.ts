@@ -17,9 +17,14 @@ export function durationLabel(minutes: number): string {
   return rest === 0 ? `${hours} h` : `${hours} h ${rest} min`
 }
 
-/** Time left until endsAt, rounded up to the minute ("2 h 41 min"); "Ended" once it has passed. */
-export function remainingLabel(endsAt: string, now: number): string {
-  const left = Date.parse(endsAt) - now
+/**
+ * Time left until endsAt, rounded up to the minute ("2 h 41 min"); "Ended" once it has passed. Never more than the
+ * window itself: `now` ticks (and the client clock may lag the server), so right after approval it can predate
+ * startsAt and would read "1 h 1 min" for a 60-minute session (BUG-038).
+ */
+export function remainingLabel(endsAt: string, now: number, startsAt: string | null): string {
+  const end = Date.parse(endsAt)
+  const left = startsAt === null ? end - now : Math.min(end - now, end - Date.parse(startsAt))
   return left <= 0 ? 'Ended' : durationLabel(Math.ceil(left / MS_PER_MINUTE))
 }
 

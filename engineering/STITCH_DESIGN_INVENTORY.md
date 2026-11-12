@@ -41,13 +41,13 @@ All batch-2 staff files use S1, so S1 is now the majority shell (16 of 38 staff 
 
 ## 2. Inventory table (one row per file)
 
-Release from spec.json. Status: **Pending** = no route in `apps/web`; **Exists in non-Stitch form** = route exists with the current plain-CSS UI (routes listed).
+Release from spec.json. Status: **Pending** = no route in `apps/web`. MVP-A status as of UI round 3 (2026-11-12, `testing/UI_TESTING_REPORT.md`): **Implemented** = follows its Stitch drawing; the only differences are omissions the rules require (no API route, must-not-implement content) and canonical-catalogue token values (guidelines §1.4, §8). **Implemented with deviations** = also differs in structure or carries an open UI defect; the deviations are listed.
 
 | # | Folder | Screen (spec.json) | Roles (personas) | Module | Rel | Shell | Implementation status |
 |---|---|---|---|---|---|---|---|
 | 1 | sc_01_periods_runs_analyst_home | SC-01 Periods and runs (analyst home) | Commission analyst; Finance approver | Periods | B | S1 | Pending |
 | 2 | sc_02_run_review | SC-02 Run review | Commission analyst; Finance approver | Periods | B | S1 | Pending |
-| 3 | sc_02_run_review_step_up_commit_modal | SC-02 Run review: critical-approval (commit) modal with step-up | Finance approver | Periods | B | S1 + modal | Pending (the generic step-up dialog exists in `components/api-provider.tsx`, plain CSS) |
+| 3 | sc_02_run_review_step_up_commit_modal | SC-02 Run review: critical-approval (commit) modal with step-up | Finance approver | Periods | B | S1 + modal | Pending as the SC-02 commit dialog. Its modal anatomy is implemented as the shared `Modal` and `StepUpModal` (TOTP instead of the drawn hardware key) used by every MVP-A dialog |
 | 4 | sc_03_payout_batches_approvals | SC-03 Payout batches and approvals | Payout officer; Finance approver | Payouts | B | S1 | Pending |
 | 5 | sc_04_plan_versions_simulation | SC-04 Plan versions: edit, compare, simulate | Plan administrator; Compliance officer | Plans | B | S1 | Pending |
 | 6 | sc_05_cap_and_pool_configuration | SC-05 Cap and pool configuration | Plan administrator | Plans | B | S3 | Pending |
@@ -55,11 +55,11 @@ Release from spec.json. Status: **Pending** = no route in `apps/web`; **Exists i
 | 8 | sc_07_genealogy_explorer_staff_as_of | SC-07 Genealogy explorer (staff, as-of) | Commission analyst; Support agent | People | B | S1 | Pending |
 | 9 | sc_08_genealogy_change_and_duplicate_cases | SC-08 Genealogy change and duplicate cases | Support agent; Compliance officer | Cases | B | S3 | Pending |
 | 10 | sc_09_participant_deep_fact_record | SC-09 Participant record | Support agent; Finance manager | People | B | S4 | Pending |
-| 11 | sc_10_compliance_reports | SC-10 Compliance reports | Compliance officer; Executive | Compliance | A | S1 | Exists in non-Stitch form: `/compliance/snapshots`, `/compliance/snapshots/[id]` |
+| 11 | sc_10_compliance_reports | SC-10 Compliance reports | Compliance officer; Executive | Compliance | A | S1 | Implemented with deviations: `/compliance/snapshots`, `/compliance/snapshots/[id]`. Reports R1–R5 on tabs (sc_10 draws all five on one page); opens on the latest period; export dossier and copy hash not rendered (no route); legal-conclusion badges not rendered (must not). No open defect |
 | 12 | sc_11_guardrails_policy_overrides_log | SC-11 Guardrails and overrides log | Compliance officer | Compliance | B | S4 | Pending |
 | 13 | sc_12_tax_configuration_year_end_forms | SC-12 Tax configuration and year-end forms | Finance manager | Finance | B | S5 | Pending |
 | 14 | sc_13_integrations_and_sync_health | SC-13 Integrations and sync health | Tenant admin; Integration developer | Settings | B | S2 | Pending |
-| 15 | sc_14_vendor_access_sessions_authorizations | SC-14 Vendor access sessions | Tenant admin | Settings | A | S6 | Exists in non-Stitch form: `/settings/vendor-access` |
+| 15 | sc_14_vendor_access_sessions_authorizations | SC-14 Vendor access sessions | Tenant admin | Settings | A | S6 | Implemented with deviations: `/settings/vendor-access` (one page: queue, open sessions with trace, history). Open: requester shown as "Vendor user &lt;id&gt;" (BUG-023, needs API); step-up dialog stacked over Approve (BUG-045); "You will be asked for a code" copy (BUG-046); focus to body after End now (BUG-028) |
 | 16 | sc_15_privacy_requests_dpo_fulfillment | SC-15 Privacy requests | DPO | Cases | B | S7 | Pending |
 | 17 | sc_16_migration_workspace_parallel_run | SC-16 Migration workspace and parallel-run report | Implementation consultant; Finance approver | Data | B | S8 | Pending |
 | 18 | sc_17_market_launch_checklist | SC-17 Market launch checklist | Tenant admin; Compliance officer | Settings | B | S8 | Pending |
@@ -69,13 +69,13 @@ Release from spec.json. Status: **Pending** = no route in `apps/web`; **Exists i
 | 22 | sc_21_distributor_customers | SC-21 Distributor: my customers | Distributor | Portal | B | P1 | Pending |
 | 23 | sc_22_distributor_bank_details_tax_profile | SC-22 Distributor: bank details and tax profile | Distributor | Portal | B | P1 | Pending |
 | 24 | sc_23_earnings_disclosure_builder | SC-23 Earnings disclosure builder | Compliance officer | Compliance | V1 | S1 | Pending |
-| 25 | sc_24_data_imports | SC-24 Data imports | Implementation consultant | Data | A | S2 | Exists in non-Stitch form: `/imports`, `/imports/new`, `/imports/[id]` |
-| 26 | sc_25_import_mapping | SC-25 Import mapping | Compliance officer; Implementation consultant | Data | A | S2 | Exists in non-Stitch form: `/imports/mappings`, `/compliance/mappings` |
-| 27 | sc_26_figure_drill_down | SC-26 Figure drill-down | Compliance officer | Compliance | A | S1 | Exists in non-Stitch form: `/compliance/snapshots/[id]/rows` |
-| 28 | sc_27_sign_in_and_second_factor | SC-27 Sign-in and second factor | All | Shared (auth) | A | C1 | Exists in non-Stitch form: `/signin`, `/signin/vendor`, `/signin/mfa`, `/signin/enrol`, `/invitation` |
-| 29 | sc_28_users_and_roles | SC-28 Users and roles | Tenant admin | Settings | A | S2 | Exists in non-Stitch form: `/settings/users` (tabs users, roles, approvals) |
-| 30 | sc_29_tenant_settings | SC-29 Tenant settings | Tenant admin | Settings | B | S1 | Exists in non-Stitch form (MVP-A subset): `/settings` (thresholds, breach contacts only) |
-| 31 | sc_30_immutable_audit_log_verification | SC-30 Audit log | Compliance officer; Tenant admin | Settings | A | S6 | Exists in non-Stitch form: `/settings/audit` (and the vendor variant `/vendor/audit`) |
+| 25 | sc_24_data_imports | SC-24 Data imports | Implementation consultant | Data | A | S2 | Implemented with deviations: `/imports`, `/imports/new`, `/imports/[id]` (list, upload and batch detail are separate routes; sc_24 draws one page); schema manifest, audit trace and ledger postings not rendered (no route). Open: month-field hint (BUG-026) |
+| 26 | sc_25_import_mapping | SC-25 Import mapping | Compliance officer; Implementation consultant | Data | A | S2 | Implemented with deviations: `/imports/mappings`, `/compliance/mappings`; add rule, discard, impact preview and the 70 % projection not rendered (no route / must not). Open: author and approver named only "you" / "another user" (BUG-029) |
+| 27 | sc_26_figure_drill_down | SC-26 Figure drill-down | Compliance officer | Compliance | A | S1 | Implemented: `/compliance/snapshots/[id]/rows`; donut gauge, cohort filter, period compare, column chooser and first/last page not rendered (no route); definition panel smaller than the formula card when the figure has no denominator |
+| 28 | sc_27_sign_in_and_second_factor | SC-27 Sign-in and second factor | All | Shared (auth) | A | C1 | Implemented: `/signin`, `/signin/vendor`, `/signin/mfa`, `/signin/enrol`, `/invitation`; gradient bar, WebAuthn path and certification footer not rendered (no route / must not). Harness: no style finding at any width |
+| 29 | sc_28_users_and_roles | SC-28 Users and roles | Tenant admin | Settings | A | S2 | Implemented with deviations: `/settings/users` (tabs users, role permission matrix, pending approvals as inspector cards). Open: focus to body after Revoke, Deactivate, Reject (BUG-028); step-up dialog stacked over Approve grant (BUG-045); "You will be asked for a code" copy (BUG-046) |
+| 30 | sc_29_tenant_settings | SC-29 Tenant settings | Tenant admin | Settings | B | S1 | Implemented with deviations, MVP-A subset: `/settings` (thresholds and breach contacts only, changed in per-setting dialogs); "Save new version" primary and version-history table not rendered (no API). Open: every threshold shows "version 5" (BUG-025) |
+| 31 | sc_30_immutable_audit_log_verification | SC-30 Audit log | Compliance officer; Tenant admin | Settings | A | S6 | Implemented with deviations: `/settings/audit` (and the vendor variant `/vendor/audit`); filters and open event in the URL. Open: export text "1 events" (BUG-027) |
 | 32 | sc_31_ingested_orders_returns_explorer | SC-31 Orders and returns (ingested) | Support agent; Commission analyst | Orders | B | S7 | Pending |
 | 33 | sc_32_late_transaction_queue | SC-32 Late-transaction queue | Commission analyst | Periods | B | S8 | Pending |
 | 34 | sc_33_ledger_journal_export | SC-33 Ledger and journal export | Finance manager | Finance | B | S1 | Pending |
@@ -84,14 +84,14 @@ Release from spec.json. Status: **Pending** = no route in `apps/web`; **Exists i
 | 37 | sc_36_global_search_command_palette | SC-36 Global search | Support agent | People (header search) | B | S1 | Pending |
 | 38 | sc_37_distributor_home | SC-37 Distributor home (mobile) | Distributor | Portal | B | P1 | Pending |
 | 39 | sc_38_distributor_notifications_profile | SC-38 Distributor notifications and profile | Distributor | Portal | B | P1 | Pending |
-| 40 | sc_39_vendor_operations_console | SC-39 Vendor operations console | Vendor ops | Vendor console | A | S8 (wrong: tenant shell) | Exists in non-Stitch form: `/vendor`, `/vendor/tenants/[id]`, `/vendor/provisioning/new`, `/vendor/support-sessions`, `/vendor/users`, `/vendor/audit` |
+| 40 | sc_39_vendor_operations_console | SC-39 Vendor operations console | Vendor ops | Vendor console | A | S8 (wrong: tenant shell) | Implemented with deviations: in the vendor shell, not the drawn tenant shell: `/vendor`, `/vendor/tenants/[id]`, `/vendor/provisioning/new`, `/vendor/support-sessions`, `/vendor/users`, `/vendor/audit`; fleet KPIs, filter search and docked request panel not rendered (no API). Open: request dialog offers areas a Tenant admin cannot approve (BUG-047) and "Compensation plans" (BUG-048) |
 | 41 | sc_40_public_earnings_disclosure_page | SC-40 Public earnings disclosure page | Prospect; Distributor | Public | V1 | C1 (document) | Pending |
 | 42 | sc_41_public_privacy_request_form | SC-41 Public privacy request form | Any data subject | Public | B | C1 | Pending |
 | 43 | sc_42_simulation_results_golden_datasets | SC-42 Simulation results and golden datasets | Plan administrator; Implementation consultant | Plans | B | S5 | Pending |
 | 44 | sc_43_rank_and_qualification_detail_staff | SC-43 Rank and qualification detail (staff) | Commission analyst; Support agent | People | B | S1 | Pending |
 | 45 | sc_44_plan_change_governance_workflow | SC-44 Plan change workflow | Plan administrator; Compliance officer | Plans | B | S5 | Pending |
 | 46 | sc_45_integrity_signals | SC-45 Integrity signals | Compliance officer | Compliance | V1 | S1 | Pending |
-| 47 | sc_46_compliance_overview_overlay_home | SC-46 Compliance overview (overlay home) | Compliance officer; Executive | Compliance (MVP-A home) | A | S1 | Exists in non-Stitch form: `/compliance` |
+| 47 | sc_46_compliance_overview_overlay_home | SC-46 Compliance overview (overlay home) | Compliance officer; Executive | Compliance (MVP-A home) | A | S1 | Implemented: `/compliance`; acknowledge, countersign and export summary not rendered (no route); legal-conclusion labels and invented benchmark lines not rendered (must not) |
 | 48 | sc_47_licence_updates_diagnostics_for_self_hosted_edition | SC-47 Licence, updates and diagnostics (self-hosted edition) | Licensee administrator | Settings › System | V1 | S5 | Pending |
 
 Folder names match the screen drawn in every file (all 48) (checked against each `<h1>`/title). Content-level deviations from the folder name or the spec are listed per file below.
@@ -179,7 +179,7 @@ Notation: **Layout** = shell + content grid. **Components** = named sections (fr
 - **Interactive:** Methodology & Legal Basis, Compare Snapshots, Export Dossier (.ZIP), Create New Snapshot (primary), copy hash, more menu, Review 14 Cases, "Open Figure Drill-Down (SC-26)".
 - **Responsive:** `md:grid-cols-2/12`, `lg:grid-cols-12`, `sm:block`.
 - **Must not implement:** legal-conclusion copy ("Statutory Defense Posture: SUBSTANTIATED & COMPLIANT", "BENCHMARK ACHIEVED", "Certified under federal safe harbor", "Optimal target ≥ 60.0%", "0% RECRUITMENT VERIFIED FTC Anti-Pyramid Defense"). Figures show value, population, method and data-quality warnings only; thresholds come from tenant settings.
-- **Existing route difference:** current `/compliance/snapshots/[id]` has report tabs and a "Compare periods" table; the Stitch file shows all five figures on one page with a docked method panel.
+- **Route before the Stitch re-skin (historical; current status in §2):** current `/compliance/snapshots/[id]` has report tabs and a "Compare periods" table; the Stitch file shows all five figures on one page with a docked method panel.
 
 #### sc_11_guardrails_policy_overrides_log — SC-11
 - **Layout:** S4. Breadcrumb/status → title + actions → 4 KPI cards → 70/30: filter bar + applied chips + guardrail table + pagination | decision inspector → bottom notice.
@@ -204,7 +204,7 @@ Notation: **Layout** = shell + content grid. **Components** = named sections (fr
 - **Interactive:** Access Policy Spec, View Audit Stream (SC-30), End Session Now, duration buttons, Deny Request, Approve & Sign (Requires MFA), Terminate Session Immediately, download icon, Audit Trace, pagination.
 - **Responsive:** `md:grid-cols-2 lg:grid-cols-4`, `xl:grid-cols-12`.
 - **Deps/behaviour:** inline JS countdown (the support-session countdown is the only permitted countdown, UI_UX §3.3).
-- **Existing route difference:** `/settings/vendor-access` uses tabs Requests / Active / History with decision and log dialogs; durations come from `GET /v1/support-sessions/limits` (Stitch hard-codes them).
+- **Route before the Stitch re-skin (historical; current status in §2):** `/settings/vendor-access` uses tabs Requests / Active / History with decision and log dialogs; durations come from `GET /v1/support-sessions/limits` (Stitch hard-codes them).
 
 #### sc_15_privacy_requests_dpo_fulfillment — SC-15
 - **Layout:** S7. Breadcrumb + title → actions → 4 KPI cards → 7/5: filter bar + chips + dense request table (deadline clock column) + pagination + reference bar | subject inspector (profile, identity proof, balancing matrix erase vs retain, reason select, dual-admin signatures, submit actions) → notice banner.
@@ -261,7 +261,7 @@ Notation: **Layout** = shell + content grid. **Components** = named sections (fr
 - **Layout:** S2 (broken config; PNG unstyled, verified). PII-enforcement banner → header + actions → 7/5: staging upload box (drag-and-drop canvas, three file trackers participants/orders/payout lines) | pre-flight diagnostics (link completeness, orphans, duplicates, control totals, parser progress) → batches table (7 cols: batch + hash, period, stage, counts and control totals, validation, timestamp, actions) + pagination → three FR notes.
 - **Interactive:** Download Schema Manifest (.JSON), Upload New Export Package (primary), Full Audit Trace Log, Filter input + button, row actions Open Mapping (SC-25) / Report / Load Batch / View Details / Ledger Postings / Download Errors, PREV / page / NEXT.
 - **Responsive:** `md:grid-cols-3`, `xl:grid-cols-12`.
-- **Existing route difference:** current app splits upload (`/imports/new`, XHR progress, market + period fields) from the list (`/imports`) and detail (`/imports/[id]`: findings table, attach mapping, Load confirm, superseded banner). Stitch shows upload and list on one page and has no detail view.
+- **Route before the Stitch re-skin (historical; current status in §2):** current app splits upload (`/imports/new`, XHR progress, market + period fields) from the list (`/imports`) and detail (`/imports/[id]`: findings table, attach mapping, Load confirm, superseded banner). Stitch shows upload and list on one page and has no detail view.
 
 #### sc_25_import_mapping — SC-25
 - **Layout:** S2 (broken config). Command bar + toolbar → version and audit context strip → unresolved-categorisation banner → domain tabs (Participant Types (Flags), Order Purpose & Buyer Types, Payout Source Classifications, Starter-Kit Volume Exclusions) → 8/4: mapping table (Source code, Occurrences, Target category select, End-Cust / Can Earn / Can Sponsor flags, Basis, Actions) | governance and impact preview drawer (R1 metric with 70% target marker, head-count bounty invariant, SOD gate, inline commit) → sticky two-person approval bar.
@@ -286,7 +286,7 @@ Notation: **Layout** = shell + content grid. **Components** = named sections (fr
 - **Layout:** S6. Breadcrumb + status banner → actions → 4 KPI cards → filter console (search, actor select, domain select, date range select, active filter tags) → 7/5: event table (Event ID / Time, Actor & Assurance, Action & Domain, Target Object, Merkle Block Hash, Status) + pagination | event inspector (metadata grid, before/after state, cryptographic proof, actions) → storage notice; fixed footer.
 - **Interactive:** Run Full Hash Chain Verification, Export Audit Log, Reset All, pagination (Previous, 1, 2, 3, 29,857, Next), Download Merkle Proof (.JSON), Report Anomalous Query.
 - **Responsive:** `sm:grid-cols-2 md:grid-cols-2 xl:grid-cols-4`, `lg:grid-cols-12`.
-- **Existing route difference:** `/settings/audit` has filters in the URL, cursor pagination (no page-number jumps, per UI_UX), export dialog; no event drawer. `GET /v1/audit-chain/verification` exists, so "Run Full Hash Chain Verification" is backed.
+- **Route before the Stitch re-skin (historical; current status in §2):** `/settings/audit` has filters in the URL, cursor pagination (no page-number jumps, per UI_UX), export dialog; no event drawer. `GET /v1/audit-chain/verification` exists, so "Run Full Hash Chain Verification" is backed.
 
 #### sc_31_ingested_orders_returns_explorer — SC-31
 - **Layout:** S7. Command/context bar → title + actions → 4 KPI cards → filter bar (search, crediting period, purpose tag, storefront source, status selects) + filter tags → 8/4: orders table (8 cols) + pagination | order inspector (attribution invariant, line volume breakdown, downline commission distribution, event history, actions) → bottom ribbon.
@@ -364,7 +364,7 @@ All ten share the S1 staff shell, P1 portal shell or C1 card/document layout, th
 - **Interactive:** copy hash, Method Specs (toggles inspector), Filter Cohort, Compare Period, Export Dataset (Audit #…) (primary, logged), tabs, column chooser and search icon buttons, first/prev/next/last (15 icon-only buttons, 11 titled), filter input, select.
 - **Responsive:** `sm:grid-cols-4`, `md:flex-row`, `lg:w-80`, `xl:grid-cols-12`, `xl:w-96`.
 - **Deviations:** first/last page jumps (cursor pagination only); threshold marker at 70 % is invented (thresholds only from settings); "Compare Period", "Filter Cohort", column chooser have no API.
-- **Existing route difference:** `/compliance/snapshots/[id]/rows?figure=&set=` already has numerator/denominator sets, sums line with success/danger banner and logged CSV export.
+- **Route before the Stitch re-skin (historical; current status in §2):** `/compliance/snapshots/[id]/rows?figure=&set=` already has numerator/denominator sets, sums line with success/danger banner and logged CSV export.
 
 #### sc_29_tenant_settings — SC-29 (B, part A)
 - **Layout:** S1. Sticky sub-header with SOD warning → actions → guardrail banner → bento: 1. money policies (rounding mode, clawback recovery method, write-off threshold with tier-2 escalation, minimum payout, bank-change cooling-off) (8 cols) | 2. privacy and visibility (downline depth masking mini-chart, prospect data ownership, retention timers) (4 cols) → 3. breach contacts and DPO runbook cards → versions table (7 cols) → diff inspector drawer (`fixed inset-y-0 right-0 md:w-[540px] lg:w-[600px]`) → two modals: "Initiate Policy Rollback", "Draft SET-v2026.5" (effective date, reason textarea).
@@ -413,7 +413,7 @@ All ten share the S1 staff shell, P1 portal shell or C1 card/document layout, th
 - **Interactive:** Export Summary (Logged), Data Imports & Coverage (SC-24), Open Full Reports (SC-10), Create Snapshot (primary), Inspect Exceptions, Acknowledge, Force Ledger Reconciliation Run, row icon buttons (10, all titled), pagination, Affirm & Countersign.
 - **Responsive:** `sm:block`, `md:grid-cols-2`, `lg:grid-cols-3/12`, `xl:grid-cols-5`.
 - **Must not implement:** legal-conclusion labels ("Compliant", "In Bounds", "Low Risk", "FTC Standard", "FTC BENCHMARK", "All 12 recorded periods satisfy Section 46 and DSA Code of Ethics"), the R5 label "Median Annual Return" (investment framing; use the glossary term for median annual earnings), decorative `linearGradient` chart fill, invented benchmark lines (≥ 51 %, ≤ 33.3 %, ≤ 5 %, "50% Invariant") unless configured as tenant thresholds; "Acknowledge", "Force Ledger Reconciliation Run", "Affirm & Countersign", "Export Summary" (no API). "Fast Start: 7.2%" in R3 is sample data.
-- **Existing route difference:** `/compliance` (ComplianceOverview) shows the newest ready/outdated snapshot per market with headline figures and a data status panel; no trend chart, no snapshots table on the page.
+- **Route before the Stitch re-skin (historical; current status in §2):** `/compliance` (ComplianceOverview) shows the newest ready/outdated snapshot per market with headline figures and a data status panel; no trend chart, no snapshots table on the page.
 
 ## 4. BR-HON-01 / refusal-list summary (must not implement, even though drawn)
 

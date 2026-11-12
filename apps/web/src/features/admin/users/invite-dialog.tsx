@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useApi } from '../../../components/api-provider'
-import { TextField } from '../../../components/form-field'
+import { TextInput } from '../../../components/form-field'
 import { useToast } from '../../../components/toast'
 import { emailError, requiredError } from '../../../lib/validation'
 import { FormDialog } from '../form-dialog'
@@ -19,12 +19,17 @@ export interface InviteDialogProps {
   readonly title?: string
   /** What happens after the invitation, for this kind of user. */
   readonly intro?: string
+  /** The confirmation shown once the invitation is created. */
+  readonly invitedMessage?: (email: string) => string
 }
+
+const sentMessage = (email: string) => `Invitation sent to ${email}. The link in it works once.`
 
 /** SC-28 Invite user: POST /v1/users. The one-time link is mailed to the invitee, never shown here. */
 export function InviteDialog({
   onClose, onInvited, endpoint = '/v1/users', title = 'Invite user',
   intro = 'The person gets an email with a link to choose a password. They have no role until you assign one.',
+  invitedMessage = sentMessage,
 }: InviteDialogProps) {
   const api = useApi()
   const toast = useToast()
@@ -42,7 +47,7 @@ export function InviteDialog({
       fieldIds: { email: EMAIL_ID, display_name: NAME_ID },
       send: async () => {
         await api.post(endpoint, body, { idempotencyKey })
-        toast({ message: `Invitation sent to ${body.email}. The link in it works once.` })
+        toast({ message: invitedMessage(body.email) })
         onInvited()
       },
     }
@@ -50,7 +55,7 @@ export function InviteDialog({
   return (
     <FormDialog title={title} submitLabel="Send invitation" onClose={onClose} onSubmit={submit}>
       <p>{intro}</p>
-      <TextField
+      <TextInput
         id={EMAIL_ID}
         label="Email address"
         type="email"
@@ -61,7 +66,7 @@ export function InviteDialog({
         onChange={(event) => setEmail(event.target.value)}
         onBlur={() => email !== '' && setError(check(email))}
       />
-      <TextField id={NAME_ID} label="Name" optional maxLength={NAME_MAX_LENGTH} value={name} onChange={(event) => setName(event.target.value)} />
+      <TextInput id={NAME_ID} label="Name" optional maxLength={NAME_MAX_LENGTH} value={name} onChange={(event) => setName(event.target.value)} />
     </FormDialog>
   )
 }

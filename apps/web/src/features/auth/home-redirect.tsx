@@ -7,6 +7,7 @@ import { ErrorState, LoadingState } from '../../components/states'
 import { errorMessage } from '../../lib/messages'
 import { homePath } from '../../lib/me'
 import { useMe } from '../../lib/session'
+import { AuthFooter, AuthHeader } from './auth-card'
 
 /**
  * Role home ("/"): pending MFA first, then the first page of the server's navigation for this user (staff or
@@ -23,11 +24,10 @@ export function HomeRedirect() {
   if (me === null || target !== null) return <LoadingState label="Opening your home page" />
   return (
     <>
-      <h1 className="card-title">No pages are available to your account</h1>
-      <p>Your account has no role that opens a page yet. Ask your administrator to assign one.</p>
-      <div className="form-actions">
-        <SignOutButton realm={me.realm} />
-      </div>
+      <AuthHeader eyebrow="Your account" icon="block" title="No pages are available to your account">
+        Your account has no role that opens a page yet. Ask your administrator to assign one.
+      </AuthHeader>
+      <AuthFooter><SignOutButton realm={me.realm} /></AuthFooter>
     </>
   )
 }

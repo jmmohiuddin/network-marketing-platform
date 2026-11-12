@@ -1,10 +1,7 @@
 import type { ReactNode } from 'react'
+import { CardLayout } from '../../components/card-layout'
 
-/** T4 centred card: sign-in, MFA, invitation and the role-home redirect. */
-export default function CardLayout({ children }: { readonly children: ReactNode }) {
-  return (
-    <main className="card-page">
-      <div className="card">{children}</div>
-    </main>
-  )
+/** Card pages: sign-in, MFA, invitation and the role-home redirect. */
+export default function CardPagesLayout({ children }: { readonly children: ReactNode }) {
+  return <CardLayout>{children}</CardLayout>
 }

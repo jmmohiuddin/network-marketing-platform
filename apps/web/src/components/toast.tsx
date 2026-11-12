@@ -1,7 +1,7 @@
 'use client'
 
-import { CircleCheck, Info, X } from 'lucide-react'
 import { createContext, use, useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
+import { Icon } from './icon'
 
 /** Toasts confirm success or give information; errors that need action are never toasts (UI-04). */
 export type ToastTone = 'success' | 'info'
@@ -21,7 +21,8 @@ type ShowToast = (toast: ToastInput) => void
 
 export const TOAST_DURATION_MS = 5000
 const MAX_TOASTS = 3
-const ICONS = { success: CircleCheck, info: Info } as const
+// sc_33 l.595 toast: verified icon in tertiary-fixed on the inverse surface.
+const ICONS = { success: { name: 'verified', className: 'text-tertiary-fixed' }, info: { name: 'info', className: 'text-inverse-primary' } } as const
 
 const ToastContext = createContext<ShowToast | null>(null)
 
@@ -39,25 +40,25 @@ function Toast({ toast, onDismiss }: { readonly toast: ToastItem; readonly onDis
     const timer = setTimeout(() => onDismiss(toast.id), TOAST_DURATION_MS)
     return () => clearTimeout(timer)
   }, [paused, toast.id, onDismiss])
-  const Icon = ICONS[toast.tone]
+  const icon = ICONS[toast.tone]
   return (
     <div
-      className={`toast toast-${toast.tone}`}
+      className="pointer-events-auto rounded-lg bg-inverse-surface text-inverse-on-surface p-space-md shadow-xl flex items-center gap-space-sm"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
       onFocus={() => setPaused(true)}
       onBlur={() => setPaused(false)}
     >
-      <Icon size={20} aria-hidden="true" />
-      <span className="toast-message">{toast.message}</span>
-      <button type="button" className="icon-button" aria-label="Dismiss notification" title="Dismiss notification" onClick={() => onDismiss(toast.id)}>
-        <X size={16} aria-hidden="true" />
+      <Icon name={icon.name} size={24} className={icon.className} />
+      <span className="flex-1 font-body-sm text-body-sm font-semibold">{toast.message}</span>
+      <button type="button" className="p-1 rounded text-inverse-on-surface hover:bg-on-surface/40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-inverse-primary" aria-label="Dismiss notification" title="Dismiss notification" onClick={() => onDismiss(toast.id)}>
+        <Icon name="close" size={16} />
       </button>
     </div>
   )
 }
 
-/** Polite live region, bottom-right (bottom on phones); 5 s each, paused on hover or focus, at most 3. */
+/** Polite live region, bottom-right (sc_33), above the bottom edge on phones (sc_18); 5 s each, paused on hover or focus, at most 3. */
 export function ToastProvider({ children }: { readonly children: ReactNode }) {
   const [toasts, setToasts] = useState<readonly ToastItem[]>([])
   const lastId = useRef(0)
@@ -70,7 +71,7 @@ export function ToastProvider({ children }: { readonly children: ReactNode }) {
   return (
     <ToastContext value={show}>
       {children}
-      <div className="toast-region" role="status" aria-live="polite">
+      <div className="fixed z-50 bottom-6 right-6 max-sm:bottom-20 max-sm:left-4 max-sm:right-4 sm:w-[400px] flex flex-col gap-space-sm pointer-events-none" role="status" aria-live="polite">
         {toasts.map((toast) => <Toast key={toast.id} toast={toast} onDismiss={dismiss} />)}
       </div>
     </ToastContext>

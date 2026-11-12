@@ -4,19 +4,19 @@ import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { ErrorSummary } from './error-summary'
-import { FileInput } from './file-input'
-import { SelectField, TextField } from './form-field'
+import { FileDropZone } from './file-drop-zone'
+import { Select, TextInput } from './form-field'
 
-describe('TextField', () => {
+describe('TextInput', () => {
   it('labels the input and describes it with the helper', () => {
-    render(<TextField label="Email address" helper="Your work address." />)
+    render(<TextInput label="Email address" helper="Your work address." />)
     const input = screen.getByLabelText('Email address')
     expect(input.getAttribute('aria-invalid')).toBeNull()
     expect(document.getElementById(input.getAttribute('aria-describedby')!)?.textContent).toBe('Your work address.')
   })
 
   it('replaces the helper with the error and marks the input invalid', () => {
-    render(<TextField label="Email address" helper="Your work address." error="Enter an email address like name@example.com." />)
+    render(<TextInput label="Email address" helper="Your work address." error="Enter an email address like name@example.com." />)
     const input = screen.getByLabelText('Email address')
     expect(input.getAttribute('aria-invalid')).toBe('true')
     expect(document.getElementById(input.getAttribute('aria-describedby')!)?.textContent).toBe('Enter an email address like name@example.com.')
@@ -24,14 +24,14 @@ describe('TextField', () => {
   })
 
   it('says "(optional)" for optional fields only', () => {
-    render(<TextField label="Display name" optional />)
+    render(<TextInput label="Display name" optional />)
     expect(screen.getByLabelText('Display name (optional)')).toBeTruthy()
   })
 })
 
-describe('SelectField', () => {
+describe('Select', () => {
   it('shows the placeholder as a disabled option', () => {
-    render(<SelectField label="Market" placeholder="Choose a market" defaultValue="" options={[{ value: 'eu', label: 'Europe' }]} />)
+    render(<Select label="Market" placeholder="Choose a market" defaultValue="" options={[{ value: 'eu', label: 'Europe' }]} />)
     const placeholder = screen.getByRole('option', { name: 'Choose a market' }) as HTMLOptionElement
     expect(placeholder.disabled).toBe(true)
   })
@@ -52,12 +52,12 @@ describe('ErrorSummary', () => {
   })
 })
 
-describe('FileInput', () => {
+describe('FileDropZone', () => {
   const choose = (files: File[]) => fireEvent.change(screen.getByLabelText('Orders file'), { target: { files } })
 
   it('states accepted types and refuses other files; size is left to the server', () => {
     const onFiles = vi.fn()
-    render(<FileInput label="Orders file" extensions={['.csv']} onFiles={onFiles} />)
+    render(<FileDropZone label="Orders file" extensions={['.csv']} onFiles={onFiles} />)
     expect(screen.getByText('.csv file.')).toBeTruthy()
     choose([new File(['a'], 'orders.xlsx')])
     expect(screen.getByText('orders.xlsx is not a .csv file.')).toBeTruthy()

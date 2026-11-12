@@ -69,6 +69,10 @@ export interface VendorUser {
   readonly last_sign_in_at: string | null
   readonly created_at: string
   readonly created_by: string | null
+  /** BUG-031: a new vendor user's invitation waits for a second vendor user (not the inviter) before it is mailed. */
+  readonly invitation_status: 'pending_approval' | 'approved' | 'rejected' | null
+  readonly invitation_decided_by: string | null
+  readonly invitation_decided_at: string | null
 }
 
 /** GET /v1/audit-events (aud/events.ts) and GET /v1/support-sessions/:id/log (without id, hash, session id). */

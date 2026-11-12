@@ -6,8 +6,8 @@ _Agent: frontend. Read before every task; update after every task. Keep concise 
 - FE-01 Data loads in client components through the same-origin `/v1` rewrite (HttpOnly SameSite=Strict cookie stays first-party); server components only for layouts and metadata.
 - FE-02 Auth error redirects are full navigations (`leavePage`), dropping client state; the API promise never settles so pages keep their loading state.
 - FE-03 Theme: light only (`color-scheme: light`, UI_UX 1.3/C-01); dark returns when O-03 values are approved. tokens.test.ts checks WCAG pairs and that no dark branch ships.
-- FE-04 No UI kit: native `<dialog>` + own focus trap/Escape/focus return; lucide-react icons; qrcode-generator drawn as SVG path (no innerHTML). QR stays dark-on-light in both themes (`--qr-*`).
-- FE-05 Sidebar: 208 px at >= 1024; below that a "Menu" disclosure (deviation from 56 px collapsed rail: API nav entries carry no icons).
+- FE-04 No UI kit: native `<dialog>` + own focus trap/Escape/focus return (useModalDialog, shared by Modal and Drawer); Material Symbols (npm material-symbols) via Icon, lucide-react removed; qrcode-generator drawn as SVG path (no innerHTML). QR stays dark-on-light in both themes (`--qr-*`).
+- FE-05 Sidebar (sc_01): 208 px at >= 1280, 56 px icon rail with title tooltips at 1024-1279 (icons from the client key map, guidelines §8.1; unknown key = first letter), overlay opened by the Menu button below 1024 (Escape/backdrop close).
 - FE-06 403 and 404 are the same "Not found or not available to you" page/component.
 - FE-07 MFA enrolment starts on the user's click (never on mount) so a re-render or reload cannot replace the secret being scanned.
 - FE-08 Vendor sign-in lives at `/signin/vendor`; vendor flows carry `next=/vendor` so MFA pages and expiry redirects stay in the vendor realm.
@@ -34,3 +34,11 @@ _Agent: frontend. Read before every task; update after every task. Keep concise 
 - FE-28 (BUG-021) Focus on client navigation: AppShell focuses `<main tabIndex=-1>` on each pathname change (query-only changes such as tabs/filters keep focus); single-task card pages focus their field (CodeForm `autoFocus` on /signin/mfa).
 - FE-29 (BUG-018) One date-time format app-wide (`lib/format.ts` formatDateTime, medium date + short time) and counted nouns via `countLabel`; decimal figures keep their exact digits and only gain locale grouping/separator (`decimal`).
 - FE-30 (BUG-023) Support-session scopes are shown as areas to view (`supportScopeLabel`), never as the permission's write capability: sessions are GET-only.
+- FE-31 (Stitch) One styling system: Tailwind 3.4 with the Stitch theme; components keep accessible names/roles from before, tests assert Stitch classes or data-tone, never old class names.
+- FE-32 (Stitch) Sign-out shows its text beside the logout icon (UI_UX §1.1: only search/close/more icon-only) and the Menu button keeps its text; Stitch draws both icon-only.
+- FE-33 (Stitch) Inputs use the sc_01 header-search look (border-outline-variant) on every field, not the borderless filter input, so fields stay visible on white cards; focus = ring-1 ring-primary.
+- FE-34 (Stitch) Support-session bar is fixed (h-8, violet-800) above the fixed shell header; AppShell shifts header/aside/main by 32 px when framed.
+- FE-35 (Stitch) CardLayout drops the sc_27 header (wordmark, SOC-2/FIPS claims) and gradient rule: no brand decided, no data source for claims.
+- FE-36 (Stitch) SC-14 follows sc_14's single page (decision queue | open sessions | history) instead of tabs; each open session card reads its newest 5 log entries (`/log?limit=5`) as the sc_14 request trace.
+- FE-37 (Stitch) A list of approvals never has a primary per item: Approve is primary only when exactly one request is listed (one primary per view).
+- FE-38 (Stitch) KPI cards show only values the API gives; counts over a cursor-paged list say "on this page" rather than inventing totals.

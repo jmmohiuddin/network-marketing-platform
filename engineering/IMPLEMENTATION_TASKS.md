@@ -20,8 +20,8 @@ MVP-B tasks are written per increment when it starts. Done = code + tests green 
 | T-A10 | CPL | packages/compliance: R1–R5 pure, bigint, golden + TS-31 tests | compensation | T-000 | FR-CPL-001..005 | P1 | Completed |
 | T-A11 | CPL | Snapshots, figures, drill-down, outdated on new load, method notes | backend | T-A09 T-A10 | FR-CPL-006 | P1 | Implemented |
 | T-A12 | PRV | Breach contacts in tenant settings | backend | T-A05 | FR-PRV-004 | P2 | Implemented |
-| T-A13 | web | Shell, tokens, sign-in, MFA, nav from permissions | frontend | T-A03 | SC-39 | P1 | Implemented |
-| T-A14 | web | Vendor console, tenant admin: users, roles, approvals, support sessions, audit | frontend | T-A13 | SC-10 14 30 46 | P1 | Implemented |
-| T-A15 | web | Imports and compliance report screens | frontend | T-A11 T-A13 | SC-24..28 | P1 | Implemented |
-| T-A16 | qa | Playwright MCP workflow, two tenants, all A roles | qa | T-A15 | AC rel A | P1 | Implemented |
+| T-A13 | web | Shell, tokens, sign-in, MFA, nav from permissions | frontend | T-A03 | SC-39 | P1 | Completed |
+| T-A14 | web | Vendor console, tenant admin: users, roles, approvals, support sessions, audit | frontend | T-A13 | SC-10 14 30 46 | P1 | Completed |
+| T-A15 | web | Imports and compliance report screens | frontend | T-A11 T-A13 | SC-24..28 | P1 | Completed |
+| T-A16 | qa | Playwright MCP workflow, two tenants, all A roles | qa | T-A15 | AC rel A | P1 | Completed |
 | T-A17 | security | Security audit + code review of A; fix Critical/High | security | T-A16 | SEC-* | P1 | Completed |

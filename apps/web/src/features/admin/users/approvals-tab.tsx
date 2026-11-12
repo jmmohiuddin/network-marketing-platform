@@ -3,14 +3,18 @@
 import { useState } from 'react'
 import { useApi } from '../../../components/api-provider'
 import { Button } from '../../../components/button'
-import { Table, type TableColumn } from '../../../components/table'
+import { PaginationBar } from '../../../components/data-table'
+import { Icon } from '../../../components/icon'
+import { EmptyState, LoadingState } from '../../../components/states'
 import { useToast } from '../../../components/toast'
 import { useSession } from '../../../lib/session'
 import type { Market } from '../../../lib/markets'
 import { formatDateTime, marketScopeLabel, personLabel, shortId } from '../format'
 import { FormDialog, TextAreaField } from '../form-dialog'
 import { useResource } from '../../../lib/use-resource'
-import { tableError, type PagedList } from '../resource'
+import { LoadFailure } from '../page-states'
+import type { PagedList } from '../resource'
+import { CHIP, MONO, NOTE } from '../ui'
 import type { GrantRequest, RoleView, UserView } from '../types'
 
 type Decision = 'approved' | 'rejected'
@@ -76,7 +80,7 @@ function DecisionDialog({ request, decision, roleName, scope, onClose, onDecided
           ? `${roleName} (${scope}) takes effect as soon as you approve. You did not ask for this grant and it is not for you.`
           : `${roleName} is not granted. The admin who asked can ask again.`}
       </p>
-      <p className="admin-note">You will be asked for a code from your authenticator app.</p>
+      <p className={NOTE}>You will be asked for a code from your authenticator app.</p>
       <TextAreaField id={REASON_ID} label="Reason" optional value={reason} onChange={setReason} />
     </FormDialog>
   )
@@ -91,48 +95,96 @@ export interface ApprovalsTabProps {
   readonly onChanged: () => void
 }
 
-/** SC-28 pending approvals: privileged grants waiting for a second admin (AC-36.1). */
+interface GrantCardProps {
+  readonly request: GrantRequest
+  readonly roleName: string
+  readonly scope: string
+  readonly users: ReadonlyMap<string, UserView>
+  /** Absent: read-only or not allowed (the reason is shown instead). */
+  readonly onDecide?: (decision: Decision) => void
+  readonly blocked: string | null
+}
+
+/** sc_28 "Privileged grant pending" inspector card: header strip, who asked, the grant, decision buttons. */
+function GrantCard({ request, roleName, scope, users, onDecide, blocked }: GrantCardProps) {
+  const { me } = useSession()
+  const titleId = `grant-${request.id}`
+  return (
+    <li aria-labelledby={titleId} className="bg-surface-container-lowest rounded shadow-sm overflow-hidden flex flex-col">
+      <div className="p-space-md bg-surface-container-high flex items-center justify-between gap-space-sm">
+        <div className="flex items-center gap-space-xs min-w-0">
+          <Icon name="how_to_reg" size={20} className="text-error" />
+          <div className="flex flex-col min-w-0">
+            <h2 id={titleId} className="font-section-heading text-section-heading text-on-surface leading-tight">Privileged grant pending</h2>
+            <span className={`${MONO} text-secondary`}>Request {shortId(request.id)}</span>
+          </div>
+        </div>
+        <span className="px-space-xs py-0.5 rounded font-caption text-caption font-semibold bg-error-container text-on-error-container uppercase tracking-wider whitespace-nowrap">Second admin</span>
+      </div>
+      <div className="p-space-md flex flex-col gap-space-md flex-1">
+        <div className="p-space-sm bg-surface-container-low rounded flex items-start gap-space-xs">
+          <Icon name="info" size={16} className="text-secondary mt-0.5" />
+          <p className="font-body-sm text-body-sm text-secondary">
+            Asked by {request.requested_by === me.user.id ? 'you' : <UserName userId={request.requested_by} users={users} />} on <span className={`${MONO} text-on-surface`}>{formatDateTime(request.created_at)}</span>.
+          </p>
+        </div>
+        <div className="bg-surface-container rounded p-space-sm flex flex-col gap-space-xs">
+          <span className="font-caption text-caption text-secondary uppercase tracking-wider font-semibold">Grant for</span>
+          <span className="font-body-sm text-body-sm font-semibold text-on-surface"><UserName userId={request.user_id} users={users} /></span>
+          <div className="pt-space-xs border-t border-surface-variant flex flex-col gap-1 font-body-sm text-body-sm">
+            <div className="flex items-center justify-between gap-space-sm">
+              <span className="text-secondary">Role</span>
+              <span className={CHIP}>{roleName}</span>
+            </div>
+            <div className="flex items-center justify-between gap-space-sm">
+              <span className="text-secondary">Market scope</span>
+              <span className="text-on-surface font-medium">{scope}</span>
+            </div>
+          </div>
+        </div>
+        {blocked !== null && <p className={NOTE}>{blocked}</p>}
+        {onDecide !== undefined && (
+          <div className="mt-auto flex flex-col gap-space-xs">
+            <Button icon="verified_user" className="w-full" aria-label={`Approve ${roleName} grant`} onClick={() => onDecide('approved')}>Approve</Button>
+            <Button variant="destructive" icon="cancel" className="w-full" aria-label={`Reject ${roleName} grant`} onClick={() => onDecide('rejected')}>Reject</Button>
+          </div>
+        )}
+      </div>
+    </li>
+  )
+}
+
+/** SC-28 pending approvals: privileged grants waiting for a second admin (AC-36.1), one sc_28 inspector card each. */
 export function ApprovalsTab({ requests, roles, markets, users, onChanged }: ApprovalsTabProps) {
   const { me, readOnly } = useSession()
   const [deciding, setDeciding] = useState<{ request: GrantRequest; decision: Decision } | null>(null)
   const roleNames = new Map(roles.map((role) => [role.id, role.name]))
   const userMap = new Map(users.map((user) => [user.id, user]))
   const roleOf = (request: GrantRequest) => roleNames.get(request.role_id) ?? 'Role'
-  const columns: readonly TableColumn<GrantRequest>[] = [
-    { key: 'user', header: 'For', cell: (request) => <UserName userId={request.user_id} users={userMap} /> },
-    { key: 'role', header: 'Role', cell: (request) => `${roleOf(request)} · ${marketScopeLabel(request.market_ids, markets)}` },
-    { key: 'by', header: 'Asked by', cell: (request) => (request.requested_by === me.user.id ? 'You' : <UserName userId={request.requested_by} users={userMap} />) },
-    { key: 'at', header: 'Asked at', cell: (request) => formatDateTime(request.created_at) },
-    {
-      key: 'decision',
-      header: 'Decision',
-      align: 'end',
-      cell: (request) => {
-        if (readOnly) return null
-        const blocked = selfApprovalReason(request, me.user.id)
-        if (blocked !== null) return <span className="admin-note">{blocked}</span>
-        return (
-          <div className="admin-row-actions">
-            <Button aria-label={`Approve ${roleOf(request)} grant`} onClick={() => setDeciding({ request, decision: 'approved' })}>Approve</Button>
-            <Button variant="destructive" aria-label={`Reject ${roleOf(request)} grant`} onClick={() => setDeciding({ request, decision: 'rejected' })}>Reject</Button>
-          </div>
-        )
-      },
-    },
-  ]
+  if (requests.error !== null) return <LoadFailure error={requests.error} onRetry={requests.reload} section />
+  if (requests.loading) return <LoadingState label="Loading grants waiting for a decision" />
+  if (requests.rows.length === 0) return <EmptyState title="No grants are waiting for a decision." />
+  const { pagination } = requests
   return (
     <>
-      <Table
-        caption="Grants of admin and approver roles take effect only after a second admin approves them."
-        columns={columns}
-        rows={requests.rows}
-        rowKey={(request) => request.id}
-        loading={requests.loading}
-        error={tableError(requests)}
-        empty={{ title: 'No grants are waiting for a decision.' }}
-        pagination={requests.pagination}
-        stackOnPhone
-      />
+      <p className={`${NOTE} mb-space-sm`}>Grants of admin and approver roles take effect only after a second admin approves them.</p>
+      <ul className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-space-md">
+        {requests.rows.map((request) => {
+          const blocked = readOnly ? null : selfApprovalReason(request, me.user.id)
+          return (
+            <GrantCard
+              key={request.id}
+              request={request}
+              roleName={roleOf(request)}
+              scope={marketScopeLabel(request.market_ids, markets)}
+              users={userMap}
+              blocked={blocked}
+              onDecide={readOnly || blocked !== null ? undefined : (decision) => setDeciding({ request, decision })}
+            />
+          )
+        })}
+      </ul>
+      {(pagination.hasPrevious || pagination.hasNext) && <div className="mt-space-md rounded overflow-hidden"><PaginationBar label="Pages of grants waiting for a decision" pagination={pagination} /></div>}
       {deciding !== null && (
         <DecisionDialog
           request={deciding.request}

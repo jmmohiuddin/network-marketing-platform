@@ -1,0 +1,18 @@
+/* Port of the shared Stitch <style> block (DESIGN_IMPLEMENTATION_GUIDELINES §2.3). Light theme only. */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html, body { margin: 0; padding: 0; }
+  body { overscroll-behavior: none; }
+  main > :first-child { margin-top: 0 !important; }
+  main > :last-child { margin-bottom: 0 !important; }
+  :root { color-scheme: light; }
+}
+
+@layer utilities {
+  /* Portal safe areas (sc_18–sc_37 head style). */
+  .pt-safe { padding-top: env(safe-area-inset-top, 0px); }
+  .pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); }
+}

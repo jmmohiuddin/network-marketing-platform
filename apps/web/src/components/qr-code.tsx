@@ -26,13 +26,13 @@ export interface QrCodeProps {
   readonly size?: number
 }
 
-/** QR code as inline SVG; dark on light in both themes, because scanners need it. */
+/** QR code as inline SVG, dark on light, because scanners need it. */
 export function QrCode({ value, label, size = 192 }: QrCodeProps) {
   const { d, modules } = qrPath(value)
   return (
-    <svg className="qr" role="img" aria-label={label} width={size} height={size} viewBox={`0 0 ${modules} ${modules}`} shapeRendering="crispEdges">
-      <rect className="qr-background" width={modules} height={modules} />
-      <path className="qr-modules" d={d} />
+    <svg className="rounded bg-surface-container-lowest p-space-xs shadow-sm" role="img" aria-label={label} width={size} height={size} viewBox={`0 0 ${modules} ${modules}`} shapeRendering="crispEdges">
+      <rect className="fill-white" width={modules} height={modules} />
+      <path className="fill-on-surface" d={d} />
     </svg>
   )
 }

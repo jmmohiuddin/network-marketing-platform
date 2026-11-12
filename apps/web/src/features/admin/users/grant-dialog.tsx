@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useApi } from '../../../components/api-provider'
 import { Banner } from '../../../components/banner'
-import { Checkbox, SelectField } from '../../../components/form-field'
+import { Checkbox, FieldError, RadioGroup, Select } from '../../../components/form-field'
 import { useToast } from '../../../components/toast'
 import type { SummaryItem } from '../../../components/error-summary'
 import { marketName, type Market } from '../../../lib/markets'
@@ -12,6 +12,7 @@ import type { Resource } from '../../../lib/use-resource'
 import { personLabel } from '../format'
 import { FormDialog } from '../form-dialog'
 import type { RoleView, UserView } from '../types'
+import { CHECK_GRID, FIELDSET, LEGEND, NOTE } from '../ui'
 
 const ROLE_ID = 'grant-role'
 const MARKETS_ID = 'grant-markets'
@@ -71,7 +72,7 @@ export function GrantDialog({ user, roles, markets, onClose, onGranted }: GrantD
   return (
     <FormDialog title="Assign role" submitLabel="Assign role" onClose={onClose} onSubmit={submit}>
       <p>Assign a role to {who}.</p>
-      <SelectField
+      <Select
         id={ROLE_ID}
         label="Role"
         placeholder="Choose a role"
@@ -86,25 +87,21 @@ export function GrantDialog({ user, roles, markets, onClose, onGranted }: GrantD
           {role.name} is an admin or approver role. It takes effect only after another admin approves it.
         </Banner>
       )}
-      <fieldset className="admin-fieldset">
-        <legend>Market scope</legend>
-        <label className="admin-choice">
-          <input type="radio" name="grant-scope" checked={scope === 'all'} onChange={() => setScope('all')} />
-          All markets of the tenant
-        </label>
-        <label className="admin-choice">
-          <input type="radio" name="grant-scope" checked={scope === 'some'} onChange={() => setScope('some')} />
-          Only some markets
-        </label>
-      </fieldset>
+      <RadioGroup
+        legend="Market scope"
+        name="grant-scope"
+        value={scope}
+        options={[{ value: 'all', label: 'All markets of the tenant' }, { value: 'some', label: 'Only some markets' }]}
+        onChange={(value) => setScope(value === 'some' ? 'some' : 'all')}
+      />
       {scope === 'some' && (
-        <fieldset className="admin-fieldset" id={MARKETS_ID} tabIndex={-1} aria-describedby={errors.markets ? `${MARKETS_ID}-error` : undefined}>
-          <legend>Markets</legend>
-          <p className="admin-note">The user sees data of these markets only.</p>
-          {errors.markets && <p id={`${MARKETS_ID}-error`} className="field-error">{errors.markets}</p>}
-          {markets.loading && <p className="admin-note">Loading the markets…</p>}
-          {markets.error !== null && <p className="field-error">{errorMessage(markets.error)}</p>}
-          <div className="admin-check-grid">
+        <fieldset className={FIELDSET} id={MARKETS_ID} tabIndex={-1} aria-describedby={errors.markets ? `${MARKETS_ID}-error` : undefined}>
+          <legend className={LEGEND}>Markets</legend>
+          <p className={NOTE}>The user sees data of these markets only.</p>
+          {errors.markets && <FieldError id={`${MARKETS_ID}-error`} message={errors.markets} />}
+          {markets.loading && <p className={NOTE}>Loading the markets…</p>}
+          {markets.error !== null && <FieldError message={errorMessage(markets.error)} />}
+          <div className={CHECK_GRID}>
             {(markets.data ?? []).map((market) => (
               <Checkbox
                 key={market.id}
@@ -116,7 +113,7 @@ export function GrantDialog({ user, roles, markets, onClose, onGranted }: GrantD
           </div>
         </fieldset>
       )}
-      <p className="admin-note">If you do not hold every permission of the role for the markets chosen, the grant also waits for a second admin.</p>
+      <p className={NOTE}>If you do not hold every permission of the role for the markets chosen, the grant also waits for a second admin.</p>
     </FormDialog>
   )
 }

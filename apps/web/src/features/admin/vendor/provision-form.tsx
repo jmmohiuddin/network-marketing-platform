@@ -5,15 +5,16 @@ import { useState, type FormEvent } from 'react'
 import { useApi } from '../../../components/api-provider'
 import { Button, LinkButton } from '../../../components/button'
 import { ErrorSummary, type SummaryItem } from '../../../components/error-summary'
-import { SelectField, TextField } from '../../../components/form-field'
+import { Select, TextInput } from '../../../components/form-field'
 import { PageHeader } from '../../../components/page-header'
+import { Stepper, type Step } from '../../../components/stepper'
 import { useToast } from '../../../components/toast'
 import { isApiError, newIdempotencyKey } from '../../../lib/api'
 import { emailError, requiredError } from '../../../lib/validation'
 import { isUuid } from '../format'
 import { summaryOf } from '../form-dialog'
 import type { TenantDetail } from '../types'
-import { ConsoleNav } from './console-nav'
+import { ACTIONS, FIELDSET, FORM, GROUP, NOTE, PAIR, SECTION_CARD } from '../ui'
 
 // Mirrors ops/routes.ts createBody; the API validates again and its issues are shown per field.
 const SLUG = /^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$/
@@ -24,6 +25,14 @@ const LANGUAGE = /^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$/
 const MAX_MARKETS = 50
 const MAX_PACK_LENGTH = 64 // ops/routes.ts market_pack max(64)
 const UUID_EXAMPLE = '0b9e6c1a-1f2d-4c3b-9a8e-7d6c5b4a3f21'
+// Each card's legend holds its h2, so the outline runs h1 > h2 section > h3 market (BUG-041); the group keeps its name.
+const CARD_LEGEND = 'font-section-heading text-section-heading text-on-surface mb-space-sm'
+// FR-TEN-001 lifecycle: this form is the first step; a second vendor user approves; go-live needs a breach contact.
+const PROVISIONING_STEPS: readonly Step[] = [
+  { label: 'Create the tenant', status: 'current', detail: 'This form' },
+  { label: 'Second vendor user approves', status: 'todo', detail: 'Admins are invited then' },
+  { label: 'Go live', status: 'todo', detail: 'Needs a breach contact' },
+]
 
 const TENANT_FIELDS = ['legal_name', 'slug', 'region', 'isolation_tier', 'dpa_document_id', 'first_admin.email', 'first_admin.display_name', 'second_admin.email', 'second_admin.display_name'] as const
 const MARKET_FIELDS = ['code', 'currency', 'minor_unit', 'time_zone', 'languages', 'market_pack'] as const
@@ -185,7 +194,7 @@ export function ProvisionTenantPage() {
     }
   }
   const tenantField = (field: TenantField, label: string, extra: { helper?: string; optional?: boolean; type?: string } = {}) => (
-    <TextField
+    <TextInput
       id={fieldIdOf(field)}
       label={label}
       helper={extra.helper}
@@ -200,16 +209,21 @@ export function ProvisionTenantPage() {
     setMarkets((list) => list.map((market) => (market.id === id ? { ...market, [field]: value } : market)))
   return (
     <>
-      <ConsoleNav />
-      <PageHeader title="Provision tenant" summary="Creates the tenant in provisioning with its region, markets and two admins. A second vendor user approves it." />
-      <form className="form" onSubmit={submit} noValidate>
+      <PageHeader
+        title="Provision tenant"
+        breadcrumbs={[{ label: 'Tenants', href: '/vendor' }, { label: 'Provision tenant' }]}
+        summary="Creates the tenant in provisioning with its region, markets and two admins. A second vendor user approves it."
+      />
+      <Stepper label="Provisioning steps" steps={PROVISIONING_STEPS} />
+      <form className={FORM} onSubmit={submit} noValidate>
         <ErrorSummary items={summary} />
-        <fieldset className="admin-fieldset">
-          <legend>Tenant</legend>
+        <div className={SECTION_CARD}>
+        <fieldset className={FIELDSET}>
+          <legend className={CARD_LEGEND}><h2>Tenant</h2></legend>
           {tenantField('legal_name', 'Legal name')}
           {tenantField('slug', 'Slug', { helper: 'Lower-case letters, digits and hyphens; staff sign in with it.' })}
           {tenantField('region', 'Data region', { helper: 'Where all of the tenant’s data, backups and exports stay, for example eu. It cannot change after the first data load.' })}
-          <SelectField
+          <Select
             id={fieldIdOf('isolation_tier')}
             label="Isolation tier"
             placeholder="Choose a tier"
@@ -220,19 +234,21 @@ export function ProvisionTenantPage() {
           />
           {tenantField('dpa_document_id', 'Signed data processing agreement ID', { helper: `A UUID, like ${UUID_EXAMPLE}. Required before a tenant is created.` })}
         </fieldset>
-        <fieldset className="admin-fieldset">
-          <legend>Markets</legend>
+        </div>
+        <div className={SECTION_CARD}>
+        <fieldset className={FIELDSET}>
+          <legend className={CARD_LEGEND}><h2>Markets</h2></legend>
           {markets.map((market, index) => (
-            <div key={market.id} className="admin-group">
-              <div className="admin-group-header">
-                <h3 className="admin-card-title">Market {index + 1}</h3>
+            <div key={market.id} className={GROUP}>
+              <div className="flex flex-wrap items-center justify-between gap-space-sm">
+                <h3 className="font-section-heading text-section-heading text-on-surface">Market {index + 1}</h3>
                 {markets.length > 1 && (
                   <Button variant="tertiary" onClick={() => setMarkets((list) => list.filter((other) => other.id !== market.id))}>Remove market {index + 1}</Button>
                 )}
               </div>
-              <div className="admin-pair">
+              <div className={PAIR}>
                 {MARKET_FIELDS.map((field) => (
-                  <TextField
+                  <TextInput
                     key={field}
                     id={fieldIdOf(`markets.${index}.${field}`)}
                     label={MARKET_LABELS[field].label}
@@ -260,20 +276,25 @@ export function ProvisionTenantPage() {
             </div>
           )}
         </fieldset>
-        <fieldset className="admin-fieldset">
-          <legend>First admin</legend>
+        </div>
+        <div className={SECTION_CARD}>
+        <fieldset className={FIELDSET}>
+          <legend className={CARD_LEGEND}><h2>First admin</h2></legend>
           {tenantField('first_admin.email', 'Email address', { type: 'email', helper: 'Invited only after the second vendor user approves.' })}
           {tenantField('first_admin.display_name', 'Name', { optional: true })}
         </fieldset>
-        <fieldset className="admin-fieldset">
-          <legend>Second admin</legend>
-          <p className="admin-note">Giving anyone an admin or approver role needs a second admin to approve it, so every tenant starts with two.</p>
+        </div>
+        <div className={SECTION_CARD}>
+        <fieldset className={FIELDSET}>
+          <legend className={CARD_LEGEND}><h2>Second admin</h2></legend>
+          <p className={NOTE}>Giving anyone an admin or approver role needs a second admin to approve it, so every tenant starts with two.</p>
           {tenantField('second_admin.email', 'Email address', { type: 'email', helper: 'A different person from the first admin, invited at the same time.' })}
           {tenantField('second_admin.display_name', 'Name', { optional: true })}
         </fieldset>
-        <div className="form-actions">
+        </div>
+        <div className={ACTIONS}>
           <LinkButton href="/vendor">Cancel</LinkButton>
-          <Button type="submit" variant="primary" loading={busy}>Create tenant</Button>
+          <Button type="submit" variant="primary" icon="add_circle" loading={busy} data-testid="primary-action">Create tenant</Button>
         </div>
       </form>
     </>

@@ -90,16 +90,48 @@ export function figureLabel(key: string): string {
   return FIGURE_LABELS[key] ?? humanize(key)
 }
 
-/** The value as stated by the method, with its unit; "Not stated" when the method gives none. */
-export function figureValue(figure: Pick<FigureSummary, 'unit' | 'value'>): string {
+/** The unit written after a figure's number; a percent keeps its sign with the number ("62.50 %"). */
+const UNIT_WORDS: Readonly<Record<FigureUnit, string>> = {
+  percent: '', count: '', minor: 'minor units', currency: 'currency units', ratio: '',
+}
+
+/** The figure's number without its unit words ("1,517,950", "62.50 %"); "Not stated" when the method gives none. */
+export function figureAmount(figure: Pick<FigureSummary, 'unit' | 'value'>): string {
   if (figure.value === null) return 'Not stated'
   switch (figure.unit) {
     case 'percent': return `${decimal(figure.value)} %`
-    case 'count': return integer(figure.value)
-    case 'minor': return `${integer(figure.value)} minor units`
-    case 'currency': return `${decimal(figure.value)} currency units`
+    case 'count':
+    case 'minor': return integer(figure.value)
+    case 'currency':
     case 'ratio': return decimal(figure.value)
   }
+}
+
+/** The unit words shown beside a hero number ("minor units"), or undefined when the number says it all. */
+export function figureUnit(figure: Pick<FigureSummary, 'unit' | 'value'>): string | undefined {
+  return figure.value === null || UNIT_WORDS[figure.unit] === '' ? undefined : UNIT_WORDS[figure.unit]
+}
+
+/** The value as stated by the method, with its unit; "Not stated" when the method gives none. */
+export function figureValue(figure: Pick<FigureSummary, 'unit' | 'value'>): string {
+  const unit = figureUnit(figure)
+  return unit === undefined ? figureAmount(figure) : `${figureAmount(figure)} ${unit}`
+}
+
+const PERCENT = 100n
+/** Two decimals: a percent is stated in hundredths. */
+const HUNDREDTHS = 100n
+
+/**
+ * part / whole as a percent with two decimals, rounded half up like the compliance method ("54.20"); exact (BigInt).
+ * Null when the whole is not positive or the part is negative: no share can be drawn.
+ */
+export function sharePercent(part: string | bigint, whole: string | bigint): string | null {
+  const numerator = BigInt(part)
+  const denominator = BigInt(whole)
+  if (denominator <= 0n || numerator < 0n) return null
+  const scaled = (2n * numerator * PERCENT * HUNDREDTHS + denominator) / (2n * denominator)
+  return `${scaled / HUNDREDTHS}.${(scaled % HUNDREDTHS).toString().padStart(2, '0')}`
 }
 
 /** `{report}.{period}.{key}` split back; the key may itself contain dots. */

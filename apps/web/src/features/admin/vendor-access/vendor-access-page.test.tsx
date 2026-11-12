@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import '../../../test/dom'
-import { screen } from '@testing-library/react'
+import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { apiError, ok } from '../../../test/fetch'
@@ -27,6 +27,11 @@ function session(overrides: Partial<SupportSession> = {}): SupportSession {
   }
 }
 
+/** GET /v1/support-sessions answered by its ?state= filter (no filter: the history). */
+function sessionsByState(lists: Readonly<Record<string, readonly SupportSession[]>>) {
+  return (query: URLSearchParams) => ok(lists[query.get('state') ?? 'history'] ?? [])
+}
+
 describe('VendorAccessPage', () => {
   beforeEach(() => {
     navigation.search = ''
@@ -35,7 +40,7 @@ describe('VendorAccessPage', () => {
   it('approves a request for at most the requested window, with an explicit region approval', async () => {
     const user = userEvent.setup()
     const fetchMock = fetchByRoute({
-      'GET /v1/support-sessions': () => ok([session()]),
+      'GET /v1/support-sessions': sessionsByState({ requested: [session()] }),
       'POST /v1/support-sessions/s1/decision': () => ok(session({ state: 'approved' })),
     })
     renderAs(ME, <VendorAccessPage />, fetchMock)
@@ -63,7 +68,7 @@ describe('VendorAccessPage', () => {
   it('denies a request and shows a server refusal in the dialog', async () => {
     const user = userEvent.setup()
     const fetchMock = fetchByRoute({
-      'GET /v1/support-sessions': () => ok([session()]),
+      'GET /v1/support-sessions': sessionsByState({ requested: [session()] }),
       'POST /v1/support-sessions/s1/decision': () => apiError(422, 'SUPPORT_REQUEST_EXPIRED', 'This request expired before a decision.'),
     })
     renderAs(ME, <VendorAccessPage />, fetchMock)
@@ -75,18 +80,20 @@ describe('VendorAccessPage', () => {
     expect(bodyOf(init)).toEqual({ approved: false, minutes: null, region_approved: false, reason: 'Not needed' })
   })
 
-  it('ends an open session now and reads its log', async () => {
-    navigation.search = 'tab=active'
+  it('shows an open session with its latest log entries, ends it now and reads the full log', async () => {
     const user = userEvent.setup()
     const active = session({ state: 'active', starts_at: '2026-11-12T09:00:00.000Z', ends_at: '2099-01-01T00:00:00.000Z' })
     const fetchMock = fetchByRoute({
-      'GET /v1/support-sessions': (query) => ok(query.get('state') === 'active' ? [active] : []),
+      'GET /v1/support-sessions': sessionsByState({ active: [active] }),
       'GET /v1/support-sessions/s1/log': () => ok([{ seq: '7', occurred_at: '2026-11-12T09:05:00.000Z', actor_type: 'vendor_user', actor_id: 'v1', action: 'SUPPORT_SESSION.ACCESSED', object_type: null, object_id: null, before: null, after: { method: 'GET', route: '/v1/compliance/snapshots' }, reason: null, request_id: 'r' }]),
       'POST /v1/support-sessions/s1/end': () => ok(session({ state: 'ended' })),
     })
     renderAs(ME, <VendorAccessPage />, fetchMock)
-    await user.click(await screen.findByRole('button', { name: 'View log' }))
-    expect(await screen.findByText('GET /v1/compliance/snapshots')).toBeTruthy()
+    const card = (await screen.findByRole('heading', { name: 'Vendor session' })).closest('li')!
+    expect(await within(card).findByText('GET /v1/compliance/snapshots')).toBeTruthy()
+    expect(callsTo(fetchMock, 'GET', '/v1/support-sessions/s1/log')[0]![0]).toContain('limit=5')
+    await user.click(within(card).getByRole('button', { name: 'View log' }))
+    expect(await within(screen.getByRole('dialog', { name: 'Support session log' })).findByText('GET /v1/compliance/snapshots')).toBeTruthy()
     await user.click(screen.getByRole('button', { name: 'Close dialog' }))
     await user.click(screen.getByRole('button', { name: 'End now' }))
     await user.click(screen.getByRole('button', { name: 'End session now' }))
@@ -96,16 +103,30 @@ describe('VendorAccessPage', () => {
 
   it('shows who asked and the areas to view, never write actions (BUG-023)', async () => {
     const asked = session({ requester_id: '7733a8df-0000-4000-8000-000000000003', scope: { permissions: ['import.manage', 'user.manage'], requester_region: 'eu' } })
-    renderAs(ME, <VendorAccessPage />, fetchByRoute({ 'GET /v1/support-sessions': () => ok([asked]) }))
+    renderAs(ME, <VendorAccessPage />, fetchByRoute({ 'GET /v1/support-sessions': sessionsByState({ requested: [asked] }) }))
     expect(await screen.findByText('Areas asked for (view only)')).toBeTruthy()
     expect(screen.getByText('Data imports, Users and roles')).toBeTruthy()
     expect(screen.getByText('Vendor user 7733a8df')).toBeTruthy()
     expect(screen.queryByText(/Upload and load|Manage users/)).toBeNull()
   })
 
-  it('says when there are no requests', async () => {
+  it('says when there are no requests, no open sessions and no history', async () => {
     renderAs(ME, <VendorAccessPage />, fetchByRoute({ 'GET /v1/support-sessions': () => ok([]) }))
     expect(await screen.findByText('No requests. When vendor staff ask for access, the request appears here.')).toBeTruthy()
+    expect(await screen.findByText('No vendor session is open.')).toBeTruthy()
+    expect(await screen.findByText('Vendor staff have not asked for access yet.')).toBeTruthy()
+    expect(screen.getByRole('heading', { name: 'Requests waiting for your decision' })).toBeTruthy()
+  })
+
+  it('counts open sessions and waiting requests and shows the data region', async () => {
+    const active = session({ id: 's2', state: 'active', starts_at: '2026-11-12T09:00:00.000Z', ends_at: '2099-01-01T00:00:00.000Z' })
+    renderAs(ME, <VendorAccessPage />, fetchByRoute({
+      'GET /v1/support-sessions': sessionsByState({ requested: [session()], active: [active] }),
+      'GET /v1/support-sessions/s2/log': () => ok([]),
+    }))
+    expect(await screen.findByText('Nothing has been logged for this session yet.')).toBeTruthy()
+    expect(screen.getByText(/First one ends in/)).toBeTruthy()
+    expect(screen.getByText('eu')).toBeTruthy()
   })
 })
 

@@ -6,10 +6,11 @@ import { useApi } from '../../components/api-provider'
 import { Banner } from '../../components/banner'
 import { Button } from '../../components/button'
 import { ErrorSummary, type SummaryItem } from '../../components/error-summary'
-import { TextField } from '../../components/form-field'
+import { TextInput } from '../../components/form-field'
 import { errorMessage, fieldErrors } from '../../lib/messages'
 import { afterSignInPath, defaultHome, safeNext, tenantSlug, type NextStep, type Realm } from '../../lib/navigation'
 import { emailError, requiredError } from '../../lib/validation'
+import { AuthHeader } from './auth-card'
 
 type Field = 'tenant' | 'email' | 'password'
 type Values = Readonly<Record<Field, string>>
@@ -26,6 +27,10 @@ const FIELDS: Readonly<Record<Realm, readonly Field[]>> = {
 }
 const ENDPOINT: Readonly<Record<Realm, string>> = { tenant: '/v1/auth/sessions', vendor: '/v1/auth/vendor-sessions' }
 const TITLE: Readonly<Record<Realm, string>> = { tenant: 'Sign in to your company', vendor: 'Sign in to the operations console' }
+const INTRO: Readonly<Record<Realm, string>> = {
+  tenant: 'Enter your company’s sign-in name, your email address and your password.',
+  vendor: 'Vendor staff only. Enter your email address and your password.',
+}
 
 function validate(field: Field, value: string): string | null {
   if (field === 'email') return emailError(value)
@@ -82,7 +87,7 @@ export function SignInForm({ realm }: { readonly realm: Realm }) {
   }
 
   const field = (name: Field, label: string, props: { type: string; autoComplete: string; helper?: string; readOnly?: boolean }) => (
-    <TextField
+    <TextInput
       readOnly={props.readOnly}
       id={fieldId(name)}
       label={label}
@@ -100,18 +105,16 @@ export function SignInForm({ realm }: { readonly realm: Realm }) {
 
   return (
     <>
-      <h1 className="card-title">{TITLE[realm]}</h1>
+      <AuthHeader eyebrow={realm === 'vendor' ? 'Operations console' : 'Staff sign-in'} icon="lock" title={TITLE[realm]}>{INTRO[realm]}</AuthHeader>
       {params.get('reason') === 'signed_out' && <Banner tone="info">You are signed out.</Banner>}
-      <form className="form" onSubmit={submit} noValidate>
+      <form className="flex flex-col gap-space-md" onSubmit={submit} noValidate>
         <ErrorSummary items={summary} />
         {realm === 'tenant' && field('tenant', 'Company', knownTenant === null
           ? { type: 'text', autoComplete: 'organization', helper: 'Your company’s sign-in name, for example acme.' }
           : { type: 'text', autoComplete: 'organization', helper: 'From your invitation link.', readOnly: true })}
         {field('email', 'Email address', { type: 'email', autoComplete: 'username' })}
         {field('password', 'Password', { type: 'password', autoComplete: 'current-password' })}
-        <div className="form-actions">
-          <Button type="submit" variant="primary" loading={busy}>Sign in</Button>
-        </div>
+        <Button type="submit" variant="primary" size="lg" icon="login" loading={busy} className="w-full" data-testid="primary-action">Sign in</Button>
       </form>
     </>
   )

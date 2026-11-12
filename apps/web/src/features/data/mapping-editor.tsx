@@ -5,16 +5,18 @@ import { useState } from 'react'
 import { useApi } from '../../components/api-provider'
 import { Banner } from '../../components/banner'
 import { Button, LinkButton } from '../../components/button'
-import { Dialog } from '../../components/dialog'
-import { FormField, SelectField } from '../../components/form-field'
+import { Modal } from '../../components/modal'
+import { FormField, Select, TEXTAREA_CLASS } from '../../components/form-field'
 import { PageHeader } from '../../components/page-header'
 import { EmptyState, ErrorState, LoadingState, NotAvailable } from '../../components/states'
-import { StatusChip } from '../../components/status-chip'
+import { StatusBadge } from '../../components/status-badge'
 import { useToast } from '../../components/toast'
 import { errorMessage, isNotAvailable } from '../../lib/messages'
 import { useSession } from '../../lib/session'
 import { dateTime } from './format'
-import { MappingForm } from './mapping-form'
+import { isDomain, MappingForm, type Domain } from './mapping-form'
+import { NOTE, ScopeStrip } from './ui'
+import { ApprovalBar } from '../../components/approval-bar'
 import type { BatchState, MappingVersion, SourceValues } from './types'
 import { useResource } from '../../lib/use-resource'
 
@@ -52,16 +54,16 @@ function ApproveDialog({ version, onClose, onApproved }: { readonly version: Map
     </>
   )
   return (
-    <Dialog open onClose={busy ? () => undefined : onClose} title={`Approve mapping version ${version.version}`} footer={footer}>
-      <p>
+    <Modal open onClose={busy ? () => undefined : onClose} title={`Approve mapping version ${version.version}`} icon="verified_user" footer={footer}>
+      <p className="font-body-sm text-body-sm text-on-surface">
         Approves version {version.version} as saved; changes not saved on this page are not part of it. An approved version can never be
         edited, and import batches can then be loaded with it. You may be asked for a code from your authenticator app.
       </p>
       <FormField label="Reason" optional>
-        {(control) => <textarea {...control} data-autofocus className="input" rows={2} maxLength={REASON_MAX} value={reason} onChange={(event) => setReason(event.target.value)} />}
+        {(control) => <textarea {...control} data-autofocus className={TEXTAREA_CLASS} rows={2} maxLength={REASON_MAX} value={reason} onChange={(event) => setReason(event.target.value)} />}
       </FormField>
       {failure !== null && <Banner tone="danger">{failure}</Banner>}
-    </Dialog>
+    </Modal>
   )
 }
 
@@ -90,12 +92,16 @@ export function MappingEditor() {
   }
   if (versions.loading || mapping.loading || batch.loading) return <LoadingState label="Loading the mapping" />
 
-  const select = (id: string | null) => {
+  const domainParam = params.get('domain')
+  const domain: Domain = isDomain(domainParam) ? domainParam : 'participant_types'
+  const replace = (versionId: string | null, tab: string | null) => {
     const query = new URLSearchParams()
-    if (id !== null) query.set('version', id)
+    if (versionId !== null) query.set('version', versionId)
     if (batchId !== null) query.set('batch', batchId)
+    if (tab !== null) query.set('domain', tab)
     router.replace(`${pathname}?${query.toString()}`)
   }
+  const select = (id: string | null) => replace(id, domainParam)
   const version = mapping.data
   const latest = Number(versions.meta.latest_version ?? 0)
   const editable = !readOnly && can('mapping.edit')
@@ -127,21 +133,19 @@ export function MappingEditor() {
     mapping.reload()
   }
 
+  const draft = version?.state === 'draft' ? version : null
   return (
     <>
       <PageHeader
         title={version === null ? 'Import mapping' : `Import mapping, version ${version.version}`}
-        state={version === null ? undefined : <StatusChip state={version.state} />}
+        state={version === null ? undefined : <StatusBadge state={version.state} />}
         summary="Maps your partner codes to the platform's categories. Saving creates a new version; approved versions never change."
-        actions={<>
-          {batchId !== null && can('import.manage') && <LinkButton href={`/imports/${batchId}`}>Back to the import batch</LinkButton>}
-          {mayApprove && <Button variant="primary" onClick={() => setApproving(true)}>Approve version {version.version}</Button>}
-        </>}
+        actions={batchId !== null && can('import.manage') ? <LinkButton href={`/imports/${batchId}`} icon="arrow_back">Back to the import batch</LinkButton> : undefined}
       />
-      <div className="data-stack">
+      <div className="flex flex-wrap items-end gap-space-md">
         {(versions.data ?? []).length > 0 && (
-          <div className="data-row">
-            <SelectField
+          <div className="min-w-[14rem]">
+            <Select
               label="Version" value={version?.id ?? ''}
               options={(versions.data ?? []).map((item) => ({ value: item.id, label: `Version ${item.version} (${item.state})` }))}
               onChange={(event) => select(event.target.value)}
@@ -149,21 +153,34 @@ export function MappingEditor() {
           </div>
         )}
         {version !== null && (
-          <dl className="data-facts">
-            <dt>Saved</dt><dd>{dateTime(version.created_at)} by {who(version.created_by, me.user.id)}</dd>
-            <dt>Approved by</dt><dd>{who(version.approved_by, me.user.id)}</dd>
-            <dt>Note</dt><dd>{version.notes ?? '—'}</dd>
-          </dl>
+          // Basis 20rem: the strip moves under the Version select on a phone instead of being squeezed beside it (BUG-037).
+          <div className="grow basis-80 min-w-0">
+            <ScopeStrip items={[['Saved', `${dateTime(version.created_at)} by ${who(version.created_by, me.user.id)}`], ['Approved by', who(version.approved_by, me.user.id)], ['Note', version.notes ?? '—']]} />
+          </div>
         )}
-        {ownDraft && <Banner tone="info">You saved this version, so another user with approval rights must approve it.</Banner>}
-        {batch.data !== null && values === null && <Banner tone="info">The batch was rejected, so it has no partner codes to map.</Banner>}
-        {batch.data !== null && values !== null && <p className="data-note">Showing the partner codes of the selected import batch with their row counts.</p>}
       </div>
+      {ownDraft && <Banner tone="info">You saved this version, so another user with approval rights must approve it.</Banner>}
+      {batch.data !== null && values === null && <Banner tone="info">The batch was rejected, so it has no partner codes to map.</Banner>}
+      {batch.data !== null && values !== null && <p className={NOTE}>Showing the partner codes of the selected import batch with their row counts.</p>}
       <MappingForm
         key={`${version?.id ?? 'none'}:${batchId ?? ''}`}
         version={version} sourceValues={values} latest={latest} editable={editable}
         saveVariant={mayApprove ? 'secondary' : 'primary'} onSaved={saved}
+        domain={domain} onDomain={(tab) => replace(version?.id ?? null, tab)}
       />
+      {draft !== null && (
+        <>
+          {/* Room for the fixed approval bar. */}
+          <div aria-hidden="true" className="h-12" />
+          <ApprovalBar
+            preparedBy={`Saved by ${who(draft.created_by, me.user.id)}`}
+            preparedAt={dateTime(draft.created_at)}
+            blockedReason={ownDraft ? 'Another user must approve this version.' : undefined}
+            approvers="Approval by a user with approval rights who did not save it"
+            actions={mayApprove ? <Button variant="primary" icon="verified_user" onClick={() => setApproving(true)} data-testid="primary-action">Approve version {draft.version}</Button> : undefined}
+          />
+        </>
+      )}
       {approving && version !== null && <ApproveDialog version={version} onClose={() => setApproving(false)} onApproved={approved} />}
     </>
   )

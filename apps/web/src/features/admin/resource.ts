@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import type { TablePagination } from '../../components/table'
+import type { Pagination } from '../../components/data-table'
 import { newIdempotencyKey } from '../../lib/api'
 import { useCursorPages } from '../../lib/cursor-pages'
 import { errorMessage } from '../../lib/messages'
@@ -12,7 +12,7 @@ export interface PagedList<T> {
   readonly loading: boolean
   readonly error: unknown
   readonly reload: () => void
-  readonly pagination: TablePagination
+  readonly pagination: Pagination
 }
 
 /**
@@ -39,7 +39,7 @@ export function usePagedList<T>(path: string, query: Query = {}): PagedList<T> {
   }
 }
 
-/** The Table error prop of a failed load. */
+/** The DataTable error prop of a failed load. */
 export function tableError(list: { readonly error: unknown; readonly reload: () => void }): { message: string; onRetry: () => void } | null {
   return list.error === null ? null : { message: errorMessage(list.error), onRetry: list.reload }
 }

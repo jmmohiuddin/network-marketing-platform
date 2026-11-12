@@ -45,6 +45,20 @@ describe('vendor console', () => {
     const row = (await screen.findByRole('link', { name: 'Acme Ltd (acme)' })).closest('tr')!
     expect(within(row).getByText('2 queued · 0 running · 1 failed')).toBeTruthy()
     expect(screen.getByText(/operational metadata only/)).toBeTruthy()
+    // A tenant in provisioning cannot decide a support request yet.
+    expect(within(row).queryByRole('button')).toBeNull()
+  })
+
+  it('asks a live tenant for a support session from its row', async () => {
+    const user = userEvent.setup()
+    renderAs(ME, <TenantsPage />, fetchByRoute({
+      'GET /v1/tenants': () => ok([tenant({ state: 'live' })]),
+      'GET /v1/support-sessions/limits': () => ok({ max_minutes: 120, scopes: ['audit.read'] }),
+    }))
+    await user.click(await screen.findByRole('button', { name: 'Request a support session for acme' }))
+    const dialog = screen.getByRole('dialog', { name: 'Request support session' })
+    expect(within(dialog).getByText('Acme Ltd (acme)')).toBeTruthy()
+    expect(within(dialog).queryByLabelText('Tenant')).toBeNull()
   })
 
   it('shows the second-person rule when the creator tries to approve provisioning', async () => {
@@ -77,6 +91,9 @@ describe('vendor console', () => {
     const user = userEvent.setup()
     const fetchMock = fetchByRoute({ 'POST /v1/tenants': () => ok(tenant(), 201) })
     renderAs(ME, <ProvisionTenantPage />, fetchMock)
+    // Sections are h2 under the page h1, markets h3 under them; groups keep their names (BUG-041).
+    expect(screen.getAllByRole('heading', { level: 2 }).map((heading) => heading.textContent)).toEqual(['Tenant', 'Markets', 'First admin', 'Second admin'])
+    expect(screen.getByRole('group', { name: 'First admin' })).toBeTruthy()
     await user.click(screen.getByRole('button', { name: 'Create tenant' }))
     expect(screen.getByRole('alert').textContent).toContain('Enter the legal name.')
     await user.type(screen.getByLabelText('Legal name'), 'Acme Ltd')
@@ -189,7 +206,7 @@ describe('vendor console', () => {
 function vendorUser(overrides: Partial<VendorUser> = {}): VendorUser {
   return {
     id: 'v2', email: 'ola@vendor.example', display_name: 'Ola Operator', state: 'active', mfa_enrolled: true, last_sign_in_at: null,
-    created_at: '2026-11-12T08:00:00.000Z', created_by: ME.user.id, ...overrides,
+    created_at: '2026-11-12T08:00:00.000Z', created_by: ME.user.id, invitation_status: null, invitation_decided_by: null, invitation_decided_at: null, ...overrides,
   }
 }
 
@@ -201,13 +218,12 @@ describe('vendor console: vendor users (BUG-011)', () => {
       'POST /v1/vendor-users': () => ok({ user: vendorUser({ state: 'invited' }) }, 201),
     })
     renderAs(ME, <VendorUsersPage />, fetchMock)
-    expect(await screen.findByText('Vera Vendor (vera@vendor.example) · you')).toBeTruthy()
-    expect(screen.getByRole('link', { name: 'Vendor users' }).getAttribute('href')).toBe('/vendor/users')
+    expect(await screen.findByText('Vera Vendor · you')).toBeTruthy()
     await user.click(screen.getByRole('button', { name: 'Invite vendor user' }))
     const dialog = screen.getByRole('dialog', { name: 'Invite vendor user' })
     await user.type(within(dialog).getByLabelText('Email address'), 'ola@vendor.example')
     await user.click(within(dialog).getByRole('button', { name: 'Send invitation' }))
-    expect(await screen.findByText(/Invitation sent to ola@vendor.example/)).toBeTruthy()
+    expect(await screen.findByText('ola@vendor.example is invited. Awaiting approval by another vendor user.')).toBeTruthy()
     const [, init] = callsTo(fetchMock, 'POST', '/v1/vendor-users')[0]!
     expect(bodyOf(init)).toEqual({ email: 'ola@vendor.example' })
     expect(headerOf(init, 'Idempotency-Key')).not.toBeNull()
@@ -228,6 +244,41 @@ describe('vendor console: vendor users (BUG-011)', () => {
     expect(await screen.findByText('A new invitation was sent to ola@vendor.example.')).toBeTruthy()
     await user.click(screen.getByRole('button', { name: 'Deactivate max@vendor.example' }))
     await user.click(within(screen.getByRole('dialog', { name: 'Deactivate vendor user' })).getByRole('button', { name: 'Deactivate vendor user' }))
+    expect(await screen.findByText(refusal)).toBeTruthy()
+  })
+})
+
+describe('vendor console: second-person invitation approval (BUG-031)', () => {
+  it('lets another vendor user approve a pending invitation, with an Idempotency-Key, and hides Resend while pending', async () => {
+    const user = userEvent.setup()
+    const pending = vendorUser({ state: 'invited', created_by: 'someone-else', invitation_status: 'pending_approval' })
+    const fetchMock = fetchByRoute({
+      'GET /v1/vendor-users': () => ok([pending]),
+      'POST /v1/vendor-users/v2/approve': () => ok({ user: { ...pending, invitation_status: 'approved' } }),
+    })
+    renderAs(ME, <VendorUsersPage />, fetchMock)
+    expect(await screen.findByText('Awaiting approval')).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Resend invitation to ola@vendor.example' })).toBeNull()
+    await user.click(screen.getByRole('button', { name: 'Approve invitation of ola@vendor.example' }))
+    await user.click(within(screen.getByRole('dialog', { name: 'Approve invitation' })).getByRole('button', { name: 'Approve invitation' }))
+    expect(await screen.findByText('The invitation was sent to ola@vendor.example.')).toBeTruthy()
+    const [, init] = callsTo(fetchMock, 'POST', '/v1/vendor-users/v2/approve')[0]!
+    expect(init.body).toBeUndefined()
+    expect(headerOf(init, 'Idempotency-Key')).not.toBeNull()
+  })
+
+  it('never offers the inviter a decision and shows the API refusal for a linked vendor user', async () => {
+    const user = userEvent.setup()
+    const refusal = 'Another vendor user must do this step.'
+    const own = vendorUser({ id: 'v3', email: 'own@vendor.example', state: 'invited', invitation_status: 'pending_approval' })
+    const linked = vendorUser({ state: 'invited', created_by: 'someone-else', invitation_status: 'pending_approval' })
+    renderAs(ME, <VendorUsersPage />, fetchByRoute({
+      'GET /v1/vendor-users': () => ok([own, linked]),
+      'POST /v1/vendor-users/v2/reject': () => apiError(403, 'APPROVER_NOT_INDEPENDENT', refusal),
+    }))
+    await user.click(await screen.findByRole('button', { name: 'Reject invitation of ola@vendor.example' }))
+    expect(screen.queryByRole('button', { name: 'Approve invitation of own@vendor.example' })).toBeNull()
+    await user.click(within(screen.getByRole('dialog', { name: 'Reject invitation' })).getByRole('button', { name: 'Reject invitation' }))
     expect(await screen.findByText(refusal)).toBeTruthy()
   })
 })
