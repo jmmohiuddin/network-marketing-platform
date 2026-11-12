@@ -23,3 +23,9 @@ Consolidated facts every session needs. Newest first. Keep under 150 lines.
 
 ## Decisions
 See `ARCHITECTURE_DECISION_LOG.md` (E-ADR-01..13).
+
+## Stitch designs (2026-11-12)
+- `design/stitch/stitch_complete_ui_screen_design/`: 47 product screens designed (SC-01..SC-47, SC-02 has an extra step-up modal file) after the second zip added SC-23, 26, 29, 36, 38, 40, 41, 43, 45, 46. `ledger_integrity/DESIGN.md` is the design system.
+- All 48 Tailwind configs carry the SAME tokens (47 colours, 13 font families, 13 sizes, 11 spacing, 4 radii); differences are formatting only. Canonical theme: `design/stitch/tailwind-theme.json`.
+- SC-13, SC-24, SC-25, SC-28 have a minified config missing its last `}`: the HTML renders with default Tailwind colours. Use their `screen.png` as the visual reference, not a live render.
+- 16 images hot-linked from lh3.googleusercontent.com (avatars) — never ship; use initials.

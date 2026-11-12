@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+
+<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_dashboard" name="shell-type"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "on-tertiary": "#ffffff", "secondary-container": "#dae2fd", "on-primary": "#ffffff", "background": "#f8f9ff", "surface-container-lowest": "#ffffff", "on-error": "#ffffff", "secondary": "#565e74", "tertiary-container": "#0d5f36", "surface-dim": "#ccdbf3", "tertiary-fixed-dim": "#8cd7a3", "on-background": "#0d1c2e", "outline-variant": "#c3c6d3", "on-tertiary-fixed-variant": "#00522d", "on-secondary-fixed": "#131b2e", "primary": "#003883", "error": "#ba1a1a", "primary-fixed": "#d9e2ff", "on-surface": "#0d1c2e", "on-error-container": "#93000a", "surface-bright": "#f8f9ff", "surface-variant": "#d5e3fc", "inverse-primary": "#afc6ff", "surface-container-low": "#eff4ff", "outline": "#737783", "inverse-surface": "#233144", "inverse-on-surface": "#eaf1ff", "on-secondary-fixed-variant": "#3f465c", "surface-container": "#e6eeff", "primary-container": "#1e4fa3", "on-secondary": "#ffffff", "on-primary-fixed": "#001944", "error-container": "#ffdad6", "surface-tint": "#2e5bb0", "secondary-fixed": "#dae2fd", "tertiary-fixed": "#a7f3be", "surface": "#f8f9ff", "on-secondary-container": "#5c647a", "on-tertiary-fixed": "#00210f", "secondary-fixed-dim": "#bec6e0", "on-primary-fixed-variant": "#074397", "surface-container-highest": "#d5e3fc", "tertiary": "#004525", "on-surface-variant": "#434752", "primary-fixed-dim": "#afc6ff", "on-tertiary-container": "#8cd7a3", "on-primary-container": "#afc6ff", "surface-container-high": "#dce9ff" }, "borderRadius": { "DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem" }, "spacing": { "gutter": "1.5rem", "space-sm": "0.5rem", "space-2xl": "3rem", "space-xxs": "0.125rem", "margin-mobile": "1rem", "space-lg": "1.5rem", "gutter-compact": "0.75rem", "space-xs": "0.25rem", "margin": "1.5rem", "space-md": "1rem", "space-xl": "2rem" }, "fontFamily": { "body-lg": [ "Inter" ], "title-lg-mobile": [ "Inter" ], "display-mobile": [ "Inter" ], "body-md": [ "Inter" ], "title-md": [ "Inter" ], "data-mono-sm": [ "JetBrains Mono" ], "data-mono-lg": [ "JetBrains Mono" ], "section-heading": [ "Inter" ], "caption": [ "Inter" ], "display": [ "Inter" ], "title-lg": [ "Inter" ], "data-mono-md": [ "JetBrains Mono" ], "body-sm": [ "Inter" ] }, "fontSize": { "body-lg": [ "16px", { "lineHeight": "24px", "letterSpacing": "0em", "fontWeight": "400" } ], "title-lg-mobile": [ "20px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600" } ], "display-mobile": [ "26px", { "lineHeight": "32px", "letterSpacing": "-0.015em", "fontWeight": "600" } ], "body-md": [ "14px", { "lineHeight": "20px", "letterSpacing": "0em", "fontWeight": "400" } ], "title-md": [ "20px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600" } ], "data-mono-sm": [ "12px", { "lineHeight": "16px", "letterSpacing": "0em", "fontWeight": "500" } ], "data-mono-lg": [ "24px", { "lineHeight": "32px", "letterSpacing": "-0.02em", "fontWeight": "600" } ], "section-heading": [ "16px", { "lineHeight": "24px", "letterSpacing": "-0.005em", "fontWeight": "600" } ], "caption": [ "12px", { "lineHeight": "16px", "letterSpacing": "0.01em", "fontWeight": "500" } ], "display": [ "32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "600" } ], "title-lg": [ "24px", { "lineHeight": "32px", "letterSpacing": "-0.015em", "fontWeight": "600" } ], "data-mono-md": [ "14px", { "lineHeight": "20px", "letterSpacing": "-0.01em", "fontWeight": "500" } ], "body-sm": [ "13px", { "lineHeight": "18px", "letterSpacing": "0.005em", "fontWeight": "400" } ] } } } };</script></head><body class="bg-background font-body-md text-on-surface antialiased"><header class="fixed top-0 left-0 right-0 h-12 bg-surface-container-lowest border-b border-outline-variant z-50 flex items-center justify-between px-space-md select-none"><div class="flex items-center gap-space-sm"><img alt="Platform Integrity Logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/ALJJyrB5eRWQNX9M_eeC454eoT79IyJIWf2apWVApZfrYBVB2P3A94kIQBFZHifsaOQy_VoAxmgBKB1311sAY-hR--ULW9hEdvY1wTCws4v-3fDyxMTP842fJ_9HmJkVilWCVfwB2CZ99Njwo0zcjFd2fwdFdY4Tlnwy0f29IOF6zgYm7iwPhYOQsz0ME3S-1aejy28KO2FJjy828FssZQ8lq8YUlEqN1nESu3IEEUwMuNo"/><span class="font-section-heading text-section-heading text-primary font-bold tracking-tight">AuditLedger</span><div class="h-4 w-px bg-outline-variant mx-space-xs"></div><div class="flex items-center gap-space-xs px-space-xs py-space-xxs rounded bg-surface-container-low border border-outline-variant hover:border-outline cursor-pointer"><span class="font-body-sm text-body-sm text-on-surface font-medium">Acrobex Global</span><span class="font-data-mono-sm text-data-mono-sm text-secondary">(TEN-842)</span><span class="material-symbols-outlined text-[16px] text-secondary">arrow_drop_down</span></div><div class="flex items-center gap-space-xs px-space-xs py-space-xxs rounded bg-surface-container-low border border-outline-variant hover:border-outline cursor-pointer"><span class="h-2 w-2 rounded-full bg-tertiary-container"></span><span class="font-body-sm text-body-sm text-on-surface">US - United States (USD $)</span><span class="material-symbols-outlined text-[16px] text-secondary">expand_more</span></div></div><div class="flex-1 max-w-xl mx-space-lg"><div class="relative flex items-center w-full"><span class="material-symbols-outlined absolute left-2.5 text-outline text-[18px]">search</span><input class="w-full h-8 pl-8 pr-12 rounded bg-surface border border-outline-variant font-body-sm text-body-sm text-on-surface placeholder:text-outline focus:border-primary focus:outline-none transition-colors" placeholder="/ or Ctrl+K to search people, orders, cases, statements..." type="text"/><div class="absolute right-2 px-1.5 py-0.5 rounded bg-surface-container border border-outline-variant font-data-mono-sm text-data-mono-sm text-secondary">⌘K</div></div></div><div class="flex items-center gap-space-md"><button class="relative p-1 text-secondary hover:text-on-surface hover:bg-surface-container rounded transition-colors" title="Notifications" type="button"><span class="material-symbols-outlined text-[20px]">notifications</span><span class="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-error text-on-error font-data-mono-sm text-data-mono-sm leading-none flex items-center justify-center">3</span></button><button class="flex items-center gap-space-xs p-1 text-secondary hover:text-on-surface hover:bg-surface-container rounded transition-colors" title="Help &amp; Regulatory Glossary" type="button"><span class="material-symbols-outlined text-[20px]">menu_book</span><span class="font-body-sm text-body-sm">Glossary</span></button><div class="h-4 w-px bg-outline-variant"></div><div class="flex items-center gap-space-sm pl-space-xs"><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div><div class="flex flex-col text-left leading-tight hidden lg:flex"><span class="font-body-sm text-body-sm text-on-surface font-semibold">Elena Rostova</span><span class="font-caption text-caption text-secondary font-medium">Lead Commission Analyst</span></div><button class="p-1 text-secondary hover:text-error hover:bg-error-container rounded transition-colors" title="Sign out" type="button"><span class="material-symbols-outlined text-[18px]">logout</span></button></div></div></header><aside class="fixed left-0 top-12 bottom-0 w-52 bg-surface-container-lowest border-r border-outline-variant z-40 flex flex-col justify-between overflow-y-auto"><div class="py-space-sm px-space-xs"><nav class="space-y-space-xxs" data-active-classes="bg-primary-container text-on-primary font-semibold"><a class="flex items-center gap-space-sm px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-body-sm text-body-sm transition-colors" data-path="overview" href="#"><span class="material-symbols-outlined text-[18px]">dashboard</span><span>Overview</span></a><a class="flex items-center gap-space-sm px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-body-sm text-body-sm transition-colors" data-path="periods-runs" href="#"><span class="material-symbols-outlined text-[18px]">history_toggle_off</span><span>Periods &amp; Runs</span></a><a class="flex items-center gap-space-sm px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-body-sm text-body-sm transition-colors" data-path="compensation-plans" href="#"><span class="material-symbols-outlined text-[18px]">schema</span><span>Compensation Plans</span></a><a class="flex items-center gap-space-sm px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-body-sm text-body-sm transition-colors" data-path="people-tree" href="#"><span class="material-symbols-outlined text-[18px]">account_tree</span><span>People &amp; Tree</span></a><a class="flex items-center gap-space-sm px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-body-sm text-body-sm transition-colors" data-path="orders-returns" href="#"><span class="material-symbols-outlined text-[18px]">receipt_long</span><span>Orders &amp; Returns</span></a><a class="flex items-center gap-space-sm px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-body-sm text-body-sm transition-colors" data-path="cases-exceptions" href="#"><span class="material-symbols-outlined text-[18px]">rule_folder</span><span>Cases &amp; Exceptions</span></a><a class="flex items-center gap-space-sm px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-body-sm text-body-sm transition-colors" data-path="payouts" href="#"><span class="material-symbols-outlined text-[18px]">payments</span><span>Payouts</span></a><a class="flex items-center gap-space-sm px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-body-sm text-body-sm transition-colors" data-path="finance-ledger" href="#"><span class="material-symbols-outlined text-[18px]">account_balance</span><span>Finance &amp; Ledger</span></a><a class="flex items-center gap-space-sm px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-body-sm text-body-sm transition-colors" data-path="compliance-reports" href="#"><span class="material-symbols-outlined text-[18px]">verified_user</span><span>Compliance Reports</span></a><a class="flex items-center gap-space-sm px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-body-sm text-body-sm transition-colors" data-path="data-imports-migration" href="#"><span class="material-symbols-outlined text-[18px]">sync_alt</span><span>Data Imports</span></a><a class="flex items-center gap-space-sm px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-body-sm text-body-sm transition-colors" data-path="settings-audit" href="#"><span class="material-symbols-outlined text-[18px]">tune</span><span>Settings &amp; Audit</span></a></nav></div><div class="p-space-sm border-t border-outline-variant bg-surface-container-low"><div class="font-data-mono-sm text-data-mono-sm text-secondary space-y-1"><div class="flex items-center justify-between"><span>Cell</span><span class="text-on-surface font-semibold">US-EAST-1</span></div><div class="flex items-center justify-between"><span>Version</span><span class="text-on-surface">v2.4.1</span></div><div class="pt-1 border-t border-outline-variant flex items-center justify-between"><span class="text-outline">Engine</span><span class="text-tertiary font-semibold">2026.11</span></div></div></div></aside><div class="pl-52"><main class="w-full pt-12 bg-background min-h-screen"><div class="flex flex-col w-full">
+<!-- Sub-header Breadcrumb and Actions Bar -->
+<div class="px-space-lg py-space-sm bg-surface-container-low flex flex-col md:flex-row md:items-center justify-between gap-space-sm">
+<div class="flex items-center gap-space-xs font-caption text-caption text-secondary">
+<span class="hover:text-primary cursor-pointer transition-colors">People</span>
+<span class="material-symbols-outlined text-[14px]">chevron_right</span>
+<span class="font-data-mono-sm text-data-mono-sm text-on-surface">POS-01948</span>
+<span class="material-symbols-outlined text-[14px]">chevron_right</span>
+<span class="text-on-surface font-semibold">Qualification State History</span>
+</div>
+<div class="flex items-center gap-space-xs">
+<div class="flex items-center gap-space-xs px-2 py-1 rounded bg-surface-container text-on-surface-variant font-data-mono-sm text-data-mono-sm">
+<span class="material-symbols-outlined text-[14px] text-tertiary">lock</span>
+<span>SPEC-ID: FR-COMP-004</span>
+</div>
+<div class="flex items-center gap-space-xs px-2 py-1 rounded bg-surface-container text-on-surface-variant font-data-mono-sm text-data-mono-sm">
+<span>RULESET: v2026.11-STABLE</span>
+</div>
+</div>
+</div>
+<div class="p-space-lg space-y-space-lg">
+<!-- Header Summary Block -->
+<div class="bg-surface-container-lowest p-space-lg rounded-xl shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-space-lg">
+<div class="space-y-space-xs">
+<div class="flex items-center gap-space-sm flex-wrap">
+<h1 class="font-title-lg text-title-lg text-on-surface tracking-tight">Rank &amp; Qualification Detail: Elena Gomez</h1>
+<span class="font-data-mono-md text-data-mono-md text-primary bg-primary-fixed px-2 py-0.5 rounded font-semibold">POS-01948</span>
+<span class="font-data-mono-sm text-data-mono-sm text-secondary bg-surface-container px-2 py-0.5 rounded">PLAN-HYBRID-2024</span>
+</div>
+<p class="font-body-md text-body-md text-secondary">Statutory compliance verification, monthly volume threshold metrics, and audited leg ladder states.</p>
+<!-- Status Badges Strip -->
+<div class="flex items-center gap-space-xs pt-1 flex-wrap">
+<div class="flex items-center gap-1.5 px-2.5 py-1 rounded bg-surface-container-high text-on-surface font-caption text-caption uppercase tracking-wider">
+<span class="text-secondary font-normal lowercase">Highest Title:</span>
+<span class="font-semibold text-primary">Senior Director</span>
+</div>
+<div class="flex items-center gap-1.5 px-2.5 py-1 rounded bg-tertiary-fixed text-on-tertiary-fixed font-caption text-caption uppercase tracking-wider">
+<span class="material-symbols-outlined text-[14px] text-tertiary">check_circle</span>
+<span class="font-semibold">Paid-As: Senior Director (2026-M10)</span>
+</div>
+<div class="flex items-center gap-1.5 px-2.5 py-1 rounded bg-surface-container text-secondary font-caption text-caption uppercase tracking-wider">
+<span class="h-2 w-2 rounded-full bg-secondary"></span>
+<span>Grace Period: Inactive</span>
+</div>
+<div class="flex items-center gap-1.5 px-2.5 py-1 rounded bg-surface-container text-on-surface font-caption text-caption uppercase tracking-wider">
+<span class="material-symbols-outlined text-[14px] text-secondary">verified</span>
+<span>Committed Run: #CR-20261031-094</span>
+</div>
+</div>
+</div>
+<!-- Action Buttons Group -->
+<div class="flex items-center gap-space-xs shrink-0 flex-wrap">
+<button class="px-space-md py-2 rounded bg-surface-container text-on-surface font-body-sm text-body-sm hover:bg-surface-container-high transition-colors flex items-center gap-1.5 shadow-sm" onclick="alert('Opening Historical Period Comparison Engine...')" type="button">
+<span class="material-symbols-outlined text-[18px] text-secondary">compare_arrows</span>
+<span>Compare Periods</span>
+</button>
+<button class="px-space-md py-2 rounded bg-surface-container text-on-surface font-body-sm text-body-sm hover:bg-surface-container-high transition-colors flex items-center gap-1.5 shadow-sm" onclick="alert('Navigating to Audit Calculation Trace (SC-02)...')" type="button">
+<span class="material-symbols-outlined text-[18px] text-secondary">receipt_long</span>
+<span>Audit Trace (SC-02)</span>
+</button>
+<button class="px-space-md py-2 rounded bg-primary text-on-primary font-body-sm text-body-sm hover:bg-primary-container transition-colors flex items-center gap-1.5 shadow-sm" onclick="alert('Launching Sponsor Tree Visualizer (SC-07)...')" type="button">
+<span class="material-symbols-outlined text-[18px]">account_tree</span>
+<span>Open Sponsor Tree (SC-07)</span>
+</button>
+</div>
+</div>
+<!-- Section 1: Current Period Qualification Ledger Bento Grid -->
+<div class="space-y-space-sm">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-primary text-[20px]">fact_check</span>
+<h2 class="font-section-heading text-section-heading text-on-surface font-bold">Current Cycle Qualification Ledger (Period 2026-M10)</h2>
+</div>
+<span class="font-data-mono-sm text-data-mono-sm text-secondary">Cycle Hash: 0x8F9C4A2E…5D01</span>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-space-md">
+<!-- Metric 1: Personal Volume (PV) -->
+<div class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm flex flex-col justify-between space-y-space-md">
+<div>
+<div class="flex items-center justify-between mb-space-xs">
+<span class="font-caption text-caption text-secondary uppercase font-semibold">Personal Volume (PV)</span>
+<span class="px-2 py-0.5 rounded bg-tertiary-fixed text-on-tertiary-fixed font-caption text-caption font-semibold">PASS</span>
+</div>
+<div class="flex items-baseline gap-space-xs">
+<span class="font-data-mono-lg text-data-mono-lg text-on-surface font-bold">520.00</span>
+<span class="font-caption text-caption text-secondary">PV</span>
+</div>
+<p class="font-body-sm text-body-sm text-secondary mt-1">Requirement: ≥ 200.00 PV</p>
+</div>
+<div>
+<div class="w-full bg-surface-container h-2 rounded-full overflow-hidden">
+<div class="bg-tertiary h-full rounded-full" style="width: 100%"></div>
+</div>
+<div class="flex justify-between items-center mt-1 font-data-mono-sm text-data-mono-sm text-tertiary font-semibold">
+<span>260.0% Attained</span>
+<span class="text-secondary font-normal">+320.00 Surplus</span>
+</div>
+</div>
+</div>
+<!-- Metric 2: Group Volume (GV) -->
+<div class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm flex flex-col justify-between space-y-space-md">
+<div>
+<div class="flex items-center justify-between mb-space-xs">
+<span class="font-caption text-caption text-secondary uppercase font-semibold">Group Volume (GV)</span>
+<span class="px-2 py-0.5 rounded bg-tertiary-fixed text-on-tertiary-fixed font-caption text-caption font-semibold">PASS</span>
+</div>
+<div class="flex items-baseline gap-space-xs">
+<span class="font-data-mono-lg text-data-mono-lg text-on-surface font-bold">192,200.00</span>
+<span class="font-caption text-caption text-secondary">GV</span>
+</div>
+<p class="font-body-sm text-body-sm text-secondary mt-1">Requirement: ≥ 150,000.00 GV</p>
+</div>
+<div>
+<div class="w-full bg-surface-container h-2 rounded-full overflow-hidden">
+<div class="bg-tertiary h-full rounded-full" style="width: 100%"></div>
+</div>
+<div class="flex justify-between items-center mt-1 font-data-mono-sm text-data-mono-sm text-tertiary font-semibold">
+<span>128.1% Attained</span>
+<span class="text-secondary font-normal">+42,200.00 Surplus</span>
+</div>
+</div>
+</div>
+<!-- Metric 3: Qualified Direct Legs -->
+<div class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm flex flex-col justify-between space-y-space-md">
+<div>
+<div class="flex items-center justify-between mb-space-xs">
+<span class="font-caption text-caption text-secondary uppercase font-semibold">Direct Qualified Legs</span>
+<span class="px-2 py-0.5 rounded bg-tertiary-fixed text-on-tertiary-fixed font-caption text-caption font-semibold">PASS</span>
+</div>
+<div class="flex items-baseline gap-space-xs">
+<span class="font-data-mono-lg text-data-mono-lg text-on-surface font-bold">4</span>
+<span class="font-caption text-caption text-secondary">Active Legs</span>
+</div>
+<p class="font-body-sm text-body-sm text-secondary mt-1">Requirement: ≥ 3 Director Legs</p>
+</div>
+<div>
+<div class="flex items-center gap-1.5">
+<span class="h-2 w-full rounded bg-tertiary" title="Leg 1: Director (Met)"></span>
+<span class="h-2 w-full rounded bg-tertiary" title="Leg 2: Director (Met)"></span>
+<span class="h-2 w-full rounded bg-tertiary" title="Leg 3: Senior Director (Met)"></span>
+<span class="h-2 w-full rounded bg-tertiary" title="Leg 4: Director (Met)"></span>
+</div>
+<div class="flex justify-between items-center mt-1 font-data-mono-sm text-data-mono-sm text-tertiary font-semibold">
+<span>4 / 3 Required</span>
+<span class="text-secondary font-normal">+1 Buffer</span>
+</div>
+</div>
+</div>
+<!-- Metric 4: Retail Customer Count -->
+<div class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm flex flex-col justify-between space-y-space-md">
+<div>
+<div class="flex items-center justify-between mb-space-xs">
+<span class="font-caption text-caption text-secondary uppercase font-semibold">Retail Customers (70/30)</span>
+<span class="px-2 py-0.5 rounded bg-tertiary-fixed text-on-tertiary-fixed font-caption text-caption font-semibold">PASS</span>
+</div>
+<div class="flex items-baseline gap-space-xs">
+<span class="font-data-mono-lg text-data-mono-lg text-on-surface font-bold">8</span>
+<span class="font-caption text-caption text-secondary">Active Verified</span>
+</div>
+<p class="font-body-sm text-body-sm text-secondary mt-1">Requirement: ≥ 5 Active Retail</p>
+</div>
+<div>
+<div class="w-full bg-surface-container h-2 rounded-full overflow-hidden">
+<div class="bg-tertiary h-full rounded-full" style="width: 100%"></div>
+</div>
+<div class="flex justify-between items-center mt-1 font-data-mono-sm text-data-mono-sm text-tertiary font-semibold">
+<span>160.0% Attained</span>
+<span class="text-secondary font-normal">FTC Invariant Met</span>
+</div>
+</div>
+</div>
+<!-- Metric 5: Max Leg Rule (50% Rule) -->
+<div class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm flex flex-col justify-between space-y-space-md">
+<div>
+<div class="flex items-center justify-between mb-space-xs">
+<span class="font-caption text-caption text-secondary uppercase font-semibold">Max Leg Rule (50% Cap)</span>
+<span class="px-2 py-0.5 rounded bg-primary-fixed text-on-primary-fixed-variant font-caption text-caption font-semibold">CAPPED &amp; PASS</span>
+</div>
+<div class="flex items-baseline gap-space-xs">
+<span class="font-data-mono-lg text-data-mono-lg text-on-surface font-bold">75,000.00</span>
+<span class="font-caption text-caption text-secondary">Capped GV</span>
+</div>
+<p class="font-body-sm text-body-sm text-secondary mt-1">Gross Leg 1: 94,500.00 GV</p>
+</div>
+<div>
+<div class="w-full bg-surface-container h-2 rounded-full overflow-hidden">
+<div class="bg-primary h-full rounded-full" style="width: 100%"></div>
+</div>
+<div class="flex justify-between items-center mt-1 font-data-mono-sm text-data-mono-sm text-primary font-semibold">
+<span>50.00% Cap Bound</span>
+<span class="text-secondary font-normal">-19,500 Spill</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Section 2: Historical Multi-Period Qualification Matrix (M05 to M10) -->
+<div class="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden space-y-space-xs">
+<div class="p-space-md bg-surface-container-lowest flex flex-col sm:flex-row sm:items-center justify-between gap-space-sm">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-primary text-[20px]">table_chart</span>
+<h2 class="font-section-heading text-section-heading text-on-surface font-bold">Multi-Period Qualification Ledger Matrix (2026-M05 through 2026-M10)</h2>
+</div>
+<div class="flex items-center gap-space-sm">
+<span class="font-caption text-caption text-secondary">AC-46.1: Immutable Ledger Trace View</span>
+<button class="px-2 py-1 rounded bg-surface-container text-on-surface font-body-sm text-body-sm hover:bg-surface-container-high transition-colors flex items-center gap-1" title="Download CSV Audit Record">
+<span class="material-symbols-outlined text-[16px]">file_download</span>
+<span>Export CSV</span>
+</button>
+</div>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left font-body-sm text-body-sm border-collapse">
+<thead>
+<tr class="bg-surface-container-low text-secondary font-caption text-caption uppercase tracking-wider">
+<th class="py-2.5 px-space-md text-left font-semibold">Period</th>
+<th class="py-2.5 px-space-md text-left font-semibold">Committed Run ID</th>
+<th class="py-2.5 px-space-md text-left font-semibold">Paid-As Rank</th>
+<th class="py-2.5 px-space-md text-left font-semibold">Title Held</th>
+<th class="py-2.5 px-space-md text-right font-semibold">PV</th>
+<th class="py-2.5 px-space-md text-right font-semibold">Gross GV</th>
+<th class="py-2.5 px-space-md text-right font-semibold">Leg 1 (Capped)</th>
+<th class="py-2.5 px-space-md text-right font-semibold">Leg 2</th>
+<th class="py-2.5 px-space-md text-right font-semibold">Leg 3+</th>
+<th class="py-2.5 px-space-md text-right font-semibold">Carry Bal (CV)</th>
+<th class="py-2.5 px-space-md text-center font-semibold">Streak</th>
+<th class="py-2.5 px-space-md text-center font-semibold">Outcome</th>
+</tr>
+</thead>
+<tbody class="divide-none">
+<!-- Row M10 (Current Period) -->
+<tr class="hover:bg-surface-container-low transition-colors bg-surface-container-lowest">
+<td class="py-2.5 px-space-md font-data-mono-md text-data-mono-md text-on-surface font-semibold">2026-M10</td>
+<td class="py-2.5 px-space-md font-data-mono-sm text-data-mono-sm text-primary hover:underline cursor-pointer">CR-20261031-094</td>
+<td class="py-2.5 px-space-md">
+<span class="px-2 py-0.5 rounded bg-tertiary-fixed text-on-tertiary-fixed font-caption text-caption font-semibold">Senior Director</span>
+</td>
+<td class="py-2.5 px-space-md font-body-sm text-body-sm text-secondary">Senior Director</td>
+<td class="py-2.5 px-space-md font-data-mono-sm text-data-mono-sm text-right text-on-surface">520.00</td>
+<td class="py-2.5 px-space-md font-data-mono-sm text-data-mono-sm text-right text-on-surface font-medium">192,200.00</td>
+<td class="py-2.5 px-space-md font-data-mono-sm text-data-mono-sm text-right text-on-surface">75,000.00</td>
+<td class="py-2.5 px-space-md font-data-mono-sm text-data-mono-sm text-right text-on-surface">54,200.00</td>
+<td class="py-2.5 px-space-md font-data-mono-sm text-data-mono-sm text-right text-on-surface">63,000.00</td>
+<td class="py-2.5 px-space-md font-data-mono-sm text-data-mono-sm text-right text-secondary">14,200.00</td>
+<td class="py-2.5 px-space-md font-data-mono-sm text-data-mono-sm text-center text-primary font-bold">2</td>
+<td class="py-2.5 px-space-md text-center">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-tertiary-container text-on-tertiary font-caption text-caption uppercase font-semibold">
+<span class="material-symbols-outlined text-[12px]">check</span> Met
+                </span>
+</td>
+</tr>
+<!-- Row M09 -->
+<tr class="hover:bg-surface-container-low transition-colors bg-surface-container-low/40">
+<td class="py-2.5 px-space-md font-data-mono-md text-data-mono-md text-on-surface font-semibold">2026-M09</td>
+<td class="py-2.5 px-space-md font-data-mono-sm text-data-mono-sm text-primary hover:underline cursor-pointer">CR-20260930-112</td>
+<td class="py-2.5 px-space-md">
+<span class="px-2 py-0.5 rounded bg-tertiary-fixed text-on-tertiary-fixed font-caption text-caption font-semibold">Senior Director</span>
+</td>
+<td class="py-2.5 px-space-md font-body-sm text-body-sm text-secondary">Senior Director</td>
+<td class="py-2.5 px-space-md font-data-mono-sm text-data-mono-sm text-right text-on-surface">310.00</td>
+<td class="py-2.5 px-space-md font-data-mono-sm text-data-mono-sm text-right text-on-surface font-medium">168,900.00</td>
+<td class="py-2.5 px-space-md font-data-mono-sm text-data-mono-sm text-right text-on-surface">75,000.00</td>
+<td class="py-2.5 px-space-md font-data-mono-sm text-data-mono-sm text-right text-on-surface">48,400.00</td>
+<td class="py-2.5 px-space-md font-data-mono-sm text-data-mono-sm text-right text-on-surface">45,500.00</td>
+<td class="py-2.5 px-space-md font-data-mono-sm text-data-mono-sm text-right text-secondary">11,000.00</td>
+<td class="py-2.5 px-space-md font-data-mono-sm text-data-mono-sm text-center text-primary font-bold">1</td>
+<td class="py-2.5 px-space-md text-center">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-tertiary-container text-on-tertiary font-caption text-caption uppercase font-semibold">
+<span class="material-symbols-outlined text-[12px]">check</span> Met
+                </span>
+</td>
+</tr>
+<!-- Row M08: Dispute Showcase (Paid-As Director vs Highest Title Senior Director) -->
+<tr class="hover:bg-surface-container-low transition-colors bg-surface-container-lowest">
+<td class="py-2.5 px-space-md font-data-mono-md text-data-mono-md text-on-surface font-semibold flex items-center gap-1">
+<span>2026-M08</span>
+<span class="material-symbols-outlined text-secondary text-[16px]" title="Rank variance detected between Title and Paid-As">warning</span>
+</td>
+<td class="py-2.5 px-space-md font-data-mono-sm text-data-mono-sm text-primary hover:underline cursor-pointer">CR-20260831-081</td>
+<td class="py-2.5 px-space-md">
+<span class="px-2 py-0.5 rounded bg-secondary-fixed text-on-secondary-fixed font-caption text-caption font-semibold">Director</span>
+</td>
+<td class="py-2.5 px-space-md font-body-sm text-body-sm text-primary font-semibold">Senior Director</td>
+<td class="py-2.5 px-space-md font-data-mono-sm text-data-mono-sm text-right text-on-surface">240.00</td>
+<td class="py-2.5 px-space-md font-data-mono-sm text-data-mono-sm text-right text-error font-medium">134,800.00</td>
+<td class="py-2.5 px-space-md font-data-mono-sm text-data-mono-sm text-right text-on-surface">67,400.00</td>
+<td class="py-2.5 px-space-md font-data-mono-sm text-data-mono-sm text-right text-on-surface">36,200.00</td>
+<td class="py-2.5 px-space-md font-data-mono-sm text-data-mono-sm text-right text-on-surface">31,200.00</td>
+<td class="py-2.5 px-space-md font-data-mono-sm text-data-mono-sm text-right text-secondary">0.00</td>
+<td class="py-2.5 px-space-md font-data-mono-sm text-data-mono-sm text-center text-secondary font-medium">0</td>
+<td class="py-2.5 px-space-md text-center">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-surface-container-highest text-on-surface-variant font-caption text-caption uppercase font-semibold" title="Missed 150k GV threshold; resolved to Director level">
+                  Step-Down
+                </span>
+</td>
+</tr>
+<!-- Row M07 -->
+<tr class="hover:bg-surface-container-low transition-colors bg-surface-container-low/40">
+<td class="py-2.5 px-space-md font-data-mono-md text-data-mono-md text-on-surface font-semibold">2026-M07</td>
+<td class="py-2.5 px-space-md font-data-mono-sm text-data-mono-sm text-primary hover:underline cursor-pointer">CR-20260731-077</td>
+<td class="py-2.5 px-space-md">
+<span class="px-2 py-0.5 rounded bg-tertiary-fixed text-on-tertiary-fixed font-caption text-caption font-semibold">Senior Director</span>
+</td>
+<td class="py-2.5 px-space-md font-body-sm text-body-sm text-secondary">Senior Director</td>
+<td class="py-2.5 px-space-md font-data-mono-sm text-data-mono-sm text-right text-on-surface">410.00</td>
+<td class="py-2.5 px-space-md font-data-mono-sm text-data-mono-sm text-right text-on-surface font-medium">174,100.00</td>
+<td class="py-2.5 px-space-md font-data-mono-sm text-data-mono-sm text-right text-on-surface">75,000.00</td>
+<td class="py-2.5 px-space-md font-data-mono-sm text-data-mono-sm text-right text-on-surface">51,100.00</td>
+<td class="py-2.5 px-space-md font-data-mono-sm text-data-mono-sm text-right text-on-surface">48,000.00</td>
+<td class="py-2.5 px-space-md font-data-mono-sm text-data-mono-sm text-right text-secondary">6,400.00</td>
+<td class="py-2.5 px-space-md font-data-mono-sm text-data-mono-sm text-center text-primary font-bold">4</td>
+<td class="py-2.5 px-space-md text-center">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-tertiary-container text-on-tertiary font-caption text-caption uppercase font-semibold">
+<span class="material-symbols-outlined text-[12px]">check</span> Met
+                </span>
+</td>
+</tr>
+<!-- Row M06 -->
+<tr class="hover:bg-surface-container-low transition-colors bg-surface-container-lowest">
+<td class="py-2.5 px-space-md font-data-mono-md text-data-mono-md text-on-surface font-semibold">2026-M06</td>
+<td class="py-2.5 px-space-md font-data-mono-sm text-data-mono-sm text-primary hover:underline cursor-pointer">CR-20260630-059</td>
+<td class="py-2.5 px-space-md">
+<span class="px-2 py-0.5 rounded bg-tertiary-fixed text-on-tertiary-fixed font-caption text-caption font-semibold">Senior Director</span>
+</td>
+<td class="py-2.5 px-space-md font-body-sm text-body-sm text-secondary">Senior Director</td>
+<td class="py-2.5 px-space-md font-data-mono-sm text-data-mono-sm text-right text-on-surface">300.00</td>
+<td class="py-2.5 px-space-md font-data-mono-sm text-data-mono-sm text-right text-on-surface font-medium">161,200.00</td>
+<td class="py-2.5 px-space-md font-data-mono-sm text-data-mono-sm text-right text-on-surface">75,000.00</td>
+<td class="py-2.5 px-space-md font-data-mono-sm text-data-mono-sm text-right text-on-surface">44,000.00</td>
+<td class="py-2.5 px-space-md font-data-mono-sm text-data-mono-sm text-right text-on-surface">42,200.00</td>
+<td class="py-2.5 px-space-md font-data-mono-sm text-data-mono-sm text-right text-secondary">8,100.00</td>
+<td class="py-2.5 px-space-md font-data-mono-sm text-data-mono-sm text-center text-primary font-bold">3</td>
+<td class="py-2.5 px-space-md text-center">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-tertiary-container text-on-tertiary font-caption text-caption uppercase font-semibold">
+<span class="material-symbols-outlined text-[12px]">check</span> Met
+                </span>
+</td>
+</tr>
+<!-- Row M05 -->
+<tr class="hover:bg-surface-container-low transition-colors bg-surface-container-low/40">
+<td class="py-2.5 px-space-md font-data-mono-md text-data-mono-md text-on-surface font-semibold">2026-M05</td>
+<td class="py-2.5 px-space-md font-data-mono-sm text-data-mono-sm text-primary hover:underline cursor-pointer">CR-20260531-032</td>
+<td class="py-2.5 px-space-md">
+<span class="px-2 py-0.5 rounded bg-tertiary-fixed text-on-tertiary-fixed font-caption text-caption font-semibold">Senior Director</span>
+</td>
+<td class="py-2.5 px-space-md font-body-sm text-body-sm text-secondary">Senior Director</td>
+<td class="py-2.5 px-space-md font-data-mono-sm text-data-mono-sm text-right text-on-surface">285.00</td>
+<td class="py-2.5 px-space-md font-data-mono-sm text-data-mono-sm text-right text-on-surface font-medium">155,000.00</td>
+<td class="py-2.5 px-space-md font-data-mono-sm text-data-mono-sm text-right text-on-surface">75,000.00</td>
+<td class="py-2.5 px-space-md font-data-mono-sm text-data-mono-sm text-right text-on-surface">41,000.00</td>
+<td class="py-2.5 px-space-md font-data-mono-sm text-data-mono-sm text-right text-on-surface">39,000.00</td>
+<td class="py-2.5 px-space-md font-data-mono-sm text-data-mono-sm text-right text-secondary">2,300.00</td>
+<td class="py-2.5 px-space-md font-data-mono-sm text-data-mono-sm text-center text-primary font-bold">2</td>
+<td class="py-2.5 px-space-md text-center">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-tertiary-container text-on-tertiary font-caption text-caption uppercase font-semibold">
+<span class="material-symbols-outlined text-[12px]">check</span> Met
+                </span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="px-space-md py-space-sm bg-surface-container-low flex flex-col sm:flex-row sm:items-center justify-between text-secondary font-caption text-caption gap-space-xs">
+<span class="font-data-mono-sm text-data-mono-sm">Showing 6 committed cycles • Algorithm version: COMP-ALG-v4.1</span>
+<div class="flex items-center gap-space-md">
+<span class="flex items-center gap-1"><span class="h-2 w-2 rounded-full bg-tertiary-container"></span> Paid-As Met Target</span>
+<span class="flex items-center gap-1"><span class="h-2 w-2 rounded-full bg-secondary"></span> Title Step-Down Exception</span>
+</div>
+</div>
+</div>
+<!-- Section 3: Carry-Forward & Banked Points Balance + Visual Leg Chart -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-space-md">
+<!-- Carry-Forward Card -->
+<div class="lg:col-span-2 bg-surface-container-lowest p-space-lg rounded-xl shadow-sm space-y-space-md flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between mb-space-sm">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-primary text-[20px]">account_balance_wallet</span>
+<h3 class="font-section-heading text-section-heading text-on-surface font-bold">Carry-Forward &amp; Banked Volume Ledger</h3>
+</div>
+<span class="font-caption text-caption text-secondary">Binary Tree Leg Balances</span>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-space-md mt-space-sm">
+<!-- Left Leg -->
+<div class="p-space-md rounded-xl bg-surface-container-low space-y-1">
+<span class="font-caption text-caption text-secondary uppercase font-semibold">Left Leg Carry Balance</span>
+<div class="flex items-baseline gap-1">
+<span class="font-data-mono-lg text-data-mono-lg text-on-surface font-bold">0.00</span>
+<span class="font-caption text-caption text-secondary">CV</span>
+</div>
+<p class="font-body-sm text-body-sm text-secondary">Flushed on M10 Cycle Commit</p>
+</div>
+<!-- Right Leg -->
+<div class="p-space-md rounded-xl bg-surface-container space-y-1">
+<div class="flex items-center justify-between">
+<span class="font-caption text-caption text-secondary uppercase font-semibold">Right Leg Carry Balance</span>
+<span class="material-symbols-outlined text-tertiary text-[16px]">trending_up</span>
+</div>
+<div class="flex items-baseline gap-1">
+<span class="font-data-mono-lg text-data-mono-lg text-primary font-bold">14,200.00</span>
+<span class="font-caption text-caption text-primary">CV</span>
+</div>
+<p class="font-caption text-caption text-error font-medium">Expires: Cycle 2026-M12 (60d Policy)</p>
+</div>
+<!-- Grace Period Counter -->
+<div class="p-space-md rounded-xl bg-surface-container-low space-y-1">
+<div class="flex items-center justify-between">
+<span class="font-caption text-caption text-secondary uppercase font-semibold">Rank Grace Protection</span>
+<span class="material-symbols-outlined text-secondary text-[16px]">shield</span>
+</div>
+<div class="flex items-baseline gap-1">
+<span class="font-data-mono-lg text-data-mono-lg text-on-surface font-bold">2 of 2</span>
+<span class="font-caption text-caption text-secondary">Months</span>
+</div>
+<p class="font-body-sm text-body-sm text-secondary">Fully Available (Zero Consumed)</p>
+</div>
+</div>
+</div>
+<div class="pt-space-sm flex items-center justify-between font-caption text-caption text-secondary">
+<span>Carry Ledger Hash: SHA256:49A8…2B0F</span>
+<span class="hover:text-primary cursor-pointer transition-colors flex items-center gap-0.5">
+            View Carry Rule BR-CYC-12 <span class="material-symbols-outlined text-[14px]">arrow_forward</span>
+</span>
+</div>
+</div>
+<!-- Distributor Operational Profile -->
+<div class="bg-surface-container-lowest p-space-lg rounded-xl shadow-sm space-y-space-md flex flex-col justify-between">
+<div>
+<div class="flex items-center gap-space-xs mb-space-sm">
+<span class="material-symbols-outlined text-primary text-[20px]">badge</span>
+<h3 class="font-section-heading text-section-heading text-on-surface font-bold">Distributor Audit Record</h3>
+</div>
+<div class="space-y-space-xs">
+<div class="flex justify-between py-1 bg-surface-container-low px-2 rounded">
+<span class="font-body-sm text-body-sm text-secondary">Entity ID</span>
+<span class="font-data-mono-sm text-data-mono-sm text-on-surface font-semibold">POS-01948</span>
+</div>
+<div class="flex justify-between py-1 px-2">
+<span class="font-body-sm text-body-sm text-secondary">Sponsor</span>
+<span class="font-body-sm text-body-sm text-primary font-medium hover:underline cursor-pointer">Marcus Vance (POS-00812)</span>
+</div>
+<div class="flex justify-between py-1 bg-surface-container-low px-2 rounded">
+<span class="font-body-sm text-body-sm text-secondary">Enrollment Date</span>
+<span class="font-data-mono-sm text-data-mono-sm text-on-surface">2023-04-18</span>
+</div>
+<div class="flex justify-between py-1 px-2">
+<span class="font-body-sm text-body-sm text-secondary">Compliance Holds</span>
+<span class="font-caption text-caption font-semibold text-tertiary">NONE (VERIFIED)</span>
+</div>
+<div class="flex justify-between py-1 bg-surface-container-low px-2 rounded">
+<span class="font-body-sm text-body-sm text-secondary">Current Payout Cell</span>
+<span class="font-data-mono-sm text-data-mono-sm text-on-surface">ACH-DOMESTIC-PRIMARY</span>
+</div>
+</div>
+</div>
+<div class="p-space-xs bg-surface-container rounded flex items-center justify-between">
+<span class="font-caption text-caption text-secondary">Audit Trail Sign-Off</span>
+<span class="font-data-mono-sm text-data-mono-sm text-tertiary font-semibold flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">lock</span> IMMUTABLE
+          </span>
+</div>
+</div>
+</div>
+<!-- Section 4: Read-Only Invariant Notice (BR-RNK-07) -->
+<div class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm flex items-start gap-space-md relative overflow-hidden">
+<div class="w-1.5 self-stretch bg-primary rounded-full shrink-0"></div>
+<div class="flex-1 space-y-space-xxs">
+<div class="flex items-center gap-space-xs">
+<span class="font-data-mono-sm text-data-mono-sm text-primary font-bold uppercase tracking-wider">Statutory Invariant Rule: BR-RNK-07</span>
+<span class="px-1.5 py-0.2 rounded bg-surface-container text-secondary font-caption text-caption">REGULATORY SYSTEM MANDATE</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface leading-relaxed">
+          Qualification states are immutable outputs of committed runs. Modification is strictly restricted to approved restatements or migration imports under multi-signature executive approval. Live manual overrides are rejected by consensus engine rules to preserve court-admissible audit trails.
+        </p>
+</div>
+<div class="shrink-0 hidden md:flex items-center">
+<button class="px-space-md py-1.5 rounded bg-surface-container hover:bg-surface-container-high text-on-surface font-body-sm text-body-sm transition-colors flex items-center gap-1" onclick="alert('Viewing Invariant BR-RNK-07 Specification in Regulatory Glossary...')" type="button">
+<span class="material-symbols-outlined text-[16px] text-secondary">policy</span>
+<span>View Spec</span>
+</button>
+</div>
+</div>
+</div>
+</div></main></div></body></html>

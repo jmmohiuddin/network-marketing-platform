@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+
+<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_dashboard" name="shell-type"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "on-tertiary": "#ffffff", "secondary-container": "#dae2fd", "on-primary": "#ffffff", "background": "#f8f9ff", "surface-container-lowest": "#ffffff", "on-error": "#ffffff", "secondary": "#565e74", "tertiary-container": "#0d5f36", "surface-dim": "#ccdbf3", "tertiary-fixed-dim": "#8cd7a3", "on-background": "#0d1c2e", "outline-variant": "#c3c6d3", "on-tertiary-fixed-variant": "#00522d", "on-secondary-fixed": "#131b2e", "primary": "#003883", "error": "#ba1a1a", "primary-fixed": "#d9e2ff", "on-surface": "#0d1c2e", "on-error-container": "#93000a", "surface-bright": "#f8f9ff", "surface-variant": "#d5e3fc", "inverse-primary": "#afc6ff", "surface-container-low": "#eff4ff", "outline": "#737783", "inverse-surface": "#233144", "inverse-on-surface": "#eaf1ff", "on-secondary-fixed-variant": "#3f465c", "surface-container": "#e6eeff", "primary-container": "#1e4fa3", "on-secondary": "#ffffff", "on-primary-fixed": "#001944", "error-container": "#ffdad6", "surface-tint": "#2e5bb0", "secondary-fixed": "#dae2fd", "tertiary-fixed": "#a7f3be", "surface": "#f8f9ff", "on-secondary-container": "#5c647a", "on-tertiary-fixed": "#00210f", "secondary-fixed-dim": "#bec6e0", "on-primary-fixed-variant": "#074397", "surface-container-highest": "#d5e3fc", "tertiary": "#004525", "on-surface-variant": "#434752", "primary-fixed-dim": "#afc6ff", "on-tertiary-container": "#8cd7a3", "on-primary-container": "#afc6ff", "surface-container-high": "#dce9ff" }, "borderRadius": { "DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem" }, "spacing": { "gutter": "1.5rem", "space-sm": "0.5rem", "space-2xl": "3rem", "space-xxs": "0.125rem", "margin-mobile": "1rem", "space-lg": "1.5rem", "gutter-compact": "0.75rem", "space-xs": "0.25rem", "margin": "1.5rem", "space-md": "1rem", "space-xl": "2rem" }, "fontFamily": { "body-lg": [ "Inter" ], "title-lg-mobile": [ "Inter" ], "display-mobile": [ "Inter" ], "body-md": [ "Inter" ], "title-md": [ "Inter" ], "data-mono-sm": [ "JetBrains Mono" ], "data-mono-lg": [ "JetBrains Mono" ], "section-heading": [ "Inter" ], "caption": [ "Inter" ], "display": [ "Inter" ], "title-lg": [ "Inter" ], "data-mono-md": [ "JetBrains Mono" ], "body-sm": [ "Inter" ] }, "fontSize": { "body-lg": [ "16px", { "lineHeight": "24px", "letterSpacing": "0em", "fontWeight": "400" } ], "title-lg-mobile": [ "20px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600" } ], "display-mobile": [ "26px", { "lineHeight": "32px", "letterSpacing": "-0.015em", "fontWeight": "600" } ], "body-md": [ "14px", { "lineHeight": "20px", "letterSpacing": "0em", "fontWeight": "400" } ], "title-md": [ "20px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600" } ], "data-mono-sm": [ "12px", { "lineHeight": "16px", "letterSpacing": "0em", "fontWeight": "500" } ], "data-mono-lg": [ "24px", { "lineHeight": "32px", "letterSpacing": "-0.02em", "fontWeight": "600" } ], "section-heading": [ "16px", { "lineHeight": "24px", "letterSpacing": "-0.005em", "fontWeight": "600" } ], "caption": [ "12px", { "lineHeight": "16px", "letterSpacing": "0.01em", "fontWeight": "500" } ], "display": [ "32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "600" } ], "title-lg": [ "24px", { "lineHeight": "32px", "letterSpacing": "-0.015em", "fontWeight": "600" } ], "data-mono-md": [ "14px", { "lineHeight": "20px", "letterSpacing": "-0.01em", "fontWeight": "500" } ], "body-sm": [ "13px", { "lineHeight": "18px", "letterSpacing": "0.005em", "fontWeight": "400" } ] } } } };</script></head><body class="bg-background font-body-md text-on-surface antialiased"><header class="fixed top-0 left-0 right-0 h-12 bg-surface-container-lowest border-b border-outline-variant z-50 flex items-center justify-between px-space-md select-none"><div class="flex items-center gap-space-sm"><img alt="Platform Integrity Logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/ALJJyrB5eRWQNX9M_eeC454eoT79IyJIWf2apWVApZfrYBVB2P3A94kIQBFZHifsaOQy_VoAxmgBKB1311sAY-hR--ULW9hEdvY1wTCws4v-3fDyxMTP842fJ_9HmJkVilWCVfwB2CZ99Njwo0zcjFd2fwdFdY4Tlnwy0f29IOF6zgYm7iwPhYOQsz0ME3S-1aejy28KO2FJjy828FssZQ8lq8YUlEqN1nESu3IEEUwMuNo"/><span class="font-section-heading text-section-heading text-primary font-bold tracking-tight">AuditLedger</span><div class="h-4 w-px bg-outline-variant mx-space-xs"></div><div class="flex items-center gap-space-xs px-space-xs py-space-xxs rounded bg-surface-container-low border border-outline-variant hover:border-outline cursor-pointer"><span class="font-body-sm text-body-sm text-on-surface font-medium">Acrobex Global</span><span class="font-data-mono-sm text-data-mono-sm text-secondary">(TEN-842)</span><span class="material-symbols-outlined text-[16px] text-secondary">arrow_drop_down</span></div><div class="flex items-center gap-space-xs px-space-xs py-space-xxs rounded bg-surface-container-low border border-outline-variant hover:border-outline cursor-pointer"><span class="h-2 w-2 rounded-full bg-tertiary-container"></span><span class="font-body-sm text-body-sm text-on-surface">US - United States (USD $)</span><span class="material-symbols-outlined text-[16px] text-secondary">expand_more</span></div></div><div class="flex-1 max-w-xl mx-space-lg"><div class="relative flex items-center w-full"><span class="material-symbols-outlined absolute left-2.5 text-outline text-[18px]">search</span><input class="w-full h-8 pl-8 pr-12 rounded bg-surface border border-outline-variant font-body-sm text-body-sm text-on-surface placeholder:text-outline focus:border-primary focus:outline-none transition-colors" placeholder="/ or Ctrl+K to search people, orders, cases, statements..." type="text"/><div class="absolute right-2 px-1.5 py-0.5 rounded bg-surface-container border border-outline-variant font-data-mono-sm text-data-mono-sm text-secondary">⌘K</div></div></div><div class="flex items-center gap-space-md"><button class="relative p-1 text-secondary hover:text-on-surface hover:bg-surface-container rounded transition-colors" title="Notifications" type="button"><span class="material-symbols-outlined text-[20px]">notifications</span><span class="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-error text-on-error font-data-mono-sm text-data-mono-sm leading-none flex items-center justify-center">3</span></button><button class="flex items-center gap-space-xs p-1 text-secondary hover:text-on-surface hover:bg-surface-container rounded transition-colors" title="Help &amp; Regulatory Glossary" type="button"><span class="material-symbols-outlined text-[20px]">menu_book</span><span class="font-body-sm text-body-sm">Glossary</span></button><div class="h-4 w-px bg-outline-variant"></div><div class="flex items-center gap-space-sm pl-space-xs"><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div><div class="flex flex-col text-left leading-tight hidden lg:flex"><span class="font-body-sm text-body-sm text-on-surface font-semibold">Elena Rostova</span><span class="font-caption text-caption text-secondary font-medium">Lead Commission Analyst</span></div><button class="p-1 text-secondary hover:text-error hover:bg-error-container rounded transition-colors" title="Sign out" type="button"><span class="material-symbols-outlined text-[18px]">logout</span></button></div></div></header><aside class="fixed left-0 top-12 bottom-0 w-52 bg-surface-container-lowest border-r border-outline-variant z-40 flex flex-col justify-between overflow-y-auto"><div class="py-space-sm px-space-xs"><nav class="space-y-space-xxs" data-active-classes="bg-primary-container text-on-primary font-semibold"><a class="flex items-center gap-space-sm px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-body-sm text-body-sm transition-colors" data-path="overview" href="#"><span class="material-symbols-outlined text-[18px]">dashboard</span><span>Overview</span></a><a class="flex items-center gap-space-sm px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-body-sm text-body-sm transition-colors" data-path="periods-runs" href="#"><span class="material-symbols-outlined text-[18px]">history_toggle_off</span><span>Periods &amp; Runs</span></a><a class="flex items-center gap-space-sm px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-body-sm text-body-sm transition-colors" data-path="compensation-plans" href="#"><span class="material-symbols-outlined text-[18px]">schema</span><span>Compensation Plans</span></a><a class="flex items-center gap-space-sm px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-body-sm text-body-sm transition-colors" data-path="people-tree" href="#"><span class="material-symbols-outlined text-[18px]">account_tree</span><span>People &amp; Tree</span></a><a class="flex items-center gap-space-sm px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-body-sm text-body-sm transition-colors" data-path="orders-returns" href="#"><span class="material-symbols-outlined text-[18px]">receipt_long</span><span>Orders &amp; Returns</span></a><a class="flex items-center gap-space-sm px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-body-sm text-body-sm transition-colors" data-path="cases-exceptions" href="#"><span class="material-symbols-outlined text-[18px]">rule_folder</span><span>Cases &amp; Exceptions</span></a><a class="flex items-center gap-space-sm px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-body-sm text-body-sm transition-colors" data-path="payouts" href="#"><span class="material-symbols-outlined text-[18px]">payments</span><span>Payouts</span></a><a class="flex items-center gap-space-sm px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-body-sm text-body-sm transition-colors" data-path="finance-ledger" href="#"><span class="material-symbols-outlined text-[18px]">account_balance</span><span>Finance &amp; Ledger</span></a><a class="flex items-center gap-space-sm px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-body-sm text-body-sm transition-colors" data-path="compliance-reports" href="#"><span class="material-symbols-outlined text-[18px]">verified_user</span><span>Compliance Reports</span></a><a class="flex items-center gap-space-sm px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-body-sm text-body-sm transition-colors" data-path="data-imports-migration" href="#"><span class="material-symbols-outlined text-[18px]">sync_alt</span><span>Data Imports</span></a><a class="flex items-center gap-space-sm px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-body-sm text-body-sm transition-colors" data-path="settings-audit" href="#"><span class="material-symbols-outlined text-[18px]">tune</span><span>Settings &amp; Audit</span></a></nav></div><div class="p-space-sm border-t border-outline-variant bg-surface-container-low"><div class="font-data-mono-sm text-data-mono-sm text-secondary space-y-1"><div class="flex items-center justify-between"><span>Cell</span><span class="text-on-surface font-semibold">US-EAST-1</span></div><div class="flex items-center justify-between"><span>Version</span><span class="text-on-surface">v2.4.1</span></div><div class="pt-1 border-t border-outline-variant flex items-center justify-between"><span class="text-outline">Engine</span><span class="text-tertiary font-semibold">2026.11</span></div></div></div></aside><div class="pl-52"><main class="w-full pt-12 bg-background min-h-screen"><div class="flex flex-col w-full">
+<!-- Sticky Context / Subheader Bar with Separation of Duties Warning -->
+<div class="sticky top-12 z-30 bg-surface-container-lowest px-space-lg py-space-sm shadow-sm flex flex-wrap items-center justify-between gap-space-md">
+<div class="flex flex-col gap-space-xxs min-w-0">
+<div class="flex items-center gap-space-sm flex-wrap">
+<span class="font-title-lg text-title-lg text-on-surface">Tenant Settings &amp; Governed Policies</span>
+<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded bg-tertiary-container/15 text-tertiary font-data-mono-sm text-data-mono-sm">
+<span class="material-symbols-outlined text-[14px]">verified</span>
+          Active Settings Version: SET-v2026.4 (Effective 2026-10-01 UTC)
+        </span>
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-surface-container text-secondary font-caption text-caption uppercase tracking-wider">
+          Immutable Hash: 0x9f4a...21c8
+        </span>
+</div>
+<p class="font-body-sm text-body-sm text-secondary">
+        Changes to financial policies require dual-custody second-person approval and snap unconditionally to future calendar period boundaries.
+      </p>
+</div>
+<!-- Top Primary Actions -->
+<div class="flex items-center gap-space-sm shrink-0">
+<button class="h-8 px-space-md rounded bg-surface-container hover:bg-surface-container-high text-on-surface font-body-sm text-body-sm font-medium flex items-center gap-1.5 transition-colors" id="btn-open-history">
+<span class="material-symbols-outlined text-[16px]">history</span>
+<span>View Version History Drawer</span>
+</button>
+<button class="h-8 px-space-md rounded bg-surface-container-low hover:bg-surface-container text-error font-body-sm text-body-sm font-medium flex items-center gap-1.5 transition-colors" onclick="openRevertModal()">
+<span class="material-symbols-outlined text-[16px]">undo</span>
+<span>Revert to SET-v2026.3</span>
+</button>
+<button class="h-8 px-space-lg rounded bg-primary-container hover:bg-primary text-on-primary font-body-sm text-body-sm font-medium flex items-center gap-1.5 shadow-sm transition-colors" onclick="openPublishModal()">
+<span class="material-symbols-outlined text-[16px]">save_as</span>
+<span>Save New Version with Effective Date</span>
+</button>
+</div>
+</div>
+<div class="p-space-lg max-w-[1440px] mx-auto w-full space-y-space-xl">
+<!-- Statutory Guardrail Invariant Banner -->
+<div class="rounded bg-surface-container-lowest p-space-md shadow-sm flex items-start gap-space-md">
+<div class="w-8 h-8 rounded bg-surface-container-low flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-primary text-[20px]">shield_with_heart</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center gap-space-xs">
+<span class="font-section-heading text-section-heading text-on-surface font-semibold">Statutory Governance Mode Active</span>
+<span class="px-1.5 py-0.2 rounded bg-tertiary-container/15 text-tertiary font-data-mono-sm text-data-mono-sm">BR-MNY-02 &amp; BR-REV-07 Enforced</span>
+</div>
+<p class="font-body-sm text-body-sm text-secondary mt-0.5">
+          All financial precision invariants, downline privacy masking, and anti-takeover cooldowns are anchored in cryptographic ledger traces. No retroactive backdating permitted.
+        </p>
+</div>
+<div class="flex items-center gap-space-sm text-secondary font-data-mono-sm text-data-mono-sm bg-surface-container-low px-2 py-1 rounded shrink-0">
+<span class="material-symbols-outlined text-[16px] text-tertiary">lock</span>
+<span>Next Period Cutoff: 2026-11-01 00:00 UTC</span>
+</div>
+</div>
+<!-- Bento Layout: Section 1 & Section 2 -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-space-lg items-start">
+<!-- Section 1: Financial & Money Policies (8 Cols) -->
+<div class="lg:col-span-8 flex flex-col gap-space-md">
+<div class="bg-surface-container-lowest rounded p-space-lg shadow-sm">
+<div class="flex items-center justify-between pb-space-sm">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-primary text-[22px]">account_balance_wallet</span>
+<span class="font-title-md text-title-md text-on-surface font-semibold">1. Financial &amp; Monetary Precision Invariants</span>
+</div>
+<span class="font-caption text-caption uppercase tracking-wider text-secondary bg-surface-container-low px-2 py-0.5 rounded">
+              FR-TEN-002 / BR-MNY-02
+            </span>
+</div>
+<p class="font-body-sm text-body-sm text-secondary mb-space-lg">
+            Defines rounding mechanics, loss absorption limits, anti-takeover hold periods, and payout aggregation boundaries across all 2026 calculation cycles.
+          </p>
+<div class="space-y-space-lg">
+<!-- Row 1: Rounding Mode & Minor Unit Precision -->
+<div class="p-space-md rounded bg-surface-container-low flex flex-col md:flex-row md:items-center justify-between gap-space-md">
+<div class="max-w-md">
+<div class="flex items-center gap-2">
+<span class="font-section-heading text-section-heading text-on-surface">Rounding Mode &amp; Minor Precision</span>
+<span class="px-1.5 py-0.5 rounded bg-surface-container text-primary font-data-mono-sm text-data-mono-sm">ROUND_HALF_UP</span>
+</div>
+<p class="font-body-sm text-body-sm text-secondary mt-1">
+                  Enforces IEEE 754-2008 Half-up rounding on all intermediate percentage calculations with minor unit (2-decimal) platform standard truncation.
+                </p>
+</div>
+<div class="flex items-center gap-space-sm shrink-0">
+<div class="flex flex-col text-right">
+<span class="font-data-mono-md text-data-mono-md text-on-surface font-semibold">2 Decimals (0.01 USD)</span>
+<span class="font-caption text-caption text-tertiary">Fractional residual retained</span>
+</div>
+<div class="w-8 h-8 rounded bg-surface-container flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined text-[18px]">balance</span>
+</div>
+</div>
+</div>
+<!-- Row 2: Clawback Recovery Method -->
+<div class="p-space-md rounded bg-surface-container-low flex flex-col md:flex-row md:items-center justify-between gap-space-md">
+<div class="max-w-md">
+<div class="flex items-center gap-2">
+<span class="font-section-heading text-section-heading text-on-surface">Clawback Recovery Method</span>
+<span class="px-1.5 py-0.5 rounded bg-surface-container text-primary font-data-mono-sm text-data-mono-sm">REC_OFFSET_FUTURE</span>
+</div>
+<p class="font-body-sm text-body-sm text-secondary mt-1">
+                  Order-line clawback executed against future commission earnings. When rank-dependent pools are impaired, system automatically initiates restatement fallback.
+                </p>
+</div>
+<div class="flex items-center gap-space-sm shrink-0">
+<select class="h-8 px-space-sm rounded bg-surface-container-lowest font-body-sm text-body-sm text-on-surface focus:outline-none focus:bg-surface-container">
+<option selected="">Order-Line Offset + Restatement Fallback</option>
+<option disabled="">Immediate Negative Balance Notice (DEPRECATED)</option>
+<option disabled="">Direct Merchant Chargeback Offset</option>
+</select>
+</div>
+</div>
+<!-- Row 3 & 4 Grid: Write-off Threshold & Min Payout -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-space-md">
+<!-- Receivables Write-off -->
+<div class="p-space-md rounded bg-surface-container-low flex flex-col justify-between gap-space-sm">
+<div>
+<div class="flex items-center justify-between">
+<span class="font-section-heading text-section-heading text-on-surface">Receivables Write-off Threshold</span>
+<span class="font-data-mono-md text-data-mono-md text-primary font-semibold">$50.00 USD</span>
+</div>
+<p class="font-body-sm text-body-sm text-secondary mt-1">
+                    Uncollectible unearned balances ≤ $50.00 auto-relinquished to Bad Debt Expense. Balances ≥ $500.00 mandate Tier-2 Controller signoff.
+                  </p>
+</div>
+<div class="pt-2 flex items-center justify-between">
+<span class="font-caption text-caption text-secondary">Tier-2 Escalation</span>
+<span class="font-data-mono-sm text-data-mono-sm text-error font-semibold">≥ $500.00 USD</span>
+</div>
+</div>
+<!-- Minimum Payout Threshold -->
+<div class="p-space-md rounded bg-surface-container-low flex flex-col justify-between gap-space-sm">
+<div>
+<div class="flex items-center justify-between">
+<span class="font-section-heading text-section-heading text-on-surface">Minimum Payout Threshold</span>
+<span class="font-data-mono-md text-data-mono-md text-primary font-semibold">$25.00 USD</span>
+</div>
+<p class="font-body-sm text-body-sm text-secondary mt-1">
+                    Net payables lower than $25.00 bypass NACHA direct deposit transmission and continuously accumulate in General Ledger Liability Account 2000.
+                  </p>
+</div>
+<div class="pt-2 flex items-center justify-between">
+<span class="font-caption text-caption text-secondary">Accumulation Ledger</span>
+<span class="font-data-mono-sm text-data-mono-sm text-secondary font-semibold">GL-2000-ACCUM</span>
+</div>
+</div>
+</div>
+<!-- Row 5: Bank Detail Cooling-off Period -->
+<div class="p-space-md rounded bg-surface-container-low flex flex-col md:flex-row md:items-center justify-between gap-space-md">
+<div class="max-w-md">
+<div class="flex items-center gap-2">
+<span class="font-section-heading text-section-heading text-on-surface">Settlement Cooling-off Window</span>
+<span class="px-1.5 py-0.5 rounded bg-surface-container text-tertiary font-data-mono-sm text-data-mono-sm">ATO-DEFENSE</span>
+</div>
+<p class="font-body-sm text-body-sm text-secondary mt-1">
+                  Mandatory 14-day settlement quarantine on updated routing, IBAN, or custodial recipient profiles to counter Account Takeover (ATO) interception.
+                </p>
+</div>
+<div class="flex items-center gap-space-md shrink-0">
+<div class="flex flex-col text-right">
+<span class="font-data-mono-lg text-data-mono-lg text-on-surface font-semibold">14 <span class="font-body-md text-body-md text-secondary">Days</span></span>
+<span class="font-caption text-caption text-secondary">Quarantine hold time</span>
+</div>
+<span class="material-symbols-outlined text-secondary text-[24px]">timer</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Section 3: Statutory Breach Contacts & DPO Runbook -->
+<div class="bg-surface-container-lowest rounded p-space-lg shadow-sm">
+<div class="flex items-center justify-between pb-space-sm">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-primary text-[22px]">contact_phone</span>
+<span class="font-title-md text-title-md text-on-surface font-semibold">3. Statutory Breach Contacts &amp; DPO Runbook</span>
+</div>
+<span class="font-caption text-caption uppercase tracking-wider text-secondary bg-surface-container-low px-2 py-0.5 rounded">
+              FR-PRV-004
+            </span>
+</div>
+<p class="font-body-sm text-body-sm text-secondary mb-space-md">
+            Designated supervisory contacts and strict statutory incident reporting SLAs mandated for GDPR Art. 33, CCPA, and CPRA notifications.
+          </p>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-space-md">
+<!-- Contact Card 1 -->
+<div class="p-space-md rounded bg-surface-container-low flex flex-col justify-between space-y-space-sm">
+<div class="flex items-start justify-between">
+<div>
+<span class="font-caption text-caption uppercase tracking-wider text-secondary">Primary Data Protection Officer</span>
+<h4 class="font-section-heading text-section-heading text-on-surface font-semibold mt-0.5">Marcus Vance, CIPP/E</h4>
+<p class="font-data-mono-sm text-data-mono-sm text-primary mt-1">dpo@acrobex.com</p>
+</div>
+<div class="w-8 h-8 rounded bg-surface-container flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[18px]">verified_user</span>
+</div>
+</div>
+<div class="pt-2 flex items-center justify-between">
+<span class="font-body-sm text-body-sm text-secondary">Regulatory Notification Window</span>
+<span class="px-2 py-0.5 rounded bg-error/10 text-error font-data-mono-sm text-data-mono-sm font-semibold">72 Hours SLA</span>
+</div>
+</div>
+<!-- Contact Card 2 -->
+<div class="p-space-md rounded bg-surface-container-low flex flex-col justify-between space-y-space-sm">
+<div class="flex items-start justify-between">
+<div>
+<span class="font-caption text-caption uppercase tracking-wider text-secondary">SecOps Incident Escalation</span>
+<h4 class="font-section-heading text-section-heading text-on-surface font-semibold mt-0.5">SecOps 24/7 Escalation Desk</h4>
+<p class="font-data-mono-sm text-data-mono-sm text-primary mt-1">+1-800-555-0199 (Toll-free)</p>
+</div>
+<div class="w-8 h-8 rounded bg-surface-container flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined text-[18px]">emergency</span>
+</div>
+</div>
+<div class="pt-2 flex items-center justify-between">
+<span class="font-body-sm text-body-sm text-secondary">Internal Triage SLA</span>
+<span class="px-2 py-0.5 rounded bg-surface-container text-on-surface font-data-mono-sm text-data-mono-sm font-semibold">≤ 15 Minutes</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Section 2: Privacy & Visibility Governance (4 Cols) -->
+<div class="lg:col-span-4 flex flex-col gap-space-md">
+<div class="bg-surface-container-lowest rounded p-space-lg shadow-sm">
+<div class="flex items-center justify-between pb-space-sm">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-primary text-[22px]">policy</span>
+<span class="font-title-md text-title-md text-on-surface font-semibold">2. Privacy &amp; Visibility</span>
+</div>
+<span class="font-caption text-caption uppercase tracking-wider text-secondary bg-surface-container-low px-2 py-0.5 rounded">
+              FR-TEN-003
+            </span>
+</div>
+<p class="font-body-sm text-body-sm text-secondary mb-space-md">
+            Governs organizational hierarchy visibility, downline masking rules, and statutory data lifecycles.
+          </p>
+<div class="space-y-space-md">
+<!-- Downline Depth Masking Visualization -->
+<div class="p-space-md rounded bg-surface-container-low space-y-space-xs">
+<div class="flex items-center justify-between">
+<span class="font-section-heading text-section-heading text-on-surface">Downline Depth Masking</span>
+<span class="font-data-mono-sm text-data-mono-sm px-1.5 py-0.5 rounded bg-primary-container text-on-primary">Depth ≤ 3</span>
+</div>
+<p class="font-body-sm text-body-sm text-secondary">
+                Full names, emails, and ranks visible through Depth 3. Beyond Depth 3, entities are masked into aggregated numeric counts and volume totals only.
+              </p>
+<!-- Inline Mini Visualization Chart -->
+<div class="pt-2">
+<div class="flex items-center justify-between text-[11px] font-data-mono-sm text-secondary mb-1">
+<span>Level 1-3: Clear PII</span>
+<span>Level 4+: Aggregated</span>
+</div>
+<div class="h-2 w-full rounded bg-surface-container overflow-hidden flex">
+<div class="bg-primary h-full w-3/5"></div>
+<div class="bg-secondary/40 h-full w-2/5"></div>
+</div>
+</div>
+</div>
+<!-- Prospect Data Ownership -->
+<div class="p-space-md rounded bg-surface-container-low space-y-space-xs">
+<div class="flex items-center justify-between">
+<span class="font-section-heading text-section-heading text-on-surface">Prospect Ownership</span>
+<span class="px-1.5 py-0.5 rounded bg-tertiary-container/15 text-tertiary font-data-mono-sm text-data-mono-sm">DISTRIBUTOR_OWNED</span>
+</div>
+<p class="font-body-sm text-body-sm text-secondary">
+                Pre-enrolled prospect leads belong exclusively to the recruiting distributor by default. Cross-line lead harvesting is prohibited by policy.
+              </p>
+</div>
+<!-- Retention Timers -->
+<div class="p-space-md rounded bg-surface-container-low space-y-space-sm">
+<span class="font-section-heading text-section-heading text-on-surface">Statutory Data Retention</span>
+<div class="space-y-2 pt-1">
+<div class="flex items-center justify-between p-2 rounded bg-surface-container-lowest">
+<div>
+<span class="font-body-sm text-body-sm text-on-surface font-medium block">Active Distributors</span>
+<span class="font-caption text-caption text-secondary">IRS / Statutory Tax Record</span>
+</div>
+<span class="font-data-mono-md text-data-mono-md text-primary font-semibold">7 Years</span>
+</div>
+<div class="flex items-center justify-between p-2 rounded bg-surface-container-lowest">
+<div>
+<span class="font-body-sm text-body-sm text-on-surface font-medium block">Terminated Unvested</span>
+<span class="font-caption text-caption text-secondary">Right-to-be-forgotten</span>
+</div>
+<span class="font-data-mono-md text-data-mono-md text-secondary font-semibold">3 Years</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- System Invariant Seal Card -->
+<div class="rounded p-space-md bg-surface-container-high/40 space-y-space-xs">
+<div class="flex items-center gap-space-xs text-primary">
+<span class="material-symbols-outlined text-[18px]">verified</span>
+<span class="font-section-heading text-section-heading font-semibold">Governance Invariant Guarantee</span>
+</div>
+<p class="font-body-sm text-body-sm text-secondary">
+            Settings are checked during every calculation batch. If tenant parameters deviate from historical snapshots, the execution engine halts immediately.
+          </p>
+</div>
+</div>
+</div>
+<!-- Section 4: Version History & Effective Date Audit Ledger -->
+<div class="bg-surface-container-lowest rounded shadow-sm overflow-hidden">
+<div class="p-space-lg flex flex-col md:flex-row md:items-center justify-between gap-space-sm">
+<div>
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-primary text-[22px]">history_edu</span>
+<span class="font-title-md text-title-md text-on-surface font-semibold">4. Governed Policy Revision Ledger &amp; Snapshots</span>
+</div>
+<p class="font-body-sm text-body-sm text-secondary mt-0.5">
+            Immutable chain of modifications. Every active, queued, or deprecated version must feature two independent signatures.
+          </p>
+</div>
+<div class="flex items-center gap-space-xs font-data-mono-sm text-data-mono-sm text-secondary">
+<span class="w-2 h-2 rounded-full bg-tertiary"></span>
+<span>4 Recorded Versions</span>
+</div>
+</div>
+<!-- Ledger Table (Compact Density) -->
+<div class="overflow-x-auto">
+<table class="w-full text-left font-body-sm text-body-sm">
+<thead class="bg-surface-container-low text-secondary font-caption text-caption uppercase tracking-wider">
+<tr>
+<th class="py-2.5 px-space-md">Version Ref</th>
+<th class="py-2.5 px-space-md">Effective Date (UTC)</th>
+<th class="py-2.5 px-space-md">Status</th>
+<th class="py-2.5 px-space-md">Primary Author</th>
+<th class="py-2.5 px-space-md">Finance Approver</th>
+<th class="py-2.5 px-space-md">Key Diff Parameter Summary</th>
+<th class="py-2.5 px-space-md text-right">Inspection</th>
+</tr>
+</thead>
+<tbody class="divide-y-0">
+<!-- Row 1: Active Current -->
+<tr class="bg-surface-container-low/40 hover:bg-surface-container transition-colors">
+<td class="py-2.5 px-space-md font-data-mono-md text-data-mono-md text-primary font-semibold">
+                SET-v2026.4
+              </td>
+<td class="py-2.5 px-space-md font-data-mono-sm text-data-mono-sm text-on-surface">
+                2026-10-01 00:00
+              </td>
+<td class="py-2.5 px-space-md">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-tertiary-container/15 text-tertiary font-data-mono-sm text-data-mono-sm font-semibold">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span> ACTIVE
+                </span>
+</td>
+<td class="py-2.5 px-space-md text-on-surface">Elena Rostova (Analyst)</td>
+<td class="py-2.5 px-space-md text-on-surface">D. Vance (VP Fin)</td>
+<td class="py-2.5 px-space-md text-secondary">
+                Extended bank cooling-off from 7 to 14 days; adjusted GL-2000 payout floor to $25.00.
+              </td>
+<td class="py-2.5 px-space-md text-right">
+<button class="h-6 px-2 rounded bg-surface-container-highest hover:bg-primary hover:text-on-primary text-primary font-caption text-caption transition-colors" onclick="inspectDiff('SET-v2026.4')">
+                  View Diff
+                </button>
+</td>
+</tr>
+<!-- Row 2: Superseded Previous -->
+<tr class="hover:bg-surface-container-low transition-colors">
+<td class="py-2.5 px-space-md font-data-mono-md text-data-mono-md text-on-surface font-semibold">
+                SET-v2026.3
+              </td>
+<td class="py-2.5 px-space-md font-data-mono-sm text-data-mono-sm text-on-surface">
+                2026-07-01 00:00
+              </td>
+<td class="py-2.5 px-space-md">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-surface-container text-secondary font-data-mono-sm text-data-mono-sm">
+                  SUPERSEDED
+                </span>
+</td>
+<td class="py-2.5 px-space-md text-on-surface">Marcus Vance (DPO)</td>
+<td class="py-2.5 px-space-md text-on-surface">D. Vance (VP Fin)</td>
+<td class="py-2.5 px-space-md text-secondary">
+                Enforced Depth 3 PII pseudonymization for CPRA compliance.
+              </td>
+<td class="py-2.5 px-space-md text-right">
+<button class="h-6 px-2 rounded bg-surface-container hover:bg-surface-container-highest text-secondary font-caption text-caption transition-colors" onclick="inspectDiff('SET-v2026.3')">
+                  View Diff
+                </button>
+</td>
+</tr>
+<!-- Row 3: Superseded Older -->
+<tr class="hover:bg-surface-container-low transition-colors">
+<td class="py-2.5 px-space-md font-data-mono-md text-data-mono-md text-on-surface font-semibold">
+                SET-v2026.2
+              </td>
+<td class="py-2.5 px-space-md font-data-mono-sm text-data-mono-sm text-on-surface">
+                2026-04-01 00:00
+              </td>
+<td class="py-2.5 px-space-md">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-surface-container text-secondary font-data-mono-sm text-data-mono-sm">
+                  SUPERSEDED
+                </span>
+</td>
+<td class="py-2.5 px-space-md text-on-surface">Elena Rostova (Analyst)</td>
+<td class="py-2.5 px-space-md text-on-surface">K. Thorne (Audit)</td>
+<td class="py-2.5 px-space-md text-secondary">
+                Set write-off ceiling to $50.00 USD with Tier-2 exception handling.
+              </td>
+<td class="py-2.5 px-space-md text-right">
+<button class="h-6 px-2 rounded bg-surface-container hover:bg-surface-container-highest text-secondary font-caption text-caption transition-colors" onclick="inspectDiff('SET-v2026.2')">
+                  View Diff
+                </button>
+</td>
+</tr>
+<!-- Row 4: Genesis Baseline -->
+<tr class="hover:bg-surface-container-low transition-colors">
+<td class="py-2.5 px-space-md font-data-mono-md text-data-mono-md text-on-surface font-semibold">
+                SET-v2026.1
+              </td>
+<td class="py-2.5 px-space-md font-data-mono-sm text-data-mono-sm text-on-surface">
+                2026-01-01 00:00
+              </td>
+<td class="py-2.5 px-space-md">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-surface-container text-secondary font-data-mono-sm text-data-mono-sm">
+                  HISTORIC
+                </span>
+</td>
+<td class="py-2.5 px-space-md text-on-surface">System Migration Script</td>
+<td class="py-2.5 px-space-md text-on-surface">Board Audit Committee</td>
+<td class="py-2.5 px-space-md text-secondary">
+                Baseline initial tenant policy definition (Genesis Ledger 2026).
+              </td>
+<td class="py-2.5 px-space-md text-right">
+<button class="h-6 px-2 rounded bg-surface-container hover:bg-surface-container-highest text-secondary font-caption text-caption transition-colors" onclick="inspectDiff('SET-v2026.1')">
+                  View Diff
+                </button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<!-- Slide-out Drawer: Version History & Detailed Parameter Diff Inspector -->
+<div class="fixed inset-y-0 right-0 w-full md:w-[540px] lg:w-[600px] bg-surface-container-lowest shadow-2xl z-50 transform translate-x-full transition-transform duration-200 flex flex-col" id="drawer-diff">
+<!-- Drawer Header -->
+<div class="p-space-lg bg-surface-container-low flex items-center justify-between">
+<div class="flex flex-col gap-0.5">
+<span class="font-caption text-caption uppercase tracking-wider text-secondary">Parameter Diff Inspector</span>
+<h3 class="font-title-md text-title-md text-on-surface font-semibold" id="drawer-version-title">SET-v2026.4 vs. SET-v2026.3</h3>
+<span class="font-data-mono-sm text-data-mono-sm text-primary">SHA-256: 4f128bc...99d10</span>
+</div>
+<button class="w-8 h-8 rounded bg-surface-container hover:bg-surface-container-high flex items-center justify-center text-on-surface transition-colors" id="btn-close-drawer">
+<span class="material-symbols-outlined text-[20px]">close</span>
+</button>
+</div>
+<!-- Drawer Body -->
+<div class="flex-1 overflow-y-auto p-space-lg space-y-space-lg">
+<!-- Approver Metadata Block -->
+<div class="p-space-md rounded bg-surface-container space-y-2">
+<div class="flex items-center justify-between text-caption font-caption text-secondary">
+<span>CREATION &amp; AUDIT TIMESTAMPS</span>
+<span class="font-data-mono-sm">2026-09-28 14:12:09 UTC</span>
+</div>
+<div class="grid grid-cols-2 gap-2 text-body-sm font-body-sm">
+<div>
+<span class="text-secondary block text-caption">Author</span>
+<span class="font-medium text-on-surface">Elena Rostova (Analyst)</span>
+</div>
+<div>
+<span class="text-secondary block text-caption">Dual-Signoff Approver</span>
+<span class="font-medium text-tertiary">David Vance (VP Finance)</span>
+</div>
+</div>
+<div class="pt-2">
+<span class="text-secondary block text-caption">Business Justification</span>
+<p class="font-body-sm text-body-sm text-on-surface mt-0.5">
+            Updated anti-takeover cooling-off threshold per Q3 Security Advisory #SEC-881 to thwart automated ACH hijacking attempts.
+          </p>
+</div>
+</div>
+<!-- Plain Language Parameter Diff Block -->
+<div class="space-y-space-sm">
+<span class="font-section-heading text-section-heading text-on-surface font-semibold">Granular Parameter Comparison</span>
+<!-- Diff Item 1 -->
+<div class="p-space-md rounded bg-surface-container-low space-y-space-xs">
+<div class="flex items-center justify-between">
+<span class="font-body-sm text-body-sm font-semibold text-on-surface">settlement.bank_detail_cooling_off_days</span>
+<span class="px-1.5 py-0.5 rounded bg-surface-container font-data-mono-sm text-data-mono-sm text-primary">CHANGED</span>
+</div>
+<div class="grid grid-cols-2 gap-space-sm pt-1">
+<div class="p-2 rounded bg-surface-container-lowest text-secondary line-through font-data-mono-sm text-data-mono-sm">
+              7 Days
+            </div>
+<div class="p-2 rounded bg-tertiary-container/15 text-tertiary font-data-mono-sm text-data-mono-sm font-semibold">
+              14 Days
+            </div>
+</div>
+</div>
+<!-- Diff Item 2 -->
+<div class="p-space-md rounded bg-surface-container-low space-y-space-xs">
+<div class="flex items-center justify-between">
+<span class="font-body-sm text-body-sm font-semibold text-on-surface">payout.minimum_threshold_cents</span>
+<span class="px-1.5 py-0.5 rounded bg-surface-container font-data-mono-sm text-data-mono-sm text-primary">CHANGED</span>
+</div>
+<div class="grid grid-cols-2 gap-space-sm pt-1">
+<div class="p-2 rounded bg-surface-container-lowest text-secondary line-through font-data-mono-sm text-data-mono-sm">
+              $10.00 USD (1000)
+            </div>
+<div class="p-2 rounded bg-tertiary-container/15 text-tertiary font-data-mono-sm text-data-mono-sm font-semibold">
+              $25.00 USD (2500)
+            </div>
+</div>
+</div>
+<!-- Diff Item 3 (Unchanged) -->
+<div class="p-space-md rounded bg-surface-container-low opacity-75 space-y-space-xs">
+<div class="flex items-center justify-between">
+<span class="font-body-sm text-body-sm text-secondary">privacy.downline_mask_depth</span>
+<span class="px-1.5 py-0.5 rounded bg-surface-container font-data-mono-sm text-data-mono-sm text-secondary">UNCHANGED</span>
+</div>
+<div class="p-2 rounded bg-surface-container-lowest font-data-mono-sm text-data-mono-sm text-secondary">
+            3 (Levels 1-3 Full PII, Level 4+ Masked)
+          </div>
+</div>
+<!-- Diff Item 4 (Unchanged) -->
+<div class="p-space-md rounded bg-surface-container-low opacity-75 space-y-space-xs">
+<div class="flex items-center justify-between">
+<span class="font-body-sm text-body-sm text-secondary">finance.clawback_recovery_mode</span>
+<span class="px-1.5 py-0.5 rounded bg-surface-container font-data-mono-sm text-data-mono-sm text-secondary">UNCHANGED</span>
+</div>
+<div class="p-2 rounded bg-surface-container-lowest font-data-mono-sm text-data-mono-sm text-secondary">
+            REC_OFFSET_FUTURE_RESTATED
+          </div>
+</div>
+</div>
+</div>
+<!-- Drawer Footer -->
+<div class="p-space-md bg-surface-container-low flex items-center justify-end gap-space-sm">
+<button class="h-8 px-space-md rounded bg-surface-container hover:bg-surface-container-high text-on-surface font-body-sm text-body-sm font-medium" id="btn-close-drawer-bottom">
+        Close Inspector
+      </button>
+</div>
+</div>
+<!-- Revert Confirmation Modal (FR-TEN-002 Dual-Custody Friction) -->
+<div class="fixed inset-0 z-50 bg-on-background/40 backdrop-blur-sm hidden items-center justify-center p-space-md" id="modal-revert">
+<div class="bg-surface-container-lowest rounded max-w-lg w-full p-space-lg shadow-2xl space-y-space-md">
+<div class="flex items-center gap-space-sm text-error">
+<span class="material-symbols-outlined text-[28px]">warning</span>
+<h3 class="font-title-md text-title-md font-semibold text-on-surface">Initiate Policy Rollback</h3>
+</div>
+<p class="font-body-sm text-body-sm text-secondary">
+        You are scheduling a reversion to <strong class="text-on-surface">SET-v2026.3</strong>. This action does <span class="text-error font-medium">not</span> apply retroactively to already-calculated periods. It will become effective at the start of the next period boundary: <span class="font-data-mono-sm text-data-mono-sm text-on-surface font-semibold">2026-11-01 00:00 UTC</span>.
+      </p>
+<div class="p-space-sm rounded bg-surface-container-low space-y-1">
+<label class="block font-caption text-caption text-secondary uppercase tracking-wider">Required Reversion Reason</label>
+<textarea class="w-full p-2 bg-surface-container-lowest rounded font-body-sm text-body-sm text-on-surface placeholder:text-secondary focus:outline-none focus:bg-surface-container" id="revert-reason" placeholder="State operational or audit justification..." rows="2"></textarea>
+</div>
+<div class="flex items-center justify-between pt-space-xs">
+<span class="font-caption text-caption text-secondary">Requires Finance Approver counter-signature</span>
+<div class="flex items-center gap-space-sm">
+<button class="h-8 px-space-md rounded bg-surface-container hover:bg-surface-container-high text-on-surface font-body-sm text-body-sm font-medium" onclick="closeRevertModal()">
+            Cancel
+          </button>
+<button class="h-8 px-space-md rounded bg-error text-on-error font-body-sm text-body-sm font-medium hover:opacity-90" onclick="confirmRevert()">
+            Submit for Approval
+          </button>
+</div>
+</div>
+</div>
+</div>
+<!-- Publish New Version Modal -->
+<div class="fixed inset-0 z-50 bg-on-background/40 backdrop-blur-sm hidden items-center justify-center p-space-md" id="modal-publish">
+<div class="bg-surface-container-lowest rounded max-w-lg w-full p-space-lg shadow-2xl space-y-space-md">
+<div class="flex items-center gap-space-sm text-primary">
+<span class="material-symbols-outlined text-[28px]">new_releases</span>
+<h3 class="font-title-md text-title-md font-semibold text-on-surface">Draft SET-v2026.5</h3>
+</div>
+<p class="font-body-sm text-body-sm text-secondary">
+        Configure the effective boundary date for the new policy bundle. Changes will enter a dual-signature queue.
+      </p>
+<div class="space-y-space-sm">
+<div>
+<label class="block font-caption text-caption text-secondary uppercase tracking-wider mb-1">Effective Period Boundary</label>
+<select class="w-full h-8 px-space-sm rounded bg-surface-container-low font-body-sm text-body-sm text-on-surface focus:outline-none">
+<option>2026-11-01 00:00 UTC (Next Calendar Run)</option>
+<option>2026-12-01 00:00 UTC</option>
+<option>2027-01-01 00:00 UTC (Annual Plan Cutover)</option>
+</select>
+</div>
+<div>
+<label class="block font-caption text-caption text-secondary uppercase tracking-wider mb-1">Assigned Finance Approver</label>
+<select class="w-full h-8 px-space-sm rounded bg-surface-container-low font-body-sm text-body-sm text-on-surface focus:outline-none">
+<option>David Vance (VP Finance &amp; Controller)</option>
+<option>Katrina Thorne (Statutory Compliance Lead)</option>
+</select>
+</div>
+<div>
+<label class="block font-caption text-caption text-secondary uppercase tracking-wider mb-1">Change Reason Summary</label>
+<input class="w-full h-8 px-space-sm rounded bg-surface-container-low font-body-sm text-body-sm text-on-surface placeholder:text-secondary focus:outline-none" placeholder="e.g., Annual statutory alignment" type="text"/>
+</div>
+</div>
+<div class="flex items-center justify-end gap-space-sm pt-space-xs">
+<button class="h-8 px-space-md rounded bg-surface-container hover:bg-surface-container-high text-on-surface font-body-sm text-body-sm font-medium" onclick="closePublishModal()">
+          Cancel
+        </button>
+<button class="h-8 px-space-md rounded bg-primary-container text-on-primary font-body-sm text-body-sm font-medium hover:bg-primary" onclick="closePublishModal()">
+          Commit to Approval Pipeline
+        </button>
+</div>
+</div>
+</div>
+<script>
+    const drawer = document.getElementById('drawer-diff');
+    const btnOpenDrawer = document.getElementById('btn-open-history');
+    const btnCloseDrawer = document.getElementById('btn-close-drawer');
+    const btnCloseDrawerBottom = document.getElementById('btn-close-drawer-bottom');
+    const drawerTitle = document.getElementById('drawer-version-title');
+
+    function openDrawer(versionLabel) {
+      if (versionLabel) {
+        drawerTitle.textContent = versionLabel + ' vs. Preceding Base';
+      } else {
+        drawerTitle.textContent = 'SET-v2026.4 vs. SET-v2026.3';
+      }
+      drawer.classList.remove('translate-x-full');
+    }
+
+    function closeDrawer() {
+      drawer.classList.add('translate-x-full');
+    }
+
+    btnOpenDrawer.addEventListener('click', () => openDrawer('SET-v2026.4'));
+    btnCloseDrawer.addEventListener('click', closeDrawer);
+    btnCloseDrawerBottom.addEventListener('click', closeDrawer);
+
+    window.inspectDiff = function(version) {
+      openDrawer(version);
+    };
+
+    const modalRevert = document.getElementById('modal-revert');
+    window.openRevertModal = function() {
+      modalRevert.classList.remove('hidden');
+      modalRevert.classList.add('flex');
+    };
+    window.closeRevertModal = function() {
+      modalRevert.classList.add('hidden');
+      modalRevert.classList.remove('flex');
+    };
+    window.confirmRevert = function() {
+      const reason = document.getElementById('revert-reason').value;
+      if (!reason.trim()) {
+        alert('Please provide a statutory justification reason.');
+        return;
+      }
+      closeRevertModal();
+      alert('Reversion submitted for dual-custody signature. Audit incident registered.');
+    };
+
+    const modalPublish = document.getElementById('modal-publish');
+    window.openPublishModal = function() {
+      modalPublish.classList.remove('hidden');
+      modalPublish.classList.add('flex');
+    };
+    window.closePublishModal = function() {
+      modalPublish.classList.add('hidden');
+      modalPublish.classList.remove('flex');
+    };
+  </script>
+</div></main></div></body></html>

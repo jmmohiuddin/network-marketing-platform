@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+
+<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_blank" name="shell-type"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "on-error-container": "#93000a", "on-secondary-fixed": "#131b2e", "secondary-container": "#dae2fd", "on-background": "#0d1c2e", "secondary": "#565e74", "on-tertiary-container": "#8cd7a3", "tertiary-container": "#0d5f36", "error-container": "#ffdad6", "surface-variant": "#d5e3fc", "on-primary-fixed": "#001944", "surface": "#f8f9ff", "surface-dim": "#ccdbf3", "surface-container-low": "#eff4ff", "outline": "#737783", "surface-container-high": "#dce9ff", "surface-container-highest": "#d5e3fc", "on-surface": "#0d1c2e", "on-primary-fixed-variant": "#074397", "tertiary": "#004525", "secondary-fixed": "#dae2fd", "on-secondary": "#ffffff", "tertiary-fixed": "#a7f3be", "on-primary-container": "#afc6ff", "on-error": "#ffffff", "inverse-surface": "#233144", "on-tertiary": "#ffffff", "on-tertiary-fixed-variant": "#00522d", "on-surface-variant": "#434752", "primary-fixed": "#d9e2ff", "error": "#ba1a1a", "on-secondary-container": "#5c647a", "secondary-fixed-dim": "#bec6e0", "primary": "#003883", "on-secondary-fixed-variant": "#3f465c", "primary-fixed-dim": "#afc6ff", "on-primary": "#ffffff", "tertiary-fixed-dim": "#8cd7a3", "on-tertiary-fixed": "#00210f", "surface-container": "#e6eeff", "inverse-primary": "#afc6ff", "outline-variant": "#c3c6d3", "surface-bright": "#f8f9ff", "surface-tint": "#2e5bb0", "surface-container-lowest": "#ffffff", "inverse-on-surface": "#eaf1ff", "primary-container": "#1e4fa3", "background": "#f8f9ff" }, "borderRadius": { "DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem" }, "spacing": { "margin": "1.5rem", "space-xl": "2rem", "margin-mobile": "1rem", "space-2xl": "3rem", "space-xs": "0.25rem", "gutter-compact": "0.75rem", "space-lg": "1.5rem", "space-xxs": "0.125rem", "space-md": "1rem", "gutter": "1.5rem", "space-sm": "0.5rem" }, "fontFamily": { "data-mono-sm": ["JetBrains Mono"], "caption": ["Inter"], "body-lg": ["Inter"], "body-md": ["Inter"], "data-mono-md": ["JetBrains Mono"], "title-lg": ["Inter"], "display": ["Inter"], "title-lg-mobile": ["Inter"], "section-heading": ["Inter"], "display-mobile": ["Inter"], "title-md": ["Inter"], "body-sm": ["Inter"], "data-mono-lg": ["JetBrains Mono"] }, "fontSize": { "data-mono-sm": ["12px", { "lineHeight": "16px", "letterSpacing": "0em", "fontWeight": "500" }], "caption": ["12px", { "lineHeight": "16px", "letterSpacing": "0.01em", "fontWeight": "500" }], "body-lg": ["16px", { "lineHeight": "24px", "letterSpacing": "0em", "fontWeight": "400" }], "body-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0em", "fontWeight": "400" }], "data-mono-md": ["14px", { "lineHeight": "20px", "letterSpacing": "-0.01em", "fontWeight": "500" }], "title-lg": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.015em", "fontWeight": "600" }], "display": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "600" }], "title-lg-mobile": ["20px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600" }], "section-heading": ["16px", { "lineHeight": "24px", "letterSpacing": "-0.005em", "fontWeight": "600" }], "display-mobile": ["26px", { "lineHeight": "32px", "letterSpacing": "-0.015em", "fontWeight": "600" }], "title-md": ["20px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600" }], "body-sm": ["13px", { "lineHeight": "18px", "letterSpacing": "0.005em", "fontWeight": "400" }], "data-mono-lg": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.02em", "fontWeight": "600" }] } } } };</script></head><body class="bg-surface font-body-md text-on-surface min-h-screen flex flex-col justify-between selection:bg-secondary-container selection:text-on-secondary-fixed"><header class="w-full py-space-lg px-gutter flex flex-col sm:flex-row items-center justify-between gap-space-sm"><div class="flex items-center gap-space-sm"><div class="w-7 h-7 bg-primary flex items-center justify-center rounded"><span class="material-symbols-outlined text-on-primary text-[18px]">account_balance</span></div><div class="flex items-baseline gap-space-xs"><span class="font-title-md text-title-md text-on-surface tracking-tight font-semibold">AuditLedger</span><span class="font-data-mono-sm text-data-mono-sm text-on-surface-variant font-medium">/AUTH-SEC</span></div></div><div class="flex items-center gap-space-xs px-space-sm py-space-xxs bg-surface-container-low rounded border border-outline-variant/60"><span class="material-symbols-outlined text-tertiary-container text-[16px]">verified_user</span><span class="font-caption text-caption text-on-surface-variant tracking-wider uppercase font-semibold">SOC-2 Type II Certified · FIPS 140-3 Compliant</span></div></header><main class="w-full flex-1 flex flex-col items-center justify-center px-margin-mobile sm:px-gutter py-space-xl"><div class="flex flex-col w-full">
+<div class="w-full max-w-[840px] mx-auto flex flex-col gap-space-lg">
+<!-- Top Document Shell Header -->
+<div class="bg-surface-container-lowest p-space-lg rounded-lg shadow-sm flex flex-col gap-space-md">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-space-sm pb-space-xs">
+<div class="flex items-center gap-space-xs">
+<span class="w-2.5 h-2.5 rounded-full bg-primary"></span>
+<span class="font-section-heading text-section-heading tracking-tight text-on-surface">Acrobex Global Holdings, Inc.</span>
+<span class="font-caption text-caption text-secondary">/ SEC Form 10-K Ex. 99.2</span>
+</div>
+<div class="inline-flex items-center gap-space-xs px-space-sm py-0.5 bg-surface-container-high rounded text-primary">
+<span class="material-symbols-outlined text-[16px]">verified</span>
+<span class="font-caption text-caption uppercase font-semibold">FTC 16 CFR §437 Compliant</span>
+</div>
+</div>
+<div class="flex flex-col gap-space-xs">
+<h1 class="font-title-lg text-title-lg text-on-surface font-semibold tracking-tight">Statement of Typical Participant Earnings</h1>
+<p class="font-body-md text-body-md text-on-surface-variant">Statutory Annual Income Disclosure Statement for the Reporting Calendar Year 2026</p>
+</div>
+<!-- Attestation & Hash Ribbon -->
+<div class="bg-surface-container-low p-space-sm rounded flex flex-col md:flex-row md:items-center justify-between gap-space-sm">
+<div class="flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-primary text-[20px]">policy</span>
+<div class="flex flex-col">
+<span class="font-caption text-caption text-on-surface font-semibold">Attestation: Ernst &amp; Young Audit Ledger Seal (Assurance Ref #EY-2026-CPL-89)</span>
+<span class="font-caption text-caption text-secondary">Published: 2026-11-05 08:00:00 UTC · Invariant Check Passed (FR-CPL-009)</span>
+</div>
+</div>
+<div class="flex items-center gap-space-xs bg-surface-container-lowest px-space-sm py-1 rounded shadow-sm">
+<span class="font-data-mono-sm text-data-mono-sm text-secondary">Merkle Root:</span>
+<span class="font-data-mono-sm text-data-mono-sm text-primary font-medium tracking-tight">SHA256: 4a91b…882c</span>
+</div>
+</div>
+</div>
+<!-- Mandatory Honest Reality Box (BR-HON-01 / BR-HON-02) -->
+<div class="bg-surface-container-lowest p-space-lg rounded-lg shadow-sm relative overflow-hidden">
+<div class="absolute left-0 top-0 bottom-0 w-1.5 bg-primary"></div>
+<div class="flex items-start gap-space-md pl-space-xs">
+<span class="material-symbols-outlined text-primary text-[24px] mt-0.5">info</span>
+<div class="flex flex-col gap-space-xs">
+<span class="font-section-heading text-section-heading text-on-surface font-semibold uppercase tracking-wider text-[13px]">Statutory Truth-in-Earning Statement</span>
+<p class="font-body-md text-body-md text-on-surface leading-relaxed">
+            The primary reason participants enroll is to enjoy products at wholesale prices and sell directly to retail customers. Building an independent sales organization involves significant, uncompensated effort, persistence, and operating overhead. <strong>Most participants do not earn a full-time income or replace standard employment compensation.</strong> Earnings are non-contractual and fluctuate strictly based on individual product sales volume.
+          </p>
+</div>
+</div>
+</div>
+<!-- Statutory Key Metrics Grid -->
+<div class="flex flex-col gap-space-xs">
+<div class="flex items-center justify-between">
+<span class="font-caption text-caption text-secondary uppercase font-semibold tracking-wider">Statutory Cohort Baseline</span>
+<span class="font-data-mono-sm text-data-mono-sm text-secondary">Cohort: FY2026 U.S. Mainland &amp; Territories</span>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-space-sm">
+<div class="bg-surface-container-lowest p-space-md rounded-lg shadow-sm flex flex-col justify-between">
+<div class="flex items-center justify-between text-secondary mb-space-xs">
+<span class="font-body-sm text-body-sm text-on-surface-variant font-medium">Total Enrolled Participants</span>
+<span class="material-symbols-outlined text-[18px]">groups</span>
+</div>
+<div class="flex flex-col">
+<span class="font-data-mono-lg text-data-mono-lg text-on-surface font-semibold">34,180</span>
+<span class="font-caption text-caption text-secondary mt-1">100.0% statutory universe</span>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-space-md rounded-lg shadow-sm flex flex-col justify-between">
+<div class="flex items-center justify-between text-secondary mb-space-xs">
+<span class="font-body-sm text-body-sm text-on-surface-variant font-medium">Earned Non-Zero (&gt; $0.00)</span>
+<span class="material-symbols-outlined text-tertiary text-[18px]">payments</span>
+</div>
+<div class="flex flex-col">
+<span class="font-data-mono-lg text-data-mono-lg text-on-surface font-semibold">18,416</span>
+<span class="font-caption text-caption text-tertiary font-semibold mt-1">53.9% of all participants</span>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-space-md rounded-lg shadow-sm flex flex-col justify-between">
+<div class="flex items-center justify-between text-secondary mb-space-xs">
+<span class="font-body-sm text-body-sm text-on-surface-variant font-medium">Earned Zero ($0.00 USD)</span>
+<span class="material-symbols-outlined text-secondary text-[18px]">money_off</span>
+</div>
+<div class="flex flex-col">
+<span class="font-data-mono-lg text-data-mono-lg text-on-surface font-semibold">15,764</span>
+<span class="font-caption text-caption text-secondary font-semibold mt-1">46.1% wholesale/inactive</span>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-space-md rounded-lg shadow-sm flex flex-col justify-between sm:col-span-1 md:col-span-1">
+<div class="flex items-center justify-between text-secondary mb-space-xs">
+<span class="font-body-sm text-body-sm text-on-surface-variant font-medium">Median (All Participants)</span>
+<span class="material-symbols-outlined text-[18px]">data_thresholding</span>
+</div>
+<div class="flex flex-col">
+<span class="font-data-mono-lg text-data-mono-lg text-on-surface font-semibold">$240.00</span>
+<span class="font-caption text-caption text-secondary mt-1">Gross USD before operating expenses</span>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-space-md rounded-lg shadow-sm flex flex-col justify-between sm:col-span-1 md:col-span-2">
+<div class="flex items-center justify-between text-secondary mb-space-xs">
+<span class="font-body-sm text-body-sm text-on-surface-variant font-medium">Median (Active Earners Only)</span>
+<span class="material-symbols-outlined text-[18px]">stacked_bar_chart</span>
+</div>
+<div class="flex flex-col">
+<div class="flex items-baseline gap-space-sm">
+<span class="font-data-mono-lg text-data-mono-lg text-primary font-semibold">$482.50</span>
+<span class="font-caption text-caption text-secondary">Cohort: 18,416 active accounts</span>
+</div>
+<div class="w-full bg-surface-container-high h-2 rounded mt-2 overflow-hidden flex">
+<div class="bg-primary h-full" style="width: 53.9%"></div>
+<div class="bg-surface-dim h-full" style="width: 46.1%"></div>
+</div>
+<div class="flex justify-between items-center mt-1 text-secondary">
+<span class="font-caption text-caption">53.9% Active Earners</span>
+<span class="font-caption text-caption">46.1% Inactive/Product Buyers</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Official Percentile Distribution Table -->
+<div class="bg-surface-container-lowest rounded-lg shadow-sm overflow-hidden flex flex-col">
+<div class="p-space-md bg-surface-container-low flex flex-col sm:flex-row sm:items-center justify-between gap-space-xs">
+<div>
+<span class="font-section-heading text-section-heading text-on-surface font-semibold">Annual Compensation Distribution Ledger</span>
+<p class="font-caption text-caption text-secondary">Gross commission and retail profit allocations calculated pursuant to FTC Guides §437.3</p>
+</div>
+<button class="inline-flex items-center gap-space-xs px-space-sm py-1 bg-surface-container-lowest hover:bg-surface-container rounded text-on-surface shadow-sm transition-colors text-body-sm font-medium" id="copySummaryBtn">
+<span class="material-symbols-outlined text-[16px]">content_copy</span>
+<span>Copy Verification Data</span>
+</button>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-high text-on-surface">
+<th class="py-space-sm px-space-md font-section-heading text-[13px] uppercase tracking-wider font-semibold">Earner Tier &amp; Rank</th>
+<th class="py-space-sm px-space-sm font-section-heading text-[13px] uppercase tracking-wider font-semibold text-right">% All</th>
+<th class="py-space-sm px-space-sm font-section-heading text-[13px] uppercase tracking-wider font-semibold text-right">% Earners</th>
+<th class="py-space-sm px-space-md font-section-heading text-[13px] uppercase tracking-wider font-semibold text-right">Annual Earnings Range</th>
+<th class="py-space-sm px-space-md font-section-heading text-[13px] uppercase tracking-wider font-semibold text-right">Median Earnings</th>
+<th class="py-space-sm px-space-md font-section-heading text-[13px] uppercase tracking-wider font-semibold text-right">Avg. Time to Reach</th>
+</tr>
+</thead>
+<tbody class="divide-y-0">
+<!-- Tier 6 -->
+<tr class="hover:bg-surface-container-low transition-colors">
+<td class="py-space-sm px-space-md">
+<div class="flex items-center gap-space-xs">
+<span class="w-2 h-2 rounded-full bg-primary"></span>
+<span class="font-body-md text-body-md font-semibold text-on-surface">Top 1%</span>
+<span class="font-caption text-caption text-secondary">(Tier 6 - National Dir.)</span>
+</div>
+</td>
+<td class="py-space-sm px-space-sm font-data-mono-sm text-data-mono-sm text-right text-on-surface">0.5%</td>
+<td class="py-space-sm px-space-sm font-data-mono-sm text-data-mono-sm text-right text-on-surface">1.0%</td>
+<td class="py-space-sm px-space-md font-data-mono-sm text-data-mono-sm text-right text-on-surface">$64,200.00 – $310,000.00</td>
+<td class="py-space-sm px-space-md font-data-mono-sm text-data-mono-sm text-right font-semibold text-primary">$94,500.00</td>
+<td class="py-space-sm px-space-md font-data-mono-sm text-data-mono-sm text-right text-secondary">6.4 Years</td>
+</tr>
+<!-- Tier 5 -->
+<tr class="bg-surface-container-lowest hover:bg-surface-container-low transition-colors">
+<td class="py-space-sm px-space-md">
+<div class="flex items-center gap-space-xs">
+<span class="w-2 h-2 rounded-full bg-secondary"></span>
+<span class="font-body-md text-body-md font-semibold text-on-surface">Top 5%</span>
+<span class="font-caption text-caption text-secondary">(Tier 5 - Senior Dir.)</span>
+</div>
+</td>
+<td class="py-space-sm px-space-sm font-data-mono-sm text-data-mono-sm text-right text-on-surface">2.7%</td>
+<td class="py-space-sm px-space-sm font-data-mono-sm text-data-mono-sm text-right text-on-surface">5.0%</td>
+<td class="py-space-sm px-space-md font-data-mono-sm text-data-mono-sm text-right text-on-surface">$18,400.00 – $64,199.00</td>
+<td class="py-space-sm px-space-md font-data-mono-sm text-data-mono-sm text-right font-semibold text-on-surface">$28,900.00</td>
+<td class="py-space-sm px-space-md font-data-mono-sm text-data-mono-sm text-right text-secondary">3.8 Years</td>
+</tr>
+<!-- Tier 4 -->
+<tr class="hover:bg-surface-container-low transition-colors">
+<td class="py-space-sm px-space-md">
+<div class="flex items-center gap-space-xs">
+<span class="w-2 h-2 rounded-full bg-secondary"></span>
+<span class="font-body-md text-body-md font-semibold text-on-surface">Top 10%</span>
+<span class="font-caption text-caption text-secondary">(Tier 4 - Directors)</span>
+</div>
+</td>
+<td class="py-space-sm px-space-sm font-data-mono-sm text-data-mono-sm text-right text-on-surface">5.4%</td>
+<td class="py-space-sm px-space-sm font-data-mono-sm text-data-mono-sm text-right text-on-surface">10.0%</td>
+<td class="py-space-sm px-space-md font-data-mono-sm text-data-mono-sm text-right text-on-surface">$5,200.00 – $18,399.00</td>
+<td class="py-space-sm px-space-md font-data-mono-sm text-data-mono-sm text-right font-semibold text-on-surface">$8,410.00</td>
+<td class="py-space-sm px-space-md font-data-mono-sm text-data-mono-sm text-right text-secondary">2.1 Years</td>
+</tr>
+<!-- Tier 3 -->
+<tr class="bg-surface-container-lowest hover:bg-surface-container-low transition-colors">
+<td class="py-space-sm px-space-md">
+<div class="flex items-center gap-space-xs">
+<span class="w-2 h-2 rounded-full bg-secondary"></span>
+<span class="font-body-md text-body-md font-semibold text-on-surface">Top 25%</span>
+<span class="font-caption text-caption text-secondary">(Tier 3 - Sr. Assoc.)</span>
+</div>
+</td>
+<td class="py-space-sm px-space-sm font-data-mono-sm text-data-mono-sm text-right text-on-surface">13.5%</td>
+<td class="py-space-sm px-space-sm font-data-mono-sm text-data-mono-sm text-right text-on-surface">25.0%</td>
+<td class="py-space-sm px-space-md font-data-mono-sm text-data-mono-sm text-right text-on-surface">$1,200.00 – $5,199.00</td>
+<td class="py-space-sm px-space-md font-data-mono-sm text-data-mono-sm text-right font-semibold text-on-surface">$2,180.00</td>
+<td class="py-space-sm px-space-md font-data-mono-sm text-data-mono-sm text-right text-secondary">14 Months</td>
+</tr>
+<!-- Tier 2 -->
+<tr class="hover:bg-surface-container-low transition-colors">
+<td class="py-space-sm px-space-md">
+<div class="flex items-center gap-space-xs">
+<span class="w-2 h-2 rounded-full bg-secondary"></span>
+<span class="font-body-md text-body-md font-semibold text-on-surface">Mid 50%</span>
+<span class="font-caption text-caption text-secondary">(Tier 2 - Associates)</span>
+</div>
+</td>
+<td class="py-space-sm px-space-sm font-data-mono-sm text-data-mono-sm text-right text-on-surface">27.0%</td>
+<td class="py-space-sm px-space-sm font-data-mono-sm text-data-mono-sm text-right text-on-surface">50.0%</td>
+<td class="py-space-sm px-space-md font-data-mono-sm text-data-mono-sm text-right text-on-surface">$120.00 – $1,199.00</td>
+<td class="py-space-sm px-space-md font-data-mono-sm text-data-mono-sm text-right font-semibold text-on-surface">$390.00</td>
+<td class="py-space-sm px-space-md font-data-mono-sm text-data-mono-sm text-right text-secondary">6 Months</td>
+</tr>
+<!-- Tier 1 -->
+<tr class="bg-surface-container-low/60 hover:bg-surface-container-low transition-colors font-medium">
+<td class="py-space-sm px-space-md">
+<div class="flex items-center gap-space-xs">
+<span class="w-2 h-2 rounded-full bg-outline"></span>
+<span class="font-body-md text-body-md font-semibold text-on-surface">Lower 50% / Inactive</span>
+<span class="font-caption text-caption text-secondary">(Tier 1 - Wholesale)</span>
+</div>
+</td>
+<td class="py-space-sm px-space-sm font-data-mono-sm text-data-mono-sm text-right text-on-surface">50.9%</td>
+<td class="py-space-sm px-space-sm font-data-mono-sm text-data-mono-sm text-right text-secondary">—</td>
+<td class="py-space-sm px-space-md font-data-mono-sm text-data-mono-sm text-right text-on-surface">$0.00 – $119.00</td>
+<td class="py-space-sm px-space-md font-data-mono-sm text-data-mono-sm text-right font-semibold text-secondary">$0.00</td>
+<td class="py-space-sm px-space-md font-data-mono-sm text-data-mono-sm text-right text-secondary">—</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="p-space-sm bg-surface-container text-right">
+<span class="font-data-mono-sm text-data-mono-sm text-secondary">Invariant Validation: Sum of Enrolled Cohort = 100.0% · Checked via Merkle Node</span>
+</div>
+</div>
+<!-- Mandatory Regulatory Disclosures & Footnotes Section -->
+<div class="bg-surface-container-lowest p-space-lg rounded-lg shadow-sm flex flex-col gap-space-md">
+<div class="flex items-center justify-between pb-space-xs">
+<span class="font-section-heading text-section-heading text-on-surface font-semibold">Statutory Accounting Disclosures &amp; Expenses</span>
+<span class="font-caption text-caption text-secondary">16 CFR §437.3(a)(4)</span>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-space-md">
+<div class="flex flex-col gap-space-xs bg-surface-container-low p-space-md rounded">
+<div class="flex items-center gap-space-xs text-primary">
+<span class="material-symbols-outlined text-[18px]">receipt_long</span>
+<span class="font-body-sm text-body-sm text-on-surface font-semibold">1. Independent Contractor Status &amp; Taxes</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
+            Earnings shown reflect gross amounts paid by Acrobex Global and estimated retail markup before deduction of expenses. Participants are independent contractors, not employees. Participants are exclusively responsible for all applicable self-employment, state, and federal taxes.
+          </p>
+</div>
+<div class="flex flex-col gap-space-xs bg-surface-container-low p-space-md rounded">
+<div class="flex items-center gap-space-xs text-primary">
+<span class="material-symbols-outlined text-[18px]">point_of_sale</span>
+<span class="font-body-sm text-body-sm text-on-surface font-semibold">2. Operating Expenses &amp; Inventory Overhead</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
+            Figures do NOT account for operating expenses incurred by participants, which may include starter kit acquisition ($49.00 USD), optional marketing materials, convention attendance, telecommunications, travel, and promotional shipping costs.
+          </p>
+</div>
+<div class="flex flex-col gap-space-xs bg-surface-container-low p-space-md rounded">
+<div class="flex items-center gap-space-xs text-primary">
+<span class="material-symbols-outlined text-[18px]">replay</span>
+<span class="font-body-sm text-body-sm text-on-surface font-semibold">3. 90% Buyback Protection Guarantee</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
+            Pursuant to the DSA Code of Ethics, Acrobex provides an explicit 90% inventory repurchase guarantee on unopened, resalable inventory purchased within the preceding 12 calendar months upon participant account cancellation.
+          </p>
+</div>
+<div class="flex flex-col gap-space-xs bg-surface-container-low p-space-md rounded">
+<div class="flex items-center gap-space-xs text-primary">
+<span class="material-symbols-outlined text-[18px]">balance</span>
+<span class="font-body-sm text-body-sm text-on-surface font-semibold">4. Prohibited Compensation Claims</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
+            Distributors are prohibited under company bylaws and Federal Trade Commission rules from making lifestyle, guaranteed income, medical health cure claims, or displaying speculative earnings testimonials during recruitment.
+          </p>
+</div>
+</div>
+<!-- Regulatory External Links & Attestation Action Bar -->
+<div class="flex flex-col sm:flex-row items-center justify-between gap-space-md pt-space-xs">
+<div class="flex flex-wrap items-center gap-space-md text-secondary">
+<a class="inline-flex items-center gap-1 font-caption text-caption hover:text-primary transition-colors" href="https://www.ftc.gov/business-guidance/resources/business-guidance-concerning-multi-level-marketing" rel="noopener noreferrer" target="_blank">
+<span>FTC MLM Guidance</span>
+<span class="material-symbols-outlined text-[14px]">open_in_new</span>
+</a>
+<a class="inline-flex items-center gap-1 font-caption text-caption hover:text-primary transition-colors" href="https://www.dsa.org/ethics" rel="noopener noreferrer" target="_blank">
+<span>DSA Code of Ethics</span>
+<span class="material-symbols-outlined text-[14px]">open_in_new</span>
+</a>
+<a class="inline-flex items-center gap-1 font-caption text-caption hover:text-primary transition-colors" href="#">
+<span>Wholesale Price Schedule</span>
+<span class="material-symbols-outlined text-[14px]">launch</span>
+</a>
+</div>
+<div class="flex items-center gap-space-xs w-full sm:w-auto">
+<button class="w-full sm:w-auto inline-flex items-center justify-center gap-space-xs px-space-md py-2 bg-primary hover:bg-primary-container text-on-primary rounded font-body-sm text-body-sm font-medium shadow-sm transition-colors" id="downloadPdfBtn">
+<span class="material-symbols-outlined text-[18px]">download_for_offline</span>
+<span>Download Certified PDF Report</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Minimal Audit Stamp Verification Footprint -->
+<div class="flex flex-col items-center justify-center p-space-sm text-secondary gap-1">
+<div class="flex items-center gap-space-xs font-data-mono-sm text-data-mono-sm">
+<span class="material-symbols-outlined text-[16px] text-tertiary">lock</span>
+<span>Cryptographically Anchored into AuditLedger Chain Block #9,481,204</span>
+</div>
+<p class="font-caption text-caption text-secondary">Immutable Public Node: 0x4E9A…90F2 · Inquiries: compliance@acrobexglobal.internal</p>
+</div>
+</div>
+</div>
+<script>
+  // Simple micro-interactions for AuditLedger Public Earnings Disclosure
+  document.getElementById('downloadPdfBtn')?.addEventListener('click', function() {
+    const originalText = this.innerHTML;
+    this.innerHTML = '<span class="material-symbols-outlined text-[18px] animate-spin">refresh</span> Generating SHA256 PDF...';
+    this.disabled = true;
+    setTimeout(() => {
+      this.innerHTML = '<span class="material-symbols-outlined text-[18px]">check_circle</span> Attested PDF Downloaded';
+      setTimeout(() => {
+        this.innerHTML = originalText;
+        this.disabled = false;
+      }, 2500);
+    }, 1000);
+  });
+
+  document.getElementById('copySummaryBtn')?.addEventListener('click', function() {
+    const textToCopy = "Acrobex Global FY2026 Earnings Disclosure | Merkle: SHA256:4a91b...882c | Median All Participants: $240.00 USD | Total Participants: 34,180";
+    navigator.clipboard?.writeText(textToCopy).then(() => {
+      const originalText = this.innerHTML;
+      this.innerHTML = '<span class="material-symbols-outlined text-[16px] text-tertiary">done</span> <span>Copied Hash</span>';
+      setTimeout(() => {
+        this.innerHTML = originalText;
+      }, 2000);
+    }).catch(() => {
+      alert("Verification metadata copied to clipboard.");
+    });
+  });
+</script></main><footer class="w-full py-space-lg px-gutter border-t border-outline-variant/40 bg-surface-container-lowest/50"><div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-space-md text-on-surface-variant"><div class="flex items-center gap-space-sm font-data-mono-sm text-data-mono-sm"><div class="flex items-center gap-space-xxs"><span class="w-2 h-2 rounded-full bg-tertiary-container"></span><span>TLS 1.3 AES-256-GCM Session Secure</span></div><span class="text-outline-variant">•</span><span class="hover:text-on-surface cursor-pointer">Node ID: 0x4E9A…90F2</span></div><div class="flex items-center gap-space-lg font-caption text-caption"><a class="hover:text-on-surface transition-colors" href="#">Privacy Policy</a><a class="hover:text-on-surface transition-colors" href="#">Security Whitepaper</a><a class="hover:text-on-surface transition-colors" href="#">Tenant Resolver</a><span class="font-data-mono-sm text-data-mono-sm text-outline">v4.18.2-prod</span></div></div></footer></body></html>
