@@ -2,7 +2,7 @@ import { defineConfig } from 'vitest/config'
 // One worker: integration tests share one Postgres database, and the machine has 16 GB.
 // Parallel agents each set NMP_TEST_DB=nmp_test_<slot> so their test runs never share a database.
 const TEST_DB = process.env.NMP_TEST_DB ?? 'nmp_test'
-if (!/^nmp_test(_[1-4])?$/.test(TEST_DB)) throw new Error(`NMP_TEST_DB must be nmp_test or nmp_test_1..4, got ${TEST_DB}`)
+if (!/^nmp_test(_[1-6])?$/.test(TEST_DB)) throw new Error(`NMP_TEST_DB must be nmp_test or nmp_test_1..6, got ${TEST_DB}`)
 
 export default defineConfig({
   test: {

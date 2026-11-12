@@ -17,10 +17,10 @@ const T = { type: 'object', properties: {
   screens: { type: 'array', items: { type: 'object', properties: { screen: { type: 'string' }, functional: { type: 'string' }, visual: { type: 'string' }, responsive: { type: 'string' }, accessibility: { type: 'string' }, notes: { type: 'string' } }, required: ['screen', 'functional', 'visual', 'responsive', 'accessibility', 'notes'] } },
   defects: { type: 'array', items: { type: 'object', properties: { id: { type: 'string' }, severity: { type: 'string', enum: ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'] }, area: { type: 'string', enum: ['web', 'api'] }, summary: { type: 'string' }, repro: { type: 'string' }, evidence: { type: 'string' } }, required: ['id', 'severity', 'area', 'summary', 'repro', 'evidence'] } } }, required: ['screens', 'defects'] }
 let active = 0; const q = []
-// 4 agents at once; each gets its own test database slot (nmp_test_1..4). Heavy commands are throttled machine-wide by scripts/heavy.sh.
-const free = [4, 3, 2, 1]
+// 6 agents at once; each gets its own test database slot (nmp_test_1..6). Heavy commands are throttled machine-wide by scripts/heavy.sh.
+const free = [6, 5, 4, 3, 2, 1]
 const SLOT = n => `\nYOUR SLOT: test database nmp_test_${n}.`
-const limit = fn => new Promise((res, rej) => { const run = () => { active++; const n = free.pop(); fn(n).then(res, rej).finally(() => { free.push(n); active--; if (q.length) q.shift()() }) }; active < 4 ? run() : q.push(run) })
+const limit = fn => new Promise((res, rej) => { const run = () => { active++; const n = free.pop(); fn(n).then(res, rej).finally(() => { free.push(n); active--; if (q.length) q.shift()() }) }; active < 6 ? run() : q.push(run) })
 const reviewFix = async (key, own, built, focus, testCmd) => {
   const rev = await limit(n => agent(`${COMMON}${SLOT(n)}\nRead-only adversarial reviewer: do NOT modify files. Scope: ${own}.\n${focus}\nReproduce findings by test, inject or SQL against nmp_test. Builder: ${JSON.stringify(built)}`, { label: `review:${key}`, phase: key.startsWith('web') ? 'Web' : 'Backend', schema: F }))
   const all = rev?.findings || []
