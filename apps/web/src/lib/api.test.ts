@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { apiError, fetchReturning, json, noContent, ok, requestBody, requestHeaders, requestInit, type FetchMock } from '../test/fetch'
-import { ApiError, createApiClient, type ApiHandlers } from './api'
+import { ApiError, createApiClient, newIdempotencyKey, type ApiHandlers } from './api'
 
 function client(fetchMock: FetchMock, overrides: Partial<ApiHandlers> = {}) {
   const handlers = {
@@ -146,5 +146,16 @@ describe('support sessions', () => {
     const { api, handlers } = client(fetchReturning(apiError(403, 'SUPPORT_SESSION_INACTIVE')), { supportSession: () => 's-1' })
     void api.get('/v1/audit-events')
     await vi.waitFor(() => expect(handlers.supportSessionClosed).toHaveBeenCalled())
+  })
+})
+
+describe('idempotency keys', () => {
+  it('are version 4 UUIDs built without crypto.randomUUID (missing outside secure contexts)', () => {
+    const randomUUID = vi.spyOn(crypto, 'randomUUID')
+    const keys = new Set(Array.from({ length: 50 }, newIdempotencyKey))
+    expect(keys.size).toBe(50)
+    for (const key of keys) expect(key).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/)
+    expect(randomUUID).not.toHaveBeenCalled()
+    randomUUID.mockRestore()
   })
 })

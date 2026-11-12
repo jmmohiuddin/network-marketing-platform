@@ -1,3 +1,5 @@
+import type { MarketRef } from '../../lib/markets'
+
 // Response shapes of the IMP and CPL routes (apps/api/src/modules/imp, modules/cpl), as the screens read them.
 
 export const BATCH_STATES = ['uploaded', 'rejected', 'validated', 'mapped', 'loaded', 'superseded'] as const
@@ -110,6 +112,7 @@ export interface Snapshot {
   readonly id: string
   readonly state: SnapshotState
   readonly market_id: string
+  readonly market: MarketRef
   readonly period_from: string
   readonly period_to: string
   readonly method_version: string

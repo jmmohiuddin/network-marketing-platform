@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
-import { currentAuth, requirePermission, requireRealm } from '../../lib/auth.js'
+import { assertStepUp, currentAuth, requirePermission, requireRealm } from '../../lib/auth.js'
 import { inTenant } from '../../lib/db.js'
 import { envelope, parse } from '../../lib/http.js'
 import { idempotent, sendIdempotent } from '../../lib/idempotency.js'
@@ -53,6 +53,6 @@ export function registerUserRoutes(app: FastifyInstance): void {
 
   app.post('/v1/users/:id/deactivate', guard, async (request) => {
     const { id } = parse(idParams, request.params)
-    return envelope(await inTenant(request, (tx) => deactivateUser(tx, id)))
+    return envelope(await inTenant(request, (tx) => deactivateUser(tx, currentAuth(request), id, () => assertStepUp(request))))
   })
 }

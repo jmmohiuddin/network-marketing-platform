@@ -8,6 +8,8 @@ import { ConfirmDialog } from '../../../components/dialog'
 import { StatusChip } from '../../../components/status-chip'
 import { Table, type TableColumn } from '../../../components/table'
 import { useToast } from '../../../components/toast'
+import type { Market } from '../../../lib/markets'
+import type { Resource } from '../../../lib/use-resource'
 import { formatDateTime, marketScopeLabel, personLabel } from '../format'
 import { tableError, useIdempotencyKey, type PagedList } from '../resource'
 import type { GrantRequest, RoleView, UserRole, UserView } from '../types'
@@ -22,15 +24,18 @@ type UserAction =
 export interface UsersTableProps {
   readonly users: PagedList<UserView>
   readonly roles: readonly RoleView[]
+  /** GET /v1/markets: scopes are shown by market code and chosen from this list. */
+  readonly markets: Resource<readonly Market[]>
   /** Pending grant requests: shown as pending next to the user they are for. */
   readonly pending: readonly GrantRequest[]
   /** Something changed: reload users and requests. */
   readonly onChanged: () => void
 }
 
-function RolesCell({ user, pending, roleNames, onRevoke }: {
+function RolesCell({ user, pending, roleNames, markets, onRevoke }: {
   readonly user: UserView
   readonly pending: readonly GrantRequest[]
+  readonly markets: readonly Market[]
   readonly roleNames: ReadonlyMap<string, string>
   /** Absent: read-only (no Revoke). */
   readonly onRevoke?: (role: UserRole) => void
@@ -41,13 +46,13 @@ function RolesCell({ user, pending, roleNames, onRevoke }: {
     <ul className="admin-plain-list">
       {user.roles.map((role) => (
         <li key={role.assignment_id} className="admin-role-line">
-          <span>{role.name} · {marketScopeLabel(role.market_ids)}{role.valid_to === null ? '' : ` · until ${formatDateTime(role.valid_to)}`}</span>
+          <span>{role.name} · {marketScopeLabel(role.market_ids, markets)}{role.valid_to === null ? '' : ` · until ${formatDateTime(role.valid_to)}`}</span>
           {onRevoke !== undefined && <Button variant="tertiary" aria-label={`Revoke ${role.name} from ${user.email}`} onClick={() => onRevoke(role)}>Revoke</Button>}
         </li>
       ))}
       {waiting.map((request) => (
         <li key={request.id} className="admin-role-line">
-          <span>{roleNames.get(request.role_id) ?? 'Role'} · {marketScopeLabel(request.market_ids)}</span>
+          <span>{roleNames.get(request.role_id) ?? 'Role'} · {marketScopeLabel(request.market_ids, markets)}</span>
           <StatusChip state="pending" label="Waiting for a second admin" />
         </li>
       ))}
@@ -76,7 +81,7 @@ function ResendDialog({ user, onClose, onDone }: { readonly user: UserView; read
 }
 
 /** SC-28 users tab: users with roles, market scopes, MFA state; assign and revoke roles, resend, deactivate. */
-export function UsersTable({ users, roles, pending, onChanged }: UsersTableProps) {
+export function UsersTable({ users, roles, markets, pending, onChanged }: UsersTableProps) {
   const { readOnly } = useSession()
   const api = useApi()
   const toast = useToast()
@@ -89,7 +94,7 @@ export function UsersTable({ users, roles, pending, onChanged }: UsersTableProps
   }
   const columns: readonly TableColumn<UserView>[] = [
     { key: 'user', header: 'User', cell: (user) => personLabel(user) },
-    { key: 'roles', header: 'Roles and market scope', cell: (user) => <RolesCell user={user} pending={pending} roleNames={roleNames} onRevoke={readOnly ? undefined : (role) => setAction({ kind: 'revoke', user, role })} /> },
+    { key: 'roles', header: 'Roles and market scope', cell: (user) => <RolesCell user={user} pending={pending} roleNames={roleNames} markets={markets.data ?? []} onRevoke={readOnly ? undefined : (role) => setAction({ kind: 'revoke', user, role })} /> },
     { key: 'mfa', header: 'Authenticator app', cell: (user) => (user.mfa_enrolled ? 'Set up' : 'Not set up') },
     { key: 'last', header: 'Last sign-in', cell: (user) => (user.last_sign_in_at === null ? 'Never' : formatDateTime(user.last_sign_in_at)) },
     { key: 'state', header: 'State', cell: (user) => <StatusChip state={user.state} /> },
@@ -121,7 +126,7 @@ export function UsersTable({ users, roles, pending, onChanged }: UsersTableProps
         empty={{ title: 'No users yet. Invite the people who work with this tenant.' }}
         pagination={users.pagination}
       />
-      {action?.kind === 'grant' && <GrantDialog user={action.user} roles={roles} onClose={close} onGranted={done} />}
+      {action?.kind === 'grant' && <GrantDialog user={action.user} roles={roles} markets={markets} onClose={close} onGranted={done} />}
       {action?.kind === 'resend' && <ResendDialog user={action.user} onClose={close} onDone={done} />}
       <ConfirmDialog
         open={action?.kind === 'deactivate'}
@@ -140,7 +145,7 @@ export function UsersTable({ users, roles, pending, onChanged }: UsersTableProps
       <ConfirmDialog
         open={action?.kind === 'revoke'}
         title="Revoke role"
-        consequence={action?.kind === 'revoke' ? `${action.user.email} loses ${action.role.name} (${marketScopeLabel(action.role.market_ids)}) now.` : ''}
+        consequence={action?.kind === 'revoke' ? `${action.user.email} loses ${action.role.name} (${marketScopeLabel(action.role.market_ids, markets.data ?? [])}) now.` : ''}
         confirmLabel="Revoke role"
         destructive
         onCancel={close}

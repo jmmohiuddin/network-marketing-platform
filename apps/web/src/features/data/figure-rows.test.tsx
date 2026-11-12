@@ -5,7 +5,7 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { apiError, json } from '../../test/fetch'
 import { renderWithProviders } from '../../test/render'
-import { FigureRows } from './figure-rows'
+import { FigureRows, matchingSums } from './figure-rows'
 import { callsOf, fetchRoutes, withSession } from './test-support'
 
 const router = vi.hoisted(() => ({ push: vi.fn(), replace: vi.fn() }))
@@ -73,5 +73,25 @@ describe('FigureRows', () => {
     renderWithProviders(withSession(<FigureRows snapshotId="s1" />, ['compliance.read']), fetchRoutes(['GET', ROWS_PATH, () => apiError(422, 'FIGURE_OMITTED', 'This indicator was not computed, so it has no rows.')]))
     expect(await screen.findByText('This indicator was not computed, so it has no rows.')).toBeTruthy()
     expect(screen.getByRole('link', { name: 'Back to the snapshot' }).getAttribute('href')).toBe('/compliance/snapshots/s1?report=R1')
+  })
+
+  it('states the sums of the whole set against the figure component they must equal (AC-41.1)', async () => {
+    const withSums = (expected: string) => json(200, {
+      ...PAGE, meta: { ...PAGE.meta, sums: { amount_minor: '10000', volume_minor: '9000' }, component: { key: 'numerator', expected_minor: expected } },
+    })
+    const { unmount } = renderWithProviders(withSession(<FigureRows snapshotId="s1" />, ['compliance.read']), fetchRoutes(['GET', ROWS_PATH, () => withSums('10000')]))
+    const match = (await screen.findByText('Sums match the figure')).closest('.banner')!
+    expect(match.textContent).toContain('Sums over the whole numerator set: Amount (minor units) 10,000 · Volume (minor units) 9,000.')
+    expect(match.textContent).toContain("Amount (minor units) equals the figure's numerator, 10,000 minor units.")
+    unmount()
+    renderWithProviders(withSession(<FigureRows snapshotId="s1" />, ['compliance.read']), fetchRoutes(['GET', ROWS_PATH, () => withSums('16000')]))
+    expect((await screen.findByRole('alert')).textContent).toContain('None equals the figure')
+  })
+})
+
+describe('matchingSums', () => {
+  it('compares whole numbers exactly and ignores anything else', () => {
+    expect(matchingSums({ amount_minor: '9007199254740993', volume_minor: '1' }, '9007199254740993')).toEqual(['amount_minor'])
+    expect(matchingSums({ amount_minor: '1.5' }, '1.5')).toEqual([])
   })
 })

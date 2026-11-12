@@ -25,6 +25,15 @@ describe('Table', () => {
     expect(within(table).getByRole('cell', { name: '20' }).className).toBe('cell-end')
   })
 
+  it('labels each cell with its column header and keeps explicit roles when rows stack on phones (BUG-022)', () => {
+    render(<Table {...base} rows={[{ id: 'b-1', rows: 10 }]} stackOnPhone />)
+    const table = screen.getByRole('table', { name: '2 batches' })
+    expect(table.className).toContain('table-stack')
+    expect(table.getAttribute('role')).toBe('table')
+    expect(within(table).getByRole('rowheader', { name: 'b-1' }).getAttribute('data-label')).toBe('Batch')
+    expect(within(table).getByRole('cell', { name: '10' }).getAttribute('data-label')).toBe('Rows')
+  })
+
   it('shows loading, empty and error states', async () => {
     const user = userEvent.setup()
     const { rerender } = render(<Table {...base} rows={[]} loading />)

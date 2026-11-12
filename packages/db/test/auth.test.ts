@@ -160,3 +160,25 @@ describe('login attempts', () => {
     await expect(withTenant(ctx, (tx) => count(tx, 'login_attempt'))).rejects.toThrow(PERMISSION_DENIED)
   })
 })
+
+describe('vendor invitations (BUG-011, 0042)', () => {
+  const invite = (userId: string, tokenHash: Buffer) => withVendor({ userId: vendorUserId }, (tx) =>
+    tx.query(
+      `INSERT INTO user_invitation (tenant_id, user_id, token_hash, expires_at, created_by)
+       VALUES (NULL, $1, $2, now() + interval '1 hour', $3)`,
+      [userId, tokenHash, vendorUserId],
+    ))
+
+  test('the vendor realm invites vendor users only; the invitation is found and seen in the vendor realm only', async () => {
+    const invitee = await createUser({ tenantId: null, state: 'invited' })
+    const tokenHash = newTokenHash()
+
+    await invite(invitee.id, tokenHash)
+    const found = await withSystem((tx) => tx.query('SELECT tenant_id, user_id FROM auth_find_invitation($1)', [tokenHash]))
+
+    expect(found.rows).toEqual([{ tenant_id: null, user_id: invitee.id }])
+    await expect(invite(ctx.userId, newTokenHash())).rejects.toThrow(RLS_VIOLATION)
+    expect(await withTenant(ctx, (tx) => count(tx, 'user_invitation'))).toBe(0)
+    expect(await withVendor({ userId: vendorUserId }, (tx) => count(tx, 'user_invitation'))).toBe(1)
+  })
+})

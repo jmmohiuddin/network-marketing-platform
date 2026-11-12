@@ -15,7 +15,7 @@ import { leavePage } from '../../../lib/leave-page'
 import { isNotAvailable } from '../../../lib/messages'
 import { enterSupportSession } from '../../../lib/support-session'
 import { useSession } from '../../../lib/session'
-import { durationLabel, formatDateTime, permissionLabel, remainingLabel } from '../format'
+import { durationLabel, formatDateTime, remainingLabel, supportScopeText } from '../format'
 import { LoadFailure } from '../page-states'
 import { useNow } from '../../../lib/use-now'
 import { tableError, usePagedList } from '../resource'
@@ -53,7 +53,7 @@ function SessionsTable({ state, onEnd }: { readonly state: string; readonly onEn
   const columns: readonly TableColumn<SupportSession>[] = [
     { key: 'tenant', header: 'Tenant', cell: (session) => session.tenant_slug },
     { key: 'reason', header: 'Reason', cell: (session) => session.reason },
-    { key: 'scope', header: 'Access (read-only)', cell: (session) => session.scope.permissions.map(permissionLabel).join(', ') },
+    { key: 'scope', header: 'Areas (view only)', cell: (session) => supportScopeText(session.scope.permissions) },
     { key: 'by', header: 'Requested by', cell: (session) => (session.requester_id === me.user.id ? 'You' : 'Another vendor user') },
     { key: 'state', header: 'State', cell: (session) => <StatusChip state={session.state} /> },
     { key: 'window', header: 'Window', cell: (session) => windowLabel(session, now) },
@@ -62,15 +62,14 @@ function SessionsTable({ state, onEnd }: { readonly state: string; readonly onEn
       header: 'Actions',
       align: 'end',
       cell: (session) => {
-        const endsAt = session.ends_at
         return (
         <div className="admin-row-actions">
-          {canOpen(session, me.user.id, now) && endsAt !== null && (
+          {canOpen(session, me.user.id, now) && (
             <Button
               variant="tertiary"
               aria-label={`Open the tenant app of ${session.tenant_slug} (read-only)`}
               onClick={() => {
-                enterSupportSession({ id: session.id, tenantSlug: session.tenant_slug, endsAt, user: me.user })
+                enterSupportSession(session.id)
                 leavePage('/')
               }}
             >

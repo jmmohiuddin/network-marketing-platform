@@ -76,13 +76,12 @@ async function refuse(request: FastifyRequest, auth: AuthContext, id: string, se
 
 /**
  * In the tenant's transaction, with the session row locked: still open (the tenant may have ended it since
- * loadSession), started on first use, and the access written to the tenant-visible session log (AC-29.1) before
- * the handler runs. false = no longer open, nothing written.
+ * loadSession) and started on first use. false = no longer open, nothing written. The access itself is logged once
+ * the route has answered (logSessionAccess), so a request the route refuses is never logged as ACCESSED (BUG-013).
  */
-function recordAccess(request: FastifyRequest, auth: AuthContext, session: SessionRow): Promise<boolean> {
+function startUse(request: FastifyRequest, auth: AuthContext, session: SessionRow): Promise<boolean> {
   const ctx = { tenantId: session.tenant_id, userId: auth.userId, sessionId: auth.sessionId }
   const actor = { actorType: 'vendor_user' as const, requestId: request.id, supportSessionId: session.id }
-  const about = { objectType: 'support_session', objectId: session.id }
   return runInTenant(ctx, actor, async (tx) => {
     const { rows } = await tx.query<{ state: string; open: boolean }>(
       `SELECT state, ${OPEN} AS open FROM support_session WHERE id = $1 FOR UPDATE`,
@@ -91,9 +90,8 @@ function recordAccess(request: FastifyRequest, auth: AuthContext, session: Sessi
     if (rows[0]?.open !== true) return false
     if (rows[0].state === 'approved') {
       await tx.query(`UPDATE support_session SET state = 'active' WHERE id = $1`, [session.id])
-      await recordAudit(tx, { action: 'SUPPORT_SESSION.STARTED', ...about, before: { state: 'approved' } })
+      await recordAudit(tx, { action: 'SUPPORT_SESSION.STARTED', objectType: 'support_session', objectId: session.id, before: { state: 'approved' } })
     }
-    await recordAudit(tx, { action: 'SUPPORT_SESSION.ACCESSED', ...about, after: accessed(request) })
     return true
   })
 }
@@ -130,7 +128,7 @@ export async function supportSessionAccess(request: FastifyRequest): Promise<voi
   if (!READ_METHODS.has(request.method)) {
     return refuse(request, auth, id, session, new ApiError(403, 'SUPPORT_SESSION_READ_ONLY', 'Support sessions are read-only.'))
   }
-  if (!(await recordAccess(request, auth, session))) return refuse(request, auth, id, session, inactive())
+  if (!(await startUse(request, auth, session))) return refuse(request, auth, id, session, inactive())
   request.auth = inSession(auth, session)
 }
 
@@ -159,8 +157,31 @@ export async function logRefusedVendorRequest(request: FastifyRequest, _reply: F
   }
 }
 
-/** Installs in-session access and vendor refusal logging on the whole app; call after session resolution. */
+// Requests whose access is already logged: an onSend that fails is answered by the error handler, which sends again.
+const accessLogged = new WeakSet<FastifyRequest>()
+
+/**
+ * onSend hook (AC-29.1 "every query and screen view"): an in-session request the route did not refuse (401/403 are
+ * ACCESS_REFUSED, logRefusedVendorRequest) is written to the tenant-visible session log with its status, before the
+ * answer leaves; if the log cannot be written, the answer is replaced by the error.
+ */
+export async function logSessionAccess(request: FastifyRequest, reply: FastifyReply): Promise<void> {
+  const auth = request.auth
+  const sessionId = auth?.supportSessionId ?? null
+  if (auth === null || sessionId === null || auth.tenantId === null) return
+  if (REFUSAL_STATUSES.has(reply.statusCode) || accessLogged.has(request)) return
+  accessLogged.add(request)
+  const ctx = { tenantId: auth.tenantId, userId: auth.userId, sessionId: auth.sessionId }
+  const actor = { actorType: 'vendor_user' as const, requestId: request.id, supportSessionId: sessionId }
+  await runInTenant(ctx, actor, (tx) => recordAudit(tx, {
+    action: 'SUPPORT_SESSION.ACCESSED', objectType: 'support_session', objectId: sessionId,
+    after: { ...accessed(request), status: reply.statusCode },
+  }))
+}
+
+/** Installs in-session access and vendor access/refusal logging on the whole app; call after session resolution. */
 export function registerSupportSessionAccess(app: FastifyInstance): void {
   app.addHook('onRequest', supportSessionAccess)
   app.addHook('onError', logRefusedVendorRequest)
+  app.addHook('onSend', logSessionAccess)
 }

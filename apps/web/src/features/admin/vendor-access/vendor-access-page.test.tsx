@@ -94,6 +94,15 @@ describe('VendorAccessPage', () => {
     expect(callsTo(fetchMock, 'POST', '/v1/support-sessions/s1/end').length).toBe(1)
   })
 
+  it('shows who asked and the areas to view, never write actions (BUG-023)', async () => {
+    const asked = session({ requester_id: '7733a8df-0000-4000-8000-000000000003', scope: { permissions: ['import.manage', 'user.manage'], requester_region: 'eu' } })
+    renderAs(ME, <VendorAccessPage />, fetchByRoute({ 'GET /v1/support-sessions': () => ok([asked]) }))
+    expect(await screen.findByText('Areas asked for (view only)')).toBeTruthy()
+    expect(screen.getByText('Data imports, Users and roles')).toBeTruthy()
+    expect(screen.getByText('Vendor user 7733a8df')).toBeTruthy()
+    expect(screen.queryByText(/Upload and load|Manage users/)).toBeNull()
+  })
+
   it('says when there are no requests', async () => {
     renderAs(ME, <VendorAccessPage />, fetchByRoute({ 'GET /v1/support-sessions': () => ok([]) }))
     expect(await screen.findByText('No requests. When vendor staff ask for access, the request appears here.')).toBeTruthy()
@@ -115,6 +124,11 @@ describe('support decision rules', () => {
   it('describes refusals and endings in the session log', () => {
     expect(logDetails({ after: { refusal: 'SUPPORT_SESSION_READ_ONLY', method: 'POST', route: '/v1/imports' } })).toBe('Refused (SUPPORT_SESSION_READ_ONLY): POST /v1/imports')
     expect(logDetails({ after: { by: 'tenant' } })).toBe('By tenant')
+    // BUG-020: the recorded params and query are shown, not the route pattern only.
+    expect(logDetails({ after: { method: 'GET', route: '/v1/settings/:key', params: { key: 'privacy.breach_contacts' }, query: {} } }))
+      .toBe('GET /v1/settings/privacy.breach_contacts')
+    expect(logDetails({ after: { method: 'GET', route: '/v1/compliance/snapshots/:id/figures/:figure/rows', params: { id: 's9', figure: 'r1.customer_share_pct' }, query: { set: 'numerator', limit: '50' } } }))
+      .toBe('GET /v1/compliance/snapshots/s9/figures/r1.customer_share_pct/rows?set=numerator&limit=50')
     expect(logDetails({ after: null })).toBe('')
   })
 })

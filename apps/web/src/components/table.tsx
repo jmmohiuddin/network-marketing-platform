@@ -34,6 +34,11 @@ export interface TableProps<T> {
   /** Cursor pagination (useCursorPages): Previous and Next only, no page numbers. */
   readonly pagination?: TablePagination
   readonly density?: 'comfortable' | 'compact'
+  /**
+   * Below 600 px each row becomes a card of "header: value" lines instead of scrolling sideways (UI_UX §7:
+   * approvals usable on phones). Explicit roles keep the table semantics that display: block would drop.
+   */
+  readonly stackOnPhone?: boolean
 }
 
 const SKELETON_ROWS = 5
@@ -49,9 +54,10 @@ function FullRow({ span, children }: { readonly span: number; readonly children:
  * Data table (UI-04, UX-05 §6.2): cursor pages, loading skeleton, empty and error states.
  * The first column names the row (a th) and should hold its link.
  */
-export function Table<T>({ caption, columns, rows, rowKey, loading = false, error = null, empty, pagination, density = 'comfortable' }: TableProps<T>) {
+export function Table<T>({ caption, columns, rows, rowKey, loading = false, error = null, empty, pagination, density = 'comfortable', stackOnPhone = false }: TableProps<T>) {
   const span = columns.length
   const alignClass = (column: TableColumn<T>) => (column.align === 'end' ? 'cell-end' : undefined)
+  const role = (name: string) => (stackOnPhone ? name : undefined)
   function body(): ReactNode {
     if (loading) {
       return Array.from({ length: SKELETON_ROWS }, (_, row) => (
@@ -71,27 +77,28 @@ export function Table<T>({ caption, columns, rows, rowKey, loading = false, erro
       )
     }
     if (rows.length === 0) return <FullRow span={span}><EmptyState title={empty.title} action={empty.action} /></FullRow>
+    const label = (column: TableColumn<T>) => (stackOnPhone ? column.header : undefined)
     return rows.map((row) => (
-      <tr key={rowKey(row)}>
+      <tr key={rowKey(row)} role={role('row')}>
         {columns.map((column, index) => index === 0
-          ? <th key={column.key} scope="row" className={alignClass(column)}>{column.cell(row)}</th>
-          : <td key={column.key} className={alignClass(column)}>{column.cell(row)}</td>)}
+          ? <th key={column.key} scope="row" role={role('rowheader')} className={alignClass(column)} data-label={label(column)}>{column.cell(row)}</th>
+          : <td key={column.key} role={role('cell')} className={alignClass(column)} data-label={label(column)}>{column.cell(row)}</td>)}
       </tr>
     ))
   }
   return (
     <div className="table-block">
       <div className="table-scroll">
-        <table className={`table table-${density}`} aria-busy={loading || undefined}>
+        <table className={`table table-${density}${stackOnPhone ? ' table-stack' : ''}`} role={role('table')} aria-busy={loading || undefined}>
           <caption className="table-caption">{caption}</caption>
-          <thead>
-            <tr>
+          <thead role={role('rowgroup')}>
+            <tr role={role('row')}>
               {columns.map((column) => (
-                <th key={column.key} scope="col" className={alignClass(column)}>{column.header}</th>
+                <th key={column.key} scope="col" role={role('columnheader')} className={alignClass(column)}>{column.header}</th>
               ))}
             </tr>
           </thead>
-          <tbody>{body()}</tbody>
+          <tbody role={role('rowgroup')}>{body()}</tbody>
         </table>
       </div>
       {loading && <p className="visually-hidden" role="status">Loading rows</p>}

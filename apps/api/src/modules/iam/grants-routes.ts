@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
-import { currentAuth, requirePermission, requireRealm, requireStepUp } from '../../lib/auth.js'
+import { assertStepUp, currentAuth, requirePermission, requireRealm, requireStepUp } from '../../lib/auth.js'
 import { inTenant } from '../../lib/db.js'
 import { envelope, parse } from '../../lib/http.js'
 import { idempotent, sendIdempotent } from '../../lib/idempotency.js'
@@ -67,7 +67,7 @@ export function registerGrantRoutes(app: FastifyInstance): void {
 
   app.post('/v1/role-assignments/:id/revoke', guard, async (request) => {
     const { id } = parse(idParams, request.params)
-    return envelope(await inTenant(request, (tx) => revokeAssignment(tx, id)))
+    return envelope(await inTenant(request, (tx) => revokeAssignment(tx, currentAuth(request), id, () => assertStepUp(request))))
   })
 
   app.get('/v1/role-grant-requests', guard, async (request) => {

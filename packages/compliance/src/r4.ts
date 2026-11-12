@@ -36,10 +36,11 @@ function activityFigures(ctx: Context, orders: readonly OrderFact[], activePvMin
   ]
 }
 
+const dayOf = (order: OrderFact): number => order.orderDay ?? 0
+
 function findCrossings(ctx: Context, orders: readonly OrderFact[], lateOrderDay: number, thresholds: readonly bigint[]): Crossing[] {
   // Day order, then order reference: the order fact carries no source row sequence, so file order within a day
   // cannot be reproduced; the reference makes the result independent of the order the facts were supplied in.
-  const dayOf = (order: OrderFact): number => order.orderDay ?? 0
   const sorted = orders.filter((o) => ctx.buyer(o).canEarn)
     .sort((a, b) => dayOf(a) - dayOf(b) || (a.orderRef < b.orderRef ? -1 : 1))
   const running = new Map<string, bigint>()
@@ -56,20 +57,22 @@ function findCrossings(ctx: Context, orders: readonly OrderFact[], lateOrderDay:
   return crossings
 }
 
-function lateFigures(ctx: Context, crossings: readonly Crossing[]): Figure[] {
+function lateFigures(ctx: Context, lateOrders: number, crossings: readonly Crossing[]): Figure[] {
   const population = 'Own orders of earning-type participants placed on or after the late-order day of the month'
   const refunded = crossings.filter((c) => c.refunded)
   const refs = (list: readonly Crossing[]): string[] => list.map((c) => c.orderRef)
   return [
     ctx.figure({
       key: 'late_threshold_crossing_orders', unit: 'count', value: crossings.length.toString(), numerator: BigInt(crossings.length),
-      population,
+      population, populationCount: lateOrders,
       method: 'Personal volume accumulated per participant in day order, orders of the same day in ascending order reference; a late order counts once for each rank threshold it lifts the running volume to or past.',
       entity: 'order', numeratorIds: refs(crossings),
     }),
     ctx.figure({
       key: 'of_which_refunded_later', unit: 'count', value: refunded.length.toString(), numerator: BigInt(refunded.length),
-      denominator: BigInt(crossings.length), population: 'Late threshold-crossing orders of the month',
+      // BUG-019: the denominator counts crossings (an order once per threshold it crosses), so the population does too.
+      denominator: BigInt(crossings.length), population: 'Late threshold crossings of the month (an order counts once for each threshold it crosses)',
+      populationCount: crossings.length,
       method: 'Crossings whose order has any refunded amount, in any refund month.',
       entity: 'order', numeratorIds: refs(refunded), denominatorIds: refs(crossings),
     }),
@@ -92,7 +95,11 @@ export function computeR4(ctx: Context, month: string): ReportPeriod {
   const { activePvMinor, lateOrderDay, rankThresholdsPvMinor } = ctx.config
   const lateReason = lateOmissionReason(ctx, orders)
   const late = lateReason === null && lateOrderDay !== undefined && rankThresholdsPvMinor !== undefined
-    ? lateFigures(ctx, findCrossings(ctx, orders, lateOrderDay, Object.values(rankThresholdsPvMinor)))
+    ? lateFigures(
+      ctx,
+      orders.filter((o) => ctx.buyer(o).canEarn && dayOf(o) >= lateOrderDay).length,
+      findCrossings(ctx, orders, lateOrderDay, Object.values(rankThresholdsPvMinor)),
+    )
     : []
   return {
     report: 'R4', period: month, periodKind: 'month', partial: false, notes: [NOTE],

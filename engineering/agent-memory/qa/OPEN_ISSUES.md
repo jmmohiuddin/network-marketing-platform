@@ -14,3 +14,18 @@ _Agent: qa. Read before every task; update after every task. Keep concise — fa
 - Catalogue question (E-ADR-09): SDD-10 gives Tenant admin "full" on Audit log, but audit export needs audit.read + export and Tenant admin lacks export. Product to confirm.
 - By design, pinned by the suites: a vendor without session sees support-session metadata incl. decided_by (a tenant admin's user id) and breach contacts; in a session the vendor cannot download the tenant's audit exports (requester-only, 404) and cannot use vendor routes while sending X-Support-Session (REALM_FORBIDDEN, logged).
 - Not covered by TS-21 here: job/outbox payload namespacing and upload paths (SEC-29), timing side channels, API keys (rel B). Rel-B routes must add cases when they land.
+
+## 2026-11-12 — Browser E2E follow-ups
+- BUG-010 (HIGH) blocks AC-36.1 for Compliance officer/Finance approver/DPO/Payout officer in every tenant whose admins are Tenant admins only. Retest W3 after fix.
+- Not exercised: step-up on grant approval/vendor-access approval (admins had stepped up < 10 min before; step-up shown on revoke), support-session auto-expiry, go-live, rejection of a request by deny, more than 50,000-row export.
+- Observation (by design E-ADR-25, not registered): saving an unapproved mapping draft marks every ready snapshot Outdated.
+
+## 2026-11-12 — After browser retest R2
+- BUG-024 (MEDIUM): console provisioning cannot name a second admin, so new tenants deadlock on every privileged grant. Retest W1/W2 after the web form sends `second_admin`.
+- BUG-023 open part: tenant request card shows "Vendor user <id>" (needs requester name in the API).
+- Still not exercised: support-session auto-expiry, go-live, >50,000-row export, vendor-user re-invite/deactivate of a non-last user.
+
+## 2026-11-12 — After browser retest R3
+- Open web defects: BUG-023 (requester name, needs API), 025, 026, 027, 028, 029, 030.
+- Observation (not registered): a mapping draft link /imports/mappings?version=… is "Not found" for the approver (no import.manage); the approver must use /compliance/mappings?version=…. The editor tells the author another user must approve, but gives no shareable link that works for them.
+- Still not exercised: support-session auto-expiry, go-live, >50,000-row export, LAST_ADMIN (unreachable while two admins exist: SECOND_ADMIN_REQUIRED first).

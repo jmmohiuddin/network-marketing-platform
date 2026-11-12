@@ -57,3 +57,23 @@ _Agent: backend. Read before every task; update after every task. Keep concise â
 
 ## Security changes T-A07b (2026-11-12) that bind backend code (details: agent-memory/security/MEMORY.md)
 - Credentials (password_credential, mfa_credential) are visible only with app.user_id = their user. Session columns: nmp_app may UPDATE last_seen_at and revoked_at only; MFA elevation = `elevateSession(tx, sessionId, rotate)` in lib/session.ts (sign-in/enrolment verification creates a NEW session row: the session id changes with the cookie). Closing a user or archiving a tenant revokes sessions in the database.
+
+## Contracts after BUG-006/007 + web contract (2026-11-12)
+- Grants: approving needs the approver's user.manage markets to cover the request (NULL only from an all-markets admin); a privileged role also needs `holdsWithin(approver, role.permissions, markets, valid_to)`. Revoke/deactivate: caller's user.manage markets cover the target's assignment(s), privileged target -> step-up. Refusal 403 SCOPE_NOT_HELD. `coversMarkets(auth, marketLists)` + `StepUpCheck` in iam/grants.ts; routes pass `() => assertStepUp(request)`.
+- GET /v1/markets (tenant realm, no permission) -> [{id, code, name, currency}] by code. name = `marketName(code)` (ten facade: Intl English region name of the ISO code, the code itself otherwise; no name column exists).
+- Snapshots: `market: {id, code, name}` beside market_id (SNAPSHOT_COLUMNS selects market_code by subquery).
+- Drill rows meta: `sums {<col>_minor: bigint string}` over the whole set; `component {key, expected_minor} | null` where key is the sums key that must equal the set's component (meta.set says numerator/denominator), null when the component is a row count (R4, counts, R5 mean denominator). Mapping COMPONENT_COLUMN in cpl/drill.ts. Order rows have `net_minor` (= amount - refunded; R1's measure).
+- GET /v1/me: always `support_session` (null outside a session); in session `{id, tenant_slug, ends_at, scope}` and `user` = the vendor user read with runInVendor. support/index exports `getSupportSession`.
+- GET /v1/support-sessions/limits (vendor) -> {max_minutes, scopes}; GET /v1/imports/limits (import.manage) -> {max_file_bytes}.
+- iam/index exports `invitationLink(webUrl, slug, token)` (ops first-admin mail uses it).
+
+
+## Contracts after browser-defect fixes BUG-010..014, 019 (2026-11-12) â€” web builds against these
+- Migration owned: 0042_vendor_user_management.sql (0043-0049 unused). Run `pnpm --filter @nmp/db reset` (test) / migrate nmp_dev, nmp_e2e before QA.
+- Grants (E-ADR-28): approver needs user.manage over the request's markets until its valid_to, not the role's permissions (Tenant admin approves Compliance officer/Finance approver). Revoke/deactivate leaving one active admin -> 422 SECOND_ADMIN_REQUIRED (none -> LAST_ADMIN): web should show the message (revoke/deactivate dialogs).
+- POST /v1/tenants: optional `second_admin: {email, display_name|null}` (must differ from first_admin, 400 otherwise); both invited, both granted Tenant admin at approval. Tenant log TENANT.CREATED after has `first_admin_ids` (array). First-admin mail: "You are an administrator of <tenant>".
+- Vendor users (E-ADR-29, vendor realm): GET /v1/vendor-users (cursor = email) -> [{id, email, display_name, state, mfa_enrolled, last_sign_in_at, created_at, created_by}]; POST /v1/vendor-users {email, display_name?} step-up + Idempotency-Key -> 201 {data:{user}} (409 EMAIL_TAKEN); POST /v1/vendor-users/:id/invitation -> 202 {data:{user}} (409 USER_NOT_INVITED); POST /v1/vendor-users/:id/deactivate step-up -> 200 user (422 LAST_VENDOR_USER). Vendor invitation link `${WEB_URL}/invitation?realm=vendor#token=<t>`: same POST /v1/auth/invitations/accept; web then links to /signin/vendor; first vendor sign-in -> next_step mfa_enrolment.
+- GET /v1/vendor-audit-events (vendor realm): same query (actor_id, action, object_type, object_id, from, to, cursor, limit) and event shape as GET /v1/audit-events, over audit.vendor_event.
+- In-session log: SUPPORT_SESSION.ACCESSED is written by an onSend hook after the route answers, only when not 401/403; after = {method, route, params, query, status}. A refused request has ACCESS_REFUSED only. The current request's ACCESSED is not visible in its own response.
+- CPL population_count = @nmp/compliance `Figure.populationCount` (count of the set the population text names). R4 of_which_refunded_later population text changed to "Late threshold crossings of the month (an order counts once for each threshold it crosses)".
+- support/access.ts exports `logSessionAccess` (onSend); iam/invitations.ts exports `issueInvitation` (works in the vendor realm: app_tenant_id() NULL).

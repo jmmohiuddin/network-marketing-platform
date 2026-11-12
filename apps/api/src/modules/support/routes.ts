@@ -49,6 +49,10 @@ const decisionGuard = { preHandler: [...decider.preHandler, requireStepUp()] }
 
 /** API-08 support sessions (FR-IAM-005): vendor requests, tenant decisions, ending, the session log. */
 export function registerSupportRoutes(app: FastifyInstance): void {
+  // What a request may ask for, so the vendor console does not repeat the server's limits.
+  app.get('/v1/support-sessions/limits', vendorOnly, async () =>
+    envelope({ max_minutes: SUPPORT_SESSION_MAX_MINUTES, scopes: scopePermission.options }))
+
   app.post('/v1/support-sessions', vendorOnly, async (request, reply) => {
     const body = parse(requestBody, request.body)
     const input = { tenantId: body.tenant, reason: body.reason, minutes: body.minutes, permissions: body.scope.permissions }

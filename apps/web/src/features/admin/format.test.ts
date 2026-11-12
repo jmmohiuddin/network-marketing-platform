@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { durationLabel, fromLocalInput, isUuid, marketScopeLabel, remainingLabel, SUPPORT_SCOPE_PERMISSIONS, toLocalInput } from './format'
+import { durationLabel, fromLocalInput, isUuid, marketScopeLabel, remainingLabel, toLocalInput } from './format'
 
 describe('admin format helpers', () => {
   it('writes durations in hours and minutes', () => {
@@ -27,11 +27,12 @@ describe('admin format helpers', () => {
     expect(marketScopeLabel(null)).toBe('All markets')
     expect(marketScopeLabel(['a'])).toBe('1 market')
     expect(marketScopeLabel(['a', 'b'])).toBe('2 markets')
+    const markets = [{ id: 'a', code: 'DE' }, { id: 'b', code: 'FR' }]
+    expect(marketScopeLabel(['a', 'b'], markets)).toBe('DE, FR')
+    expect(marketScopeLabel(['a', 'c'], markets)).toBe('2 markets')
   })
 
-  it('never offers unmasking to vendor staff', () => {
-    expect(SUPPORT_SCOPE_PERMISSIONS).not.toContain('participant.unmask')
-    expect(SUPPORT_SCOPE_PERMISSIONS).toContain('compliance.read')
+  it('recognises ids', () => {
     expect(isUuid('0b9e6c1a-1f2d-4c3b-9a8e-7d6c5b4a3f21')).toBe(true)
     expect(isUuid('0b9e6c1a')).toBe(false)
   })

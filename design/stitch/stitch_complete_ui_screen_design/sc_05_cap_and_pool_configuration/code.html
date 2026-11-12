@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+
+<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_dashboard" name="shell-type"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{colors:{"surface-container-high":"#dce9ff","inverse-surface":"#233144","secondary-fixed":"#dae2fd","on-tertiary-fixed-variant":"#00522d","error-container":"#ffdad6","primary-fixed":"#d9e2ff","tertiary-container":"#0d5f36","on-secondary-container":"#5c647a","outline-variant":"#c3c6d3","tertiary-fixed-dim":"#8cd7a3","on-error-container":"#93000a","primary-fixed-dim":"#afc6ff","tertiary":"#004525","on-background":"#0d1c2e","on-surface":"#0d1c2e","surface-dim":"#ccdbf3","surface-tint":"#2e5bb0","surface-container-lowest":"#ffffff","surface-container":"#e6eeff","on-tertiary":"#ffffff","inverse-on-surface":"#eaf1ff","surface-container-highest":"#d5e3fc","on-primary":"#ffffff","primary":"#003883","outline":"#737783","secondary":"#565e74","tertiary-fixed":"#a7f3be","on-error":"#ffffff","secondary-container":"#dae2fd","on-primary-fixed":"#001944","on-primary-container":"#afc6ff","on-primary-fixed-variant":"#074397","secondary-fixed-dim":"#bec6e0","error":"#ba1a1a","on-tertiary-container":"#8cd7a3","background":"#f8f9ff","surface-bright":"#f8f9ff","on-secondary-fixed-variant":"#3f465c","surface-container-low":"#eff4ff","surface":"#f8f9ff","on-tertiary-fixed":"#00210f","on-secondary":"#ffffff","inverse-primary":"#afc6ff","primary-container":"#1e4fa3","on-surface-variant":"#434752","surface-variant":"#d5e3fc","on-secondary-fixed":"#131b2e"},borderRadius:{DEFAULT:"0.125rem",lg:"0.25rem",xl:"0.5rem",full:"0.75rem"},spacing:{"space-sm":"0.5rem","space-xxs":"0.125rem","space-xs":"0.25rem","margin-mobile":"1rem",margin:"1.5rem","space-md":"1rem","space-2xl":"3rem",gutter:"1.5rem","space-xl":"2rem","gutter-compact":"0.75rem","space-lg":"1.5rem"},fontFamily:{caption:["Inter"],"section-heading":["Inter"],"data-mono-md":["JetBrains Mono"],"title-lg-mobile":["Inter"],"data-mono-sm":["JetBrains Mono"],"data-mono-lg":["JetBrains Mono"],"title-lg":["Inter"],"body-sm":["Inter"],"body-md":["Inter"],display:["Inter"],"display-mobile":["Inter"],"body-lg":["Inter"],"title-md":["Inter"]},fontSize:{caption:["12px",{lineHeight:"16px",letterSpacing:"0.01em",fontWeight:"500"}],"section-heading":["16px",{lineHeight:"24px",letterSpacing:"-0.005em",fontWeight:"600"}],"data-mono-md":["14px",{lineHeight:"20px",letterSpacing:"-0.01em",fontWeight:"500"}],"title-lg-mobile":["20px",{lineHeight:"28px",letterSpacing:"-0.01em",fontWeight:"600"}],"data-mono-sm":["12px",{lineHeight:"16px",letterSpacing:"0em",fontWeight:"500"}],"data-mono-lg":["24px",{lineHeight:"32px",letterSpacing:"-0.02em",fontWeight:"600"}],"title-lg":["24px",{lineHeight:"32px",letterSpacing:"-0.015em",fontWeight:"600"}],"body-sm":["13px",{lineHeight:"18px",letterSpacing:"0.005em",fontWeight:"400"}],"body-md":["14px",{lineHeight:"20px",letterSpacing:"0em",fontWeight:"400"}],display:["32px",{lineHeight:"40px",letterSpacing:"-0.02em",fontWeight:"600"}],"display-mobile":["26px",{lineHeight:"32px",letterSpacing:"-0.015em",fontWeight:"600"}],"body-lg":["16px",{lineHeight:"24px",letterSpacing:"0em",fontWeight:"400"}],"title-md":["20px",{lineHeight:"28px",letterSpacing:"-0.01em",fontWeight:"600"}]}}}}</script></head><body class="bg-surface font-body-md text-body-md text-on-surface antialiased"><aside class="fixed left-0 top-0 h-screen w-72 bg-surface-container-lowest border-r border-outline-variant z-50 flex flex-col justify-between"><div class="flex flex-col h-full"><div class="h-16 px-space-md border-b border-outline-variant flex items-center justify-between bg-surface-container-low"><div class="flex items-center gap-space-sm"><div class="w-8 h-8 rounded bg-primary-container flex items-center justify-center text-on-primary font-section-heading text-section-heading">AL</div><div class="flex flex-col"><span class="font-section-heading text-section-heading tracking-tight text-on-surface">AuditLedger</span><span class="font-caption text-caption text-secondary uppercase tracking-wider">Compliance Ledger</span></div></div><span class="font-data-mono-sm text-data-mono-sm bg-surface-container px-space-xs py-space-xxs rounded text-on-surface-variant border border-outline-variant">v4.2</span></div><div class="flex-1 overflow-y-auto px-space-sm py-space-md space-y-space-md"><div class="space-y-space-xxs"><div class="px-space-xs text-[11px] font-semibold text-secondary uppercase tracking-wider">Core Operations</div><nav class="space-y-space-xxs" data-active-classes="bg-surface-container-high text-primary font-semibold border-l-2 border-primary"><a class="flex items-center justify-between px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors font-body-sm text-body-sm" data-path="overview" href="#"><div class="flex items-center gap-space-xs"><span class="material-symbols-outlined text-[18px]">dashboard</span><span>Overview</span></div><span class="font-data-mono-sm text-[11px] text-secondary">SC-35</span></a><a class="flex items-center justify-between px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors font-body-sm text-body-sm" data-path="periods-runs" href="#"><div class="flex items-center gap-space-xs"><span class="material-symbols-outlined text-[18px]">event_repeat</span><span>Periods &amp; Runs</span></div><span class="font-data-mono-sm text-[11px] text-secondary">SC-01</span></a><a aria-current="page" class="flex items-center justify-between px-space-sm py-1.5 rounded transition-colors bg-surface-container-high text-primary font-semibold border-l-2 border-primary" data-path="comp-plans" href="#"><div class="flex items-center gap-space-xs"><span class="material-symbols-outlined text-[18px]">account_tree</span><span>Comp Plans</span></div><span class="font-data-mono-sm text-[11px] text-secondary">SC-04</span></a><a class="flex items-center justify-between px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors font-body-sm text-body-sm" data-path="payouts" href="#"><div class="flex items-center gap-space-xs"><span class="material-symbols-outlined text-[18px]">payments</span><span>Payouts</span></div><span class="font-data-mono-sm text-[11px] text-secondary">SC-03</span></a><a class="flex items-center justify-between px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors font-body-sm text-body-sm" data-path="finance-ledger" href="#"><div class="flex items-center gap-space-xs"><span class="material-symbols-outlined text-[18px]">menu_book</span><span>Finance &amp; Ledger</span></div><span class="font-data-mono-sm text-[11px] text-secondary">SC-33</span></a></nav></div><div class="space-y-space-xxs"><div class="px-space-xs text-[11px] font-semibold text-secondary uppercase tracking-wider">Hierarchy &amp; Activity</div><nav class="space-y-space-xxs" data-active-classes="bg-surface-container-high text-primary font-semibold border-l-2 border-primary"><a class="flex items-center justify-between px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors font-body-sm text-body-sm" data-path="people-tree" href="#"><div class="flex items-center gap-space-xs"><span class="material-symbols-outlined text-[18px]">group</span><span>People &amp; Tree</span></div><span class="font-data-mono-sm text-[11px] text-secondary">SC-07</span></a><a class="flex items-center justify-between px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors font-body-sm text-body-sm" data-path="orders-returns" href="#"><div class="flex items-center gap-space-xs"><span class="material-symbols-outlined text-[18px]">receipt_long</span><span>Orders &amp; Returns</span></div><span class="font-data-mono-sm text-[11px] text-secondary">SC-31</span></a><a class="flex items-center justify-between px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors font-body-sm text-body-sm" data-path="cases-exceptions" href="#"><div class="flex items-center gap-space-xs"><span class="material-symbols-outlined text-[18px]">report_problem</span><span>Cases &amp; Exceptions</span></div><span class="font-data-mono-sm text-[11px] text-secondary">SC-06</span></a></nav></div><div class="space-y-space-xxs"><div class="px-space-xs text-[11px] font-semibold text-secondary uppercase tracking-wider">Statutory &amp; Audit</div><nav class="space-y-space-xxs" data-active-classes="bg-surface-container-high text-primary font-semibold border-l-2 border-primary"><a class="flex items-center justify-between px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors font-body-sm text-body-sm" data-path="compliance-reports" href="#"><div class="flex items-center gap-space-xs"><span class="material-symbols-outlined text-[18px]">verified</span><span>Compliance Reports</span></div><span class="font-data-mono-sm text-[11px] text-secondary">SC-10</span></a><a class="flex items-center justify-between px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors font-body-sm text-body-sm" data-path="audit-log" href="#"><div class="flex items-center gap-space-xs"><span class="material-symbols-outlined text-[18px]">history</span><span>Audit Log</span></div><span class="font-data-mono-sm text-[11px] text-secondary">SC-30</span></a><a class="flex items-center justify-between px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors font-body-sm text-body-sm" data-path="privacy-requests" href="#"><div class="flex items-center gap-space-xs"><span class="material-symbols-outlined text-[18px]">lock_person</span><span>Privacy Requests</span></div><span class="font-data-mono-sm text-[11px] text-secondary">SC-15</span></a></nav></div><div class="space-y-space-xxs"><div class="px-space-xs text-[11px] font-semibold text-secondary uppercase tracking-wider">Integration &amp; Platform</div><nav class="space-y-space-xxs" data-active-classes="bg-surface-container-high text-primary font-semibold border-l-2 border-primary"><a class="flex items-center justify-between px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors font-body-sm text-body-sm" data-path="data-imports" href="#"><div class="flex items-center gap-space-xs"><span class="material-symbols-outlined text-[18px]">upload_file</span><span>Data Imports</span></div><span class="font-data-mono-sm text-[11px] text-secondary">SC-24</span></a><a class="flex items-center justify-between px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors font-body-sm text-body-sm" data-path="migration-parallel" href="#"><div class="flex items-center gap-space-xs"><span class="material-symbols-outlined text-[18px]">sync_alt</span><span>Migration &amp; Parallel</span></div><span class="font-data-mono-sm text-[11px] text-secondary">SC-16</span></a><a class="flex items-center justify-between px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors font-body-sm text-body-sm" data-path="market-launch" href="#"><div class="flex items-center gap-space-xs"><span class="material-symbols-outlined text-[18px]">public</span><span>Market Launch</span></div><span class="font-data-mono-sm text-[11px] text-secondary">SC-17</span></a><a class="flex items-center justify-between px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors font-body-sm text-body-sm" data-path="vendor-access" href="#"><div class="flex items-center gap-space-xs"><span class="material-symbols-outlined text-[18px]">vpn_key</span><span>Vendor Access</span></div><span class="font-data-mono-sm text-[11px] text-secondary">SC-14</span></a><a class="flex items-center justify-between px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors font-body-sm text-body-sm" data-path="users-roles" href="#"><div class="flex items-center gap-space-xs"><span class="material-symbols-outlined text-[18px]">admin_panel_settings</span><span>Users &amp; Roles</span></div><span class="font-data-mono-sm text-[11px] text-secondary">SC-28</span></a><a class="flex items-center justify-between px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors font-body-sm text-body-sm" data-path="integrations" href="#"><div class="flex items-center gap-space-xs"><span class="material-symbols-outlined text-[18px]">hub</span><span>Integrations</span></div><span class="font-data-mono-sm text-[11px] text-secondary">SC-13</span></a><a class="flex items-center justify-between px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors font-body-sm text-body-sm" data-path="vendor-console" href="#"><div class="flex items-center gap-space-xs"><span class="material-symbols-outlined text-[18px]">terminal</span><span>Vendor Console</span></div><span class="font-data-mono-sm text-[11px] text-secondary">SC-39</span></a><a class="flex items-center justify-between px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors font-body-sm text-body-sm" data-path="system-diagnostics" href="#"><div class="flex items-center gap-space-xs"><span class="material-symbols-outlined text-[18px]">monitor_heart</span><span>System &amp; Diagnostics</span></div><span class="font-data-mono-sm text-[11px] text-secondary">SC-47</span></a></nav></div></div><div class="p-space-sm border-t border-outline-variant bg-surface-container-low"><div class="flex items-center justify-between text-[11px] text-secondary"><span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-tertiary-fixed-dim"></span> Engine Online</span><span class="font-data-mono-sm">24ms latency</span></div></div></div></aside><div class="pl-72"><header class="fixed top-0 left-72 right-0 h-16 bg-surface-container-lowest border-b border-outline-variant z-40 px-space-md flex items-center justify-between"><div class="flex items-center gap-space-md"><div class="flex items-center gap-space-xs bg-surface-container-low border border-outline-variant px-space-sm py-1.5 rounded cursor-pointer hover:bg-surface-container transition-colors"><span class="material-symbols-outlined text-secondary text-[18px]">corporate_fare</span><div class="flex flex-col text-left"><span class="font-caption text-caption text-secondary uppercase">Tenant</span><span class="font-body-sm text-body-sm font-semibold text-on-surface leading-none">Acrobex Global Corp <span class="font-data-mono-sm text-[11px] text-secondary font-normal">TEN-842</span></span></div><span class="material-symbols-outlined text-secondary text-[18px] ml-1">expand_more</span></div><div class="flex items-center gap-space-xs bg-surface-container-low border border-outline-variant px-space-sm py-1.5 rounded cursor-pointer hover:bg-surface-container transition-colors"><span class="material-symbols-outlined text-secondary text-[18px]">monetization_on</span><div class="flex flex-col text-left"><span class="font-caption text-caption text-secondary uppercase">Market / Currency</span><span class="font-body-sm text-body-sm font-semibold text-on-surface leading-none">US - United States <span class="font-data-mono-sm text-[11px] text-secondary font-normal">USD ($)</span></span></div><span class="material-symbols-outlined text-secondary text-[18px] ml-1">expand_more</span></div></div><div class="flex items-center gap-space-md"><div class="relative flex items-center w-72"><span class="material-symbols-outlined absolute left-2.5 text-secondary text-[18px]">search</span><input class="w-full h-8 pl-8 pr-12 bg-surface border border-outline-variant rounded font-body-sm text-body-sm text-on-surface placeholder:text-secondary focus:outline-none focus:border-primary" placeholder="Search rules, payouts, entities..." type="text"/><div class="absolute right-2 flex items-center gap-0.5 bg-surface-container px-1 py-0.5 rounded border border-outline-variant"><span class="font-data-mono-sm text-[10px] text-secondary">Ctrl+K</span></div></div><button class="relative p-1.5 text-secondary hover:text-on-surface rounded hover:bg-surface-container transition-colors"><span class="material-symbols-outlined text-[20px]">notifications</span><span class="absolute top-1 right-1 w-2 h-2 rounded-full bg-error"></span></button><div class="h-6 w-px bg-outline-variant"></div><div class="flex items-center gap-space-sm"><div class="flex flex-col items-end text-right"><span class="font-body-sm text-body-sm font-semibold text-on-surface leading-tight">Elena Rostova</span><span class="font-caption text-caption text-secondary leading-tight">Lead Commission Analyst</span></div><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="w-full pt-16 bg-surface"><div class="flex flex-col w-full">
+<div class="px-space-md py-space-sm bg-surface-container-low flex items-center justify-between">
+<div class="flex items-center gap-space-xs font-caption text-caption text-secondary">
+<a class="hover:text-primary transition-colors flex items-center gap-1" href="#">
+<span class="material-symbols-outlined text-[14px]">account_tree</span>
+<span>Comp Plans</span>
+</a>
+<span class="text-outline">/</span>
+<span class="px-1.5 py-0.5 rounded bg-surface-container text-on-surface-variant font-data-mono-sm text-[11px]">Plan Version v4.3-DRAFT</span>
+<span class="text-outline">/</span>
+<span class="text-primary font-semibold">Cap &amp; Pool Configuration (SC-05)</span>
+</div>
+<div class="flex items-center gap-space-xs">
+<span class="w-2 h-2 rounded-full bg-tertiary-fixed-dim"></span>
+<span class="font-data-mono-sm text-data-mono-sm text-secondary">INVARIANT ENGINE: TS-08 / BR-CAP-01 ARMED</span>
+</div>
+</div>
+<div class="p-space-lg flex flex-col gap-space-lg">
+<div class="flex flex-col lg:flex-row lg:items-center justify-between gap-space-md pb-space-sm bg-surface">
+<div class="flex flex-col max-w-3xl">
+<div class="flex items-center gap-space-sm mb-1">
+<span class="px-2 py-0.5 rounded bg-primary-container text-on-primary font-data-mono-sm text-[11px] tracking-wider uppercase">SC-05 Spec</span>
+<span class="px-2 py-0.5 rounded bg-surface-container-high text-primary font-data-mono-sm text-[11px]">FR-PLN-004</span>
+<span class="px-2 py-0.5 rounded bg-surface-container text-secondary font-data-mono-sm text-[11px]">BR-CAP-01..03</span>
+</div>
+<h1 class="font-title-lg text-title-lg text-on-surface tracking-tight">Cap and Pool Configuration</h1>
+<p class="font-body-sm text-body-sm text-secondary mt-1">
+          Configure algorithmic bonus caps, shared revenue pools, priority curtailment ladders, and residue distribution rules with instant historical period simulation.
+        </p>
+</div>
+<div class="flex items-center gap-space-xs flex-wrap self-start lg:self-center">
+<button class="h-8 px-space-sm rounded bg-surface-container-lowest text-on-surface hover:bg-surface-container shadow-sm flex items-center gap-1.5 font-body-sm text-body-sm transition-colors" type="button">
+<span class="material-symbols-outlined text-[16px] text-secondary">query_stats</span>
+<span>Preview on Period 2026-M10</span>
+</button>
+<button class="h-8 px-space-sm rounded bg-surface-container-lowest text-on-surface hover:bg-surface-container shadow-sm flex items-center gap-1.5 font-body-sm text-body-sm transition-colors" type="button">
+<span class="material-symbols-outlined text-[16px] text-secondary">file_download</span>
+<span>Export Cap Model (.JSON)</span>
+</button>
+<button class="h-8 px-space-md rounded bg-primary text-on-primary hover:bg-primary-container shadow-sm flex items-center gap-1.5 font-section-heading text-section-heading transition-colors" type="button">
+<span class="material-symbols-outlined text-[16px]">save</span>
+<span>Save Cap Configuration</span>
+</button>
+</div>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-space-md">
+<div class="bg-surface-container-lowest p-space-md rounded shadow-sm flex flex-col justify-between">
+<div class="flex items-center justify-between text-secondary">
+<span class="font-caption text-caption uppercase tracking-wider">Active Caps &amp; Pools</span>
+<span class="material-symbols-outlined text-[18px] text-primary">toll</span>
+</div>
+<div class="mt-space-sm">
+<div class="font-data-mono-lg text-data-mono-lg text-on-surface leading-tight">3 Caps · 2 Pools</div>
+<div class="font-body-sm text-body-sm text-secondary mt-0.5">Scope: Unilevel, Gen Leadership, FastStart</div>
+</div>
+<div class="mt-space-sm pt-space-xs bg-surface-container-low px-2 py-1 rounded flex items-center justify-between text-[11px] font-data-mono-sm text-secondary">
+<span>Target Cap CV: 10.00%</span>
+<span class="text-tertiary font-semibold">Active Mode</span>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-space-md rounded shadow-sm flex flex-col justify-between">
+<div class="flex items-center justify-between text-secondary">
+<span class="font-caption text-caption uppercase tracking-wider">Curtailment Method</span>
+<span class="material-symbols-outlined text-[18px] text-primary">waterfall_chart</span>
+</div>
+<div class="mt-space-sm">
+<div class="font-data-mono-lg text-data-mono-lg text-on-surface leading-tight">Priority &amp; Prop.</div>
+<div class="font-body-sm text-body-sm text-secondary mt-0.5">BR-CAP-01 evaluated per-participant first</div>
+</div>
+<div class="mt-space-sm pt-space-xs bg-surface-container-low px-2 py-1 rounded flex items-center justify-between text-[11px] font-data-mono-sm text-secondary">
+<span>Invariant: TS-08 Engine</span>
+<span class="text-primary font-semibold">Ladder Verified</span>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-space-md rounded shadow-sm flex flex-col justify-between">
+<div class="flex items-center justify-between text-secondary">
+<span class="font-caption text-caption uppercase tracking-wider">Est. Cohort Impact</span>
+<span class="material-symbols-outlined text-[18px] text-error">trending_down</span>
+</div>
+<div class="mt-space-sm">
+<div class="font-data-mono-lg text-data-mono-lg text-error leading-tight">-$84,350.50</div>
+<div class="font-body-sm text-body-sm text-secondary mt-0.5">Across 3,412 trimmed payout lines</div>
+</div>
+<div class="mt-space-sm pt-space-xs bg-surface-container-low px-2 py-1 rounded flex items-center justify-between text-[11px] font-data-mono-sm text-secondary">
+<span>Baseline: Period 2026-M10</span>
+<span class="text-error font-semibold">4.82% Curtailment</span>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-space-md rounded shadow-sm flex flex-col justify-between">
+<div class="flex items-center justify-between text-secondary">
+<span class="font-caption text-caption uppercase tracking-wider">Residue Invariant</span>
+<span class="material-symbols-outlined text-[18px] text-tertiary">check_circle</span>
+</div>
+<div class="mt-space-sm">
+<div class="font-data-mono-lg text-data-mono-lg text-tertiary leading-tight">Zero Breakage ($0.00)</div>
+<div class="font-body-sm text-body-sm text-secondary mt-0.5">Posts strictly to Account 2150</div>
+</div>
+<div class="mt-space-sm pt-space-xs bg-surface-container-low px-2 py-1 rounded flex items-center justify-between text-[11px] font-data-mono-sm text-secondary">
+<span>Rule: BR-MNY-03 / TS-12</span>
+<span class="text-tertiary font-semibold">Exact Parity OK</span>
+</div>
+</div>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-space-lg items-start">
+<div class="lg:col-span-8 flex flex-col gap-space-lg">
+<div class="bg-surface-container-lowest rounded shadow-sm overflow-hidden">
+<div class="p-space-md bg-surface-container-low flex flex-col sm:flex-row sm:items-center justify-between gap-space-sm">
+<div class="flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-primary text-[20px]">tune</span>
+<div>
+<h2 class="font-section-heading text-section-heading text-on-surface">Cap Definition &amp; Mathematical Ceilings</h2>
+<p class="font-caption text-caption text-secondary">Configure aggregate thresholds and participant constraints per bonus scheme</p>
+</div>
+</div>
+<div class="flex items-center gap-space-xs self-start sm:self-center">
+<span class="px-2 py-0.5 rounded bg-surface-container-high text-primary font-data-mono-sm text-[11px]">RULE HASH: #4f8b9e02</span>
+<span class="px-2 py-0.5 rounded bg-surface-container text-on-surface-variant font-data-mono-sm text-[11px]">ACTIVE STAT</span>
+</div>
+</div>
+<div class="p-space-md space-y-space-md">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-space-md">
+<div>
+<label class="block font-caption text-caption text-secondary mb-1 uppercase tracking-wider">Cap Identifier (Canonical)</label>
+<div class="flex items-center gap-2">
+<input class="h-8 px-space-sm rounded bg-surface font-data-mono-md text-data-mono-md text-on-surface w-full focus:outline-none focus:ring-1 focus:ring-primary shadow-sm" readonly="" type="text" value="CAP-CORP-01"/>
+<span class="material-symbols-outlined text-secondary text-[18px]" title="Immutable system id">lock</span>
+</div>
+<span class="font-caption text-[11px] text-secondary mt-1 block">Executive Leadership &amp; Unilevel Ceiling</span>
+</div>
+<div>
+<label class="block font-caption text-caption text-secondary mb-1 uppercase tracking-wider">Statutory Base Expression (BR-CAP-03)</label>
+<input class="h-8 px-space-sm rounded bg-surface font-body-sm text-body-sm text-on-surface w-full focus:outline-none focus:ring-1 focus:ring-primary shadow-sm" type="text" value="10.0% of Global Net Commissionable Volume ($4,728,140.00 CV)"/>
+<span class="font-caption text-[11px] text-secondary mt-1 block">Dynamic variable evaluated at period reconciliation</span>
+</div>
+</div>
+<div>
+<label class="block font-caption text-caption text-secondary mb-1 uppercase tracking-wider">Bonus Mechanism Scope (Multi-Select Scope)</label>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-space-xs">
+<label class="flex items-center gap-space-xs p-2 rounded bg-surface-container-low cursor-pointer hover:bg-surface-container transition-colors">
+<input checked="" class="w-4 h-4 rounded text-primary focus:ring-primary" type="checkbox"/>
+<div class="flex flex-col">
+<span class="font-body-sm text-body-sm font-semibold text-on-surface">Unilevel Bonus</span>
+<span class="font-caption text-[11px] text-secondary font-data-mono-sm">Levels L1 - L5</span>
+</div>
+</label>
+<label class="flex items-center gap-space-xs p-2 rounded bg-surface-container-low cursor-pointer hover:bg-surface-container transition-colors">
+<input checked="" class="w-4 h-4 rounded text-primary focus:ring-primary" type="checkbox"/>
+<div class="flex flex-col">
+<span class="font-body-sm text-body-sm font-semibold text-on-surface">Gen 1-3 Leadership</span>
+<span class="font-caption text-[11px] text-secondary font-data-mono-sm">Matching &amp; Pools</span>
+</div>
+</label>
+<label class="flex items-center gap-space-xs p-2 rounded bg-surface-container-low cursor-pointer hover:bg-surface-container transition-colors">
+<input checked="" class="w-4 h-4 rounded text-primary focus:ring-primary" type="checkbox"/>
+<div class="flex flex-col">
+<span class="font-body-sm text-body-sm font-semibold text-on-surface">FastStart Builder</span>
+<span class="font-caption text-[11px] text-secondary font-data-mono-sm">90-Day Velocity</span>
+</div>
+</label>
+</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-space-md p-space-sm bg-surface-container-low rounded">
+<div class="flex flex-col">
+<span class="font-caption text-caption text-secondary uppercase tracking-wider">Period Cap Ceiling Target</span>
+<span class="font-data-mono-lg text-data-mono-lg text-primary mt-1">$472,814.00</span>
+<span class="font-caption text-[11px] text-secondary mt-0.5">USD Invariant Maximum</span>
+</div>
+<div class="flex flex-col">
+<span class="font-caption text-caption text-secondary uppercase tracking-wider">Gross Calculated Period Pool</span>
+<span class="font-data-mono-lg text-data-mono-lg text-error mt-1">$557,164.50</span>
+<span class="font-caption text-[11px] text-error mt-0.5">+$84,350.50 (17.84% over ceiling)</span>
+</div>
+<div class="flex flex-col">
+<span class="font-caption text-caption text-secondary uppercase tracking-wider">Post-Curtailment Net Output</span>
+<span class="font-data-mono-lg text-data-mono-lg text-tertiary mt-1">$472,814.00</span>
+<span class="font-caption text-[11px] text-tertiary mt-0.5">100.0% Exact Fit to Target</span>
+</div>
+</div>
+<div>
+<div class="flex items-center justify-between mb-2">
+<label class="font-section-heading text-section-heading text-on-surface">Curtailment Engine Strategy</label>
+<span class="font-caption text-caption text-secondary">Method specification governing overage absorption</span>
+</div>
+<div class="space-y-space-xs">
+<label class="flex items-start gap-space-sm p-space-sm rounded bg-surface-container hover:bg-surface-container-high transition-colors cursor-pointer">
+<input checked="" class="mt-1 text-primary focus:ring-primary" name="algorithm_choice" type="radio"/>
+<div class="flex-1">
+<div class="flex items-center justify-between">
+<span class="font-body-sm text-body-sm font-semibold text-on-surface">Priority List Curtailment (Method: TS-08)</span>
+<span class="px-2 py-0.5 rounded bg-primary text-on-primary font-caption text-[10px] tracking-wide uppercase">RECOMMENDED BY COMPLIANCE</span>
+</div>
+<p class="font-body-sm text-body-sm text-secondary mt-0.5">
+                      Progressively curtails bonuses starting from the most volatile matching pools (Rank 1) down toward base unilevel earnings. Protects foundational distributor tiers.
+                    </p>
+</div>
+</label>
+<label class="flex items-start gap-space-sm p-space-sm rounded bg-surface-container-low hover:bg-surface-container transition-colors cursor-pointer">
+<input class="mt-1 text-primary focus:ring-primary" name="algorithm_choice" type="radio"/>
+<div class="flex-1">
+<div class="flex items-center justify-between">
+<span class="font-body-sm text-body-sm font-semibold text-on-surface">Proportional Proration Across Scoped Lines (Method: TS-07)</span>
+<span class="font-data-mono-sm text-data-mono-sm text-secondary">Uniform Scaling Factor</span>
+</div>
+<p class="font-body-sm text-body-sm text-secondary mt-0.5">
+                      Scales all eligible payees down by a uniform multiplier (84.861%) regardless of hierarchy rank or bonus source.
+                    </p>
+</div>
+</label>
+<label class="flex items-start gap-space-sm p-space-sm rounded bg-surface-container-low hover:bg-surface-container transition-colors cursor-pointer">
+<input class="mt-1 text-primary focus:ring-primary" name="algorithm_choice" type="radio"/>
+<div class="flex-1">
+<div class="flex items-center justify-between">
+<span class="font-body-sm text-body-sm font-semibold text-on-surface">Per-Participant Statutory Ceiling (BR-CAP-02)</span>
+<span class="font-data-mono-sm text-data-mono-sm text-secondary">$25,000.00 Earner Hardstop</span>
+</div>
+<p class="font-body-sm text-body-sm text-secondary mt-0.5">
+                      Hard clamps individual single-distributor period payouts before running collective pool absorption.
+                    </p>
+</div>
+</label>
+</div>
+</div>
+<div>
+<div class="flex items-center justify-between mb-2">
+<div>
+<h3 class="font-section-heading text-section-heading text-on-surface">Priority Curtailment Ladder (TS-08 Ordering)</h3>
+<p class="font-caption text-caption text-secondary">Order determines sequential reduction priority until the cap ceiling is satisfied.</p>
+</div>
+<button class="font-caption text-caption text-primary hover:underline flex items-center gap-1" type="button">
+<span class="material-symbols-outlined text-[14px]">tune</span>
+<span>Reset Default Invariants</span>
+</button>
+</div>
+<div class="space-y-1.5" id="curtailment-ladder">
+<div class="flex items-center justify-between p-space-sm bg-surface-container-low hover:bg-surface-container rounded transition-colors group">
+<div class="flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-secondary text-[18px] cursor-grab">drag_indicator</span>
+<span class="w-6 h-6 rounded bg-error-container text-on-error-container font-data-mono-sm text-data-mono-sm flex items-center justify-center font-bold">1</span>
+<div>
+<div class="flex items-center gap-2">
+<span class="font-body-sm text-body-sm font-semibold text-on-surface">Gen 3 Leadership Matching</span>
+<span class="px-1.5 py-0.2 rounded bg-surface-container-high text-primary font-data-mono-sm text-[10px]">TIER 1 (TRIMMED FIRST)</span>
+</div>
+<span class="font-caption text-[11px] text-secondary">Target pool: High volatility matching lines</span>
+</div>
+</div>
+<div class="text-right">
+<div class="font-data-mono-md text-data-mono-md text-error font-semibold">100% Absorbed</div>
+<div class="font-caption text-[11px] text-secondary">-$54,120.00 total capacity trimmed</div>
+</div>
+</div>
+<div class="flex items-center justify-between p-space-sm bg-surface-container-low hover:bg-surface-container rounded transition-colors group">
+<div class="flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-secondary text-[18px] cursor-grab">drag_indicator</span>
+<span class="w-6 h-6 rounded bg-surface-container-high text-primary font-data-mono-sm text-data-mono-sm flex items-center justify-center font-bold">2</span>
+<div>
+<div class="flex items-center gap-2">
+<span class="font-body-sm text-body-sm font-semibold text-on-surface">Gen 2 Leadership Matching</span>
+<span class="px-1.5 py-0.2 rounded bg-surface-container-high text-primary font-data-mono-sm text-[10px]">TIER 2 (PARTIAL PRO-RATA)</span>
+</div>
+<span class="font-caption text-[11px] text-secondary">Target pool: Secondary generation overrides</span>
+</div>
+</div>
+<div class="text-right">
+<div class="font-data-mono-md text-data-mono-md text-error font-semibold">42.4% Absorbed</div>
+<div class="font-caption text-[11px] text-secondary">-$30,230.50 of $71,300.00 trimmed</div>
+</div>
+</div>
+<div class="flex items-center justify-between p-space-sm bg-surface-container-lowest rounded opacity-90">
+<div class="flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-outline-variant text-[18px]">lock</span>
+<span class="w-6 h-6 rounded bg-surface-container text-secondary font-data-mono-sm text-data-mono-sm flex items-center justify-center font-bold">3</span>
+<div>
+<div class="flex items-center gap-2">
+<span class="font-body-sm text-body-sm font-semibold text-on-surface">Gen 1 Leadership Pool</span>
+<span class="px-1.5 py-0.2 rounded bg-tertiary-container text-on-tertiary-container font-data-mono-sm text-[10px]">PROTECTED (0% TRIMMED)</span>
+</div>
+<span class="font-caption text-[11px] text-secondary">Target pool: Core leadership executive tranche</span>
+</div>
+</div>
+<div class="text-right">
+<div class="font-data-mono-md text-data-mono-md text-tertiary font-semibold">$0.00 Curtailed</div>
+<div class="font-caption text-[11px] text-secondary">$120,400.00 fully preserved</div>
+</div>
+</div>
+<div class="flex items-center justify-between p-space-sm bg-surface-container-lowest rounded opacity-90">
+<div class="flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-outline-variant text-[18px]">verified_user</span>
+<span class="w-6 h-6 rounded bg-surface-container text-secondary font-data-mono-sm text-data-mono-sm flex items-center justify-center font-bold">4</span>
+<div>
+<div class="flex items-center gap-2">
+<span class="font-body-sm text-body-sm font-semibold text-on-surface">Unilevel Base (L1 - L5)</span>
+<span class="px-1.5 py-0.2 rounded bg-primary-container text-on-primary-container font-data-mono-sm text-[10px]">INVIOLABLE STATUTORY BASELINE</span>
+</div>
+<span class="font-caption text-[11px] text-secondary">Minimum earning floor: Statutory non-curtailable base</span>
+</div>
+</div>
+<div class="text-right">
+<div class="font-data-mono-md text-data-mono-md text-on-surface font-semibold">Protected Base</div>
+<div class="font-caption text-[11px] text-secondary">$311,944.00 100% paid</div>
+</div>
+</div>
+</div>
+</div>
+<div class="p-space-sm rounded bg-surface-container-low flex items-start gap-space-sm">
+<span class="material-symbols-outlined text-secondary text-[20px] mt-0.5">account_balance</span>
+<div class="flex-1">
+<div class="flex items-center justify-between">
+<span class="font-body-sm text-body-sm font-semibold text-on-surface">Residue Allocation Policy (BR-MNY-04 / TS-12)</span>
+<span class="font-data-mono-sm text-data-mono-sm text-secondary">Account: 2150 (Rounding Reserve)</span>
+</div>
+<p class="font-body-sm text-body-sm text-secondary mt-0.5">
+                  Fractional cents generated during proportional reductions are allocated strictly via the largest-remainder method. Residual breakage posts directly to ledger Account 2150 with zero enterprise leakage.
+                </p>
+</div>
+</div>
+</div>
+</div>
+<div class="bg-surface-container-lowest rounded shadow-sm overflow-hidden">
+<div class="p-space-md bg-surface-container-low flex flex-col sm:flex-row sm:items-center justify-between gap-space-sm">
+<div class="flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-tertiary text-[20px]">pie_chart</span>
+<div>
+<h2 class="font-section-heading text-section-heading text-on-surface">Shared Bonus Pool Allocation (Global Diamond Pool)</h2>
+<p class="font-caption text-caption text-secondary">Pool size, participant points, and zero-breakage largest remainder distribution</p>
+</div>
+</div>
+<span class="px-2 py-0.5 rounded bg-tertiary-container text-on-tertiary-container font-data-mono-sm text-[11px]">POOL-DIA-02</span>
+</div>
+<div class="p-space-md space-y-space-md">
+<div class="grid grid-cols-1 md:grid-cols-3 gap-space-md">
+<div class="p-space-sm bg-surface-container-low rounded">
+<span class="font-caption text-caption text-secondary uppercase tracking-wider">Total Pool Capital</span>
+<div class="font-data-mono-lg text-data-mono-lg text-on-surface mt-1">$62,500.00</div>
+<span class="font-caption text-[11px] text-secondary">1.321% of Net CV</span>
+</div>
+<div class="p-space-sm bg-surface-container-low rounded">
+<span class="font-caption text-caption text-secondary uppercase tracking-wider">Qualified Shares Issued</span>
+<div class="font-data-mono-lg text-data-mono-lg text-on-surface mt-1">66.00 Shares</div>
+<span class="font-caption text-[11px] text-secondary">42 Unique Diamond Qualifiers</span>
+</div>
+<div class="p-space-sm bg-surface-container-low rounded">
+<span class="font-caption text-caption text-secondary uppercase tracking-wider">Base Value Per Share</span>
+<div class="font-data-mono-lg text-data-mono-lg text-primary mt-1">$946.96</div>
+<span class="font-caption text-[11px] text-secondary">Exact Integer Division: 94696¢</span>
+</div>
+</div>
+<div class="bg-surface p-space-sm rounded space-y-space-sm">
+<div class="flex items-center justify-between">
+<span class="font-section-heading text-section-heading text-on-surface">Exact Parity Proof (TS-06 Engine Run)</span>
+<span class="font-data-mono-sm text-data-mono-sm text-tertiary font-semibold">INVARIANT VERIFIED</span>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-4 gap-space-xs text-center font-data-mono-sm text-data-mono-sm">
+<div class="p-2 rounded bg-surface-container-low">
+<div class="text-secondary font-caption text-[11px]">Qualified Shares</div>
+<div class="text-on-surface font-semibold mt-1">66</div>
+</div>
+<div class="p-2 rounded bg-surface-container-low">
+<div class="text-secondary font-caption text-[11px]">Tranche Subtotal</div>
+<div class="text-on-surface font-semibold mt-1">$62,499.36</div>
+</div>
+<div class="p-2 rounded bg-surface-container-low">
+<div class="text-secondary font-caption text-[11px]">Residue Overflow</div>
+<div class="text-tertiary font-semibold mt-1">+$0.64 (64¢)</div>
+</div>
+<div class="p-2 rounded bg-surface-container-high">
+<div class="text-primary font-caption text-[11px]">Ledger Match</div>
+<div class="text-primary font-bold mt-1">$62,500.00</div>
+</div>
+</div>
+<div class="flex items-center gap-space-xs text-caption font-caption text-secondary">
+<span class="material-symbols-outlined text-tertiary text-[16px]">verified</span>
+<span>Algorithm TS-06 allocated precisely 1 cent to the first 64 sorted shareholder accounts. Perfect balance sheet zero-drift confirmed.</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="lg:col-span-4 flex flex-col gap-space-lg">
+<div class="bg-surface-container-lowest rounded shadow-sm overflow-hidden">
+<div class="p-space-md bg-surface-container-low flex items-center justify-between">
+<div class="flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-primary text-[20px]">visibility</span>
+<div>
+<h2 class="font-section-heading text-section-heading text-on-surface">Simulation Snapshot</h2>
+<p class="font-caption text-caption text-secondary">Period 2026-M10 historical dataset</p>
+</div>
+</div>
+<span class="px-2 py-0.5 rounded bg-surface-container text-on-surface font-data-mono-sm text-[11px]">18,416 QUALIFIERS</span>
+</div>
+<div class="p-space-md space-y-space-md">
+<div class="p-space-sm rounded bg-error-container text-on-error-container">
+<div class="flex items-center justify-between">
+<span class="font-caption text-caption uppercase tracking-wider font-semibold">Gross Overage Curtailed</span>
+<span class="font-data-mono-md text-data-mono-md font-bold">-$84,350.50</span>
+</div>
+<div class="mt-2 w-full bg-surface-container-lowest rounded-full h-2 overflow-hidden">
+<div class="bg-error h-full rounded-full" style="width: 17.84%"></div>
+</div>
+<div class="flex justify-between items-center mt-1 text-[11px] font-data-mono-sm">
+<span>Curtailed: 17.84% of pool</span>
+<span>Cap Ceiling: 100.0%</span>
+</div>
+</div>
+<div class="flex items-center justify-between py-1 bg-surface-container-low px-space-sm rounded">
+<span class="font-body-sm text-body-sm text-secondary">Curtailed Payees</span>
+<span class="font-data-mono-sm text-data-mono-sm text-on-surface font-semibold">3,412 of 18,416 (18.52%)</span>
+</div>
+<div>
+<div class="flex items-center justify-between mb-2">
+<span class="font-section-heading text-section-heading text-on-surface">Top Curtailed Payees</span>
+<span class="font-caption text-caption text-secondary">Audit Sample</span>
+</div>
+<div class="space-y-space-xs font-body-sm text-body-sm">
+<div class="p-space-sm rounded bg-surface-container-low flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<div class="flex flex-col">
+<span class="font-semibold text-on-surface">Elena Gomez</span>
+<span class="font-data-mono-sm text-[11px] text-secondary">POS-01948 · Sr Exec Director</span>
+</div>
+<div class="text-right">
+<span class="font-data-mono-md text-data-mono-md text-error font-semibold">-$420.00</span>
+<span class="block font-caption text-[11px] text-error font-data-mono-sm">-2.83%</span>
+</div>
+</div>
+<div class="flex items-center gap-1 font-caption text-[11px] text-secondary">
+<span class="w-1.5 h-1.5 rounded-full bg-error"></span>
+<span>Reason: Gen 3 Matching 100% curtailed</span>
+</div>
+</div>
+<div class="p-space-sm rounded bg-surface-container-low flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<div class="flex flex-col">
+<span class="font-semibold text-on-surface">Marcus Vance</span>
+<span class="font-data-mono-sm text-[11px] text-secondary">POS-04812 · Executive VP</span>
+</div>
+<div class="text-right">
+<span class="font-data-mono-md text-data-mono-md text-error font-semibold">-$680.00</span>
+<span class="block font-caption text-[11px] text-error font-data-mono-sm">-3.47%</span>
+</div>
+</div>
+<div class="flex items-center gap-1 font-caption text-[11px] text-secondary">
+<span class="w-1.5 h-1.5 rounded-full bg-error"></span>
+<span>Reason: Hard Participant Ceiling Triggered</span>
+</div>
+</div>
+<div class="p-space-sm rounded bg-surface-container-low flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<div class="flex flex-col">
+<span class="font-semibold text-on-surface">Thomas K.</span>
+<span class="font-data-mono-sm text-[11px] text-secondary">POS-03112 · Director</span>
+</div>
+<div class="text-right">
+<span class="font-data-mono-md text-data-mono-md text-error font-semibold">-$110.00</span>
+<span class="block font-caption text-[11px] text-error font-data-mono-sm">-1.91%</span>
+</div>
+</div>
+<div class="flex items-center gap-1 font-caption text-[11px] text-secondary">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+<span>Reason: Gen 2 Proration (42.4% rate)</span>
+</div>
+</div>
+<div class="p-space-sm rounded bg-surface flex flex-col gap-1 opacity-75">
+<div class="flex items-center justify-between">
+<div class="flex flex-col">
+<span class="font-semibold text-on-surface">Rachel Hayes</span>
+<span class="font-data-mono-sm text-[11px] text-secondary">POS-08412 · Manager</span>
+</div>
+<div class="text-right">
+<span class="font-data-mono-md text-data-mono-md text-tertiary font-semibold">$0.00</span>
+<span class="block font-caption text-[11px] text-tertiary font-data-mono-sm">0.00%</span>
+</div>
+</div>
+<div class="flex items-center gap-1 font-caption text-[11px] text-secondary">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary-fixed-dim"></span>
+<span>Status: Unaffected (Below Priority Threshold)</span>
+</div>
+</div>
+</div>
+</div>
+<div class="p-space-sm bg-surface-container-high rounded space-y-1 text-on-surface">
+<div class="flex items-center justify-between font-caption text-caption text-primary font-semibold">
+<span class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">compare_arrows</span>
+<span>Method Comparison Insight</span>
+</span>
+<span class="font-data-mono-sm text-[10px]">Δ METRIC</span>
+</div>
+<p class="font-caption text-caption text-on-surface-variant leading-relaxed">
+                Using <strong>TS-08 Priority Ladder</strong> instead of Flat Proportional saves lower tiers from receiving -$9,130.43 in curtailments, directly protecting retention among rank Director and below.
+              </p>
+</div>
+</div>
+</div>
+<div class="p-space-md rounded bg-surface-container-low shadow-sm space-y-space-xs">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-tertiary text-[20px]">gavel</span>
+<span class="font-section-heading text-section-heading text-on-surface">Statutory Compliance Invariant</span>
+</div>
+<span class="inline-block px-2 py-0.5 rounded bg-tertiary-container text-on-tertiary-container font-data-mono-sm text-[11px] font-semibold">
+            BR-CAP-01 &amp; BR-MNY-03 Mathematical Invariant Enforced
+          </span>
+<p class="font-body-sm text-body-sm text-secondary leading-relaxed pt-1">
+            Evaluated strictly before company-level pool closure. All allocations sum to minor unit accuracy with zero binary floating-point representation. Curtailment operations produce deterministic audit proofs logged under <code class="font-data-mono-sm text-primary">SC-30</code>.
+          </p>
+</div>
+</div>
+</div>
+</div>
+</div></main></div></body></html>

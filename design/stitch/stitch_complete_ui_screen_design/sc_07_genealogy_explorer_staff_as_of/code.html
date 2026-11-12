@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+
+<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_dashboard" name="shell-type"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "on-tertiary": "#ffffff", "secondary-container": "#dae2fd", "on-primary": "#ffffff", "background": "#f8f9ff", "surface-container-lowest": "#ffffff", "on-error": "#ffffff", "secondary": "#565e74", "tertiary-container": "#0d5f36", "surface-dim": "#ccdbf3", "tertiary-fixed-dim": "#8cd7a3", "on-background": "#0d1c2e", "outline-variant": "#c3c6d3", "on-tertiary-fixed-variant": "#00522d", "on-secondary-fixed": "#131b2e", "primary": "#003883", "error": "#ba1a1a", "primary-fixed": "#d9e2ff", "on-surface": "#0d1c2e", "on-error-container": "#93000a", "surface-bright": "#f8f9ff", "surface-variant": "#d5e3fc", "inverse-primary": "#afc6ff", "surface-container-low": "#eff4ff", "outline": "#737783", "inverse-surface": "#233144", "inverse-on-surface": "#eaf1ff", "on-secondary-fixed-variant": "#3f465c", "surface-container": "#e6eeff", "primary-container": "#1e4fa3", "on-secondary": "#ffffff", "on-primary-fixed": "#001944", "error-container": "#ffdad6", "surface-tint": "#2e5bb0", "secondary-fixed": "#dae2fd", "tertiary-fixed": "#a7f3be", "surface": "#f8f9ff", "on-secondary-container": "#5c647a", "on-tertiary-fixed": "#00210f", "secondary-fixed-dim": "#bec6e0", "on-primary-fixed-variant": "#074397", "surface-container-highest": "#d5e3fc", "tertiary": "#004525", "on-surface-variant": "#434752", "primary-fixed-dim": "#afc6ff", "on-tertiary-container": "#8cd7a3", "on-primary-container": "#afc6ff", "surface-container-high": "#dce9ff" }, "borderRadius": { "DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem" }, "spacing": { "gutter": "1.5rem", "space-sm": "0.5rem", "space-2xl": "3rem", "space-xxs": "0.125rem", "margin-mobile": "1rem", "space-lg": "1.5rem", "gutter-compact": "0.75rem", "space-xs": "0.25rem", "margin": "1.5rem", "space-md": "1rem", "space-xl": "2rem" }, "fontFamily": { "body-lg": [ "Inter" ], "title-lg-mobile": [ "Inter" ], "display-mobile": [ "Inter" ], "body-md": [ "Inter" ], "title-md": [ "Inter" ], "data-mono-sm": [ "JetBrains Mono" ], "data-mono-lg": [ "JetBrains Mono" ], "section-heading": [ "Inter" ], "caption": [ "Inter" ], "display": [ "Inter" ], "title-lg": [ "Inter" ], "data-mono-md": [ "JetBrains Mono" ], "body-sm": [ "Inter" ] }, "fontSize": { "body-lg": [ "16px", { "lineHeight": "24px", "letterSpacing": "0em", "fontWeight": "400" } ], "title-lg-mobile": [ "20px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600" } ], "display-mobile": [ "26px", { "lineHeight": "32px", "letterSpacing": "-0.015em", "fontWeight": "600" } ], "body-md": [ "14px", { "lineHeight": "20px", "letterSpacing": "0em", "fontWeight": "400" } ], "title-md": [ "20px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600" } ], "data-mono-sm": [ "12px", { "lineHeight": "16px", "letterSpacing": "0em", "fontWeight": "500" } ], "data-mono-lg": [ "24px", { "lineHeight": "32px", "letterSpacing": "-0.02em", "fontWeight": "600" } ], "section-heading": [ "16px", { "lineHeight": "24px", "letterSpacing": "-0.005em", "fontWeight": "600" } ], "caption": [ "12px", { "lineHeight": "16px", "letterSpacing": "0.01em", "fontWeight": "500" } ], "display": [ "32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "600" } ], "title-lg": [ "24px", { "lineHeight": "32px", "letterSpacing": "-0.015em", "fontWeight": "600" } ], "data-mono-md": [ "14px", { "lineHeight": "20px", "letterSpacing": "-0.01em", "fontWeight": "500" } ], "body-sm": [ "13px", { "lineHeight": "18px", "letterSpacing": "0.005em", "fontWeight": "400" } ] } } } };</script></head><body class="bg-background font-body-md text-on-surface antialiased"><header class="fixed top-0 left-0 right-0 h-12 bg-surface-container-lowest border-b border-outline-variant z-50 flex items-center justify-between px-space-md select-none"><div class="flex items-center gap-space-sm"><img alt="Platform Integrity Logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/ALJJyrB5eRWQNX9M_eeC454eoT79IyJIWf2apWVApZfrYBVB2P3A94kIQBFZHifsaOQy_VoAxmgBKB1311sAY-hR--ULW9hEdvY1wTCws4v-3fDyxMTP842fJ_9HmJkVilWCVfwB2CZ99Njwo0zcjFd2fwdFdY4Tlnwy0f29IOF6zgYm7iwPhYOQsz0ME3S-1aejy28KO2FJjy828FssZQ8lq8YUlEqN1nESu3IEEUwMuNo"/><span class="font-section-heading text-section-heading text-primary font-bold tracking-tight">AuditLedger</span><div class="h-4 w-px bg-outline-variant mx-space-xs"></div><div class="flex items-center gap-space-xs px-space-xs py-space-xxs rounded bg-surface-container-low border border-outline-variant hover:border-outline cursor-pointer"><span class="font-body-sm text-body-sm text-on-surface font-medium">Acrobex Global</span><span class="font-data-mono-sm text-data-mono-sm text-secondary">(TEN-842)</span><span class="material-symbols-outlined text-[16px] text-secondary">arrow_drop_down</span></div><div class="flex items-center gap-space-xs px-space-xs py-space-xxs rounded bg-surface-container-low border border-outline-variant hover:border-outline cursor-pointer"><span class="h-2 w-2 rounded-full bg-tertiary-container"></span><span class="font-body-sm text-body-sm text-on-surface">US - United States (USD $)</span><span class="material-symbols-outlined text-[16px] text-secondary">expand_more</span></div></div><div class="flex-1 max-w-xl mx-space-lg"><div class="relative flex items-center w-full"><span class="material-symbols-outlined absolute left-2.5 text-outline text-[18px]">search</span><input class="w-full h-8 pl-8 pr-12 rounded bg-surface border border-outline-variant font-body-sm text-body-sm text-on-surface placeholder:text-outline focus:border-primary focus:outline-none transition-colors" placeholder="/ or Ctrl+K to search people, orders, cases, statements..." type="text"/><div class="absolute right-2 px-1.5 py-0.5 rounded bg-surface-container border border-outline-variant font-data-mono-sm text-data-mono-sm text-secondary">⌘K</div></div></div><div class="flex items-center gap-space-md"><button class="relative p-1 text-secondary hover:text-on-surface hover:bg-surface-container rounded transition-colors" title="Notifications" type="button"><span class="material-symbols-outlined text-[20px]">notifications</span><span class="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-error text-on-error font-data-mono-sm text-data-mono-sm leading-none flex items-center justify-center">3</span></button><button class="flex items-center gap-space-xs p-1 text-secondary hover:text-on-surface hover:bg-surface-container rounded transition-colors" title="Help &amp; Regulatory Glossary" type="button"><span class="material-symbols-outlined text-[20px]">menu_book</span><span class="font-body-sm text-body-sm">Glossary</span></button><div class="h-4 w-px bg-outline-variant"></div><div class="flex items-center gap-space-sm pl-space-xs"><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div><div class="flex flex-col text-left leading-tight hidden lg:flex"><span class="font-body-sm text-body-sm text-on-surface font-semibold">Elena Rostova</span><span class="font-caption text-caption text-secondary font-medium">Lead Commission Analyst</span></div><button class="p-1 text-secondary hover:text-error hover:bg-error-container rounded transition-colors" title="Sign out" type="button"><span class="material-symbols-outlined text-[18px]">logout</span></button></div></div></header><aside class="fixed left-0 top-12 bottom-0 w-52 bg-surface-container-lowest border-r border-outline-variant z-40 flex flex-col justify-between overflow-y-auto"><div class="py-space-sm px-space-xs"><nav class="space-y-space-xxs" data-active-classes="bg-primary-container text-on-primary font-semibold"><a class="flex items-center gap-space-sm px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-body-sm text-body-sm transition-colors" data-path="overview" href="#"><span class="material-symbols-outlined text-[18px]">dashboard</span><span>Overview</span></a><a class="flex items-center gap-space-sm px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-body-sm text-body-sm transition-colors" data-path="periods-runs" href="#"><span class="material-symbols-outlined text-[18px]">history_toggle_off</span><span>Periods &amp; Runs</span></a><a class="flex items-center gap-space-sm px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-body-sm text-body-sm transition-colors" data-path="compensation-plans" href="#"><span class="material-symbols-outlined text-[18px]">schema</span><span>Compensation Plans</span></a><a class="flex items-center gap-space-sm px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-body-sm text-body-sm transition-colors" data-path="people-tree" href="#"><span class="material-symbols-outlined text-[18px]">account_tree</span><span>People &amp; Tree</span></a><a class="flex items-center gap-space-sm px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-body-sm text-body-sm transition-colors" data-path="orders-returns" href="#"><span class="material-symbols-outlined text-[18px]">receipt_long</span><span>Orders &amp; Returns</span></a><a class="flex items-center gap-space-sm px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-body-sm text-body-sm transition-colors" data-path="cases-exceptions" href="#"><span class="material-symbols-outlined text-[18px]">rule_folder</span><span>Cases &amp; Exceptions</span></a><a class="flex items-center gap-space-sm px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-body-sm text-body-sm transition-colors" data-path="payouts" href="#"><span class="material-symbols-outlined text-[18px]">payments</span><span>Payouts</span></a><a class="flex items-center gap-space-sm px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-body-sm text-body-sm transition-colors" data-path="finance-ledger" href="#"><span class="material-symbols-outlined text-[18px]">account_balance</span><span>Finance &amp; Ledger</span></a><a class="flex items-center gap-space-sm px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-body-sm text-body-sm transition-colors" data-path="compliance-reports" href="#"><span class="material-symbols-outlined text-[18px]">verified_user</span><span>Compliance Reports</span></a><a class="flex items-center gap-space-sm px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-body-sm text-body-sm transition-colors" data-path="data-imports-migration" href="#"><span class="material-symbols-outlined text-[18px]">sync_alt</span><span>Data Imports</span></a><a class="flex items-center gap-space-sm px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-body-sm text-body-sm transition-colors" data-path="settings-audit" href="#"><span class="material-symbols-outlined text-[18px]">tune</span><span>Settings &amp; Audit</span></a></nav></div><div class="p-space-sm border-t border-outline-variant bg-surface-container-low"><div class="font-data-mono-sm text-data-mono-sm text-secondary space-y-1"><div class="flex items-center justify-between"><span>Cell</span><span class="text-on-surface font-semibold">US-EAST-1</span></div><div class="flex items-center justify-between"><span>Version</span><span class="text-on-surface">v2.4.1</span></div><div class="pt-1 border-t border-outline-variant flex items-center justify-between"><span class="text-outline">Engine</span><span class="text-tertiary font-semibold">2026.11</span></div></div></div></aside><div class="pl-52"><main class="w-full pt-12 bg-background min-h-screen"><div class="flex flex-col w-full">
+<!-- Top Command & Bitemporal Toolbar -->
+<div class="w-full bg-surface-container-lowest px-space-lg py-space-md shadow-sm">
+<div class="flex flex-col lg:flex-row lg:items-center justify-between gap-space-sm pb-space-sm">
+<div class="flex flex-col space-y-space-xxs">
+<div class="flex items-center gap-space-sm flex-wrap">
+<h1 class="font-title-lg text-title-lg text-on-surface tracking-tight">Genealogy Explorer</h1>
+<span class="inline-flex items-center gap-1.5 px-space-xs py-0.5 rounded bg-surface-container text-primary font-caption text-caption uppercase tracking-wider font-semibold">
+<span class="h-1.5 w-1.5 rounded-full bg-primary animate-pulse"></span>
+            Bitemporal Mode Active
+          </span>
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-tertiary-fixed text-on-tertiary-fixed-variant font-data-mono-sm text-data-mono-sm">
+<span class="material-symbols-outlined text-[14px]">lock_clock</span>
+            Snapshot Locked
+          </span>
+</div>
+<p class="font-body-sm text-body-sm text-secondary">
+          Inspect organizational sponsor and placement structures as they existed on any historical date and as recorded at any point in time.
+        </p>
+</div>
+<div class="flex items-center gap-space-xs self-start lg:self-center">
+<button class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded bg-surface-container-low hover:bg-surface-container text-on-surface font-body-sm text-body-sm transition-colors shadow-sm" type="button">
+<span class="material-symbols-outlined text-[16px] text-secondary">tune</span>
+          Tree Config
+        </button>
+<button class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded bg-surface-container-low hover:bg-surface-container text-on-surface font-body-sm text-body-sm transition-colors shadow-sm" type="button">
+<span class="material-symbols-outlined text-[16px] text-secondary">download</span>
+          Export Subtree
+        </button>
+<button class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded bg-primary text-on-primary font-body-sm text-body-sm font-semibold hover:bg-primary-container transition-colors shadow-sm" type="button">
+<span class="material-symbols-outlined text-[16px]">compare_arrows</span>
+          Run Path Audit
+        </button>
+</div>
+</div>
+<!-- Bitemporal Parameter Matrix Bar -->
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-12 gap-space-sm pt-space-sm bg-surface-container-low p-space-sm rounded-xl">
+<!-- Search Input -->
+<div class="xl:col-span-3 flex flex-col justify-center">
+<label class="font-caption text-caption text-secondary uppercase font-semibold mb-1">Target Participant or Position</label>
+<div class="relative flex items-center">
+<span class="material-symbols-outlined absolute left-2.5 text-outline text-[18px]">search</span>
+<input class="w-full h-8 pl-8 pr-3 rounded bg-surface-container-lowest font-body-sm text-body-sm text-on-surface focus:outline-none focus:ring-1 focus:ring-primary shadow-sm" placeholder="Search by name, ID, or handle..." type="text" value="POS-01948 (Elena Gomez)"/>
+</div>
+</div>
+<!-- Tree Kind Segmented Control -->
+<div class="xl:col-span-3 flex flex-col justify-center">
+<label class="font-caption text-caption text-secondary uppercase font-semibold mb-1">Tree Structure Kind</label>
+<div class="inline-flex h-8 bg-surface-container-lowest p-0.5 rounded shadow-sm">
+<button class="flex-1 px-2.5 py-1 text-center font-body-sm text-body-sm rounded font-semibold bg-primary text-on-primary shadow-sm transition-all flex items-center justify-center gap-1" type="button">
+<span class="material-symbols-outlined text-[14px]">share</span>
+            Sponsor Tree
+          </button>
+<button class="flex-1 px-2.5 py-1 text-center font-body-sm text-body-sm rounded font-medium text-secondary hover:text-on-surface transition-all flex items-center justify-center gap-1" type="button">
+<span class="material-symbols-outlined text-[14px]">grid_view</span>
+            Placement Tree
+          </button>
+</div>
+</div>
+<!-- As-Of Date (Effective Time) -->
+<div class="xl:col-span-2 flex flex-col justify-center">
+<div class="flex items-center justify-between mb-1">
+<label class="font-caption text-caption text-secondary uppercase font-semibold">As-Of (Effective)</label>
+<span class="font-caption text-caption text-primary font-medium">Valid Time</span>
+</div>
+<div class="relative flex items-center">
+<span class="material-symbols-outlined absolute left-2 text-outline text-[16px]">calendar_today</span>
+<input class="w-full h-8 pl-7 pr-2 rounded bg-surface-container-lowest font-data-mono-sm text-data-mono-sm text-on-surface focus:outline-none focus:ring-1 focus:ring-primary shadow-sm" type="date" value="2026-10-31"/>
+</div>
+</div>
+<!-- Known-At Timestamp (System Transaction Time) -->
+<div class="xl:col-span-2 flex flex-col justify-center">
+<div class="flex items-center justify-between mb-1">
+<label class="font-caption text-caption text-secondary uppercase font-semibold">Known-At (System)</label>
+<span class="font-caption text-caption text-primary font-medium">Tx Ledger</span>
+</div>
+<div class="relative flex items-center">
+<span class="material-symbols-outlined absolute left-2 text-outline text-[16px]">schedule</span>
+<input class="w-full h-8 pl-7 pr-2 rounded bg-surface-container-lowest font-data-mono-sm text-data-mono-sm text-on-surface focus:outline-none focus:ring-1 focus:ring-primary shadow-sm" type="text" value="2026-11-01 02:14:00"/>
+</div>
+</div>
+<!-- Diff Switch & Quick Actions -->
+<div class="xl:col-span-2 flex flex-col justify-center">
+<span class="font-caption text-caption text-secondary uppercase font-semibold mb-1">Diff Visualization</span>
+<label class="inline-flex items-center gap-2 h-8 px-2.5 bg-surface-container-lowest rounded cursor-pointer shadow-sm">
+<input checked="" class="rounded text-primary focus:ring-primary h-4 w-4" type="checkbox"/>
+<span class="font-body-sm text-body-sm font-medium text-on-surface truncate">Diff vs Current Reality</span>
+</label>
+</div>
+</div>
+</div>
+<!-- Invariant Engine & Read Model Health Banner -->
+<div class="px-space-lg pt-space-sm pb-space-xs">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-space-xs px-space-md py-2 bg-surface-container-lowest rounded-xl shadow-sm">
+<div class="flex items-center gap-space-sm">
+<div class="flex items-center justify-center w-6 h-6 rounded-full bg-tertiary-fixed text-tertiary">
+<span class="material-symbols-outlined text-[16px]">verified</span>
+</div>
+<div class="flex items-center gap-space-xs flex-wrap">
+<span class="font-body-sm text-body-sm font-semibold text-on-surface">Materialized Read Model Active</span>
+<span class="text-outline text-body-sm">•</span>
+<span class="font-body-sm text-body-sm text-secondary">Closure table indexed to depth <span class="font-data-mono-sm text-data-mono-sm font-semibold text-on-surface">18</span></span>
+<span class="text-outline text-body-sm">•</span>
+<span class="font-body-sm text-body-sm text-secondary"><span class="font-data-mono-sm text-data-mono-sm font-semibold text-on-surface">0</span> stale subtrees detected</span>
+</div>
+</div>
+<div class="flex items-center gap-space-md">
+<div class="flex items-center gap-1.5 font-data-mono-sm text-data-mono-sm text-secondary">
+<span class="inline-block w-2 h-2 rounded-full bg-tertiary"></span>
+<span>Ancestor check p95: <span class="font-semibold text-on-surface">14ms</span></span>
+</div>
+<span class="text-outline text-caption hidden sm:inline">|</span>
+<span class="font-data-mono-sm text-data-mono-sm text-secondary bg-surface-container px-2 py-0.5 rounded">TREE_REV_#84920.8</span>
+</div>
+</div>
+</div>
+<!-- Diff Alert Banner for CAS-8941 -->
+<div class="px-space-lg py-space-xs">
+<div class="relative overflow-hidden bg-surface-container-lowest rounded-xl p-space-md shadow-sm">
+<div class="absolute left-0 top-0 bottom-0 w-1.5 bg-primary"></div>
+<div class="flex flex-col lg:flex-row lg:items-center justify-between gap-space-sm">
+<div class="flex items-start gap-space-sm">
+<div class="p-1.5 rounded-lg bg-surface-container text-primary mt-0.5">
+<span class="material-symbols-outlined text-[20px]">difference</span>
+</div>
+<div>
+<div class="flex items-center gap-2 flex-wrap">
+<span class="font-body-md text-body-md font-semibold text-on-surface">Historical Diff Detected: Case #CAS-8941 Pending</span>
+<span class="px-2 py-0.5 rounded bg-surface-container-high text-primary font-caption text-caption font-semibold">10-Day Rule Window</span>
+<span class="font-data-mono-sm text-data-mono-sm text-secondary">Initiated: 2026-11-02 18:30:11 UTC</span>
+</div>
+<p class="font-body-sm text-body-sm text-secondary mt-0.5">
+              The currently inspected view (<span class="font-data-mono-sm text-data-mono-sm font-semibold text-on-surface">2026-11-01 02:14:00 UTC</span>) captures sponsorship <span class="font-semibold text-on-surface">before</span> proposed reparenting of leg <span class="font-data-mono-sm text-data-mono-sm text-on-surface font-semibold">Chloe T. (POS-12903)</span> to <span class="font-data-mono-sm text-data-mono-sm text-on-surface font-semibold">Marcus R. (POS-04192)</span>.
+            </p>
+</div>
+</div>
+<div class="flex items-center gap-space-xs shrink-0 self-start lg:self-center">
+<button class="px-3 py-1.5 rounded bg-surface-container hover:bg-surface-container-high text-primary font-body-sm text-body-sm font-medium transition-colors" type="button">
+            Inspect Proposal Trace
+          </button>
+<button class="px-3 py-1.5 rounded bg-primary text-on-primary font-body-sm text-body-sm font-semibold hover:bg-primary-container transition-colors shadow-sm" type="button">
+            Review Case #CAS-8941
+          </button>
+</div>
+</div>
+</div>
+</div>
+<!-- Main 2-Column Responsive Layout -->
+<div class="px-space-lg py-space-sm pb-space-2xl grid grid-cols-1 lg:grid-cols-12 gap-space-md">
+<!-- LEFT COLUMN: Hierarchy Canvas & Downline Explorer (~65%) -->
+<div class="lg:col-span-8 flex flex-col space-y-space-md">
+<!-- Breadcrumbs Path Navigator to Root -->
+<div class="bg-surface-container-lowest p-space-sm rounded-xl shadow-sm flex items-center justify-between flex-wrap gap-space-xs">
+<div class="flex items-center gap-1.5 font-body-sm text-body-sm text-secondary flex-wrap">
+<button class="hover:text-primary transition-colors flex items-center gap-1 font-medium" type="button">
+<span class="material-symbols-outlined text-[16px]">domain</span>
+            Root (Acrobex Global)
+          </button>
+<span class="material-symbols-outlined text-[14px] text-outline">chevron_right</span>
+<button class="hover:text-primary transition-colors flex items-center gap-1 font-medium" type="button">
+            Marcus Vance
+            <span class="font-data-mono-sm text-data-mono-sm text-outline">(POS-04812)</span>
+</button>
+<span class="material-symbols-outlined text-[14px] text-outline">chevron_right</span>
+<span class="font-semibold text-primary flex items-center gap-1 bg-surface-container px-2 py-0.5 rounded">
+            Elena Gomez
+            <span class="font-data-mono-sm text-data-mono-sm text-secondary">(POS-01948)</span>
+<span class="material-symbols-outlined text-[14px]">pin_drop</span>
+</span>
+</div>
+<div class="flex items-center gap-1">
+<span class="font-caption text-caption text-secondary mr-2">Tree Depth: <span class="font-data-mono-sm text-data-mono-sm font-bold text-on-surface">Level 3</span></span>
+<button class="p-1 rounded hover:bg-surface-container text-secondary transition-colors" title="Zoom Out / Up One Level" type="button">
+<span class="material-symbols-outlined text-[18px]">arrow_upward</span>
+</button>
+<button class="p-1 rounded hover:bg-surface-container text-secondary transition-colors" title="Expand All Direct Legs" type="button">
+<span class="material-symbols-outlined text-[18px]">unfold_more</span>
+</button>
+</div>
+</div>
+<!-- Focused Root/Anchor Node Card: Elena Gomez -->
+<div class="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden">
+<div class="bg-gradient-to-r from-primary to-primary-container px-space-md py-space-sm text-on-primary flex flex-col md:flex-row md:items-center justify-between gap-space-sm">
+<div class="flex items-center gap-space-sm">
+<div class="w-12 h-12 rounded-xl bg-surface-container-lowest/15 backdrop-blur flex items-center justify-center font-title-lg text-title-lg font-bold text-on-primary">
+              EG
+            </div>
+<div>
+<div class="flex items-center gap-2 flex-wrap">
+<h2 class="font-title-md text-title-md font-bold tracking-tight">Elena Gomez</h2>
+<span class="font-data-mono-sm text-data-mono-sm bg-surface-container-lowest/20 px-2 py-0.5 rounded font-medium">POS-01948</span>
+<span class="px-2 py-0.5 rounded bg-tertiary-fixed text-on-tertiary-fixed-variant font-caption text-caption font-bold">
+                  DIAMOND DIRECTOR
+                </span>
+<span class="px-2 py-0.5 rounded bg-surface-container-lowest/20 text-on-primary font-caption text-caption">
+                  Active (Paid-As Diamond)
+                </span>
+</div>
+<p class="font-caption text-caption text-primary-fixed mt-0.5 flex items-center gap-space-xs">
+<span>Account P-88201</span>
+<span>•</span>
+<span>Enrolled 2023-04-12</span>
+<span>•</span>
+<span>Sponsor: Marcus Vance (POS-04812)</span>
+</p>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<span class="text-caption font-caption bg-surface-container-lowest/10 px-2 py-1 rounded">Anchor Subject</span>
+</div>
+</div>
+<!-- Node Metrics Ribbon -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-0 bg-surface-container-low">
+<div class="p-space-sm bg-surface-container-lowest flex flex-col">
+<span class="font-caption text-caption text-secondary uppercase font-semibold">Personal Volume (PV)</span>
+<span class="font-data-mono-lg text-data-mono-lg font-bold text-on-surface mt-1">1,420 <span class="font-body-sm text-body-sm font-normal text-secondary">PV</span></span>
+<span class="font-caption text-caption text-tertiary flex items-center gap-0.5 mt-0.5">
+<span class="material-symbols-outlined text-[14px]">check_circle</span>
+              Qualified (≥ 200 PV Req)
+            </span>
+</div>
+<div class="p-space-sm bg-surface-container-lowest flex flex-col">
+<span class="font-caption text-caption text-secondary uppercase font-semibold">Group Volume (GV)</span>
+<span class="font-data-mono-lg text-data-mono-lg font-bold text-on-surface mt-1">384,200 <span class="font-body-sm text-body-sm font-normal text-secondary">GV</span></span>
+<span class="font-caption text-caption text-secondary mt-0.5">Oct 2026 Reconciliation</span>
+</div>
+<div class="p-space-sm bg-surface-container-lowest flex flex-col">
+<span class="font-caption text-caption text-secondary uppercase font-semibold">Total Downline</span>
+<span class="font-data-mono-lg text-data-mono-lg font-bold text-on-surface mt-1">4,120 <span class="font-body-sm text-body-sm font-normal text-secondary">pos</span></span>
+<span class="font-caption text-caption text-primary font-medium mt-0.5">4 Direct Frontline Legs</span>
+</div>
+<div class="p-space-sm bg-surface-container-lowest flex flex-col">
+<span class="font-caption text-caption text-secondary uppercase font-semibold">Max Leg Volume Cap</span>
+<div class="flex items-baseline gap-1 mt-1">
+<span class="font-data-mono-lg text-data-mono-lg font-bold text-primary">55%</span>
+<span class="font-caption text-caption text-secondary">/ 45% Rule</span>
+</div>
+<span class="font-caption text-caption text-tertiary font-medium mt-0.5">Compliant (No Spillover)</span>
+</div>
+</div>
+</div>
+<!-- Downline Hierarchy Controls & View Mode -->
+<div class="bg-surface-container-lowest rounded-xl shadow-sm p-space-md">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-space-sm pb-space-sm">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-primary text-[20px]">account_tree</span>
+<h3 class="font-section-heading text-section-heading font-bold text-on-surface">Direct Frontline Legs</h3>
+<span class="font-data-mono-sm text-data-mono-sm bg-surface-container px-2 py-0.5 rounded text-secondary font-medium">4 Legs Active</span>
+</div>
+<div class="flex items-center gap-2">
+<!-- View Mode Switcher -->
+<div class="inline-flex h-7 bg-surface-container p-0.5 rounded text-caption font-caption">
+<button class="px-2 py-0.5 rounded bg-surface-container-lowest text-on-surface font-semibold shadow-sm flex items-center gap-1" type="button">
+<span class="material-symbols-outlined text-[14px]">table_rows</span>
+                Table View
+              </button>
+<button class="px-2 py-0.5 rounded text-secondary hover:text-on-surface flex items-center gap-1 transition-colors" type="button">
+<span class="material-symbols-outlined text-[14px]">lan</span>
+                Graphic Graph
+              </button>
+</div>
+<!-- Keyboard shortcut indicator -->
+<div class="hidden md:flex items-center gap-1 text-outline font-data-mono-sm text-data-mono-sm pl-2">
+<kbd class="px-1.5 py-0.5 bg-surface-container rounded font-semibold text-secondary">↑</kbd>
+<kbd class="px-1.5 py-0.5 bg-surface-container rounded font-semibold text-secondary">↓</kbd>
+<span>navigate</span>
+<kbd class="px-1.5 py-0.5 bg-surface-container rounded font-semibold text-secondary ml-1">↵</kbd>
+<span>inspect</span>
+</div>
+</div>
+</div>
+<!-- Frontline Legs Breakdown List -->
+<div class="space-y-space-xs mt-space-xs">
+<!-- Leg 1: Thomas K. (POS-03112) -->
+<div class="group bg-surface-container-low hover:bg-surface-container p-space-sm rounded-xl transition-all shadow-sm">
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-space-sm">
+<div class="flex items-center gap-space-sm">
+<button class="w-6 h-6 rounded bg-surface-container-lowest hover:bg-primary hover:text-on-primary text-secondary flex items-center justify-center transition-colors shadow-sm" title="Expand Child Nodes" type="button">
+<span class="material-symbols-outlined text-[16px]">arrow_right</span>
+</button>
+<div class="w-8 h-8 rounded-lg bg-surface-container-lowest flex items-center justify-center font-data-mono-sm text-data-mono-sm font-bold text-primary shadow-sm">
+                  L1
+                </div>
+<div>
+<div class="flex items-center gap-2 flex-wrap">
+<span class="font-body-md text-body-md font-semibold text-on-surface">Thomas K.</span>
+<span class="font-data-mono-sm text-data-mono-sm text-secondary font-medium">POS-03112</span>
+<span class="px-2 py-0.5 rounded bg-surface-container-high text-primary font-caption text-caption font-semibold">
+                      Senior Director
+                    </span>
+<span class="px-2 py-0.5 rounded bg-surface-container-lowest text-secondary font-caption text-caption shadow-sm">
+                      Level 1
+                    </span>
+</div>
+<div class="flex items-center gap-3 text-caption font-caption text-secondary mt-0.5 flex-wrap">
+<span>Downline: <strong class="text-on-surface font-data-mono-sm text-data-mono-sm">1,840</strong> positions</span>
+<span>•</span>
+<span>Leg QV: <strong class="text-on-surface font-data-mono-sm text-data-mono-sm">$182,400</strong></span>
+<span>•</span>
+<span class="text-error font-medium flex items-center gap-0.5">
+<span class="material-symbols-outlined text-[14px]">warning</span>
+                      Leg Cap at 55% ($182,400 of $211,310 allowable)
+                    </span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-space-xs shrink-0 self-end md:self-center">
+<!-- Visual Bar Representation of Leg Volume Contribution -->
+<div class="w-24 bg-surface-container-highest h-2 rounded-full overflow-hidden mr-2 hidden sm:block">
+<div class="bg-primary h-full" style="width: 47.4%"></div>
+</div>
+<button class="px-2.5 py-1 rounded bg-surface-container-lowest hover:bg-primary-container hover:text-on-primary text-primary font-body-sm text-body-sm font-semibold transition-colors shadow-sm" type="button">
+                  Focus Node
+                </button>
+</div>
+</div>
+</div>
+<!-- Leg 2: Maya L. (POS-09411) -->
+<div class="group bg-surface-container-low hover:bg-surface-container p-space-sm rounded-xl transition-all shadow-sm">
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-space-sm">
+<div class="flex items-center gap-space-sm">
+<button class="w-6 h-6 rounded bg-surface-container-lowest hover:bg-primary hover:text-on-primary text-secondary flex items-center justify-center transition-colors shadow-sm" title="Expand Child Nodes" type="button">
+<span class="material-symbols-outlined text-[16px]">arrow_right</span>
+</button>
+<div class="w-8 h-8 rounded-lg bg-surface-container-lowest flex items-center justify-center font-data-mono-sm text-data-mono-sm font-bold text-primary shadow-sm">
+                  L2
+                </div>
+<div>
+<div class="flex items-center gap-2 flex-wrap">
+<span class="font-body-md text-body-md font-semibold text-on-surface">Maya L.</span>
+<span class="font-data-mono-sm text-data-mono-sm text-secondary font-medium">POS-09411</span>
+<span class="px-2 py-0.5 rounded bg-surface-container-high text-primary font-caption text-caption font-semibold">
+                      Director
+                    </span>
+<span class="px-2 py-0.5 rounded bg-surface-container-lowest text-secondary font-caption text-caption shadow-sm">
+                      Level 1
+                    </span>
+</div>
+<div class="flex items-center gap-3 text-caption font-caption text-secondary mt-0.5 flex-wrap">
+<span>Downline: <strong class="text-on-surface font-data-mono-sm text-data-mono-sm">1,220</strong> positions</span>
+<span>•</span>
+<span>Leg QV: <strong class="text-on-surface font-data-mono-sm text-data-mono-sm">$114,800</strong></span>
+<span>•</span>
+<span class="text-tertiary font-medium">29.8% Total GV Contribution</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-space-xs shrink-0 self-end md:self-center">
+<div class="w-24 bg-surface-container-highest h-2 rounded-full overflow-hidden mr-2 hidden sm:block">
+<div class="bg-primary h-full" style="width: 29.8%"></div>
+</div>
+<button class="px-2.5 py-1 rounded bg-surface-container-lowest hover:bg-primary-container hover:text-on-primary text-primary font-body-sm text-body-sm font-semibold transition-colors shadow-sm" type="button">
+                  Focus Node
+                </button>
+</div>
+</div>
+</div>
+<!-- Leg 3: Marcus R. (POS-04192) -->
+<div class="group bg-surface-container-low hover:bg-surface-container p-space-sm rounded-xl transition-all shadow-sm">
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-space-sm">
+<div class="flex items-center gap-space-sm">
+<button class="w-6 h-6 rounded bg-surface-container-lowest hover:bg-primary hover:text-on-primary text-secondary flex items-center justify-center transition-colors shadow-sm" title="Expand Child Nodes" type="button">
+<span class="material-symbols-outlined text-[16px]">arrow_right</span>
+</button>
+<div class="w-8 h-8 rounded-lg bg-surface-container-lowest flex items-center justify-center font-data-mono-sm text-data-mono-sm font-bold text-primary shadow-sm">
+                  L3
+                </div>
+<div>
+<div class="flex items-center gap-2 flex-wrap">
+<span class="font-body-md text-body-md font-semibold text-on-surface">Marcus R.</span>
+<span class="font-data-mono-sm text-data-mono-sm text-secondary font-medium">POS-04192</span>
+<span class="px-2 py-0.5 rounded bg-surface-container-high text-primary font-caption text-caption font-semibold">
+                      Executive Director
+                    </span>
+<span class="px-2 py-0.5 rounded bg-surface-container-lowest text-secondary font-caption text-caption shadow-sm">
+                      Level 1
+                    </span>
+</div>
+<div class="flex items-center gap-3 text-caption font-caption text-secondary mt-0.5 flex-wrap">
+<span>Downline: <strong class="text-on-surface font-data-mono-sm text-data-mono-sm">890</strong> positions</span>
+<span>•</span>
+<span>Leg QV: <strong class="text-on-surface font-data-mono-sm text-data-mono-sm">$78,600</strong></span>
+<span>•</span>
+<span class="text-tertiary font-medium">20.4% Total GV Contribution</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-space-xs shrink-0 self-end md:self-center">
+<div class="w-24 bg-surface-container-highest h-2 rounded-full overflow-hidden mr-2 hidden sm:block">
+<div class="bg-primary h-full" style="width: 20.4%"></div>
+</div>
+<button class="px-2.5 py-1 rounded bg-surface-container-lowest hover:bg-primary-container hover:text-on-primary text-primary font-body-sm text-body-sm font-semibold transition-colors shadow-sm" type="button">
+                  Focus Node
+                </button>
+</div>
+</div>
+</div>
+<!-- Leg 4: Chloe T. (POS-12903) — With Pending Diff Indicator -->
+<div class="group bg-surface-container-low hover:bg-surface-container p-space-sm rounded-xl transition-all shadow-sm relative overflow-hidden">
+<!-- Diff Accent Strip on left -->
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-error"></div>
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-space-sm">
+<div class="flex items-center gap-space-sm pl-1">
+<button class="w-6 h-6 rounded bg-surface-container-lowest hover:bg-primary hover:text-on-primary text-secondary flex items-center justify-center transition-colors shadow-sm" title="Expand Child Nodes" type="button">
+<span class="material-symbols-outlined text-[16px]">arrow_right</span>
+</button>
+<div class="w-8 h-8 rounded-lg bg-surface-container-lowest flex items-center justify-center font-data-mono-sm text-data-mono-sm font-bold text-primary shadow-sm">
+                  L4
+                </div>
+<div>
+<div class="flex items-center gap-2 flex-wrap">
+<span class="font-body-md text-body-md font-semibold text-on-surface">Chloe T.</span>
+<span class="font-data-mono-sm text-data-mono-sm text-secondary font-medium">POS-12903</span>
+<span class="px-2 py-0.5 rounded bg-surface-container-high text-primary font-caption text-caption font-semibold">
+                      Director
+                    </span>
+<span class="px-2 py-0.5 rounded bg-error-container text-on-error-container font-caption text-caption font-bold flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px]">flag</span>
+                      Pending Transfer (CAS-8941)
+                    </span>
+</div>
+<div class="flex items-center gap-3 text-caption font-caption text-secondary mt-0.5 flex-wrap">
+<span>Downline: <strong class="text-on-surface font-data-mono-sm text-data-mono-sm">170</strong> positions</span>
+<span>•</span>
+<span>Leg QV: <strong class="text-on-surface font-data-mono-sm text-data-mono-sm">$8,400</strong></span>
+<span>•</span>
+<span class="text-secondary">Proposed Target: Marcus R. (POS-04192)</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-space-xs shrink-0 self-end md:self-center">
+<div class="w-24 bg-surface-container-highest h-2 rounded-full overflow-hidden mr-2 hidden sm:block">
+<div class="bg-primary h-full" style="width: 2.4%"></div>
+</div>
+<button class="px-2.5 py-1 rounded bg-surface-container-lowest hover:bg-primary-container hover:text-on-primary text-primary font-body-sm text-body-sm font-semibold transition-colors shadow-sm" type="button">
+                  Focus Node
+                </button>
+</div>
+</div>
+</div>
+</div>
+<!-- Subtree Summary Footer -->
+<div class="mt-space-md pt-space-sm flex flex-col sm:flex-row items-center justify-between text-caption font-caption text-secondary">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-tertiary">check</span>
+<span>Total Frontline Volume: <strong class="text-on-surface font-data-mono-sm text-data-mono-sm">$382,780 QV</strong> + Personal <strong class="text-on-surface font-data-mono-sm text-data-mono-sm">$1,420 PV</strong> = <strong class="text-on-surface font-data-mono-sm text-data-mono-sm">$384,200 Total GV</strong></span>
+</div>
+<span class="font-data-mono-sm text-data-mono-sm mt-2 sm:mt-0">Page 1 of 1 (Showing 4 of 4 legs)</span>
+</div>
+</div>
+</div>
+<!-- RIGHT COLUMN: Position Inspector Drawer & Relationship Context (~35%) -->
+<div class="lg:col-span-4 flex flex-col space-y-space-md">
+<!-- Position Attributes & Lifecycle Spec Card -->
+<div class="bg-surface-container-lowest rounded-xl shadow-sm p-space-md">
+<div class="flex items-center justify-between pb-space-sm">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[20px]">badge</span>
+<h3 class="font-section-heading text-section-heading font-bold text-on-surface">Position Attributes &amp; Lifecycle</h3>
+</div>
+<span class="font-data-mono-sm text-data-mono-sm bg-surface-container px-2 py-0.5 rounded text-secondary font-medium">REV-481</span>
+</div>
+<div class="space-y-space-sm pt-space-xs">
+<!-- Position Ownership Details -->
+<div class="bg-surface-container-low p-space-sm rounded-xl">
+<div class="flex items-center justify-between mb-1.5">
+<span class="font-caption text-caption text-secondary uppercase font-semibold">Participant Owner</span>
+<button class="inline-flex items-center gap-1 font-caption text-caption text-primary font-semibold hover:underline" type="button">
+<span class="material-symbols-outlined text-[14px]">visibility</span>
+                Audited Unmask
+              </button>
+</div>
+<div class="flex items-center justify-between">
+<div>
+<span class="font-body-md text-body-md font-bold text-on-surface">Elena Gomez</span>
+<span class="font-data-mono-sm text-data-mono-sm text-secondary ml-1.5">P-88201</span>
+</div>
+<span class="px-2 py-0.5 rounded bg-tertiary-fixed text-on-tertiary-fixed-variant font-caption text-caption font-semibold">KYC Verified</span>
+</div>
+</div>
+<!-- Multi-Position Mapping -->
+<div class="bg-surface-container-low p-space-sm rounded-xl">
+<span class="font-caption text-caption text-secondary uppercase font-semibold">Positions Owned by Participant (2)</span>
+<div class="mt-2 space-y-1.5">
+<div class="flex items-center justify-between bg-surface-container-lowest p-2 rounded shadow-sm">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-primary">radio_button_checked</span>
+<span class="font-data-mono-sm text-data-mono-sm font-bold text-on-surface">POS-01948</span>
+<span class="font-caption text-caption text-secondary">(Primary / Inspected)</span>
+</div>
+<span class="font-caption text-caption font-semibold text-tertiary">Active</span>
+</div>
+<div class="flex items-center justify-between bg-surface-container-lowest p-2 rounded shadow-sm">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-outline">radio_button_unchecked</span>
+<span class="font-data-mono-sm text-data-mono-sm font-bold text-on-surface">POS-01948-B</span>
+<span class="font-caption text-caption text-secondary">(Binary Node 2)</span>
+</div>
+<span class="font-caption text-caption font-semibold text-secondary">Dormant</span>
+</div>
+</div>
+</div>
+<!-- Upstream Lineage Context -->
+<div class="bg-surface-container-low p-space-sm rounded-xl space-y-2">
+<span class="font-caption text-caption text-secondary uppercase font-semibold">Upstream Sponsors &amp; Placement</span>
+<div class="flex items-center justify-between text-body-sm font-body-sm">
+<span class="text-secondary">Enrolling Sponsor:</span>
+<span class="font-semibold text-on-surface">Marcus Vance <span class="font-data-mono-sm text-data-mono-sm text-secondary">(POS-04812)</span></span>
+</div>
+<div class="flex items-center justify-between text-body-sm font-body-sm">
+<span class="text-secondary">Placement Parent:</span>
+<span class="font-semibold text-on-surface">Marcus Vance <span class="font-data-mono-sm text-data-mono-sm text-secondary">(Leg L-A)</span></span>
+</div>
+<div class="flex items-center justify-between text-body-sm font-body-sm">
+<span class="text-secondary">Tree Depth (Root):</span>
+<span class="font-data-mono-sm text-data-mono-sm font-bold text-on-surface">Level 3</span>
+</div>
+</div>
+<!-- Bitemporal Interval Range -->
+<div class="bg-surface-container-low p-space-sm rounded-xl">
+<span class="font-caption text-caption text-secondary uppercase font-semibold">Temporal Interval (Ledger Proof)</span>
+<div class="mt-2 space-y-1.5 font-data-mono-sm text-data-mono-sm text-body-sm">
+<div class="flex items-center justify-between">
+<span class="text-secondary">Valid Time:</span>
+<span class="text-on-surface font-semibold">[2024-03-15, ∞)</span>
+</div>
+<div class="flex items-center justify-between">
+<span class="text-secondary">System Time:</span>
+<span class="text-on-surface font-semibold">[2024-03-15 10:00 UTC, ∞)</span>
+</div>
+<div class="flex items-center justify-between">
+<span class="text-secondary">Signature Hash:</span>
+<span class="text-primary truncate max-w-[160px]">0x7f88a91b...32e1</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Pending / Past Structural Cases Card -->
+<div class="bg-surface-container-lowest rounded-xl shadow-sm p-space-md">
+<div class="flex items-center justify-between pb-space-sm">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[20px]">rule_folder</span>
+<h3 class="font-section-heading text-section-heading font-bold text-on-surface">Pending Structural Case</h3>
+</div>
+<span class="px-2 py-0.5 rounded bg-surface-container-high text-primary font-caption text-caption font-bold">CAS-8941</span>
+</div>
+<div class="pt-space-xs space-y-space-sm">
+<div class="p-space-sm bg-surface-container-low rounded-xl">
+<div class="flex items-center justify-between">
+<span class="font-body-sm text-body-sm font-bold text-on-surface">Sponsor Re-Parenting Request</span>
+<span class="font-caption text-caption text-secondary">10-Day Grace Window</span>
+</div>
+<p class="font-body-sm text-body-sm text-secondary mt-1">
+              Customer Support initiated correction proposal to transfer child leg <span class="font-semibold text-on-surface">Chloe T. (POS-12903)</span> under <span class="font-semibold text-on-surface">Marcus R. (POS-04192)</span>.
+            </p>
+</div>
+<!-- Impact Pre-flight Check -->
+<div class="bg-surface-container-low p-space-sm rounded-xl space-y-2">
+<span class="font-caption text-caption text-secondary uppercase font-semibold">Invariant Impact Verification</span>
+<div class="flex items-center justify-between text-body-sm font-body-sm">
+<span class="text-secondary flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px] text-tertiary">check_circle</span>
+                Graph Cycle Check
+              </span>
+<span class="font-semibold text-tertiary">PASS (Zero Cycles)</span>
+</div>
+<div class="flex items-center justify-between text-body-sm font-body-sm">
+<span class="text-secondary flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px] text-tertiary">check_circle</span>
+                Max Placement Leg Depth
+              </span>
+<span class="font-semibold text-on-surface">Within Bounds (Max 24)</span>
+</div>
+<div class="flex items-center justify-between text-body-sm font-body-sm">
+<span class="text-secondary flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px] text-error">error</span>
+                Historical Period Impact
+              </span>
+<span class="font-semibold text-error">4 Committed Periods Affected</span>
+</div>
+<div class="p-2 rounded bg-surface-container text-caption font-caption text-secondary">
+              Notice: Restatement run will be required for Oct, Nov, and Dec 2026 commission cycles if retroactive adjustment is approved.
+            </div>
+</div>
+</div>
+</div>
+<!-- Quick Operational Action Triggers -->
+<div class="bg-surface-container-lowest rounded-xl shadow-sm p-space-md">
+<h3 class="font-section-heading text-section-heading font-bold text-on-surface pb-space-sm">Genealogy Operations</h3>
+<div class="space-y-space-xs pt-space-xs">
+<a class="flex items-center justify-between p-space-sm rounded-xl bg-surface-container-low hover:bg-surface-container text-on-surface transition-colors group shadow-sm" href="#">
+<div class="flex items-center gap-space-sm">
+<div class="p-2 rounded-lg bg-surface-container-lowest text-primary group-hover:bg-primary group-hover:text-on-primary transition-colors shadow-sm">
+<span class="material-symbols-outlined text-[18px]">add_moderator</span>
+</div>
+<div>
+<div class="font-body-sm text-body-sm font-semibold text-on-surface">Start Genealogy Case (SC-08)</div>
+<div class="font-caption text-caption text-secondary">Initiate sponsor transfer, placement swap, or freeze</div>
+</div>
+</div>
+<span class="material-symbols-outlined text-[18px] text-outline group-hover:text-primary transition-colors">chevron_right</span>
+</a>
+<a class="flex items-center justify-between p-space-sm rounded-xl bg-surface-container-low hover:bg-surface-container text-on-surface transition-colors group shadow-sm" href="#">
+<div class="flex items-center gap-space-sm">
+<div class="p-2 rounded-lg bg-surface-container-lowest text-primary group-hover:bg-primary group-hover:text-on-primary transition-colors shadow-sm">
+<span class="material-symbols-outlined text-[18px]">contact_page</span>
+</div>
+<div>
+<div class="font-body-sm text-body-sm font-semibold text-on-surface">View Participant Factsheet (SC-09)</div>
+<div class="font-caption text-caption text-secondary">Complete distributor profile, KYC &amp; contract details</div>
+</div>
+</div>
+<span class="material-symbols-outlined text-[18px] text-outline group-hover:text-primary transition-colors">chevron_right</span>
+</a>
+<a class="flex items-center justify-between p-space-sm rounded-xl bg-surface-container-low hover:bg-surface-container text-on-surface transition-colors group shadow-sm" href="#">
+<div class="flex items-center gap-space-sm">
+<div class="p-2 rounded-lg bg-surface-container-lowest text-primary group-hover:bg-primary group-hover:text-on-primary transition-colors shadow-sm">
+<span class="material-symbols-outlined text-[18px]">receipt_long</span>
+</div>
+<div>
+<div class="font-body-sm text-body-sm font-semibold text-on-surface">Open Statements History (SC-18)</div>
+<div class="font-caption text-caption text-secondary">Historical period payouts, earnings &amp; adjustments</div>
+</div>
+</div>
+<span class="material-symbols-outlined text-[18px] text-outline group-hover:text-primary transition-colors">chevron_right</span>
+</a>
+</div>
+</div>
+</div>
+</div>
+<!-- Sticky Bottom Separation-of-Duties Bar for Pending Case CAS-8941 -->
+<div class="sticky bottom-0 left-0 right-0 bg-surface-container-lowest border-t border-outline-variant px-space-lg py-2.5 shadow-xl z-30 flex flex-col sm:flex-row items-center justify-between gap-space-sm">
+<div class="flex items-center gap-space-sm">
+<div class="flex items-center justify-center w-7 h-7 rounded-full bg-surface-container text-primary">
+<span class="material-symbols-outlined text-[18px]">verified_user</span>
+</div>
+<div class="flex flex-col">
+<div class="flex items-center gap-2">
+<span class="font-body-sm text-body-sm font-bold text-on-surface">Two-Person Rule Sign-Off Pending</span>
+<span class="font-caption text-caption px-2 py-0.5 rounded bg-surface-container text-secondary font-medium">Stage 1 of 2 Complete</span>
+</div>
+<span class="font-caption text-caption text-secondary">First approval recorded by <span class="font-semibold text-on-surface">M. Jenkins (Compliance)</span> at 2026-11-02 21:05 UTC. Awaiting Lead Analyst authorization.</span>
+</div>
+</div>
+<div class="flex items-center gap-space-xs self-end sm:self-center shrink-0">
+<button class="px-3 py-1.5 rounded bg-surface-container-low hover:bg-surface-container text-secondary font-body-sm text-body-sm font-medium transition-colors" type="button">
+        Reject Proposal
+      </button>
+<button class="px-4 py-1.5 rounded bg-primary text-on-primary font-body-sm text-body-sm font-semibold hover:bg-primary-container transition-colors shadow-sm flex items-center gap-1.5" type="button">
+<span class="material-symbols-outlined text-[16px]">draw</span>
+        Sign &amp; Authorize Reparenting
+      </button>
+</div>
+</div>
+<!-- Inline Script for Interaction Handling -->
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // Lazy expand/collapse on frontline legs
+      const legButtons = document.querySelectorAll('button[title="Expand Child Nodes"]');
+      legButtons.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const icon = btn.querySelector('.material-symbols-outlined');
+          if (icon.textContent === 'arrow_right') {
+            icon.textContent = 'arrow_drop_down';
+            btn.classList.add('bg-primary', 'text-on-primary');
+          } else {
+            icon.textContent = 'arrow_right';
+            btn.classList.remove('bg-primary', 'text-on-primary');
+          }
+        });
+      });
+
+      // Keyboard navigation mockup
+      window.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+          // Highlight preview indication
+        }
+      });
+    });
+  </script>
+</div></main></div></body></html>

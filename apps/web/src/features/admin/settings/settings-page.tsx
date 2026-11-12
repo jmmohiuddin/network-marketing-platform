@@ -71,6 +71,14 @@ const CONTACT_COLUMNS: readonly TableColumn<BreachContact>[] = [
 
 const PATH = '/v1/settings/'
 
+/** Banner title while thresholds are unset; null once every threshold has a value (or none has loaded yet). */
+export function unsetThresholdsTitle(thresholds: readonly Resource<SettingRead<unknown>>[]): string | null {
+  const unset = thresholds.filter((setting) => setting.data !== null && setting.data.value === null).length
+  if (unset === 0) return null
+  if (unset === thresholds.length) return 'No thresholds are set for you'
+  return unset === 1 ? '1 threshold is not set' : `${unset} thresholds are not set`
+}
+
 /** Tenant settings for release A (API-39; MVP_A C-1 slice of SC-29): compliance thresholds and breach contacts. */
 export function SettingsPage() {
   const { readOnly } = useSession()
@@ -92,14 +100,17 @@ export function SettingsPage() {
   }
   const dialog = { latestVersion, onClose: close, onSaved: close }
   const contactList = (contacts.data?.value ?? null) as readonly BreachContact[] | null
+  const unsetTitle = unsetThresholdsTitle([activePv, ranks, lateDay, share])
   return (
     <div className="admin-stack">
       <PageHeader title="Settings" summary="Values your reports and your vendor depend on. Each change is kept as a new version with its reason." />
       <section className="admin-section" aria-labelledby="thresholds-title">
         <h2 id="thresholds-title" className="admin-section-title">Compliance thresholds</h2>
-        <Banner tone="info" title="No thresholds are set for you">
-          The product ships no default values. While a threshold is not set, reports leave out the indicator that needs it and say so. Agree each value with your compliance adviser or counsel.
-        </Banner>
+        {unsetTitle !== null && (
+          <Banner tone="info" title={unsetTitle}>
+            The product ships no default values. While a threshold is not set, reports leave out the indicator that needs it and say so. Agree each value with your compliance adviser or counsel.
+          </Banner>
+        )}
         <ul className="admin-cards">
           <SettingRow
             title="Active earner threshold"

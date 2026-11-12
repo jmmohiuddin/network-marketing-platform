@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+
+<html class="h-full" lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><meta content="mobile_tab" name="shell-type"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { colors: { "primary-fixed-dim": "#afc6ff", "on-primary-fixed": "#001944", "secondary-fixed-dim": "#bec6e0", "outline": "#737783", "on-tertiary": "#ffffff", "secondary-container": "#dae2fd", "surface-variant": "#d5e3fc", "surface-container-lowest": "#ffffff", "tertiary-container": "#0d5f36", "surface": "#f8f9ff", "surface-bright": "#f8f9ff", "on-secondary": "#ffffff", "on-error-container": "#93000a", "surface-container": "#e6eeff", "on-background": "#0d1c2e", "inverse-surface": "#233144", "on-surface": "#0d1c2e", "tertiary-fixed-dim": "#8cd7a3", "surface-container-high": "#dce9ff", "primary-container": "#1e4fa3", "error-container": "#ffdad6", "on-tertiary-fixed": "#00210f", "on-secondary-fixed": "#131b2e", "primary": "#003883", "surface-dim": "#ccdbf3", "on-error": "#ffffff", "on-tertiary-fixed-variant": "#00522d", "on-secondary-container": "#5c647a", "on-tertiary-container": "#8cd7a3", "on-primary": "#ffffff", "surface-tint": "#2e5bb0", "tertiary": "#004525", "on-primary-container": "#afc6ff", "on-secondary-fixed-variant": "#3f465c", "outline-variant": "#c3c6d3", "secondary": "#565e74", "secondary-fixed": "#dae2fd", "surface-container-highest": "#d5e3fc", "primary-fixed": "#d9e2ff", "error": "#ba1a1a", "on-primary-fixed-variant": "#074397", "on-surface-variant": "#434752", "inverse-primary": "#afc6ff", "tertiary-fixed": "#a7f3be", "surface-container-low": "#eff4ff", "background": "#f8f9ff", "inverse-on-surface": "#eaf1ff" }, borderRadius: { "DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem" }, spacing: { "margin": "1.5rem", "space-xl": "2rem", "gutter": "1.5rem", "space-sm": "0.5rem", "space-lg": "1.5rem", "space-2xl": "3rem", "gutter-compact": "0.75rem", "space-md": "1rem", "space-xxs": "0.125rem", "space-xs": "0.25rem", "margin-mobile": "1rem" }, fontFamily: { "data-mono-sm": ["JetBrains Mono"], "title-lg-mobile": ["Inter"], "section-heading": ["Inter"], "data-mono-md": ["JetBrains Mono"], "body-md": ["Inter"], "title-lg": ["Inter"], "body-lg": ["Inter"], "display": ["Inter"], "display-mobile": ["Inter"], "caption": ["Inter"], "data-mono-lg": ["JetBrains Mono"], "body-sm": ["Inter"], "title-md": ["Inter"] }, fontSize: { "data-mono-sm": ["12px", { "lineHeight": "16px", "letterSpacing": "0em", "fontWeight": "500" }], "title-lg-mobile": ["20px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600" }], "section-heading": ["16px", { "lineHeight": "24px", "letterSpacing": "-0.005em", "fontWeight": "600" }], "data-mono-md": ["14px", { "lineHeight": "20px", "letterSpacing": "-0.01em", "fontWeight": "500" }], "body-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0em", "fontWeight": "400" }], "title-lg": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.015em", "fontWeight": "600" }], "body-lg": ["16px", { "lineHeight": "24px", "letterSpacing": "0em", "fontWeight": "400" }], "display": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "600" }], "display-mobile": ["26px", { "lineHeight": "32px", "letterSpacing": "-0.015em", "fontWeight": "600" }], "caption": ["12px", { "lineHeight": "16px", "letterSpacing": "0.01em", "fontWeight": "500" }], "data-mono-lg": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.02em", "fontWeight": "600" }], "body-sm": ["13px", { "lineHeight": "18px", "letterSpacing": "0.005em", "fontWeight": "400" }], "title-md": ["20px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600" }] } } } };</script><style>@layer base{html,body{width:100%;margin:0;padding:0;}body{overscroll-behavior:none;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head><body class="bg-surface font-body-md text-on-surface antialiased flex flex-col min-h-full"><header class="fixed top-0 w-full z-50 bg-surface/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)] pt-safe"><div class="h-16 px-margin-mobile flex items-center justify-between"><div class="flex flex-col justify-center"><div class="flex items-center gap-space-xs"><span class="text-caption font-caption tracking-wider uppercase text-on-surface-variant font-semibold">AuditLedger</span><span class="text-caption font-caption text-outline">•</span><span class="text-caption font-caption text-primary-container font-semibold">Apex Health</span></div><span class="text-section-heading font-section-heading text-on-surface tracking-tight leading-none mt-space-xxs">Retail Customers</span></div><div class="flex items-center gap-space-xs"><a aria-label="Notifications" class="relative w-11 h-11 flex items-center justify-center text-on-surface-variant hover:text-on-surface transition-colors" data-path="compliance-notices" href="#"><span class="material-symbols-outlined text-[22px]">notifications</span><span class="absolute top-2.5 right-2.5 w-2 h-2 rounded-full bg-error ring-2 ring-surface"></span></a><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center shrink-0"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="flex-1 flex flex-col relative w-full px-margin-mobile pt-16 pb-24 bg-surface"><div class="flex flex-col w-full pb-6 space-y-space-md">
+<!-- Distributor Identity & Attribution Badge -->
+<div class="bg-surface-container-low p-space-md rounded-xl shadow-sm flex items-center justify-between">
+<div class="flex items-center space-x-space-sm min-w-0">
+<div class="w-10 h-10 rounded-full bg-primary-container text-on-primary flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[20px]">verified_user</span>
+</div>
+<div class="min-w-0">
+<div class="flex items-center space-x-space-xs">
+<span class="font-section-heading text-section-heading text-on-surface truncate">Elena Gomez</span>
+<span class="font-data-mono-sm text-data-mono-sm bg-surface-container-highest text-on-surface-variant px-1.5 py-0.5 rounded">POS-01948</span>
+</div>
+<p class="font-caption text-caption text-secondary truncate">BR-ATT-01 · Servicing Retail Rep</p>
+</div>
+</div>
+<div class="text-right shrink-0">
+<span class="inline-flex items-center gap-1 font-caption text-caption text-tertiary-container bg-tertiary-fixed px-2 py-0.5 rounded font-semibold uppercase tracking-wider">
+<span class="material-symbols-outlined text-[14px]">shield</span> FTC Validated
+      </span>
+</div>
+</div>
+<!-- Section Title & Subtitle -->
+<div class="px-space-xxs">
+<div class="flex items-center justify-between">
+<h1 class="font-title-lg-mobile text-title-lg-mobile text-on-surface font-semibold tracking-tight">Retail Customers</h1>
+<span class="font-caption text-caption text-outline font-semibold">BR-HON-01 Compliant</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">Bona fide retail customer servicing &amp; attribution ledger</p>
+</div>
+<!-- Metric Summary Bento Grid -->
+<div class="grid grid-cols-2 gap-space-sm">
+<!-- Metric 1: Serviced Customers -->
+<div class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm flex flex-col justify-between relative overflow-hidden">
+<div class="flex items-center justify-between">
+<span class="font-caption text-caption text-secondary uppercase font-semibold">Active Serviced</span>
+<span class="material-symbols-outlined text-primary text-[20px]">groups</span>
+</div>
+<div class="mt-space-sm">
+<span class="font-data-mono-lg text-data-mono-lg text-on-surface font-bold">28</span>
+<div class="flex items-center text-tertiary font-caption text-caption font-semibold mt-1">
+<span class="material-symbols-outlined text-[14px]">trending_up</span>
+<span>+3 this cycle</span>
+</div>
+</div>
+</div>
+<!-- Metric 2: Repeat Order Rate -->
+<div class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm flex flex-col justify-between relative overflow-hidden">
+<div class="flex items-center justify-between">
+<span class="font-caption text-caption text-secondary uppercase font-semibold">90-Day Repeat</span>
+<span class="material-symbols-outlined text-tertiary-container text-[20px]">autorenew</span>
+</div>
+<div class="mt-space-sm">
+<span class="font-data-mono-lg text-data-mono-lg text-on-surface font-bold">84.2%</span>
+<div class="flex items-center text-primary-container font-caption text-caption mt-1">
+<span class="font-data-mono-sm text-data-mono-sm">Target: &gt;70% (FTC)</span>
+</div>
+</div>
+</div>
+<!-- Metric 3: Monthly Sales Volume -->
+<div class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm flex flex-col justify-between relative overflow-hidden">
+<div class="flex items-center justify-between">
+<span class="font-caption text-caption text-secondary uppercase font-semibold">Retail Volume</span>
+<span class="material-symbols-outlined text-primary text-[20px]">shopping_bag</span>
+</div>
+<div class="mt-space-sm">
+<span class="font-data-mono-md text-data-mono-md text-on-surface font-bold text-[18px] leading-tight">$4,180.00</span>
+<p class="font-caption text-caption text-outline mt-1 truncate">Oct 2026 Verified</p>
+</div>
+</div>
+<!-- Metric 4: Retail Profit Earned -->
+<div class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm flex flex-col justify-between relative overflow-hidden">
+<div class="flex items-center justify-between">
+<span class="font-caption text-caption text-secondary uppercase font-semibold">Direct Profit</span>
+<span class="material-symbols-outlined text-primary-container text-[20px]">account_balance_wallet</span>
+</div>
+<div class="mt-space-sm">
+<span class="font-data-mono-md text-data-mono-md text-primary font-bold text-[18px] leading-tight">$1,420.00</span>
+<p class="font-caption text-caption text-tertiary font-semibold mt-1 truncate">Credited to SC-18 ✓</p>
+</div>
+</div>
+</div>
+<!-- Quick Action Strip -->
+<div class="grid grid-cols-2 gap-space-sm">
+<button class="flex items-center justify-center space-x-space-xs bg-primary text-on-primary py-2.5 px-3 rounded-lg shadow-sm hover:opacity-95 active:scale-[0.98] transition-transform" type="button">
+<span class="material-symbols-outlined text-[18px]">share</span>
+<span class="font-body-sm text-body-sm font-semibold truncate">Share Store Link</span>
+</button>
+<button class="flex items-center justify-center space-x-space-xs bg-surface-container text-on-surface py-2.5 px-3 rounded-lg shadow-sm hover:bg-surface-container-high active:scale-[0.98] transition-transform" type="button">
+<span class="material-symbols-outlined text-[18px]">download</span>
+<span class="font-body-sm text-body-sm font-semibold truncate">Export CSV</span>
+</button>
+</div>
+<!-- Search & Filters Container -->
+<div class="space-y-space-xs pt-space-xs">
+<!-- Search Bar -->
+<div class="relative w-full">
+<span class="material-symbols-outlined absolute left-3 top-2.5 text-outline text-[20px]">search</span>
+<input class="w-full bg-surface-container-lowest text-on-surface font-body-sm text-body-sm pl-10 pr-4 py-2 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-container" placeholder="Search by customer name or Order ID..." type="text"/>
+</div>
+<!-- Filter Chips Scrollable Stack -->
+<div class="flex items-center space-x-space-xs overflow-x-auto py-1 no-scrollbar">
+<button class="shrink-0 px-3 py-1.5 rounded-full bg-primary-container text-on-primary font-caption text-caption font-semibold">
+        All Customers (28)
+      </button>
+<button class="shrink-0 px-3 py-1.5 rounded-full bg-surface-container text-on-surface-variant hover:bg-surface-container-high font-caption text-caption">
+        Repeat Buyers (24)
+      </button>
+<button class="shrink-0 px-3 py-1.5 rounded-full bg-surface-container text-on-surface-variant hover:bg-surface-container-high font-caption text-caption">
+        New This Month (3)
+      </button>
+<button class="shrink-0 px-3 py-1.5 rounded-full bg-surface-container text-on-surface-variant hover:bg-surface-container-high font-caption text-caption">
+        Auto-Delivery (19)
+      </button>
+</div>
+</div>
+<!-- Customer Cards Stack (FR-CRM-001 / FR-DIST-005) -->
+<div class="space-y-space-sm">
+<!-- Customer 1: Sarah Jenkins -->
+<div class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm space-y-space-sm relative">
+<div class="flex items-start justify-between">
+<div class="space-y-0.5">
+<div class="flex items-center space-x-1.5">
+<span class="font-section-heading text-section-heading text-on-surface font-semibold">Sarah Jenkins</span>
+<span class="inline-flex items-center text-tertiary-container bg-tertiary-fixed px-1.5 py-0.5 rounded text-[11px] font-semibold">
+<span class="material-symbols-outlined text-[12px] mr-0.5">verified</span> Repeat Buyer
+            </span>
+</div>
+<p class="font-data-mono-sm text-data-mono-sm text-outline">Cust ID: #CUST-8812</p>
+</div>
+<span class="font-caption text-caption bg-secondary-fixed text-on-secondary-fixed px-2 py-0.5 rounded-full font-medium text-right shrink-0">
+          Auto-Delivery
+        </span>
+</div>
+<!-- Schedule Callout -->
+<div class="bg-surface-container-low px-3 py-2 rounded-lg flex items-center justify-between text-secondary">
+<div class="flex items-center space-x-1.5">
+<span class="material-symbols-outlined text-[16px] text-primary">event_repeat</span>
+<span class="font-body-sm text-body-sm">Next Auto-Ship:</span>
+</div>
+<span class="font-data-mono-sm text-data-mono-sm font-semibold text-on-surface">Nov 14, 2026</span>
+</div>
+<!-- Order Details Grid -->
+<div class="grid grid-cols-2 gap-2 text-body-sm">
+<div class="bg-surface-container-low/50 p-2 rounded">
+<span class="font-caption text-caption text-outline block">Last Order · Oct 28</span>
+<span class="font-data-mono-md text-data-mono-md font-semibold text-on-surface">$184.00</span>
+<p class="font-caption text-caption text-secondary truncate mt-0.5">Daily Wellness Pack</p>
+</div>
+<div class="bg-surface-container-low/50 p-2 rounded">
+<span class="font-caption text-caption text-outline block">Lifetime Volume</span>
+<span class="font-data-mono-md text-data-mono-md font-semibold text-on-surface">$2,580.00</span>
+<p class="font-caption text-caption text-secondary mt-0.5">14 total orders</p>
+</div>
+</div>
+<!-- Direct Profit Strip -->
+<div class="flex items-center justify-between pt-1 border-t-0 bg-primary-fixed/30 px-3 py-2 rounded-lg">
+<div class="flex items-center space-x-1 text-primary">
+<span class="material-symbols-outlined text-[16px]">payments</span>
+<span class="font-caption text-caption font-semibold">Direct Profit Credited</span>
+</div>
+<span class="font-data-mono-md text-data-mono-md font-bold text-primary">+$46.00</span>
+</div>
+</div>
+<!-- Customer 2: David Miller -->
+<div class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm space-y-space-sm">
+<div class="flex items-start justify-between">
+<div class="space-y-0.5">
+<span class="font-section-heading text-section-heading text-on-surface font-semibold">David Miller</span>
+<p class="font-data-mono-sm text-data-mono-sm text-outline">Cust ID: #CUST-9041</p>
+</div>
+<span class="font-caption text-caption bg-surface-container-high text-on-surface-variant px-2 py-0.5 rounded-full font-medium">
+          One-Time Purchase
+        </span>
+</div>
+<!-- Order Details Grid -->
+<div class="grid grid-cols-2 gap-2 text-body-sm">
+<div class="bg-surface-container-low/50 p-2 rounded">
+<span class="font-caption text-caption text-outline block">Last Order · Oct 25</span>
+<span class="font-data-mono-md text-data-mono-md font-semibold text-on-surface">$320.00</span>
+<p class="font-caption text-caption text-secondary truncate mt-0.5">Immunity &amp; Recovery</p>
+</div>
+<div class="bg-surface-container-low/50 p-2 rounded">
+<span class="font-caption text-caption text-outline block">Lifetime Volume</span>
+<span class="font-data-mono-md text-data-mono-md font-semibold text-on-surface">$1,140.00</span>
+<p class="font-caption text-caption text-secondary mt-0.5">4 total orders</p>
+</div>
+</div>
+<!-- Direct Profit Strip -->
+<div class="flex items-center justify-between bg-primary-fixed/30 px-3 py-2 rounded-lg">
+<div class="flex items-center space-x-1 text-primary">
+<span class="material-symbols-outlined text-[16px]">payments</span>
+<span class="font-caption text-caption font-semibold">Direct Profit Credited</span>
+</div>
+<span class="font-data-mono-md text-data-mono-md font-bold text-primary">+$80.00</span>
+</div>
+</div>
+<!-- Customer 3: Jennifer Wu -->
+<div class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm space-y-space-sm">
+<div class="flex items-start justify-between">
+<div class="space-y-0.5">
+<div class="flex items-center space-x-1.5">
+<span class="font-section-heading text-section-heading text-on-surface font-semibold">Jennifer Wu</span>
+<span class="inline-flex items-center text-tertiary-container bg-tertiary-fixed px-1.5 py-0.5 rounded text-[11px] font-semibold">
+<span class="material-symbols-outlined text-[12px] mr-0.5">verified</span> Repeat
+            </span>
+</div>
+<p class="font-data-mono-sm text-data-mono-sm text-outline">Cust ID: #CUST-7742</p>
+</div>
+<span class="font-caption text-caption bg-secondary-fixed text-on-secondary-fixed px-2 py-0.5 rounded-full font-medium">
+          Auto-Delivery
+        </span>
+</div>
+<!-- Schedule Callout -->
+<div class="bg-surface-container-low px-3 py-2 rounded-lg flex items-center justify-between text-secondary">
+<div class="flex items-center space-x-1.5">
+<span class="material-symbols-outlined text-[16px] text-primary">event_repeat</span>
+<span class="font-body-sm text-body-sm">Next Auto-Ship:</span>
+</div>
+<span class="font-data-mono-sm text-data-mono-sm font-semibold text-on-surface">Nov 10, 2026</span>
+</div>
+<!-- Order Details Grid -->
+<div class="grid grid-cols-2 gap-2 text-body-sm">
+<div class="bg-surface-container-low/50 p-2 rounded">
+<span class="font-caption text-caption text-outline block">Last Order · Oct 12</span>
+<span class="font-data-mono-md text-data-mono-md font-semibold text-on-surface">$145.00</span>
+<p class="font-caption text-caption text-secondary truncate mt-0.5">Protein &amp; Nutrition Kit</p>
+</div>
+<div class="bg-surface-container-low/50 p-2 rounded">
+<span class="font-caption text-caption text-outline block">Lifetime Volume</span>
+<span class="font-data-mono-md text-data-mono-md font-semibold text-on-surface">$1,305.00</span>
+<p class="font-caption text-caption text-secondary mt-0.5">9 total orders</p>
+</div>
+</div>
+<!-- Direct Profit Strip -->
+<div class="flex items-center justify-between bg-primary-fixed/30 px-3 py-2 rounded-lg">
+<div class="flex items-center space-x-1 text-primary">
+<span class="material-symbols-outlined text-[16px]">payments</span>
+<span class="font-caption text-caption font-semibold">Direct Profit Credited</span>
+</div>
+<span class="font-data-mono-md text-data-mono-md font-bold text-primary">+$36.25</span>
+</div>
+</div>
+<!-- Customer 4: Robert Vance (Reassigned Servicing) -->
+<div class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm space-y-space-sm">
+<div class="flex items-start justify-between">
+<div class="space-y-0.5">
+<span class="font-section-heading text-section-heading text-on-surface font-semibold">Robert Vance</span>
+<p class="font-data-mono-sm text-data-mono-sm text-outline">Cust ID: #CUST-6109</p>
+</div>
+<span class="font-caption text-caption bg-secondary-container text-on-secondary-container px-2 py-0.5 rounded-full font-semibold">
+          Reassigned
+        </span>
+</div>
+<!-- Reassignment Attribution Banner (BR-ATT-03) -->
+<div class="bg-surface-container-high/60 p-2.5 rounded-lg flex items-start space-x-2">
+<span class="material-symbols-outlined text-primary text-[18px] shrink-0 mt-0.5">assignment_ind</span>
+<div class="text-on-surface-variant font-caption text-caption">
+<span class="font-semibold text-on-surface">Reassigned Oct 1, 2026:</span> Transferred from terminated distributor <span class="font-data-mono-sm text-data-mono-sm">POS-00912</span> per attribution protection rule BR-ATT-03.
+        </div>
+</div>
+<!-- Order Details Grid -->
+<div class="grid grid-cols-2 gap-2 text-body-sm">
+<div class="bg-surface-container-low/50 p-2 rounded">
+<span class="font-caption text-caption text-outline block">Last Order · Oct 18</span>
+<span class="font-data-mono-md text-data-mono-md font-semibold text-on-surface">$210.00</span>
+<p class="font-caption text-caption text-secondary truncate mt-0.5">Core Vitality Pack</p>
+</div>
+<div class="bg-surface-container-low/50 p-2 rounded">
+<span class="font-caption text-caption text-outline block">Direct Profit</span>
+<span class="font-data-mono-md text-data-mono-md font-bold text-primary mt-1">+$52.50</span>
+<p class="font-caption text-caption text-tertiary mt-0.5">Credited Oct Cycle</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Statutory Retail Defense Notice (Mandatory Regulatory Module) -->
+<div class="bg-surface-container-low p-space-md rounded-xl space-y-space-xs shadow-sm">
+<div class="flex items-center space-x-space-xs text-on-surface font-section-heading text-section-heading">
+<span class="material-symbols-outlined text-primary-container text-[20px]">policy</span>
+<span class="font-semibold">Statutory Retail Defense Audit</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
+      Customer servicing relationships establish bona fide end-user sales required under <strong class="text-on-surface font-semibold">FTC 16 CFR Part 437</strong>. All retail volume is verified against third-party shipping fulfillment records. Distributorship productivity is calculated strictly on legitimate consumer sales, not recruit onboarding (BR-HON-01).
+    </p>
+<div class="pt-1 flex items-center justify-between font-data-mono-sm text-data-mono-sm text-outline">
+<span>Audit Hash: #9d81-ec44-c7</span>
+<span class="text-tertiary-container font-semibold">Verified Active</span>
+</div>
+</div>
+</div></main><nav class="fixed bottom-0 w-full z-50 pb-safe bg-surface/90 backdrop-blur-xl shadow-[0_-2px_10px_rgba(0,0,0,0.04)]" data-active-classes="text-primary-container font-semibold"><div class="flex justify-around items-center h-16 px-space-xs"><a class="flex flex-col items-center justify-center min-w-[56px] min-h-[44px] px-space-xs text-on-surface-variant hover:text-on-surface transition-colors" data-path="distributor-home" href="#"><span class="material-symbols-outlined text-[22px]">dashboard</span><span class="text-caption font-caption mt-0.5 tracking-tight">Home</span></a><a class="flex flex-col items-center justify-center min-w-[56px] min-h-[44px] px-space-xs text-on-surface-variant hover:text-on-surface transition-colors" data-path="earnings-ledger" href="#"><span class="material-symbols-outlined text-[22px]">account_balance_wallet</span><span class="text-caption font-caption mt-0.5 tracking-tight">Earnings</span></a><a class="flex flex-col items-center justify-center min-w-[56px] min-h-[44px] px-space-xs text-on-surface-variant hover:text-on-surface transition-colors" data-path="rank-qualifications" href="#"><span class="material-symbols-outlined text-[22px]">military_tech</span><span class="text-caption font-caption mt-0.5 tracking-tight">Rank</span></a><a aria-current="page" class="flex flex-col items-center justify-center min-w-[56px] min-h-[44px] px-space-xs transition-colors text-primary-container font-semibold" data-path="retail-customers" href="#"><span class="material-symbols-outlined text-[22px]">groups</span><span class="text-caption font-caption mt-0.5 tracking-tight">Customers</span></a><a class="flex flex-col items-center justify-center min-w-[56px] min-h-[44px] px-space-xs text-on-surface-variant hover:text-on-surface transition-colors" data-path="team-organization" href="#"><span class="material-symbols-outlined text-[22px]">account_tree</span><span class="text-caption font-caption mt-0.5 tracking-tight">Team</span></a></div></nav></body></html>

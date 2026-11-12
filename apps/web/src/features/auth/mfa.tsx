@@ -31,6 +31,7 @@ export function MfaVerification() {
       <CodeForm
         idPrefix="mfa"
         endpoint="/v1/auth/sessions/current/mfa"
+        autoFocus
         submitLabel="Verify code"
         onVerified={() => router.replace(destination)}
         secondaryAction={<SignOutButton realm={realm} />}

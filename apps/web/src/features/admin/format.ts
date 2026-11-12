@@ -1,15 +1,13 @@
 // Display helpers shared by the admin and vendor console screens.
+import { countLabel } from '../../lib/format'
+import type { Market } from '../../lib/markets'
 
 const MINUTES_PER_HOUR = 60
 const MS_PER_MINUTE = 60_000
-const DATE_TIME = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' })
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 const SHORT_ID_LENGTH = 8
 
-/** A timestamp in the user's locale; "—" when absent. */
-export function formatDateTime(value: string | null | undefined): string {
-  return value === null || value === undefined ? '—' : DATE_TIME.format(new Date(value))
-}
+export { formatDateTime } from '../../lib/format'
 
 /** 240 -> "4 h", 90 -> "1 h 30 min", 45 -> "45 min". */
 export function durationLabel(minutes: number): string {
@@ -34,6 +32,15 @@ export function shortId(id: string): string {
   return id.slice(0, SHORT_ID_LENGTH)
 }
 
+const ACTOR_TYPES: Readonly<Record<string, string>> = { user: 'User', vendor_user: 'Vendor user', system: 'System' }
+
+/** "Ada Admin (ada@acme.example)" when the actor is known, else "Vendor user 1a2b3c4d" or "System". */
+export function actorLabel(actor: { readonly actor_type: string; readonly actor_id: string | null }, names: ReadonlyMap<string, string>): string {
+  const kind = ACTOR_TYPES[actor.actor_type] ?? actor.actor_type
+  if (actor.actor_id === null) return kind
+  return names.get(actor.actor_id) ?? `${kind} ${shortId(actor.actor_id)}`
+}
+
 /** Labels for the permission catalogue (apps/api/src/lib/permissions.ts); unknown strings show as they are. */
 const PERMISSION_LABELS: Readonly<Record<string, string>> = {
   'import.manage': 'Upload and load data imports',
@@ -55,17 +62,38 @@ export function permissionLabel(permission: string): string {
 }
 
 /**
- * Support-session scopes a vendor user may request: the catalogue without participant.unmask (support/sessions.ts
- * scopePermission). The vendor realm cannot read GET /v1/roles, so the list is kept here; the API validates it.
+ * What a support session with each permission lets the vendor see. Sessions are read-only (GET only, FR-IAM-005),
+ * so a scope names areas to view, never actions; unknown strings show as they are.
  */
-export const SUPPORT_SCOPE_PERMISSIONS: readonly string[] = Object.keys(PERMISSION_LABELS).filter(
-  (permission) => permission !== 'participant.unmask',
-)
+const SUPPORT_SCOPE_LABELS: Readonly<Record<string, string>> = {
+  'import.manage': 'Data imports',
+  'mapping.edit': 'Import mappings (editor’s view)',
+  'mapping.approve': 'Import mappings (approver’s view)',
+  'snapshot.create': 'Compliance snapshots (creator’s view)',
+  'compliance.read': 'Compliance reports',
+  export: 'Row exports',
+  'audit.read': 'Audit log',
+  'vendor_access.decide': 'Vendor access requests',
+  'settings.manage': 'Settings',
+  'user.manage': 'Users and roles',
+  'plan.activate': 'Compensation plans',
+}
 
-/** null = every market of the tenant. */
-export function marketScopeLabel(marketIds: readonly string[] | null): string {
+export function supportScopeLabel(permission: string): string {
+  return SUPPORT_SCOPE_LABELS[permission] ?? permission
+}
+
+/** The areas of a support session's scope, in words: "Compliance reports, Audit log". */
+export function supportScopeText(permissions: readonly string[]): string {
+  return permissions.map(supportScopeLabel).join(', ')
+}
+
+/** null = every market of the tenant; market codes once the markets are known, else how many. */
+export function marketScopeLabel(marketIds: readonly string[] | null, markets: readonly Pick<Market, 'id' | 'code'>[] = []): string {
   if (marketIds === null) return 'All markets'
-  return marketIds.length === 1 ? '1 market' : `${marketIds.length} markets`
+  const codes = marketIds.map((id) => markets.find((market) => market.id === id)?.code)
+  if (codes.length > 0 && codes.every((code) => code !== undefined)) return codes.join(', ')
+  return countLabel(marketIds.length, 'market')
 }
 
 export function personLabel(user: { readonly display_name: string | null; readonly email: string }): string {

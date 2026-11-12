@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { errorMessage } from '../lib/messages'
 import { activeEntry, withNext, type Realm } from '../lib/navigation'
 import { shellRedirect, type Me } from '../lib/me'
@@ -25,7 +25,10 @@ function ShellLayout({ me, frame, pathname, children }: {
   readonly children: ReactNode
 }) {
   const [menuOpen, setMenuOpen] = useState(false)
+  const main = useRef<HTMLElement>(null)
   const current = activeEntry(pathname, me.navigation)
+  // Client navigation (sign-in, links) would leave focus on <body>: start each page at its main content.
+  useEffect(() => main.current?.focus({ preventScroll: true }), [pathname])
   const shell = (
     <div className="shell">
       <a className="skip-link" href="#main">Skip to main content</a>
@@ -50,7 +53,7 @@ function ShellLayout({ me, frame, pathname, children }: {
           ))}
         </ul>
       </nav>
-      <main id="main" className="shell-main" tabIndex={-1}>
+      <main ref={main} id="main" className="shell-main" tabIndex={-1}>
         {current === undefined ? <NotAvailable /> : children}
       </main>
     </div>
@@ -65,10 +68,8 @@ function ShellLayout({ me, frame, pathname, children }: {
  * session gets the tenant app, read-only, inside the support-session frame. Pages read the user with useSession().
  */
 export function AppShell({ realm, children }: { readonly realm: Realm; readonly children: ReactNode }) {
-  const { me: loaded, error, reload } = useMe()
-  const frame = loaded === null ? null : supportFrameOf(loaded)
-  // Inside a support session GET /v1/me has no user (the vendor user is not a tenant row): the frame carries it.
-  const me = loaded === null || frame === null ? loaded : { ...loaded, user: frame.user }
+  const { me, error, reload } = useMe()
+  const frame = me === null ? null : supportFrameOf(me)
   const router = useRouter()
   const pathname = usePathname()
   const redirect = me === null ? null : shellRedirect(me, realm)

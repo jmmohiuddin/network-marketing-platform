@@ -5,6 +5,7 @@ import {
   auditActions, buildTestApp, call, closePoolsAfterAll, createSignedInUser, createTenant, ownerRows, resetApiDb, testConfig,
   type TestTenant, type TestUser,
 } from '../../../test/helpers/index.js'
+import { PERMISSIONS } from '../../lib/permissions.js'
 import { expireSupportSessionsJob } from './expiry.js'
 import { supportModule } from './index.js'
 
@@ -65,6 +66,22 @@ const vendorActions = async (objectId: string) =>
 const tenantActionsFor = async (objectId: string) =>
   (await ownerRows<{ action: string }>('SELECT action FROM audit.audit_event WHERE object_id = $1 ORDER BY seq', [objectId]))
     .map((row) => row.action)
+
+describe('GET /v1/support-sessions/limits', () => {
+  test('gives vendor users what a request may ask for, the limits the request is checked against; tenant users are refused', async () => {
+    const limits = await call(app, { method: 'GET', url: '/v1/support-sessions/limits', as: engineer })
+    const { max_minutes: maxMinutes, scopes } = limits.json().data as { max_minutes: number; scopes: string[] }
+    const longest = await fileRequest({ minutes: maxMinutes, scope: { permissions: scopes.slice(0, 20) } })
+    const tooLong = await fileRequest({ minutes: maxMinutes + 1 })
+    const outOfScope = await fileRequest({ scope: { permissions: ['participant.unmask'] } })
+
+    expect(limits.json().data).toEqual({ max_minutes: 480, scopes: PERMISSIONS.filter((permission) => permission !== 'participant.unmask') })
+    expect(longest.statusCode).toBe(201)
+    expect([tooLong.statusCode, outOfScope.statusCode]).toEqual([400, 400])
+    expect((await call(app, { method: 'GET', url: '/v1/support-sessions/limits', as: admin })).json().error.code).toBe('REALM_FORBIDDEN')
+    expect((await call(app, { method: 'GET', url: '/v1/support-sessions/limits' })).statusCode).toBe(401)
+  })
+})
 
 describe('POST /v1/support-sessions (vendor request)', () => {
   test('files a request, logs it in both logs and notifies the tenant', async () => {

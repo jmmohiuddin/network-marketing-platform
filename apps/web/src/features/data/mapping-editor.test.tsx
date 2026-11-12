@@ -39,7 +39,7 @@ describe('MappingEditor', () => {
     const fetchMock = fetchRoutes(...routes(), ['PUT', /^\/v1\/import-mappings$/, () => ok(created, 201)])
     renderWithProviders(withSession(<MappingEditor />, ['mapping.edit', 'import.manage']), fetchMock)
     expect(await screen.findByRole('heading', { name: 'Import mapping, version 3' })).toBeTruthy()
-    const warning = screen.getByText('3 partner code(s) are not mapped').closest('.banner') as HTMLElement
+    const warning = screen.getByText('3 partner codes are not mapped').closest('.banner') as HTMLElement
     expect(warning.textContent).toContain('R, DL')
     expect(warning.textContent).toContain('customer')
     expect(screen.queryByRole('button', { name: /Approve/ })).toBeNull()

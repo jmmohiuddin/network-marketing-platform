@@ -7,6 +7,7 @@ import { TabPanel, Tabs } from '../../../components/tabs'
 import { isNotAvailable } from '../../../lib/messages'
 import { LoadFailure, useTabParam } from '../page-states'
 import { useSession } from '../../../lib/session'
+import { MARKETS_PATH, type Market } from '../../../lib/markets'
 import { useResource } from '../../../lib/use-resource'
 import { usePagedList } from '../resource'
 import type { GrantRequest, RoleView, UserView } from '../types'
@@ -25,6 +26,7 @@ export function UsersPage() {
   const { readOnly } = useSession()
   const users = usePagedList<UserView>('/v1/users')
   const roles = useResource<readonly RoleView[]>('/v1/roles')
+  const markets = useResource<readonly Market[]>(MARKETS_PATH)
   const pending = usePagedList<GrantRequest>('/v1/role-grant-requests', { state: 'pending', limit: PENDING_PAGE_SIZE })
   const [inviting, setInviting] = useState(false)
   const pendingLabel = pending.loading || pending.error !== null ? 'Pending approvals' : `Pending approvals (${pending.rows.length})`
@@ -46,9 +48,9 @@ export function UsersPage() {
       />
       <Tabs label="Users and roles" idPrefix={ID_PREFIX} tabs={tabs} selected={tab} onSelect={selectTab} />
       <TabPanel idPrefix={ID_PREFIX} tabId={tab}>
-        {tab === 'users' && <UsersTable users={users} roles={roleRows} pending={pending.rows} onChanged={refresh} />}
+        {tab === 'users' && <UsersTable users={users} roles={roleRows} markets={markets} pending={pending.rows} onChanged={refresh} />}
         {tab === 'roles' && <RolesTab roles={roles} onChanged={roles.reload} />}
-        {tab === 'approvals' && <ApprovalsTab requests={pending} roles={roleRows} users={users.rows} onChanged={refresh} />}
+        {tab === 'approvals' && <ApprovalsTab requests={pending} roles={roleRows} markets={markets.data ?? []} users={users.rows} onChanged={refresh} />}
       </TabPanel>
       {inviting && (
         <InviteDialog

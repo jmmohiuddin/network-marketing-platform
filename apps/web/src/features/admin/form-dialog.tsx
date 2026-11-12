@@ -5,6 +5,7 @@ import { Button, type ButtonVariant } from '../../components/button'
 import { Dialog, type DialogSize } from '../../components/dialog'
 import { ErrorSummary, type SummaryItem } from '../../components/error-summary'
 import { FormField, type FieldLabelProps } from '../../components/form-field'
+import { newIdempotencyKey } from '../../lib/api'
 import { errorMessage, fieldErrors } from '../../lib/messages'
 
 /**
@@ -55,7 +56,7 @@ export function FormDialog({ title, size = 'md', submitLabel, submitVariant = 'p
   const [idempotencyKey, setIdempotencyKey] = useState<string | null>(null)
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    const key = idempotencyKey ?? crypto.randomUUID()
+    const key = idempotencyKey ?? newIdempotencyKey()
     setIdempotencyKey(key)
     const submission = onSubmit(key)
     setSummary(submission.items)

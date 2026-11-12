@@ -8,7 +8,7 @@ import { ErrorSummary, type SummaryItem } from '../../../components/error-summar
 import { SelectField, TextField } from '../../../components/form-field'
 import { PageHeader } from '../../../components/page-header'
 import { useToast } from '../../../components/toast'
-import { isApiError } from '../../../lib/api'
+import { isApiError, newIdempotencyKey } from '../../../lib/api'
 import { emailError, requiredError } from '../../../lib/validation'
 import { isUuid } from '../format'
 import { summaryOf } from '../form-dialog'
@@ -22,8 +22,10 @@ const CURRENCY = /^[A-Z]{3}$/
 const MINOR_UNIT = /^[0-4]$/
 const LANGUAGE = /^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$/
 const MAX_MARKETS = 50
+const MAX_PACK_LENGTH = 64 // ops/routes.ts market_pack max(64)
+const UUID_EXAMPLE = '0b9e6c1a-1f2d-4c3b-9a8e-7d6c5b4a3f21'
 
-const TENANT_FIELDS = ['legal_name', 'slug', 'region', 'isolation_tier', 'dpa_document_id', 'first_admin.email', 'first_admin.display_name'] as const
+const TENANT_FIELDS = ['legal_name', 'slug', 'region', 'isolation_tier', 'dpa_document_id', 'first_admin.email', 'first_admin.display_name', 'second_admin.email', 'second_admin.display_name'] as const
 const MARKET_FIELDS = ['code', 'currency', 'minor_unit', 'time_zone', 'languages', 'market_pack'] as const
 type TenantField = (typeof TENANT_FIELDS)[number]
 type MarketField = (typeof MARKET_FIELDS)[number]
@@ -52,9 +54,13 @@ function tenantError(field: TenantField, value: string): string | null {
     case 'slug': return SLUG.test(text) ? null : 'Use lower-case letters, digits and hyphens, starting and ending with a letter or digit.'
     case 'region': return requiredError('the data region', text)
     case 'isolation_tier': return text === '' ? 'Choose the isolation tier.' : null
-    case 'dpa_document_id': return isUuid(text) ? null : 'Enter the ID of the signed data processing agreement.'
+    case 'dpa_document_id':
+      return isUuid(text) ? null : `Enter the agreement’s document ID as a UUID, like ${UUID_EXAMPLE}.`
     case 'first_admin.email': return requiredError('the first admin’s email address', text) ?? emailError(text)
-    case 'first_admin.display_name': return null
+    // BUG-024: required here although the API accepts none; with one admin no admin or approver role can ever be approved (SEC-27).
+    case 'second_admin.email': return requiredError('the second admin’s email address', text) ?? emailError(text)
+    case 'first_admin.display_name':
+    case 'second_admin.display_name': return null
   }
 }
 
@@ -69,14 +75,18 @@ function marketError(field: MarketField, value: string): string | null {
       const tags = languagesOf(text)
       return tags.length > 0 && tags.every((tag) => LANGUAGE.test(tag)) ? null : 'Enter language tags separated by commas, for example de, en.'
     }
-    case 'market_pack': return requiredError('the market pack', text)
+    case 'market_pack':
+      if (text === '') return 'Enter the market pack, or none if the market has no pack.'
+      return text.length > MAX_PACK_LENGTH ? `Use at most ${MAX_PACK_LENGTH} characters.` : null
   }
 }
 
 /** Field errors keyed by body path. */
 export function checkProvisioning(tenant: TenantDraft, markets: readonly Record<MarketField, string>[]): Errors {
+  const sameAdmin = tenant['second_admin.email'].trim().toLowerCase() === tenant['first_admin.email'].trim().toLowerCase()
   const tenantErrors = TENANT_FIELDS.flatMap((field) => {
-    const error = tenantError(field, tenant[field])
+    const duplicate = field === 'second_admin.email' && sameAdmin ? 'Enter a different person from the first admin.' : null
+    const error = tenantError(field, tenant[field]) ?? duplicate
     return error === null ? [] : [[field, error] as const]
   })
   const codes = markets.map((market) => market.code.trim())
@@ -89,8 +99,9 @@ export function checkProvisioning(tenant: TenantDraft, markets: readonly Record<
   return Object.fromEntries([...tenantErrors, ...marketErrors, ...none])
 }
 
+const adminOf = (email: string, displayName: string) => ({ email: email.trim(), display_name: displayName.trim() === '' ? null : displayName.trim() })
+
 function bodyOf(tenant: TenantDraft, markets: readonly MarketDraft[]) {
-  const name = tenant['first_admin.display_name'].trim()
   return {
     legal_name: tenant.legal_name.trim(),
     slug: tenant.slug.trim(),
@@ -101,7 +112,8 @@ function bodyOf(tenant: TenantDraft, markets: readonly MarketDraft[]) {
       code: market.code.trim(), currency: market.currency.trim(), minor_unit: Number(market.minor_unit.trim()),
       time_zone: market.time_zone.trim(), languages: languagesOf(market.languages), market_pack: market.market_pack.trim(),
     })),
-    first_admin: { email: tenant['first_admin.email'].trim(), display_name: name === '' ? null : name },
+    first_admin: adminOf(tenant['first_admin.email'], tenant['first_admin.display_name']),
+    second_admin: adminOf(tenant['second_admin.email'], tenant['second_admin.display_name']),
   }
 }
 
@@ -126,7 +138,8 @@ const MARKET_LABELS: Readonly<Record<MarketField, { label: string; helper?: stri
   minor_unit: { label: 'Currency decimals', helper: '2 for EUR, 0 for JPY' },
   time_zone: { label: 'Time zone', helper: 'For example Europe/Berlin' },
   languages: { label: 'Languages', helper: 'Comma-separated, for example de, en' },
-  market_pack: { label: 'Market pack' },
+  // No pack catalogue exists yet (B-MKT): the API takes the pack's name as text.
+  market_pack: { label: 'Market pack', helper: `The pack with this market’s legal values; none if it has no pack. Up to ${MAX_PACK_LENGTH} characters.` },
 }
 
 /**
@@ -159,12 +172,12 @@ export function ProvisionTenantPage() {
     if (items.length > 0) return
     const body = bodyOf(tenant, markets)
     const serialized = JSON.stringify(body)
-    const idempotencyKey = attempt?.body === serialized ? attempt.key : crypto.randomUUID()
+    const idempotencyKey = attempt?.body === serialized ? attempt.key : newIdempotencyKey()
     setAttempt({ key: idempotencyKey, body: serialized })
     setBusy(true)
     try {
       const { data } = await api.post<TenantDetail>('/v1/tenants', body, { idempotencyKey })
-      toast({ message: `${data.legal_name} created. Another vendor user must approve it before its first admin is invited.` })
+      toast({ message: `${data.legal_name} created. Another vendor user must approve it before its admins are invited.` })
       router.push(`/vendor/tenants/${data.id}`)
     } catch (error) {
       setSummary(refusalSummary(error, fieldIds))
@@ -188,7 +201,7 @@ export function ProvisionTenantPage() {
   return (
     <>
       <ConsoleNav />
-      <PageHeader title="Provision tenant" summary="Creates the tenant in provisioning with its region, markets and first admin. A second vendor user approves it." />
+      <PageHeader title="Provision tenant" summary="Creates the tenant in provisioning with its region, markets and two admins. A second vendor user approves it." />
       <form className="form" onSubmit={submit} noValidate>
         <ErrorSummary items={summary} />
         <fieldset className="admin-fieldset">
@@ -205,7 +218,7 @@ export function ProvisionTenantPage() {
             options={[{ value: 'pooled', label: 'Pooled database (row-level isolation)' }, { value: 'dedicated', label: 'Dedicated database' }]}
             onChange={(event) => setTenant({ ...tenant, isolation_tier: event.target.value })}
           />
-          {tenantField('dpa_document_id', 'Signed data processing agreement ID', { helper: 'Required before a tenant is created.' })}
+          {tenantField('dpa_document_id', 'Signed data processing agreement ID', { helper: `A UUID, like ${UUID_EXAMPLE}. Required before a tenant is created.` })}
         </fieldset>
         <fieldset className="admin-fieldset">
           <legend>Markets</legend>
@@ -251,6 +264,12 @@ export function ProvisionTenantPage() {
           <legend>First admin</legend>
           {tenantField('first_admin.email', 'Email address', { type: 'email', helper: 'Invited only after the second vendor user approves.' })}
           {tenantField('first_admin.display_name', 'Name', { optional: true })}
+        </fieldset>
+        <fieldset className="admin-fieldset">
+          <legend>Second admin</legend>
+          <p className="admin-note">Giving anyone an admin or approver role needs a second admin to approve it, so every tenant starts with two.</p>
+          {tenantField('second_admin.email', 'Email address', { type: 'email', helper: 'A different person from the first admin, invited at the same time.' })}
+          {tenantField('second_admin.display_name', 'Name', { optional: true })}
         </fieldset>
         <div className="form-actions">
           <LinkButton href="/vendor">Cancel</LinkButton>

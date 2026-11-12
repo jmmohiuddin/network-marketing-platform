@@ -5,12 +5,13 @@ import { Fragment, useState, type FormEvent } from 'react'
 import { Button, LinkButton } from '../../components/button'
 import { ErrorSummary, type SummaryItem } from '../../components/error-summary'
 import { FileInput, formatMegabytes } from '../../components/file-input'
-import { TextField } from '../../components/form-field'
+import { SelectField, TextField } from '../../components/form-field'
 import { PageHeader } from '../../components/page-header'
 import { useToast } from '../../components/toast'
-import { isApiError } from '../../lib/api'
+import { isApiError, newIdempotencyKey } from '../../lib/api'
 import { errorMessage, fieldErrors } from '../../lib/messages'
-import { requiredError } from '../../lib/validation'
+import { MARKETS_PATH, marketName, type Market } from '../../lib/markets'
+import { useResource } from '../../lib/use-resource'
 import { periodErrors } from './period'
 import { uploadForm, type UploadProgress } from './transfer'
 import { IMPORT_FILES, type Batch, type ImportFile } from './types'
@@ -36,12 +37,16 @@ type Errors = Readonly<Partial<Record<Field | ImportFile, string>>>
 
 const fieldId = (name: Field | ImportFile) => `import-${name}`
 
+/** GET /v1/imports/limits: the largest file the API accepts. */
+export interface ImportLimits {
+  readonly max_file_bytes: number
+}
+
 /** Client checks before sending; the server validates everything again. */
 export function validateImport(values: Values, files: Files): Errors {
-  const market = requiredError('the market code', values.market)
   const missing = IMPORT_FILES.filter((file) => files[file] === undefined)
   return {
-    ...(market === null ? {} : { market }),
+    ...(values.market === '' ? { market: 'Choose the market.' } : {}),
     ...periodErrors(values.period_from, values.period_to),
     ...Object.fromEntries(missing.map((file) => [file, `Choose the ${file.replace('_', ' ')} CSV file.`])),
   }
@@ -84,6 +89,8 @@ function Progress({ progress }: { readonly progress: UploadProgress }) {
 export function NewImportForm() {
   const router = useRouter()
   const toast = useToast()
+  const markets = useResource<readonly Market[]>(MARKETS_PATH)
+  const limits = useResource<ImportLimits>('/v1/imports/limits')
   const [values, setValues] = useState<Values>({ market: '', period_from: '', period_to: '' })
   const [files, setFiles] = useState<Files>({})
   const [errors, setErrors] = useState<Errors>({})
@@ -110,7 +117,7 @@ export function NewImportForm() {
       setSummary(Object.entries(found).map(([name, message]) => ({ fieldId: fieldId(name as Field), message: message! })))
       return
     }
-    const key = idempotencyKey ?? crypto.randomUUID()
+    const key = idempotencyKey ?? newIdempotencyKey()
     setIdempotencyKey(key)
     setBusy(true)
     setSummary([])
@@ -141,15 +148,18 @@ export function NewImportForm() {
       <PageHeader title="Upload export" summary="The files are checked before any row is stored. Files with names, contacts, addresses, identity or bank data are rejected." />
       <form className="form" onSubmit={submit} noValidate>
         <ErrorSummary items={summary} />
-        <TextField
-          id={fieldId('market')} label="Market" helper="The market code, for example DE." autoCapitalize="characters" spellCheck={false}
+        <SelectField
+          id={fieldId('market')} label="Market"
+          placeholder={markets.loading ? 'Loading markets…' : 'Choose a market'}
+          helper={markets.error === null ? undefined : errorMessage(markets.error)}
+          options={(markets.data ?? []).map((market) => ({ value: market.code, label: marketName(market) }))}
           value={values.market} error={errors.market} disabled={busy} onChange={(event) => setValue('market', event.target.value)}
         />
         {month('period_from', 'First month')}
         {month('period_to', 'Last month')}
         {IMPORT_FILES.map((file) => (
           <FileInput
-            key={file} id={fieldId(file)} label={FILE_LABELS[file]} name={file} extensions={['.csv']}
+            key={file} id={fieldId(file)} label={FILE_LABELS[file]} name={file} extensions={['.csv']} maxBytes={limits.data?.max_file_bytes}
             error={errors[file]} disabled={busy} onFiles={(chosen) => setFile(file, chosen)}
           />
         ))}

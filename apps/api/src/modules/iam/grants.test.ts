@@ -282,10 +282,11 @@ describe('POST /v1/role-assignments/:id/revoke', () => {
     expect(await auditActions(acme.id)).toContain('ROLE.REVOKED')
   })
 
-  test('FR-IAM-003 under concurrency: two admins revoking each other\'s admin grant at once leave one', async () => {
-    const pair = await createTenant()
-    const first = await createSignedInUser({ tenantId: pair.id, roles: ['Tenant admin'] })
-    const second = await createSignedInUser({ tenantId: pair.id, roles: ['Tenant admin'] })
+  test('FR-IAM-003 under concurrency: of three admins, two revoking each other\'s admin grant at once leave two', async () => {
+    const trio = await createTenant()
+    const first = await createSignedInUser({ tenantId: trio.id, roles: ['Tenant admin'], stepUp: true })
+    const second = await createSignedInUser({ tenantId: trio.id, roles: ['Tenant admin'], stepUp: true })
+    await createSignedInUser({ tenantId: trio.id, roles: ['Tenant admin'] })
     const grantOf = async (as: TestUser) => (await call(app, { method: 'GET', url: '/v1/me', as })).json().data.roles[0].assignment_id as string
     const [firstGrant, secondGrant] = [await grantOf(first), await grantOf(second)]
 
@@ -294,21 +295,98 @@ describe('POST /v1/role-assignments/:id/revoke', () => {
       call(app, { method: 'POST', url: `/v1/role-assignments/${firstGrant}/revoke`, as: second }),
     ])
     const live = await ownerRows(
-      `SELECT 1 FROM role_assignment WHERE tenant_id = $1 AND (valid_to IS NULL OR valid_to > now())`, [pair.id],
+      `SELECT 1 FROM role_assignment WHERE tenant_id = $1 AND (valid_to IS NULL OR valid_to > now())`, [trio.id],
     )
 
-    // The loser gets 422 LAST_ADMIN, or 403 when its own grant was already gone as its session resolved.
+    // The loser gets 422 SECOND_ADMIN_REQUIRED, or 403 when its own grant was already gone as its session resolved.
     expect(responses.filter((response) => response.statusCode === 200)).toHaveLength(1)
-    expect(live).toHaveLength(1)
+    expect(live).toHaveLength(2)
+  })
+
+  test('BUG-014: the second-last admin grant cannot be revoked, so privileged grants keep a possible approver', async () => {
+    const pair = await createTenant()
+    const first = await createSignedInUser({ tenantId: pair.id, roles: ['Tenant admin'], stepUp: true })
+    const second = await createSignedInUser({ tenantId: pair.id, roles: ['Tenant admin'], stepUp: true })
+    const reader = await createSignedInUser({ tenantId: pair.id, roles: ['Executive read-only'] })
+    const grantOf = async (as: TestUser) => (await call(app, { method: 'GET', url: '/v1/me', as })).json().data.roles[0].assignment_id as string
+    const revoke = async (as: TestUser, of: TestUser) => call(app, { method: 'POST', url: `/v1/role-assignments/${await grantOf(of)}/revoke`, as })
+
+    const refused = await revoke(first, second)
+    const readerRevoked = await revoke(first, reader)
+    const requested = await grant(first, reader.id, { role_id: await baseRoleId('Tenant admin') })
+    const approved = await decide(second, requested.json().data.request.id, 'approved')
+    const afterThird = await revoke(first, second)
+
+    expect(refused.statusCode).toBe(422)
+    expect(refused.json().error.code).toBe('SECOND_ADMIN_REQUIRED')
+    expect(readerRevoked.statusCode).toBe(200)
+    expect(approved.statusCode).toBe(200)
+    expect(afterThird.statusCode).toBe(200)
   })
 
   test('the last admin grant cannot be revoked; another tenant gets 404; analysts get 403', async () => {
     const solo = await createTenant()
-    const soloAdmin = await createSignedInUser({ tenantId: solo.id, roles: ['Tenant admin'] })
+    const soloAdmin = await createSignedInUser({ tenantId: solo.id, roles: ['Tenant admin'], stepUp: true })
     const assignmentId: string = (await call(app, { method: 'GET', url: '/v1/me', as: soloAdmin })).json().data.roles[0].assignment_id
 
     expect((await call(app, { method: 'POST', url: `/v1/role-assignments/${assignmentId}/revoke`, as: soloAdmin })).json().error.code).toBe('LAST_ADMIN')
     expect((await call(app, { method: 'POST', url: `/v1/role-assignments/${assignmentId}/revoke`, as: admin })).statusCode).toBe(404)
     expect((await call(app, { method: 'POST', url: `/v1/role-assignments/${assignmentId}/revoke`, as: analyst })).statusCode).toBe(403)
+  })
+
+  test('BUG-007: ending a privileged assignment needs a fresh second factor, ending another one does not', async () => {
+    const unstepped = await createSignedInUser({ tenantId: acme.id, roles: ['Tenant admin'] })
+    const officer = await createSignedInUser({ tenantId: acme.id, roles: ['Compliance officer'] })
+    const reader = await createSignedInUser({ tenantId: acme.id, roles: ['Executive read-only'] })
+    const grantOf = async (as: TestUser) => (await call(app, { method: 'GET', url: '/v1/me', as })).json().data.roles[0].assignment_id as string
+    const revoke = (as: TestUser, assignmentId: string) => call(app, { method: 'POST', url: `/v1/role-assignments/${assignmentId}/revoke`, as })
+
+    const privileged = await revoke(unstepped, await grantOf(officer))
+    const plain = await revoke(unstepped, await grantOf(reader))
+    const stepped = await revoke(admin, await grantOf(officer))
+
+    expect(privileged.json().error.code).toBe('STEP_UP_REQUIRED')
+    expect([plain.statusCode, stepped.statusCode]).toEqual([200, 200])
+  })
+})
+
+describe('BUG-006, BUG-010: the second admin approves within their own admin markets and validity', () => {
+  const requestFor = async (role: 'Tenant admin' | 'Finance approver' | 'Payout officer', marketIds: string[] | null) => {
+    const user = await createSignedInUser({ tenantId: acme.id })
+    return (await grant(admin, user.id, { role_id: await baseRoleId(role), market_ids: marketIds })).json().data.request.id as string
+  }
+
+  test('an approver scoped to one market approves grants over that market only; a time-boxed approver no open-ended admin', async () => {
+    const de = await createMarket(acme.id, 'DE')
+    const nl = await createMarket(acme.id, 'NL')
+    const scoped = await createSignedInUser({ tenantId: acme.id, roles: ['Tenant admin'], marketIds: [de], stepUp: true })
+    const boxed = await createSignedInUser({ tenantId: acme.id, roles: ['Tenant admin'], validTo: new Date(Date.now() + 86_400_000), stepUp: true })
+
+    const refused = [
+      await decide(scoped, await requestFor('Tenant admin', [nl]), 'approved'),
+      await decide(scoped, await requestFor('Tenant admin', [de, nl]), 'approved'),
+      await decide(scoped, await requestFor('Payout officer', null), 'approved'),
+      await decide(boxed, await requestFor('Tenant admin', null), 'approved'),
+    ]
+    const rejected = await decide(scoped, await requestFor('Tenant admin', null), 'rejected', 'out of my markets')
+    const own = await decide(scoped, await requestFor('Tenant admin', [de]), 'approved')
+    const nonPrivileged = await decide(scoped, await requestFor('Payout officer', [de]), 'approved')
+
+    expect(refused.map((response) => response.json().error.code)).toEqual(Array(4).fill('SCOPE_NOT_HELD'))
+    expect(rejected.json().data.request.state).toBe('rejected')
+    expect(own.json().data.assignment.market_ids).toEqual([de])
+    expect(nonPrivileged.json().data.assignment.market_ids).toEqual([de])
+  })
+
+  test('BUG-010: a Tenant admin approves Compliance officer and Finance approver grants without holding their permissions', async () => {
+    const grantee = await createSignedInUser({ tenantId: acme.id })
+    const requested = await grant(admin, grantee.id, { role_id: await baseRoleId('Compliance officer') })
+    const officer = await decide(approver, requested.json().data.request.id, 'approved')
+    const finance = await decide(approver, await requestFor('Finance approver', null), 'approved')
+
+    expect(requested.statusCode).toBe(202)
+    expect([officer.statusCode, finance.statusCode]).toEqual([200, 200])
+    expect(officer.json().data.assignment.approval_id).toBe(officer.json().data.request.approval_id)
+    expect(await permissionsOf(grantee)).toEqual(expect.arrayContaining(['snapshot.create', 'export', 'mapping.approve']))
   })
 })

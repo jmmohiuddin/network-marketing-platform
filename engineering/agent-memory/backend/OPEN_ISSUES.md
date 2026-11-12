@@ -10,7 +10,6 @@ _Agent: backend. Read before every task; update after every task. Keep concise â
 - AC-53.1 (no breach contact -> no go-live / first load) is for TEN/IMP: check `getSetting(tx, 'privacy.breach_contacts')`.
 - Rate limits are per process (in memory); request.ip has no trustProxy (behind a proxy all clients share one IP).
 - Residual timing oracle: a failed sign-in for an existing account also writes its audit event (a few ms more than an unknown account).
-- Fixed in R1 for the granter. Still open: the second admin who approves a pending grant is not checked against its market scope or permissions (BR-SEC-05 reading; product to confirm).
 - pgboss tables have no RLS; job data carries tenant ids: keep payloads to ids.
 - E-ADR-10 values (session, lockout, export cap) are env config, not tenant settings (MVP_A C-1 suggested settings).
 - Environment: `.env` SECRET_ENCRYPTION_KEY=change-me makes server and seed fail fast; set `openssl rand -base64 32`. nmp_dev needs `pnpm db:migrate` (0007, 0008); nmp_e2e needs `--reset`. Dev seed: `NODE_ENV=development pnpm seed` (refuses any database but nmp_dev/nmp_test/nmp_e2e).
@@ -37,7 +36,7 @@ _Agent: backend. Read before every task; update after every task. Keep concise â
 - Existing nmp_test batches validated before R1 have no stored_sha256 and cannot be loaded (test data only).
 
 ## From T-A05/T-A06/T-A12 ops, support, prv (2026-11-12)
-- Fixed in R2: global hook, actorOf, defaultModules (ops/support/prv). Still open: GET /v1/me for a vendor in session (realm tenant, vendor user id) is undefined; impModule/cpl not in defaultModules (their owners).
+- Fixed in R2: global hook, actorOf, defaultModules (ops/support/prv). GET /v1/me in session fixed 2026-11-12.
 - IAM: export an invitation facade (e.g. `inviteUser`/`sendInvitationJob` + a first-admin creator) so ops stops writing user_account/role_assignment/user_invitation directly (shortcut comments in ops/tenant-creation.ts, ops/first-admin-invitation.ts).
 - LIB: lib/idempotency.ts could take a store so vendor routes reuse it (support/vendor-idempotency.ts repeats canonical hashing).
 - TEN: no keys yet for per-market breach notification timelines (BR-DAT-07, FR-PRV-004), tenant max support-session minutes, request expiry; DPO cannot read privacy.breach_contacts (readPermissions = settings.manage only).
@@ -49,3 +48,19 @@ _Agent: backend. Read before every task; update after every task. Keep concise â
 - nmp_dev / nmp_e2e not migrated to 0011.
 - Region catalogue and pooled-only tier are constants in ops/tenant-creation.ts (OQ-A8/OQ-19).
 - nmp_dev / nmp_e2e not migrated to 0010.
+
+## From BUG-006/007 + web contract (2026-11-12)
+- Product to confirm: approving an approver/admin role needs the approver to hold the role's permissions, so a Tenant admin cannot approve Compliance officer or Finance approver grants on their own (seeded owner holds every role). Removals have no dual control (only scope + step-up).
+- Market names are English ISO region names derived from the code; codes that are not ISO (only direct inserts/tests) are named by the code.
+- Drill `component.key` = sums key (documented for the web); frontend must not read it as 'numerator'/'denominator'.
+- Web tests/typecheck were failing on in-flight frontend edits (`marketLabel` missing in features/data/format.ts) when the full suite ran; API side green.
+
+
+## From BUG-010..014, 019 (2026-11-12)
+- Web (owner frontend): vendor users screen and vendor audit log screen (UI_UX `/audit`), provisioning form `second_admin`, invitation page `?realm=vendor` -> /signin/vendor, show SECOND_ADMIN_REQUIRED in revoke/deactivate dialogs.
+- A tenant provisioned with only one admin still cannot approve privileged grants (no second admin can be made). Product decision: require `second_admin`, or a vendor-assisted bootstrap.
+- With exactly two admins, a hostile second admin cannot be removed (SECOND_ADMIN_REQUIRED) and need not approve a third: needs a break-glass/vendor path.
+- Admin count ignores market scope: two admins scoped to different markets count as two although neither can approve the other's all-markets grants.
+- Vendor invitation mail is sent inside the request transaction (no vendor job runner); commit failure after send = dead link. work_region still has no API (vendor-user invite could take it; region catalogue lives in ops).
+- One person controlling two vendor accounts (invited by themselves) defeats two-person provisioning; only the vendor log shows who invited whom.
+- Old CPL snapshots keep their previous population_count until recomputed. nmp_dev / nmp_e2e not migrated to 0042.

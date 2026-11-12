@@ -1,9 +1,12 @@
 import { randomUUID } from 'node:crypto'
 import type { Tx } from '@nmp/db'
+import type { AuthContext } from '../../lib/auth.js'
 import { recordAudit } from '../../lib/audit.js'
 import { ApiError, notFound } from '../../lib/errors.js'
 import { enqueue } from '../../lib/jobs.js'
+import { isPrivileged } from '../../lib/permissions.js'
 import { assertAdminRemains } from './admins.js'
+import { coversMarkets, type StepUpCheck } from './grants.js'
 import { sendInvitationJob } from './invitations.js'
 
 export interface UserView {
@@ -83,13 +86,30 @@ export async function reissueInvitation(tx: Tx, userId: string, invitedBy: strin
   return user
 }
 
+// Every grant the user holds or will hold (not yet ended), with its role's permissions.
+async function openGrants(tx: Tx, userId: string) {
+  const { rows } = await tx.query<{ market_ids: string[] | null; permissions: string[] }>(
+    `SELECT ra.market_ids, r.permissions FROM role_assignment ra JOIN role r ON r.id = ra.role_id
+     WHERE ra.user_id = $1 AND (ra.valid_to IS NULL OR ra.valid_to > now())`,
+    [userId],
+  )
+  return rows
+}
+
 /**
  * Deactivates a user and revokes their open invitations (SEC-34); the state change revokes their sessions in the
- * database (trigger user_account_closed_revokes_sessions, 0040). Not the last admin.
+ * database (trigger user_account_closed_revokes_sessions, 0040). Not the last admin. BUG-007: the caller's
+ * user.manage markets must cover every market of the user's grants, and a user holding a privileged role is
+ * deactivated only with a fresh second factor.
  */
-export async function deactivateUser(tx: Tx, userId: string): Promise<UserView> {
+export async function deactivateUser(tx: Tx, auth: AuthContext, userId: string, stepUp: StepUpCheck): Promise<UserView> {
   const user = await getUser(tx, userId)
   if (user.state === 'deactivated') return user
+  const grants = await openGrants(tx, userId)
+  if (!coversMarkets(auth, grants.map((grant) => grant.market_ids))) {
+    throw new ApiError(403, 'SCOPE_NOT_HELD', 'You can deactivate only users whose roles are limited to markets you manage users in.')
+  }
+  if (grants.some((grant) => isPrivileged(grant.permissions))) stepUp()
   await assertAdminRemains(tx, { userId })
   await tx.query(`UPDATE user_account SET state = 'deactivated' WHERE id = $1`, [userId])
   await tx.query(

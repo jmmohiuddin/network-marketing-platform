@@ -104,6 +104,8 @@ export interface Figure {
   readonly numerator: bigint | null
   readonly denominator: bigint | null
   readonly population: string
+  /** How many members the population text names (BUG-019: shown beside it, so it must count that set). */
+  readonly populationCount: number
   readonly method: string
   readonly methodVersion: string
   readonly note: string | null

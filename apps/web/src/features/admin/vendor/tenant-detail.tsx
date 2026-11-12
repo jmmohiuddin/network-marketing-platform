@@ -1,5 +1,7 @@
 'use client'
 
+import Link from 'next/link'
+import { countLabel } from '../../../lib/format'
 import { useState } from 'react'
 import { useApi } from '../../../components/api-provider'
 import { Banner } from '../../../components/banner'
@@ -41,12 +43,12 @@ function ApproveDialog({ tenant, onClose, onDone }: { readonly tenant: TenantDet
     <ConfirmDialog
       open
       title="Approve tenant provisioning"
-      consequence={`${tenant.legal_name} moves to implementation: its first admin gets the Tenant admin role and an invitation email. A vendor user other than the one who created the tenant must approve it, with a code from their authenticator app.`}
+      consequence={`${tenant.legal_name} moves to implementation: its admins get the Tenant admin role and an invitation email. A vendor user other than the one who created the tenant must approve it, with a code from their authenticator app.`}
       confirmLabel="Approve provisioning"
       onCancel={onClose}
       onConfirm={async () => {
         await api.post(`/v1/tenants/${tenant.id}/approve`, undefined, { idempotencyKey })
-        toast({ message: `${tenant.legal_name} is in implementation. The first admin has been invited.` })
+        toast({ message: `${tenant.legal_name} is in implementation. Its admins have been invited.` })
         onDone()
       }}
     />
@@ -119,7 +121,7 @@ export function TenantDetailPage({ tenantId }: { readonly tenantId: string }) {
           title={detail.legal_name}
           state={<StatusChip state={detail.state} />}
           summary={detail.state === 'provisioning'
-            ? 'Waiting for a second vendor user to approve. Nothing reaches the first admin before that.'
+            ? <>Waiting for a second vendor user to approve. Nothing reaches its admins before that. If nobody else can, invite one under <Link href="/vendor/users">Vendor users</Link>.</>
             : 'Operational metadata only. Business data needs a support session the tenant approves.'}
           actions={<Actions tenant={detail} onStep={setStep} />}
         />
@@ -131,7 +133,7 @@ export function TenantDetailPage({ tenantId }: { readonly tenantId: string }) {
           <dt>Created</dt><dd>{formatDateTime(detail.created_at)}</dd>
           <dt>Background jobs</dt><dd>{jobHealthLabel(detail.job_health)}</dd>
         </dl>
-        <Table caption={`${detail.markets.length} markets`} columns={MARKET_COLUMNS} rows={detail.markets} rowKey={(market) => market.id} empty={{ title: 'No markets.' }} />
+        <Table caption={countLabel(detail.markets.length, 'market')} columns={MARKET_COLUMNS} rows={detail.markets} rowKey={(market) => market.id} empty={{ title: 'No markets.' }} />
         {detail.state !== 'provisioning' && <BreachContacts tenantId={detail.id} />}
       </div>
       {step === 'approve' && <ApproveDialog tenant={detail} onClose={() => setStep(null)} onDone={done} />}

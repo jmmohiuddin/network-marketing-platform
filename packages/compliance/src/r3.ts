@@ -10,6 +10,7 @@ const refs = (lines: readonly PayoutLineFact[]): string[] => lines.map((l) => l.
 
 function mix(ctx: Context, period: string, periodKind: 'month' | 'year', lines: readonly PayoutLineFact[], partial: boolean): ReportPeriod {
   const population = `All payout lines paid in the ${periodKind}`
+  const populationCount = lines.length // every R3 figure is taken over all lines, clawbacks included (BUG-019)
   const clawbacks = lines.filter((l) => l.sourceKind === 'clawback')
   const grossLines = lines.filter((l) => l.sourceKind !== 'clawback')
   const gross = amountOf(grossLines)
@@ -22,18 +23,18 @@ function mix(ctx: Context, period: string, periodKind: 'month' | 'year', lines: 
     report: 'R3', period, periodKind, partial, omitted: [], notes,
     figures: [
       ctx.figure({
-        key: 'gross_cents', unit: 'minor', value: gross.toString(), numerator: gross, population,
+        key: 'gross_cents', unit: 'minor', value: gross.toString(), numerator: gross, population, populationCount,
         method: 'Sum of payout amounts of every source kind except clawback.', entity: 'payout_line', numeratorIds: refs(grossLines),
       }),
       ctx.figure({
-        key: 'clawback_cents', unit: 'minor', value: amountOf(clawbacks).toString(), numerator: amountOf(clawbacks), population,
+        key: 'clawback_cents', unit: 'minor', value: amountOf(clawbacks).toString(), numerator: amountOf(clawbacks), population, populationCount,
         method: 'Sum of payout amounts of source kind clawback (negative); reported separately, not in the shares.',
         entity: 'payout_line', numeratorIds: refs(clawbacks),
       }),
       ...kinds.map((kind) => {
         const ofKind = grossLines.filter((l) => l.sourceKind === kind)
         return ctx.percentFigure({
-          key: `share_pct.${kind}`, numerator: amountOf(ofKind), denominator: gross, population, method: SHARE_METHOD,
+          key: `share_pct.${kind}`, numerator: amountOf(ofKind), denominator: gross, population, populationCount, method: SHARE_METHOD,
           entity: 'payout_line', numeratorIds: refs(ofKind), denominatorIds: refs(grossLines),
         })
       }),

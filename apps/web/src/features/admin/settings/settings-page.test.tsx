@@ -28,7 +28,21 @@ describe('SettingsPage', () => {
     renderAs(adminMe(), <SettingsPage />, unsetRoutes())
     expect(await screen.findByText('Report R4 leaves out the active-earner figures.')).toBeTruthy()
     expect(screen.getAllByText('Not set')).toHaveLength(4)
+    expect(screen.getByText('No thresholds are set for you')).toBeTruthy()
     expect(screen.getByText('No breach contact recorded')).toBeTruthy()
+  })
+
+  it('drops the unset-thresholds banner once every threshold is set (BUG-017)', async () => {
+    renderAs(adminMe(), <SettingsPage />, fetchByRoute({
+      'GET /v1/settings/compliance.active_pv_minor': setting('compliance.active_pv_minor', '5000'),
+      'GET /v1/settings/compliance.rank_thresholds_pv_minor': setting('compliance.rank_thresholds_pv_minor', { leader: '10000' }),
+      'GET /v1/settings/compliance.late_order_day': setting('compliance.late_order_day', 27),
+      'GET /v1/settings/compliance.personal_share_flag': setting('compliance.personal_share_flag', { numerator: '1', denominator: '3' }),
+      'GET /v1/settings/privacy.breach_contacts': setting('privacy.breach_contacts'),
+    }))
+    expect(await screen.findByText('Day 27 of the month')).toBeTruthy()
+    expect(screen.queryByText('Not set')).toBeNull()
+    expect(screen.queryByText(/thresholds? (are|is) not set|No thresholds are set/)).toBeNull()
   })
 
   it('opens an unset threshold empty and saves it with If-Match and a reason', async () => {
@@ -76,6 +90,20 @@ describe('SettingsPage', () => {
     })
   })
 
+  it('names each rank row’s fields and remove button by its number (BUG-021)', async () => {
+    const user = userEvent.setup()
+    renderAs(adminMe(), <SettingsPage />, unsetRoutes())
+    await user.click(await screen.findByRole('button', { name: 'Change rank thresholds' }))
+    const dialog = screen.getByRole('dialog')
+    await user.click(within(dialog).getByRole('button', { name: 'Add rank' }))
+    await user.click(within(dialog).getByRole('button', { name: 'Add rank' }))
+    for (const rank of [1, 2]) {
+      expect(within(dialog).getAllByLabelText(`Rank ${rank} name`)).toHaveLength(1)
+      expect(within(dialog).getAllByLabelText(`Rank ${rank} personal volume`)).toHaveLength(1)
+      expect(within(dialog).getAllByRole('button', { name: `Remove rank ${rank}` })).toHaveLength(1)
+    }
+  })
+
   it('shows values in force', async () => {
     renderAs(adminMe(), <SettingsPage />, fetchByRoute({
       ...Object.fromEntries(KEYS.map((key) => [`GET /v1/settings/${key}`, setting(key)])),
@@ -83,6 +111,7 @@ describe('SettingsPage', () => {
     }))
     expect(await screen.findByText('More than 1 out of 3')).toBeTruthy()
     expect(screen.getAllByText('Not set')).toHaveLength(3)
+    expect(screen.getByText('3 thresholds are not set')).toBeTruthy()
   })
 })
 

@@ -1,5 +1,6 @@
 'use client'
 
+import { countLabel } from '../../lib/format'
 import { Table, type TableColumn } from '../../components/table'
 import { useCursorPages } from '../../lib/cursor-pages'
 import { errorMessage } from '../../lib/messages'
@@ -24,8 +25,8 @@ export function BatchFindings({ batchId, errorCount, stored }: { readonly batchI
   const { data, meta, error, loading, reload } = useResource<Finding[]>(`/v1/imports/${batchId}/errors`, { cursor: pages.cursor, limit: PAGE_SIZE })
   const nextCursor = (meta as PageMeta).next_cursor ?? null
   const caption = stored < errorCount
-    ? `${integer(errorCount)} validation errors; the first ${integer(stored)} are listed. Rows count the header as row 1.`
-    : `${integer(errorCount)} validation errors. Rows count the header as row 1.`
+    ? `${countLabel(errorCount, 'validation error')}; the first ${integer(stored)} are listed. Rows count the header as row 1.`
+    : `${countLabel(errorCount, 'validation error')}. Rows count the header as row 1.`
   return (
     <Table
       caption={caption}

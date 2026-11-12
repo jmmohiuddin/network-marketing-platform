@@ -144,6 +144,7 @@ describe('POST /v1/tenants/:id/approve (second-person approval)', () => {
     const accepted = await call(app, { method: 'POST', url: '/v1/auth/invitations/accept', body: { token: invitationToken(mail!), password: PASSWORD } })
     const signIn = await call(app, { method: 'POST', url: '/v1/auth/sessions', body: { tenant: tenant.slug, email: tenant.email, password: PASSWORD } })
 
+    expect(mail).toContain(`/invitation?tenant=${tenant.slug}#token=${invitationToken(mail!)}`)
     expect(byCreator.json().error.code).toBe('SOD_SELF_APPROVAL')
     expect(withoutStepUp.json().error.code).toBe('STEP_UP_REQUIRED')
     expect(approved.json().data.state).toBe('implementation')
@@ -159,6 +160,24 @@ describe('POST /v1/tenants/:id/approve (second-person approval)', () => {
     expect(await vendorActions(tenant.id)).toEqual(['TENANT.CREATED', 'TENANT.PROVISIONING_APPROVED'])
     expect(await auditActions(tenant.id)).toEqual(expect.arrayContaining(['TENANT.PROVISIONING_APPROVED', 'USER.INVITATION_SENT', 'USER.ACTIVATED']))
     expect((await approve(tenant.id)).json().error.code).toBe('TENANT_STATE_INVALID')
+  })
+
+  test('BUG-014: a second admin named at provisioning is granted Tenant admin at approval too, so grants have an approver', async () => {
+    const suffix = randomUUID().slice(0, 8)
+    const body = tenantBody({ second_admin: { email: `second-${suffix}@acme.test`, display_name: null } })
+    const clash = tenantBody()
+    const sameEmail = await create({ ...clash, second_admin: { email: clash.first_admin.email.toUpperCase() } })
+    const tenant = await created(body)
+
+    await approve(tenant.id)
+    const admins = await ownerRows<{ email: string }>(
+      `SELECT u.email FROM role_assignment ra JOIN user_account u ON u.id = ra.user_id WHERE ra.tenant_id = $1`,
+      [tenant.id],
+    )
+
+    expect(sameEmail.statusCode).toBe(400)
+    expect(admins.map((row) => row.email).sort()).toEqual([tenant.email, `second-${suffix}@acme.test`].sort())
+    expect((await auditActions(tenant.id)).filter((action) => action === 'USER.INVITED')).toHaveLength(2)
   })
 
   test('takes an Idempotency-Key (TR-API-13); the key of one approval cannot approve another tenant', async () => {

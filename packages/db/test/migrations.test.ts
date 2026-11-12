@@ -40,6 +40,12 @@ const POLICIES_BEYOND_TENANT_ISOLATION: Policy[] = [
   ['role', 'base_role_read', 'r', "((tenant_id IS NULL) AND is_base AND (app_realm() = 'tenant'::text))", null],
   ['role', 'vendor_platform_roles', '*', VENDOR_OWNED, VENDOR_OWNED],
   ['session', 'vendor_sessions', '*', VENDOR_OWNED, VENDOR_OWNED],
+  // BUG-011 (0042): vendor users invite vendor users.
+  [
+    'user_invitation', 'vendor_invitations', '*', VENDOR_OWNED,
+    "((app_realm() = 'vendor'::text) AND (tenant_id IS NULL) AND (EXISTS ( SELECT 1 FROM user_account u" +
+      " WHERE ((u.id = user_invitation.user_id) AND (u.realm = 'vendor'::text)))))",
+  ],
   ['support_session', 'vendor_read', 'r', VENDOR, null],
   [
     'support_session', 'vendor_request', 'a', null,
@@ -65,6 +71,7 @@ const KEYS_WITHOUT_TENANT_ID = [
   'role_grant_request_role_id_fkey', // base roles have no tenant: trigger role_grant_request_role_in_tenant
   'session_user_id_realm_fkey', // realm match; session_tenant_id_user_id_fkey carries the tenant
   'support_session_requester_id_fkey', // a vendor user: policy vendor_request
+  'user_invitation_user_id_fkey', // vendor invitations have no tenant: policy vendor_invitations (0042)
 ]
 
 closePoolsAfterAll()

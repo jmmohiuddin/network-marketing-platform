@@ -9,15 +9,31 @@ import type { AuditEvent, SupportSession } from '../types'
 interface AccessDetails {
   readonly method?: unknown
   readonly route?: unknown
+  readonly params?: unknown
+  readonly query?: unknown
   readonly refusal?: unknown
   readonly by?: unknown
+}
+
+const ROUTE_PARAM = /:([A-Za-z_]\w*)/g
+
+const isRecord = (value: unknown): value is Readonly<Record<string, unknown>> => value !== null && typeof value === 'object' && !Array.isArray(value)
+
+/** The path actually asked for: the route pattern with the recorded params filled in, then the recorded query. */
+export function requestedPath(route: string, params: unknown, query: unknown): string {
+  const values = isRecord(params) ? params : {}
+  const path = route.replace(ROUTE_PARAM, (pattern, name: string) => (typeof values[name] === 'string' ? values[name] : pattern))
+  const pairs = isRecord(query)
+    ? Object.entries(query).flatMap(([key, value]) => (Array.isArray(value) ? value : [value]).filter((item) => typeof item === 'string').map((item) => `${key}=${item}`))
+    : []
+  return pairs.length === 0 ? path : `${path}?${pairs.join('&')}`
 }
 
 /** What a log entry did: the request of an access, the refusal code, or who ended the session. */
 export function logDetails(event: Pick<AuditEvent, 'after'>): string {
   if (event.after === null || typeof event.after !== 'object') return ''
   const after = event.after as AccessDetails
-  const request = typeof after.method === 'string' && typeof after.route === 'string' ? `${after.method} ${after.route}` : ''
+  const request = typeof after.method === 'string' && typeof after.route === 'string' ? `${after.method} ${requestedPath(after.route, after.params, after.query)}` : ''
   if (typeof after.refusal === 'string') return `Refused (${after.refusal})${request === '' ? '' : `: ${request}`}`
   if (typeof after.by === 'string') return `By ${after.by}`
   return request

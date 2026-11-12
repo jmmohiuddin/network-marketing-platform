@@ -71,3 +71,18 @@ _Agent: backend. Read before every task; update after every task. Keep concise â
 - **Vendor end**: requester only (app + trigger); others 403 PERMISSION_DENIED, unknown 404, not active 409.
 - **Approve idempotency**: tenant.approved_by + approval_idempotency_key + approval_request_hash, UNIQUE (approved_by, key); tenant locked before the replay lookup so a racing retry replays; key reused for another tenant -> 422 IDEMPOTENCY_KEY_REUSED (also on the unique race).
 - **First admin grant at approval**: grantFirstAdminRole (tenant-creation.ts) in approveProvisioning's tenant part, created_by and ROLE.GRANTED actor = approver.
+
+## BUG-006/007 + web contract (2026-11-12)
+- Approval rule: privileged role -> approver must hold its permissions over the markets until valid_to (literal BUG-006 fix); non-privileged role on the request path (granter lacked a permission/market/validity, or self-grant) -> approver needs only market coverage, so two admins can still grant e.g. Payout officer (existing BR-SEC-05 test). Consequence: a Tenant admin alone cannot approve Compliance officer / Finance approver grants (needs an admin holding those permissions).
+- Removal rule: market coverage via user.manage scope only; step-up when the target is privileged; no second admin for removals (not asked).
+- SCOPE_NOT_HELD is 403 (not 422 like SUPPORT_SCOPE_NOT_HELD): the caller is not allowed, the request is valid.
+- Market name derived from the ISO code (Intl.DisplayNames 'en') instead of a migration: provisioning only accepts ISO 3166-1 alpha-2 codes and DATABASE.md has no name column. Reverse with a `market.name` column if tenants need their own names.
+- Drill `component.key` names the sums column (not 'numerator'/'denominator', which meta.set already says); `net_minor` added so every money component equals exactly one sum.
+
+
+## BUG-010..014, 019 (2026-11-12)
+- **Approval rule** (E-ADR-28) replaces the BUG-006 "approver holds the role's permissions" rule; market coverage and validity of the approver's admin grant kept (one `holdsWithin(auth, ['user.manage'], markets, valid_to)`).
+- **Two-admin floor** in `assertAdminRemains` (same advisory lock): counts distinct active users with another live user.manage assignment.
+- **ACCESSED after the answer** (onSend, own tenant tx, before bytes leave; WeakSet guards the error-handler resend). Chosen over writing in the handler's tx because a 404/400 query would then leave no trace (rolled back). Status recorded so a failed query is visible as such.
+- **Population count in @nmp/compliance** (where the population text is written), not in cpl/compute.ts; METHOD_VERSION unchanged (formulas unchanged; drill-down compares value/numerator/denominator only).
+- **Vendor users in iam** (identity), iam -> support (vendorIdempotency) import; vendor invitations reuse user_invitation (tenant_id NULL) rather than a new table; USER.* action names reused in the vendor log. Isolation case flag `echoesRefusedRequests` for the vendor log (it repeats ids vendors sent in refused requests).

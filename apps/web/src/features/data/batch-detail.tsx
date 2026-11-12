@@ -1,5 +1,6 @@
 'use client'
 
+import { countLabel } from '../../lib/format'
 import Link from 'next/link'
 import { Fragment, useState, type ReactNode } from 'react'
 import { useApi } from '../../components/api-provider'
@@ -113,7 +114,7 @@ export function BatchDetail({ batchId }: { readonly batchId: string }) {
   async function load() {
     const { meta } = await api.post<Batch>(`/v1/imports/${batchId}/load`)
     const superseded = Array.isArray(meta.superseded) ? meta.superseded.length : 0
-    toast({ message: superseded === 0 ? 'Batch loaded.' : `Batch loaded. ${superseded} earlier batch(es) of this period are now superseded.`, tone: 'success' })
+    toast({ message: superseded === 0 ? 'Batch loaded.' : `Batch loaded. ${countLabel(superseded, 'earlier batch', 'earlier batches')} of this period ${superseded === 1 ? 'is' : 'are'} now superseded.`, tone: 'success' })
     setConfirmLoad(false)
     reload()
   }
@@ -130,7 +131,7 @@ export function BatchDetail({ batchId }: { readonly batchId: string }) {
       <PageHeader title={`Import ${batch.market} · ${period}`} state={<StatusChip state={batch.state} />} summary={SUMMARY[batch.state]} actions={actions} />
       {batch.state === 'rejected' && (
         <Banner tone="danger" title="Rejected: nothing was stored">
-          {integer(errorCount)} validation error(s) were found. The files are not kept; upload corrected files as a new batch.
+          {countLabel(errorCount, 'validation error')} {errorCount === 1 ? 'was' : 'were'} found. The files are not kept; upload corrected files as a new batch.
         </Banner>
       )}
       {batch.state === 'superseded' && batch.superseded_by !== null && (

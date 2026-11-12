@@ -10,20 +10,32 @@ import { PageHeader } from '../../../components/page-header'
 import { Table, type TableColumn } from '../../../components/table'
 import { errorMessage, isNotAvailable } from '../../../lib/messages'
 import { useSession } from '../../../lib/session'
-import { formatDateTime, shortId } from '../format'
+import { useResource } from '../../../lib/use-resource'
+import { actorLabel, formatDateTime, personLabel, shortId } from '../format'
 import { LoadFailure } from '../page-states'
 import { tableError, usePagedList } from '../resource'
-import type { AuditEvent, ChainVerification } from '../types'
+import type { AuditEvent, ChainVerification, UserView } from '../types'
 import { AuditFilterBar, filtersFrom, type AuditFilters } from './audit-filters'
 import { AuditExportDialog } from './export-dialog'
+import { ConsoleNav } from '../vendor/console-nav'
 
 function objectLabel(event: AuditEvent): string {
   if (event.object_type === null) return '—'
   return event.object_id === null ? event.object_type : `${event.object_type} ${shortId(event.object_id)}`
 }
 
-function actorLabel(event: AuditEvent): string {
-  return event.actor_id === null ? event.actor_type : `${event.actor_type} ${shortId(event.actor_id)}`
+// shortcut: names come from the first 200 users of the log's realm (GET /v1/users needs user.manage; vendor users
+// read GET /v1/vendor-users) and the signed-in user; any other actor shows its kind and short id. Upgrade when audit
+// events carry the actor's name.
+const USER_PAGE_SIZE = 200
+const TENANT_EVENTS_PATH = '/v1/audit-events'
+const VENDOR_EVENTS_PATH = '/v1/vendor-audit-events'
+
+/** Names of the users of the log's realm that the signed-in user may list; usersPath null: only their own. */
+function useActorNames(usersPath: string | null): ReadonlyMap<string, string> {
+  const { me } = useSession()
+  const users = useResource<Pick<UserView, 'id' | 'email' | 'display_name'>[]>(usersPath, { limit: USER_PAGE_SIZE })
+  return new Map([[me.user.id, personLabel(me.user)], ...(users.data ?? []).map((user) => [user.id, personLabel(user)] as const)])
 }
 
 function Json({ value }: { readonly value: unknown }) {
@@ -31,13 +43,13 @@ function Json({ value }: { readonly value: unknown }) {
 }
 
 /** SC-30 event drawer content: every recorded field of one event. */
-function EventDialog({ event, onClose }: { readonly event: AuditEvent; readonly onClose: () => void }) {
+function EventDialog({ event, names, onClose }: { readonly event: AuditEvent; readonly names: ReadonlyMap<string, string>; readonly onClose: () => void }) {
   return (
     <Dialog open onClose={onClose} title={`Audit event ${event.seq}`} size="lg">
       <dl className="admin-details">
         <dt>Time</dt><dd>{formatDateTime(event.occurred_at)}</dd>
         <dt>Action</dt><dd>{event.action}</dd>
-        <dt>Actor</dt><dd className="admin-mono">{event.actor_type}{event.actor_id === null ? '' : ` ${event.actor_id}`}</dd>
+        <dt>Actor</dt><dd>{actorLabel(event, names)}{event.actor_id === null ? '' : <span className="admin-mono"> · {event.actor_type} {event.actor_id}</span>}</dd>
         <dt>Object</dt><dd className="admin-mono">{event.object_type ?? '—'}{event.object_id === null ? '' : ` ${event.object_id}`}</dd>
         <dt>Support session</dt><dd className="admin-mono">{event.support_session_id ?? '—'}</dd>
         <dt>Reason</dt><dd>{event.reason ?? '—'}</dd>
@@ -50,8 +62,13 @@ function EventDialog({ event, onClose }: { readonly event: AuditEvent; readonly 
   )
 }
 
-function EventsTable({ filters, onOpen }: { readonly filters: AuditFilters; readonly onOpen: (event: AuditEvent) => void }) {
-  const events = usePagedList<AuditEvent>('/v1/audit-events', filters)
+function EventsTable({ path, filters, names, onOpen }: {
+  readonly path: string
+  readonly filters: AuditFilters
+  readonly names: ReadonlyMap<string, string>
+  readonly onOpen: (event: AuditEvent) => void
+}) {
+  const events = usePagedList<AuditEvent>(path, filters)
   if (isNotAvailable(events.error)) return <LoadFailure error={events.error} onRetry={events.reload} section />
   const columns: readonly TableColumn<AuditEvent>[] = [
     {
@@ -60,7 +77,7 @@ function EventsTable({ filters, onOpen }: { readonly filters: AuditFilters; read
       cell: (event) => <Button variant="tertiary" aria-label={`Open event ${event.seq}, ${event.action}`} onClick={() => onOpen(event)}>{formatDateTime(event.occurred_at)}</Button>,
     },
     { key: 'action', header: 'Action', cell: (event) => event.action },
-    { key: 'actor', header: 'Actor', cell: actorLabel },
+    { key: 'actor', header: 'Actor', cell: (event) => actorLabel(event, names) },
     { key: 'object', header: 'Object', cell: objectLabel },
     { key: 'seq', header: 'Sequence', align: 'end', cell: (event) => event.seq },
   ]
@@ -90,23 +107,36 @@ function ChainResult({ result }: { readonly result: ChainVerification }) {
   )
 }
 
-/** SC-30 Audit log (FR-AUD-001/002, API-09): search, open an event, export within the row cap, verify the chain. */
-export function AuditPage() {
-  const { can, readOnly } = useSession()
-  const api = useApi()
+/** Filters in the URL, the events matching them and the event opened from the list: one audit log's search. */
+function EventSearch({ path, usersPath }: { readonly path: string; readonly usersPath: string | null }) {
   const params = useSearchParams()
   const router = useRouter()
   const pathname = usePathname()
   const filters = filtersFrom(params)
   const filterKey = JSON.stringify(filters)
   const [opened, setOpened] = useState<AuditEvent | null>(null)
-  const [exporting, setExporting] = useState(false)
-  const [verifying, setVerifying] = useState(false)
-  const [chain, setChain] = useState<{ result?: ChainVerification; error?: string } | null>(null)
+  const names = useActorNames(usersPath)
   function apply(next: AuditFilters) {
     const search = new URLSearchParams(next as Record<string, string>).toString()
     router.replace(search === '' ? pathname : `${pathname}?${search}`)
   }
+  return (
+    <>
+      <AuditFilterBar key={`filters ${filterKey}`} applied={filters} onApply={apply} />
+      <EventsTable key={`events ${filterKey}`} path={path} filters={filters} names={names} onOpen={setOpened} />
+      {opened !== null && <EventDialog event={opened} names={names} onClose={() => setOpened(null)} />}
+    </>
+  )
+}
+
+/** SC-30 Audit log (FR-AUD-001/002, API-09): search, open an event, export within the row cap, verify the chain. */
+export function AuditPage() {
+  const { can, readOnly } = useSession()
+  const api = useApi()
+  const filters = filtersFrom(useSearchParams())
+  const [exporting, setExporting] = useState(false)
+  const [verifying, setVerifying] = useState(false)
+  const [chain, setChain] = useState<{ result?: ChainVerification; error?: string } | null>(null)
   async function verify() {
     setVerifying(true)
     try {
@@ -132,10 +162,27 @@ export function AuditPage() {
       />
       {chain?.result !== undefined && <ChainResult result={chain.result} />}
       {chain?.error !== undefined && <Banner tone="danger" title="The chain could not be verified">{chain.error}</Banner>}
-      <AuditFilterBar key={`filters ${filterKey}`} applied={filters} onApply={apply} />
-      <EventsTable key={`events ${filterKey}`} filters={filters} onOpen={setOpened} />
-      {opened !== null && <EventDialog event={opened} onClose={() => setOpened(null)} />}
+      <EventSearch path={TENANT_EVENTS_PATH} usersPath={can('user.manage') ? '/v1/users' : null} />
       {exporting && <AuditExportDialog filters={filters} onClose={() => setExporting(false)} />}
     </div>
+  )
+}
+
+/**
+ * Vendor audit log (BUG-012, FR-OPS-001, E-ADR-06): every vendor action and refused vendor access, from
+ * GET /v1/vendor-audit-events, searched like the tenant's log. Actors are named from the vendor users.
+ */
+export function VendorAuditPage() {
+  return (
+    <>
+      <ConsoleNav />
+      <div className="admin-stack">
+        <PageHeader
+          title="Vendor audit log"
+          summary="Every action of vendor users: provisioning, approvals, support sessions and refused access to tenant data. Append-only and hash-chained."
+        />
+        <EventSearch path={VENDOR_EVENTS_PATH} usersPath="/v1/vendor-users" />
+      </div>
+    </>
   )
 }

@@ -19,8 +19,9 @@ vi.mock('../lib/leave-page', () => ({ leavePage }))
 const NOW = Date.parse('2026-11-12T10:00:00.000Z')
 const ENGINEER = { id: 'v1', email: 'engineer@vendor.example', display_name: 'Eve Engineer' }
 
-// GET /v1/me inside a session: tenant realm, the session as the only role, no user (support/access.ts inSession).
-const inSession = {
+// GET /v1/me inside a session: tenant realm, the vendor user, the session as the only role and support_session.
+const inSession = (endsAt: string) => ({
+  user: ENGINEER,
   tenant: { id: 't1', slug: 'acme', legal_name: 'Acme Ltd', region: 'eu', state: 'live' },
   realm: 'tenant',
   roles: [{ assignment_id: 'ss1', role_id: 'ss1', name: 'Support session', market_ids: null }],
@@ -28,7 +29,8 @@ const inSession = {
   mfa: { required: true, enrolled: true, verified: true },
   step_up_at: null,
   navigation: [{ key: 'compliance', path: '/compliance', label: 'Compliance' }],
-}
+  support_session: { id: 'ss1', tenant_slug: 'acme', ends_at: endsAt, scope: { permissions: ['compliance.read'] } },
+})
 
 function Page() {
   const { can, readOnly } = useSession()
@@ -47,8 +49,8 @@ describe('support-session frame', () => {
   })
 
   it('reads the tenant app inside the session: header on reads, frame with countdown, write controls hidden', async () => {
-    enterSupportSession({ id: 'ss1', tenantSlug: 'acme', endsAt: new Date(NOW + (2 * 60 + 41) * 60_000).toISOString(), user: ENGINEER })
-    const fetchMock = fetchRoutes(['GET', /^\/v1\/me$/, () => ok(inSession)])
+    enterSupportSession('ss1')
+    const fetchMock = fetchRoutes(['GET', /^\/v1\/me$/, () => ok(inSession(new Date(NOW + (2 * 60 + 41) * 60_000).toISOString()))])
     renderWithProviders(<AppShell realm="tenant"><Page /></AppShell>, fetchMock)
     const bar = await screen.findByRole('region', { name: 'Vendor support session' })
     expect(bar.textContent).toContain('Vendor support session · read-only · acme · ends in 02:41')
@@ -59,8 +61,8 @@ describe('support-session frame', () => {
 
   it('ends the session from the frame in the vendor realm and returns to the console', async () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
-    enterSupportSession({ id: 'ss1', tenantSlug: 'acme', endsAt: new Date(NOW + 60 * 60_000).toISOString(), user: ENGINEER })
-    const fetchMock = fetchRoutes(['GET', /^\/v1\/me$/, () => ok(inSession)], ['POST', /^\/v1\/support-sessions\/ss1\/end$/, () => ok({ id: 'ss1', state: 'ended' })])
+    enterSupportSession('ss1')
+    const fetchMock = fetchRoutes(['GET', /^\/v1\/me$/, () => ok(inSession(new Date(NOW + 60 * 60_000).toISOString()))], ['POST', /^\/v1\/support-sessions\/ss1\/end$/, () => ok({ id: 'ss1', state: 'ended' })])
     renderWithProviders(<AppShell realm="tenant"><Page /></AppShell>, fetchMock)
     await user.click(within(await screen.findByRole('region', { name: 'Vendor support session' })).getByRole('button', { name: 'End session' }))
     await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'End session' }))
@@ -72,9 +74,10 @@ describe('support-session frame', () => {
   })
 
   it('draws no frame for a stored session the server does not confirm', async () => {
-    enterSupportSession({ id: 'ss1', tenantSlug: 'acme', endsAt: new Date(NOW + 60 * 60_000).toISOString(), user: ENGINEER })
+    enterSupportSession('ss1')
     const tenantUser: Me = {
-      ...inSession, realm: 'tenant', roles: [], user: { id: 'u1', email: 'officer@acme.example', display_name: null },
+      ...inSession(new Date(NOW + 60 * 60_000).toISOString()), roles: [], support_session: null,
+      user: { id: 'u1', email: 'officer@acme.example', display_name: null },
     } as Me
     renderWithProviders(<AppShell realm="tenant"><Page /></AppShell>, fetchRoutes(['GET', /^\/v1\/me$/, () => ok(tenantUser)]))
     expect(await screen.findByText('May create')).toBeTruthy()

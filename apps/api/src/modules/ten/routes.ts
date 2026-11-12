@@ -4,6 +4,7 @@ import { assertStepUp, currentAuth, requirePermission, requireRealm } from '../.
 import { inTenant } from '../../lib/db.js'
 import { ApiError, notFound, permissionDenied } from '../../lib/errors.js'
 import { envelope, parse } from '../../lib/http.js'
+import { listMarkets } from './markets.js'
 import { getEffectiveSettings, getLatestVersion, isSettingKey, SETTINGS, type SettingKey } from './settings.js'
 import { putSetting } from './settings-write.js'
 
@@ -69,4 +70,9 @@ export function registerSettingsRoutes(app: FastifyInstance): void {
       return envelope(saved)
     },
   )
+}
+
+/** The tenant's markets for pickers and labels (market scope of grants, snapshots, imports): any signed-in tenant user. */
+export function registerMarketRoutes(app: FastifyInstance): void {
+  app.get('/v1/markets', { preHandler: [requireRealm('tenant')] }, async (request) => envelope(await inTenant(request, listMarkets)))
 }

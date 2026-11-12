@@ -42,6 +42,11 @@ describe('MfaEnrolment', () => {
 describe('MfaVerification', () => {
   beforeEach(() => navigation.router.replace.mockClear())
 
+  it('puts focus on the code field on arrival (BUG-021)', () => {
+    renderWithProviders(<MfaVerification />, fetchReturning())
+    expect(document.activeElement).toBe(screen.getByLabelText('Verification code'))
+  })
+
   it('checks the code format before sending and shows a wrong code on the field', async () => {
     const user = userEvent.setup()
     const fetchMock = fetchReturning(apiError(422, 'MFA_CODE_INVALID', 'The code is not valid. Enter the current code from your app.'), ok({ assurance: 'aal2' }))

@@ -30,6 +30,22 @@ export function isApiError(error: unknown, code?: string): error is ApiError {
   return error instanceof ApiError && (code === undefined || error.code === code)
 }
 
+// RFC 9562 UUID version 4: the version nibble and the variant bits.
+const UUID_VERSION_BYTE = 6
+const UUID_VARIANT_BYTE = 8
+
+/**
+ * A fresh Idempotency-Key (a version 4 UUID). Built from crypto.getRandomValues, which every page has:
+ * crypto.randomUUID exists only in secure contexts, so it is missing on plain-http LAN addresses.
+ */
+export function newIdempotencyKey(): string {
+  const bytes = crypto.getRandomValues(new Uint8Array(16))
+  bytes[UUID_VERSION_BYTE] = (bytes[UUID_VERSION_BYTE]! & 0x0f) | 0x40
+  bytes[UUID_VARIANT_BYTE] = (bytes[UUID_VARIANT_BYTE]! & 0x3f) | 0x80
+  const hex = Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('')
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`
+}
+
 export type Method = 'GET' | 'POST' | 'PUT' | 'DELETE'
 
 export interface RequestOptions {
@@ -37,7 +53,7 @@ export interface RequestOptions {
   readonly body?: unknown
   readonly query?: Readonly<Record<string, string | number | boolean | null | undefined>>
   /**
-   * Creating POSTs: one key per user action (crypto.randomUUID() when the action starts), kept in the
+   * Creating POSTs: one key per user action (newIdempotencyKey() when the action starts), kept in the
    * form's state and sent again when the user retries that action, so the server runs it at most once.
    */
   readonly idempotencyKey?: string

@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+
+<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_dashboard" name="shell-type"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "on-tertiary": "#ffffff", "secondary-container": "#dae2fd", "on-primary": "#ffffff", "background": "#f8f9ff", "surface-container-lowest": "#ffffff", "on-error": "#ffffff", "secondary": "#565e74", "tertiary-container": "#0d5f36", "surface-dim": "#ccdbf3", "tertiary-fixed-dim": "#8cd7a3", "on-background": "#0d1c2e", "outline-variant": "#c3c6d3", "on-tertiary-fixed-variant": "#00522d", "on-secondary-fixed": "#131b2e", "primary": "#003883", "error": "#ba1a1a", "primary-fixed": "#d9e2ff", "on-surface": "#0d1c2e", "on-error-container": "#93000a", "surface-bright": "#f8f9ff", "surface-variant": "#d5e3fc", "inverse-primary": "#afc6ff", "surface-container-low": "#eff4ff", "outline": "#737783", "inverse-surface": "#233144", "inverse-on-surface": "#eaf1ff", "on-secondary-fixed-variant": "#3f465c", "surface-container": "#e6eeff", "primary-container": "#1e4fa3", "on-secondary": "#ffffff", "on-primary-fixed": "#001944", "error-container": "#ffdad6", "surface-tint": "#2e5bb0", "secondary-fixed": "#dae2fd", "tertiary-fixed": "#a7f3be", "surface": "#f8f9ff", "on-secondary-container": "#5c647a", "on-tertiary-fixed": "#00210f", "secondary-fixed-dim": "#bec6e0", "on-primary-fixed-variant": "#074397", "surface-container-highest": "#d5e3fc", "tertiary": "#004525", "on-surface-variant": "#434752", "primary-fixed-dim": "#afc6ff", "on-tertiary-container": "#8cd7a3", "on-primary-container": "#afc6ff", "surface-container-high": "#dce9ff" }, "borderRadius": { "DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem" }, "spacing": { "gutter": "1.5rem", "space-sm": "0.5rem", "space-2xl": "3rem", "space-xxs": "0.125rem", "margin-mobile": "1rem", "space-lg": "1.5rem", "gutter-compact": "0.75rem", "space-xs": "0.25rem", "margin": "1.5rem", "space-md": "1rem", "space-xl": "2rem" }, "fontFamily": { "body-lg": [ "Inter" ], "title-lg-mobile": [ "Inter" ], "display-mobile": [ "Inter" ], "body-md": [ "Inter" ], "title-md": [ "Inter" ], "data-mono-sm": [ "JetBrains Mono" ], "data-mono-lg": [ "JetBrains Mono" ], "section-heading": [ "Inter" ], "caption": [ "Inter" ], "display": [ "Inter" ], "title-lg": [ "Inter" ], "data-mono-md": [ "JetBrains Mono" ], "body-sm": [ "Inter" ] }, "fontSize": { "body-lg": [ "16px", { "lineHeight": "24px", "letterSpacing": "0em", "fontWeight": "400" } ], "title-lg-mobile": [ "20px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600" } ], "display-mobile": [ "26px", { "lineHeight": "32px", "letterSpacing": "-0.015em", "fontWeight": "600" } ], "body-md": [ "14px", { "lineHeight": "20px", "letterSpacing": "0em", "fontWeight": "400" } ], "title-md": [ "20px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600" } ], "data-mono-sm": [ "12px", { "lineHeight": "16px", "letterSpacing": "0em", "fontWeight": "500" } ], "data-mono-lg": [ "24px", { "lineHeight": "32px", "letterSpacing": "-0.02em", "fontWeight": "600" } ], "section-heading": [ "16px", { "lineHeight": "24px", "letterSpacing": "-0.005em", "fontWeight": "600" } ], "caption": [ "12px", { "lineHeight": "16px", "letterSpacing": "0.01em", "fontWeight": "500" } ], "display": [ "32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "600" } ], "title-lg": [ "24px", { "lineHeight": "32px", "letterSpacing": "-0.015em", "fontWeight": "600" } ], "data-mono-md": [ "14px", { "lineHeight": "20px", "letterSpacing": "-0.01em", "fontWeight": "500" } ], "body-sm": [ "13px", { "lineHeight": "18px", "letterSpacing": "0.005em", "fontWeight": "400" } ] } } } };</script></head><body class="bg-background font-body-md text-on-surface antialiased"><header class="fixed top-0 left-0 right-0 h-12 bg-surface-container-lowest border-b border-outline-variant z-50 flex items-center justify-between px-space-md select-none"><div class="flex items-center gap-space-sm"><img alt="Platform Integrity Logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/ALJJyrB5eRWQNX9M_eeC454eoT79IyJIWf2apWVApZfrYBVB2P3A94kIQBFZHifsaOQy_VoAxmgBKB1311sAY-hR--ULW9hEdvY1wTCws4v-3fDyxMTP842fJ_9HmJkVilWCVfwB2CZ99Njwo0zcjFd2fwdFdY4Tlnwy0f29IOF6zgYm7iwPhYOQsz0ME3S-1aejy28KO2FJjy828FssZQ8lq8YUlEqN1nESu3IEEUwMuNo"/><span class="font-section-heading text-section-heading text-primary font-bold tracking-tight">AuditLedger</span><div class="h-4 w-px bg-outline-variant mx-space-xs"></div><div class="flex items-center gap-space-xs px-space-xs py-space-xxs rounded bg-surface-container-low border border-outline-variant hover:border-outline cursor-pointer"><span class="font-body-sm text-body-sm text-on-surface font-medium">Acrobex Global</span><span class="font-data-mono-sm text-data-mono-sm text-secondary">(TEN-842)</span><span class="material-symbols-outlined text-[16px] text-secondary">arrow_drop_down</span></div><div class="flex items-center gap-space-xs px-space-xs py-space-xxs rounded bg-surface-container-low border border-outline-variant hover:border-outline cursor-pointer"><span class="h-2 w-2 rounded-full bg-tertiary-container"></span><span class="font-body-sm text-body-sm text-on-surface">US - United States (USD $)</span><span class="material-symbols-outlined text-[16px] text-secondary">expand_more</span></div></div><div class="flex-1 max-w-xl mx-space-lg"><div class="relative flex items-center w-full"><span class="material-symbols-outlined absolute left-2.5 text-outline text-[18px]">search</span><input class="w-full h-8 pl-8 pr-12 rounded bg-surface border border-outline-variant font-body-sm text-body-sm text-on-surface placeholder:text-outline focus:border-primary focus:outline-none transition-colors" placeholder="/ or Ctrl+K to search people, orders, cases, statements..." type="text"/><div class="absolute right-2 px-1.5 py-0.5 rounded bg-surface-container border border-outline-variant font-data-mono-sm text-data-mono-sm text-secondary">⌘K</div></div></div><div class="flex items-center gap-space-md"><button class="relative p-1 text-secondary hover:text-on-surface hover:bg-surface-container rounded transition-colors" title="Notifications" type="button"><span class="material-symbols-outlined text-[20px]">notifications</span><span class="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-error text-on-error font-data-mono-sm text-data-mono-sm leading-none flex items-center justify-center">3</span></button><button class="flex items-center gap-space-xs p-1 text-secondary hover:text-on-surface hover:bg-surface-container rounded transition-colors" title="Help &amp; Regulatory Glossary" type="button"><span class="material-symbols-outlined text-[20px]">menu_book</span><span class="font-body-sm text-body-sm">Glossary</span></button><div class="h-4 w-px bg-outline-variant"></div><div class="flex items-center gap-space-sm pl-space-xs"><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div><div class="flex flex-col text-left leading-tight hidden lg:flex"><span class="font-body-sm text-body-sm text-on-surface font-semibold">Elena Rostova</span><span class="font-caption text-caption text-secondary font-medium">Lead Commission Analyst</span></div><button class="p-1 text-secondary hover:text-error hover:bg-error-container rounded transition-colors" title="Sign out" type="button"><span class="material-symbols-outlined text-[18px]">logout</span></button></div></div></header><aside class="fixed left-0 top-12 bottom-0 w-52 bg-surface-container-lowest border-r border-outline-variant z-40 flex flex-col justify-between overflow-y-auto"><div class="py-space-sm px-space-xs"><nav class="space-y-space-xxs" data-active-classes="bg-primary-container text-on-primary font-semibold"><a class="flex items-center gap-space-sm px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-body-sm text-body-sm transition-colors" data-path="overview" href="#"><span class="material-symbols-outlined text-[18px]">dashboard</span><span>Overview</span></a><a class="flex items-center gap-space-sm px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-body-sm text-body-sm transition-colors" data-path="periods-runs" href="#"><span class="material-symbols-outlined text-[18px]">history_toggle_off</span><span>Periods &amp; Runs</span></a><a class="flex items-center gap-space-sm px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-body-sm text-body-sm transition-colors" data-path="compensation-plans" href="#"><span class="material-symbols-outlined text-[18px]">schema</span><span>Compensation Plans</span></a><a class="flex items-center gap-space-sm px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-body-sm text-body-sm transition-colors" data-path="people-tree" href="#"><span class="material-symbols-outlined text-[18px]">account_tree</span><span>People &amp; Tree</span></a><a class="flex items-center gap-space-sm px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-body-sm text-body-sm transition-colors" data-path="orders-returns" href="#"><span class="material-symbols-outlined text-[18px]">receipt_long</span><span>Orders &amp; Returns</span></a><a class="flex items-center gap-space-sm px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-body-sm text-body-sm transition-colors" data-path="cases-exceptions" href="#"><span class="material-symbols-outlined text-[18px]">rule_folder</span><span>Cases &amp; Exceptions</span></a><a class="flex items-center gap-space-sm px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-body-sm text-body-sm transition-colors" data-path="payouts" href="#"><span class="material-symbols-outlined text-[18px]">payments</span><span>Payouts</span></a><a class="flex items-center gap-space-sm px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-body-sm text-body-sm transition-colors" data-path="finance-ledger" href="#"><span class="material-symbols-outlined text-[18px]">account_balance</span><span>Finance &amp; Ledger</span></a><a class="flex items-center gap-space-sm px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-body-sm text-body-sm transition-colors" data-path="compliance-reports" href="#"><span class="material-symbols-outlined text-[18px]">verified_user</span><span>Compliance Reports</span></a><a class="flex items-center gap-space-sm px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-body-sm text-body-sm transition-colors" data-path="data-imports-migration" href="#"><span class="material-symbols-outlined text-[18px]">sync_alt</span><span>Data Imports</span></a><a class="flex items-center gap-space-sm px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-body-sm text-body-sm transition-colors" data-path="settings-audit" href="#"><span class="material-symbols-outlined text-[18px]">tune</span><span>Settings &amp; Audit</span></a></nav></div><div class="p-space-sm border-t border-outline-variant bg-surface-container-low"><div class="font-data-mono-sm text-data-mono-sm text-secondary space-y-1"><div class="flex items-center justify-between"><span>Cell</span><span class="text-on-surface font-semibold">US-EAST-1</span></div><div class="flex items-center justify-between"><span>Version</span><span class="text-on-surface">v2.4.1</span></div><div class="pt-1 border-t border-outline-variant flex items-center justify-between"><span class="text-outline">Engine</span><span class="text-tertiary font-semibold">2026.11</span></div></div></div></aside><div class="pl-52"><main class="w-full pt-12 bg-background min-h-screen"><div class="flex flex-col w-full">
+<!-- Sticky Context & Action Ribbon -->
+<div class="sticky top-12 z-30 bg-surface-container-lowest border-b border-outline-variant px-space-md py-space-sm flex flex-col md:flex-row md:items-center justify-between gap-space-sm">
+<div class="flex items-center gap-space-sm flex-wrap">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-primary text-[22px]">policy</span>
+<h1 class="font-title-lg text-title-lg text-on-surface tracking-tight">Compliance Reports &amp; Regulatory Defensibility</h1>
+</div>
+<div class="flex items-center gap-1.5 px-2 py-0.5 rounded bg-surface-container-high text-tertiary font-caption text-caption uppercase tracking-wider font-semibold border border-tertiary-fixed-dim">
+<span class="material-symbols-outlined text-[14px]" style="font-variation-settings: 'FILL' 1;">verified</span>
+<span>Snapshot #SNP-2026-M10-A (VERIFIED)</span>
+</div>
+</div>
+<div class="flex items-center gap-space-xs flex-wrap">
+<button class="h-8 px-space-sm rounded bg-surface border border-outline-variant hover:bg-surface-container text-on-surface font-body-sm text-body-sm flex items-center gap-1.5 transition-colors" type="button">
+<span class="material-symbols-outlined text-[16px] text-secondary">history_edu</span>
+<span>Methodology &amp; Legal Basis</span>
+</button>
+<button class="h-8 px-space-sm rounded bg-surface border border-outline-variant hover:bg-surface-container text-on-surface font-body-sm text-body-sm flex items-center gap-1.5 transition-colors" type="button">
+<span class="material-symbols-outlined text-[16px] text-secondary">compare_arrows</span>
+<span>Compare Snapshots</span>
+</button>
+<button class="h-8 px-space-sm rounded bg-surface border border-outline-variant hover:bg-surface-container text-on-surface font-body-sm text-body-sm flex items-center gap-1.5 transition-colors" type="button">
+<span class="material-symbols-outlined text-[16px] text-secondary">archive</span>
+<span>Export Dossier (.ZIP)</span>
+</button>
+<button class="h-8 px-space-md rounded bg-primary text-on-primary font-body-sm text-body-sm font-semibold flex items-center gap-1.5 hover:bg-primary-container transition-colors shadow-sm" type="button">
+<span class="material-symbols-outlined text-[16px]">add_task</span>
+<span>Create New Snapshot</span>
+</button>
+</div>
+</div>
+<!-- Operational Header & Scope Bar -->
+<div class="px-space-md pt-space-md pb-space-sm bg-surface border-b border-outline-variant">
+<p class="font-body-md text-body-md text-on-surface-variant max-w-4xl">
+      Generate, inspect, and drill down into statutory transaction-backed compliance metrics (R1 through R5) with immutable audit snapshots. Certified under federal safe harbor and direct selling legal defensibility guidelines.
+    </p>
+<!-- Scope Meta Strip -->
+<div class="mt-space-sm p-space-sm rounded bg-surface-container-low border border-outline-variant flex flex-wrap items-center justify-between gap-y-2 gap-x-4">
+<div class="flex items-center gap-space-md flex-wrap text-on-surface">
+<div class="flex items-center gap-1.5">
+<span class="font-caption text-caption text-secondary uppercase font-semibold">Scoped Period:</span>
+<span class="font-data-mono-md text-data-mono-md font-semibold text-primary">October 2026 (2026-M10)</span>
+</div>
+<div class="h-3.5 w-px bg-outline-variant hidden sm:block"></div>
+<div class="flex items-center gap-1.5">
+<span class="font-caption text-caption text-secondary uppercase font-semibold">Jurisdiction:</span>
+<span class="font-body-sm text-body-sm font-medium">US - United States (USD $)</span>
+</div>
+<div class="h-3.5 w-px bg-outline-variant hidden sm:block"></div>
+<div class="flex items-center gap-1.5">
+<span class="font-caption text-caption text-secondary uppercase font-semibold">Mapping Version:</span>
+<span class="px-1.5 py-0.5 rounded bg-surface border border-outline-variant font-data-mono-sm text-data-mono-sm text-secondary font-medium">v2.1 Approved by Legal Counsel</span>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<span class="font-caption text-caption text-secondary uppercase font-semibold">Merkle Root Hash:</span>
+<code class="px-2 py-0.5 rounded bg-surface font-data-mono-sm text-data-mono-sm text-on-surface border border-outline-variant select-all">0x8f2d49b109e3c417ba2e01dfb09</code>
+<button class="text-secondary hover:text-primary p-0.5" title="Copy Root Hash" type="button">
+<span class="material-symbols-outlined text-[16px]">content_copy</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Main Canvas: Two-Column Responsive Asymmetry -->
+<div class="p-space-md grid grid-cols-1 lg:grid-cols-12 gap-space-md items-start">
+<!-- Left Column: The 5 Statutory Compliance Figures Grid (R1 - R5) -->
+<div class="lg:col-span-8 flex flex-col gap-space-md">
+<!-- Safe Harbor Status Banner -->
+<div class="rounded bg-surface-container-lowest border-l-4 border-l-tertiary-container border-y border-r border-outline-variant p-space-sm flex items-start gap-space-sm shadow-sm">
+<span class="material-symbols-outlined text-tertiary text-[20px] mt-0.5">verified_user</span>
+<div class="flex-1">
+<div class="flex items-center justify-between">
+<span class="font-section-heading text-section-heading text-tertiary font-bold">Statutory Defense Posture: SUBSTANTIATED &amp; COMPLIANT</span>
+<span class="font-data-mono-sm text-data-mono-sm text-secondary">Engine Validated: 2026-11-01 02:14:09 UTC</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">
+            All invariant tests passed without override. Retail ratio meets or exceeds both FTC 16 CFR § 437 standards and historical administrative settlement benchmarks (&gt; 50.0% nominal, 60.0% targeted).
+          </p>
+</div>
+</div>
+<!-- Statutory Metric Cards Container -->
+<div class="space-y-space-md">
+<!-- R1 Card: Retail Customer Share -->
+<div class="rounded bg-surface-container-lowest border border-outline-variant shadow-sm overflow-hidden">
+<div class="bg-surface-container-low px-space-md py-space-sm border-b border-outline-variant flex items-center justify-between">
+<div class="flex items-center gap-space-xs">
+<span class="px-2 py-0.5 rounded bg-primary text-on-primary font-data-mono-sm text-data-mono-sm font-bold">R1</span>
+<span class="font-section-heading text-section-heading text-on-surface">Retail Customer Share of Net Sales</span>
+<span class="font-caption text-caption text-secondary">(FR-CPL-001)</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="px-2 py-0.5 rounded bg-tertiary-fixed text-on-tertiary-fixed font-caption text-caption font-semibold">BENCHMARK ACHIEVED</span>
+<button class="text-secondary hover:text-primary p-1" type="button">
+<span class="material-symbols-outlined text-[18px]">more_vert</span>
+</button>
+</div>
+</div>
+<div class="p-space-md">
+<div class="grid grid-cols-1 md:grid-cols-12 gap-space-md items-center">
+<div class="md:col-span-5 flex flex-col">
+<div class="flex items-baseline gap-space-sm">
+<span class="font-data-mono-lg text-[36px] font-bold text-tertiary leading-none">68.4%</span>
+<span class="font-body-sm text-body-sm text-secondary font-medium">Net Sales Ratio</span>
+</div>
+<div class="mt-2 flex items-center gap-1.5 text-on-surface-variant font-body-sm text-body-sm">
+<span class="material-symbols-outlined text-[16px] text-tertiary">check_circle</span>
+<span>Statutory minimum &gt;= 50.0% (Optimal target &gt;= 60.0%)</span>
+</div>
+<div class="mt-3 pt-3 border-t border-outline-variant text-secondary font-body-sm text-body-sm">
+                  Analyzed Cohort: <span class="font-data-mono-md text-data-mono-md text-on-surface font-semibold">142,890 orders</span> ($14,180,450.00 Net)
+                </div>
+</div>
+<!-- Visual Segmentation Bar -->
+<div class="md:col-span-7 flex flex-col gap-2">
+<div class="flex justify-between items-center font-caption text-caption text-secondary">
+<span>Net Sales Breakdown</span>
+<span class="font-data-mono-sm text-data-mono-sm">$14.18M total ledger base</span>
+</div>
+<div class="h-6 w-full rounded bg-surface-container flex overflow-hidden border border-outline-variant p-0.5">
+<div class="bg-tertiary-container h-full rounded-sm transition-all" style="width: 68.4%;" title="End Customer: 68.4%"></div>
+<div class="bg-primary-container h-full rounded-sm mx-0.5 transition-all" style="width: 12.8%;" title="Resale Orders: 12.8%"></div>
+<div class="bg-secondary h-full rounded-sm transition-all" style="width: 18.8%;" title="Personal Use: 18.8%"></div>
+</div>
+<div class="grid grid-cols-3 gap-2 mt-1 font-body-sm text-body-sm">
+<div class="flex flex-col">
+<span class="flex items-center gap-1 text-on-surface font-medium">
+<span class="h-2 w-2 rounded-full bg-tertiary-container"></span>Direct End Customer
+                    </span>
+<span class="font-data-mono-sm text-data-mono-sm text-secondary">$9.70M (68.4%)</span>
+</div>
+<div class="flex flex-col">
+<span class="flex items-center gap-1 text-on-surface font-medium">
+<span class="h-2 w-2 rounded-full bg-primary-container"></span>Resale Orders
+                    </span>
+<span class="font-data-mono-sm text-data-mono-sm text-secondary">$1.82M (12.8%)</span>
+</div>
+<div class="flex flex-col">
+<span class="flex items-center gap-1 text-on-surface font-medium">
+<span class="h-2 w-2 rounded-full bg-secondary"></span>Personal Use
+                    </span>
+<span class="font-data-mono-sm text-data-mono-sm text-secondary">$2.66M (18.8%)</span>
+</div>
+</div>
+</div>
+</div>
+<div class="mt-space-md pt-space-sm border-t border-outline-variant flex items-center justify-between text-body-sm">
+<div class="flex items-center gap-2 text-secondary">
+<span class="material-symbols-outlined text-[16px] text-tertiary">trending_up</span>
+<span>Four-period trend: 62.5% (M7) → 64.1% (M8) → 66.8% (M9) → <strong class="text-on-surface">68.4% (M10)</strong></span>
+</div>
+<a class="text-primary hover:underline font-semibold flex items-center gap-1" href="#">
+<span>Inspect 98,420 Customer Orders</span>
+<span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+</a>
+</div>
+</div>
+</div>
+<!-- R2 Card: Personal-Use Share of Rewarded Volume -->
+<div class="rounded bg-surface-container-lowest border border-outline-variant shadow-sm overflow-hidden">
+<div class="bg-surface-container-low px-space-md py-space-sm border-b border-outline-variant flex items-center justify-between">
+<div class="flex items-center gap-space-xs">
+<span class="px-2 py-0.5 rounded bg-primary text-on-primary font-data-mono-sm text-data-mono-sm font-bold">R2</span>
+<span class="font-section-heading text-section-heading text-on-surface">Personal-Use Share of Rewarded Volume</span>
+<span class="font-caption text-caption text-secondary">(FR-CPL-002)</span>
+</div>
+<span class="px-2 py-0.5 rounded bg-tertiary-fixed text-on-tertiary-fixed font-caption text-caption font-semibold">WITHIN LEGAL CEILING</span>
+</div>
+<div class="p-space-md grid grid-cols-1 md:grid-cols-12 gap-space-md items-center">
+<div class="md:col-span-5">
+<div class="flex items-baseline gap-space-sm">
+<span class="font-data-mono-lg text-[36px] font-bold text-on-surface leading-none">21.6%</span>
+<span class="font-body-sm text-body-sm text-secondary font-medium">Commissioned Personal Volume</span>
+</div>
+<div class="mt-2 flex items-center gap-1.5 text-secondary font-body-sm text-body-sm">
+<span class="material-symbols-outlined text-[16px] text-tertiary">check</span>
+<span>Ceiling: &lt; 30.0% safe threshold</span>
+</div>
+<div class="mt-2 text-caption text-caption text-secondary">
+                Population: <span class="font-data-mono-sm text-data-mono-sm text-on-surface">18,420 commissioned payees</span>
+</div>
+</div>
+<div class="md:col-span-7 bg-surface p-space-sm rounded border border-outline-variant">
+<div class="flex items-center justify-between">
+<span class="font-body-sm text-body-sm font-semibold text-error flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[18px]">warning</span>
+                  14 Payees Flagged (&gt;30% personal reward)
+                </span>
+<button class="h-6 px-2 rounded bg-surface-container-highest text-primary font-data-mono-sm text-data-mono-sm font-medium hover:bg-primary hover:text-on-primary transition-colors" type="button">
+                  Review 14 Cases
+                </button>
+</div>
+<p class="font-body-sm text-body-sm text-secondary mt-1">
+                Attribution Method: Source order line-items reconciled directly against freight signature delivery logs and end-customer payment references.
+              </p>
+</div>
+</div>
+</div>
+<!-- R3 Card: Payout Source Mix -->
+<div class="rounded bg-surface-container-lowest border border-outline-variant shadow-sm overflow-hidden">
+<div class="bg-surface-container-low px-space-md py-space-sm border-b border-outline-variant flex items-center justify-between">
+<div class="flex items-center gap-space-xs">
+<span class="px-2 py-0.5 rounded bg-primary text-on-primary font-data-mono-sm text-data-mono-sm font-bold">R3</span>
+<span class="font-section-heading text-section-heading text-on-surface">Payout Source Mix &amp; Non-Recruitment Invariant</span>
+<span class="font-caption text-caption text-secondary">(FR-CPL-003)</span>
+</div>
+<span class="px-2 py-0.5 rounded bg-tertiary-fixed text-on-tertiary-fixed font-caption text-caption font-semibold">0% RECRUITMENT VERIFIED</span>
+</div>
+<div class="p-space-md">
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-space-md">
+<div>
+<span class="font-caption text-caption text-secondary uppercase font-semibold">FTC Anti-Pyramid Defense Mix</span>
+<div class="font-data-mono-lg text-[28px] font-bold text-tertiary">
+                  82.4% Sales-Derived / 0.0% Headcount
+                </div>
+</div>
+<div class="flex items-center gap-space-md bg-surface px-space-sm py-2 rounded border border-outline-variant">
+<div>
+<span class="font-caption text-caption text-secondary block">Net Clawbacks</span>
+<span class="font-data-mono-md text-data-mono-md text-error font-semibold">-$18,420.00</span>
+</div>
+<div class="h-6 w-px bg-outline-variant"></div>
+<div>
+<span class="font-caption text-caption text-secondary block">Guardrail Intercepts</span>
+<span class="font-data-mono-md text-data-mono-md text-on-surface font-semibold">0 Breaches</span>
+</div>
+</div>
+</div>
+<!-- Breakdown Table Matrix -->
+<div class="mt-space-md border border-outline-variant rounded overflow-hidden">
+<table class="w-full text-left font-body-sm text-body-sm">
+<thead class="bg-surface-container font-caption text-caption text-secondary border-b border-outline-variant">
+<tr>
+<th class="py-1.5 px-3">Earning Mechanism</th>
+<th class="py-1.5 px-3">Statutory Classification</th>
+<th class="py-1.5 px-3 text-right">Disbursed Amount</th>
+<th class="py-1.5 px-3 text-right">Share of Payout</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant bg-surface-container-lowest">
+<tr>
+<td class="py-2 px-3 font-medium text-on-surface">Direct Retail Sales Commissions</td>
+<td class="py-2 px-3 text-tertiary font-medium">Bona Fide End Customer</td>
+<td class="py-2 px-3 text-right font-data-mono-sm text-data-mono-sm">$2,410,240.00</td>
+<td class="py-2 px-3 text-right font-data-mono-sm text-data-mono-sm font-semibold">58.2%</td>
+</tr>
+<tr>
+<td class="py-2 px-3 font-medium text-on-surface">Unilevel Team Volume Rebates</td>
+<td class="py-2 px-3 text-tertiary font-medium">Multi-Tier Sales Differential</td>
+<td class="py-2 px-3 text-right font-data-mono-sm text-data-mono-sm">$1,002,150.00</td>
+<td class="py-2 px-3 text-right font-data-mono-sm text-data-mono-sm font-semibold">24.2%</td>
+</tr>
+<tr>
+<td class="py-2 px-3 font-medium text-on-surface">Leadership Generation Bonuses</td>
+<td class="py-2 px-3 text-on-surface-variant">Qualified Leadership Pool</td>
+<td class="py-2 px-3 text-right font-data-mono-sm text-data-mono-sm">$604,600.00</td>
+<td class="py-2 px-3 text-right font-data-mono-sm text-data-mono-sm font-semibold">14.6%</td>
+</tr>
+<tr class="bg-surface-container-low">
+<td class="py-2 px-3 font-medium text-on-surface flex items-center gap-1.5">
+<span>Enrollment / Headcount Bounty</span>
+<span class="px-1 py-0.2 rounded bg-surface border border-outline-variant font-data-mono-sm text-[10px] text-secondary">RULE BR-GRD-01</span>
+</td>
+<td class="py-2 px-3 text-error font-medium">PROHIBITED BY PLATFORM INVARIANT</td>
+<td class="py-2 px-3 text-right font-data-mono-sm text-data-mono-sm text-error font-semibold">$0.00</td>
+<td class="py-2 px-3 text-right font-data-mono-sm text-data-mono-sm text-error font-bold">0.0%</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<!-- R4 & R5 Split Container -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-space-md">
+<!-- R4: Period-End Volume Crossings -->
+<div class="rounded bg-surface-container-lowest border border-outline-variant shadow-sm flex flex-col justify-between">
+<div>
+<div class="bg-surface-container-low px-space-md py-space-sm border-b border-outline-variant flex items-center justify-between">
+<div class="flex items-center gap-space-xs">
+<span class="px-2 py-0.5 rounded bg-primary text-on-primary font-data-mono-sm text-data-mono-sm font-bold">R4</span>
+<span class="font-section-heading text-section-heading text-on-surface">Threshold Crossings</span>
+</div>
+<span class="font-caption text-caption text-secondary">(FR-CPL-004)</span>
+</div>
+<div class="p-space-md space-y-3">
+<div class="flex items-baseline justify-between">
+<span class="font-data-mono-lg text-data-mono-lg font-bold text-on-surface">3.2% Late Crossings</span>
+<span class="px-2 py-0.5 rounded bg-surface-container text-secondary font-caption text-caption font-semibold">LOW RISK</span>
+</div>
+<p class="font-body-sm text-body-sm text-secondary">
+                  Audits artificial month-end volume stuffing and bonus buying patterns to protect compensation legitimacy.
+                </p>
+<div class="space-y-2 pt-2 border-t border-outline-variant">
+<div class="flex items-center justify-between font-body-sm text-body-sm">
+<span class="text-on-surface-variant">Active with Zero Retail Orders</span>
+<span class="font-data-mono-sm text-data-mono-sm font-semibold text-on-surface">184 dist. (1.0%)</span>
+</div>
+<div class="flex items-center justify-between font-body-sm text-body-sm">
+<span class="text-on-surface-variant">Period-End Surge (Final 72h)</span>
+<span class="font-data-mono-sm text-data-mono-sm font-semibold text-on-surface">428 orders</span>
+</div>
+<div class="flex items-center justify-between font-body-sm text-body-sm">
+<span class="text-on-surface-variant">Subsequent 30-Day Reversals</span>
+<span class="font-data-mono-sm text-data-mono-sm font-semibold text-tertiary">9 refunded (2.1%)</span>
+</div>
+</div>
+</div>
+</div>
+<div class="p-space-sm bg-surface-container-low border-t border-outline-variant text-right">
+<a class="text-primary font-body-sm text-body-sm font-semibold hover:underline" href="#">Inspect Crossing Log →</a>
+</div>
+</div>
+<!-- R5: Annualized Earnings Distribution -->
+<div class="rounded bg-surface-container-lowest border border-outline-variant shadow-sm flex flex-col justify-between">
+<div>
+<div class="bg-surface-container-low px-space-md py-space-sm border-b border-outline-variant flex items-center justify-between">
+<div class="flex items-center gap-space-xs">
+<span class="px-2 py-0.5 rounded bg-primary text-on-primary font-data-mono-sm text-data-mono-sm font-bold">R5</span>
+<span class="font-section-heading text-section-heading text-on-surface">Earnings Distribution</span>
+</div>
+<span class="font-caption text-caption text-secondary">(FR-CPL-005)</span>
+</div>
+<div class="p-space-md space-y-3">
+<div>
+<span class="font-caption text-caption text-secondary uppercase font-semibold">Full Cohort Median (Honest Accounting)</span>
+<div class="font-data-mono-lg text-data-mono-lg font-bold text-on-surface">$466.50 / year</div>
+<span class="font-caption text-caption text-secondary">Includes 100% of participants with executed agreement (42,100 total).</span>
+</div>
+<!-- Horizontal Distribution Mini-chart -->
+<div class="space-y-1.5 pt-2 border-t border-outline-variant font-caption text-caption">
+<div class="flex justify-between items-center">
+<span class="text-secondary">$0 Earned</span>
+<span class="font-data-mono-sm text-data-mono-sm font-medium">54.2% (22,818)</span>
+</div>
+<div class="w-full bg-surface-container h-1.5 rounded overflow-hidden">
+<div class="bg-secondary h-full" style="width: 54.2%;"></div>
+</div>
+<div class="flex justify-between items-center">
+<span class="text-secondary">$1 - $500</span>
+<span class="font-data-mono-sm text-data-mono-sm font-medium">28.4% (11,956)</span>
+</div>
+<div class="w-full bg-surface-container h-1.5 rounded overflow-hidden">
+<div class="bg-primary-container h-full" style="width: 28.4%;"></div>
+</div>
+<div class="flex justify-between items-center">
+<span class="text-secondary">$501 - $2,500</span>
+<span class="font-data-mono-sm text-data-mono-sm font-medium">11.2% (4,715)</span>
+</div>
+<div class="w-full bg-surface-container h-1.5 rounded overflow-hidden">
+<div class="bg-primary-container h-full" style="width: 11.2%;"></div>
+</div>
+<div class="flex justify-between items-center">
+<span class="text-secondary">&gt; $2,500</span>
+<span class="font-data-mono-sm text-data-mono-sm font-medium">6.2% (2,611)</span>
+</div>
+<div class="w-full bg-surface-container h-1.5 rounded overflow-hidden">
+<div class="bg-tertiary-container h-full" style="width: 6.2%;"></div>
+</div>
+</div>
+</div>
+</div>
+<div class="p-space-sm bg-surface-container-low border-t border-outline-variant flex items-center justify-between">
+<span class="font-caption text-caption text-secondary">FTC 16 CFR Part 437 Standard</span>
+<a class="text-primary font-body-sm text-body-sm font-semibold hover:underline" href="#">Full Disclosure Table →</a>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Column: Statutory Methodology & Mapping Inspector Drawer (Docked Staff View) -->
+<div class="lg:col-span-4 flex flex-col gap-space-md">
+<!-- Methodology & Trace Inspector -->
+<div class="rounded bg-surface-container-lowest border border-outline-variant shadow-sm overflow-hidden">
+<div class="bg-surface-container-low px-space-md py-space-sm border-b border-outline-variant flex items-center justify-between">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-primary text-[18px]">gavel</span>
+<span class="font-section-heading text-section-heading text-on-surface">Legal Basis &amp; Method</span>
+</div>
+<span class="font-data-mono-sm text-data-mono-sm px-1.5 py-0.5 rounded bg-surface border border-outline-variant text-secondary">FR-CPL-012</span>
+</div>
+<div class="p-space-md space-y-space-md">
+<div>
+<span class="font-caption text-caption uppercase text-secondary font-semibold block mb-1">R1 Net Sales Formula</span>
+<div class="p-space-sm rounded bg-surface font-data-mono-sm text-data-mono-sm text-on-surface border border-outline-variant overflow-x-auto">
+              NetSales = Σ (GrossOrderAmt - Refunds - Chargebacks)<br/>
+              RetailShare = Σ(NetSales WHERE counts_as_end_customer = true) / TotalNetSales
+            </div>
+</div>
+<div>
+<span class="font-caption text-caption uppercase text-secondary font-semibold block mb-1">Active Mapping Version</span>
+<div class="p-space-sm rounded bg-surface-container-low border border-outline-variant space-y-2">
+<div class="flex items-center justify-between">
+<span class="font-body-sm text-body-sm font-semibold text-on-surface">Config Map v2.1</span>
+<span class="font-caption text-caption px-1.5 py-0.5 rounded bg-tertiary-fixed text-on-tertiary-fixed font-semibold">LEGAL SIGN-OFF</span>
+</div>
+<p class="font-caption text-caption text-secondary">
+                Approved by General Counsel (O. Bennett) on 2026-08-15. Replaces v2.0 deprecating speculative distributor auto-ship allowances.
+              </p>
+<div class="pt-2 border-t border-outline-variant flex flex-col gap-1 text-caption text-caption">
+<div class="flex justify-between">
+<span class="text-on-surface-variant">Retail Customer:</span>
+<span class="font-data-mono-sm text-data-mono-sm text-tertiary">End Customer Flag = TRUE</span>
+</div>
+<div class="flex justify-between">
+<span class="text-on-surface-variant">Preferred Customer:</span>
+<span class="font-data-mono-sm text-data-mono-sm text-tertiary">End Customer Flag = TRUE</span>
+</div>
+<div class="flex justify-between">
+<span class="text-on-surface-variant">Distributor Direct Buy:</span>
+<span class="font-data-mono-sm text-data-mono-sm text-error">End Customer Flag = FALSE</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Cryptographic Seal Details -->
+<div class="space-y-1.5">
+<span class="font-caption text-caption uppercase text-secondary font-semibold block">Snapshot Verification Trail</span>
+<div class="p-space-sm rounded bg-surface border border-outline-variant space-y-1.5 text-body-sm">
+<div class="flex justify-between items-center">
+<span class="text-secondary text-caption">Signature 1:</span>
+<span class="font-data-mono-sm text-data-mono-sm text-on-surface">E. Rostova (Analyst)</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="text-secondary text-caption">Signature 2:</span>
+<span class="font-data-mono-sm text-data-mono-sm text-on-surface">M. Sterling (Compliance Dir)</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="text-secondary text-caption">Timestamp:</span>
+<span class="font-data-mono-sm text-data-mono-sm text-on-surface">2026-11-01T04:12:00Z</span>
+</div>
+<div class="flex justify-between items-center pt-1 border-t border-outline-variant">
+<span class="text-secondary text-caption">Tamper Check:</span>
+<span class="text-tertiary font-semibold flex items-center gap-1 font-caption">
+<span class="material-symbols-outlined text-[14px]">lock</span>
+                  0 Mutated Records
+                </span>
+</div>
+</div>
+</div>
+<div class="pt-2">
+<button class="w-full h-10 px-space-md rounded bg-surface border border-primary text-primary hover:bg-surface-container font-body-sm text-body-sm font-semibold flex items-center justify-center gap-2 transition-colors" type="button">
+<span class="material-symbols-outlined text-[18px]">account_tree</span>
+<span>Open Figure Drill-Down (SC-26)</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Quick Regulatory Reference Document Box -->
+<div class="rounded bg-surface-container-lowest border border-outline-variant shadow-sm p-space-md">
+<div class="flex items-center gap-2 mb-2">
+<span class="material-symbols-outlined text-secondary text-[20px]">description</span>
+<span class="font-section-heading text-section-heading text-on-surface">Statutory Defense Binder</span>
+</div>
+<p class="font-body-sm text-body-sm text-secondary mb-3">
+          Download certified single-file evidence bundle formatted for direct presentation in FTC, SEC, or State Attorney General inquiries.
+        </p>
+<div class="space-y-2">
+<a class="flex items-center justify-between p-2 rounded bg-surface hover:bg-surface-container border border-outline-variant text-body-sm text-on-surface transition-colors" href="#">
+<span class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-primary">picture_as_pdf</span>
+<span>2026-M10 Statutory Defense.pdf</span>
+</span>
+<span class="font-data-mono-sm text-data-mono-sm text-secondary">3.8 MB</span>
+</a>
+<a class="flex items-center justify-between p-2 rounded bg-surface hover:bg-surface-container border border-outline-variant text-body-sm text-on-surface transition-colors" href="#">
+<span class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-primary">data_table</span>
+<span>Raw Line-Item Settlement.parquet</span>
+</span>
+<span class="font-data-mono-sm text-data-mono-sm text-secondary">42.1 MB</span>
+</a>
+</div>
+</div>
+</div>
+</div>
+<!-- Regulatory Footer Note -->
+<div class="px-space-md py-space-sm border-t border-outline-variant bg-surface-container-low text-center">
+<p class="font-caption text-caption text-secondary max-w-4xl mx-auto">
+      AuditLedger Statutory Compliance Engine • Compliant with FTC 16 CFR Part 437, Koscot Interplanetary Invariant Doctrine, and Omnitrition Safe Harbor tests. Snapshots are cryptographically sealed in WORM (Write Once Read Many) persistent storage.
+    </p>
+</div>
+</div></main></div></body></html>

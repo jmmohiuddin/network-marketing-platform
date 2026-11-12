@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+
+<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_dashboard" name="shell-type"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "on-tertiary": "#ffffff", "secondary-container": "#dae2fd", "on-primary": "#ffffff", "background": "#f8f9ff", "surface-container-lowest": "#ffffff", "on-error": "#ffffff", "secondary": "#565e74", "tertiary-container": "#0d5f36", "surface-dim": "#ccdbf3", "tertiary-fixed-dim": "#8cd7a3", "on-background": "#0d1c2e", "outline-variant": "#c3c6d3", "on-tertiary-fixed-variant": "#00522d", "on-secondary-fixed": "#131b2e", "primary": "#003883", "error": "#ba1a1a", "primary-fixed": "#d9e2ff", "on-surface": "#0d1c2e", "on-error-container": "#93000a", "surface-bright": "#f8f9ff", "surface-variant": "#d5e3fc", "inverse-primary": "#afc6ff", "surface-container-low": "#eff4ff", "outline": "#737783", "inverse-surface": "#233144", "inverse-on-surface": "#eaf1ff", "on-secondary-fixed-variant": "#3f465c", "surface-container": "#e6eeff", "primary-container": "#1e4fa3", "on-secondary": "#ffffff", "on-primary-fixed": "#001944", "error-container": "#ffdad6", "surface-tint": "#2e5bb0", "secondary-fixed": "#dae2fd", "tertiary-fixed": "#a7f3be", "surface": "#f8f9ff", "on-secondary-container": "#5c647a", "on-tertiary-fixed": "#00210f", "secondary-fixed-dim": "#bec6e0", "on-primary-fixed-variant": "#074397", "surface-container-highest": "#d5e3fc", "tertiary": "#004525", "on-surface-variant": "#434752", "primary-fixed-dim": "#afc6ff", "on-tertiary-container": "#8cd7a3", "on-primary-container": "#afc6ff", "surface-container-high": "#dce9ff" }, "borderRadius": { "DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem" }, "spacing": { "gutter": "1.5rem", "space-sm": "0.5rem", "space-2xl": "3rem", "space-xxs": "0.125rem", "margin-mobile": "1rem", "space-lg": "1.5rem", "gutter-compact": "0.75rem", "space-xs": "0.25rem", "margin": "1.5rem", "space-md": "1rem", "space-xl": "2rem" }, "fontFamily": { "body-lg": [ "Inter" ], "title-lg-mobile": [ "Inter" ], "display-mobile": [ "Inter" ], "body-md": [ "Inter" ], "title-md": [ "Inter" ], "data-mono-sm": [ "JetBrains Mono" ], "data-mono-lg": [ "JetBrains Mono" ], "section-heading": [ "Inter" ], "caption": [ "Inter" ], "display": [ "Inter" ], "title-lg": [ "Inter" ], "data-mono-md": [ "JetBrains Mono" ], "body-sm": [ "Inter" ] }, "fontSize": { "body-lg": [ "16px", { "lineHeight": "24px", "letterSpacing": "0em", "fontWeight": "400" } ], "title-lg-mobile": [ "20px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600" } ], "display-mobile": [ "26px", { "lineHeight": "32px", "letterSpacing": "-0.015em", "fontWeight": "600" } ], "body-md": [ "14px", { "lineHeight": "20px", "letterSpacing": "0em", "fontWeight": "400" } ], "title-md": [ "20px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600" } ], "data-mono-sm": [ "12px", { "lineHeight": "16px", "letterSpacing": "0em", "fontWeight": "500" } ], "data-mono-lg": [ "24px", { "lineHeight": "32px", "letterSpacing": "-0.02em", "fontWeight": "600" } ], "section-heading": [ "16px", { "lineHeight": "24px", "letterSpacing": "-0.005em", "fontWeight": "600" } ], "caption": [ "12px", { "lineHeight": "16px", "letterSpacing": "0.01em", "fontWeight": "500" } ], "display": [ "32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "600" } ], "title-lg": [ "24px", { "lineHeight": "32px", "letterSpacing": "-0.015em", "fontWeight": "600" } ], "data-mono-md": [ "14px", { "lineHeight": "20px", "letterSpacing": "-0.01em", "fontWeight": "500" } ], "body-sm": [ "13px", { "lineHeight": "18px", "letterSpacing": "0.005em", "fontWeight": "400" } ] } } } };</script></head><body class="bg-background font-body-md text-on-surface antialiased"><header class="fixed top-0 left-0 right-0 h-12 bg-surface-container-lowest border-b border-outline-variant z-50 flex items-center justify-between px-space-md select-none"><div class="flex items-center gap-space-sm"><img alt="Platform Integrity Logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/ALJJyrB5eRWQNX9M_eeC454eoT79IyJIWf2apWVApZfrYBVB2P3A94kIQBFZHifsaOQy_VoAxmgBKB1311sAY-hR--ULW9hEdvY1wTCws4v-3fDyxMTP842fJ_9HmJkVilWCVfwB2CZ99Njwo0zcjFd2fwdFdY4Tlnwy0f29IOF6zgYm7iwPhYOQsz0ME3S-1aejy28KO2FJjy828FssZQ8lq8YUlEqN1nESu3IEEUwMuNo"/><span class="font-section-heading text-section-heading text-primary font-bold tracking-tight">AuditLedger</span><div class="h-4 w-px bg-outline-variant mx-space-xs"></div><div class="flex items-center gap-space-xs px-space-xs py-space-xxs rounded bg-surface-container-low border border-outline-variant hover:border-outline cursor-pointer"><span class="font-body-sm text-body-sm text-on-surface font-medium">Acrobex Global</span><span class="font-data-mono-sm text-data-mono-sm text-secondary">(TEN-842)</span><span class="material-symbols-outlined text-[16px] text-secondary">arrow_drop_down</span></div><div class="flex items-center gap-space-xs px-space-xs py-space-xxs rounded bg-surface-container-low border border-outline-variant hover:border-outline cursor-pointer"><span class="h-2 w-2 rounded-full bg-tertiary-container"></span><span class="font-body-sm text-body-sm text-on-surface">US - United States (USD $)</span><span class="material-symbols-outlined text-[16px] text-secondary">expand_more</span></div></div><div class="flex-1 max-w-xl mx-space-lg"><div class="relative flex items-center w-full"><span class="material-symbols-outlined absolute left-2.5 text-outline text-[18px]">search</span><input class="w-full h-8 pl-8 pr-12 rounded bg-surface border border-outline-variant font-body-sm text-body-sm text-on-surface placeholder:text-outline focus:border-primary focus:outline-none transition-colors" placeholder="/ or Ctrl+K to search people, orders, cases, statements..." type="text"/><div class="absolute right-2 px-1.5 py-0.5 rounded bg-surface-container border border-outline-variant font-data-mono-sm text-data-mono-sm text-secondary">⌘K</div></div></div><div class="flex items-center gap-space-md"><button class="relative p-1 text-secondary hover:text-on-surface hover:bg-surface-container rounded transition-colors" title="Notifications" type="button"><span class="material-symbols-outlined text-[20px]">notifications</span><span class="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-error text-on-error font-data-mono-sm text-data-mono-sm leading-none flex items-center justify-center">3</span></button><button class="flex items-center gap-space-xs p-1 text-secondary hover:text-on-surface hover:bg-surface-container rounded transition-colors" title="Help &amp; Regulatory Glossary" type="button"><span class="material-symbols-outlined text-[20px]">menu_book</span><span class="font-body-sm text-body-sm">Glossary</span></button><div class="h-4 w-px bg-outline-variant"></div><div class="flex items-center gap-space-sm pl-space-xs"><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div><div class="flex flex-col text-left leading-tight hidden lg:flex"><span class="font-body-sm text-body-sm text-on-surface font-semibold">Elena Rostova</span><span class="font-caption text-caption text-secondary font-medium">Lead Commission Analyst</span></div><button class="p-1 text-secondary hover:text-error hover:bg-error-container rounded transition-colors" title="Sign out" type="button"><span class="material-symbols-outlined text-[18px]">logout</span></button></div></div></header><aside class="fixed left-0 top-12 bottom-0 w-52 bg-surface-container-lowest border-r border-outline-variant z-40 flex flex-col justify-between overflow-y-auto"><div class="py-space-sm px-space-xs"><nav class="space-y-space-xxs" data-active-classes="bg-primary-container text-on-primary font-semibold"><a class="flex items-center gap-space-sm px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-body-sm text-body-sm transition-colors" data-path="overview" href="#"><span class="material-symbols-outlined text-[18px]">dashboard</span><span>Overview</span></a><a class="flex items-center gap-space-sm px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-body-sm text-body-sm transition-colors" data-path="periods-runs" href="#"><span class="material-symbols-outlined text-[18px]">history_toggle_off</span><span>Periods &amp; Runs</span></a><a class="flex items-center gap-space-sm px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-body-sm text-body-sm transition-colors" data-path="compensation-plans" href="#"><span class="material-symbols-outlined text-[18px]">schema</span><span>Compensation Plans</span></a><a class="flex items-center gap-space-sm px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-body-sm text-body-sm transition-colors" data-path="people-tree" href="#"><span class="material-symbols-outlined text-[18px]">account_tree</span><span>People &amp; Tree</span></a><a class="flex items-center gap-space-sm px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-body-sm text-body-sm transition-colors" data-path="orders-returns" href="#"><span class="material-symbols-outlined text-[18px]">receipt_long</span><span>Orders &amp; Returns</span></a><a class="flex items-center gap-space-sm px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-body-sm text-body-sm transition-colors" data-path="cases-exceptions" href="#"><span class="material-symbols-outlined text-[18px]">rule_folder</span><span>Cases &amp; Exceptions</span></a><a class="flex items-center gap-space-sm px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-body-sm text-body-sm transition-colors" data-path="payouts" href="#"><span class="material-symbols-outlined text-[18px]">payments</span><span>Payouts</span></a><a class="flex items-center gap-space-sm px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-body-sm text-body-sm transition-colors" data-path="finance-ledger" href="#"><span class="material-symbols-outlined text-[18px]">account_balance</span><span>Finance &amp; Ledger</span></a><a class="flex items-center gap-space-sm px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-body-sm text-body-sm transition-colors" data-path="compliance-reports" href="#"><span class="material-symbols-outlined text-[18px]">verified_user</span><span>Compliance Reports</span></a><a class="flex items-center gap-space-sm px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-body-sm text-body-sm transition-colors" data-path="data-imports-migration" href="#"><span class="material-symbols-outlined text-[18px]">sync_alt</span><span>Data Imports</span></a><a class="flex items-center gap-space-sm px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-body-sm text-body-sm transition-colors" data-path="settings-audit" href="#"><span class="material-symbols-outlined text-[18px]">tune</span><span>Settings &amp; Audit</span></a></nav></div><div class="p-space-sm border-t border-outline-variant bg-surface-container-low"><div class="font-data-mono-sm text-data-mono-sm text-secondary space-y-1"><div class="flex items-center justify-between"><span>Cell</span><span class="text-on-surface font-semibold">US-EAST-1</span></div><div class="flex items-center justify-between"><span>Version</span><span class="text-on-surface">v2.4.1</span></div><div class="pt-1 border-t border-outline-variant flex items-center justify-between"><span class="text-outline">Engine</span><span class="text-tertiary font-semibold">2026.11</span></div></div></div></aside><div class="pl-52"><main class="w-full pt-12 bg-background min-h-screen"><div class="max-w-[1440px] mx-auto px-space-md py-space-sm"><div class="flex flex-col w-full pb-24">
+<!-- TOP BANNER: INVARIANT & STATUS ALERT -->
+<div class="w-full bg-surface-container-lowest p-space-md mb-space-md rounded-lg shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-space-md">
+<div class="flex flex-col gap-space-xs max-w-4xl">
+<div class="flex flex-wrap items-center gap-space-sm">
+<span class="font-section-heading text-section-heading text-on-surface tracking-tight font-bold">Run Review — Period 2026-M10 (October 2026 Close)</span>
+<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-primary-fixed text-primary font-caption text-caption uppercase tracking-wider font-semibold">
+<span class="h-1.5 w-1.5 rounded-full bg-primary animate-pulse"></span>
+          Calculated (Run #1042-3)
+        </span>
+<span class="font-data-mono-sm text-data-mono-sm text-secondary bg-surface-container px-2 py-0.5 rounded">
+          HASH: c88b71d-prod
+        </span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
+        October 2026 monthly commission run calculated on Nov 1, 2026 02:14 UTC. Gross payout <strong class="text-on-surface font-semibold font-data-mono-sm">$4,812,490.50</strong> across 18,420 payees (+4.2% variance vs September). Pending second-person approval.
+      </p>
+</div>
+<!-- Title Action Buttons -->
+<div class="flex items-center flex-wrap gap-space-xs self-stretch md:self-auto justify-end">
+<button class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded bg-surface-container-low hover:bg-surface-container text-on-surface font-body-sm text-body-sm transition-colors shadow-sm" type="button">
+<span class="material-symbols-outlined text-[16px] text-secondary">download</span>
+<span>Export Run Audit (.CSV)</span>
+</button>
+<button class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded bg-surface-container-low hover:bg-surface-container text-on-surface font-body-sm text-body-sm transition-colors shadow-sm" type="button">
+<span class="material-symbols-outlined text-[16px] text-secondary">replay</span>
+<span>Replay Historical Run</span>
+</button>
+<button class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded bg-surface-container hover:bg-surface-container-high text-on-surface font-body-sm text-body-sm transition-colors shadow-sm" type="button">
+<span class="material-symbols-outlined text-[16px] text-primary">restart_alt</span>
+<span class="font-medium">Recalculate Run</span>
+</button>
+</div>
+</div>
+<!-- KPI SUMMARY TILES (ROW OF 4) -->
+<div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-space-md mb-space-md">
+<!-- Metric 1: Gross Payout Expense -->
+<div class="bg-surface-container-lowest p-space-md rounded-lg shadow-sm flex flex-col justify-between relative overflow-hidden">
+<div class="flex items-center justify-between text-secondary mb-space-xs">
+<span class="font-caption text-caption uppercase tracking-wider font-semibold">Gross Payout Expense</span>
+<span class="material-symbols-outlined text-[18px]">account_balance_wallet</span>
+</div>
+<div class="flex flex-col gap-1">
+<div class="font-data-mono-lg text-data-mono-lg text-on-surface tracking-tight font-bold">$4,812,490.50</div>
+<div class="flex items-center gap-1.5 font-body-sm text-body-sm">
+<span class="inline-flex items-center text-tertiary-container font-medium font-data-mono-sm">
+<span class="material-symbols-outlined text-[14px]">arrow_upward</span>
+            +$194,320.10 (+4.2%)
+          </span>
+<span class="text-secondary text-[11px]">vs prior run</span>
+</div>
+</div>
+<div class="mt-space-sm pt-space-xs flex items-center justify-between text-secondary font-caption text-caption bg-surface-container-low px-2 py-1 rounded">
+<span>Ledger tie-out:</span>
+<span class="text-tertiary font-semibold flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]">check_circle</span>
+          100% Reconciled
+        </span>
+</div>
+</div>
+<!-- Metric 2: Active Commissioned Payees -->
+<div class="bg-surface-container-lowest p-space-md rounded-lg shadow-sm flex flex-col justify-between">
+<div class="flex items-center justify-between text-secondary mb-space-xs">
+<span class="font-caption text-caption uppercase tracking-wider font-semibold">Commissioned Payees</span>
+<span class="material-symbols-outlined text-[18px]">groups</span>
+</div>
+<div class="flex flex-col gap-1">
+<div class="font-data-mono-lg text-data-mono-lg text-on-surface tracking-tight font-bold">18,420 <span class="font-body-md text-body-md font-normal text-secondary">payees</span></div>
+<div class="flex items-center gap-1.5 font-body-sm text-body-sm">
+<span class="inline-flex items-center text-tertiary-container font-medium font-data-mono-sm">
+<span class="material-symbols-outlined text-[14px]">trending_up</span>
+            +312 new earners
+          </span>
+<span class="text-secondary text-[11px]">active net</span>
+</div>
+</div>
+<div class="mt-space-sm pt-space-xs flex items-center justify-between text-secondary font-caption text-caption bg-surface-container-low px-2 py-1 rounded">
+<span>Met threshold: <strong class="text-on-surface font-semibold font-data-mono-sm">17,890</strong></span>
+<span>Held &lt;$25: <strong class="text-secondary font-semibold font-data-mono-sm">530</strong></span>
+</div>
+</div>
+<!-- Metric 3: Total Line Items & Volume -->
+<div class="bg-surface-container-lowest p-space-md rounded-lg shadow-sm flex flex-col justify-between">
+<div class="flex items-center justify-between text-secondary mb-space-xs">
+<span class="font-caption text-caption uppercase tracking-wider font-semibold">Calculation Volume &amp; Yield</span>
+<span class="material-symbols-outlined text-[18px]">reorder</span>
+</div>
+<div class="flex flex-col gap-1">
+<div class="font-data-mono-lg text-data-mono-lg text-on-surface tracking-tight font-bold">142,890 <span class="font-body-md text-body-md font-normal text-secondary">lines</span></div>
+<div class="flex items-center gap-1.5 font-body-sm text-body-sm">
+<span class="text-on-surface font-medium font-data-mono-sm">$14,180,400.00</span>
+<span class="text-secondary text-[11px]">CV base</span>
+</div>
+</div>
+<div class="mt-space-sm pt-space-xs flex items-center justify-between text-secondary font-caption text-caption bg-surface-container-low px-2 py-1 rounded">
+<span>Payout / Net Sales:</span>
+<span class="text-primary font-bold font-data-mono-sm">33.94%</span>
+</div>
+</div>
+<!-- Metric 4: Exceptions & Alerts -->
+<div class="bg-surface-container-lowest p-space-md rounded-lg shadow-sm flex flex-col justify-between bg-gradient-to-br from-surface-container-lowest to-error-container/20">
+<div class="flex items-center justify-between text-error mb-space-xs">
+<span class="font-caption text-caption uppercase tracking-wider font-semibold flex items-center gap-1 text-on-surface">
+<span class="material-symbols-outlined text-[16px] text-error">priority_high</span>
+          Exceptions &amp; Invariants
+        </span>
+<span class="px-1.5 py-0.5 rounded bg-error text-on-error font-data-mono-sm text-data-mono-sm font-semibold">4 Actionable</span>
+</div>
+<div class="flex flex-col gap-1">
+<div class="font-data-mono-lg text-data-mono-lg text-error tracking-tight font-bold">4 Awaiting Sign-off</div>
+<div class="flex items-center gap-2 font-body-sm text-body-sm text-secondary">
+<span>1 cap scale</span>
+<span>·</span>
+<span>2 reversals</span>
+<span>·</span>
+<span>1 clawback</span>
+</div>
+</div>
+<div class="mt-space-sm pt-space-xs flex items-center justify-between font-caption text-caption bg-surface-container-low px-2 py-1 rounded text-on-surface">
+<span>Invariant integrity status:</span>
+<span class="text-error font-semibold flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]">pending</span>
+          Requires Review
+        </span>
+</div>
+</div>
+</div>
+<!-- PEER VIEWS TAB BAR -->
+<div class="flex items-center justify-between bg-surface-container-lowest px-space-md py-1.5 rounded-t-lg shadow-sm">
+<div class="flex items-center gap-space-xs overflow-x-auto">
+<button class="px-3 py-2 font-body-sm text-body-sm font-semibold text-primary bg-surface-container rounded transition-colors whitespace-nowrap flex items-center gap-1.5" type="button">
+<span class="material-symbols-outlined text-[16px]">pie_chart</span>
+<span>Variance &amp; Bonus Breakdown</span>
+</button>
+<button class="px-3 py-2 font-body-sm text-body-sm text-secondary hover:text-on-surface hover:bg-surface-container-low rounded transition-colors whitespace-nowrap flex items-center gap-1.5" type="button">
+<span class="material-symbols-outlined text-[16px]">trending_up</span>
+<span>Top Payee Movers (25)</span>
+</button>
+<button class="px-3 py-2 font-body-sm text-body-sm text-secondary hover:text-on-surface hover:bg-surface-container-low rounded transition-colors whitespace-nowrap flex items-center gap-1.5" type="button">
+<span class="material-symbols-outlined text-[16px] text-error">warning</span>
+<span>Exceptions &amp; Invariants (4)</span>
+</button>
+<button class="px-3 py-2 font-body-sm text-body-sm text-secondary hover:text-on-surface hover:bg-surface-container-low rounded transition-colors whitespace-nowrap flex items-center gap-1.5" type="button">
+<span class="material-symbols-outlined text-[16px]">device_hub</span>
+<span>Line Item Provenance Trace</span>
+</button>
+<button class="px-3 py-2 font-body-sm text-body-sm text-secondary hover:text-on-surface hover:bg-surface-container-low rounded transition-colors whitespace-nowrap flex items-center gap-1.5" type="button">
+<span class="material-symbols-outlined text-[16px]">difference</span>
+<span>Input Snapshot &amp; Diff</span>
+</button>
+</div>
+<div class="hidden lg:flex items-center gap-2 text-secondary font-caption text-caption">
+<span>Rule Engine: <strong>v2026.11</strong></span>
+<span>•</span>
+<span>Snapshot: <strong>20261101-0214-G7</strong></span>
+</div>
+</div>
+<!-- MAIN TWO-COLUMN WORKSPACE (65% TABLE / 35% INSPECTION TRACE DRAWER) -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-space-md mt-space-xs">
+<!-- LEFT COLUMN: BONUS BREAKDOWN TABLE & EXCEPTION CHECKLIST (65%) -->
+<div class="lg:col-span-8 flex flex-col gap-space-md">
+<!-- Table Filter Bar & Controls -->
+<div class="bg-surface-container-lowest p-space-md rounded-lg shadow-sm flex flex-col gap-space-sm">
+<div class="flex flex-wrap items-center justify-between gap-space-sm">
+<div class="flex items-center flex-wrap gap-space-xs">
+<!-- Category Filter -->
+<div class="relative">
+<select class="h-8 pl-2.5 pr-8 bg-surface-container-low text-on-surface font-body-sm text-body-sm rounded cursor-pointer appearance-none focus:outline-none focus:ring-1 focus:ring-primary">
+<option>All Bonus Mechanisms (7)</option>
+<option>Direct Profit &amp; Retail</option>
+<option>Unilevel &amp; Matrix</option>
+<option>Generational Pools</option>
+<option>Caps &amp; Clawbacks</option>
+</select>
+<span class="material-symbols-outlined absolute right-2 top-2 text-[16px] text-secondary pointer-events-none">expand_more</span>
+</div>
+<!-- Min Variance Filter -->
+<div class="relative">
+<select class="h-8 pl-2.5 pr-8 bg-surface-container-low text-on-surface font-body-sm text-body-sm rounded cursor-pointer appearance-none focus:outline-none focus:ring-1 focus:ring-primary">
+<option>Variance Threshold: All (&gt; 0.0%)</option>
+<option>Variance &gt; ±5.0%</option>
+<option>Variance &gt; ±10.0%</option>
+<option>Negative Deltas Only</option>
+</select>
+<span class="material-symbols-outlined absolute right-2 top-2 text-[16px] text-secondary pointer-events-none">expand_more</span>
+</div>
+<!-- Search Payee ID -->
+<div class="relative w-48 sm:w-56">
+<span class="material-symbols-outlined absolute left-2 top-2 text-[16px] text-outline">search</span>
+<input class="w-full h-8 pl-7 pr-2.5 rounded bg-surface-container-low font-body-sm text-body-sm text-on-surface placeholder:text-outline focus:outline-none focus:ring-1 focus:ring-primary" placeholder="Filter rule or payee..." type="text"/>
+</div>
+</div>
+<!-- Density Toggle & Summary Pill -->
+<div class="flex items-center gap-space-xs">
+<span class="font-caption text-caption text-secondary hidden sm:inline">Density:</span>
+<div class="inline-flex p-0.5 rounded bg-surface-container-low">
+<button class="px-2 py-0.5 rounded font-caption text-caption font-semibold bg-surface-container-lowest text-on-surface shadow-sm" type="button">Compact</button>
+<button class="px-2 py-0.5 rounded font-caption text-caption text-secondary hover:text-on-surface" type="button">Standard</button>
+</div>
+</div>
+</div>
+<div class="p-2 rounded bg-surface-container-low flex items-center justify-between text-body-sm font-body-sm text-on-surface-variant">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-primary">info</span>
+<span>Multi-pass sequence verified (Pass 1 through Pass 5 deterministic execution).</span>
+</div>
+<span class="font-caption text-caption text-secondary font-data-mono-sm">Execution time: 42.18s</span>
+</div>
+<!-- Bonus Variance Data Table -->
+<div class="overflow-x-auto rounded">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container text-secondary font-caption text-caption uppercase tracking-wider select-none">
+<th class="py-2.5 px-3 font-semibold">Bonus Mechanism</th>
+<th class="py-2.5 px-2 font-semibold text-center w-16">Pass</th>
+<th class="py-2.5 px-3 font-semibold text-right">Prior (M09)</th>
+<th class="py-2.5 px-3 font-semibold text-right">Current (M10)</th>
+<th class="py-2.5 px-3 font-semibold text-right">Delta ($)</th>
+<th class="py-2.5 px-3 font-semibold text-right">Delta (%)</th>
+<th class="py-2.5 px-3 font-semibold">Status / Invariant</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-surface-container font-body-sm text-body-sm">
+<!-- Row 1 -->
+<tr class="hover:bg-surface-container-low/60 cursor-pointer transition-colors">
+<td class="py-2 px-3 font-medium text-on-surface flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px] text-secondary">storefront</span>
+<span>Retail Customer Profit (Direct)</span>
+</td>
+<td class="py-2 px-2 text-center font-data-mono-sm text-secondary">P-1</td>
+<td class="py-2 px-3 text-right font-data-mono-sm text-secondary">$840,210.00</td>
+<td class="py-2 px-3 text-right font-data-mono-sm font-medium text-on-surface">$864,150.00</td>
+<td class="py-2 px-3 text-right font-data-mono-sm text-tertiary-container font-medium">+$23,940.00</td>
+<td class="py-2 px-3 text-right font-data-mono-sm text-tertiary-container font-medium">+2.85%</td>
+<td class="py-2 px-3">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-tertiary-fixed-dim/40 text-tertiary font-caption text-caption font-semibold">
+<span class="h-1.5 w-1.5 rounded-full bg-tertiary"></span>
+                    Verified Normal
+                  </span>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-surface-container-low/60 cursor-pointer transition-colors">
+<td class="py-2 px-3 font-medium text-on-surface flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px] text-secondary">account_tree</span>
+<span>Unilevel Volume Bonus (5 Levels)</span>
+</td>
+<td class="py-2 px-2 text-center font-data-mono-sm text-secondary">P-2</td>
+<td class="py-2 px-3 text-right font-data-mono-sm text-secondary">$1,620,400.00</td>
+<td class="py-2 px-3 text-right font-data-mono-sm font-medium text-on-surface">$1,655,890.00</td>
+<td class="py-2 px-3 text-right font-data-mono-sm text-tertiary-container font-medium">+$35,490.00</td>
+<td class="py-2 px-3 text-right font-data-mono-sm text-tertiary-container font-medium">+2.19%</td>
+<td class="py-2 px-3">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-tertiary-fixed-dim/40 text-tertiary font-caption text-caption font-semibold">
+<span class="h-1.5 w-1.5 rounded-full bg-tertiary"></span>
+                    Verified Normal
+                  </span>
+</td>
+</tr>
+<!-- Row 3: ACTIVE SELECTION -->
+<tr class="bg-primary-container/10 hover:bg-primary-container/20 cursor-pointer transition-colors">
+<td class="py-2 px-3 font-semibold text-primary flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px] text-primary">military_tech</span>
+<span>Leadership Generation Bonus</span>
+<span class="material-symbols-outlined text-[14px] text-primary" title="Inspecting in right panel">arrow_right_alt</span>
+</td>
+<td class="py-2 px-2 text-center font-data-mono-sm font-semibold text-primary">P-3</td>
+<td class="py-2 px-3 text-right font-data-mono-sm text-secondary">$1,340,000.00</td>
+<td class="py-2 px-3 text-right font-data-mono-sm font-bold text-on-surface">$1,452,450.00</td>
+<td class="py-2 px-3 text-right font-data-mono-sm text-primary font-bold">+$112,450.00</td>
+<td class="py-2 px-3 text-right font-data-mono-sm text-primary font-bold">+8.39%</td>
+<td class="py-2 px-3">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-secondary-container text-on-secondary-fixed-variant font-caption text-caption font-bold">
+<span class="material-symbols-outlined text-[12px]">visibility</span>
+                    Flagged (Movers)
+                  </span>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="hover:bg-surface-container-low/60 cursor-pointer transition-colors">
+<td class="py-2 px-3 font-medium text-on-surface flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px] text-secondary">public</span>
+<span>Global Leadership Bonus Pool (3%)</span>
+</td>
+<td class="py-2 px-2 text-center font-data-mono-sm text-secondary">P-4</td>
+<td class="py-2 px-3 text-right font-data-mono-sm text-secondary">$425,412.00</td>
+<td class="py-2 px-3 text-right font-data-mono-sm font-medium text-on-surface">$425,412.00</td>
+<td class="py-2 px-3 text-right font-data-mono-sm text-secondary">$0.00</td>
+<td class="py-2 px-3 text-right font-data-mono-sm text-secondary">0.00%</td>
+<td class="py-2 px-3">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-surface-container text-secondary font-caption text-caption font-semibold">
+                    Allocated (66 shares)
+                  </span>
+</td>
+</tr>
+<!-- Row 5 -->
+<tr class="hover:bg-surface-container-low/60 cursor-pointer transition-colors">
+<td class="py-2 px-3 font-medium text-on-surface flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px] text-secondary">bolt</span>
+<span>Fast Start Enrolment Bonus</span>
+</td>
+<td class="py-2 px-2 text-center font-data-mono-sm text-secondary">P-2</td>
+<td class="py-2 px-3 text-right font-data-mono-sm text-secondary">$384,100.00</td>
+<td class="py-2 px-3 text-right font-data-mono-sm font-medium text-on-surface">$362,800.00</td>
+<td class="py-2 px-3 text-right font-data-mono-sm text-error font-medium">-$21,300.00</td>
+<td class="py-2 px-3 text-right font-data-mono-sm text-error font-medium">-5.54%</td>
+<td class="py-2 px-3">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-tertiary-fixed-dim/40 text-tertiary font-caption text-caption font-semibold">
+<span class="h-1.5 w-1.5 rounded-full bg-tertiary"></span>
+                    Verified Normal
+                  </span>
+</td>
+</tr>
+<!-- Row 6 -->
+<tr class="hover:bg-surface-container-low/60 cursor-pointer transition-colors">
+<td class="py-2 px-3 font-medium text-on-surface flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px] text-secondary">tune</span>
+<span>Company Scoped Cap Adjustment (BR-CAP-01)</span>
+</td>
+<td class="py-2 px-2 text-center font-data-mono-sm text-secondary">P-5</td>
+<td class="py-2 px-3 text-right font-data-mono-sm text-secondary">-$45,120.00</td>
+<td class="py-2 px-3 text-right font-data-mono-sm font-medium text-error">-$52,180.00</td>
+<td class="py-2 px-3 text-right font-data-mono-sm text-error font-medium">-$7,060.00</td>
+<td class="py-2 px-3 text-right font-data-mono-sm text-error font-medium">+15.6%</td>
+<td class="py-2 px-3">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-error-container text-on-error-container font-caption text-caption font-semibold">
+<span class="material-symbols-outlined text-[12px]">balance</span>
+                    Cap Applied (12 scaled)
+                  </span>
+</td>
+</tr>
+<!-- Row 7 -->
+<tr class="hover:bg-surface-container-low/60 cursor-pointer transition-colors">
+<td class="py-2 px-3 font-medium text-on-surface flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px] text-secondary">receipt</span>
+<span>Late Transaction Netting &amp; Adjustments</span>
+</td>
+<td class="py-2 px-2 text-center font-data-mono-sm text-secondary">P-5</td>
+<td class="py-2 px-3 text-right font-data-mono-sm text-secondary">$12,490.00</td>
+<td class="py-2 px-3 text-right font-data-mono-sm font-medium text-on-surface">$14,840.50</td>
+<td class="py-2 px-3 text-right font-data-mono-sm text-tertiary-container font-medium">+$2,350.50</td>
+<td class="py-2 px-3 text-right font-data-mono-sm text-tertiary-container font-medium">+18.8%</td>
+<td class="py-2 px-3">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-secondary-container text-on-secondary-fixed font-caption text-caption font-semibold">
+                    4 cases reconciled
+                  </span>
+</td>
+</tr>
+</tbody>
+<tfoot>
+<tr class="bg-surface-container font-data-mono-md text-data-mono-md font-bold text-on-surface">
+<td class="py-2 px-3">Net Commission Total</td>
+<td class="py-2 px-2 text-center text-secondary font-caption">ALL</td>
+<td class="py-2 px-3 text-right text-secondary">$4,618,170.40</td>
+<td class="py-2 px-3 text-right text-primary">$4,812,490.50</td>
+<td class="py-2 px-3 text-right text-tertiary-container">+$194,320.10</td>
+<td class="py-2 px-3 text-right text-tertiary-container">+4.21%</td>
+<td class="py-2 px-3 font-caption text-caption text-tertiary">All Invariants Checked</td>
+</tr>
+</tfoot>
+</table>
+</div>
+</div>
+<!-- EXCEPTION ACKNOWLEDGMENT CHECKLIST -->
+<div class="bg-surface-container-lowest p-space-md rounded-lg shadow-sm flex flex-col gap-space-sm">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[20px]">fact_check</span>
+<span class="font-section-heading text-section-heading text-on-surface font-bold">Mandatory Run Sign-Off Checklist (4 Items)</span>
+</div>
+<span class="px-2.5 py-0.5 rounded bg-surface-container text-on-surface-variant font-caption text-caption font-semibold">
+            2 of 4 Completed
+          </span>
+</div>
+<p class="font-body-sm text-body-sm text-secondary">
+          Pursuant to SOX-404 and Internal Control Directive FIN-09, every variance anomaly and automated compensation cap application must be explicitly signed off prior to committing run disbursements.
+        </p>
+<div class="space-y-space-xs mt-space-xs">
+<!-- Item 1: Checked -->
+<div class="p-space-sm rounded bg-surface-container-low flex items-start gap-space-sm">
+<div class="pt-0.5">
+<input checked="" class="h-4 w-4 rounded text-primary focus:ring-primary cursor-not-allowed" disabled="" type="checkbox"/>
+</div>
+<div class="flex-1">
+<div class="flex items-center justify-between">
+<span class="font-body-sm text-body-sm font-semibold text-on-surface line-through opacity-75">
+                  1. Scoped Cap Proportional Scale on Leadership Pool verified against Rule PLN-2026-v4.1 ($52,180.00 cut across 12 payees).
+                </span>
+<span class="font-caption text-caption text-tertiary font-medium">Signed by S. Jenkins</span>
+</div>
+<p class="font-caption text-caption text-secondary mt-0.5">Verified scale coefficient: 0.941829 applied uniformly across Diamond tier lines.</p>
+</div>
+</div>
+<!-- Item 2: Checked -->
+<div class="p-space-sm rounded bg-surface-container-low flex items-start gap-space-sm">
+<div class="pt-0.5">
+<input checked="" class="h-4 w-4 rounded text-primary focus:ring-primary cursor-not-allowed" disabled="" type="checkbox"/>
+</div>
+<div class="flex-1">
+<div class="flex items-center justify-between">
+<span class="font-body-sm text-body-sm font-semibold text-on-surface line-through opacity-75">
+                  2. Order #ORD-89421 late refund ($420.00) clawback netted against payee POS-10928 future payable.
+                </span>
+<span class="font-caption text-caption text-tertiary font-medium">Signed by S. Jenkins</span>
+</div>
+<p class="font-caption text-caption text-secondary mt-0.5">Dispute Case #DSP-209 closed. Deduction registered in Pass 5 Netting register.</p>
+</div>
+</div>
+<!-- Item 3: Pending Action -->
+<div class="p-space-sm rounded bg-error-container/20 flex items-start gap-space-sm">
+<div class="pt-0.5">
+<input class="h-4 w-4 rounded text-primary focus:ring-primary cursor-pointer" id="chk-item-3" type="checkbox"/>
+</div>
+<div class="flex-1">
+<div class="flex items-center justify-between">
+<label class="font-body-sm text-body-sm font-semibold text-on-surface cursor-pointer" for="chk-item-3">
+                  3. Payee POS-04812 total delta exceeding +45% investigated (Downline leg surge in Market US-West, verified legitimate).
+                </label>
+<span class="font-caption text-caption text-error font-semibold uppercase">Pending</span>
+</div>
+<p class="font-caption text-caption text-secondary mt-0.5">
+                Surge attributed to 428 enrollments during Fall convention flash promotion. Automated anomaly flag triggered.
+              </p>
+<div class="mt-2 flex items-center gap-2">
+<input class="h-7 px-2 text-xs w-full max-w-md rounded bg-surface-container-lowest text-on-surface placeholder:text-outline focus:outline-none focus:ring-1 focus:ring-primary" placeholder="Sign-off audit note (required)..." type="text"/>
+<button class="h-7 px-2.5 rounded bg-primary text-on-primary font-caption text-caption font-semibold" type="button">Sign</button>
+</div>
+</div>
+</div>
+<!-- Item 4: Pending Action -->
+<div class="p-space-sm rounded bg-error-container/20 flex items-start gap-space-sm">
+<div class="pt-0.5">
+<input class="h-4 w-4 rounded text-primary focus:ring-primary cursor-pointer" id="chk-item-4" type="checkbox"/>
+</div>
+<div class="flex-1">
+<div class="flex items-center justify-between">
+<label class="font-body-sm text-body-sm font-semibold text-on-surface cursor-pointer" for="chk-item-4">
+                  4. Invariant test passed: Expense ($4,812,490.50) = Payable ($4,230,180.20) + Withholding ($582,310.30) + Residue ($0.00).
+                </label>
+<span class="font-caption text-caption text-error font-semibold uppercase">Pending</span>
+</div>
+<p class="font-caption text-caption text-secondary mt-0.5">Zero residual pennies invariant confirmed by verification engine core.</p>
+<div class="mt-2 flex items-center gap-2">
+<input class="h-7 px-2 text-xs w-full max-w-md rounded bg-surface-container-lowest text-on-surface placeholder:text-outline focus:outline-none focus:ring-1 focus:ring-primary" placeholder="Sign-off audit note (required)..." type="text"/>
+<button class="h-7 px-2.5 rounded bg-primary text-on-primary font-caption text-caption font-semibold" type="button">Sign</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- RIGHT COLUMN: INSPECTION DRAWER / TRACE VIEWER (35%) -->
+<div class="lg:col-span-4 flex flex-col gap-space-md">
+<div class="bg-surface-container-lowest p-space-md rounded-lg shadow-sm flex flex-col h-full sticky top-14">
+<!-- Trace Header -->
+<div class="flex items-center justify-between pb-space-xs border-b border-surface-container">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[20px]">account_tree</span>
+<span class="font-section-heading text-section-heading text-on-surface font-bold">Calculation Trace</span>
+</div>
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-tertiary-fixed-dim/40 text-tertiary font-caption text-caption font-semibold">
+<span class="material-symbols-outlined text-[13px]">verified</span>
+            Deterministic Hash
+          </span>
+</div>
+<!-- Entity Identity & Hash -->
+<div class="mt-space-sm p-space-xs rounded bg-surface-container-low flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="font-caption text-caption text-secondary">Payee Target:</span>
+<span class="font-data-mono-sm text-data-mono-sm font-bold text-on-surface">POS-04812</span>
+</div>
+<div class="flex items-center justify-between">
+<span class="font-caption text-caption text-secondary">Legal Entity:</span>
+<span class="font-body-sm text-body-sm font-semibold text-on-surface">Marcus Vance (Diamond Dist.)</span>
+</div>
+<div class="flex items-center justify-between">
+<span class="font-caption text-caption text-secondary">Trace Engine Hash:</span>
+<span class="font-data-mono-sm text-data-mono-sm text-primary font-medium">#a8f94e1c2069b</span>
+</div>
+</div>
+<!-- Provenance Steps Accordion / Breakdown -->
+<div class="mt-space-sm space-y-space-xs flex-1">
+<div class="font-caption text-caption uppercase tracking-wider text-secondary font-semibold">Evaluation Parameters</div>
+<div class="p-2.5 rounded bg-surface-container-low text-body-sm space-y-1.5">
+<div class="flex justify-between items-start">
+<span class="text-secondary text-xs">Plan Rule Version:</span>
+<span class="font-data-mono-sm text-right text-xs text-on-surface font-medium">NA-COMP-v4.2</span>
+</div>
+<div class="flex justify-between items-start">
+<span class="text-secondary text-xs">Effective Baseline:</span>
+<span class="font-data-mono-sm text-right text-xs text-on-surface">2026-09-01</span>
+</div>
+<div class="flex justify-between items-start">
+<span class="text-secondary text-xs">Evaluated Rank:</span>
+<span class="font-body-sm text-right font-semibold text-primary">Senior National Dir. (L-A, R6)</span>
+</div>
+<div class="flex justify-between items-start">
+<span class="text-secondary text-xs">Base Commissionable Vol:</span>
+<span class="font-data-mono-sm text-right text-on-surface font-bold">$384,200.00</span>
+</div>
+</div>
+<div class="font-caption text-caption uppercase tracking-wider text-secondary font-semibold pt-1">Stepwise Mathematical Proof</div>
+<!-- Formula & Compression Logic -->
+<div class="p-2.5 rounded bg-surface-container-low font-data-mono-sm text-data-mono-sm space-y-2">
+<div class="text-[11px] text-secondary font-sans leading-tight">
+              Formula: <strong class="text-on-surface">Gen 1 (4.0%) + Gen 2 (3.0%)</strong> with dynamic compression on inactive node <span class="bg-surface-container px-1 rounded font-mono">POS-0914</span>.
+            </div>
+<!-- Math Step 1 -->
+<div class="p-2 rounded bg-surface-container-lowest flex items-center justify-between">
+<div class="flex flex-col">
+<span class="text-[11px] text-secondary font-sans">Generation 1 Vol:</span>
+<span class="text-on-surface font-semibold">$192,000.00 × 4.0%</span>
+</div>
+<span class="text-primary font-bold">+$7,680.00</span>
+</div>
+<!-- Math Step 2 -->
+<div class="p-2 rounded bg-surface-container-lowest flex items-center justify-between">
+<div class="flex flex-col">
+<span class="text-[11px] text-secondary font-sans">Generation 2 Vol:</span>
+<span class="text-on-surface font-semibold">$192,200.00 × 3.0%</span>
+</div>
+<span class="text-primary font-bold">+$5,766.00</span>
+</div>
+<!-- Rounding & Final Total -->
+<div class="p-2 rounded bg-surface-container flex items-center justify-between">
+<div class="flex flex-col">
+<span class="text-[11px] text-secondary font-sans">Rounding (Half-Up Minor Units):</span>
+<span class="text-on-surface font-semibold">Total Line Value</span>
+</div>
+<span class="text-tertiary-container font-extrabold text-sm">$13,446.00</span>
+</div>
+</div>
+<!-- Referenced Orders -->
+<div class="p-2 rounded bg-surface-container-low flex items-center justify-between">
+<div class="flex items-center gap-1.5 text-secondary">
+<span class="material-symbols-outlined text-[16px]">receipt_long</span>
+<span class="font-body-sm text-body-sm font-medium text-on-surface">428 referenced orders</span>
+</div>
+<span class="font-caption text-caption text-tertiary font-semibold flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px]">check</span>
+              0 unlinked
+            </span>
+</div>
+</div>
+<!-- Drawer Action Footer -->
+<div class="mt-space-md pt-space-xs flex flex-col gap-2">
+<button class="w-full h-8 flex items-center justify-center gap-1.5 rounded bg-surface-container hover:bg-surface-container-high text-on-surface font-body-sm text-body-sm transition-colors" type="button">
+<span class="material-symbols-outlined text-[16px] text-secondary">code</span>
+<span>Inspect Full JSON Bitemporal Trace</span>
+</button>
+<a class="text-center font-caption text-caption text-primary hover:underline py-1" href="#">
+            Open Payee Complete Compensation Ledger →
+          </a>
+</div>
+</div>
+</div>
+</div>
+<!-- STICKY BOTTOM APPROVAL BAR (SEPARATION OF DUTIES ENFORCED) -->
+<div class="fixed bottom-0 left-52 right-0 bg-surface-container-lowest border-t border-outline-variant shadow-xl z-30 px-space-md py-2.5 flex flex-col md:flex-row items-center justify-between gap-space-sm">
+<!-- Left: Preparer Info (SOD Separation Rule) -->
+<div class="flex items-center gap-2">
+<div class="h-7 w-7 rounded-full bg-secondary-container flex items-center justify-center text-on-secondary-fixed">
+<span class="material-symbols-outlined text-[16px]">draw</span>
+</div>
+<div class="flex flex-col text-left leading-tight">
+<div class="flex items-center gap-1.5">
+<span class="font-caption text-caption text-on-surface font-semibold">Prepared: Sarah Jenkins (Analyst)</span>
+<span class="px-1.5 py-0.2 rounded bg-surface-container font-data-mono-sm text-[10px] text-secondary">2026-11-01 02:14 UTC</span>
+</div>
+<span class="font-caption text-[11px] text-error font-medium">SOD-01 Rule Enforced: Preparer barred from approving this disbursement.</span>
+</div>
+</div>
+<!-- Center: Approver Status & WebAuthn Token -->
+<div class="flex items-center gap-2 bg-surface-container-low px-3 py-1 rounded">
+<span class="material-symbols-outlined text-[16px] text-tertiary">key</span>
+<div class="flex items-center gap-1.5 text-xs text-on-surface font-medium">
+<span>Elena Rostova</span>
+<span class="text-secondary">(Authorized Approver)</span>
+<span class="inline-flex items-center gap-1 px-1.5 py-0.2 rounded-full bg-tertiary-fixed text-on-tertiary-fixed font-data-mono-sm text-[10px]">
+<span class="h-1.5 w-1.5 rounded-full bg-tertiary"></span>
+          WebAuthn Valid (3m)
+        </span>
+</div>
+</div>
+<!-- Right: Three Mandatory Action Buttons -->
+<div class="flex items-center gap-space-xs self-stretch md:self-auto justify-end">
+<!-- Reject Button -->
+<button class="h-9 px-3 rounded bg-surface-container-lowest hover:bg-error-container/30 text-error font-body-sm text-body-sm font-semibold transition-colors shadow-sm flex items-center gap-1" type="button">
+<span class="material-symbols-outlined text-[16px]">close</span>
+<span>Reject / Recalculate</span>
+</button>
+<!-- Acknowledge Exceptions Button -->
+<button class="h-9 px-3 rounded bg-surface-container hover:bg-surface-container-high text-on-surface font-body-sm text-body-sm font-semibold transition-colors shadow-sm flex items-center gap-1.5" type="button">
+<span class="material-symbols-outlined text-[16px] text-secondary">playlist_add_check</span>
+<span>Acknowledge All (2 Remaining)</span>
+</button>
+<!-- Commit Primary Button -->
+<button class="h-9 px-4 rounded bg-primary hover:bg-primary-container text-on-primary font-body-sm text-body-sm font-bold transition-all shadow-md flex items-center gap-1.5" type="button">
+<span class="material-symbols-outlined text-[18px]">verified</span>
+<span>Commit Run &amp; Post ($4,812,490.50)</span>
+</button>
+</div>
+</div>
+</div></div></main></div></body></html>

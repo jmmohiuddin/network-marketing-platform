@@ -10,6 +10,13 @@ export interface Me {
   readonly mfa: { readonly required: boolean; readonly enrolled: boolean; readonly verified: boolean }
   readonly step_up_at: string | null
   readonly navigation: readonly NavigationEntry[]
+  /** Only inside an approved vendor support session; `user` is then the vendor user. */
+  readonly support_session?: {
+    readonly id: string
+    readonly tenant_slug: string
+    readonly ends_at: string
+    readonly scope: { readonly permissions: readonly string[] }
+  } | null
 }
 
 /** The MFA page the user must finish first (AC-35.1: no page before a required factor is enrolled), or null. */

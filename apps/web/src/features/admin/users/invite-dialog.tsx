@@ -11,8 +11,21 @@ const EMAIL_ID = 'invite-email'
 const NAME_ID = 'invite-name'
 const NAME_MAX_LENGTH = 200
 
+export interface InviteDialogProps {
+  readonly onClose: () => void
+  readonly onInvited: () => void
+  /** POST endpoint: tenant staff (default) or vendor users (/v1/vendor-users, which asks for step-up). */
+  readonly endpoint?: string
+  readonly title?: string
+  /** What happens after the invitation, for this kind of user. */
+  readonly intro?: string
+}
+
 /** SC-28 Invite user: POST /v1/users. The one-time link is mailed to the invitee, never shown here. */
-export function InviteDialog({ onClose, onInvited }: { readonly onClose: () => void; readonly onInvited: () => void }) {
+export function InviteDialog({
+  onClose, onInvited, endpoint = '/v1/users', title = 'Invite user',
+  intro = 'The person gets an email with a link to choose a password. They have no role until you assign one.',
+}: InviteDialogProps) {
   const api = useApi()
   const toast = useToast()
   const [email, setEmail] = useState('')
@@ -28,15 +41,15 @@ export function InviteDialog({ onClose, onInvited }: { readonly onClose: () => v
       items: [],
       fieldIds: { email: EMAIL_ID, display_name: NAME_ID },
       send: async () => {
-        await api.post('/v1/users', body, { idempotencyKey })
+        await api.post(endpoint, body, { idempotencyKey })
         toast({ message: `Invitation sent to ${body.email}. The link in it works once.` })
         onInvited()
       },
     }
   }
   return (
-    <FormDialog title="Invite user" submitLabel="Send invitation" onClose={onClose} onSubmit={submit}>
-      <p>The person gets an email with a link to choose a password. They have no role until you assign one.</p>
+    <FormDialog title={title} submitLabel="Send invitation" onClose={onClose} onSubmit={submit}>
+      <p>{intro}</p>
       <TextField
         id={EMAIL_ID}
         label="Email address"

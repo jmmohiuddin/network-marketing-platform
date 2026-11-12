@@ -19,7 +19,7 @@ const figure = (key: string, unit: string, value: string | null, extra: object =
   population_count: 4, method: `Method of ${key}.`, method_version: 'cpl-method-1.0.0', note: null, rows: '', ...extra,
 })
 const SNAPSHOT = {
-  id: 's1', state: 'ready', market_id: 'mk', period_from: '2025-01', period_to: '2025-12', method_version: 'cpl-method-1.0.0', failure_reason: null,
+  id: 's1', state: 'ready', market_id: 'mk', market: { id: 'mk', code: 'DE', name: 'Germany' }, period_from: '2025-01', period_to: '2025-12', method_version: 'cpl-method-1.0.0', failure_reason: null,
   created_at: '2026-11-01T10:00:00Z', reports: ['R1', 'R5'], input_batch_ids: ['b1'], input_mapping_versions: [3],
   input_data_quality: [{ batch_id: 'b1', data_quality: { orders: 40, orders_unknown_purpose: 2, refunded_orders: 0, refunds_without_month: 0, payout_lines: 9, payout_lines_without_source_order: 0, payout_lines_unknown_source_kind: 0, unmapped: { purposes: [], source_kinds: [] } } }],
   results: [
@@ -72,17 +72,53 @@ describe('SnapshotReport', () => {
     expect(router.replace).toHaveBeenCalledWith('/compliance/snapshots/s1?report=R5')
   })
 
-  it('names the market in the title and compares the periods of a report side by side', async () => {
+  const r1 = (period: string, value: string) => ({
+    report: 'R1', period, period_kind: 'month', partial: false, notes: [], omitted: [],
+    figures: [{ ...figure('customer_share_pct', 'percent', value, { numerator: '600', denominator: '1000' }), id: `R1.${period}.customer_share_pct` }],
+  })
+  const threeMonths = { ...SNAPSHOT, results: [r1('2025-01', '62.50'), r1('2025-02', '58.00'), r1('2025-03', '60.00')] }
+  const showThreeMonths = () => renderWithProviders(
+    withSession(<SnapshotReport snapshotId="s1" />, ['compliance.read']),
+    fetchRoutes(['GET', /snapshots\/s1$/, () => json(200, { data: threeMonths, meta: {} })]),
+  )
+
+  it('names the market and charts the trend of a monthly figure, with its table one toggle away', async () => {
     search.value = ''
-    const r1 = (period: string, value: string) => ({
-      report: 'R1', period, period_kind: 'month', partial: false, notes: [], omitted: [],
-      figures: [{ ...figure('customer_share_pct', 'percent', value), id: `R1.${period}.customer_share_pct` }],
-    })
-    const twoMonths = { ...SNAPSHOT, results: [r1('2025-01', '62.50'), r1('2025-02', '58.00')] }
-    renderWithProviders(withSession(<SnapshotReport snapshotId="s1" />, ['compliance.read']), fetchRoutes(['GET', /snapshots\/s1$/, () => json(200, { data: twoMonths, meta: {} })]))
-    expect(await screen.findByRole('heading', { level: 1, name: 'Snapshot · market mk · 2025-01 to 2025-12' })).toBeTruthy()
-    const table = screen.getByRole('table', { name: '1 figures across 2 periods' })
+    const user = userEvent.setup()
+    showThreeMonths()
+    expect(await screen.findByRole('heading', { level: 1, name: 'Snapshot · Germany (DE) · 2025-01 to 2025-12' })).toBeTruthy()
+    const chart = screen.getByRole('figure', { name: 'Customer share of net sales by period' })
+    expect(within(chart).getByText('Lowest 58.00 % (2025-02), highest 62.50 % (2025-01), latest 60.00 % (2025-03).')).toBeTruthy()
+    expect(within(chart).getByRole('group', { name: 'Customer share of net sales, by period' })).toBeTruthy()
+    const point = within(chart).getByRole('img', { name: '2025-01: 62.50 %' })
+    act(() => point.focus())
+    expect(within(chart).getByText('62.50 % in 2025-01')).toBeTruthy()
+    await user.click(within(chart).getByRole('button', { name: 'View as table' }))
+    const table = within(chart).getByRole('table', { name: 'Customer share of net sales in each period' })
+    const row = within(table).getByText('2025-02').closest('tr')!
+    expect([...row.querySelectorAll('td')].map((cell) => cell.textContent)).toEqual(['58.00 %', '600', '1,000'])
+    expect(within(chart).getByRole('button', { name: 'View as table' }).getAttribute('aria-pressed')).toBe('true')
+  })
+
+  it('keeps the chosen period in the URL', async () => {
+    search.value = ''
+    const user = userEvent.setup()
+    showThreeMonths()
+    await user.selectOptions(await screen.findByLabelText('Period'), '2025-02')
+    expect(router.replace).toHaveBeenCalledWith('/compliance/snapshots/s1?report=R1&period=2025-02')
+  })
+
+  it('compares two periods with the exact difference and shows only the chosen period', async () => {
+    search.value = 'report=R1&period=2025-03&compare=2025-01'
+    showThreeMonths()
+    const section = await screen.findByRole('region', { name: 'Compare 2025-03 with 2025-01' })
+    const table = within(section).getByRole('table', { name: '1 figure in 2025-03 and 2025-01' })
     const row = within(table).getByText('Customer share of net sales').closest('tr')!
-    expect([...row.querySelectorAll('td')].map((cell) => cell.textContent)).toEqual(['62.50 %', '58.00 %'])
+    expect([...row.querySelectorAll('td')].map((cell) => cell.textContent)).toEqual(['60.00 %', '62.50 %', '\u22122.50 points'])
+    expect(within(section).getByRole('group', { name: 'Percentages in 2025-03 and 2025-01' })).toBeTruthy()
+    expect(within(section).getByText('60.00 % (2025-03)')).toBeTruthy()
+    expect(screen.getByRole('region', { name: 'R1 · 2025-03' })).toBeTruthy()
+    expect(screen.queryByRole('region', { name: 'R1 · 2025-01' })).toBeNull()
+    expect(screen.queryByRole('region', { name: 'Trend' })).toBeNull()
   })
 })

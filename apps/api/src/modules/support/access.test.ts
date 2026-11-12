@@ -11,6 +11,8 @@ import { inTenant } from '../../lib/db.js'
 import { envelope } from '../../lib/http.js'
 import type { ApiModule } from '../../lib/module.js'
 import { audModule } from '../aud/index.js'
+import { iamModule } from '../iam/index.js'
+import { tenModule } from '../ten/index.js'
 import { SUPPORT_SESSION_HEADER, supportModule } from './index.js'
 
 let app: FastifyInstance
@@ -47,7 +49,7 @@ beforeAll(async () => {
   otherEngineer = await createSignedInUser({ tenantId: null })
   await ownerRows(`UPDATE user_account SET work_region = 'eu' WHERE id = ANY ($1)`, [[engineer.id, otherEngineer.id]])
   await withTenant({ tenantId: globex.id, userId: globexUser.id }, (tx) => recordAudit(tx, { action: 'TEST.GLOBEX_ONLY' }))
-  app = await buildTestApp({ modules: [supportModule, audModule, probe] })
+  app = await buildTestApp({ modules: [supportModule, audModule, iamModule, tenModule, probe] })
 })
 
 afterAll(async () => {
@@ -96,7 +98,7 @@ describe('a vendor user inside an approved support session (AC-29.1, TS-37)', ()
     const actions = events.json().data.map((event: { action: string }) => event.action)
 
     expect(events.statusCode).toBe(200)
-    expect(actions).toContain('SUPPORT_SESSION.ACCESSED')
+    expect(actions).toContain('SUPPORT_SESSION.STARTED')
     expect(actions).not.toContain('TEST.GLOBEX_ONLY')
     expect(stored).toEqual([{ state: 'active' }])
     expect(log.slice(-2)).toEqual([
@@ -104,8 +106,24 @@ describe('a vendor user inside an approved support session (AC-29.1, TS-37)', ()
       { action: 'SUPPORT_SESSION.ACCESSED', actor_type: 'vendor_user', actor_id: engineer.id, support_session_id: id },
     ])
     expect(await afterOf(id, 'audit.audit_event', 'SUPPORT_SESSION.ACCESSED')).toEqual([
-      { method: 'GET', route: '/v1/audit-events', params: {}, query: { limit: '200' } },
+      { method: 'GET', route: '/v1/audit-events', params: {}, query: { limit: '200' }, status: 200 },
     ])
+  })
+
+  test('BUG-013: a read the route refuses is logged as refused only, never as accessed; a failed query is logged with its status', async () => {
+    const id = await session(['audit.read'])
+    const accessLog = async () => (await eventsAbout(id, 'audit.audit_event'))
+      .map((event) => event.action).filter((action) => action.startsWith('SUPPORT_SESSION.ACCESS'))
+
+    const refused = await inSession(id, 'GET', '/v1/settings/privacy.breach_contacts')
+    const afterRefusal = await accessLog()
+    const malformed = await inSession(id, 'GET', '/v1/audit-events?limit=0')
+
+    expect(refused.json().error.code).toBe('PERMISSION_DENIED')
+    expect(afterRefusal).toEqual(['SUPPORT_SESSION.ACCESS_REFUSED'])
+    expect(malformed.statusCode).toBe(400)
+    expect(await accessLog()).toEqual(['SUPPORT_SESSION.ACCESS_REFUSED', 'SUPPORT_SESSION.ACCESSED'])
+    expect((await afterOf(id, 'audit.audit_event', 'SUPPORT_SESSION.ACCESSED')).map((after) => after.status)).toEqual([400])
   })
 
   test('handlers write their audit events as the vendor user, in the session', async () => {
@@ -153,6 +171,30 @@ describe('a vendor user inside an approved support session (AC-29.1, TS-37)', ()
     expect(stored).toEqual([{ state: 'ended' }])
     expect(await refusals(id, 'audit.audit_event')).toEqual(['SUPPORT_SESSION_INACTIVE'])
     expect(await refusals(id, 'audit.vendor_event')).toEqual(['SUPPORT_SESSION_INACTIVE'])
+  })
+})
+
+describe('GET /v1/me inside the session', () => {
+  test('names the vendor user (read in the vendor realm) and the session; outside it support_session is null', async () => {
+    const id = await session(['audit.read'])
+    const [vendor] = await ownerRows<{ display_name: string | null }>('SELECT display_name FROM user_account WHERE id = $1', [engineer.id])
+
+    const me = await inSession(id, 'GET', '/v1/me')
+    const outside = await call(app, { method: 'GET', url: '/v1/me', as: engineer })
+    const tenantUser = await call(app, { method: 'GET', url: '/v1/me', as: admin })
+
+    expect(me.statusCode).toBe(200)
+    expect(me.json().data).toMatchObject({
+      realm: 'tenant',
+      user: { id: engineer.id, email: engineer.email, display_name: vendor!.display_name },
+      tenant: { id: acme.id, slug: acme.slug },
+      support_session: {
+        id, tenant_slug: acme.slug, ends_at: expect.any(String), scope: { permissions: ['audit.read'], requester_region: 'eu' },
+      },
+    })
+    expect(Object.keys(me.json().data.user)).toEqual(['id', 'email', 'display_name'])
+    expect(outside.json().data).toMatchObject({ realm: 'vendor', user: { id: engineer.id }, support_session: null })
+    expect(tenantUser.json().data).toMatchObject({ user: { id: admin.id }, support_session: null })
   })
 })
 

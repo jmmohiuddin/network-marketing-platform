@@ -5,6 +5,7 @@ import { recordAudit } from '../../lib/audit.js'
 import { defineTenantJob } from '../../lib/jobs.js'
 import { sendMail } from '../../lib/mailer.js'
 import { hashToken } from '../../lib/session.js'
+import { invitationLink } from '../iam/index.js'
 
 const TOKEN_BYTES = 32
 
@@ -12,11 +13,12 @@ interface Invitee {
   email: string
   state: string
   tenant_name: string
+  tenant_slug: string
 }
 
 async function findInvitee(tx: Tx, userId: string): Promise<Invitee | undefined> {
   const { rows } = await tx.query<Invitee>(
-    `SELECT u.email, u.state, t.legal_name AS tenant_name FROM user_account u JOIN tenant t ON t.id = u.tenant_id
+    `SELECT u.email, u.state, t.legal_name AS tenant_name, t.slug AS tenant_slug FROM user_account u JOIN tenant t ON t.id = u.tenant_id
      WHERE u.id = $1`,
     [userId],
   )
@@ -60,10 +62,10 @@ export const sendFirstAdminInvitationJob = defineTenantJob({
       to: invitee.email,
       subject: `Your administrator account at ${invitee.tenant_name}`,
       text: [
-        `You are the first administrator of ${invitee.tenant_name}.`,
+        `You are an administrator of ${invitee.tenant_name}.`,
         '',
         `Choose your password with this link. It works once, until ${invitation.expiresAt.toISOString()}:`,
-        `${ctx.config.webUrl}/invitation#token=${invitation.token}`,
+        invitationLink(ctx.config.webUrl, invitee.tenant_slug, invitation.token),
         '',
         'If you did not expect this invitation, ignore this email.',
       ].join('\n'),

@@ -39,7 +39,7 @@ function flagFigures(ctx: Context, pay: ReadonlyMap<string, PayeePay>, flag: Rat
     }),
     ctx.figure({
       key: 'flag_threshold', unit: 'ratio', value: formatRatio(flag, FLAG_DECIMALS),
-      numerator: flag.numerator, denominator: flag.denominator, population: PAYEE_POPULATION,
+      numerator: flag.numerator, denominator: flag.denominator, population: PAYEE_POPULATION, populationCount: payees.length,
       method: 'Tenant setting: personal-use share of multi-level pay above which a payee is flagged.',
       entity: 'participant', numeratorIds: [],
     }),

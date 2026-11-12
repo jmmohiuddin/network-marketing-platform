@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+
+<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_dashboard" name="shell-type"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{colors:{"surface-bright":"#f8f9ff","surface-variant":"#d5e3fc","on-secondary-container":"#5c647a","background":"#f8f9ff","primary-fixed-dim":"#afc6ff","on-primary-fixed":"#001944","inverse-surface":"#233144","surface-container-low":"#eff4ff","tertiary-container":"#0d5f36","on-secondary-fixed":"#131b2e","inverse-primary":"#afc6ff","on-background":"#0d1c2e","surface-tint":"#2e5bb0","on-tertiary-container":"#8cd7a3","surface-container-lowest":"#ffffff","on-tertiary-fixed-variant":"#00522d","on-tertiary-fixed":"#00210f","surface-container-highest":"#d5e3fc","primary-fixed":"#d9e2ff","outline-variant":"#c3c6d3","tertiary-fixed":"#a7f3be","on-surface":"#0d1c2e","surface-dim":"#ccdbf3","tertiary":"#004525","on-secondary-fixed-variant":"#3f465c","on-secondary":"#ffffff","surface":"#f8f9ff","secondary-fixed-dim":"#bec6e0","secondary-container":"#dae2fd","error-container":"#ffdad6","secondary-fixed":"#dae2fd","surface-container":"#e6eeff","surface-container-high":"#dce9ff","on-surface-variant":"#434752","secondary":"#565e74","primary-container":"#1e4fa3","on-primary-fixed-variant":"#074397","on-error":"#ffffff","inverse-on-surface":"#eaf1ff","on-primary-container":"#afc6ff","error":"#ba1a1a","primary":"#003883","tertiary-fixed-dim":"#8cd7a3","on-tertiary":"#ffffff","on-primary":"#ffffff","outline":"#737783","on-error-container":"#93000a"},borderRadius:{"DEFAULT":"0.125rem","lg":"0.25rem","xl":"0.5rem","full":"0.75rem"},spacing:{"space-sm":"0.5rem","gutter-compact":"0.75rem","margin-mobile":"1rem","space-lg":"1.5rem","space-xs":"0.25rem","gutter":"1.5rem","space-xl":"2rem","space-2xl":"3rem","margin":"1.5rem","space-xxs":"0.125rem","space-md":"1rem"},fontFamily:{"title-lg-mobile":["Inter"],"section-heading":["Inter"],"body-lg":["Inter"],"data-mono-lg":["JetBrains Mono"],"caption":["Inter"],"data-mono-md":["JetBrains Mono"],"title-lg":["Inter"],"display-mobile":["Inter"],"display":["Inter"],"data-mono-sm":["JetBrains Mono"],"body-sm":["Inter"],"body-md":["Inter"],"title-md":["Inter"]},fontSize:{"title-lg-mobile":["20px",{"lineHeight":"28px","letterSpacing":"-0.01em","fontWeight":"600"}],"section-heading":["16px",{"lineHeight":"24px","letterSpacing":"-0.005em","fontWeight":"600"}],"body-lg":["16px",{"lineHeight":"24px","letterSpacing":"0em","fontWeight":"400"}],"data-mono-lg":["24px",{"lineHeight":"32px","letterSpacing":"-0.02em","fontWeight":"600"}],"caption":["12px",{"lineHeight":"16px","letterSpacing":"0.01em","fontWeight":"500"}],"data-mono-md":["14px",{"lineHeight":"20px","letterSpacing":"-0.01em","fontWeight":"500"}],"title-lg":["24px",{"lineHeight":"32px","letterSpacing":"-0.015em","fontWeight":"600"}],"display-mobile":["26px",{"lineHeight":"32px","letterSpacing":"-0.015em","fontWeight":"600"}],"display":["32px",{"lineHeight":"40px","letterSpacing":"-0.02em","fontWeight":"600"}],"data-mono-sm":["12px",{"lineHeight":"16px","letterSpacing":"0em","fontWeight":"500"}],"body-sm":["13px",{"lineHeight":"18px","letterSpacing":"0.005em","fontWeight":"400"}],"body-md":["14px",{"lineHeight":"20px","letterSpacing":"0em","fontWeight":"400"}],"title-md":["20px",{"lineHeight":"28px","letterSpacing":"-0.01em","fontWeight":"600"}]}}}};</script></head><body class="bg-surface font-body-md text-on-surface antialiased"><aside class="fixed left-0 top-0 h-full w-72 bg-surface-container-lowest shadow-[0_1px_8px_rgba(0,0,0,0.04)] z-50 flex flex-col justify-between select-none"><div class="flex flex-col h-full"><div class="h-16 px-space-md flex items-center justify-between bg-surface-container-lowest shrink-0"><div class="flex items-center gap-space-sm"><div class="w-7 h-7 bg-primary rounded flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">account_balance</span></div><div class="flex flex-col"><span class="font-section-heading text-[13px] tracking-tight text-primary leading-none font-bold">AuditLedger</span><span class="font-caption text-[10px] tracking-wider uppercase text-on-surface-variant font-semibold mt-0.5">FIN-CORE COMPLIANCE</span></div></div><div class="w-2 h-2 rounded-full bg-tertiary-fixed-dim" title="System Active"></div></div><div class="overflow-y-auto flex-1 px-space-sm py-space-sm space-y-space-md"><div class="space-y-space-xxs"><div class="px-space-sm py-space-xs font-caption text-caption text-on-surface-variant tracking-wider uppercase font-semibold">COMMISSION SYSTEM</div><nav class="space-y-space-xxs" data-active-classes="bg-primary-container text-on-primary-container font-semibold rounded"><a class="group flex items-center justify-between px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface text-body-sm font-body-sm transition-colors" data-path="overview" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[18px] text-on-surface-variant group-hover:text-on-surface">space_dashboard</span><span>Overview</span></div><span class="font-data-mono-sm text-[11px] text-on-surface-variant">SC-35</span></a><a class="group flex items-center justify-between px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface text-body-sm font-body-sm transition-colors" data-path="periods-runs" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[18px] text-on-surface-variant group-hover:text-on-surface">calendar_month</span><span>Periods &amp; Runs</span></div><span class="font-data-mono-sm text-[11px] text-on-surface-variant">SC-01/32</span></a><a class="group flex items-center justify-between px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface text-body-sm font-body-sm transition-colors" data-path="comp-plans" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[18px] text-on-surface-variant group-hover:text-on-surface">schema</span><span>Comp Plans</span></div><span class="font-data-mono-sm text-[11px] text-on-surface-variant">SC-04</span></a><a class="group flex items-center justify-between px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface text-body-sm font-body-sm transition-colors" data-path="people-tree" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[18px] text-on-surface-variant group-hover:text-on-surface">account_tree</span><span>People &amp; Tree</span></div><span class="font-data-mono-sm text-[11px] text-on-surface-variant">SC-07</span></a><a class="group flex items-center justify-between px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface text-body-sm font-body-sm transition-colors" data-path="orders-returns" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[18px] text-on-surface-variant group-hover:text-on-surface">receipt_long</span><span>Orders &amp; Returns</span></div><span class="font-data-mono-sm text-[11px] text-on-surface-variant">SC-31</span></a><a class="group flex items-center justify-between px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface text-body-sm font-body-sm transition-colors" data-path="cases-exceptions" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[18px] text-on-surface-variant group-hover:text-on-surface">warning</span><span>Cases &amp; Exceptions</span></div><span class="font-data-mono-sm text-[11px] text-on-surface-variant">SC-06</span></a><a class="group flex items-center justify-between px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface text-body-sm font-body-sm transition-colors" data-path="payouts" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[18px] text-on-surface-variant group-hover:text-on-surface">payments</span><span>Payouts</span></div><span class="font-data-mono-sm text-[11px] text-on-surface-variant">SC-03</span></a><a class="group flex items-center justify-between px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface text-body-sm font-body-sm transition-colors" data-path="finance-ledger" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[18px] text-on-surface-variant group-hover:text-on-surface">balance</span><span>Finance &amp; Ledger</span></div><span class="font-data-mono-sm text-[11px] text-on-surface-variant">SC-33</span></a><a class="group flex items-center justify-between px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface text-body-sm font-body-sm transition-colors" data-path="compliance-reports" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[18px] text-on-surface-variant group-hover:text-on-surface">verified_user</span><span>Compliance Reports</span></div><span class="font-data-mono-sm text-[11px] text-on-surface-variant">SC-10</span></a></nav></div><div class="space-y-space-xxs pt-space-xs"><div class="px-space-sm py-space-xs font-caption text-caption text-on-surface-variant tracking-wider uppercase font-semibold">DATA &amp; ADMINISTRATION</div><nav class="space-y-space-xxs" data-active-classes="bg-primary-container text-on-primary-container font-semibold rounded"><a class="group flex items-center justify-between px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface text-body-sm font-body-sm transition-colors" data-path="data-imports" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[18px] text-on-surface-variant group-hover:text-on-surface">cloud_upload</span><span>Data Imports</span></div><span class="font-data-mono-sm text-[11px] text-on-surface-variant">SC-24/25</span></a><a class="group flex items-center justify-between px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface text-body-sm font-body-sm transition-colors" data-path="migration-parallel" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[18px] text-on-surface-variant group-hover:text-on-surface">sync_alt</span><span>Migration &amp; Parallel</span></div><span class="font-data-mono-sm text-[11px] text-on-surface-variant">SC-16</span></a><a class="group flex items-center justify-between px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface text-body-sm font-body-sm transition-colors" data-path="market-launch" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[18px] text-on-surface-variant group-hover:text-on-surface">flag</span><span>Market Launch</span></div><span class="font-data-mono-sm text-[11px] text-on-surface-variant">SC-17</span></a><a aria-current="page" class="group flex items-center justify-between px-space-sm py-1.5 transition-colors bg-primary-container text-on-primary-container font-semibold rounded" data-path="vendor-access" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[18px] text-on-surface-variant group-hover:text-on-surface">vpn_key</span><span>Vendor Access</span></div><span class="font-data-mono-sm text-[11px] text-on-surface-variant">SC-14</span></a><a class="group flex items-center justify-between px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface text-body-sm font-body-sm transition-colors" data-path="audit-log" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[18px] text-on-surface-variant group-hover:text-on-surface">history_edu</span><span>Audit Log</span></div><span class="font-data-mono-sm text-[11px] text-on-surface-variant">SC-30</span></a><a class="group flex items-center justify-between px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface text-body-sm font-body-sm transition-colors" data-path="users-roles" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[18px] text-on-surface-variant group-hover:text-on-surface">admin_panel_settings</span><span>Users &amp; Roles</span></div><span class="font-data-mono-sm text-[11px] text-on-surface-variant">SC-28</span></a><a class="group flex items-center justify-between px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface text-body-sm font-body-sm transition-colors" data-path="integrations" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[18px] text-on-surface-variant group-hover:text-on-surface">hub</span><span>Integrations</span></div><span class="font-data-mono-sm text-[11px] text-on-surface-variant">SC-13</span></a><a class="group flex items-center justify-between px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface text-body-sm font-body-sm transition-colors" data-path="vendor-console" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[18px] text-on-surface-variant group-hover:text-on-surface">terminal</span><span>Vendor Console</span></div><span class="font-data-mono-sm text-[11px] text-on-surface-variant">SC-39</span></a></nav></div></div><div class="p-space-sm bg-surface-container-low shrink-0"><div class="flex items-center gap-space-sm p-space-xs rounded bg-surface-container-lowest"><span class="material-symbols-outlined text-primary text-[18px]">verified</span><div class="flex flex-col"><span class="font-caption text-[11px] text-on-surface font-semibold leading-tight">Statutory Immutability</span><span class="font-data-mono-sm text-[10px] text-on-surface-variant leading-tight">SEC-17a-4 COMPLIANT</span></div></div></div></div></aside><div class="pl-72 flex flex-col min-h-screen"><header class="fixed top-0 left-72 right-0 h-16 bg-surface/85 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)] z-40 flex items-center justify-between px-gutter"><div class="flex items-center gap-space-md"><div class="flex items-center gap-space-xs bg-surface-container-low px-space-sm py-1 rounded text-body-sm"><span class="material-symbols-outlined text-on-surface-variant text-[16px]">corporate_fare</span><span class="font-body-sm text-on-surface font-semibold">Acrobex Global</span><span class="font-data-mono-sm text-caption text-on-surface-variant">(TEN-842)</span><span class="material-symbols-outlined text-on-surface-variant text-[16px]">arrow_drop_down</span></div><div class="flex items-center gap-space-xs bg-surface-container-low px-space-sm py-1 rounded text-body-sm"><span class="material-symbols-outlined text-on-surface-variant text-[16px]">payments</span><span class="font-body-sm text-on-surface">US - United States (USD $)</span><span class="material-symbols-outlined text-on-surface-variant text-[16px]">arrow_drop_down</span></div></div><div class="flex items-center gap-space-md"><div class="flex items-center justify-between gap-space-md bg-surface-container px-space-md py-1.5 rounded w-64 text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer"><div class="flex items-center gap-space-xs"><span class="material-symbols-outlined text-[16px]">search</span><span class="font-body-sm text-caption">Global command search</span></div><kbd class="font-data-mono-sm text-caption bg-surface-container-highest px-1.5 py-0.5 rounded text-on-surface-variant">/ or ⌘K</kbd></div><button class="relative p-1.5 text-on-surface-variant hover:text-on-surface transition-colors rounded hover:bg-surface-container" title="System Notifications" type="button"><span class="material-symbols-outlined text-[20px]">notifications</span><span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-error"></span></button><div class="flex items-center gap-space-sm pl-space-xs"><div class="flex flex-col text-right"><span class="font-body-sm text-body-sm font-semibold text-on-surface leading-tight">Elena Rostova</span><span class="font-caption text-caption text-on-surface-variant leading-tight">Lead Commission Analyst</span></div><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center shrink-0"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="w-full pt-16 pb-8 bg-surface px-gutter flex-1"><div class="flex flex-col w-full space-y-space-lg pb-space-2xl">
+<!-- Breadcrumb & Header Section -->
+<div class="flex flex-col space-y-space-xs">
+<div class="flex items-center gap-space-xs font-caption text-caption text-on-surface-variant">
+<span class="hover:text-primary transition-colors cursor-pointer">Settings</span>
+<span class="material-symbols-outlined text-[14px]">chevron_right</span>
+<span class="text-on-surface font-semibold">Vendor Access Sessions</span>
+</div>
+<div class="flex flex-wrap items-center justify-between gap-space-md pt-space-xs">
+<div class="flex items-center gap-space-md">
+<h1 class="font-display text-display text-on-surface tracking-tight">Vendor Support Sessions &amp; Data Boundary Control</h1>
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-secondary-container text-on-secondary-container font-caption text-caption tracking-wider font-semibold">
+<span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+          ZERO STANDING ACCESS ENFORCED
+        </span>
+</div>
+<!-- Action Utilities -->
+<div class="flex items-center gap-space-sm">
+<button class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded bg-surface-container-lowest text-on-surface font-body-sm text-body-sm shadow-sm hover:bg-surface-container transition-colors" type="button">
+<span class="material-symbols-outlined text-[18px] text-secondary">security</span>
+<span>Access Policy Spec</span>
+</button>
+<button class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded bg-surface-container-lowest text-on-surface font-body-sm text-body-sm shadow-sm hover:bg-surface-container transition-colors" type="button">
+<span class="material-symbols-outlined text-[18px] text-secondary">history_edu</span>
+<span>View Audit Stream (SC-30)</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Mandatory Statutory Notice Banner (BR-SEC-01) -->
+<div class="relative overflow-hidden rounded bg-surface-container-lowest p-space-md shadow-sm">
+<div class="absolute left-0 top-0 bottom-0 w-1.5 bg-primary"></div>
+<div class="flex items-start gap-space-md pl-space-xs">
+<div class="p-2 rounded bg-surface-container text-primary shrink-0">
+<span class="material-symbols-outlined text-[22px]">policy</span>
+</div>
+<div class="flex-1 flex flex-col space-y-0.5">
+<div class="flex items-center gap-space-sm">
+<span class="font-section-heading text-section-heading text-on-surface">BR-SEC-01 INVARIANT ACTIVE</span>
+<span class="font-data-mono-sm text-caption bg-surface-container px-2 py-0.5 rounded text-primary font-semibold">STRICT BOUNDARY LOCK</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">
+          Platform operators hold <strong class="text-on-surface font-semibold">ZERO standing visibility</strong> into tenant data. Support sessions are ephemeral, read-only by default, strictly time-boxed to 2 hours maximum, and require dual-admin authorization with live audit streaming. Cryptographic keys isolating tenant partitions are revoked immediately upon session expiration or manual intervention.
+        </p>
+</div>
+<div class="hidden lg:flex flex-col text-right shrink-0">
+<span class="font-caption text-caption text-on-surface-variant font-medium">Compliance Assertion</span>
+<span class="font-data-mono-sm text-caption text-tertiary font-semibold flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">verified</span> ISO-27001 / SOC2 Type II
+        </span>
+</div>
+</div>
+</div>
+<!-- Top KPI Cards Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-space-md">
+<!-- Card 1: Active Vendor Sessions -->
+<div class="bg-surface-container-lowest p-space-md rounded shadow-sm flex flex-col justify-between space-y-space-md">
+<div class="flex items-center justify-between">
+<span class="font-caption text-caption text-on-surface-variant font-semibold tracking-wider uppercase">Active Vendor Sessions</span>
+<span class="flex h-2.5 w-2.5 relative">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-error opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-error"></span>
+</span>
+</div>
+<div class="space-y-1">
+<div class="font-data-mono-lg text-data-mono-lg text-on-surface font-bold tracking-tight">1 Live Session</div>
+<div class="flex items-center gap-1.5 font-data-mono-sm text-caption text-error font-semibold">
+<span class="material-symbols-outlined text-[14px]">timer</span>
+<span id="kpi-timer">01h 14m 22s remaining</span>
+</div>
+</div>
+<div class="pt-space-xs">
+<button class="w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded bg-error-container text-on-error-container hover:bg-error hover:text-on-error font-body-sm text-body-sm font-semibold transition-all" type="button">
+<span class="material-symbols-outlined text-[16px]">cancel</span>
+<span>End Session Now</span>
+</button>
+</div>
+</div>
+<!-- Card 2: Pending Requests -->
+<div class="bg-surface-container-lowest p-space-md rounded shadow-sm flex flex-col justify-between space-y-space-md">
+<div class="flex items-center justify-between">
+<span class="font-caption text-caption text-on-surface-variant font-semibold tracking-wider uppercase">Pending Requests</span>
+<span class="px-2 py-0.5 rounded bg-surface-container-high font-data-mono-sm text-[11px] text-on-surface-variant font-semibold">AC-29.1</span>
+</div>
+<div class="space-y-1">
+<div class="font-data-mono-lg text-data-mono-lg text-on-surface font-bold">1 Awaiting Decision</div>
+<div class="flex items-center gap-1 font-body-sm text-caption text-on-secondary-container">
+<span class="material-symbols-outlined text-[14px]">hourglass_top</span>
+<span>Auto-denies in 24m if unconfirmed</span>
+</div>
+</div>
+<div class="pt-space-xs flex items-center justify-between text-caption font-body-sm text-on-surface-variant bg-surface-container-low px-2 py-1.5 rounded">
+<span>Dual Approval State:</span>
+<span class="font-data-mono-sm font-semibold text-primary">1 of 2 Sign-offs</span>
+</div>
+</div>
+<!-- Card 3: Historical Sessions (30d) -->
+<div class="bg-surface-container-lowest p-space-md rounded shadow-sm flex flex-col justify-between space-y-space-md">
+<div class="flex items-center justify-between">
+<span class="font-caption text-caption text-on-surface-variant font-semibold tracking-wider uppercase">Historical (30 Days)</span>
+<span class="material-symbols-outlined text-secondary text-[20px]">assignment_turned_in</span>
+</div>
+<div class="space-y-1">
+<div class="font-data-mono-lg text-data-mono-lg text-on-surface font-bold">4 Completed</div>
+<div class="flex items-center gap-1 font-body-sm text-caption text-tertiary-container font-semibold">
+<span class="material-symbols-outlined text-[14px]">check_circle</span>
+<span>100% Read-Only Guard Enforced</span>
+</div>
+</div>
+<div class="pt-space-xs flex items-center justify-between text-caption font-body-sm text-on-surface-variant bg-surface-container-low px-2 py-1.5 rounded">
+<span>Write Actions Attempted:</span>
+<span class="font-data-mono-sm font-semibold text-tertiary">0 Breaches</span>
+</div>
+</div>
+<!-- Card 4: Data Boundary Status -->
+<div class="bg-surface-container-lowest p-space-md rounded shadow-sm flex flex-col justify-between space-y-space-md">
+<div class="flex items-center justify-between">
+<span class="font-caption text-caption text-on-surface-variant font-semibold tracking-wider uppercase">Data Boundary Status</span>
+<span class="px-2 py-0.5 rounded bg-tertiary-fixed text-on-tertiary-fixed font-caption text-[11px] font-bold">ENFORCED</span>
+</div>
+<div class="space-y-1">
+<div class="font-data-mono-lg text-data-mono-lg text-tertiary font-bold tracking-tight">ISOLATED</div>
+<div class="font-body-sm text-caption text-on-surface-variant truncate">
+          Zero PII Decryption · STS Token Ring
+        </div>
+</div>
+<div class="pt-space-xs flex items-center justify-between text-caption font-body-sm text-on-surface-variant bg-surface-container-low px-2 py-1.5 rounded">
+<span>KMS Partition:</span>
+<span class="font-data-mono-sm font-semibold text-on-surface">AWS-KMS-TEN842-EU</span>
+</div>
+</div>
+</div>
+<!-- Section 1 & Section 2 Split Workstation -->
+<div class="grid grid-cols-1 xl:grid-cols-12 gap-space-lg items-start">
+<!-- Section 1: Pending Authorization Request (Left Column 7 cols) -->
+<div class="xl:col-span-7 flex flex-col space-y-space-md">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-sm">
+<span class="flex items-center justify-center w-6 h-6 rounded bg-primary text-on-primary font-caption text-caption font-bold">1</span>
+<h2 class="font-title-lg text-title-lg text-on-surface tracking-tight">Authorization Decision Queue</h2>
+</div>
+<span class="font-caption text-caption text-on-surface-variant font-medium">Protocol Ref: UJ-11 / FR-IAM-005</span>
+</div>
+<!-- Prominent Request Card -->
+<div class="bg-surface-container-lowest rounded shadow-md overflow-hidden flex flex-col">
+<!-- Request Header Stripe -->
+<div class="p-space-md bg-surface-container-high flex flex-wrap items-center justify-between gap-space-sm">
+<div class="flex items-center gap-space-sm">
+<span class="px-2.5 py-1 rounded bg-primary-container text-on-primary-container font-data-mono-sm text-caption font-bold">REQ #SUP-8821</span>
+<span class="font-body-sm text-body-sm text-on-surface font-semibold">Tier-3 Ingestion Diagnostic Grant</span>
+</div>
+<div class="flex items-center gap-1.5 font-caption text-caption text-error font-semibold bg-surface-container-lowest px-2.5 py-1 rounded shadow-sm">
+<span class="material-symbols-outlined text-[14px]">alarm</span>
+<span>Expires in 23m 48s</span>
+</div>
+</div>
+<div class="p-space-lg space-y-space-md">
+<!-- Two-column requester metadata grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-space-md p-space-md rounded bg-surface-container-low">
+<div class="space-y-1">
+<span class="font-caption text-caption text-on-surface-variant uppercase font-semibold">Authenticated Requester</span>
+<div class="flex items-center gap-space-xs pt-0.5">
+<span class="material-symbols-outlined text-secondary text-[18px]">badge</span>
+<span class="font-body-md text-body-md text-on-surface font-semibold">Alex Mercer</span>
+</div>
+<span class="font-data-mono-sm text-caption text-on-surface-variant block">EMEA Support Engineer (Tier-3 Ops)</span>
+</div>
+<div class="space-y-1">
+<span class="font-caption text-caption text-on-surface-variant uppercase font-semibold">Target Organization Partition</span>
+<div class="flex items-center gap-space-xs pt-0.5">
+<span class="material-symbols-outlined text-secondary text-[18px]">dns</span>
+<span class="font-body-md text-body-md text-on-surface font-semibold">Acrobex Global (TEN-842)</span>
+</div>
+<span class="font-data-mono-sm text-caption text-on-surface-variant block">EU &amp; UK Market Database Partition</span>
+</div>
+<div class="space-y-1">
+<span class="font-caption text-caption text-on-surface-variant uppercase font-semibold">Scope &amp; API Permissions</span>
+<div class="font-data-mono-sm text-body-sm text-primary font-semibold">Read-Only Diagnostics (FR-INT-002)</div>
+<span class="font-caption text-caption text-on-surface-variant block">Scope: webhook:ingest:read, outbox:logs:read</span>
+</div>
+<div class="space-y-1">
+<span class="font-caption text-caption text-on-surface-variant uppercase font-semibold">Requested Duration</span>
+<div class="font-data-mono-sm text-body-sm text-on-surface font-bold">2 Hours (Strict Max Limit)</div>
+<span class="font-caption text-caption text-on-surface-variant block">Auto-terminates 120m after token issuance</span>
+</div>
+</div>
+<!-- Incident Justification Statement -->
+<div class="space-y-space-xs">
+<span class="font-caption text-caption text-on-surface-variant font-semibold uppercase tracking-wider">Formal Incident Justification</span>
+<div class="p-space-md rounded bg-surface-container font-body-sm text-body-sm text-on-surface leading-relaxed">
+<span class="font-data-mono-sm font-semibold text-primary">[INC-9941]</span> Ingestion payload sync lag threshold exceeded (4,210ms) on UK Storefront WooCommerce connector following the 2026-10-31 multi-currency delta release. Operator requires zero-visibility inspection of outbox sync lag buffer to rectify socket stall.
+            </div>
+</div>
+<!-- Hard Guardrail Warning Box -->
+<div class="p-space-md rounded bg-surface-container-lowest shadow-sm flex items-start gap-space-sm">
+<span class="material-symbols-outlined text-tertiary text-[20px] shrink-0 mt-0.5">shield_lock</span>
+<div class="space-y-0.5">
+<span class="font-section-heading text-caption text-tertiary uppercase font-bold tracking-wider">Statutory PII &amp; Compensation Firewalls Enforced</span>
+<p class="font-body-sm text-caption text-on-surface-variant">
+                Alex Mercer will be strictly blinded from: Participant PII, full credit card/banking IBANs, tree hierarchies, and commission dollar aggregates. All SQL/REST queries are recorded in real-time to the tenant statutory audit trail <span class="font-data-mono-sm text-primary font-semibold">(SC-30)</span>.
+              </p>
+</div>
+</div>
+<!-- Dual Authorization Approval Progression Status -->
+<div class="space-y-space-xs pt-space-xs">
+<div class="flex items-center justify-between text-caption font-body-sm">
+<span class="font-semibold text-on-surface">Separation of Duties (AC-29.2 Dual Sign-Off)</span>
+<span class="font-data-mono-sm text-on-surface-variant font-semibold">1 of 2 Complete</span>
+</div>
+<div class="w-full bg-surface-container rounded h-2 overflow-hidden flex">
+<div class="bg-primary w-1/2 h-full"></div>
+<div class="bg-surface-container-high w-1/2 h-full"></div>
+</div>
+<div class="flex items-center justify-between font-caption text-caption text-on-surface-variant">
+<span class="flex items-center gap-1 text-tertiary font-semibold">
+<span class="material-symbols-outlined text-[14px]">check</span> Sign-off 1: Marcus Vance (Tenant SecOps)
+              </span>
+<span class="text-on-secondary-container font-semibold">Sign-off 2: Pending Your Approval</span>
+</div>
+</div>
+<!-- Action Buttons Bar -->
+<div class="pt-space-sm flex flex-wrap items-center justify-between gap-space-sm">
+<div class="flex items-center gap-space-xs">
+<span class="font-caption text-caption text-on-surface-variant font-medium">Duration:</span>
+<button class="px-2.5 py-1 rounded bg-surface-container text-on-surface font-data-mono-sm text-caption hover:bg-surface-variant transition-colors" type="button">30 min</button>
+<button class="px-2.5 py-1 rounded bg-surface-container text-on-surface font-data-mono-sm text-caption hover:bg-surface-variant transition-colors" type="button">1 hour</button>
+<button class="px-2.5 py-1 rounded bg-primary-container text-on-primary-container font-data-mono-sm text-caption font-bold" type="button">2 hours (Max)</button>
+</div>
+<div class="flex items-center gap-space-sm">
+<button class="px-3.5 py-2 rounded bg-surface-container-low text-error hover:bg-error-container font-body-sm text-body-sm font-semibold transition-colors" type="button">
+                Deny Request
+              </button>
+<button class="inline-flex items-center gap-2 px-4 py-2 rounded bg-primary text-on-primary hover:bg-primary-container font-body-sm text-body-sm font-semibold shadow-sm transition-all" type="button">
+<span class="material-symbols-outlined text-[18px]">verified_user</span>
+<span>Approve &amp; Sign (Requires MFA)</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Section 2: Active Live Session Monitor (Right Column 5 cols) -->
+<div class="xl:col-span-5 flex flex-col space-y-space-md">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-sm">
+<span class="flex items-center justify-center w-6 h-6 rounded bg-error text-on-error font-caption text-caption font-bold">2</span>
+<h2 class="font-title-lg text-title-lg text-on-surface tracking-tight">Active Session Monitor</h2>
+</div>
+<span class="font-caption text-caption text-error font-semibold flex items-center gap-1">
+<span class="w-2 h-2 rounded-full bg-error animate-ping"></span> LIVE STREAMING
+        </span>
+</div>
+<!-- Live Session Card -->
+<div class="bg-surface-container-lowest rounded shadow-md overflow-hidden flex flex-col">
+<!-- Live Header Info -->
+<div class="p-space-md bg-surface-container flex items-center justify-between">
+<div class="flex items-center gap-space-sm">
+<span class="px-2 py-0.5 rounded bg-error text-on-error font-data-mono-sm text-caption font-bold">#SUP-8819</span>
+<span class="font-body-sm text-body-sm text-on-surface font-semibold">Sarah Lin (Platform Ops)</span>
+</div>
+<span class="font-data-mono-sm text-caption text-on-surface-variant font-medium">Token ID: tk_live_842x9</span>
+</div>
+<div class="p-space-md space-y-space-md">
+<!-- Session Progress Graphic -->
+<div class="p-space-md rounded bg-surface-container-low flex items-center justify-between">
+<div class="space-y-0.5">
+<span class="font-caption text-caption text-on-surface-variant uppercase font-semibold">Session Lifetime Elapsed</span>
+<div class="font-data-mono-sm text-caption text-on-surface">Started: 13:40 UTC · Ends: 15:40 UTC</div>
+</div>
+<div class="text-right">
+<div class="font-data-mono-lg text-data-mono-lg text-error font-bold" id="live-session-timer">01:14:02</div>
+<span class="font-caption text-caption text-on-surface-variant">Time Remaining</span>
+</div>
+</div>
+<!-- Active Metrics Pill Array -->
+<div class="grid grid-cols-2 gap-space-xs text-caption font-caption">
+<div class="bg-surface-container px-3 py-2 rounded">
+<span class="text-on-surface-variant block">Sandbox Scope:</span>
+<span class="font-data-mono-sm text-body-sm text-on-surface font-semibold truncate block">Read-Only Telemetry</span>
+</div>
+<div class="bg-surface-container px-3 py-2 rounded">
+<span class="text-on-surface-variant block">Egress Volume:</span>
+<span class="font-data-mono-sm text-body-sm text-on-surface font-semibold truncate block">1.84 MB / 100 MB Cap</span>
+</div>
+</div>
+<!-- Live Log Trace Terminal Component -->
+<div class="space-y-1.5">
+<div class="flex items-center justify-between font-caption text-caption">
+<span class="text-on-surface-variant font-semibold uppercase tracking-wider flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">terminal</span> Read-Only Request Trace
+              </span>
+<span class="font-data-mono-sm text-[11px] text-tertiary font-semibold">Buffer Healthy</span>
+</div>
+<div class="bg-inverse-surface text-inverse-on-surface rounded p-space-sm font-data-mono-sm text-[11px] space-y-1.5 overflow-x-auto max-h-56 select-text shadow-inner">
+<div class="flex items-start gap-2 opacity-70">
+<span class="text-outline-variant shrink-0">14:22:10</span>
+<span class="text-tertiary-fixed font-bold shrink-0">GET</span>
+<span class="truncate">/api/v1/sync/status HTTP/2.0</span>
+<span class="ml-auto text-tertiary-fixed shrink-0">200 OK</span>
+</div>
+<div class="flex items-start gap-2 opacity-80">
+<span class="text-outline-variant shrink-0">14:24:05</span>
+<span class="text-tertiary-fixed font-bold shrink-0">GET</span>
+<span class="truncate">/api/v1/outbox/lag?channel=uk_store</span>
+<span class="ml-auto text-tertiary-fixed shrink-0">200 OK</span>
+</div>
+<div class="flex items-start gap-2 opacity-90">
+<span class="text-outline-variant shrink-0">14:25:30</span>
+<span class="text-tertiary-fixed font-bold shrink-0">GET</span>
+<span class="truncate">/api/v1/connectors/shopify/queue_depth</span>
+<span class="ml-auto text-tertiary-fixed shrink-0">200 OK</span>
+</div>
+<div class="flex items-start gap-2 font-semibold bg-surface-tint/20 px-1 py-0.5 rounded">
+<span class="text-outline-variant shrink-0">14:26:12</span>
+<span class="text-primary-fixed-dim font-bold shrink-0">GET</span>
+<span class="truncate">/api/v1/diagnostics/reconciliation_probe</span>
+<span class="ml-auto text-tertiary-fixed shrink-0">200 OK</span>
+</div>
+</div>
+</div>
+<!-- Emergency Termination Strip -->
+<div class="pt-space-xs">
+<button class="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded bg-error text-on-error hover:opacity-95 font-body-sm text-body-sm font-bold shadow transition-all" type="button">
+<span class="material-symbols-outlined text-[18px]">gavel</span>
+<span>Terminate Session Immediately (Revoke Ephemeral Token)</span>
+</button>
+<span class="font-caption text-[11px] text-on-surface-variant block text-center pt-1.5">
+              Instantly tears down IAM STS session and purges active HTTP bearer tokens.
+            </span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Section 3: Historical Support Sessions Audit Table -->
+<div class="flex flex-col space-y-space-md pt-space-md">
+<div class="flex flex-wrap items-center justify-between gap-space-md">
+<div class="flex items-center gap-space-sm">
+<span class="flex items-center justify-center w-6 h-6 rounded bg-secondary text-on-secondary font-caption text-caption font-bold">3</span>
+<div>
+<h2 class="font-title-lg text-title-lg text-on-surface tracking-tight">Statutory Historical Support Sessions Audit</h2>
+<span class="font-caption text-caption text-on-surface-variant font-medium">All historical sessions recorded in WORM statutory storage (SEC-17a-4 / FINRA compliant)</span>
+</div>
+</div>
+<!-- Filter utilities -->
+<div class="flex items-center gap-space-xs">
+<div class="flex items-center gap-1 bg-surface-container-lowest px-2.5 py-1.5 rounded shadow-sm text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px]">filter_list</span>
+<span class="font-body-sm text-caption">Scope: All Types</span>
+</div>
+<div class="flex items-center gap-1 bg-surface-container-lowest px-2.5 py-1.5 rounded shadow-sm text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px]">calendar_today</span>
+<span class="font-body-sm text-caption">Past 30 Days</span>
+</div>
+<button class="p-1.5 rounded bg-surface-container-lowest text-on-surface-variant hover:text-on-surface shadow-sm transition-colors" title="Export Ledger" type="button">
+<span class="material-symbols-outlined text-[18px]">download</span>
+</button>
+</div>
+</div>
+<!-- Data Table Container -->
+<div class="bg-surface-container-lowest rounded shadow-md overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-high text-on-surface font-caption text-caption uppercase tracking-wider font-semibold">
+<th class="py-3 px-4">Session ID</th>
+<th class="py-3 px-4">Vendor Engineer</th>
+<th class="py-3 px-4">Tenant Approvers (Dual Sign)</th>
+<th class="py-3 px-4">Scope &amp; Incident Reason</th>
+<th class="py-3 px-4 text-right">Duration</th>
+<th class="py-3 px-4 text-center">Execution Log</th>
+<th class="py-3 px-4 text-center">Security Status</th>
+<th class="py-3 px-4 text-right">Action</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-surface-container font-body-sm text-body-sm text-on-surface">
+<!-- Row 1 -->
+<tr class="hover:bg-surface-container-low transition-colors">
+<td class="py-3 px-4">
+<span class="font-data-mono-sm font-semibold text-primary">#SUP-8794</span>
+<span class="block font-caption text-[11px] text-on-surface-variant">2026-10-28 09:12 UTC</span>
+</td>
+<td class="py-3 px-4">
+<span class="font-body-md font-semibold">Liam Vance</span>
+<span class="block font-caption text-caption text-on-surface-variant">Database Site Reliability Eng</span>
+</td>
+<td class="py-3 px-4">
+<div class="flex flex-col gap-0.5">
+<span class="font-caption text-caption text-on-surface font-medium">1. Elena Rostova (Lead Analyst)</span>
+<span class="font-caption text-caption text-on-surface font-medium">2. Marcus Vance (SecOps)</span>
+</div>
+</td>
+<td class="py-3 px-4 max-w-xs">
+<span class="font-data-mono-sm text-[12px] font-semibold text-on-surface">DB Connection Pool Diagnostics</span>
+<p class="font-caption text-caption text-on-surface-variant truncate">INC-9820: PostgreSQL connection exhaustion post-settlement calculation cycle.</p>
+</td>
+<td class="py-3 px-4 text-right font-data-mono-sm">
+<span class="text-on-surface font-semibold">45 min</span>
+<span class="block font-caption text-[11px] text-on-surface-variant">Max: 120m</span>
+</td>
+<td class="py-3 px-4 text-center">
+<span class="inline-flex items-center gap-1 font-data-mono-sm text-caption bg-surface-container px-2 py-0.5 rounded text-on-surface">
+<span class="material-symbols-outlined text-[14px] text-secondary">terminal</span> 14 Queries
+              </span>
+</td>
+<td class="py-3 px-4 text-center">
+<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded bg-tertiary-fixed text-on-tertiary-fixed font-caption text-caption font-semibold">
+<span class="material-symbols-outlined text-[14px]">check</span> NORMAL EXPIRE
+              </span>
+</td>
+<td class="py-3 px-4 text-right">
+<button class="text-primary hover:underline font-body-sm text-caption font-semibold inline-flex items-center gap-0.5" type="button">
+<span>Audit Trace</span>
+<span class="material-symbols-outlined text-[14px]">arrow_outward</span>
+</button>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-surface-container-low transition-colors">
+<td class="py-3 px-4">
+<span class="font-data-mono-sm font-semibold text-primary">#SUP-8751</span>
+<span class="block font-caption text-[11px] text-on-surface-variant">2026-10-21 16:30 UTC</span>
+</td>
+<td class="py-3 px-4">
+<span class="font-body-md font-semibold">Rachel Hayes</span>
+<span class="block font-caption text-caption text-on-surface-variant">Integration Specialist</span>
+</td>
+<td class="py-3 px-4">
+<div class="flex flex-col gap-0.5">
+<span class="font-caption text-caption text-on-surface font-medium">1. David Chen (Compliance)</span>
+<span class="font-caption text-caption text-on-surface font-medium">2. Elena Rostova (Lead Analyst)</span>
+</div>
+</td>
+<td class="py-3 px-4 max-w-xs">
+<span class="font-data-mono-sm text-[12px] font-semibold text-on-surface">Klaviyo Webhook Payload Inspection</span>
+<p class="font-caption text-caption text-on-surface-variant truncate">INC-9764: Event dispatch dead-lettering for distributor tier change notification.</p>
+</td>
+<td class="py-3 px-4 text-right font-data-mono-sm">
+<span class="text-on-surface font-semibold">1h 12m</span>
+<span class="block font-caption text-[11px] text-on-surface-variant">Max: 120m</span>
+</td>
+<td class="py-3 px-4 text-center">
+<span class="inline-flex items-center gap-1 font-data-mono-sm text-caption bg-surface-container px-2 py-0.5 rounded text-on-surface">
+<span class="material-symbols-outlined text-[14px] text-secondary">terminal</span> 28 Queries
+              </span>
+</td>
+<td class="py-3 px-4 text-center">
+<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded bg-tertiary-fixed text-on-tertiary-fixed font-caption text-caption font-semibold">
+<span class="material-symbols-outlined text-[14px]">check</span> NORMAL EXPIRE
+              </span>
+</td>
+<td class="py-3 px-4 text-right">
+<button class="text-primary hover:underline font-body-sm text-caption font-semibold inline-flex items-center gap-0.5" type="button">
+<span>Audit Trace</span>
+<span class="material-symbols-outlined text-[14px]">arrow_outward</span>
+</button>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-surface-container-low transition-colors">
+<td class="py-3 px-4">
+<span class="font-data-mono-sm font-semibold text-primary">#SUP-8692</span>
+<span class="block font-caption text-[11px] text-on-surface-variant">2026-10-14 11:05 UTC</span>
+</td>
+<td class="py-3 px-4">
+<span class="font-body-md font-semibold">Tariq Mansour</span>
+<span class="block font-caption text-caption text-on-surface-variant">Security Infrastructure Analyst</span>
+</td>
+<td class="py-3 px-4">
+<div class="flex flex-col gap-0.5">
+<span class="font-caption text-caption text-on-surface font-medium">1. Marcus Vance (SecOps)</span>
+<span class="font-caption text-caption text-on-surface font-medium">2. David Chen (Compliance)</span>
+</div>
+</td>
+<td class="py-3 px-4 max-w-xs">
+<span class="font-data-mono-sm text-[12px] font-semibold text-on-surface">WAF Rate-Limiting Policy Rectification</span>
+<p class="font-caption text-caption text-on-surface-variant truncate">INC-9611: Edge CDN False-positive IP block during monthly batch submission run.</p>
+</td>
+<td class="py-3 px-4 text-right font-data-mono-sm">
+<span class="text-on-surface font-semibold">22 min</span>
+<span class="block font-caption text-[11px] text-on-surface-variant">Max: 120m</span>
+</td>
+<td class="py-3 px-4 text-center">
+<span class="inline-flex items-center gap-1 font-data-mono-sm text-caption bg-surface-container px-2 py-0.5 rounded text-on-surface">
+<span class="material-symbols-outlined text-[14px] text-secondary">terminal</span> 6 Queries
+              </span>
+</td>
+<td class="py-3 px-4 text-center">
+<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded bg-surface-container-high text-on-surface font-caption text-caption font-semibold">
+<span class="material-symbols-outlined text-[14px]">lock_reset</span> MANUAL REVOKE
+              </span>
+</td>
+<td class="py-3 px-4 text-right">
+<button class="text-primary hover:underline font-body-sm text-caption font-semibold inline-flex items-center gap-0.5" type="button">
+<span>Audit Trace</span>
+<span class="material-symbols-outlined text-[14px]">arrow_outward</span>
+</button>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="hover:bg-surface-container-low transition-colors">
+<td class="py-3 px-4">
+<span class="font-data-mono-sm font-semibold text-primary">#SUP-8610</span>
+<span class="block font-caption text-[11px] text-on-surface-variant">2026-10-02 18:40 UTC</span>
+</td>
+<td class="py-3 px-4">
+<span class="font-body-md font-semibold">Sarah Lin</span>
+<span class="block font-caption text-caption text-on-surface-variant">Platform Operations</span>
+</td>
+<td class="py-3 px-4">
+<div class="flex flex-col gap-0.5">
+<span class="font-caption text-caption text-on-surface font-medium">1. Elena Rostova (Lead Analyst)</span>
+<span class="font-caption text-caption text-on-surface font-medium">2. Marcus Vance (SecOps)</span>
+</div>
+</td>
+<td class="py-3 px-4 max-w-xs">
+<span class="font-data-mono-sm text-[12px] font-semibold text-on-surface">Kafka Ingestion Queue Backpressure Tune</span>
+<p class="font-caption text-caption text-on-surface-variant truncate">INC-9502: Offset commit stalling on high-throughput orders partition.</p>
+</td>
+<td class="py-3 px-4 text-right font-data-mono-sm">
+<span class="text-on-surface font-semibold">1h 48m</span>
+<span class="block font-caption text-[11px] text-on-surface-variant">Max: 120m</span>
+</td>
+<td class="py-3 px-4 text-center">
+<span class="inline-flex items-center gap-1 font-data-mono-sm text-caption bg-surface-container px-2 py-0.5 rounded text-on-surface">
+<span class="material-symbols-outlined text-[14px] text-secondary">terminal</span> 42 Queries
+              </span>
+</td>
+<td class="py-3 px-4 text-center">
+<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded bg-tertiary-fixed text-on-tertiary-fixed font-caption text-caption font-semibold">
+<span class="material-symbols-outlined text-[14px]">check</span> NORMAL EXPIRE
+              </span>
+</td>
+<td class="py-3 px-4 text-right">
+<button class="text-primary hover:underline font-body-sm text-caption font-semibold inline-flex items-center gap-0.5" type="button">
+<span>Audit Trace</span>
+<span class="material-symbols-outlined text-[14px]">arrow_outward</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+<!-- Table Pagination/Info Bar -->
+<div class="p-space-sm bg-surface-container-low flex items-center justify-between text-caption font-caption text-on-surface-variant">
+<span>Showing 4 completed vendor sessions (last 30 calendar days)</span>
+<div class="flex items-center gap-space-sm">
+<span>Page 1 of 1</span>
+<div class="flex items-center gap-1">
+<button class="p-1 rounded bg-surface-container text-on-surface-variant opacity-50 cursor-not-allowed" type="button">
+<span class="material-symbols-outlined text-[16px]">chevron_left</span>
+</button>
+<button class="p-1 rounded bg-surface-container text-on-surface-variant opacity-50 cursor-not-allowed" type="button">
+<span class="material-symbols-outlined text-[16px]">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Statutory System Security Specification Strip -->
+<div class="rounded bg-surface-container p-space-md flex flex-wrap items-center justify-between gap-space-md">
+<div class="flex items-center gap-space-md">
+<span class="material-symbols-outlined text-primary text-[24px]">vpn_lock</span>
+<div class="flex flex-col">
+<span class="font-section-heading text-section-heading text-on-surface">Zero-Standing Access Architecture (ZSA-2026)</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">TLS 1.3 Strict Transport Security · Region: US-East-1 · Ephemeral STS Token Engine Active</span>
+</div>
+</div>
+<div class="flex items-center gap-space-lg font-data-mono-sm text-caption text-on-surface-variant">
+<span>Enforcement Engine: <strong>v2026.11-PROD</strong></span>
+<span>KMS Envelope: <strong>AES-256-GCM</strong></span>
+<span class="text-tertiary font-bold flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">lock</span> STATUTORY ENFORCED
+      </span>
+</div>
+</div>
+</div>
+<script>
+  // Simple micro-interaction for active session live countdown simulation
+  (function() {
+    let totalSeconds = (1 * 3600) + (14 * 60) + 2;
+    const timerElem = document.getElementById('live-session-timer');
+    const kpiTimerElem = document.getElementById('kpi-timer');
+
+    setInterval(() => {
+      if (totalSeconds > 0) {
+        totalSeconds--;
+        const hours = Math.floor(totalSeconds / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        const seconds = totalSeconds % 60;
+
+        const formattedHHMMSS = 
+          String(hours).padStart(2, '0') + ':' + 
+          String(minutes).padStart(2, '0') + ':' + 
+          String(seconds).padStart(2, '0');
+
+        const formattedKpi = 
+          String(hours).padStart(2, '0') + 'h ' + 
+          String(minutes).padStart(2, '0') + 'm ' + 
+          String(seconds).padStart(2, '0') + 's remaining';
+
+        if (timerElem) timerElem.textContent = formattedHHMMSS;
+        if (kpiTimerElem) kpiTimerElem.textContent = formattedKpi;
+      }
+    }, 1000);
+  })();
+</script></main><footer class="fixed bottom-0 left-72 right-0 h-8 bg-surface-container-low shadow-[0_1px_8px_rgba(0,0,0,0.04)] z-30 flex items-center justify-between px-gutter select-none"><div class="flex items-center gap-space-lg"><div class="flex items-center gap-space-xs"><span class="w-2 h-2 rounded-full bg-tertiary-fixed-dim"></span><span class="font-caption text-caption text-on-surface-variant font-medium">System:</span><span class="font-caption text-caption text-on-surface font-semibold">Online</span></div><div class="flex items-center gap-space-xs"><span class="font-caption text-caption text-on-surface-variant font-medium">Build:</span><span class="font-data-mono-sm text-caption text-on-surface">v2.4.1</span></div><div class="flex items-center gap-space-xs"><span class="font-caption text-caption text-on-surface-variant font-medium">Engine:</span><span class="font-data-mono-sm text-caption text-on-surface">2026.11-PROD</span></div></div><div class="flex items-center gap-space-xs"><span class="material-symbols-outlined text-tertiary-container text-[14px]">lock</span><span class="font-caption text-caption text-tertiary font-semibold uppercase tracking-wider">Statutory Audit Lock Active</span></div></footer></div></body></html>

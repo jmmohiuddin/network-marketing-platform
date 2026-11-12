@@ -6,6 +6,8 @@ import { usePathname } from 'next/navigation'
 const SECTIONS = [
   { href: '/vendor', label: 'Tenants', matches: (path: string) => path === '/vendor' || path.startsWith('/vendor/tenants') || path.startsWith('/vendor/provisioning') },
   { href: '/vendor/support-sessions', label: 'Support sessions', matches: (path: string) => path.startsWith('/vendor/support-sessions') },
+  { href: '/vendor/users', label: 'Vendor users', matches: (path: string) => path.startsWith('/vendor/users') },
+  { href: '/vendor/audit', label: 'Audit log', matches: (path: string) => path.startsWith('/vendor/audit') },
 ]
 
 /**

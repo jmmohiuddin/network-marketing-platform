@@ -1,4 +1,4 @@
-import { ComplianceInputError, type ComplianceFacts, type DrillEntity, type Figure } from '@nmp/compliance'
+import { ComplianceInputError, type ComplianceFacts, type DrillEntity, type Figure, type ReportCode } from '@nmp/compliance'
 import type { Tx } from '@nmp/db'
 import { toCsv } from '../../lib/csv.js'
 import { ApiError, notFound } from '../../lib/errors.js'
@@ -31,10 +31,12 @@ interface EntityTable {
 function entityTable(ref: FigureRef, entity: DrillEntity, facts: ComplianceFacts): EntityTable {
   if (entity === 'order') {
     return {
+      // net_minor = amount_minor - refunded_minor: the net sales R1 sums (AC-41.1).
       columns: ['order_ref', 'order_month', 'order_day', 'buyer_ref', 'amount_minor', 'volume_minor', 'refunded_minor',
-        'refund_month', 'purpose', 'is_starter_kit'],
+        'net_minor', 'refund_month', 'purpose', 'is_starter_kit'],
       cells: new Map(facts.orders.map((o) => [o.orderRef, [o.orderRef, o.orderMonth, o.orderDay, o.buyerRef,
-        o.amountMinor.toString(), o.volumeMinor.toString(), o.refundedMinor.toString(), o.refundMonth, o.purpose, o.isStarterKit]])),
+        o.amountMinor.toString(), o.volumeMinor.toString(), o.refundedMinor.toString(), (o.amountMinor - o.refundedMinor).toString(),
+        o.refundMonth, o.purpose, o.isStarterKit]])),
     }
   }
   if (entity === 'payout_line') {
@@ -59,6 +61,7 @@ function cellsOf(table: EntityTable, ref: string): Cells {
 }
 
 export interface DrillTarget {
+  readonly report: ReportCode
   readonly snapshotId: string
   readonly figureId: string
   readonly stored: StoredFigure
@@ -102,7 +105,7 @@ export async function drillTarget(tx: Tx, snapshotId: string, figureId: string, 
   const { periods, facts } = await recompute(tx, snapshot)
   const figure = periods.find((p) => p.report === ref.report && p.period === ref.period)?.figures.find((f) => f.key === ref.key)
   if (figure === undefined || !sameFigure(figure, stored)) throw notReproducible('The recomputed figure differs from the stored one.')
-  return { snapshotId: snapshot.id, figureId, stored, figure, table: entityTable(ref, figure.drill.entity, facts) }
+  return { report: ref.report, snapshotId: snapshot.id, figureId, stored, figure, table: entityTable(ref, figure.drill.entity, facts) }
 }
 
 const idsOf = (target: DrillTarget, set: DrillSet): readonly string[] =>
@@ -114,6 +117,31 @@ function figureSummary(target: DrillTarget) {
     id: target.figureId, unit: stored.unit, value: stored.value, numerator: stored.numerator, denominator: stored.denominator,
     population: stored.population, method: stored.method, method_version: stored.method_version, note: stored.note,
   }
+}
+
+// AC-41.1: the *_minor column whose sum over a set equals the figure's component (as @nmp/compliance computes it);
+// null where the component is a count of rows.
+const R2_VOLUME_FIGURES = new Set(['rewarded_volume_cents', 'personal_use_share_pct', 'unknown_purpose_share_pct'])
+const COMPONENT_COLUMN: Readonly<Record<ReportCode, (key: string, set: DrillSet) => string | null>> = {
+  R1: (key) => (key === 'participant_orders_purpose_unknown_pct' ? null : 'net_minor'),
+  R2: (key) => (R2_VOLUME_FIGURES.has(key) ? 'volume_minor' : key === 'unattributable_amount_cents' ? 'amount_minor' : null),
+  R3: () => 'amount_minor',
+  R4: () => null,
+  R5: (key, set) => (key === 'mean' && set === 'numerator' ? 'earnings_minor' : null),
+}
+
+/** Sum of every *_minor column over the whole set (not the page), as bigint strings. */
+function sumsOf(target: DrillTarget, ids: readonly string[]): Record<string, string> {
+  const minor = target.table.columns.flatMap((column, index) => (column.endsWith('_minor') ? [{ column, index }] : []))
+  const totals = minor.map(({ index }) => ids.reduce((total, id) => total + BigInt(cellsOf(target.table, id)[index] as string), 0n))
+  return Object.fromEntries(minor.map(({ column }, i) => [column, totals[i]!.toString()]))
+}
+
+/** The sums key that must equal the figure's component for this set, and that component; null for counts. */
+function componentOf(target: DrillTarget, set: DrillSet): { key: string; expected_minor: string } | null {
+  const key = COMPONENT_COLUMN[target.report](target.figure.key, set)
+  const expected = target.stored[set]
+  return key === null || expected === null ? null : { key, expected_minor: expected }
 }
 
 /** One page of a figure's numerator or denominator rows, by ascending reference. */
@@ -130,7 +158,7 @@ export function drillPage(target: DrillTarget, set: DrillSet, after: string | un
     data: page.data,
     meta: {
       ...page.meta, set, entity: target.figure.drill.entity, row_count: ids.length, figure: figureSummary(target),
-      notice: FIGURES_NOTICE,
+      sums: sumsOf(target, ids), component: componentOf(target, set), notice: FIGURES_NOTICE,
     },
   }
 }

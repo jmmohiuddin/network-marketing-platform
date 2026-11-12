@@ -40,6 +40,15 @@ describe('InvitationForm', () => {
     expect((await screen.findByRole('link', { name: 'Go to sign-in' })).getAttribute('href')).toBe('/signin?tenant=acme-eu')
   })
 
+  it('sends an invited vendor user to the vendor sign-in (BUG-011)', async () => {
+    const user = userEvent.setup()
+    window.history.replaceState(null, '', '/invitation?realm=vendor#token=tok_123')
+    renderWithProviders(<InvitationForm />, fetchReturning(noContent()))
+    expect(await screen.findByText(/invited to sign in to the vendor operations console/)).toBeTruthy()
+    await choosePassword(user, PASSWORD)
+    expect((await screen.findByRole('link', { name: 'Go to sign-in' })).getAttribute('href')).toBe('/signin/vendor')
+  })
+
   it('ignores a company value that is not a tenant slug', async () => {
     const user = userEvent.setup()
     window.history.replaceState(null, '', '/invitation?tenant=Acme%20Ltd#token=tok_123')

@@ -86,6 +86,14 @@ async function asPhantom(as: TestUser | undefined, routeCase: RouteCase) {
   return { status: response.statusCode, error: errorOf(response) }
 }
 
+/** Values no vendor user named in a refused request (the vendor log keeps their params and query, E-ADR-22). */
+async function notNamedInRefusals(values: readonly string[]): Promise<string[]> {
+  const [refused] = await ownerRows<{ text: string }>(
+    `SELECT coalesce(string_agg(after_ref, ' '), '') AS text FROM audit.vendor_event WHERE action = 'SUPPORT_SESSION.ACCESS_REFUSED'`,
+  )
+  return values.filter((value) => !refused!.text.includes(value))
+}
+
 const logged = (table: 'audit.audit_event' | 'audit.vendor_event', requestId: string, action: string) =>
   ownerRows<{ after_ref: string | null }>(`SELECT after_ref FROM ${table} WHERE request_id = $1 AND action = $2 ORDER BY seq`, [requestId, action])
 const refusalsLogged = async (table: 'audit.audit_event' | 'audit.vendor_event', requestId: string) =>
@@ -306,8 +314,9 @@ describe('vendor user without a support session (AC-29.3, E-ADR-22: no business 
     const as = await createSignedInUser({ tenantId: null })
 
     const response = await send(as, request)
+    const shown = routeCase.echoesRefusedRequests === true ? await notNamedInRefusals(businessCanaries) : businessCanaries
 
-    expect(leaked(response, request, businessCanaries)).toEqual([])
+    expect(leaked(response, request, shown)).toEqual([])
     expect(response.statusCode).toBeLessThan(500)
     if (routeCase.access !== 'tenant') return
     expect(outcome(response)).toBe(refusal(request, 403, 'REALM_FORBIDDEN'))

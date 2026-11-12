@@ -46,7 +46,7 @@ describe('the default app', () => {
     expect(withoutSession.json().error.code).toBe('REALM_FORBIDDEN')
     expect(inSession.statusCode).toBe(200)
     expect(inSession.json().data.map((event: { action: string }) => event.action)).toEqual(
-      expect.arrayContaining(['SUPPORT_SESSION.REQUESTED', 'SUPPORT_SESSION.APPROVED', 'SUPPORT_SESSION.ACCESSED']),
+      expect.arrayContaining(['SUPPORT_SESSION.REQUESTED', 'SUPPORT_SESSION.APPROVED', 'SUPPORT_SESSION.STARTED']),
     )
   })
 })

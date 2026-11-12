@@ -155,7 +155,7 @@ export function RolesTab({ roles, onChanged }: { readonly roles: Resource<readon
         {!readOnly && roles.data !== null && <Button onClick={() => setCreating(true)}>Create role</Button>}
       </div>
       <Table
-        caption={`Permission matrix: what each of the ${rows.length} roles may do`}
+        caption={`Permission matrix: what ${rows.length === 1 ? 'the role' : `each of the ${rows.length} roles`} may do`}
         columns={matrix.columns}
         rows={matrix.rows}
         rowKey={(row) => row.key}

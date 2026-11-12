@@ -141,6 +141,15 @@
 .table-full-row { padding: 0; }
 .table-error { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-3); padding: var(--space-6) var(--space-4); }
 .pagination { display: flex; justify-content: flex-end; gap: var(--space-2); }
+/* stackOnPhone: rows become cards of "header: value" lines; the column headers move into each cell. */
+@media (max-width: 599px) {
+  .table-stack, .table-stack caption, .table-stack tbody, .table-stack tr, .table-stack th, .table-stack td { display: block; }
+  .table-stack thead { display: none; }
+  .table-stack tbody tr { padding: var(--space-3) var(--space-4); border-top: var(--border-width-default) solid var(--color-border-default); }
+  .table-stack tbody th, .table-stack tbody td { height: auto; padding: var(--space-1) 0; border-top: 0; text-align: start; }
+  .table-stack [data-label]::before { content: attr(data-label); display: block; color: var(--color-text-secondary); font: var(--font-caption); }
+  .table-stack .table-full-row { padding: 0; }
+}
 .skeleton { display: block; height: var(--space-3); border-radius: var(--radius-sm); background: var(--color-bg-subtle); animation: pulse 1.6s ease-in-out infinite; }
 .skeleton-line { width: 60%; }
 

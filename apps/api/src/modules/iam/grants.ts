@@ -1,5 +1,5 @@
 import type { Tx } from '@nmp/db'
-import type { AuthContext } from '../../lib/auth.js'
+import { marketScope, type AuthContext } from '../../lib/auth.js'
 import { recordAudit } from '../../lib/audit.js'
 import { ApiError, notFound } from '../../lib/errors.js'
 import { enqueueOutbox } from '../../lib/outbox.js'
@@ -42,6 +42,20 @@ export type GrantOutcome =
 const ASSIGNMENT_COLUMNS = 'id, user_id, role_id, market_ids, valid_from, valid_to, approval_id'
 const REQUEST_COLUMNS = 'id, user_id, role_id, market_ids, valid_to, requested_by, state, approval_id, decided_at, created_at'
 const ADMIN_PERMISSION = 'user.manage'
+
+/** Runs the route's step-up check (403 STEP_UP_REQUIRED); called only when the target is privileged (SEC-20). */
+export type StepUpCheck = () => void
+
+const scopeNotHeld = (message: string): ApiError => new ApiError(403, 'SCOPE_NOT_HELD', message)
+
+/**
+ * BR-SEC-05 / SEC-26 for approvals and removals: the caller's user.manage markets cover every market of the given grants. A grant
+ * over all markets (null) is covered only by a user.manage grant over all markets.
+ */
+export function coversMarkets(auth: AuthContext, grants: readonly (readonly string[] | null)[]): boolean {
+  const scope = marketScope(auth, ADMIN_PERMISSION)
+  return scope === null || grants.every((markets) => markets !== null && markets.every((id) => scope.includes(id)))
+}
 
 async function assertGrantee(tx: Tx, userId: string): Promise<void> {
   const { rows } = await tx.query<{ state: string }>('SELECT state FROM user_account WHERE id = $1', [userId])
@@ -153,6 +167,16 @@ async function applyApproval(tx: Tx, request: GrantRequestView, role: RoleView, 
   return assignment
 }
 
+/**
+ * SEC-27 / AC-36.1: the second admin's approval is the control, so the approver needs admin rights (user.manage)
+ * over every requested market (all markets only from an all-markets admin, BUG-006) lasting at least until the
+ * grant's end, but not the role's own permissions: a Tenant admin approves Compliance officer or Finance approver
+ * grants (BUG-010).
+ */
+function mayApprove(auth: AuthContext, request: GrantRequestView): boolean {
+  return holdsWithin(auth, [ADMIN_PERMISSION], request.market_ids, request.valid_to)
+}
+
 /** Second-admin decision on a privileged grant (step-up checked by the route; factor time is recorded). */
 export async function decideGrant(tx: Tx, auth: AuthContext, requestId: string, decision: Decision) {
   const request = await lockRequest(tx, requestId)
@@ -161,6 +185,9 @@ export async function decideGrant(tx: Tx, auth: AuthContext, requestId: string, 
     throw new ApiError(422, 'GRANT_EXPIRED', 'The requested end date has passed. Reject this request and request the grant again.')
   }
   const role = await assignableRole(tx, request.role_id)
+  if (decision.decision === 'approved' && !mayApprove(auth, request)) {
+    throw scopeNotHeld('You can approve a grant only over markets you manage users in, and only for as long as your own admin role lasts.')
+  }
   const approvalId = await insertApproval(tx, auth, request, decision)
   const { rows } = await tx.query<GrantRequestView>(
     `UPDATE role_grant_request SET state = $2, approval_id = $3, decided_at = now() WHERE id = $1 RETURNING ${REQUEST_COLUMNS}`,
@@ -188,14 +215,21 @@ export async function listGrantRequests(
   return rows
 }
 
-/** Ends an active assignment now (valid_to); never the last admin grant. */
-export async function revokeAssignment(tx: Tx, assignmentId: string): Promise<AssignmentView> {
+/**
+ * Ends an active assignment now (valid_to); never the last admin grant. BUG-007: the caller's user.manage markets
+ * must cover the assignment's markets, and ending a privileged assignment needs a fresh second factor.
+ */
+export async function revokeAssignment(tx: Tx, auth: AuthContext, assignmentId: string, stepUp: StepUpCheck): Promise<AssignmentView> {
   const { rows } = await tx.query<AssignmentView>(
     `SELECT ${ASSIGNMENT_COLUMNS} FROM role_assignment ra
      WHERE id = $1 AND valid_from <= now() AND (valid_to IS NULL OR valid_to > now())`,
     [assignmentId],
   )
   if (rows[0] === undefined) throw notFound()
+  if (!coversMarkets(auth, [rows[0].market_ids])) {
+    throw scopeNotHeld('You can revoke only roles limited to markets you manage users in.')
+  }
+  if ((await assignableRole(tx, rows[0].role_id)).privileged) stepUp()
   await assertAdminRemains(tx, { assignmentId })
   const revoked = await tx.query<AssignmentView>(
     `UPDATE role_assignment SET valid_to = now() WHERE id = $1 RETURNING ${ASSIGNMENT_COLUMNS}`,

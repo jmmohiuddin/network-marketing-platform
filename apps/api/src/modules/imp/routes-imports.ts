@@ -50,7 +50,10 @@ function registerUpload(app: FastifyInstance, deps: ImportRouteDeps): void {
   }))
 }
 
-function registerReads(app: FastifyInstance): void {
+function registerReads(app: FastifyInstance, deps: ImportRouteDeps): void {
+  // The upload form's file size limit (a larger file gets 413 FILE_TOO_LARGE).
+  app.get('/v1/imports/limits', MANAGE, async () => envelope({ max_file_bytes: deps.maxFileBytes }))
+
   app.get('/v1/imports', MANAGE, async (request) => {
     const query = parse(listQuery, request.query)
     const after = decodeCursor(query.cursor, z.uuid())
@@ -108,6 +111,6 @@ function registerTransitions(app: FastifyInstance, deps: ImportRouteDeps): void 
 /** API-01, API-02 and the batch lifecycle steps (FR-IMP-001, FR-IMP-003); all need import.manage. */
 export function registerImportRoutes(app: FastifyInstance, deps: ImportRouteDeps): void {
   registerUpload(app, deps)
-  registerReads(app)
+  registerReads(app, deps)
   registerTransitions(app, deps)
 }

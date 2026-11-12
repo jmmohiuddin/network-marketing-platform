@@ -1,5 +1,6 @@
 'use client'
 
+import { countLabel } from '../../lib/format'
 import { useState, type FormEvent, type ReactNode } from 'react'
 import { useApi } from '../../components/api-provider'
 import { Banner } from '../../components/banner'
@@ -61,7 +62,7 @@ function VocabularyTable({ title, codes, counts, columns }: {
     <section className="data-section" aria-label={title}>
       <h2>{title}</h2>
       <Table
-        caption={`${codes.length} partner code(s)`}
+        caption={countLabel(codes.length, 'partner code')}
         columns={[
           { key: 'code', header: 'Partner code', cell: (code) => <span className="data-code">{code === '' ? '(empty)' : code}</span> },
           { key: 'rows', header: 'Rows in batch', align: 'end', cell: rowsOf },
@@ -138,7 +139,7 @@ export function MappingForm({ version, sourceValues, latest, editable: mayEdit, 
         </div>
       )}
       {(unmapped.unknown.length > 0 || unmapped.blocking.length > 0) && (
-        <Banner tone="warning" title={`${unmapped.unknown.length + unmapped.blocking.length} partner code(s) are not mapped`}>
+        <Banner tone="warning" title={`${countLabel(unmapped.unknown.length + unmapped.blocking.length, 'partner code')} ${unmapped.unknown.length + unmapped.blocking.length === 1 ? 'is' : 'are'} not mapped`}>
           {unmapped.unknown.length > 0 && <p>Order purposes and payout source kinds left unmapped load as unknown and are counted in the data-quality report: <span className="data-code">{unmapped.unknown.join(', ')}</span>.</p>}
           {unmapped.blocking.length > 0 && <p>Participant types and starter-kit codes have no safe default: a batch that uses these cannot be loaded until they are mapped: <span className="data-code">{unmapped.blocking.join(', ')}</span>.</p>}
         </Banner>

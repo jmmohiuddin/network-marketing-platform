@@ -6,7 +6,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { apiError, json, ok } from '../../../test/fetch'
 import { adminMe, bodyOf, callsTo, fetchByRoute, headerOf, renderAs } from '../test-support'
 import type { GrantRequest, RoleView, UserView } from '../types'
-import { marketIdsError, parseMarketIds } from './grant-dialog'
 import { UsersPage } from './users-page'
 
 const navigation = vi.hoisted(() => ({ search: '', router: { replace: vi.fn(), push: vi.fn() } }))
@@ -41,6 +40,7 @@ function routes(extra: Record<string, () => Response> = {}) {
     'GET /v1/users': () => ok(USERS),
     'GET /v1/roles': () => json(200, { data: ROLES, meta: { permissions: ['user.manage', 'settings.manage', 'compliance.read'] } }),
     'GET /v1/role-grant-requests': () => ok(PENDING),
+    'GET /v1/markets': () => ok([{ id: MARKET, code: 'DE', name: 'Germany', currency: 'EUR' }, { id: 'm-fr', code: 'FR', name: 'France', currency: 'EUR' }]),
     ...extra,
   })
 }
@@ -84,11 +84,9 @@ describe('UsersPage', () => {
     await user.selectOptions(screen.getByLabelText('Role'), 'r-admin')
     expect(screen.getByText(/takes effect only after another admin approves it/)).toBeTruthy()
     await user.click(screen.getByLabelText('Only some markets'))
-    await user.type(screen.getByLabelText('Market IDs'), 'DE')
     await user.click(screen.getByRole('button', { name: 'Assign role' }))
-    expect(screen.getByRole('alert').textContent).toContain('"DE" is not a market ID.')
-    await user.clear(screen.getByLabelText('Market IDs'))
-    await user.type(screen.getByLabelText('Market IDs'), MARKET)
+    expect(screen.getByRole('alert').textContent).toContain('Choose at least one market, or all markets.')
+    await user.click(screen.getByLabelText('Germany (DE)'))
     await user.click(screen.getByRole('button', { name: 'Assign role' }))
     expect(await screen.findByText(/Tenant admin for Bob Builder \(bob@acme.example\) waits for a second admin/)).toBeTruthy()
     const [, init] = callsTo(fetchMock, 'POST', '/v1/users/u2/role-assignments')[0]!
@@ -123,6 +121,7 @@ describe('UsersPage', () => {
     renderAs(ME, <UsersPage />, fetchMock)
     const own = (await screen.findByText('You asked for this grant. Another admin must decide it.')).closest('tr')!
     expect(within(own).queryByRole('button')).toBeNull()
+    expect(await screen.findByText('Tenant admin · DE')).toBeTruthy()
     await user.click(screen.getByRole('button', { name: 'Approve Tenant admin grant' }))
     await user.click(screen.getByRole('button', { name: 'Approve grant' }))
     expect(await screen.findByText(refusal)).toBeTruthy()
@@ -147,13 +146,5 @@ describe('UsersPage roles tab (SC-28 permission matrix)', () => {
     await user.click(within(dialog).getByLabelText('Change tenant settings'))
     await user.click(within(dialog).getByLabelText('Read compliance reports'))
     expect(within(dialog).getByRole('status').textContent).toBe('Changes from Tenant admin: adds Read compliance reports. removes Change tenant settings.')
-  })
-})
-
-describe('market ids of a grant', () => {
-  it('splits lines and commas, drops duplicates and checks the format', () => {
-    expect(parseMarketIds(`${MARKET},\n${MARKET}  `)).toEqual([MARKET])
-    expect(marketIdsError([])).toContain('at least one')
-    expect(marketIdsError([MARKET])).toBeNull()
   })
 })

@@ -18,10 +18,12 @@ export interface CodeFormProps {
   readonly onVerified: () => void
   /** A secondary button placed before the submit button (Cancel, Sign out). */
   readonly secondaryAction?: ReactNode
+  /** Focus the field on mount: set when the form is the page's only task (MFA sign-in step); dialogs focus [data-autofocus]. */
+  readonly autoFocus?: boolean
 }
 
 /** One 6-digit TOTP code field: pasteable, numeric keyboard, one-time-code autofill (UX-05 §6.1 Auth). */
-export function CodeForm({ idPrefix, endpoint, submitLabel, onVerified, secondaryAction }: CodeFormProps) {
+export function CodeForm({ idPrefix, endpoint, submitLabel, onVerified, secondaryAction, autoFocus = false }: CodeFormProps) {
   const api = useApi()
   const input = useRef<HTMLInputElement>(null)
   const [code, setCode] = useState('')
@@ -67,6 +69,7 @@ export function CodeForm({ idPrefix, endpoint, submitLabel, onVerified, secondar
         autoComplete="one-time-code"
         maxLength={CODE_LENGTH}
         data-autofocus
+        autoFocus={autoFocus}
         className="input-code"
       />
       <div className="form-actions">

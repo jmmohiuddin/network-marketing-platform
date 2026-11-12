@@ -3,36 +3,27 @@
 import { useState } from 'react'
 import { useApi } from '../../../components/api-provider'
 import { Banner } from '../../../components/banner'
-import { SelectField } from '../../../components/form-field'
+import { Checkbox, SelectField } from '../../../components/form-field'
 import { useToast } from '../../../components/toast'
 import type { SummaryItem } from '../../../components/error-summary'
-import { isUuid, personLabel } from '../format'
-import { FormDialog, TextAreaField } from '../form-dialog'
+import { marketName, type Market } from '../../../lib/markets'
+import { errorMessage } from '../../../lib/messages'
+import type { Resource } from '../../../lib/use-resource'
+import { personLabel } from '../format'
+import { FormDialog } from '../form-dialog'
 import type { RoleView, UserView } from '../types'
 
 const ROLE_ID = 'grant-role'
 const MARKETS_ID = 'grant-markets'
-const MAX_MARKETS = 100
-const MARKET_ID_TEXT_LENGTH = 37 // a uuid and a separator
 const ACCEPTED = 202
 
 type Scope = 'all' | 'some'
 
-/** Market ids typed one per line or separated by commas; duplicates removed. */
-export function parseMarketIds(text: string): readonly string[] {
-  return [...new Set(text.split(/[\s,]+/).filter((id) => id !== ''))]
-}
-
-export function marketIdsError(ids: readonly string[]): string | null {
-  if (ids.length === 0) return 'Enter at least one market ID, or choose all markets.'
-  if (ids.length > MAX_MARKETS) return `Enter at most ${MAX_MARKETS} market IDs.`
-  const invalid = ids.find((id) => !isUuid(id))
-  return invalid === undefined ? null : `"${invalid}" is not a market ID. Market IDs look like 0b9e6c1a-1f2d-4c3b-9a8e-7d6c5b4a3f21.`
-}
-
 export interface GrantDialogProps {
   readonly user: UserView
   readonly roles: readonly RoleView[]
+  /** GET /v1/markets: the tenant's markets to choose a scope from. */
+  readonly markets: Resource<readonly Market[]>
   readonly onClose: () => void
   readonly onGranted: () => void
 }
@@ -42,19 +33,22 @@ export interface GrantDialogProps {
  * grants at once (201), or opens a request for a second admin (202) for admin and approver roles and for
  * anything the granter does not hold over those markets (BR-SEC-05, SEC-27).
  */
-export function GrantDialog({ user, roles, onClose, onGranted }: GrantDialogProps) {
+export function GrantDialog({ user, roles, markets, onClose, onGranted }: GrantDialogProps) {
   const api = useApi()
   const toast = useToast()
   const [roleId, setRoleId] = useState('')
   const [scope, setScope] = useState<Scope>('all')
-  const [marketText, setMarketText] = useState('')
+  const [chosen, setChosen] = useState<ReadonlySet<string>>(new Set())
   const [errors, setErrors] = useState<{ role?: string | null; markets?: string | null }>({})
   const role = roles.find((candidate) => candidate.id === roleId)
   const who = personLabel(user)
 
   function submit(idempotencyKey: string) {
-    const marketIds = scope === 'all' ? null : parseMarketIds(marketText)
-    const found = { role: role === undefined ? 'Choose a role.' : null, markets: marketIds === null ? null : marketIdsError(marketIds) }
+    const marketIds = scope === 'all' ? null : (markets.data ?? []).filter((market) => chosen.has(market.id)).map((market) => market.id)
+    const found = {
+      role: role === undefined ? 'Choose a role.' : null,
+      markets: marketIds !== null && marketIds.length === 0 ? 'Choose at least one market, or all markets.' : null,
+    }
     setErrors(found)
     const items: SummaryItem[] = [
       ...(found.role === null ? [] : [{ fieldId: ROLE_ID, message: found.role }]),
@@ -104,15 +98,23 @@ export function GrantDialog({ user, roles, onClose, onGranted }: GrantDialogProp
         </label>
       </fieldset>
       {scope === 'some' && (
-        <TextAreaField
-          id={MARKETS_ID}
-          label="Market IDs"
-          helper="One per line. The user sees data of these markets only."
-          maxLength={MAX_MARKETS * MARKET_ID_TEXT_LENGTH}
-          value={marketText}
-          error={errors.markets}
-          onChange={setMarketText}
-        />
+        <fieldset className="admin-fieldset" id={MARKETS_ID} tabIndex={-1} aria-describedby={errors.markets ? `${MARKETS_ID}-error` : undefined}>
+          <legend>Markets</legend>
+          <p className="admin-note">The user sees data of these markets only.</p>
+          {errors.markets && <p id={`${MARKETS_ID}-error`} className="field-error">{errors.markets}</p>}
+          {markets.loading && <p className="admin-note">Loading the markets…</p>}
+          {markets.error !== null && <p className="field-error">{errorMessage(markets.error)}</p>}
+          <div className="admin-check-grid">
+            {(markets.data ?? []).map((market) => (
+              <Checkbox
+                key={market.id}
+                label={marketName(market)}
+                checked={chosen.has(market.id)}
+                onChange={(event) => setChosen((current) => new Set(event.target.checked ? [...current, market.id] : [...current].filter((id) => id !== market.id)))}
+              />
+            ))}
+          </div>
+        </fieldset>
       )}
       <p className="admin-note">If you do not hold every permission of the role for the markets chosen, the grant also waits for a second admin.</p>
     </FormDialog>

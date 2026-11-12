@@ -1,16 +1,19 @@
 'use client'
 
+import { countLabel } from '../../lib/format'
 import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import type { ReactNode } from 'react'
 import { Banner } from '../../components/banner'
 import { LinkButton } from '../../components/button'
 import { PageHeader } from '../../components/page-header'
 import { ErrorState, LoadingState, NotAvailable } from '../../components/states'
 import { StatusChip } from '../../components/status-chip'
-import { Table, type TableColumn } from '../../components/table'
 import { TabPanel, Tabs } from '../../components/tabs'
 import { errorMessage, isNotAvailable } from '../../lib/messages'
-import { dateTime, figureLabel, figureValue, integer, marketLabel, periodRange, REPORT_NAMES, SNAPSHOTS_PATH } from './format'
+import { marketName } from '../../lib/markets'
+import { dateTime, figureLabel, figureValue, integer, periodRange, REPORT_NAMES, SNAPSHOTS_PATH } from './format'
+import { CompareSection, PeriodFilters, TrendSection, type PeriodChoice } from './period-views'
 import type { DataQuality, Figure, PeriodResult, ReportCode, SnapshotDetail } from './types'
 import { useResource } from '../../lib/use-resource'
 
@@ -19,14 +22,23 @@ const TABS_ID = 'report'
 export const rowsHref = (snapshotId: string, figureId: string) =>
   `/compliance/snapshots/${snapshotId}/rows?figure=${encodeURIComponent(figureId)}`
 
+export interface FigureCardProps {
+  readonly snapshotId: string
+  readonly figure: Figure
+  readonly context?: string
+  /** Shown under the value (SC-46: sparkline and change since the previous period). */
+  readonly trend?: ReactNode
+}
+
 /** Figure card with method (UI-04): value, components, population, method and the rows behind it. */
-export function FigureCard({ snapshotId, figure, context }: { readonly snapshotId: string; readonly figure: Figure; readonly context?: string }) {
+export function FigureCard({ snapshotId, figure, context, trend }: FigureCardProps) {
   const label = figureLabel(figure.key)
   return (
     <article className="figure-card" aria-label={context === undefined ? label : `${context}: ${label}`}>
       {context !== undefined && <p className="data-note">{context}</p>}
       <h3>{label}</h3>
       <p className="figure-value">{figureValue(figure)}</p>
+      {trend}
       {figure.note !== null && <p className="data-note">{figure.note}</p>}
       <dl className="data-facts">
         {figure.numerator !== null && <><dt>Numerator</dt><dd>{integer(figure.numerator)}</dd></>}
@@ -70,43 +82,6 @@ function PeriodSection({ snapshotId, result }: { readonly snapshotId: string; re
           </ul>
         </div>
       )}
-    </section>
-  )
-}
-
-interface ComparisonRow {
-  readonly key: string
-  readonly byPeriod: ReadonlyMap<string, Figure>
-}
-
-/**
- * SC-10 compare periods: every figure of the report by period, side by side (the table form of its trend).
- * shortcut: no chart yet; the data-vis palette is not colour-vision checked (UI_UX O-10). Add the chart with
- * this table as its "View as table" alternative once it is.
- */
-export function PeriodComparison({ results }: { readonly results: readonly PeriodResult[] }) {
-  const periods = results.map((result) => result.period)
-  const keys = [...new Set(results.flatMap((result) => result.figures.map((figure) => figure.key)))]
-  const rows: ComparisonRow[] = keys.map((key) => ({
-    key,
-    byPeriod: new Map(results.flatMap((result) => result.figures.filter((figure) => figure.key === key).map((figure): [string, Figure] => [result.period, figure]))),
-  }))
-  const columns: TableColumn<ComparisonRow>[] = [
-    { key: 'figure', header: 'Figure', cell: (row) => figureLabel(row.key) },
-    ...periods.map((period): TableColumn<ComparisonRow> => ({
-      key: period,
-      header: period,
-      align: 'end',
-      cell: (row) => {
-        const figure = row.byPeriod.get(period)
-        return figure === undefined ? 'Not computed' : figureValue(figure)
-      },
-    })),
-  ]
-  return (
-    <section className="data-section" aria-labelledby="compare-periods-title">
-      <h2 id="compare-periods-title">Compare periods</h2>
-      <Table caption={`${keys.length} figures across ${periods.length} periods`} columns={columns} rows={rows} rowKey={(row) => row.key} empty={{ title: 'No figures.' }} density="compact" />
     </section>
   )
 }
@@ -157,15 +132,28 @@ export function SnapshotReport({ snapshotId }: { readonly snapshotId: string }) 
   const asked = params.get('report')
   const report: ReportCode | undefined = snapshot.reports.find((code) => code === asked) ?? snapshot.reports[0]
   const results = snapshot.results.filter((result) => result.report === report)
+  const periods = results.map((result) => result.period)
+  const known = (value: string | null) => (value !== null && periods.includes(value) ? value : null)
+  const period = known(params.get('period'))
+  const compare = period === null ? null : known(params.get('compare'))
+  const selected = results.find((result) => result.period === period)
+  const compared = results.find((result) => result.period === compare)
+  const choose = (choice: PeriodChoice) => {
+    const query = new URLSearchParams({ report: report ?? '' })
+    if (choice.period !== null) query.set('period', choice.period)
+    if (choice.compare !== null) query.set('compare', choice.compare)
+    router.replace(`${pathname}?${query.toString()}`)
+  }
+  const monthly = results.length > 1 && results.every((result) => result.period_kind === 'month')
   const warnings = qualityWarnings(snapshot.input_data_quality)
   const versions = snapshot.input_mapping_versions.map((version) => `v${version}`).join(', ') || '—'
   const showFigures = snapshot.state === 'ready' || snapshot.state === 'outdated'
   return (
     <>
       <PageHeader
-        title={`Snapshot · ${marketLabel(snapshot.market_id)} · ${periodRange(snapshot.period_from, snapshot.period_to)}`}
+        title={`Snapshot · ${marketName(snapshot.market)} · ${periodRange(snapshot.period_from, snapshot.period_to)}`}
         state={<StatusChip state={snapshot.state} />}
-        summary={`Method ${snapshot.method_version} · mapping ${versions} · ${snapshot.input_batch_ids.length} loaded batch(es) · created ${dateTime(snapshot.created_at)}`}
+        summary={`Method ${snapshot.method_version} · mapping ${versions} · ${countLabel(snapshot.input_batch_ids.length, 'loaded batch', 'loaded batches')} · created ${dateTime(snapshot.created_at)}`}
         actions={<LinkButton href={SNAPSHOTS_PATH}>All snapshots</LinkButton>}
       />
       <div className="data-stack">
@@ -191,8 +179,12 @@ export function SnapshotReport({ snapshotId }: { readonly snapshotId: string }) 
               ? <p>This report has no period with data in the snapshot's range.</p>
               : (
                 <>
-                  {results.length > 1 && <PeriodComparison results={results} />}
-                  {results.map((result) => <PeriodSection key={`${result.report}.${result.period}`} snapshotId={snapshot.id} result={result} />)}
+                  {results.length > 1 && <PeriodFilters periods={periods} choice={{ period, compare }} onChange={choose} />}
+                  {selected === undefined && monthly && <TrendSection key={report} results={results} />}
+                  {selected !== undefined && compared !== undefined && <CompareSection a={selected} b={compared} />}
+                  {(selected === undefined ? results : [selected]).map((result) => (
+                    <PeriodSection key={`${result.report}.${result.period}`} snapshotId={snapshot.id} result={result} />
+                  ))}
                 </>
               )}
           </TabPanel>

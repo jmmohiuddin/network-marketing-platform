@@ -7,37 +7,29 @@ export const SUPPORT_SESSIONS_PATH = '/vendor/support-sessions'
 export const SUPPORT_SESSION_HEADER = 'X-Support-Session'
 
 // Per browser tab and gone when the tab closes: a session is opened in one tab, on purpose (FR-IAM-005).
-const STORAGE_KEY = 'nmp-support-session'
+const STORAGE_KEY = 'nmp-support-session-id'
 
-/** The support session a vendor user opened the tenant app with ("Open tenant app" on SC-39). */
+/** The support session the tenant app is read in, as GET /v1/me states it inside that session. */
 export interface SupportSessionFrame {
   readonly id: string
   readonly tenantSlug: string
   /** ISO; the window the tenant approved. */
   readonly endsAt: string
-  /** The vendor user (GET /v1/me inside a session does not return it). */
-  readonly user: Me['user']
 }
 
-function isFrame(value: unknown): value is SupportSessionFrame {
-  const frame = value as Partial<SupportSessionFrame> | null
-  return typeof frame?.id === 'string' && typeof frame.tenantSlug === 'string' && typeof frame.endsAt === 'string'
-    && typeof frame.user?.id === 'string' && typeof frame.user.email === 'string'
-}
-
-/** The stored session, or null (none, unreadable, or storage blocked). */
-export function storedSupportSession(): SupportSessionFrame | null {
+/** The id of the session this tab opened the tenant app with ("Open tenant app" on SC-39), or null. */
+export function storedSupportSession(): string | null {
   if (typeof window === 'undefined') return null
   try {
-    const value: unknown = JSON.parse(window.sessionStorage.getItem(STORAGE_KEY) ?? 'null')
-    return isFrame(value) ? value : null
+    const id = window.sessionStorage.getItem(STORAGE_KEY)
+    return id === null || id === '' ? null : id
   } catch {
     return null
   }
 }
 
-export function enterSupportSession(frame: SupportSessionFrame): void {
-  window.sessionStorage.setItem(STORAGE_KEY, JSON.stringify(frame))
+export function enterSupportSession(id: string): void {
+  window.sessionStorage.setItem(STORAGE_KEY, id)
 }
 
 export function leaveSupportSession(): void {
@@ -51,17 +43,14 @@ export function leaveSupportSession(): void {
 /** The session id to send from this page: tenant app pages only, never the vendor console or sign-in pages. */
 export function supportSessionFor(pathname: string): string | null {
   if (realmOf(pathname) !== 'tenant' || isAuthPage(pathname)) return null
-  return storedSupportSession()?.id ?? null
+  return storedSupportSession()
 }
 
-/**
- * The frame to draw around the tenant app: the stored session, once the server has confirmed it (inside a session
- * GET /v1/me answers in the tenant realm with the session as the only role assignment).
- */
+/** The frame to draw around the tenant app: only what the server confirms (GET /v1/me inside the session). */
 export function supportFrameOf(me: Me): SupportSessionFrame | null {
-  const frame = storedSupportSession()
-  if (frame === null || me.realm !== 'tenant') return null
-  return me.roles.some((role) => role.assignment_id === frame.id) ? frame : null
+  const session = me.support_session
+  if (session == null || me.realm !== 'tenant') return null
+  return { id: session.id, tenantSlug: session.tenant_slug, endsAt: session.ends_at }
 }
 
 const MS_PER_MINUTE = 60_000

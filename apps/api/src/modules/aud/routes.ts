@@ -1,7 +1,7 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify'
 import { z } from 'zod'
 import { requirePermission, requireRealm } from '../../lib/auth.js'
-import { inTenant } from '../../lib/db.js'
+import { inTenant, inVendor } from '../../lib/db.js'
 import { envelope, parse } from '../../lib/http.js'
 import { idempotent, sendIdempotent, type StoredResponse } from '../../lib/idempotency.js'
 import type { ExportDecision } from '../../lib/exports.js'
@@ -39,6 +39,14 @@ export function registerAuditRoutes(app: FastifyInstance): void {
     const { cursor, limit, ...filter } = parse(listQuery, request.query)
     const beforeSeq = decodeCursor(cursor, seqCursor)
     const rows = await inTenant(request, (tx) => listAuditEvents(tx, filter, beforeSeq, limit))
+    return toPage(rows, limit, (event) => event.seq)
+  })
+
+  // BUG-012 (FR-OPS-001, E-ADR-06): the vendor log, for vendor users (console actions and refused vendor access).
+  app.get('/v1/vendor-audit-events', { preHandler: [requireRealm('vendor')] }, async (request) => {
+    const { cursor, limit, ...filter } = parse(listQuery, request.query)
+    const beforeSeq = decodeCursor(cursor, seqCursor)
+    const rows = await inVendor(request, (tx) => listAuditEvents(tx, filter, beforeSeq, limit, 'audit.vendor_event'))
     return toPage(rows, limit, (event) => event.seq)
   })
 

@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import type { TablePagination } from '../../components/table'
+import { newIdempotencyKey } from '../../lib/api'
 import { useCursorPages } from '../../lib/cursor-pages'
 import { errorMessage } from '../../lib/messages'
 import { useResource, type Query } from '../../lib/use-resource'
@@ -48,6 +49,6 @@ export function tableError(list: { readonly error: unknown; readonly reload: () 
  * Forms whose values can change take the key FormDialog gives them, which changes with the values.
  */
 export function useIdempotencyKey(): string {
-  const [key] = useState(() => crypto.randomUUID())
+  const [key] = useState(() => newIdempotencyKey())
   return key
 }

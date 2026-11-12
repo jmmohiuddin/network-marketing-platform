@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+
+<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_dashboard" name="shell-type"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500;600&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{colors:{"on-surface":"#0d1c2e","surface-container":"#e6eeff","primary-fixed":"#d9e2ff","on-secondary-fixed-variant":"#3f465c","tertiary-container":"#0d5f36","surface":"#f8f9ff","on-tertiary-fixed-variant":"#00522d","inverse-surface":"#233144","secondary-container":"#dae2fd","secondary":"#565e74","on-primary":"#ffffff","on-error":"#ffffff","primary-fixed-dim":"#afc6ff","tertiary-fixed-dim":"#8cd7a3","surface-tint":"#2e5bb0","surface-container-highest":"#d5e3fc","on-primary-fixed-variant":"#074397","surface-dim":"#ccdbf3","outline":"#737783","surface-container-low":"#eff4ff","tertiary-fixed":"#a7f3be","on-tertiary-fixed":"#00210f","inverse-on-surface":"#eaf1ff","on-surface-variant":"#434752","on-primary-container":"#afc6ff","primary":"#003883","background":"#f8f9ff","surface-container-high":"#dce9ff","on-secondary-fixed":"#131b2e","on-background":"#0d1c2e","primary-container":"#1e4fa3","on-primary-fixed":"#001944","on-error-container":"#93000a","outline-variant":"#c3c6d3","on-secondary-container":"#5c647a","inverse-primary":"#afc6ff","error":"#ba1a1a","error-container":"#ffdad6","on-secondary":"#ffffff","secondary-fixed":"#dae2fd","on-tertiary":"#ffffff","on-tertiary-container":"#8cd7a3","surface-bright":"#f8f9ff","surface-container-lowest":"#ffffff","tertiary":"#004525","surface-variant":"#d5e3fc","secondary-fixed-dim":"#bec6e0"},borderRadius:{DEFAULT:"0.125rem",lg:"0.25rem",xl:"0.5rem",full:"0.75rem"},spacing:{margin:"1.5rem","space-lg":"1.5rem","space-xxs":"0.125rem",gutter:"1.5rem","margin-mobile":"1rem","space-md":"1rem","gutter-compact":"0.75rem","space-2xl":"3rem","space-sm":"0.5rem","space-xs":"0.25rem","space-xl":"2rem"},fontFamily:{caption:["Inter"],"title-md":["Inter"],"title-lg":["Inter"],"data-mono-lg":["JetBrains Mono"],"data-mono-sm":["JetBrains Mono"],"body-sm":["Inter"],"body-lg":["Inter"],"display-mobile":["Inter"],"data-mono-md":["JetBrains Mono"],"section-heading":["Inter"],"body-md":["Inter"],display:["Inter"],"title-lg-mobile":["Inter"]},fontSize:{caption:["12px",{lineHeight:"16px",letterSpacing:"0.01em",fontWeight:"500"}],"title-md":["20px",{lineHeight:"28px",letterSpacing:"-0.01em",fontWeight:"600"}],"title-lg":["24px",{lineHeight:"32px",letterSpacing:"-0.015em",fontWeight:"600"}],"data-mono-lg":["24px",{lineHeight:"32px",letterSpacing:"-0.02em",fontWeight:"600"}],"data-mono-sm":["12px",{lineHeight:"16px",letterSpacing:"0em",fontWeight:"500"}],"body-sm":["13px",{lineHeight:"18px",letterSpacing:"0.005em",fontWeight:"400"}],"body-lg":["16px",{lineHeight:"24px",letterSpacing:"0em",fontWeight:"400"}],"display-mobile":["26px",{lineHeight:"32px",letterSpacing:"-0.015em",fontWeight:"600"}],"data-mono-md":["14px",{lineHeight:"20px",letterSpacing:"-0.01em",fontWeight:"500"}],"section-heading":["16px",{lineHeight:"24px",letterSpacing:"-0.005em",fontWeight:"600"}],"body-md":["14px",{lineHeight:"20px",letterSpacing:"0em",fontWeight:"400"}],display:["32px",{lineHeight:"40px",letterSpacing:"-0.02em",fontWeight:"600"}],"title-lg-mobile":["20px",{lineHeight:"28px",letterSpacing:"-0.01em",fontWeight:"600"}]}}}}</script></head><body class="bg-surface font-body-md text-on-surface antialiased"><aside class="fixed left-0 top-0 h-screen w-72 bg-surface-container-lowest border-r border-outline-variant z-50 flex flex-col justify-between overflow-y-auto"><div class="flex flex-col"><div class="h-14 px-space-md border-b border-outline-variant flex items-center gap-space-sm bg-surface-container-lowest sticky top-0 z-10"><div class="w-8 h-8 rounded bg-primary flex items-center justify-center shrink-0"><span class="material-symbols-outlined text-on-primary text-[20px]">account_balance</span></div><div class="flex flex-col min-w-0"><span class="font-section-heading text-section-heading text-on-surface tracking-tight leading-none truncate">AuditLedger</span><span class="font-data-mono-sm text-data-mono-sm text-secondary truncate mt-space-xxs">v4.18.2 • STATUTORY</span></div></div><nav class="flex flex-col py-space-xs" data-active-classes="bg-surface-container-high text-primary font-section-heading border-l-2 border-primary"><div class="px-space-md pt-space-sm pb-space-xxs text-[11px] font-semibold text-secondary tracking-wider uppercase">Core Operations</div><a class="flex items-center justify-between px-space-md py-1.5 text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface text-body-sm font-body-sm transition-colors" data-path="overview" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[18px]">dashboard</span><span>Overview</span></div><span class="font-data-mono-sm text-data-mono-sm text-outline">SC-35</span></a><a class="flex items-center justify-between px-space-md py-1.5 text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface text-body-sm font-body-sm transition-colors" data-path="periods-and-runs" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[18px]">event_repeat</span><span>Periods &amp; Runs</span></div><span class="font-data-mono-sm text-data-mono-sm text-outline">SC-01</span></a><a aria-current="page" class="flex items-center justify-between px-space-md py-1.5 transition-colors bg-surface-container-high text-primary font-section-heading border-l-2 border-primary" data-path="comp-plans" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[18px]">schema</span><span>Comp Plans</span></div><span class="font-data-mono-sm text-data-mono-sm text-outline">SC-04</span></a><a class="flex items-center justify-between px-space-md py-1.5 text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface text-body-sm font-body-sm transition-colors" data-path="payouts" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[18px]">payments</span><span>Payouts</span></div><span class="font-data-mono-sm text-data-mono-sm text-outline">SC-03</span></a><a class="flex items-center justify-between px-space-md py-1.5 text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface text-body-sm font-body-sm transition-colors" data-path="finance-and-ledger" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[18px]">menu_book</span><span>Finance &amp; Ledger</span></div><span class="font-data-mono-sm text-data-mono-sm text-outline">SC-33</span></a><div class="px-space-md pt-space-md pb-space-xxs text-[11px] font-semibold text-secondary tracking-wider uppercase">Hierarchy &amp; Activity</div><a class="flex items-center justify-between px-space-md py-1.5 text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface text-body-sm font-body-sm transition-colors" data-path="people-and-tree" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[18px]">account_tree</span><span>People &amp; Tree</span></div><span class="font-data-mono-sm text-data-mono-sm text-outline">SC-07</span></a><a class="flex items-center justify-between px-space-md py-1.5 text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface text-body-sm font-body-sm transition-colors" data-path="orders-and-returns" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[18px]">receipt_long</span><span>Orders &amp; Returns</span></div><span class="font-data-mono-sm text-data-mono-sm text-outline">SC-31</span></a><a class="flex items-center justify-between px-space-md py-1.5 text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface text-body-sm font-body-sm transition-colors" data-path="cases-and-exceptions" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[18px]">rule</span><span>Cases &amp; Exceptions</span></div><span class="font-data-mono-sm text-data-mono-sm text-outline">SC-06</span></a><div class="px-space-md pt-space-md pb-space-xxs text-[11px] font-semibold text-secondary tracking-wider uppercase">Statutory &amp; Audit</div><a class="flex items-center justify-between px-space-md py-1.5 text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface text-body-sm font-body-sm transition-colors" data-path="compliance-reports" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[18px]">verified_user</span><span>Compliance Reports</span></div><span class="font-data-mono-sm text-data-mono-sm text-outline">SC-10</span></a><a class="flex items-center justify-between px-space-md py-1.5 text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface text-body-sm font-body-sm transition-colors" data-path="audit-log" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[18px]">history_edu</span><span>Audit Log</span></div><span class="font-data-mono-sm text-data-mono-sm text-outline">SC-30</span></a><a class="flex items-center justify-between px-space-md py-1.5 text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface text-body-sm font-body-sm transition-colors" data-path="privacy-requests" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[18px]">fingerprint</span><span>Privacy Requests</span></div><span class="font-data-mono-sm text-data-mono-sm text-outline">SC-15</span></a><div class="px-space-md pt-space-md pb-space-xxs text-[11px] font-semibold text-secondary tracking-wider uppercase">Integration &amp; Platform</div><a class="flex items-center justify-between px-space-md py-1.5 text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface text-body-sm font-body-sm transition-colors" data-path="data-imports" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[18px]">upload_file</span><span>Data Imports</span></div><span class="font-data-mono-sm text-data-mono-sm text-outline">SC-24</span></a><a class="flex items-center justify-between px-space-md py-1.5 text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface text-body-sm font-body-sm transition-colors" data-path="migration-and-parallel" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[18px]">compare_arrows</span><span>Migration &amp; Parallel</span></div><span class="font-data-mono-sm text-data-mono-sm text-outline">SC-16</span></a><a class="flex items-center justify-between px-space-md py-1.5 text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface text-body-sm font-body-sm transition-colors" data-path="market-launch" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[18px]">rocket_launch</span><span>Market Launch</span></div><span class="font-data-mono-sm text-data-mono-sm text-outline">SC-17</span></a><a class="flex items-center justify-between px-space-md py-1.5 text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface text-body-sm font-body-sm transition-colors" data-path="vendor-access" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[18px]">vpn_key</span><span>Vendor Access</span></div><span class="font-data-mono-sm text-data-mono-sm text-outline">SC-14</span></a><a class="flex items-center justify-between px-space-md py-1.5 text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface text-body-sm font-body-sm transition-colors" data-path="users-and-roles" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[18px]">badge</span><span>Users &amp; Roles</span></div><span class="font-data-mono-sm text-data-mono-sm text-outline">SC-28</span></a><a class="flex items-center justify-between px-space-md py-1.5 text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface text-body-sm font-body-sm transition-colors" data-path="integrations" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[18px]">sync_alt</span><span>Integrations</span></div><span class="font-data-mono-sm text-data-mono-sm text-outline">SC-13</span></a><a class="flex items-center justify-between px-space-md py-1.5 text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface text-body-sm font-body-sm transition-colors" data-path="vendor-console" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[18px]">terminal</span><span>Vendor Console</span></div><span class="font-data-mono-sm text-data-mono-sm text-outline">SC-39</span></a><a class="flex items-center justify-between px-space-md py-1.5 text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface text-body-sm font-body-sm transition-colors" data-path="system-and-diagnostics" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[18px]">troubleshoot</span><span>System &amp; Diagnostics</span></div><span class="font-data-mono-sm text-data-mono-sm text-outline">SC-47</span></a></nav></div><div class="p-space-md border-t border-outline-variant bg-surface-container-low"><div class="flex items-center justify-between"><div class="flex items-center gap-space-xs"><div class="w-2 h-2 rounded-full bg-tertiary-fixed-dim"></div><span class="font-data-mono-sm text-data-mono-sm text-secondary font-medium">INVARIANT ENGINE</span></div><span class="px-1.5 py-0.5 rounded bg-surface-container-lowest border border-outline-variant text-[10px] font-semibold text-secondary">LOCKED</span></div></div></aside><div class="pl-72"><header class="fixed top-0 left-72 right-0 h-14 bg-surface-container-lowest border-b border-outline-variant z-40 flex items-center justify-between px-space-md"><div class="flex items-center gap-space-md"><div class="flex items-center gap-space-xs border border-outline-variant rounded px-2.5 py-1 bg-surface-container-low"><span class="material-symbols-outlined text-[16px] text-secondary">apartment</span><select class="bg-transparent text-body-sm font-body-sm text-on-surface font-medium border-0 focus:ring-0 focus:outline-none cursor-pointer pr-1"><option>Global Direct Inc. (Main)</option><option>Apex Commerce LLC (Sub-Tenant)</option><option>Staging Horizon 2 (Audit Mirror)</option></select></div><div class="flex items-center gap-space-xs border border-outline-variant rounded px-2.5 py-1 bg-surface-container-low"><span class="material-symbols-outlined text-[16px] text-secondary">public</span><span class="text-body-sm font-body-sm text-on-surface font-medium">US - United States (USD $)</span><span class="material-symbols-outlined text-[14px] text-outline ml-1">expand_more</span></div></div><div class="flex items-center gap-space-md"><button class="flex items-center gap-space-sm bg-surface border border-outline-variant rounded px-space-sm py-1 text-secondary hover:text-on-surface hover:bg-surface-container-low transition-colors" type="button"><span class="material-symbols-outlined text-[16px]">search</span><span class="text-body-sm font-body-sm text-outline">Search rules, distributors, logs...</span><kbd class="font-data-mono-sm text-[10px] px-1.5 py-0.5 rounded bg-surface-container border border-outline-variant text-on-surface-variant font-semibold">Ctrl+K</kbd></button><div class="h-6 w-px bg-outline-variant"></div><button class="relative p-1 text-secondary hover:text-on-surface transition-colors" type="button"><span class="material-symbols-outlined text-[20px]">notifications</span><span class="absolute top-1 right-1 w-2 h-2 rounded-full bg-error ring-2 ring-surface-container-lowest"></span></button><div class="flex items-center gap-space-sm pl-space-xs"><div class="flex flex-col text-right"><span class="text-body-sm font-body-sm font-semibold text-on-surface leading-tight">Elena Rostova</span><span class="font-caption text-caption text-secondary leading-none mt-space-xxs">Lead Commission Analyst</span></div><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center shrink-0"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="w-full pt-14 bg-surface px-space-md pb-space-2xl min-h-screen"><div class="flex flex-col w-full">
+<!-- Top Statutory Banner: Invariant Engine Rules -->
+<div class="mb-space-lg rounded-lg bg-surface-container-lowest shadow-sm overflow-hidden flex flex-col md:flex-row items-stretch">
+<div class="w-2.5 bg-error shrink-0"></div>
+<div class="p-space-md flex-1 flex flex-col md:flex-row md:items-center justify-between gap-space-md bg-surface-container-lowest">
+<div class="flex items-start gap-space-sm">
+<span class="material-symbols-outlined text-error text-[22px] mt-0.5 shrink-0" style="font-variation-settings: 'FILL' 1;">gavel</span>
+<div class="flex flex-col">
+<div class="flex items-center gap-space-xs">
+<span class="font-section-heading text-section-heading text-on-surface">STATUTORY STAGE-GATE INVARIANT ACTIVE</span>
+<span class="font-data-mono-sm text-data-mono-sm px-1.5 py-0.5 rounded bg-error-container text-on-error-container uppercase font-semibold">BR-PLN-02 // BR-PLN-03</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">
+            A compensation plan version cannot be scheduled or activated without: (1) Historical period simulation, (2) 100% passing golden test datasets, (3) Jurisdictional filing confirmation across all operational regions, and (4) Minimum 30-day distributor field notice window.
+          </p>
+</div>
+</div>
+<div class="flex items-center gap-space-xs shrink-0 self-start md:self-center">
+<span class="font-data-mono-sm text-data-mono-sm px-2.5 py-1 rounded bg-surface-container-high text-primary font-semibold flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-primary animate-ping"></span>
+          ENFORCING SOD-01
+        </span>
+</div>
+</div>
+</div>
+<!-- Header Section with Title and Actions -->
+<div class="flex flex-col lg:flex-row lg:items-end justify-between gap-space-md mb-space-lg">
+<div class="flex flex-col">
+<div class="flex items-center gap-space-xs text-secondary font-data-mono-sm text-data-mono-sm uppercase tracking-wider mb-1">
+<span>Statutory Governance</span>
+<span>/</span>
+<span>FR-PLN-007</span>
+<span>/</span>
+<span>UJ-08 Lifecycle</span>
+</div>
+<h1 class="font-title-lg text-title-lg text-on-surface tracking-tight">SC-44 Plan Change Governance &amp; Activation Workflow</h1>
+<p class="font-body-md text-body-md text-secondary mt-1 max-w-4xl">
+        Formal statutory stage-gate lifecycle for compensation plan version activation, legal filings, mandatory field notice, and bitemporal transition rules.
+      </p>
+</div>
+<div class="flex items-center gap-space-sm shrink-0">
+<button class="h-9 px-space-md rounded bg-surface-container hover:bg-surface-container-high text-on-surface font-body-sm text-body-sm font-medium shadow-sm transition-all flex items-center gap-1.5" type="button">
+<span class="material-symbols-outlined text-[18px] text-secondary">picture_as_pdf</span>
+<span>Download Plan Change Docket (.PDF)</span>
+</button>
+<button class="h-9 px-space-md rounded bg-primary-container hover:bg-primary text-on-primary font-body-sm text-body-sm font-semibold shadow-sm transition-all flex items-center gap-1.5" id="trigger-activation-btn" type="button">
+<span class="material-symbols-outlined text-[18px]">verified</span>
+<span>Schedule Activation (Requires Dual Sign-Off)</span>
+</button>
+</div>
+</div>
+<!-- Key Metric KPI Cards (4 Cards Grid) -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-space-md mb-space-lg">
+<!-- Card 1 -->
+<div class="bg-surface-container-lowest rounded-lg p-space-md shadow-sm relative overflow-hidden flex flex-col justify-between">
+<div class="flex items-start justify-between">
+<span class="font-caption text-caption text-secondary uppercase font-semibold">Target Version</span>
+<span class="font-data-mono-sm text-data-mono-sm px-2 py-0.5 rounded bg-surface-container text-primary font-semibold">DRAFT</span>
+</div>
+<div class="mt-space-sm">
+<div class="font-data-mono-lg text-data-mono-lg text-on-surface leading-tight">Plan v4.3-DRAFT</div>
+<div class="font-body-sm text-body-sm text-secondary mt-1 flex items-center gap-1">
+<span class="material-symbols-outlined text-[15px] text-primary">schedule</span>
+<span>Cutover: <strong>2027-M01 Boundary</strong></span>
+</div>
+</div>
+<div class="mt-space-sm pt-space-xs bg-surface-container-low -mx-space-md -mb-space-md px-space-md py-1.5 flex items-center justify-between text-secondary font-caption text-caption">
+<span>Hash: 8f9b..e421</span>
+<span class="text-tertiary font-medium">Bitemporal Snap OK</span>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="bg-surface-container-lowest rounded-lg p-space-md shadow-sm relative overflow-hidden flex flex-col justify-between">
+<div class="flex items-start justify-between">
+<span class="font-caption text-caption text-secondary uppercase font-semibold">Stage-Gate Progress</span>
+<span class="font-data-mono-sm text-data-mono-sm px-2 py-0.5 rounded bg-secondary-container text-on-secondary-container font-semibold">66% READY</span>
+</div>
+<div class="mt-space-sm">
+<div class="font-data-mono-lg text-data-mono-lg text-on-surface leading-tight">Step 4 of 6</div>
+<div class="font-body-sm text-body-sm text-secondary mt-1 flex items-center gap-1">
+<span class="material-symbols-outlined text-[15px] text-tertiary-container">hourglass_top</span>
+<span>Statutory Filings (3 of 4 markets)</span>
+</div>
+</div>
+<div class="mt-space-sm pt-space-xs bg-surface-container-low -mx-space-md -mb-space-md px-space-md py-1.5 flex items-center justify-between text-secondary font-caption text-caption">
+<span>Gating: Legal Counsel</span>
+<span class="text-error font-medium">1 Market Pending</span>
+</div>
+</div>
+<!-- Card 3 -->
+<div class="bg-surface-container-lowest rounded-lg p-space-md shadow-sm relative overflow-hidden flex flex-col justify-between">
+<div class="flex items-start justify-between">
+<span class="font-caption text-caption text-secondary uppercase font-semibold">Mandatory Field Notice</span>
+<span class="font-data-mono-sm text-data-mono-sm px-2 py-0.5 rounded bg-surface-container-high text-primary font-semibold">BR-PLN-04</span>
+</div>
+<div class="mt-space-sm">
+<div class="font-data-mono-lg text-data-mono-lg text-on-surface leading-tight">Day 12 of 30</div>
+<div class="font-body-sm text-body-sm text-secondary mt-1 flex items-center gap-1">
+<span class="material-symbols-outlined text-[15px] text-tertiary">check_circle</span>
+<span>18,416 Notice Receipts Logged</span>
+</div>
+</div>
+<div class="mt-space-sm pt-space-xs bg-surface-container-low -mx-space-md -mb-space-md px-space-md py-1.5 flex items-center justify-between text-secondary font-caption text-caption">
+<span>Dispatched: 2026-11-01</span>
+<span class="text-secondary font-medium">Window Satisfying</span>
+</div>
+</div>
+<!-- Card 4 -->
+<div class="bg-surface-container-lowest rounded-lg p-space-md shadow-sm relative overflow-hidden flex flex-col justify-between">
+<div class="flex items-start justify-between">
+<span class="font-caption text-caption text-secondary uppercase font-semibold">Affected Titles &amp; Streaks</span>
+<span class="font-data-mono-sm text-data-mono-sm px-2 py-0.5 rounded bg-surface-container text-tertiary font-semibold">100% MAPPED</span>
+</div>
+<div class="mt-space-sm">
+<div class="font-data-mono-lg text-data-mono-lg text-on-surface leading-tight">284 Transitions</div>
+<div class="font-body-sm text-body-sm text-secondary mt-1 flex items-center gap-1">
+<span class="material-symbols-outlined text-[15px] text-primary">rule</span>
+<span>0 Unmapped distributor paths</span>
+</div>
+</div>
+<div class="mt-space-sm pt-space-xs bg-surface-container-low -mx-space-md -mb-space-md px-space-md py-1.5 flex items-center justify-between text-secondary font-caption text-caption">
+<span>FR-PLN-008 Carry</span>
+<span class="text-primary font-medium">Full Volume Preserved</span>
+</div>
+</div>
+</div>
+<!-- Main Content Layout (65% Left / 35% Right Split) -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-space-lg items-start mb-space-2xl">
+<!-- LEFT COLUMN (65% -> 8 of 12 cols) -->
+<div class="lg:col-span-8 flex flex-col gap-space-lg">
+<!-- Stepper Container -->
+<div class="bg-surface-container-lowest rounded-lg p-space-lg shadow-sm">
+<div class="flex items-center justify-between pb-space-sm mb-space-md">
+<div class="flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-primary text-[22px]">timeline</span>
+<h2 class="font-title-md text-title-md text-on-surface">Statutory Stage-Gate Lifecycle</h2>
+</div>
+<span class="font-caption text-caption text-secondary">Controlled by Engine Spec UJ-08</span>
+</div>
+<!-- 6 Steps Visual Stepper -->
+<div class="space-y-3">
+<!-- Step 1 (Completed) -->
+<div class="flex items-start gap-space-md p-space-sm rounded-lg bg-surface-container-low">
+<div class="flex flex-col items-center shrink-0">
+<div class="w-8 h-8 rounded-full bg-tertiary-fixed flex items-center justify-center text-on-tertiary-fixed shadow-sm">
+<span class="material-symbols-outlined text-[18px]">check</span>
+</div>
+<div class="w-0.5 h-6 bg-tertiary-fixed mt-1"></div>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex flex-wrap items-center justify-between gap-1">
+<div class="flex items-center gap-space-xs">
+<span class="font-section-heading text-section-heading text-on-surface">Step 1: Declarative Rule Specification</span>
+<span class="font-caption text-caption px-2 py-0.5 rounded bg-surface-container-lowest text-tertiary font-semibold uppercase">COMPLETED</span>
+</div>
+<span class="font-data-mono-sm text-data-mono-sm text-secondary">2026-10-15 09:30 UTC</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1">
+                Authored DSL definition committed with semantic diff tag <code class="font-data-mono-sm text-data-mono-sm bg-surface-container px-1 py-0.5 rounded">v4.3-rev2</code>. Formal AST validated without compilation syntax errors. Approved by Sarah Lin (Principal Plan Architect).
+              </p>
+</div>
+</div>
+<!-- Step 2 (Completed) -->
+<div class="flex items-start gap-space-md p-space-sm rounded-lg bg-surface-container-low">
+<div class="flex flex-col items-center shrink-0">
+<div class="w-8 h-8 rounded-full bg-tertiary-fixed flex items-center justify-center text-on-tertiary-fixed shadow-sm">
+<span class="material-symbols-outlined text-[18px]">check</span>
+</div>
+<div class="w-0.5 h-6 bg-tertiary-fixed mt-1"></div>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex flex-wrap items-center justify-between gap-1">
+<div class="flex items-center gap-space-xs">
+<span class="font-section-heading text-section-heading text-on-surface">Step 2: Historical Simulation &amp; Impact Analysis</span>
+<span class="font-caption text-caption px-2 py-0.5 rounded bg-surface-container-lowest text-tertiary font-semibold uppercase">COMPLETED</span>
+</div>
+<span class="font-data-mono-sm text-data-mono-sm text-secondary">2026-10-18 16:45 UTC</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1">
+                SC-42 Simulation Run <code class="font-data-mono-sm text-data-mono-sm bg-surface-container px-1 py-0.5 rounded">#SIM-2026-10</code> completed on 12 trailing months. Payout delta: -$84,210 (-1.18% gross margin shift). Volatility coefficient 0.04 (within 0.05 limit).
+              </p>
+</div>
+</div>
+<!-- Step 3 (Completed) -->
+<div class="flex items-start gap-space-md p-space-sm rounded-lg bg-surface-container-low">
+<div class="flex flex-col items-center shrink-0">
+<div class="w-8 h-8 rounded-full bg-tertiary-fixed flex items-center justify-center text-on-tertiary-fixed shadow-sm">
+<span class="material-symbols-outlined text-[18px]">check</span>
+</div>
+<div class="w-0.5 h-6 bg-tertiary-fixed mt-1"></div>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex flex-wrap items-center justify-between gap-1">
+<div class="flex items-center gap-space-xs">
+<span class="font-section-heading text-section-heading text-on-surface">Step 3: Platform Guardrail &amp; Statutory Verification</span>
+<span class="font-caption text-caption px-2 py-0.5 rounded bg-surface-container-lowest text-tertiary font-semibold uppercase">PASSED</span>
+</div>
+<span class="font-data-mono-sm text-data-mono-sm text-secondary">2026-10-21 11:20 UTC</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1">
+                SC-11 Invariant Suite verified 44/44 golden test datasets. Zero unlawful binary loops, 0% inventory loading risk, retail customer volume ratio verified at 71.4% (FTC requirement &gt;51%).
+              </p>
+</div>
+</div>
+<!-- Step 4 (Active / In Progress) -->
+<div class="flex items-start gap-space-md p-space-sm rounded-lg bg-surface-container-high shadow-sm ring-1 ring-primary/20">
+<div class="flex flex-col items-center shrink-0">
+<div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-on-primary shadow-sm">
+<span class="material-symbols-outlined text-[18px] animate-spin">refresh</span>
+</div>
+<div class="w-0.5 h-6 bg-primary-fixed-dim mt-1"></div>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex flex-wrap items-center justify-between gap-1">
+<div class="flex items-center gap-space-xs">
+<span class="font-section-heading text-section-heading text-primary font-bold">Step 4: Jurisdictional Regulatory Filings</span>
+<span class="font-caption text-caption px-2 py-0.5 rounded bg-secondary-container text-on-secondary-container font-semibold uppercase">ACTIVE (3/4 FILED)</span>
+</div>
+<span class="font-data-mono-sm text-data-mono-sm text-primary font-medium">IN REVIEW</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1">
+                Filing packages required across operational markets. US, UK, and Canada certified. Malaysia (KPDN) submission acknowledged; awaiting final formal receipt letter from Legal Counsel.
+              </p>
+</div>
+</div>
+<!-- Step 5 (Active / Field Notice Window) -->
+<div class="flex items-start gap-space-md p-space-sm rounded-lg bg-surface-container-low">
+<div class="flex flex-col items-center shrink-0">
+<div class="w-8 h-8 rounded-full bg-surface-container-highest flex items-center justify-center text-primary shadow-sm">
+<span class="material-symbols-outlined text-[18px]">calendar_today</span>
+</div>
+<div class="w-0.5 h-6 bg-outline-variant mt-1"></div>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex flex-wrap items-center justify-between gap-1">
+<div class="flex items-center gap-space-xs">
+<span class="font-section-heading text-section-heading text-on-surface">Step 5: Mandatory Field Notice Period (30 Days)</span>
+<span class="font-caption text-caption px-2 py-0.5 rounded bg-surface-container text-secondary font-semibold uppercase">DAY 12 / 30</span>
+</div>
+<span class="font-data-mono-sm text-data-mono-sm text-secondary">Ends 2026-11-30</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1">
+                BR-PLN-04 strict statutory constraint. Full redlined policy published via Distributor Backoffice portal. Hard-gate unlocks on 2026-12-01 00:00:00 UTC.
+              </p>
+</div>
+</div>
+<!-- Step 6 (Locked / Dual Authorization) -->
+<div class="flex items-start gap-space-md p-space-sm rounded-lg bg-surface-container-lowest opacity-75">
+<div class="flex flex-col items-center shrink-0">
+<div class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center text-outline shadow-sm">
+<span class="material-symbols-outlined text-[18px]">lock</span>
+</div>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex flex-wrap items-center justify-between gap-1">
+<div class="flex items-center gap-space-xs">
+<span class="font-section-heading text-section-heading text-secondary">Step 6: Dual-Authorized Production Cutover</span>
+<span class="font-caption text-caption px-2 py-0.5 rounded bg-surface-container-high text-secondary font-semibold uppercase">LOCKED</span>
+</div>
+<span class="font-data-mono-sm text-data-mono-sm text-outline">Target: 2027-01-01</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1">
+                Bitemporal state transition into live ledger. Unlocks automatically once Step 4 and Step 5 are formally signed off by compliance and legal officers.
+              </p>
+</div>
+</div>
+</div>
+</div>
+<!-- Regulatory Filing Checklist & Evidence Table -->
+<div class="bg-surface-container-lowest rounded-lg p-space-lg shadow-sm">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-space-sm pb-space-sm mb-space-md">
+<div class="flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-primary text-[22px]">policy</span>
+<div>
+<h2 class="font-title-md text-title-md text-on-surface">Stage 4: Jurisdictional Regulatory Filings</h2>
+<p class="font-caption text-caption text-secondary">Compliance validation per statutory territory requirement</p>
+</div>
+</div>
+<button class="h-8 px-space-sm rounded bg-surface-container hover:bg-surface-container-high text-on-surface font-body-sm text-body-sm font-medium transition-all flex items-center gap-1 self-start sm:self-center" type="button">
+<span class="material-symbols-outlined text-[16px] text-secondary">add_circle</span>
+<span>Add Market Addendum</span>
+</button>
+</div>
+<!-- Dense Statutory Table -->
+<div class="overflow-x-auto rounded-lg bg-surface-container-low">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-high text-secondary font-data-mono-sm text-data-mono-sm uppercase tracking-wider">
+<th class="py-2.5 px-space-md font-semibold">Jurisdiction &amp; Regulatory Act</th>
+<th class="py-2.5 px-space-md font-semibold">Filing Status</th>
+<th class="py-2.5 px-space-md font-semibold">Attestation Evidence</th>
+<th class="py-2.5 px-space-md font-semibold">Approval Stamp</th>
+<th class="py-2.5 px-space-md font-semibold text-right">Actions</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-surface-container-lowest font-body-sm text-body-sm">
+<!-- US Market -->
+<tr class="hover:bg-surface-container transition-colors">
+<td class="py-2.5 px-space-md">
+<div class="font-semibold text-on-surface flex items-center gap-1.5">
+<span class="font-data-mono-sm text-data-mono-sm px-1.5 py-0.2 rounded bg-surface-container text-primary font-bold">US</span>
+<span>United States of America</span>
+</div>
+<div class="font-caption text-caption text-secondary">FTC Omni-Market Guidelines / Section 5</div>
+</td>
+<td class="py-2.5 px-space-md">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-surface-container-lowest text-tertiary font-semibold font-caption text-caption">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>
+                    Exempt / Dossier Filed
+                  </span>
+</td>
+<td class="py-2.5 px-space-md">
+<div class="flex items-center gap-1 text-primary hover:underline cursor-pointer font-data-mono-sm text-data-mono-sm">
+<span class="material-symbols-outlined text-[15px]">description</span>
+<span>Memo-US-2026-09.pdf</span>
+</div>
+</td>
+<td class="py-2.5 px-space-md font-data-mono-sm text-data-mono-sm text-secondary">
+                  2026-10-22 (Legal)
+                </td>
+<td class="py-2.5 px-space-md text-right">
+<button class="p-1 text-secondary hover:text-on-surface transition-colors" title="View Verification Record" type="button">
+<span class="material-symbols-outlined text-[18px]">visibility</span>
+</button>
+</td>
+</tr>
+<!-- UK Market -->
+<tr class="hover:bg-surface-container transition-colors">
+<td class="py-2.5 px-space-md">
+<div class="font-semibold text-on-surface flex items-center gap-1.5">
+<span class="font-data-mono-sm text-data-mono-sm px-1.5 py-0.2 rounded bg-surface-container text-primary font-bold">GB</span>
+<span>United Kingdom</span>
+</div>
+<div class="font-caption text-caption text-secondary">UK Trading Schemes Act 1996 / DSAS Code</div>
+</td>
+<td class="py-2.5 px-space-md">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-surface-container-lowest text-tertiary font-semibold font-caption text-caption">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>
+                    Certified Compliant
+                  </span>
+</td>
+<td class="py-2.5 px-space-md">
+<div class="flex items-center gap-1 text-primary hover:underline cursor-pointer font-data-mono-sm text-data-mono-sm">
+<span class="material-symbols-outlined text-[15px]">verified_user</span>
+<span>UK-DSA-Cert-441.pdf</span>
+</div>
+</td>
+<td class="py-2.5 px-space-md font-data-mono-sm text-data-mono-sm text-secondary">
+                  2026-10-24 (DSA UK)
+                </td>
+<td class="py-2.5 px-space-md text-right">
+<button class="p-1 text-secondary hover:text-on-surface transition-colors" title="View Verification Record" type="button">
+<span class="material-symbols-outlined text-[18px]">visibility</span>
+</button>
+</td>
+</tr>
+<!-- Canada Market -->
+<tr class="hover:bg-surface-container transition-colors">
+<td class="py-2.5 px-space-md">
+<div class="font-semibold text-on-surface flex items-center gap-1.5">
+<span class="font-data-mono-sm text-data-mono-sm px-1.5 py-0.2 rounded bg-surface-container text-primary font-bold">CA</span>
+<span>Canada</span>
+</div>
+<div class="font-caption text-caption text-secondary">Competition Bureau Canada Section 55 &amp; 55.1</div>
+</td>
+<td class="py-2.5 px-space-md">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-surface-container-lowest text-tertiary font-semibold font-caption text-caption">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>
+                    Certified Compliant
+                  </span>
+</td>
+<td class="py-2.5 px-space-md">
+<div class="flex items-center gap-1 text-primary hover:underline cursor-pointer font-data-mono-sm text-data-mono-sm">
+<span class="material-symbols-outlined text-[15px]">verified_user</span>
+<span>CA-CB-Attest-881.pdf</span>
+</div>
+</td>
+<td class="py-2.5 px-space-md font-data-mono-sm text-data-mono-sm text-secondary">
+                  2026-10-25 (Counsel)
+                </td>
+<td class="py-2.5 px-space-md text-right">
+<button class="p-1 text-secondary hover:text-on-surface transition-colors" title="View Verification Record" type="button">
+<span class="material-symbols-outlined text-[18px]">visibility</span>
+</button>
+</td>
+</tr>
+<!-- Malaysia Market (Warning / In Progress) -->
+<tr class="bg-secondary-container/30 hover:bg-secondary-container/50 transition-colors">
+<td class="py-2.5 px-space-md">
+<div class="font-semibold text-on-surface flex items-center gap-1.5">
+<span class="font-data-mono-sm text-data-mono-sm px-1.5 py-0.2 rounded bg-surface-container text-primary font-bold">MY</span>
+<span>Malaysia</span>
+</div>
+<div class="font-caption text-caption text-secondary">Direct Sales &amp; Anti-Pyramid Act 1993 (KPDN)</div>
+</td>
+<td class="py-2.5 px-space-md">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-secondary-container text-on-secondary-container font-semibold font-caption text-caption">
+<span class="material-symbols-outlined text-[13px] text-tertiary-container animate-spin">sync</span>
+                    Awaiting Ministry Ack
+                  </span>
+</td>
+<td class="py-2.5 px-space-md">
+<div class="font-data-mono-sm text-data-mono-sm text-on-surface font-medium flex items-center gap-1">
+<span class="material-symbols-outlined text-[15px] text-secondary">receipt</span>
+<span>Ref #KPDN-2026-9918</span>
+</div>
+<span class="font-caption text-caption text-secondary">Submitted 2026-10-28</span>
+</td>
+<td class="py-2.5 px-space-md font-data-mono-sm text-data-mono-sm text-error font-semibold">
+                  Pending Legal Sign
+                </td>
+<td class="py-2.5 px-space-md text-right">
+<button class="h-7 px-2 rounded bg-surface-container-lowest text-primary hover:bg-primary hover:text-on-primary text-caption font-semibold transition-colors flex items-center gap-1 ml-auto" type="button">
+<span class="material-symbols-outlined text-[14px]">upload_file</span>
+<span>Upload Ack</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<!-- Title Transition Matrix & Accrued Rules (FR-PLN-008) -->
+<div class="bg-surface-container-lowest rounded-lg p-space-lg shadow-sm">
+<div class="flex items-center justify-between pb-space-sm mb-space-md">
+<div class="flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-primary text-[22px]">swap_horiz</span>
+<div>
+<h2 class="font-title-md text-title-md text-on-surface">Title Transition &amp; Accrued Carry-Forward Rules</h2>
+<p class="font-caption text-caption text-secondary">Enforcing statutory grandfathering clauses per FR-PLN-008</p>
+</div>
+</div>
+<span class="font-data-mono-sm text-data-mono-sm px-2 py-0.5 rounded bg-surface-container text-tertiary font-bold">284 AUDITED PATHS</span>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-space-md mb-space-md">
+<!-- Box 1: Title Mapping -->
+<div class="p-space-md rounded-lg bg-surface-container-low flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between mb-2">
+<span class="font-caption text-caption text-secondary font-semibold uppercase">Title Mapping</span>
+<span class="material-symbols-outlined text-primary text-[18px]">verified</span>
+</div>
+<div class="font-body-sm text-body-sm font-semibold text-on-surface">Existing 'Senior Director'</div>
+<div class="font-data-mono-sm text-data-mono-sm text-primary my-1 flex items-center gap-1">
+<span>→</span>
+<span class="font-bold">Executive Director v4.3</span>
+</div>
+<p class="font-caption text-caption text-on-surface-variant mt-2">
+                Preserves historical peak title recognition. Threshold recalibrated from $15,000 to $18,000 Group Qualifying Volume (GQV).
+              </p>
+</div>
+<div class="mt-3 pt-2 bg-surface-container -mx-space-md -mb-space-md px-space-md py-1.5 font-caption text-caption text-secondary">
+              Grandfather Period: Permanent
+            </div>
+</div>
+<!-- Box 2: Streak Counters -->
+<div class="p-space-md rounded-lg bg-surface-container-low flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between mb-2">
+<span class="font-caption text-caption text-secondary font-semibold uppercase">Streak Counters</span>
+<span class="material-symbols-outlined text-tertiary text-[18px]">auto_mode</span>
+</div>
+<div class="font-body-sm text-body-sm font-semibold text-on-surface">6-Month Consecutive Tier</div>
+<div class="font-data-mono-sm text-data-mono-sm text-tertiary my-1 flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">check_circle</span>
+<span class="font-bold">100% Carry Protected</span>
+</div>
+<p class="font-caption text-caption text-on-surface-variant mt-2">
+                Active rank maintenance streaks retain month count. A 30-day statutory grace period is granted across all title qualification criteria.
+              </p>
+</div>
+<div class="mt-3 pt-2 bg-surface-container -mx-space-md -mb-space-md px-space-md py-1.5 font-caption text-caption text-secondary">
+              Grace Cutoff: 2027-01-31
+            </div>
+</div>
+<!-- Box 3: Volume Carry -->
+<div class="p-space-md rounded-lg bg-surface-container-low flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between mb-2">
+<span class="font-caption text-caption text-secondary font-semibold uppercase">Binary Volume Carry</span>
+<span class="material-symbols-outlined text-primary text-[18px]">database</span>
+</div>
+<div class="font-body-sm text-body-sm font-semibold text-on-surface">Left / Right Leg Flushing</div>
+<div class="font-data-mono-sm text-data-mono-sm text-primary my-1 flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">lock_reset</span>
+<span class="font-bold">Zero Flush Guarantee</span>
+</div>
+<p class="font-caption text-caption text-on-surface-variant mt-2">
+                All accumulated leg volumes roll forward seamlessly into Period 2027-M01. No retroactive deductions permitted per invariant BR-PLN-01.
+              </p>
+</div>
+<div class="mt-3 pt-2 bg-surface-container -mx-space-md -mb-space-md px-space-md py-1.5 font-caption text-caption text-secondary">
+              Replay Guarantee: Certified
+            </div>
+</div>
+</div>
+<!-- Matrix Detail Line Item Table -->
+<div class="bg-surface-container p-space-sm rounded-lg flex items-center justify-between">
+<div class="flex items-center gap-space-sm text-on-surface-variant font-body-sm text-body-sm">
+<span class="material-symbols-outlined text-[18px] text-secondary">table_view</span>
+<span>View complete 284-row transition matrix and legacy streak preservation map</span>
+</div>
+<button class="h-8 px-space-sm rounded bg-surface-container-lowest text-primary hover:bg-surface-container-high font-data-mono-sm text-data-mono-sm font-semibold transition-colors flex items-center gap-1" type="button">
+<span>TRANSITION_SPEC.JSON</span>
+<span class="material-symbols-outlined text-[16px]">open_in_new</span>
+</button>
+</div>
+</div>
+</div>
+<!-- RIGHT COLUMN (35% -> 4 of 12 cols): Inspector & Sign-off Drawer -->
+<div class="lg:col-span-4 flex flex-col gap-space-lg">
+<!-- Dual Authorization & Legal Sign-off Block -->
+<div class="bg-surface-container-lowest rounded-lg p-space-lg shadow-sm">
+<div class="flex items-center gap-space-xs pb-space-sm mb-space-md">
+<span class="material-symbols-outlined text-primary text-[22px]">draw</span>
+<div>
+<h3 class="font-title-md text-title-md text-on-surface">Separation of Duties (SOD-01)</h3>
+<p class="font-caption text-caption text-secondary">Statutory tri-party approval registry</p>
+</div>
+</div>
+<div class="space-y-space-md">
+<!-- Actor 1: Compliance Officer -->
+<div class="p-space-sm rounded-lg bg-surface-container-low flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="font-caption text-caption text-secondary uppercase font-semibold">1. Compliance Officer</span>
+<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-surface-container-lowest text-tertiary font-data-mono-sm text-data-mono-sm font-bold">
+<span class="material-symbols-outlined text-[13px]">check_circle</span>
+                SIGNED
+              </span>
+</div>
+<div class="font-body-md text-body-md font-semibold text-on-surface mt-1">Marcus Vance</div>
+<div class="font-data-mono-sm text-data-mono-sm text-secondary">Signed: 2026-10-28 14:10 UTC</div>
+<div class="font-caption text-caption text-on-surface-variant mt-1 bg-surface-container p-1.5 rounded">
+              Attestation: "Simulations SC-42 and Invariant SC-11 reviewed. FTC 51% consumer threshold satisfied."
+            </div>
+</div>
+<!-- Actor 2: Chief Legal Officer (Awaiting) -->
+<div class="p-space-sm rounded-lg bg-surface-container-high shadow-sm ring-1 ring-tertiary-container/30 flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="font-caption text-caption text-secondary uppercase font-semibold">2. Chief Legal Counsel</span>
+<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-secondary-container text-on-secondary-container font-data-mono-sm text-data-mono-sm font-bold">
+<span class="material-symbols-outlined text-[13px] animate-spin">hourglass_empty</span>
+                PENDING
+              </span>
+</div>
+<div class="font-body-md text-body-md font-semibold text-on-surface mt-1">David Chen</div>
+<div class="font-data-mono-sm text-data-mono-sm text-error font-medium">Awaiting: Malaysia KPDN Formal Ack</div>
+<div class="font-caption text-caption text-on-surface-variant mt-1 bg-surface-container-low p-1.5 rounded">
+              Note: "Counsel will sign once the ministry receipt number is formally counter-signed by local counsel."
+            </div>
+<button class="mt-2 w-full h-8 rounded bg-primary-container hover:bg-primary text-on-primary font-body-sm text-body-sm font-medium transition-colors flex items-center justify-center gap-1.5" type="button">
+<span class="material-symbols-outlined text-[16px]">notification_important</span>
+<span>Request Urgent Sign-off (Escalate)</span>
+</button>
+</div>
+<!-- Actor 3: Tenant Admin / Operator -->
+<div class="p-space-sm rounded-lg bg-surface-container-low flex flex-col gap-1 opacity-80">
+<div class="flex items-center justify-between">
+<span class="font-caption text-caption text-secondary uppercase font-semibold">3. Tenant Administrator</span>
+<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-surface-container text-secondary font-data-mono-sm text-data-mono-sm font-bold">
+                ELIGIBLE
+              </span>
+</div>
+<div class="font-body-md text-body-md font-semibold text-on-surface mt-1">Elena Rostova</div>
+<div class="font-data-mono-sm text-data-mono-sm text-secondary">Awaiting: Steps 4 &amp; 5 Resolution</div>
+<p class="font-caption text-caption text-on-surface-variant mt-1">
+              Authorized to execute deployment runbook once legal conditions and 30-day notice expire.
+            </p>
+</div>
+</div>
+</div>
+<!-- Cutover Transition Rule Invariant Card (BR-PLN-01) -->
+<div class="bg-surface-container-lowest rounded-lg p-space-lg shadow-sm">
+<div class="flex items-center gap-space-xs pb-space-sm mb-space-sm">
+<span class="material-symbols-outlined text-primary text-[20px]">calendar_month</span>
+<h3 class="font-title-md text-title-md text-on-surface">BR-PLN-01 Cutover Rule</h3>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+          Activation date is strictly locked to the statutory Calendar Period boundary:
+        </p>
+<div class="my-space-md p-space-md rounded-lg bg-surface-container-low flex flex-col gap-1 text-center">
+<span class="font-caption text-caption text-secondary uppercase font-semibold">Immutable Cutover Timestamp</span>
+<span class="font-data-mono-lg text-data-mono-lg text-primary font-bold">2027-01-01 00:00:00 UTC</span>
+<span class="font-caption text-caption text-tertiary font-medium">Period 2027-M01 Boundary Exact</span>
+</div>
+<div class="space-y-2 text-on-surface-variant font-caption text-caption">
+<div class="flex items-start gap-2">
+<span class="material-symbols-outlined text-error text-[16px] shrink-0 mt-0.5">block</span>
+<span><strong>Mid-period cutover prohibited:</strong> Intramonth activation cannot occur under any circumstances to preserve reproducible accounting snapshots.</span>
+</div>
+<div class="flex items-start gap-2">
+<span class="material-symbols-outlined text-tertiary text-[16px] shrink-0 mt-0.5">lock_clock</span>
+<span><strong>Retroactive Replay Guard:</strong> Period 2026-M12 and trailing periods remain locked against the v4.3 engine indefinitely.</span>
+</div>
+</div>
+<div class="mt-space-md pt-space-sm">
+<button class="w-full h-8 rounded bg-surface-container hover:bg-surface-container-high text-on-surface font-body-sm text-body-sm font-medium transition-colors flex items-center justify-center gap-1.5" type="button">
+<span class="material-symbols-outlined text-[16px] text-secondary">terminal</span>
+<span>Inspect Engine Replay Boundary Tests</span>
+</button>
+</div>
+</div>
+<!-- Quick Upload Filing Acknowledgement Widget -->
+<div class="bg-surface-container-lowest rounded-lg p-space-lg shadow-sm">
+<h3 class="font-title-md text-title-md text-on-surface mb-1">Direct Regulatory Upload</h3>
+<p class="font-caption text-caption text-secondary mb-space-md">Upload signed receipt for pending Malaysia KPDN filing</p>
+<div class="p-space-md rounded-lg bg-surface-container-low flex flex-col items-center justify-center text-center cursor-pointer hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-[32px] text-primary mb-1">cloud_upload</span>
+<span class="font-body-sm text-body-sm font-medium text-on-surface">Click to select statutory receipt</span>
+<span class="font-caption text-caption text-secondary mt-0.5">PDF or PKCS#7 signed file (max 25MB)</span>
+</div>
+<button class="mt-space-sm w-full h-8 rounded bg-surface-container-high hover:bg-surface-container-highest text-primary font-body-sm text-body-sm font-semibold transition-colors flex items-center justify-center gap-1" type="button">
+<span class="material-symbols-outlined text-[16px]">file_upload</span>
+<span>Commit Document to SC-30 Audit Log</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Sticky Bottom Separation-of-Duties (SOD) Approval Ribbon -->
+<div class="fixed bottom-0 left-72 right-0 bg-surface-container-lowest shadow-xl px-space-lg py-space-sm z-30 flex flex-col sm:flex-row items-center justify-between gap-space-md">
+<!-- Left: Author & Preparation Meta -->
+<div class="flex items-center gap-space-md min-w-0">
+<div class="w-9 h-9 rounded-full bg-surface-container-high flex items-center justify-center text-primary shrink-0">
+<span class="material-symbols-outlined text-[20px]">badge</span>
+</div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-space-xs">
+<span class="font-body-sm text-body-sm font-bold text-on-surface truncate">Prepared by Sarah Lin</span>
+<span class="font-data-mono-sm text-data-mono-sm text-secondary">(Lead Plan Architect)</span>
+</div>
+<div class="font-caption text-caption text-secondary truncate flex items-center gap-1">
+<span>Draft Docket ID:</span>
+<code class="font-data-mono-sm text-data-mono-sm text-primary">DCK-2026-V4.3-ACT</code>
+<span>•</span>
+<span class="text-tertiary font-medium">3 of 4 Gates Cleared</span>
+</div>
+</div>
+</div>
+<!-- Center: Required Approvers Status Strip -->
+<div class="hidden xl:flex items-center gap-space-sm">
+<div class="flex items-center gap-1.5 px-2.5 py-1 rounded bg-surface-container-low font-data-mono-sm text-data-mono-sm text-on-surface">
+<span class="material-symbols-outlined text-[16px] text-tertiary">check_circle</span>
+<span>M. Vance (Compliance)</span>
+</div>
+<div class="text-secondary">→</div>
+<div class="flex items-center gap-1.5 px-2.5 py-1 rounded bg-secondary-container font-data-mono-sm text-data-mono-sm text-on-secondary-container font-semibold">
+<span class="material-symbols-outlined text-[16px] text-tertiary-container animate-spin">refresh</span>
+<span>D. Chen (Legal - Pending)</span>
+</div>
+<div class="text-secondary">→</div>
+<div class="flex items-center gap-1.5 px-2.5 py-1 rounded bg-surface-container-low font-data-mono-sm text-data-mono-sm text-secondary">
+<span class="material-symbols-outlined text-[16px] text-outline">lock</span>
+<span>E. Rostova (Cutover Deployment)</span>
+</div>
+</div>
+<!-- Right: Sticky CTA Buttons -->
+<div class="flex items-center gap-space-sm shrink-0 w-full sm:w-auto justify-end">
+<button class="h-9 px-space-md rounded bg-surface-container hover:bg-surface-container-high text-on-surface font-body-sm text-body-sm font-medium transition-colors" type="button">
+        Export Audit Bundle
+      </button>
+<button class="h-9 px-space-md rounded bg-surface-container-high text-outline cursor-not-allowed font-body-sm text-body-sm font-semibold flex items-center gap-1.5" disabled="" id="sticky-lock-btn" type="button">
+<span class="material-symbols-outlined text-[18px]">lock</span>
+<span>Awaiting Final Sign-Off (Locked)</span>
+</button>
+</div>
+</div>
+<!-- Interactive Feedback Modal / Toast Backdrop (Hidden by default, triggered via JS) -->
+<div class="fixed inset-0 bg-on-surface/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-space-md" id="statutory-modal">
+<div class="bg-surface-container-lowest rounded-xl max-w-lg w-full p-space-lg shadow-2xl flex flex-col gap-space-md">
+<div class="flex items-start justify-between">
+<div class="flex items-center gap-space-sm text-error">
+<span class="material-symbols-outlined text-[24px]">gavel</span>
+<h3 class="font-title-md text-title-md text-on-surface">Invariant Gate Enforcement</h3>
+</div>
+<button class="p-1 text-secondary hover:text-on-surface" id="close-modal-btn" type="button">
+<span class="material-symbols-outlined text-[20px]">close</span>
+</button>
+</div>
+<div class="font-body-md text-body-md text-on-surface-variant space-y-2">
+<p>
+          Execution of <strong>Plan v4.3 Activation</strong> is strictly blocked by the <em>Invariant Engine</em>:
+        </p>
+<ul class="list-disc pl-5 space-y-1 font-caption text-caption text-secondary">
+<li><strong>Jurisdiction:</strong> Malaysia (KPDN) filing receipt acknowledgement is not countersigned by Chief Legal Counsel.</li>
+<li><strong>Notice Window:</strong> 18 days remaining in statutory 30-day distributor cooling-off window (BR-PLN-04).</li>
+<li><strong>Separation of Duties:</strong> Requires 2 of 2 statutory signatures (David Chen pending).</li>
+</ul>
+</div>
+<div class="flex items-center justify-end gap-space-sm pt-space-xs">
+<button class="h-9 px-space-md rounded bg-primary-container text-on-primary font-body-sm text-body-sm font-medium" id="confirm-modal-btn" type="button">
+          Understood, Return to Dossier
+        </button>
+</div>
+</div>
+</div>
+<script>
+    (function initGovernanceInteractions() {
+      const modal = document.getElementById('statutory-modal');
+      const triggerBtn = document.getElementById('trigger-activation-btn');
+      const closeBtn = document.getElementById('close-modal-btn');
+      const confirmBtn = document.getElementById('confirm-modal-btn');
+
+      if (triggerBtn && modal) {
+        triggerBtn.addEventListener('click', () => {
+          modal.classList.remove('hidden');
+        });
+      }
+
+      const hideModal = () => {
+        if (modal) modal.classList.add('hidden');
+      };
+
+      if (closeBtn) closeBtn.addEventListener('click', hideModal);
+      if (confirmBtn) confirmBtn.addEventListener('click', hideModal);
+    })();
+  </script>
+</div></main></div></body></html>

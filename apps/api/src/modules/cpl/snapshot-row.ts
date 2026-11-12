@@ -1,5 +1,6 @@
 import type { ReportCode } from '@nmp/compliance'
 import { z } from 'zod'
+import { marketName } from '../ten/index.js'
 
 export const REPORT_CODES = ['R1', 'R2', 'R3', 'R4', 'R5'] as const satisfies readonly ReportCode[]
 
@@ -36,6 +37,7 @@ export interface SnapshotRecord {
   id: string
   state: SnapshotState
   market_id: string
+  market_code: string
   period_from: string
   period_to: string
   method_version: string
@@ -52,8 +54,9 @@ export interface Snapshot extends Omit<SnapshotRecord, 'input_refs'> {
   readonly inputs: InputRefs
 }
 
-/** Periods as 'YYYY-MM' (the snapshot covers whole months), the inputs hash as hex. */
-export const SNAPSHOT_COLUMNS = `id, state, market_id, to_char(period_from, 'YYYY-MM') AS period_from,
+/** Periods as 'YYYY-MM' (the snapshot covers whole months), the inputs hash as hex, the market's code. */
+export const SNAPSHOT_COLUMNS = `id, state, market_id,
+  (SELECT m.code FROM market m WHERE m.id = compliance_report_snapshot.market_id) AS market_code, to_char(period_from, 'YYYY-MM') AS period_from,
   to_char(period_to, 'YYYY-MM') AS period_to, method_version, mapping_id, settings_version_id, input_refs,
   encode(inputs_hash, 'hex') AS inputs_hash, failure_reason, created_by, created_at`
 
@@ -64,9 +67,9 @@ export function toSnapshot(record: SnapshotRecord): Snapshot {
 }
 
 export function snapshotView(snapshot: Snapshot) {
-  const { inputs, ...rest } = snapshot
+  const { inputs, market_code: code, ...rest } = snapshot
   return {
-    ...rest, reports: inputs.reports, input_batch_ids: inputs.batch_ids, input_mapping_ids: inputs.mapping_ids,
+    ...rest, market: { id: rest.market_id, code, name: marketName(code) }, reports: inputs.reports, input_batch_ids: inputs.batch_ids, input_mapping_ids: inputs.mapping_ids,
     input_mapping_versions: inputs.mapping_versions,
   }
 }

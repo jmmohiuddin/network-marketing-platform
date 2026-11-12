@@ -6,11 +6,12 @@ import { useApi } from '../../components/api-provider'
 import { Button } from '../../components/button'
 import { Dialog } from '../../components/dialog'
 import { ErrorSummary, type SummaryItem } from '../../components/error-summary'
-import { Checkbox, TextField } from '../../components/form-field'
+import { Checkbox, SelectField, TextField } from '../../components/form-field'
 import { useToast } from '../../components/toast'
-import { isApiError } from '../../lib/api'
+import { isApiError, newIdempotencyKey } from '../../lib/api'
 import { errorMessage, fieldErrors } from '../../lib/messages'
-import { requiredError } from '../../lib/validation'
+import { MARKETS_PATH, marketName, type Market } from '../../lib/markets'
+import { useResource } from '../../lib/use-resource'
 import { REPORT_NAMES } from './format'
 import { periodErrors } from './period'
 import { REPORT_CODES, type ReportCode, type Snapshot } from './types'
@@ -29,9 +30,8 @@ export interface SnapshotRequest {
 }
 
 export function validateSnapshotRequest(request: SnapshotRequest): Errors {
-  const market = requiredError('the market code', request.market)
   return {
-    ...(market === null ? {} : { market }),
+    ...(request.market === '' ? { market: 'Choose the market.' } : {}),
     ...periodErrors(request.period_from, request.period_to),
     ...(request.reports.length === 0 ? { reports: 'Choose at least one report.' } : {}),
   }
@@ -52,12 +52,20 @@ function serverErrors(error: unknown): Errors {
   return {}
 }
 
+export interface CreateSnapshotDialogProps {
+  readonly open: boolean
+  readonly onClose: () => void
+  /** Fields filled in on opening (a new snapshot for an outdated one's market and range). */
+  readonly initial?: Partial<SnapshotRequest>
+}
+
 /** API-04: a snapshot of R1-R5 for a market and a range of whole months, computed by a job. */
-export function CreateSnapshotDialog({ open, onClose }: { readonly open: boolean; readonly onClose: () => void }) {
+export function CreateSnapshotDialog({ open, onClose, initial }: CreateSnapshotDialogProps) {
   const api = useApi()
   const router = useRouter()
   const toast = useToast()
-  const [request, setRequest] = useState<SnapshotRequest>({ market: '', period_from: '', period_to: '', reports: REPORT_CODES })
+  const markets = useResource<readonly Market[]>(open ? MARKETS_PATH : null)
+  const [request, setRequest] = useState<SnapshotRequest>({ market: '', period_from: '', period_to: '', reports: REPORT_CODES, ...initial })
   const [errors, setErrors] = useState<Errors>({})
   const [summary, setSummary] = useState<readonly SummaryItem[]>([])
   const [busy, setBusy] = useState(false)
@@ -78,11 +86,11 @@ export function CreateSnapshotDialog({ open, onClose }: { readonly open: boolean
       setSummary(Object.entries(found).map(([field, message]) => ({ fieldId: fieldId(field as Field), message: message! })))
       return
     }
-    const key = idempotencyKey ?? crypto.randomUUID()
+    const key = idempotencyKey ?? newIdempotencyKey()
     setIdempotencyKey(key)
     setBusy(true)
     try {
-      const body = { ...request, market: request.market.trim(), period_from: request.period_from.trim(), period_to: request.period_to.trim() }
+      const body = { ...request, period_from: request.period_from.trim(), period_to: request.period_to.trim() }
       const { data } = await api.post<Snapshot>('/v1/compliance/snapshots', body, { idempotencyKey: key })
       toast({ message: 'The snapshot is being computed.', tone: 'info' })
       router.push(`/compliance/snapshots/${data.id}`)
@@ -112,8 +120,11 @@ export function CreateSnapshotDialog({ open, onClose }: { readonly open: boolean
       <form id={FORM_ID} className="form" onSubmit={submit} noValidate>
         <ErrorSummary items={summary} />
         <p className="data-note">Every month of the range must be covered by a loaded import of the market. The snapshot is computed from that data and never changes afterwards.</p>
-        <TextField
-          id={fieldId('market')} label="Market" helper="The market code, for example DE." data-autofocus autoCapitalize="characters" spellCheck={false}
+        <SelectField
+          id={fieldId('market')} label="Market" data-autofocus
+          placeholder={markets.loading ? 'Loading markets…' : 'Choose a market'}
+          helper={markets.error === null ? undefined : errorMessage(markets.error)}
+          options={(markets.data ?? []).map((market) => ({ value: market.code, label: marketName(market) }))}
           value={request.market} error={errors.market} onChange={(event) => change({ market: event.target.value })}
         />
         {month('period_from', 'First month')}

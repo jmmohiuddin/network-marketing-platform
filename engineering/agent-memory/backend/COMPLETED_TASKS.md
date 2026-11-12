@@ -48,3 +48,15 @@ _Agent: backend. Read before every task; update after every task. Keep concise â
 - MEDIUM: vendor without session refused REALM_FORBIDDEN logged (vendor log, NO_SESSION, onError hook); migration 0011 guard follows actor vendor_user into the tenant realm (support/vendor-guard.test.ts mirrors the psql repro); requester region from user_account.work_region, body region dropped; ACCESSED carries query, in-session 401/403 logged as ACCESS_REFUSED in both logs.
 - LOW: session re-checked under lock in recordAccess and in every in-session inTenant tx (test ends the session mid-request); vendor ends only own session (403 PERMISSION_DENIED); approve takes Idempotency-Key (columns on tenant, 0011); first admin's Tenant admin grant + ROLE.GRANTED move to the approval (approver = actor); assertDeciderExists marked shortcut; E-ADR-21..24 and API.md 3.2/4.11 updated.
 - Verified: `pnpm vitest run apps/api` 273/273, `pnpm vitest run packages/db` 76/76, tsc clean. Mutation check: reverting actorOf / inTenant re-check fails 2 access tests. Only nmp_test migrated (0011).
+
+## BUG-006/007 + web contract (markets, limits, drill sums, invitation links, me in session) (2026-11-12)
+- BUG-006 fixed (iam/grants.ts `mayApprove`), BUG-007 fixed (revokeAssignment/deactivateUser take auth + step-up check). role-matrix `test.fails` flipped to `test`, plus allowed-within-own-market cases; grants/users tests extended. BUG_REGISTER rows Fixed.
+- New routes: GET /v1/markets (ten/markets.ts), GET /v1/support-sessions/limits (vendor), GET /v1/imports/limits (import.manage). Isolation cases + TS-36 probes added.
+- Snapshot list/detail/create carry `market {id, code, name}`; drill rows meta `sums` + `component`; order rows gained `net_minor` (also in CSV export); invitation links `${WEB_URL}/invitation?tenant=<slug>#token=`; GET /v1/me gives `support_session` (null outside) and, in session, the vendor user via runInVendor.
+- Session INSERT binding (task 3): already done by 0041 (no INSERT for nmp_app; auth_open_session binds app_user_id()). No migration written; 0042-0049 unused.
+- Verified: `pnpm vitest run` 1040 passed, 5 failed â€” all 5 in apps/web (compliance-overview, snapshot-report: `marketLabel` missing from web format.ts, frontend agent editing at the time); `pnpm -s typecheck` clean; `tsc -p apps/web` fails on the same in-flight web files.
+
+## Browser defects BUG-010, 011, 012, 013, 014, 019 (2026-11-12)
+- Fixed at root cause with regression tests; BUG_REGISTER rows updated (011/012: console screens open for web). E-ADR-28, E-ADR-29 added.
+- Files: iam/{grants,admins,invitations,vendor-users,vendor-users-routes,index}.ts, ops/{routes,tenant-creation,first-admin-invitation}.ts, support/access.ts, aud/{events,routes}.ts, cpl/compute.ts, packages/compliance/src/{types,figure,r2,r3,r4}.ts, migration 0042; tests in iam, ops, support, cpl, packages/compliance, packages/db (migrations pins, auth), test/isolation/cases.ts, test/authz/role-matrix.test.ts.
+- Verified: `pnpm vitest run` 83 files / 1116 tests green; `pnpm -s typecheck` and `tsc -p apps/web --noEmit` clean.

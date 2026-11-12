@@ -13,7 +13,7 @@ MVP-B tasks are written per increment when it starts. Done = code + tests green 
 | T-A06 | IAM | Vendor support sessions: request, decide, expire, read-only | orchestrator | T-A05 | FR-IAM-005 | P0 | Implemented |
 | T-A07 | security | Generated cross-tenant isolation suite over every route (TS-21) | qa | T-A06 | TS-21 | P0 | Implemented |
 | T-A07b | db/IAM | Hardening migration 0040 for BUG-001..004 (support request impersonation, credential row scope, session column immutability, sessions of deactivated users) + BUG-005 grant market scope | security | stage 2 | BUG_REGISTER | P0 | Implemented |
-| T-A07c | IAM | Fix BUG-006 (approver scope on pending grants) and BUG-007 (revoke/deactivate scope + step-up) | security | stage 3 | BUG_REGISTER | P0 | Not Started |
+| T-A07c | IAM | Fix BUG-006 (approver scope on pending grants) and BUG-007 (revoke/deactivate scope + step-up) | security | stage 3 | BUG_REGISTER | P0 | Completed |
 | T-A08 | IMP | Upload, validation (15 rules, forbidden tokens), row errors | backend | T-A05 | FR-IMP-001 | P1 | Implemented |
 | T-A09 | IMP | Mapping (draft/approved), load to cpl_fact_*, supersede | backend | T-A08 | FR-IMP-002 003 | P1 | Implemented |
 | T-A10 | CPL | packages/compliance: R1–R5 pure, bigint, golden + TS-31 tests | compensation | T-000 | FR-CPL-001..005 | P1 | Completed |
@@ -23,4 +23,4 @@ MVP-B tasks are written per increment when it starts. Done = code + tests green 
 | T-A14 | web | Vendor console, tenant admin: users, roles, approvals, support sessions, audit | frontend | T-A13 | SC-10 14 30 46 | P1 | Implemented |
 | T-A15 | web | Imports and compliance report screens | frontend | T-A11 T-A13 | SC-24..28 | P1 | Implemented |
 | T-A16 | qa | Playwright MCP workflow, two tenants, all A roles | qa | T-A15 | AC rel A | P1 | Implemented |
-| T-A17 | security | Security audit + code review of A; fix Critical/High | security | T-A16 | SEC-* | P1 | Not Started |
+| T-A17 | security | Security audit + code review of A; fix Critical/High | security | T-A16 | SEC-* | P1 | Completed |

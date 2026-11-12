@@ -59,6 +59,18 @@ export interface SupportSession {
   readonly created_at: string
 }
 
+/** GET /v1/vendor-users (iam/vendor-users.ts VendorUserView). */
+export interface VendorUser {
+  readonly id: string
+  readonly email: string
+  readonly display_name: string | null
+  readonly state: string
+  readonly mfa_enrolled: boolean
+  readonly last_sign_in_at: string | null
+  readonly created_at: string
+  readonly created_by: string | null
+}
+
 /** GET /v1/audit-events (aud/events.ts) and GET /v1/support-sessions/:id/log (without id, hash, session id). */
 export interface AuditEvent {
   readonly id?: string

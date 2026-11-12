@@ -19,5 +19,7 @@ Consolidated facts every session needs. Newest first. Keep under 150 lines.
 ## Standing instructions
 - Founder (2026-11-12): build the whole PRD, all 122 FRs, and do not ask permission between stages. Still stop for real money movement, deploys, pushes, paid services.
 
+- Founder (2026-11-12): Google Stitch designs in `design/stitch/` are the frontend source of truth (see DESIGN_IMPLEMENTATION_GUIDELINES.md); Impeccable audits within that direction; UI testing at 4 viewports with reports in `testing/`.
+
 ## Decisions
 See `ARCHITECTURE_DECISION_LOG.md` (E-ADR-01..13).

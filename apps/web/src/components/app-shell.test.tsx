@@ -51,6 +51,12 @@ describe('AppShell', () => {
     expect(screen.getByText('Acme Ltd')).toBeTruthy()
   })
 
+  it('starts each page with focus on its main content (BUG-021)', async () => {
+    renderWithProviders(<AppShell realm="tenant"><Page /></AppShell>, fetchReturning(ok(me())))
+    await screen.findByText('May invite users')
+    expect(document.activeElement).toBe(screen.getByRole('main'))
+  })
+
   it('shows "Not found or not available to you" outside the navigation', async () => {
     navigation.pathname = '/imports'
     renderWithProviders(<AppShell realm="tenant"><Page /></AppShell>, fetchReturning(ok(me())))

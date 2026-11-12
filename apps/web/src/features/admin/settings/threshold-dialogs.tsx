@@ -116,10 +116,10 @@ interface RankRow {
 export function checkRanks(rows: readonly { readonly name: string; readonly threshold: string }[]): { value: Record<string, string> | null; errors: Record<string, string> } {
   const errors = Object.fromEntries(rows.flatMap((row, index) => {
     const name = row.name.trim()
-    const nameError = name === '' ? 'Enter the rank name.'
+    const nameError = name === '' ? `Enter the name of rank ${index + 1}.`
       : name.length > RANK_NAME_MAX ? `Use at most ${RANK_NAME_MAX} characters.`
         : rows.findIndex((other) => other.name.trim() === name) !== index ? 'Each rank name may appear once.' : null
-    const thresholdError = minorUnitsError(row.threshold, 'the personal volume')
+    const thresholdError = minorUnitsError(row.threshold, `the personal volume of rank ${index + 1}`)
     return [...(nameError === null ? [] : [[`rank-${index}-name`, nameError]]), ...(thresholdError === null ? [] : [[`rank-${index}-threshold`, thresholdError]])]
   }))
   if (rows.length === 0) return { value: null, errors: { 'rank-add': 'Add at least one rank.' } }
@@ -149,11 +149,11 @@ export function RankThresholdsDialog({ current, ...props }: ThresholdDialogProps
       {rows.map((row, index) => (
         <div key={row.id} className="admin-group">
           <div className="admin-pair">
-            <TextField id={`rank-${index}-name`} label="Rank name" maxLength={RANK_NAME_MAX} value={row.name} error={errors[`rank-${index}-name`]} onChange={(event) => update(row.id, { name: event.target.value })} />
-            <TextField id={`rank-${index}-threshold`} label="Personal volume" inputMode="numeric" value={row.threshold} error={errors[`rank-${index}-threshold`]} onChange={(event) => update(row.id, { threshold: event.target.value })} />
+            <TextField id={`rank-${index}-name`} label={`Rank ${index + 1} name`} maxLength={RANK_NAME_MAX} value={row.name} error={errors[`rank-${index}-name`]} onChange={(event) => update(row.id, { name: event.target.value })} />
+            <TextField id={`rank-${index}-threshold`} label={`Rank ${index + 1} personal volume`} inputMode="numeric" value={row.threshold} error={errors[`rank-${index}-threshold`]} onChange={(event) => update(row.id, { threshold: event.target.value })} />
           </div>
           <div className="form-actions">
-            <Button variant="tertiary" onClick={() => setRows((current) => current.filter((other) => other.id !== row.id))}>Remove rank {row.name.trim()}</Button>
+            <Button variant="tertiary" onClick={() => setRows((current) => current.filter((other) => other.id !== row.id))}>Remove rank {index + 1}</Button>
           </div>
         </div>
       ))}

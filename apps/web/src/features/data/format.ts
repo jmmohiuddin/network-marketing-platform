@@ -1,11 +1,15 @@
-import type { FigureSummary, ReportCode } from './types'
+import type { FigureSummary, FigureUnit, ReportCode } from './types'
 
 /** SC-10 snapshot list (SC-46, the overview, is /compliance). */
 export const SNAPSHOTS_PATH = '/compliance/snapshots'
 
-// shortcut: snapshot views carry market_id only (no code, no markets endpoint); show the code once the API adds it.
-export function marketLabel(marketId: string): string {
-  return `market ${marketId}`
+/** The one figure per report that heads the overview (SC-46) and that a trend opens on (SC-10). */
+export const HEADLINE_KEYS: Readonly<Record<ReportCode, string>> = {
+  R1: 'customer_share_pct',
+  R2: 'personal_use_share_pct',
+  R3: 'share_pct.retail_sale',
+  R4: 'active_with_no_customer_order_pct',
+  R5: 'earned_more_than_zero_pct',
 }
 
 /** "2025-01" or "2025-01 to 2025-03". */
@@ -13,14 +17,23 @@ export function periodRange(from: string, to: string): string {
   return from === to ? from : `${from} to ${to}`
 }
 
-/** Date and time in the user's locale. */
-export function dateTime(iso: string): string {
-  return new Date(iso).toLocaleString()
-}
+/** Date and time in the user's locale, as on every other screen. */
+export { formatDateTime as dateTime } from '../../lib/format'
 
 /** An integer decimal string (counts, minor units) with the locale's digit grouping; bigint-safe. */
 export function integer(value: string | number): string {
   return BigInt(value).toLocaleString()
+}
+
+const DECIMAL_SEPARATOR = new Intl.NumberFormat().formatToParts(1.5).find((part) => part.type === 'decimal')?.value ?? '.'
+const DECIMAL_TEXT = /^(-?)(\d+)(?:\.(\d+))?$/
+
+/** A decimal string ("1630.95") with the locale's grouping and separator ("1,630.95"); exact, any other text as is. */
+export function decimal(value: string): string {
+  const match = DECIMAL_TEXT.exec(value)
+  if (match === null) return value
+  const [, sign = '', whole = '0', fraction] = match
+  return `${sign}${integer(whole)}${fraction === undefined ? '' : `${DECIMAL_SEPARATOR}${fraction}`}`
 }
 
 /** "payout_lines" -> "Payout lines"; "amount_minor" -> "Amount (minor units)". */
@@ -81,11 +94,11 @@ export function figureLabel(key: string): string {
 export function figureValue(figure: Pick<FigureSummary, 'unit' | 'value'>): string {
   if (figure.value === null) return 'Not stated'
   switch (figure.unit) {
-    case 'percent': return `${figure.value} %`
+    case 'percent': return `${decimal(figure.value)} %`
     case 'count': return integer(figure.value)
     case 'minor': return `${integer(figure.value)} minor units`
-    case 'currency': return `${figure.value} currency units`
-    case 'ratio': return figure.value
+    case 'currency': return `${decimal(figure.value)} currency units`
+    case 'ratio': return decimal(figure.value)
   }
 }
 
@@ -94,4 +107,51 @@ export function parseFigureId(id: string): { readonly report: ReportCode; readon
   const match = /^(R[1-5])\.(\d{4}(?:-\d{2})?)\.(.+)$/.exec(id)
   if (match === null) return null
   return { report: match[1] as ReportCode, period: match[2]!, key: match[3]! }
+}
+
+const DECIMAL = /^-?\d+(\.\d+)?$/
+const scaleOf = (value: string) => value.split('.')[1]?.length ?? 0
+
+/** A decimal string as a whole number of 10^-scale units ("62.5", 2 -> 6250n): exact, no floating point. */
+function scaled(value: string, scale: number): bigint {
+  const [whole = '0', fraction = ''] = value.replace('-', '').split('.')
+  const units = BigInt(`${whole}${fraction.padEnd(scale, '0')}`)
+  return value.startsWith('-') ? -units : units
+}
+
+function difference(a: string, b: string): { readonly units: bigint; readonly scale: number } | null {
+  if (!DECIMAL.test(a) || !DECIMAL.test(b)) return null
+  const scale = Math.max(scaleOf(a), scaleOf(b))
+  return { units: scaled(a, scale) - scaled(b, scale), scale }
+}
+
+/** Orders two decimal strings exactly (negative: a < b); null when either is not a decimal. */
+export function compareDecimal(a: string, b: string): number | null {
+  const found = difference(a, b)
+  return found === null ? null : Number(found.units > 0n) - Number(found.units < 0n)
+}
+
+/** The unsigned decimal text of a number of 10^-scale units (450n, 2 -> "4.50"). */
+function magnitude(units: bigint, scale: number): string {
+  const digits = (units < 0n ? -units : units).toString().padStart(scale + 1, '0')
+  return scale === 0 ? digits : `${digits.slice(0, -scale)}.${digits.slice(-scale)}`
+}
+
+const UNIT_SUFFIX: Readonly<Record<FigureUnit, string>> = {
+  percent: ' points', count: '', minor: ' minor units', currency: ' currency units', ratio: '',
+}
+
+/** "+4.50 points", "−1,200 minor units", "No change": later minus earlier of one figure, computed exactly. */
+export function changeLabel(unit: FigureUnit, later: string | null, earlier: string | null): string {
+  const found = later === null || earlier === null ? null : difference(later, earlier)
+  if (found === null) return 'Not comparable'
+  if (found.units === 0n) return 'No change'
+  const sign = found.units > 0n ? '+' : '\u2212'
+  const amount = decimal(magnitude(found.units, found.scale))
+  return `${sign}${amount}${UNIT_SUFFIX[unit]}`
+}
+
+/** Axis titles: the unit each figure is stated in. */
+export const UNIT_NAMES: Readonly<Record<FigureUnit, string>> = {
+  percent: 'Percent', count: 'Count', minor: 'Minor units', currency: 'Currency units', ratio: 'Ratio',
 }

@@ -15,6 +15,8 @@ export interface FigureInput {
   readonly numerator?: bigint | null
   readonly denominator?: bigint | null
   readonly population: string
+  /** Size of the population; default: the denominator set when the figure has one, otherwise the numerator set. */
+  readonly populationCount?: number
   readonly method: string
   readonly note?: string | null
   readonly entity: DrillEntity
@@ -45,6 +47,7 @@ function buildDrill(input: FigureInput, cap: number): Drill {
 }
 
 export function buildFigure(input: FigureInput, cap: number): Figure {
+  const drill = buildDrill(input, cap)
   return {
     key: input.key,
     unit: input.unit,
@@ -52,10 +55,11 @@ export function buildFigure(input: FigureInput, cap: number): Figure {
     numerator: input.numerator ?? null,
     denominator: input.denominator ?? null,
     population: input.population,
+    populationCount: input.populationCount ?? (input.denominatorIds === undefined ? drill.numeratorCount : drill.denominatorCount),
     method: input.method,
     methodVersion: METHOD_VERSION,
     note: input.note ?? null,
-    drill: buildDrill(input, cap),
+    drill,
   }
 }
 

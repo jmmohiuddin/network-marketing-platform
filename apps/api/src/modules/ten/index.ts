@@ -1,11 +1,12 @@
 import type { ApiModule } from '../../lib/module.js'
-import { registerSettingsRoutes } from './routes.js'
+import { registerMarketRoutes, registerSettingsRoutes } from './routes.js'
 
-/** Tenant configuration (TEN): versioned tenant settings. Other modules read settings through this facade. */
+/** Tenant configuration (TEN): versioned tenant settings and the market list. Other modules read them through this facade. */
 export const tenModule: ApiModule = {
   name: 'ten',
   register(app) {
     registerSettingsRoutes(app)
+    registerMarketRoutes(app)
   },
 }
 
@@ -19,3 +20,4 @@ export {
   type SettingValue,
   type SettingValues,
 } from './settings.js'
+export { marketName } from './markets.js'

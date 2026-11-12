@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+
+<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_dashboard" name="shell-type"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "on-tertiary": "#ffffff", "secondary-container": "#dae2fd", "on-primary": "#ffffff", "background": "#f8f9ff", "surface-container-lowest": "#ffffff", "on-error": "#ffffff", "secondary": "#565e74", "tertiary-container": "#0d5f36", "surface-dim": "#ccdbf3", "tertiary-fixed-dim": "#8cd7a3", "on-background": "#0d1c2e", "outline-variant": "#c3c6d3", "on-tertiary-fixed-variant": "#00522d", "on-secondary-fixed": "#131b2e", "primary": "#003883", "error": "#ba1a1a", "primary-fixed": "#d9e2ff", "on-surface": "#0d1c2e", "on-error-container": "#93000a", "surface-bright": "#f8f9ff", "surface-variant": "#d5e3fc", "inverse-primary": "#afc6ff", "surface-container-low": "#eff4ff", "outline": "#737783", "inverse-surface": "#233144", "inverse-on-surface": "#eaf1ff", "on-secondary-fixed-variant": "#3f465c", "surface-container": "#e6eeff", "primary-container": "#1e4fa3", "on-secondary": "#ffffff", "on-primary-fixed": "#001944", "error-container": "#ffdad6", "surface-tint": "#2e5bb0", "secondary-fixed": "#dae2fd", "tertiary-fixed": "#a7f3be", "surface": "#f8f9ff", "on-secondary-container": "#5c647a", "on-tertiary-fixed": "#00210f", "secondary-fixed-dim": "#bec6e0", "on-primary-fixed-variant": "#074397", "surface-container-highest": "#d5e3fc", "tertiary": "#004525", "on-surface-variant": "#434752", "primary-fixed-dim": "#afc6ff", "on-tertiary-container": "#8cd7a3", "on-primary-container": "#afc6ff", "surface-container-high": "#dce9ff" }, "borderRadius": { "DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem" }, "spacing": { "gutter": "1.5rem", "space-sm": "0.5rem", "space-2xl": "3rem", "space-xxs": "0.125rem", "margin-mobile": "1rem", "space-lg": "1.5rem", "gutter-compact": "0.75rem", "space-xs": "0.25rem", "margin": "1.5rem", "space-md": "1rem", "space-xl": "2rem" }, "fontFamily": { "body-lg": [ "Inter" ], "title-lg-mobile": [ "Inter" ], "display-mobile": [ "Inter" ], "body-md": [ "Inter" ], "title-md": [ "Inter" ], "data-mono-sm": [ "JetBrains Mono" ], "data-mono-lg": [ "JetBrains Mono" ], "section-heading": [ "Inter" ], "caption": [ "Inter" ], "display": [ "Inter" ], "title-lg": [ "Inter" ], "data-mono-md": [ "JetBrains Mono" ], "body-sm": [ "Inter" ] }, "fontSize": { "body-lg": [ "16px", { "lineHeight": "24px", "letterSpacing": "0em", "fontWeight": "400" } ], "title-lg-mobile": [ "20px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600" } ], "display-mobile": [ "26px", { "lineHeight": "32px", "letterSpacing": "-0.015em", "fontWeight": "600" } ], "body-md": [ "14px", { "lineHeight": "20px", "letterSpacing": "0em", "fontWeight": "400" } ], "title-md": [ "20px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600" } ], "data-mono-sm": [ "12px", { "lineHeight": "16px", "letterSpacing": "0em", "fontWeight": "500" } ], "data-mono-lg": [ "24px", { "lineHeight": "32px", "letterSpacing": "-0.02em", "fontWeight": "600" } ], "section-heading": [ "16px", { "lineHeight": "24px", "letterSpacing": "-0.005em", "fontWeight": "600" } ], "caption": [ "12px", { "lineHeight": "16px", "letterSpacing": "0.01em", "fontWeight": "500" } ], "display": [ "32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "600" } ], "title-lg": [ "24px", { "lineHeight": "32px", "letterSpacing": "-0.015em", "fontWeight": "600" } ], "data-mono-md": [ "14px", { "lineHeight": "20px", "letterSpacing": "-0.01em", "fontWeight": "500" } ], "body-sm": [ "13px", { "lineHeight": "18px", "letterSpacing": "0.005em", "fontWeight": "400" } ] } } } };</script></head><body class="bg-background font-body-md text-on-surface antialiased"><header class="fixed top-0 left-0 right-0 h-12 bg-surface-container-lowest border-b border-outline-variant z-50 flex items-center justify-between px-space-md select-none"><div class="flex items-center gap-space-sm"><img alt="Platform Integrity Logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/ALJJyrB5eRWQNX9M_eeC454eoT79IyJIWf2apWVApZfrYBVB2P3A94kIQBFZHifsaOQy_VoAxmgBKB1311sAY-hR--ULW9hEdvY1wTCws4v-3fDyxMTP842fJ_9HmJkVilWCVfwB2CZ99Njwo0zcjFd2fwdFdY4Tlnwy0f29IOF6zgYm7iwPhYOQsz0ME3S-1aejy28KO2FJjy828FssZQ8lq8YUlEqN1nESu3IEEUwMuNo"/><span class="font-section-heading text-section-heading text-primary font-bold tracking-tight">AuditLedger</span><div class="h-4 w-px bg-outline-variant mx-space-xs"></div><div class="flex items-center gap-space-xs px-space-xs py-space-xxs rounded bg-surface-container-low border border-outline-variant hover:border-outline cursor-pointer"><span class="font-body-sm text-body-sm text-on-surface font-medium">Acrobex Global</span><span class="font-data-mono-sm text-data-mono-sm text-secondary">(TEN-842)</span><span class="material-symbols-outlined text-[16px] text-secondary">arrow_drop_down</span></div><div class="flex items-center gap-space-xs px-space-xs py-space-xxs rounded bg-surface-container-low border border-outline-variant hover:border-outline cursor-pointer"><span class="h-2 w-2 rounded-full bg-tertiary-container"></span><span class="font-body-sm text-body-sm text-on-surface">US - United States (USD $)</span><span class="material-symbols-outlined text-[16px] text-secondary">expand_more</span></div></div><div class="flex-1 max-w-xl mx-space-lg"><div class="relative flex items-center w-full"><span class="material-symbols-outlined absolute left-2.5 text-outline text-[18px]">search</span><input class="w-full h-8 pl-8 pr-12 rounded bg-surface border border-outline-variant font-body-sm text-body-sm text-on-surface placeholder:text-outline focus:border-primary focus:outline-none transition-colors" placeholder="/ or Ctrl+K to search people, orders, cases, statements..." type="text"/><div class="absolute right-2 px-1.5 py-0.5 rounded bg-surface-container border border-outline-variant font-data-mono-sm text-data-mono-sm text-secondary">⌘K</div></div></div><div class="flex items-center gap-space-md"><button class="relative p-1 text-secondary hover:text-on-surface hover:bg-surface-container rounded transition-colors" title="Notifications" type="button"><span class="material-symbols-outlined text-[20px]">notifications</span><span class="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-error text-on-error font-data-mono-sm text-data-mono-sm leading-none flex items-center justify-center">3</span></button><button class="flex items-center gap-space-xs p-1 text-secondary hover:text-on-surface hover:bg-surface-container rounded transition-colors" title="Help &amp; Regulatory Glossary" type="button"><span class="material-symbols-outlined text-[20px]">menu_book</span><span class="font-body-sm text-body-sm">Glossary</span></button><div class="h-4 w-px bg-outline-variant"></div><div class="flex items-center gap-space-sm pl-space-xs"><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div><div class="flex flex-col text-left leading-tight hidden lg:flex"><span class="font-body-sm text-body-sm text-on-surface font-semibold">Elena Rostova</span><span class="font-caption text-caption text-secondary font-medium">Lead Commission Analyst</span></div><button class="p-1 text-secondary hover:text-error hover:bg-error-container rounded transition-colors" title="Sign out" type="button"><span class="material-symbols-outlined text-[18px]">logout</span></button></div></div></header><aside class="fixed left-0 top-12 bottom-0 w-52 bg-surface-container-lowest border-r border-outline-variant z-40 flex flex-col justify-between overflow-y-auto"><div class="py-space-sm px-space-xs"><nav class="space-y-space-xxs" data-active-classes="bg-primary-container text-on-primary font-semibold"><a class="flex items-center gap-space-sm px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-body-sm text-body-sm transition-colors" data-path="overview" href="#"><span class="material-symbols-outlined text-[18px]">dashboard</span><span>Overview</span></a><a class="flex items-center gap-space-sm px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-body-sm text-body-sm transition-colors" data-path="periods-runs" href="#"><span class="material-symbols-outlined text-[18px]">history_toggle_off</span><span>Periods &amp; Runs</span></a><a class="flex items-center gap-space-sm px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-body-sm text-body-sm transition-colors" data-path="compensation-plans" href="#"><span class="material-symbols-outlined text-[18px]">schema</span><span>Compensation Plans</span></a><a class="flex items-center gap-space-sm px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-body-sm text-body-sm transition-colors" data-path="people-tree" href="#"><span class="material-symbols-outlined text-[18px]">account_tree</span><span>People &amp; Tree</span></a><a class="flex items-center gap-space-sm px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-body-sm text-body-sm transition-colors" data-path="orders-returns" href="#"><span class="material-symbols-outlined text-[18px]">receipt_long</span><span>Orders &amp; Returns</span></a><a class="flex items-center gap-space-sm px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-body-sm text-body-sm transition-colors" data-path="cases-exceptions" href="#"><span class="material-symbols-outlined text-[18px]">rule_folder</span><span>Cases &amp; Exceptions</span></a><a class="flex items-center gap-space-sm px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-body-sm text-body-sm transition-colors" data-path="payouts" href="#"><span class="material-symbols-outlined text-[18px]">payments</span><span>Payouts</span></a><a class="flex items-center gap-space-sm px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-body-sm text-body-sm transition-colors" data-path="finance-ledger" href="#"><span class="material-symbols-outlined text-[18px]">account_balance</span><span>Finance &amp; Ledger</span></a><a class="flex items-center gap-space-sm px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-body-sm text-body-sm transition-colors" data-path="compliance-reports" href="#"><span class="material-symbols-outlined text-[18px]">verified_user</span><span>Compliance Reports</span></a><a class="flex items-center gap-space-sm px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-body-sm text-body-sm transition-colors" data-path="data-imports-migration" href="#"><span class="material-symbols-outlined text-[18px]">sync_alt</span><span>Data Imports</span></a><a class="flex items-center gap-space-sm px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-body-sm text-body-sm transition-colors" data-path="settings-audit" href="#"><span class="material-symbols-outlined text-[18px]">tune</span><span>Settings &amp; Audit</span></a></nav></div><div class="p-space-sm border-t border-outline-variant bg-surface-container-low"><div class="font-data-mono-sm text-data-mono-sm text-secondary space-y-1"><div class="flex items-center justify-between"><span>Cell</span><span class="text-on-surface font-semibold">US-EAST-1</span></div><div class="flex items-center justify-between"><span>Version</span><span class="text-on-surface">v2.4.1</span></div><div class="pt-1 border-t border-outline-variant flex items-center justify-between"><span class="text-outline">Engine</span><span class="text-tertiary font-semibold">2026.11</span></div></div></div></aside><div class="pl-52"><main class="w-full pt-12 bg-background min-h-screen"><div class="flex flex-col w-full">
+<div class="p-space-lg space-y-space-md max-w-[1440px] mx-auto w-full">
+<!-- Top Action & Meta Context Header -->
+<div class="flex flex-col xl:flex-row xl:items-center justify-between gap-space-md pb-space-sm">
+<div class="space-y-space-xxs min-w-0">
+<div class="flex items-center gap-space-sm flex-wrap">
+<span class="font-data-mono-sm text-data-mono-sm text-secondary uppercase tracking-wider">SC-33 Ledger &amp; Journal Export</span>
+<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-tertiary-fixed text-on-tertiary-fixed font-caption text-caption font-semibold">
+<span class="material-symbols-outlined text-[14px]">lock</span>
+            LEDGER INTEGRITY: ZERO UNEXPLAINED DIFFERENCE (0.00 RESIDUE)
+          </span>
+<span class="font-data-mono-sm text-data-mono-sm text-secondary">| RUN #1042-3 (FINALIZED)</span>
+</div>
+<h1 class="font-title-lg text-title-lg text-on-surface tracking-tight">Finance &amp; Obligations Ledger</h1>
+<p class="font-body-md text-body-md text-on-surface-variant max-w-4xl">
+          Verify double-entry obligations, audit account balances, inspect append-only journal postings, and export ERP journal entries.
+        </p>
+</div>
+<!-- Action Button Group -->
+<div class="flex items-center gap-space-sm flex-wrap self-start xl:self-auto shrink-0">
+<button class="h-8 px-space-sm rounded bg-surface-container hover:bg-surface-container-high text-on-surface font-body-sm text-body-sm font-medium transition-colors flex items-center gap-1.5" id="btn-open-clawback">
+<span class="material-symbols-outlined text-[16px] text-secondary">trending_down</span>
+<span>Receivables Ageing Analysis</span>
+</button>
+<button class="h-8 px-space-sm rounded bg-error-container hover:bg-surface-container-high text-error font-body-sm text-body-sm font-medium transition-colors flex items-center gap-1.5" id="btn-clawback-writeoff">
+<span class="material-symbols-outlined text-[16px]">remove_moderator</span>
+<span>Propose Clawback Write-Off</span>
+</button>
+<button class="h-8 px-space-md rounded bg-primary-container hover:bg-primary text-on-primary font-body-sm text-body-sm font-semibold transition-colors shadow-sm flex items-center gap-1.5" id="btn-export-erp">
+<span class="material-symbols-outlined text-[16px]">file_download</span>
+<span>Generate ERP Journal Export</span>
+</button>
+</div>
+</div>
+<!-- Accounting Invariant Top Banner (Strict Proof of Equilibrium) -->
+<div class="rounded-xl bg-surface-container-low p-space-md shadow-sm relative overflow-hidden">
+<div class="absolute -right-16 -top-16 w-64 h-64 rounded-full bg-tertiary-fixed-dim/20 pointer-events-none blur-2xl"></div>
+<div class="flex flex-col lg:flex-row lg:items-center justify-between gap-space-md relative z-10">
+<div class="space-y-1">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-tertiary text-[20px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span class="font-section-heading text-section-heading text-tertiary font-bold tracking-tight">BALANCED TO MINOR UNIT (PASS)</span>
+<span class="h-3 w-px bg-outline-variant mx-1"></span>
+<span class="font-data-mono-sm text-data-mono-sm text-secondary">INVARIANT EQUATION VERIFIED</span>
+</div>
+<div class="font-data-mono-md text-data-mono-md text-on-surface tracking-tight bg-surface-container-lowest/80 px-space-sm py-1.5 rounded inline-block">
+<span class="text-primary font-semibold">Expense ($4,812,490.50)</span> = 
+            <span class="text-on-surface">Payable ($4,230,180.20)</span> + 
+            <span class="text-on-surface">Withholding ($582,310.30)</span> + 
+            <span class="text-tertiary font-semibold">Residue ($0.00)</span>
+</div>
+</div>
+<div class="flex items-center gap-space-lg text-right shrink-0">
+<div class="space-y-0.5">
+<div class="font-caption text-caption text-secondary uppercase tracking-wider">Ledger Cryptographic Hash</div>
+<div class="font-data-mono-sm text-data-mono-sm text-on-surface font-semibold flex items-center gap-1 justify-end">
+<span class="material-symbols-outlined text-[14px] text-tertiary">fingerprint</span>
+<span>sha256: 0x9f42b71e84a2c9103e</span>
+</div>
+</div>
+<div class="h-8 w-px bg-outline-variant"></div>
+<div class="space-y-0.5">
+<div class="font-caption text-caption text-secondary uppercase tracking-wider">Total Ledger Entries</div>
+<div class="font-data-mono-md text-data-mono-md text-on-surface font-bold">285,780</div>
+</div>
+<div class="h-8 w-px bg-outline-variant"></div>
+<div class="space-y-0.5">
+<div class="font-caption text-caption text-secondary uppercase tracking-wider">Ledger Mutability</div>
+<div class="inline-flex items-center gap-1 font-caption text-caption text-on-surface-variant font-semibold">
+<span class="h-1.5 w-1.5 rounded-full bg-secondary"></span>
+              APPEND-ONLY (IMMUTABLE)
+            </div>
+</div>
+</div>
+</div>
+</div>
+<!-- 4 KPI Summary Cards -->
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-space-md">
+<!-- Card 1 -->
+<div class="rounded-xl bg-surface-container-lowest p-space-md shadow-sm space-y-space-xs relative">
+<div class="flex items-center justify-between">
+<span class="font-caption text-caption text-secondary uppercase font-semibold">Total Gross Commission</span>
+<span class="font-data-mono-sm text-data-mono-sm px-1.5 py-0.5 rounded bg-surface-container text-primary font-semibold">GL-501</span>
+</div>
+<div class="font-data-mono-lg text-data-mono-lg text-on-surface font-bold tracking-tight">$4,812,490.50</div>
+<div class="flex items-center justify-between text-secondary pt-1">
+<span class="font-caption text-caption">Period 2026-M10 Run #1042-3</span>
+<span class="font-data-mono-sm text-data-mono-sm text-tertiary font-semibold flex items-center gap-0.5">
+<span class="material-symbols-outlined text-[14px]">done_all</span> 100% Tied
+          </span>
+</div>
+<div class="w-full bg-surface-container h-1 rounded-full overflow-hidden mt-1">
+<div class="bg-primary h-full" style="width: 100%;"></div>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="rounded-xl bg-surface-container-lowest p-space-md shadow-sm space-y-space-xs relative">
+<div class="flex items-center justify-between">
+<span class="font-caption text-caption text-secondary uppercase font-semibold">Net Payee Obligations</span>
+<span class="font-data-mono-sm text-data-mono-sm px-1.5 py-0.5 rounded bg-surface-container text-on-surface font-semibold">GL-201</span>
+</div>
+<div class="font-data-mono-lg text-data-mono-lg text-on-surface font-bold tracking-tight">$4,230,180.20</div>
+<div class="flex items-center justify-between text-secondary pt-1">
+<span class="font-caption text-caption truncate max-w-[170px]" title="Wells Fargo ACH Batch #BAT-2026-10-88">WF ACH #BAT-2026-10-88</span>
+<span class="font-data-mono-sm text-data-mono-sm text-secondary">87.90% of Total</span>
+</div>
+<div class="w-full bg-surface-container h-1 rounded-full overflow-hidden mt-1">
+<div class="bg-tertiary h-full" style="width: 87.9%;"></div>
+</div>
+</div>
+<!-- Card 3 -->
+<div class="rounded-xl bg-surface-container-lowest p-space-md shadow-sm space-y-space-xs relative">
+<div class="flex items-center justify-between">
+<span class="font-caption text-caption text-secondary uppercase font-semibold">Statutory Tax Withholding</span>
+<span class="font-data-mono-sm text-data-mono-sm px-1.5 py-0.5 rounded bg-surface-container text-on-surface font-semibold">GL-205</span>
+</div>
+<div class="font-data-mono-lg text-data-mono-lg text-on-surface font-bold tracking-tight">$582,310.30</div>
+<div class="flex items-center justify-between text-secondary pt-1">
+<span class="font-caption text-caption">Backup &amp; State Mandates</span>
+<span class="font-data-mono-sm text-data-mono-sm text-secondary">12.10% of Total</span>
+</div>
+<div class="w-full bg-surface-container h-1 rounded-full overflow-hidden mt-1">
+<div class="bg-outline h-full" style="width: 12.1%;"></div>
+</div>
+</div>
+<!-- Card 4 -->
+<div class="rounded-xl bg-surface-container-lowest p-space-md shadow-sm space-y-space-xs relative">
+<div class="flex items-center justify-between">
+<span class="font-caption text-caption text-secondary uppercase font-semibold">Clawback Receivables Ageing</span>
+<span class="font-data-mono-sm text-data-mono-sm px-1.5 py-0.5 rounded bg-error-container text-on-error-container font-semibold">GL-108</span>
+</div>
+<div class="font-data-mono-lg text-data-mono-lg text-on-surface font-bold tracking-tight">$18,450.00</div>
+<div class="flex items-center justify-between text-secondary pt-1">
+<span class="font-caption text-caption">&gt;90d Candidate: <strong class="text-error font-semibold">$1.8k</strong></span>
+<span class="font-data-mono-sm text-data-mono-sm text-secondary">42 Cases</span>
+</div>
+<!-- Sparkline visualization bar -->
+<div class="w-full bg-surface-container h-1.5 rounded-full overflow-hidden flex mt-1">
+<div class="bg-tertiary h-full" style="width: 67%;" title="30-60d: $12.4k (67%)"></div>
+<div class="bg-secondary h-full" style="width: 23%;" title="60-90d: $4.2k (23%)"></div>
+<div class="bg-error h-full" style="width: 10%;" title="&gt;90d: $1.8k (10%)"></div>
+</div>
+</div>
+</div>
+<!-- Main Navigation Tabs -->
+<div class="flex items-center justify-between bg-surface-container-low rounded p-1 shadow-sm">
+<div class="flex items-center gap-1" id="ledger-tabs">
+<button class="px-space-md py-1.5 rounded bg-surface-container-lowest text-primary font-section-heading text-section-heading shadow-sm transition-all" data-tab="tab-journal">
+          Journal Postings Register (Append-Only)
+        </button>
+<button class="px-space-md py-1.5 rounded text-on-surface-variant hover:text-on-surface font-body-sm text-body-sm transition-all" data-tab="tab-accounts">
+          General Ledger Accounts
+        </button>
+<button class="px-space-md py-1.5 rounded text-on-surface-variant hover:text-on-surface font-body-sm text-body-sm transition-all" data-tab="tab-ageing">
+          Clawback Receivables &amp; Ageing (42)
+        </button>
+<button class="px-space-md py-1.5 rounded text-on-surface-variant hover:text-on-surface font-body-sm text-body-sm transition-all" data-tab="tab-erp-mapping">
+          ERP Chart of Accounts Mapping (14/14)
+        </button>
+</div>
+<div class="flex items-center gap-2 pr-space-xs text-secondary font-caption text-caption">
+<span class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px] text-tertiary">sync</span> Synced to Ledger Engine
+        </span>
+</div>
+</div>
+<!-- Dual Layout: Main Ledger Register (Left / Primary) & ERP Integration Rail (Right / Auxiliary) -->
+<div class="grid grid-cols-1 xl:grid-cols-12 gap-space-md items-start">
+<!-- Primary Data Workspace (Left 9-Cols) -->
+<div class="xl:col-span-9 space-y-space-md">
+<!-- Filter and Audit Controls Toolbar -->
+<div class="rounded-xl bg-surface-container-lowest p-space-sm shadow-sm flex flex-wrap items-center justify-between gap-space-sm">
+<div class="flex flex-wrap items-center gap-space-sm">
+<!-- Period Selector -->
+<div class="flex items-center bg-surface-container-low px-space-xs py-1 rounded">
+<span class="font-caption text-caption text-secondary pr-1">Period:</span>
+<select class="bg-transparent font-data-mono-sm text-data-mono-sm text-on-surface font-semibold focus:outline-none cursor-pointer">
+<option selected="">2026-M10 (October 2026 - Closed)</option>
+<option>2026-M09 (September 2026 - Reconciled)</option>
+<option>2026-M08 (August 2026 - Reconciled)</option>
+</select>
+</div>
+<!-- Account Filter -->
+<div class="flex items-center bg-surface-container-low px-space-xs py-1 rounded">
+<span class="font-caption text-caption text-secondary pr-1">Account:</span>
+<select class="bg-transparent font-body-sm text-body-sm text-on-surface focus:outline-none cursor-pointer">
+<option selected="">All Ledger Accounts (GL-100 to GL-599)</option>
+<option>GL-501 Commission Expense</option>
+<option>GL-201 Payee Payable</option>
+<option>GL-205 Withholding Liability</option>
+<option>GL-108 Clawback Receivable</option>
+<option>GL-102 Clearing Wells Fargo</option>
+</select>
+</div>
+<!-- Min Posting Threshold -->
+<div class="flex items-center bg-surface-container-low px-space-xs py-1 rounded">
+<span class="font-caption text-caption text-secondary pr-1">Min $:</span>
+<input class="w-16 bg-transparent font-data-mono-sm text-data-mono-sm text-on-surface focus:outline-none" placeholder="0.00" type="text"/>
+</div>
+<!-- Search Reference -->
+<div class="relative flex items-center">
+<span class="material-symbols-outlined absolute left-2 text-outline text-[16px]">search</span>
+<input class="h-7 pl-7 pr-3 rounded bg-surface-container-low font-body-sm text-body-sm text-on-surface focus:outline-none placeholder:text-outline w-56" placeholder="Filter JE-ID, Batch, or Case..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-space-sm ml-auto">
+<span class="font-data-mono-sm text-data-mono-sm text-secondary">Showing 6 of 285,780 postings</span>
+<button class="h-7 px-2 rounded bg-surface-container hover:bg-surface-container-high text-on-surface font-caption text-caption transition-colors flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">tune</span> Density
+            </button>
+</div>
+</div>
+<!-- Double-Entry Postings Table (Staff Dense Specification) -->
+<div class="rounded-xl bg-surface-container-lowest shadow-sm overflow-hidden">
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse select-text">
+<thead>
+<tr class="bg-surface-container-low text-secondary font-caption text-caption uppercase tracking-wider">
+<th class="py-2.5 px-3 font-semibold">Posting Time (UTC)</th>
+<th class="py-2.5 px-3 font-semibold">Journal Entry ID</th>
+<th class="py-2.5 px-3 font-semibold">Origin Reference</th>
+<th class="py-2.5 px-3 font-semibold">Debit Account</th>
+<th class="py-2.5 px-3 font-semibold">Credit Account</th>
+<th class="py-2.5 px-3 font-semibold text-right">Debit ($)</th>
+<th class="py-2.5 px-3 font-semibold text-right">Credit ($)</th>
+<th class="py-2.5 px-3 font-semibold">Dual Approver Audit</th>
+<th class="py-2.5 px-3 font-semibold text-center">Status</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-surface-container font-body-sm text-body-sm text-on-surface">
+<!-- Row 1: Gross Expense Accrual -->
+<tr class="hover:bg-surface-container-low transition-colors group">
+<td class="py-2 px-3 font-data-mono-sm text-data-mono-sm text-secondary whitespace-nowrap">2026-10-31 23:59:58</td>
+<td class="py-2 px-3 font-data-mono-sm text-data-mono-sm font-semibold text-primary whitespace-nowrap cursor-pointer hover:underline">
+                    JE-2026-1042-01
+                  </td>
+<td class="py-2 px-3 whitespace-nowrap">
+<span class="px-1.5 py-0.5 rounded bg-surface-container font-data-mono-sm text-data-mono-sm text-on-surface">Run #1042-3</span>
+</td>
+<td class="py-2 px-3">
+<div class="font-medium text-on-surface">Commission Expense</div>
+<div class="font-data-mono-sm text-data-mono-sm text-secondary">GL-501-COMM</div>
+</td>
+<td class="py-2 px-3">
+<div class="font-medium text-on-surface">Commission Accrued Payable</div>
+<div class="font-data-mono-sm text-data-mono-sm text-secondary">GL-201-PAYEE</div>
+</td>
+<td class="py-2 px-3 font-data-mono-md text-data-mono-md text-right font-semibold text-on-surface whitespace-nowrap">
+                    4,812,490.50
+                  </td>
+<td class="py-2 px-3 font-data-mono-md text-data-mono-md text-right font-semibold text-on-surface whitespace-nowrap">
+                    4,812,490.50
+                  </td>
+<td class="py-2 px-3 whitespace-nowrap">
+<div class="font-caption text-caption text-on-surface font-medium">E. Rostova (Analyst)</div>
+<div class="font-caption text-caption text-secondary">S. Jenkins (FinDir) 00:04z</div>
+</td>
+<td class="py-2 px-3 text-center whitespace-nowrap">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-surface-container-high text-secondary font-caption text-caption font-bold">
+<span class="material-symbols-outlined text-[13px]">lock</span> POSTED
+                    </span>
+</td>
+</tr>
+<!-- Row 2: Tax Withholding Split -->
+<tr class="hover:bg-surface-container-low transition-colors group">
+<td class="py-2 px-3 font-data-mono-sm text-data-mono-sm text-secondary whitespace-nowrap">2026-11-01 00:02:11</td>
+<td class="py-2 px-3 font-data-mono-sm text-data-mono-sm font-semibold text-primary whitespace-nowrap cursor-pointer hover:underline">
+                    JE-2026-1042-02
+                  </td>
+<td class="py-2 px-3 whitespace-nowrap">
+<span class="px-1.5 py-0.5 rounded bg-surface-container font-data-mono-sm text-data-mono-sm text-on-surface">Run #1042-3</span>
+</td>
+<td class="py-2 px-3">
+<div class="font-medium text-on-surface">Commission Accrued Payable</div>
+<div class="font-data-mono-sm text-data-mono-sm text-secondary">GL-201-PAYEE</div>
+</td>
+<td class="py-2 px-3">
+<div class="font-medium text-on-surface">Statutory Tax Withholding</div>
+<div class="font-data-mono-sm text-data-mono-sm text-secondary">GL-205-WTHLD</div>
+</td>
+<td class="py-2 px-3 font-data-mono-md text-data-mono-md text-right font-semibold text-on-surface whitespace-nowrap">
+                    582,310.30
+                  </td>
+<td class="py-2 px-3 font-data-mono-md text-data-mono-md text-right font-semibold text-on-surface whitespace-nowrap">
+                    582,310.30
+                  </td>
+<td class="py-2 px-3 whitespace-nowrap">
+<div class="font-caption text-caption text-on-surface font-medium">Sys / Autotask TaxEngine</div>
+<div class="font-caption text-caption text-secondary">S. Jenkins (FinDir) 00:05z</div>
+</td>
+<td class="py-2 px-3 text-center whitespace-nowrap">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-surface-container-high text-secondary font-caption text-caption font-bold">
+<span class="material-symbols-outlined text-[13px]">lock</span> POSTED
+                    </span>
+</td>
+</tr>
+<!-- Row 3: ACH Disbursement Settlement -->
+<tr class="hover:bg-surface-container-low transition-colors group">
+<td class="py-2 px-3 font-data-mono-sm text-data-mono-sm text-secondary whitespace-nowrap">2026-11-01 02:30:00</td>
+<td class="py-2 px-3 font-data-mono-sm text-data-mono-sm font-semibold text-primary whitespace-nowrap cursor-pointer hover:underline">
+                    JE-2026-1042-03
+                  </td>
+<td class="py-2 px-3 whitespace-nowrap">
+<span class="px-1.5 py-0.5 rounded bg-surface-container font-data-mono-sm text-data-mono-sm text-on-surface">#BAT-2026-10-88</span>
+</td>
+<td class="py-2 px-3">
+<div class="font-medium text-on-surface">Commission Accrued Payable</div>
+<div class="font-data-mono-sm text-data-mono-sm text-secondary">GL-201-PAYEE</div>
+</td>
+<td class="py-2 px-3">
+<div class="font-medium text-on-surface">Wells Fargo Clearing Settlement</div>
+<div class="font-data-mono-sm text-data-mono-sm text-secondary">GL-102-ACH-WF</div>
+</td>
+<td class="py-2 px-3 font-data-mono-md text-data-mono-md text-right font-semibold text-on-surface whitespace-nowrap">
+                    4,230,180.20
+                  </td>
+<td class="py-2 px-3 font-data-mono-md text-data-mono-md text-right font-semibold text-on-surface whitespace-nowrap">
+                    4,230,180.20
+                  </td>
+<td class="py-2 px-3 whitespace-nowrap">
+<div class="font-caption text-caption text-on-surface font-medium">ACH Gateway Signoff</div>
+<div class="font-caption text-caption text-secondary">E. Rostova (Analyst) 02:31z</div>
+</td>
+<td class="py-2 px-3 text-center whitespace-nowrap">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-tertiary-fixed text-on-tertiary-fixed font-caption text-caption font-bold">
+<span class="material-symbols-outlined text-[13px]">verified</span> SETTLED
+                    </span>
+</td>
+</tr>
+<!-- Row 4: Clawback Case Recovery -->
+<tr class="hover:bg-surface-container-low transition-colors group">
+<td class="py-2 px-3 font-data-mono-sm text-data-mono-sm text-secondary whitespace-nowrap">2026-11-01 04:12:15</td>
+<td class="py-2 px-3 font-data-mono-sm text-data-mono-sm font-semibold text-primary whitespace-nowrap cursor-pointer hover:underline">
+                    JE-2026-1042-04
+                  </td>
+<td class="py-2 px-3 whitespace-nowrap">
+<span class="px-1.5 py-0.5 rounded bg-surface-container font-data-mono-sm text-data-mono-sm text-on-surface">#CAS-2026-1039</span>
+</td>
+<td class="py-2 px-3">
+<div class="font-medium text-on-surface">Clawback Receivables</div>
+<div class="font-data-mono-sm text-data-mono-sm text-secondary">GL-108-CLAW</div>
+</td>
+<td class="py-2 px-3">
+<div class="font-medium text-on-surface">Commission Expense Adjustment</div>
+<div class="font-data-mono-sm text-data-mono-sm text-secondary">GL-501-COMM</div>
+</td>
+<td class="py-2 px-3 font-data-mono-md text-data-mono-md text-right font-semibold text-on-surface whitespace-nowrap">
+                    1,250.00
+                  </td>
+<td class="py-2 px-3 font-data-mono-md text-data-mono-md text-right font-semibold text-on-surface whitespace-nowrap">
+                    1,250.00
+                  </td>
+<td class="py-2 px-3 whitespace-nowrap">
+<div class="font-caption text-caption text-on-surface font-medium">M. Kowalski (Compliance)</div>
+<div class="font-caption text-caption text-secondary">E. Rostova 04:15z</div>
+</td>
+<td class="py-2 px-3 text-center whitespace-nowrap">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-surface-container-high text-secondary font-caption text-caption font-bold">
+<span class="material-symbols-outlined text-[13px]">lock</span> POSTED
+                    </span>
+</td>
+</tr>
+<!-- Row 5: Foreign Exchange Rounding Residue Check -->
+<tr class="hover:bg-surface-container-low transition-colors group">
+<td class="py-2 px-3 font-data-mono-sm text-data-mono-sm text-secondary whitespace-nowrap">2026-11-01 04:15:00</td>
+<td class="py-2 px-3 font-data-mono-sm text-data-mono-sm font-semibold text-primary whitespace-nowrap cursor-pointer hover:underline">
+                    JE-2026-1042-05
+                  </td>
+<td class="py-2 px-3 whitespace-nowrap">
+<span class="px-1.5 py-0.5 rounded bg-surface-container font-data-mono-sm text-data-mono-sm text-on-surface">Run #1042-3</span>
+</td>
+<td class="py-2 px-3">
+<div class="font-medium text-on-surface">Minor Unit Rounding Clearing</div>
+<div class="font-data-mono-sm text-data-mono-sm text-secondary">GL-999-RND</div>
+</td>
+<td class="py-2 px-3">
+<div class="font-medium text-on-surface">Commission Expense</div>
+<div class="font-data-mono-sm text-data-mono-sm text-secondary">GL-501-COMM</div>
+</td>
+<td class="py-2 px-3 font-data-mono-md text-data-mono-md text-right font-semibold text-tertiary whitespace-nowrap">
+                    0.00
+                  </td>
+<td class="py-2 px-3 font-data-mono-md text-data-mono-md text-right font-semibold text-tertiary whitespace-nowrap">
+                    0.00
+                  </td>
+<td class="py-2 px-3 whitespace-nowrap">
+<div class="font-caption text-caption text-on-surface font-medium">Invariant Bot Engine</div>
+<div class="font-caption text-caption text-secondary">Audited Pass 04:15z</div>
+</td>
+<td class="py-2 px-3 text-center whitespace-nowrap">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-tertiary-fixed text-on-tertiary-fixed font-caption text-caption font-bold">
+<span class="material-symbols-outlined text-[13px]">check</span> RESIDUE 0
+                    </span>
+</td>
+</tr>
+<!-- Row 6: Merchant Return Chargeback Offset -->
+<tr class="hover:bg-surface-container-low transition-colors group">
+<td class="py-2 px-3 font-data-mono-sm text-data-mono-sm text-secondary whitespace-nowrap">2026-11-01 05:40:22</td>
+<td class="py-2 px-3 font-data-mono-sm text-data-mono-sm font-semibold text-primary whitespace-nowrap cursor-pointer hover:underline">
+                    JE-2026-1042-06
+                  </td>
+<td class="py-2 px-3 whitespace-nowrap">
+<span class="px-1.5 py-0.5 rounded bg-surface-container font-data-mono-sm text-data-mono-sm text-on-surface">#ORD-RET-9014</span>
+</td>
+<td class="py-2 px-3">
+<div class="font-medium text-on-surface">Customer Return Clearing</div>
+<div class="font-data-mono-sm text-data-mono-sm text-secondary">GL-109-RET</div>
+</td>
+<td class="py-2 px-3">
+<div class="font-medium text-on-surface">Commission Accrued Payable</div>
+<div class="font-data-mono-sm text-data-mono-sm text-secondary">GL-201-PAYEE</div>
+</td>
+<td class="py-2 px-3 font-data-mono-md text-data-mono-md text-right font-semibold text-on-surface whitespace-nowrap">
+                    842.10
+                  </td>
+<td class="py-2 px-3 font-data-mono-md text-data-mono-md text-right font-semibold text-on-surface whitespace-nowrap">
+                    842.10
+                  </td>
+<td class="py-2 px-3 whitespace-nowrap">
+<div class="font-caption text-caption text-on-surface font-medium">T. Vance (Claims)</div>
+<div class="font-caption text-caption text-secondary">E. Rostova 05:45z</div>
+</td>
+<td class="py-2 px-3 text-center whitespace-nowrap">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-surface-container-high text-secondary font-caption text-caption font-bold">
+<span class="material-symbols-outlined text-[13px]">lock</span> POSTED
+                    </span>
+</td>
+</tr>
+</tbody>
+<tfoot class="bg-surface-container-low font-data-mono-md text-data-mono-md text-on-surface font-bold">
+<tr>
+<td class="py-2.5 px-3 text-right text-secondary uppercase font-caption text-caption" colspan="5">Total Active Period Journal Batch (6 Sample Items)</td>
+<td class="py-2.5 px-3 text-right text-primary">$9,627,073.10</td>
+<td class="py-2.5 px-3 text-right text-primary">$9,627,073.10</td>
+<td class="py-2.5 px-3 text-tertiary text-center font-caption text-caption font-bold" colspan="2">NET DIFFERENCE: $0.00</td>
+</tr>
+</tfoot>
+</table>
+</div>
+<div class="p-space-xs bg-surface-container-lowest border-t border-surface-container flex items-center justify-between text-secondary font-caption text-caption">
+<div>Audit Rule: FR-FIN-001 (Zero-Sum Invariant Double-Entry Constraint strictly enforced by cell database).</div>
+<div class="flex items-center gap-2">
+<button class="px-2 py-1 rounded bg-surface-container hover:bg-surface-container-high text-on-surface transition-colors disabled:opacity-50" disabled="">Previous</button>
+<span>Page 1 of 47,630</span>
+<button class="px-2 py-1 rounded bg-surface-container hover:bg-surface-container-high text-on-surface transition-colors">Next</button>
+</div>
+</div>
+</div>
+<!-- Secondary Visual Detail: Receivables Ageing Drill-Down -->
+<div class="rounded-xl bg-surface-container-lowest p-space-md shadow-sm space-y-space-sm">
+<div class="flex items-center justify-between">
+<div class="space-y-0.5">
+<h2 class="font-section-heading text-section-heading text-on-surface">GL-108 Clawback Ageing Distribution</h2>
+<p class="font-caption text-caption text-secondary">Aging obligations accrued from distributor churn, return reversals, and disciplinary chargebacks.</p>
+</div>
+<span class="font-data-mono-sm text-data-mono-sm px-2 py-1 rounded bg-surface-container text-on-surface font-semibold">Total Recoverable: $18,450.00</span>
+</div>
+<!-- Ageing Breakdown Bands -->
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-space-sm pt-2">
+<div class="p-space-sm rounded-lg bg-surface-container-low space-y-1">
+<div class="flex items-center justify-between text-secondary">
+<span class="font-caption text-caption font-semibold">30 - 60 Days (Normal)</span>
+<span class="font-data-mono-sm text-data-mono-sm text-tertiary">Current</span>
+</div>
+<div class="font-data-mono-lg text-data-mono-lg text-on-surface font-bold">$12,400.00</div>
+<div class="font-caption text-caption text-secondary">28 active distributors on standard payment offset plan.</div>
+</div>
+<div class="p-space-sm rounded-lg bg-surface-container-low space-y-1">
+<div class="flex items-center justify-between text-secondary">
+<span class="font-caption text-caption font-semibold">60 - 90 Days (Warning)</span>
+<span class="font-data-mono-sm text-data-mono-sm text-on-secondary-container">Overdue</span>
+</div>
+<div class="font-data-mono-lg text-data-mono-lg text-on-surface font-bold">$4,250.00</div>
+<div class="font-caption text-caption text-secondary">9 distributors subject to commission account freeze.</div>
+</div>
+<div class="p-space-sm rounded-lg bg-error-container/40 space-y-1">
+<div class="flex items-center justify-between text-error">
+<span class="font-caption text-caption font-semibold">&gt;90 Days (Critical)</span>
+<span class="font-data-mono-sm text-data-mono-sm text-error font-bold">Write-Off Candidate</span>
+</div>
+<div class="font-data-mono-lg text-data-mono-lg text-error font-bold">$1,800.00</div>
+<div class="font-caption text-caption text-on-surface-variant">5 dormant distributors. Requires separation-of-duties write-off approval.</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Auxiliary Panel: ERP Export & General Ledger Health (Right 3-Cols) -->
+<div class="xl:col-span-3 space-y-space-md">
+<!-- ERP Integration Panel (FR-FIN-003 / FR-FIN-005) -->
+<div class="rounded-xl bg-surface-container-lowest p-space-md shadow-sm space-y-space-md">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[20px]">account_balance</span>
+<h2 class="font-section-heading text-section-heading text-on-surface">ERP Journal Bridge</h2>
+</div>
+<div class="space-y-space-xs">
+<label class="font-caption text-caption text-secondary uppercase font-semibold block">Target ERP Engine</label>
+<div class="space-y-1.5">
+<label class="flex items-center gap-2 p-2 rounded bg-surface-container-low cursor-pointer hover:bg-surface-container transition-colors">
+<input checked="" class="text-primary focus:ring-primary" name="erp_format" type="radio" value="sap_netsuite"/>
+<div class="min-w-0">
+<div class="font-body-sm text-body-sm font-semibold text-on-surface">SAP S/4HANA / NetSuite</div>
+<div class="font-caption text-caption text-secondary">Standard ISO 20022 CSV Suite</div>
+</div>
+</label>
+<label class="flex items-center gap-2 p-2 rounded bg-surface-container-low cursor-pointer hover:bg-surface-container transition-colors">
+<input class="text-primary focus:ring-primary" name="erp_format" type="radio" value="workday"/>
+<div class="min-w-0">
+<div class="font-body-sm text-body-sm font-semibold text-on-surface">Workday Financials XML</div>
+<div class="font-caption text-caption text-secondary">Enterprise Journal WSDL 39.0</div>
+</div>
+</label>
+</div>
+</div>
+<!-- Mapping Validation Status -->
+<div class="p-space-sm rounded bg-surface-container-low space-y-1.5">
+<div class="flex items-center justify-between">
+<span class="font-caption text-caption text-secondary font-semibold">Account Mapping Check</span>
+<span class="inline-flex items-center gap-1 font-caption text-caption text-tertiary font-bold">
+<span class="material-symbols-outlined text-[14px]">check_circle</span> 100% COMPLETE
+              </span>
+</div>
+<div class="font-data-mono-sm text-data-mono-sm text-on-surface">14/14 Tenant GLs Synchronized</div>
+<p class="font-caption text-caption text-on-surface-variant">
+              Zero unmapped cost centers or rounding holding accounts. Ready for statutory posting.
+            </p>
+</div>
+<!-- Download Action -->
+<div class="space-y-space-xs pt-1">
+<button class="w-full h-9 rounded bg-primary text-on-primary hover:bg-primary-container font-body-sm text-body-sm font-semibold transition-all flex items-center justify-center gap-2 shadow-sm" id="btn-download-journal">
+<span class="material-symbols-outlined text-[18px]">download_for_offline</span>
+<span>Download Verified Journal (.CSV)</span>
+</button>
+<div class="text-center font-caption text-caption text-secondary">
+              Includes immutable SHA-256 header manifest
+            </div>
+</div>
+</div>
+<!-- Ledger Integrity Diagnostic Card -->
+<div class="rounded-xl bg-surface-container-lowest p-space-md shadow-sm space-y-space-sm">
+<h3 class="font-section-heading text-section-heading text-on-surface flex items-center gap-1.5">
+<span class="material-symbols-outlined text-secondary text-[18px]">verified_user</span>
+            Ledger Invariant Proof
+          </h3>
+<div class="space-y-2 text-secondary font-body-sm text-body-sm">
+<div class="flex items-center justify-between pb-1 border-b border-surface-container">
+<span>Equation Audit</span>
+<span class="text-tertiary font-semibold font-data-mono-sm text-data-mono-sm">0.00 Diff</span>
+</div>
+<div class="flex items-center justify-between pb-1 border-b border-surface-container">
+<span>Double-Entry Parity</span>
+<span class="text-on-surface font-semibold font-data-mono-sm text-data-mono-sm">100.00%</span>
+</div>
+<div class="flex items-center justify-between pb-1 border-b border-surface-container">
+<span>Orphan Line Items</span>
+<span class="text-tertiary font-semibold font-data-mono-sm text-data-mono-sm">0 Found</span>
+</div>
+<div class="flex items-center justify-between">
+<span>Engine State</span>
+<span class="text-on-surface font-semibold font-data-mono-sm text-data-mono-sm">SEALED (T1)</span>
+</div>
+</div>
+<div class="mt-2 pt-2 border-t border-surface-container">
+<div class="font-caption text-caption text-secondary">
+              Signed by Auditor Node: <span class="font-data-mono-sm text-data-mono-sm text-on-surface font-medium">CELL-US-EAST-1::LEDGER-VALIDATOR-04</span>
+</div>
+</div>
+</div>
+<!-- Two-Person Authorization Status Banner -->
+<div class="rounded-xl bg-surface-container-low p-space-md space-y-space-xs shadow-sm">
+<div class="flex items-center gap-1.5 text-on-surface font-section-heading text-section-heading font-semibold">
+<span class="material-symbols-outlined text-primary text-[18px]">policy</span>
+            Separation of Duties
+          </div>
+<p class="font-caption text-caption text-secondary">
+            Period 2026-M10 obligations ledger fully signed off. Modifications require dual-signature re-opening workflow.
+          </p>
+<div class="pt-2 space-y-1.5 font-caption text-caption">
+<div class="flex items-center justify-between bg-surface-container-lowest px-2 py-1 rounded">
+<span class="text-on-surface font-medium">Preparer: Elena Rostova</span>
+<span class="text-tertiary font-bold">2026-10-31 23:58z</span>
+</div>
+<div class="flex items-center justify-between bg-surface-container-lowest px-2 py-1 rounded">
+<span class="text-on-surface font-medium">Approver: Sarah Jenkins</span>
+<span class="text-tertiary font-bold">2026-11-01 00:05z</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Notification Toast Element (Hidden by default, triggered by JS) -->
+<div class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none" id="export-toast">
+<div class="rounded-lg bg-inverse-surface text-inverse-on-surface p-space-md shadow-xl flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-tertiary-fixed text-[24px]">verified</span>
+<div>
+<div class="font-section-heading text-section-heading font-semibold">Export Archive Generated</div>
+<div class="font-caption text-caption text-surface-container-high font-data-mono-sm">JE_EXPORT_2026_M10_FINAL_SEALED.csv (SHA-256 Validated)</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<script>
+  // Micro-interactions and Tab/Export triggers
+  document.addEventListener('DOMContentLoaded', () => {
+    const tabs = document.querySelectorAll('#ledger-tabs button');
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        tabs.forEach(t => {
+          t.className = 'px-space-md py-1.5 rounded text-on-surface-variant hover:text-on-surface font-body-sm text-body-sm transition-all';
+        });
+        tab.className = 'px-space-md py-1.5 rounded bg-surface-container-lowest text-primary font-section-heading text-section-heading shadow-sm transition-all';
+      });
+    });
+
+    const downloadBtn = document.getElementById('btn-download-journal');
+    const toast = document.getElementById('export-toast');
+
+    if (downloadBtn && toast) {
+      downloadBtn.addEventListener('click', () => {
+        downloadBtn.innerHTML = '<span class="material-symbols-outlined text-[18px] animate-spin">refresh</span><span>Compiling Journal...</span>';
+        setTimeout(() => {
+          downloadBtn.innerHTML = '<span class="material-symbols-outlined text-[18px]">download_for_offline</span><span>Download Verified Journal (.CSV)</span>';
+          toast.classList.remove('translate-y-20', 'opacity-0', 'pointer-events-none');
+          setTimeout(() => {
+            toast.classList.add('translate-y-20', 'opacity-0', 'pointer-events-none');
+          }, 3500);
+        }, 800);
+      });
+    }
+
+    const clawbackBtn = document.getElementById('btn-clawback-writeoff');
+    if (clawbackBtn) {
+      clawbackBtn.addEventListener('click', () => {
+        alert('Action restricted: Write-off of GL-108 balances requires a formal Two-Person Approval workflow ticket with Financial Controller signoff.');
+      });
+    }
+  });
+</script></main></div></body></html>

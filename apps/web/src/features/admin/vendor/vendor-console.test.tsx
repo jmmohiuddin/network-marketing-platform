@@ -5,13 +5,14 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { apiError, ok } from '../../../test/fetch'
 import { bodyOf, callsTo, fetchByRoute, headerOf, renderAs, vendorMe } from '../test-support'
-import type { SupportSession, TenantDetail } from '../types'
+import type { SupportSession, TenantDetail, VendorUser } from '../types'
 import { checkProvisioning, ProvisionTenantPage } from './provision-form'
 import { sessionMinutesError } from './request-session-dialog'
 import { storedSupportSession } from '../../../lib/support-session'
 import { canEnd, canOpen, VendorSessionsPage } from './sessions-page'
 import { TenantDetailPage } from './tenant-detail'
 import { TenantsPage } from './tenants-page'
+import { VendorUsersPage } from './vendor-users-page'
 
 const router = vi.hoisted(() => ({ replace: vi.fn(), push: vi.fn() }))
 vi.mock('next/navigation', () => ({ useRouter: () => router, usePathname: () => '/vendor', useSearchParams: () => new URLSearchParams() }))
@@ -89,7 +90,15 @@ describe('vendor console', () => {
     await user.type(screen.getByLabelText('Time zone'), 'Europe/Berlin')
     await user.type(screen.getByLabelText('Languages'), 'de, en')
     await user.type(screen.getByLabelText('Market pack'), 'de-2026')
-    await user.type(screen.getByLabelText('Email address'), 'first@acme.example')
+    const firstAdmin = within(screen.getByRole('group', { name: 'First admin' }))
+    const secondAdmin = within(screen.getByRole('group', { name: 'Second admin' }))
+    await user.type(firstAdmin.getByLabelText('Email address'), 'first@acme.example')
+    await user.type(secondAdmin.getByLabelText('Email address'), 'FIRST@acme.example')
+    await user.click(screen.getByRole('button', { name: 'Create tenant' }))
+    expect(screen.getByRole('alert').textContent).toContain('Enter a different person from the first admin.')
+    await user.clear(secondAdmin.getByLabelText('Email address'))
+    await user.type(secondAdmin.getByLabelText('Email address'), 'second@acme.example')
+    await user.type(secondAdmin.getByLabelText('Name (optional)'), 'Sam Second')
     await user.click(screen.getByRole('button', { name: 'Create tenant' }))
     expect(await screen.findByText(/Another vendor user must approve it/)).toBeTruthy()
     expect(router.push).toHaveBeenCalledWith('/vendor/tenants/t1')
@@ -97,6 +106,7 @@ describe('vendor console', () => {
       legal_name: 'Acme Ltd', slug: 'acme', region: 'eu', isolation_tier: 'pooled', dpa_document_id: DPA,
       markets: [{ code: 'DE', currency: 'EUR', minor_unit: 2, time_zone: 'Europe/Berlin', languages: ['de', 'en'], market_pack: 'de-2026' }],
       first_admin: { email: 'first@acme.example', display_name: null },
+      second_admin: { email: 'second@acme.example', display_name: 'Sam Second' },
     })
   })
 
@@ -110,9 +120,10 @@ describe('vendor console', () => {
     const fill: [string, string][] = [
       ['Legal name', 'Acme Ltd'], ['Slug', 'acme'], ['Data region', 'eu'], ['Signed data processing agreement ID', DPA], ['Country code', 'DE'],
       ['Currency', 'EUR'], ['Currency decimals', '2'], ['Time zone', 'Europe/Berlin'], ['Languages', 'de'], ['Market pack', 'de-2026'],
-      ['Email address', 'first@acme.example'],
     ]
     for (const [label, value] of fill) await user.type(screen.getByLabelText(label), value)
+    await user.type(within(screen.getByRole('group', { name: 'First admin' })).getByLabelText('Email address'), 'first@acme.example')
+    await user.type(within(screen.getByRole('group', { name: 'Second admin' })).getByLabelText('Email address'), 'second@acme.example')
     await user.selectOptions(screen.getByLabelText('Isolation tier'), 'pooled')
     await user.click(screen.getByRole('button', { name: 'Create tenant' }))
     await screen.findByRole('alert')
@@ -132,6 +143,7 @@ describe('vendor console', () => {
     const fetchMock = fetchByRoute({
       'GET /v1/support-sessions': () => ok([]),
       'GET /v1/tenants': () => ok([tenant({ state: 'live' }), tenant({ id: 't2', slug: 'new', legal_name: 'New Co', state: 'provisioning' })]),
+      'GET /v1/support-sessions/limits': () => ok({ max_minutes: 120, scopes: ['compliance.read', 'audit.read'] }),
       'POST /v1/support-sessions': () => ok(session({ state: 'requested' }), 201),
     })
     renderAs(ME, <VendorSessionsPage />, fetchMock)
@@ -141,7 +153,17 @@ describe('vendor console', () => {
     expect(within(dialog).queryByRole('option', { name: 'New Co (new)' })).toBeNull()
     await user.selectOptions(within(dialog).getByLabelText('Tenant'), 't1')
     await user.type(within(dialog).getByLabelText('Reason'), 'Ticket 42')
-    await user.click(within(dialog).getByLabelText('Read the audit log'))
+    // The areas and the longest duration come from the API (GET /v1/support-sessions/limits).
+    // Sessions are view-only: the scope names areas to see, never actions (BUG-023).
+    expect(within(dialog).getByRole('group', { name: 'Areas you need to see' })).toBeTruthy()
+    await user.click(await within(dialog).findByLabelText('Audit log'))
+    expect(within(dialog).getByLabelText('Compliance reports')).toBeTruthy()
+    expect(within(dialog).queryByLabelText('Settings')).toBeNull()
+    expect(within(dialog).getByText(/Up to 120 minutes/)).toBeTruthy()
+    await user.type(within(dialog).getByLabelText('Duration in minutes'), '121')
+    await user.click(within(dialog).getByRole('button', { name: 'Send request' }))
+    expect(within(dialog).getAllByText(/Ask for 1 to 120 minutes/).length).toBeGreaterThan(0)
+    await user.clear(within(dialog).getByLabelText('Duration in minutes'))
     await user.type(within(dialog).getByLabelText('Duration in minutes'), '90')
     await user.click(within(dialog).getByRole('button', { name: 'Send request' }))
     expect(await screen.findByText(/Nothing can be accessed until the tenant approves it/)).toBeTruthy()
@@ -164,6 +186,52 @@ describe('vendor console', () => {
   })
 })
 
+function vendorUser(overrides: Partial<VendorUser> = {}): VendorUser {
+  return {
+    id: 'v2', email: 'ola@vendor.example', display_name: 'Ola Operator', state: 'active', mfa_enrolled: true, last_sign_in_at: null,
+    created_at: '2026-11-12T08:00:00.000Z', created_by: ME.user.id, ...overrides,
+  }
+}
+
+describe('vendor console: vendor users (BUG-011)', () => {
+  it('invites a second vendor user with an Idempotency-Key', async () => {
+    const user = userEvent.setup()
+    const fetchMock = fetchByRoute({
+      'GET /v1/vendor-users': () => ok([vendorUser({ id: ME.user.id, email: ME.user.email, display_name: 'Vera Vendor' })]),
+      'POST /v1/vendor-users': () => ok({ user: vendorUser({ state: 'invited' }) }, 201),
+    })
+    renderAs(ME, <VendorUsersPage />, fetchMock)
+    expect(await screen.findByText('Vera Vendor (vera@vendor.example) · you')).toBeTruthy()
+    expect(screen.getByRole('link', { name: 'Vendor users' }).getAttribute('href')).toBe('/vendor/users')
+    await user.click(screen.getByRole('button', { name: 'Invite vendor user' }))
+    const dialog = screen.getByRole('dialog', { name: 'Invite vendor user' })
+    await user.type(within(dialog).getByLabelText('Email address'), 'ola@vendor.example')
+    await user.click(within(dialog).getByRole('button', { name: 'Send invitation' }))
+    expect(await screen.findByText(/Invitation sent to ola@vendor.example/)).toBeTruthy()
+    const [, init] = callsTo(fetchMock, 'POST', '/v1/vendor-users')[0]!
+    expect(bodyOf(init)).toEqual({ email: 'ola@vendor.example' })
+    expect(headerOf(init, 'Idempotency-Key')).not.toBeNull()
+  })
+
+  it('resends an open invitation and shows why the last vendor user stays', async () => {
+    const user = userEvent.setup()
+    const refusal = 'This would leave no vendor user who can sign in.'
+    const fetchMock = fetchByRoute({
+      'GET /v1/vendor-users': () => ok([vendorUser({ state: 'invited' }), vendorUser({ id: 'v3', email: 'max@vendor.example', display_name: null })]),
+      'POST /v1/vendor-users/v2/invitation': () => ok({ user: vendorUser({ state: 'invited' }) }, 202),
+      'POST /v1/vendor-users/v3/deactivate': () => apiError(422, 'LAST_VENDOR_USER', refusal),
+    })
+    renderAs(ME, <VendorUsersPage />, fetchMock)
+    await user.click(await screen.findByRole('button', { name: 'Resend invitation to ola@vendor.example' }))
+    expect(screen.queryByRole('button', { name: 'Resend invitation to max@vendor.example' })).toBeNull()
+    await user.click(within(screen.getByRole('dialog', { name: 'Resend invitation' })).getByRole('button', { name: 'Resend invitation' }))
+    expect(await screen.findByText('A new invitation was sent to ola@vendor.example.')).toBeTruthy()
+    await user.click(screen.getByRole('button', { name: 'Deactivate max@vendor.example' }))
+    await user.click(within(screen.getByRole('dialog', { name: 'Deactivate vendor user' })).getByRole('button', { name: 'Deactivate vendor user' }))
+    expect(await screen.findByText(refusal)).toBeTruthy()
+  })
+})
+
 describe('vendor console: working in a support session', () => {
   it('opens the tenant app for the vendor user’s own approved session, read-only', async () => {
     const user = userEvent.setup()
@@ -177,7 +245,7 @@ describe('vendor console: working in a support session', () => {
     renderAs(ME, <VendorSessionsPage />, fetchMock)
     await user.click(await screen.findByRole('button', { name: 'Open the tenant app of acme (read-only)' }))
     expect(screen.queryByRole('button', { name: 'Open the tenant app of other (read-only)' })).toBeNull()
-    expect(storedSupportSession()).toEqual({ id: 's1', tenantSlug: 'acme', endsAt: '2099-01-01T00:00:00.000Z', user: ME.user })
+    expect(storedSupportSession()).toBe('s1')
     expect(leavePage).toHaveBeenCalledWith('/')
     window.sessionStorage.clear()
   })
@@ -199,14 +267,16 @@ describe('vendor console rules', () => {
     expect(canEnd(session({ requester_id: 'x' }), ME.user.id)).toBe(false)
   })
 
-  it('asks for 1 to 480 minutes', () => {
-    expect(sessionMinutesError('480')).toBeNull()
-    expect(sessionMinutesError('481')).toContain('1 to 480')
+  it('asks for 1 minute up to the API limit', () => {
+    expect(sessionMinutesError('480', 480)).toBeNull()
+    expect(sessionMinutesError('481', 480)).toContain('1 to 480')
+    expect(sessionMinutesError('1.5', 480)).toContain('whole number')
   })
 
   it('checks markets for duplicates, codes and time zones', () => {
     const tenantDraft = {
       legal_name: 'A', slug: 'a', region: 'eu', isolation_tier: 'pooled', dpa_document_id: DPA, 'first_admin.email': 'a@b.example', 'first_admin.display_name': '',
+      'second_admin.email': 'c@b.example', 'second_admin.display_name': '',
     }
     const market = { code: 'DE', currency: 'EUR', minor_unit: '2', time_zone: 'Mars/Base', languages: 'de', market_pack: 'p' }
     expect(checkProvisioning(tenantDraft, [market, market])).toEqual({
@@ -214,5 +284,29 @@ describe('vendor console rules', () => {
       'markets.1.code': 'Each market may appear once.',
       'markets.1.time_zone': 'Enter a time zone such as Europe/Berlin.',
     })
+  })
+
+  it('requires a second admin who is not the first (BUG-024)', () => {
+    const tenantDraft = {
+      legal_name: 'A', slug: 'a', region: 'eu', isolation_tier: 'pooled', dpa_document_id: DPA, 'first_admin.email': 'a@b.example', 'first_admin.display_name': '',
+      'second_admin.email': '', 'second_admin.display_name': '',
+    }
+    const market = { code: 'DE', currency: 'EUR', minor_unit: '2', time_zone: 'Europe/Berlin', languages: 'de', market_pack: 'none' }
+    expect(checkProvisioning(tenantDraft, [market])).toEqual({ 'second_admin.email': 'Enter the second admin’s email address.' })
+    expect(checkProvisioning({ ...tenantDraft, 'second_admin.email': ' A@B.example ' }, [market])).toEqual({ 'second_admin.email': 'Enter a different person from the first admin.' })
+    expect(checkProvisioning({ ...tenantDraft, 'second_admin.email': 'c@b.example' }, [market])).toEqual({})
+  })
+
+  it('says the agreement ID is a UUID and what a market pack takes (BUG-016)', () => {
+    const tenantDraft = {
+      legal_name: 'A', slug: 'a', region: 'eu', isolation_tier: 'pooled', dpa_document_id: 'DPA-2026-0042', 'first_admin.email': 'a@b.example', 'first_admin.display_name': '',
+      'second_admin.email': 'c@b.example', 'second_admin.display_name': '',
+    }
+    const market = { code: 'DE', currency: 'EUR', minor_unit: '2', time_zone: 'Europe/Berlin', languages: 'de', market_pack: '' }
+    const errors = checkProvisioning(tenantDraft, [market])
+    expect(errors.dpa_document_id).toContain('as a UUID, like')
+    expect(errors['markets.0.market_pack']).toBe('Enter the market pack, or none if the market has no pack.')
+    expect(checkProvisioning(tenantDraft, [{ ...market, market_pack: 'x'.repeat(65) }])['markets.0.market_pack']).toBe('Use at most 64 characters.')
+    expect(checkProvisioning({ ...tenantDraft, dpa_document_id: DPA }, [{ ...market, market_pack: 'none' }])).toEqual({})
   })
 })

@@ -26,6 +26,11 @@ export interface RouteCase {
   readonly own?: number
   /** Status of the read inside tenant A's support session when not 200. */
   readonly inSession?: number
+  /**
+   * The vendor log (E-ADR-22): it repeats the path params and query that vendor users sent in refused requests, which
+   * may be tenant ids they named themselves; nothing else of a tenant may show.
+   */
+  readonly echoesRefusedRequests?: boolean
   readonly request: (t: Targets) => CaseRequest
 }
 
@@ -79,6 +84,7 @@ export const ROUTE_CASES: Readonly<Record<string, RouteCase>> = {
     method: 'PUT', url: '/v1/settings/compliance.late_order_day', headers: { 'if-match': '"0"' },
     body: { value: PROTOTYPE_SETTINGS['compliance.late_order_day'], reason: 'isolation' },
   })),
+  'GET /v1/markets': collection('tenant', () => get('/v1/markets')),
   // AUD
   'GET /v1/audit-events': collection('tenant', () => get('/v1/audit-events?limit=200')),
   'GET /v1/audit-chain/verification': collection('tenant', () => get('/v1/audit-chain/verification')),
@@ -89,6 +95,7 @@ export const ROUTE_CASES: Readonly<Record<string, RouteCase>> = {
   'POST /v1/support-sessions': vendor((t) => json('POST', '/v1/support-sessions', {
     tenant: t.tenant, reason: 'isolation', scope: { permissions: SUPPORT_SCOPE }, minutes: 30,
   }, true)),
+  'GET /v1/support-sessions/limits': vendor(() => get('/v1/support-sessions/limits')),
   'GET /v1/support-sessions': collection('either', () => get('/v1/support-sessions?limit=200')),
   'GET /v1/support-sessions/:id': object('either', (t) => get(`/v1/support-sessions/${t.supportSession}`)),
   'POST /v1/support-sessions/:id/decision': object('tenant', (t) =>
@@ -102,8 +109,15 @@ export const ROUTE_CASES: Readonly<Record<string, RouteCase>> = {
   'POST /v1/tenants': vendor(() => json('POST', '/v1/tenants', {}, true)),
   'POST /v1/tenants/:id/approve': vendor((t) => json('POST', `/v1/tenants/${t.tenant}/approve`, undefined, true)),
   'POST /v1/tenants/:id/go-live': vendor((t) => json('POST', `/v1/tenants/${t.tenant}/go-live`)),
+  'GET /v1/vendor-audit-events': { ...vendor(() => get('/v1/vendor-audit-events?limit=200')), echoesRefusedRequests: true },
+  // Vendor users (BUG-011): tenant A's user id names no vendor user.
+  'GET /v1/vendor-users': vendor(() => get('/v1/vendor-users?limit=200')),
+  'POST /v1/vendor-users': vendor((t) => json('POST', '/v1/vendor-users', { email: t.email }, true)),
+  'POST /v1/vendor-users/:id/invitation': vendor((t) => json('POST', `/v1/vendor-users/${t.user}/invitation`)),
+  'POST /v1/vendor-users/:id/deactivate': vendor((t) => json('POST', `/v1/vendor-users/${t.user}/deactivate`)),
   // IMP: tenant A's market code means nothing in tenant B.
   'POST /v1/imports': own('tenant', 422, uploadRequest),
+  'GET /v1/imports/limits': collection('tenant', () => get('/v1/imports/limits')),
   'GET /v1/imports': collection('tenant', () => get('/v1/imports?limit=200')),
   'GET /v1/imports/:id': object('tenant', (t) => get(`/v1/imports/${t.batch}`)),
   'GET /v1/imports/:id/errors': object('tenant', (t) => get(`/v1/imports/${t.rejectedBatch}/errors`)),

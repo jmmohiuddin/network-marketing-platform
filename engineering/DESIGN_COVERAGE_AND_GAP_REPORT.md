@@ -1,0 +1,160 @@
+# Design coverage and gap report (Stitch vs product spec)
+
+Inputs: `engineering/STITCH_DESIGN_INVENTORY.md` (what each Stitch file contains), `product-documentation/09-governance/traceability-data/spec.json` (47 screens, primary/secondary actions), `engineering/context/UI_UX.md` (§5.7 per-screen state matrix, §6 interaction rules, §7 responsive rules), `apps/web/src` and `apps/api/src` routes (2026-11-12).
+Component names in the "Fill from" column are the catalogue entries in `engineering/DESIGN_IMPLEMENTATION_GUIDELINES.md` §8, each with its canonical Stitch source.
+
+Definitions. **Complete** = the main state of the screen is drawn with the spec's key content and its primary action. **Partial** = drawn, but a spec'd view, tab body, form or the primary action is missing. **None** = no Stitch file.
+
+## 1. Coverage summary
+
+| Coverage | Count | Screens |
+|---|---|---|
+| Complete | 25 | SC-01, 02, 05, 06, 07, 10, 11, 14, 15, 16, 17, 19, 20, 21, 24, 25, 30, 31, 33, 34, 35, 37, 42, 44, 47 |
+| Partial | 12 | SC-03, 04, 08, 09, 12, 13, 18, 22, 27, 28, 32, 39 |
+| None | 10 | SC-23, 26, 29, 36, 38, 40, 41, 43, 45, 46 |
+
+**Confirmed:** exactly 10 screens have no Stitch design: SC-23, SC-26, SC-29, SC-36, SC-38, SC-40, SC-41, SC-43, SC-45, SC-46. 38 files cover 37 screen ids (SC-02 has the page plus a separate commit-modal file).
+
+Coverage by release:
+
+| Rel | Screens | Complete | Partial | None |
+|---|---|---|---|---|
+| A (MVP-A) | SC-10, 14, 24, 25, 26, 27, 28, 30, 39, 46 | 10, 14, 24, 25, 30 | 27, 28, 39 | **26, 46** |
+| B (MVP-B) | 33 screens | 20 | 9 | 29, 36, 38, 41, 43 |
+| V1 | SC-23, 40, 45, 47 | 47 | — | 23, 40, 45 |
+
+MVP-A impact: two shipped routes have no design at all (`/compliance` = SC-46, `/compliance/snapshots/[id]/rows` = SC-26) and three are partial (SC-27 auth pages, SC-28 users and roles, SC-39 vendor console). These are the first gaps to close because the routes already exist.
+
+## 2. Gaps common to every designed screen
+
+Stitch draws one populated, happy-path state per screen. The following are missing everywhere and are filled the same way on every screen (guidelines §6):
+
+| Missing | Fill from |
+|---|---|
+| Loading (skeleton shaped like content, then message after ~2 s) | `Skeleton` (built from the KPI card and table row geometry of sc_01) inside the existing `LoadingState` contract |
+| Empty: first use and no results | `EmptyState` (one outline icon + one sentence + one action, 64 px padding) |
+| Error: recoverable (inline, input kept) and blocking (section with reference id + Retry) | `Banner` danger variant (sc_02 top banner geometry) and existing `ErrorState`/`ErrorSummary` re-skinned |
+| Permission denied ("Not found or not available to you"; controls absent) | existing `NotAvailable` re-skinned with `EmptyState` |
+| Read-only: committed/locked, support session | `StatusBadge` committed (lock), existing `SupportFrame` re-skinned, `useSession().readOnly` hides writes |
+| Partial data / stale / sync behind banners | `Banner` warning variant (sc_32 non-dismissible banner) |
+| Offline (portal) | `Banner` info + last-loaded time |
+| Success feedback | `Toast` (sc_33 desktop, sc_18 phone) for non-critical; inline confirmation for decisions |
+| Focus, keyboard, labels for icon-only buttons, real `<select>`s | guidelines §7 (Stitch draws fake selects as `div`s in sc_30, sc_31 and leaves many icon buttons unlabelled) |
+| Tablet/phone behaviour for staff screens (sidebar collapse to 56 px overlay at md, drawer over list at md, the three phone-capable approvals) | `AppShell` collapsed variant + `Drawer`; see §5 |
+| Portal tablet/desktop (T2: top bar ≤6 items, centred 600/720 column, side panel at ≥1024) | `PortalShell` desktop variant; see §5 |
+
+## 3. Per-screen gaps (designed screens)
+
+Columns: **Missing states** = screen-specific states from UI_UX §5.7 not drawn (beyond §2). **Missing dialogs** = modals, drawers, sheets, wizards the spec needs. **Mobile** = responsive gaps. **Missing interactions** = spec primary/secondary actions not drawn (or drawn but unbacked). **Fill from** = how the gap is closed.
+
+### 3.1 MVP-A screens (routes already exist; re-skin first)
+
+| Screen | Missing states | Missing dialogs | Mobile | Missing interactions vs spec | Fill from |
+|---|---|---|---|---|---|
+| **SC-10** Compliance reports (complete) | Computing with progress; no data for range; computation failed + retry; outdated badge; null figure "—" + reason; R5 partial year not publishable | Create snapshot dialog (exists in app: `CreateSnapshotDialog`); method drawer (drawn docked only); export confirmation | Docked method panel must become a drawer at md | Spec primaries all drawn; "Export Dossier (.ZIP)" and "Methodology & Legal Basis" have no API; existing "Compare periods" table and report tabs have no Stitch counterpart | `FigureCard` (sc_10 R1 card), `Drawer` (sc_30 inspector as docked, sc_35 as overlay), `Modal`, `DataTable` for the compare table, `Tabs` (sc_02 peer tabs) for report tabs |
+| **SC-14** Vendor access (complete) | No requests; decision recorded; expired requests read-only; denied / auto-denied states | Decision confirm (approve/deny with step-up), session log dialog (exist in app); end-session confirm | One of the three phone-capable staff tasks: request card with Approve/Deny must work at 360 px; drawn grid is desktop-only | Durations hard-coded (must come from `GET /v1/support-sessions/limits`); "Access Policy Spec" and per-row download have no API | `RequestCard` (sc_14 prominent request card), `SegmentedControl` (sc_07) for duration, `StepUpModal`, `DataTable` + `Pagination` for history, `ConfirmDialog` |
+| **SC-24** Data imports (complete) | Validation/load as jobs with stages; "No imports yet" + schema and sample files; rejected batch banner + report download; superseded read-only; validated-not-loaded | Load confirmation (exists); upload is a separate page in the app | Desktop only (fine: not a phone task) | "Download Schema Manifest", "Full Audit Trace Log", "Ledger Postings", "Report" have no API; batch **detail** view (`/imports/[id]`: findings table, attach mapping, data quality) is not drawn | Upload page: `FileDropZone` (sc_24 drag-and-drop canvas) + file trackers; list: `DataTable` (sc_24 batch table); detail: `PageHeader` + `KpiCard` + `DataTable` + `Banner`; progress: `Stepper` (sc_16 pipeline) for job stages |
+| **SC-25** Import mapping (complete) | Unmapped values listed; Approve absent for consultant; approved versions read-only; draft autosaved | Approve confirmation with step-up | Desktop only | "Add note" (spec secondary) not drawn; "Add Mapping Rule", "Submit for Statutory Review", "Discard Staged Edits", impact preview have no API; existing "Start a new draft from version N" not drawn | `Tabs` (sc_25 domain tabs), `DataTable` with inline `Select`, `ApprovalBar` (sc_25 sticky bar), `Banner` (unresolved categorisation), `StepUpModal` |
+| **SC-30** Audit log (complete) | Read-only always; no results; export queued | Export dialog (exists: row count + "export is recorded"); event drawer (drawn docked) | Desktop only | Spec: Search / Open event / Export all drawn. "Download Merkle Proof", "Report Anomalous Query" no API. "Run Full Hash Chain Verification" is backed (`GET /v1/audit-chain/verification`). Page-number pagination conflicts with cursor rule | `FiltersBar` (sc_30 filter console, with native selects), `DataTable`, `Pagination` (cursor variant: Previous/Next only), `Drawer` (sc_30 side inspector), `Modal` |
+| **SC-27** Sign-in and second factor (partial) | Generic failure; lockout after 5 failures; forced MFA enrolment; "Cannot reach sign-in service"; field format errors | Not applicable (T4 card flow) | Phone: T3 without bottom nav; card stretches at 360 | **Step 1 (company, email, password) not drawn**; enrolment (QR + secret + confirm code), vendor sign-in, invitation acceptance, recovery not drawn. Primary "Sign in" missing; drawn WebAuthn path unsupported | `CardLayout` (sc_27 card), `TextInput` (sc_01 header search geometry at 40 px), `CodeInput` (sc_27 6-slot), `Button` primary, `Banner` danger, existing `QrCode` inside the card |
+| **SC-28** Users and roles (partial) | Only the first admin (empty); invitation sent; conflicting duties refused; privileged grant pending second admin; sole admin cannot remove own admin role | **Invite dialog**, assign-role/grant dialog, deactivate confirm, role editor (all exist in app, unstyled) | Desktop only | Permission matrix tab body and role editor not drawn; "Session Security & MFA Logs", "VIEW CONFLICT MATRIX", "Export Access Audit", "Edit Scope" no API | `Tabs` (sc_28 sub-nav), `DataTable` (sc_28 users table), `PermissionMatrix` (new, built from `DataTable` + checkbox cells), `Modal` (sc_02-modal shell at 560 px) for invite/grant, `Drawer` (sc_28 inspector) for pending grant |
+| **SC-39** Vendor console (partial) | No tenants; request sent; business-data routes do not exist | Request-session dialog (drawn as docked form), provisioning wizard (drawn as button only) | Desktop only (spec) | Drawn in the **tenant** shell; tenant detail, provisioning, support sessions list, vendor users, vendor audit not drawn; fleet KPIs, market packs, fleet diagnostics, "Sync Fleet State" no API | `AppShell` vendor variant (sc_01 shell with server/console nav), `DataTable` (sc_39 tenant table), `Modal` holding the sc_39 request form, `Stepper` (sc_44) for provisioning steps, `DataTable` for sessions/users, audit = SC-30 components |
+
+### 3.2 MVP-B screens
+
+| Screen | Missing states | Missing dialogs | Mobile | Missing interactions vs spec | Fill from |
+|---|---|---|---|---|---|
+| **SC-01** Periods and runs (complete) | Run progress with stages (safe to leave); "No periods yet" + set-up steps; run failed + Resume; committed lock + "Request restatement"; **sync behind: calculation blocked** | Run confirm | Timeline is fixed 7 columns; must wrap at md | "Calculate" (primary for an open period) not drawn, only "Open Run Review"; two primaries drawn (one allowed); "open batches" link missing | `StateTimeline` (sc_01 ribbon), `KpiCard`, `Tabs` (calendar), `DataTable`, `Banner`, `ProgressStages` (sc_01 engine passes) |
+| **SC-02** Run review (complete) | "Nothing needs acknowledgement"; invariant failed: commit refused; superseded run read-only; stale sync blocks commit; commit disabled for preparer with reason | Trace drawer drawn docked (needs overlay at md); commit modal drawn (sc_02-modal) | **Phone-capable task**: summary, totals, exceptions as cards, pinned approval bar, step-up | "Request commit" (preparer path) not drawn; Export/re-run drawn | `ApprovalBar` (sc_02 l.562), `StepUpModal` (sc_02-modal), `Checklist` (sc_02 exception list), `TraceViewer` (sc_02 right column), `DataTable` |
+| **SC-03** Payout batches (partial) | Instruction progress; "No batches yet"; provider rejected → retry failed lines; settled read-only; balance changed → back to Draft; partially settled; provider not eligible | Approve = critical approval (reuse sc_02-modal pattern); retry confirm | **Phone-capable task**: totals, counts, exclusion reasons, pinned bar | Tab bodies Included / Excluded (reasons) / Instructions (per-line states) not drawn; "open payee" link | `Tabs` + `DataTable` per tab, `Drawer` (sc_03 inspector), `StepUpModal`, `ApprovalBar` |
+| **SC-04** Plan versions (partial) | Draft autosaved; validation errors per rule; guardrail blocked / warned (acknowledgement); approved immutable; activation blocked | **Rule editor drawer**, compare-versions diff view, submit-for-review confirm | Desktop only | **"Save draft"** primary not drawn; Compare versions, Submit for review not drawn; tabs other than Rules have no body | `Drawer` (sc_35 overlay) with `TextInput`/`Select` forms, `DiffBlock` (sc_04 diff box), `Banner` (sc_04 guardrail), `Tabs` |
+| **SC-05** Cap and pool (complete) | Preview computing; preview needs committed period; immutable in approved versions | — | Desktop only | Priority reordering drawn as drag handles; spec needs move up/down buttons | `PriorityList` = `DataTable` rows with up/down icon buttons (sc_07 expand-button style, labelled) |
+| **SC-06** Cases (complete) | "No cases match"; reason + evidence required; approve disabled for proposer; decided read-only; effect preview unavailable → cannot approve; rejected with reason; blocked by policy | Simple confirm (reject), effect-preview approval with step-up | Drawer over list at md | "Attach evidence" uploader and "reassign" not drawn; queue drawn as div rows | `DataTable` for queue, `Drawer` (sc_06 detail panel), `FileDropZone` (sc_17 upload area), `EffectPreview` (sc_06 proposed effect block), `ApprovalBar` |
+| **SC-07** Genealogy explorer (complete) | "Search for a position or person"; lazy branch loading; historical view read-only banner; **read model rebuilding: depth-limited notice** | Node panel drawn docked | Desktop; tree must be keyboard-operable (APG tree) | "Graphic Graph" view must not be the only view (indented list default) | `TreeList` (sc_07 frontline legs list), `SegmentedControl`, `Banner`, `Breadcrumbs` (sc_07 path navigator), `Drawer` |
+| **SC-08** Genealogy change and duplicates (partial) | Checks computing; outside window / cycle / slot taken (next slot proposed); approve absent for filer; decided read-only; draft kept | Form wizard steps; approval with step-up | Desktop only | **Duplicate side-by-side comparison** (matching attributes highlighted) not drawn; "view affected periods" drawn | `Stepper` (sc_12 wizard), `Checklist` (sc_08 rules matrix), `DataTable` (sc_08 delta table), two-column compare built from `FieldGrid` (sc_09 identity block) |
+| **SC-09** Participant record (partial) | Tabs "No history yet"; masked fields; pseudonymised record (identity removed) | Unmask = step-up modal (drawn as `window.confirm`) | Desktop only | Tab bodies other than Overview not drawn; "open statement" link drawn | `Tabs` (sc_09 nav), `DataTable` (sc_09 types history table), `MaskedField` (sc_22 TIN module), `StepUpModal` |
+| **SC-11** Guardrails log (complete) | No results; override approval states | Approve override (effect preview + step-up) | Desktop only | "Approve override" primary drawn only as "Submit Override Request" from the inspector | `FiltersBar` (sc_11), `DataTable`, `Drawer` (sc_11 inspector), `ApprovalBar` |
+| **SC-12** Tax and year-end (partial) | Missing tax ids as validation state; wizard step blocked | Year-end wizard steps 1, 2, 4 | Desktop only | Rules table with effective dates + basis status (tab body) not drawn; "Fix missing tax ids" flow | `Stepper` (sc_12 wizard), `DataTable`, `StatusBadge` basis-status variant, `Drawer` |
+| **SC-13** Integrations (partial) | "Connect your store"; failing connection with guidance; behind: lag shown | **API-key creation modal (key shown once)**; webhook and export forms | Desktop only | Webhooks, exports, provider approval evidence tables not drawn; "view differences", "export schedule" | `KpiCard`/`StatusCard` (sc_13 connector card), `Modal` + `SecretText` (existing, re-skinned), `DataTable`, `Sparkline` (sc_13) |
+| **SC-15** Privacy requests (complete) | Std; deadline indicators drawn | Fulfil (irreversible) = critical confirmation with step-up | Desktop only | — | `DataTable`, `Drawer` (sc_15 inspector), `ConfirmDialog` typed/critical variant |
+| **SC-16** Migration workspace (complete) | Import + comparison jobs; validation blocks (cycles, orphans, totals); sign-off disabled until unexplained = 0; legacy file lacks bonus detail | Cutover modal drawn (no `role="dialog"`) | Desktop only | "map" step (link to SC-25 pattern) | `Stepper` (sc_16 pipeline), `DataTable`, `Checklist`, `StepUpModal` |
+| **SC-17** Market launch (complete) | Market Live; go-live disabled with missing items named; screening-status rule needs written risk acceptance | Sign-off with step-up | Desktop only | "Override" drawn must not exist as a free action | `Tabs`, `DataTable`, `FileDropZone` (sc_17), `ApprovalBar` |
+| **SC-31** Orders and returns (complete) | No results | Order detail drawn docked | Desktop only | "Saved views" drawn but no API yet | `FiltersBar` (sc_31 with tags), `DataTable`, `Drawer`, `Timeline` (sc_31 event history) |
+| **SC-32** Late-transaction queue (partial) | "No late transactions"; consumed items read-only | **Bulk preview modal (count, total effect, affected payees)** not drawn (drawn as `alert()`) | Desktop only | "Raise restatement" drawn | `Modal` with `EffectPreview` + `DataTable`, bulk bar from sc_32 bulk strip |
+| **SC-33** Ledger and journal (complete) | No postings; imbalance alert (danger banner); export blocked list when mapping incomplete | Write-off proposal dialog | Desktop only | "Open account" (accounts tab body) not drawn | `Banner` (sc_33 invariant banner), `DataTable`, `Tabs`, `Toast` (sc_33) |
+| **SC-34** Payout reconciliation (complete) | Unmatched as working list | Resolve item confirm; import report upload | Desktop only | — | `DataTable`, `Drawer`, `FileDropZone` |
+| **SC-35** Executive overview (complete) | "No committed period yet"; sync behind banner | Definition popover per figure (drawn as icon only) | KPI 3/4/5 per row rule; charts stack at md | Chart "View as table" toggle missing (required) | `KpiCard` (sc_35 KPI strip), `ChartCard` (sc_35 SVG chart) + table toggle, `DataTable`, `Popover` |
+| **SC-42** Simulation results (complete) | No simulation yet; job progress; failed with reason; golden failures listed | Add golden case dialog | Desktop only | "Add golden case" not drawn | `Histogram` (sc_42), `DataTable`, `Drawer`, `Modal` |
+| **SC-44** Plan change workflow (complete) | Scheduled; incomplete checks named; approve absent for author; blocked steps explained | Blocking modal drawn (no `role="dialog"`) | Desktop only | "Record filing", "set notice" drawn as upload widget/steps | `Stepper` (sc_44 six steps), `DataTable`, `ApprovalBar`, `Modal` |
+| **SC-47** Licence and diagnostics (V1, complete) | Checks running; no updates; signature failure refused + report; licence lapsed notice; works offline | Second-approver activation (step-up) | Desktop only | "Load licence" not drawn | `Tabs`, `DataTable`, `KpiCard`, `StepUpModal` |
+
+### 3.3 Distributor portal (all phone-only drawings)
+
+| Screen | Missing states | Missing dialogs / sheets | Mobile / tablet | Missing interactions vs spec | Fill from |
+|---|---|---|---|---|---|
+| **SC-37** Home (complete) | Skeleton; "Your first statement appears after the first pay period closes"; payout held (reason + end date); offline last-loaded | — | No T2 layout (top bar, 600/720 column) | Notifications link exists (bell); rank chip drawn; snapshot block and leg count must be removed | `PortalShell`, `NetPayHero` (sc_37 hero), `Banner` (sc_37 notice), `LinkCard` (sc_37 module cards), `BottomNav` (sc_18) |
+| **SC-18** Statements (partial) | No committed periods; **open period: status only, no numbers**; dispute submitted; explanation template missing; offline last statement | Explanation bottom sheet drawn; side panel (≥1024) not drawn; dispute form not drawn | No T2 / desktop side panel | **Period list and period picker ("switch period") not drawn**; Download drawn (PDF); dispute flow ends at a button | `StatementSummary` (sc_18 reconciliation card), `LineList` (sc_18 grouped lines), `BottomSheet` (sc_18) + `Drawer` side-panel variant, `Select` period picker (sc_19 cycle selector) |
+| **SC-19** Rank status (complete) | No state yet; open period labelled not final; grace period explained; plan transition notice | — | No T2 | Requirements must show measured vs required only | `StatusTile` (sc_19 rank tile), `Checklist` (sc_19 requirements), `DataTable` stacked-card variant for history |
+| **SC-20** Team (complete) | "No one in your team yet"; lazy loading; **beyond depth aggregates + explanation; outside downline: not found**; stale after a change | — | md+: tree + node panel | "Expand branch" drawn as Inspect Leg Subtree; ranking/"Key Builders" removed | `TreeList` portal variant (sc_20 leg cards without portraits), `Banner` (sc_20 privacy banner), `AggregateRow` (sc_20 deep-generation summary) |
+| **SC-21** My customers (complete) | "No customers yet"; past customers read-only | Customer detail ("Open customer") not drawn | sm: 2-col cards, md+: table | "Open customer" missing; "Share Store Link", "Export CSV" not in spec | `CustomerCard` (sc_21 card), `FilterChips` (sc_21), `DataTable` at md+ |
+| **SC-22** Bank and tax (partial) | No details yet: add; change saved + cooling-off date; cooling-off active; under review; re-authentication failed; input kept | **Change form flow (one group per screen, re-authenticate)** not drawn | No T2 | "Save change (re-authenticate)" primary not drawn | `MaskedField` (sc_22), `Banner` (sc_22 cooling-off), portal form built from `TextInput` (40 px, 16 px text) + `Button` full width, `StepUpModal` (sheet on phone), `Timeline` (sc_22 version history) |
+
+## 4. Screens with no Stitch design (10)
+
+All are built from extracted components (guidelines §9). Pattern sources follow UI_UX §5.7 "reused patterns".
+
+| Screen | Rel | Route (spec / app) | Build from | Notes |
+|---|---|---|---|---|
+| **SC-46** Compliance overview (overlay home) | A | `/compliance` (exists, plain CSS) | `PageHeader` + `KpiCard` (sc_35 KPI strip) for R1–R5 headline figures with `Sparkline` (sc_13) + data status panel (`Checklist` from sc_24 pre-flight diagnostics) + `EmptyState` "Upload an export to begin" → SC-24 | Highest priority: shipped route. Figures past tense, no legal-conclusion badges |
+| **SC-26** Figure drill-down | A | `/compliance/snapshots/[id]/rows` (exists) | `PageHeader` + definition panel (sc_10 methodology inspector, docked) + `DataTable` + cursor `Pagination` + sums line `Banner` success/danger + export `Modal` | Shipped route |
+| **SC-29** Tenant settings | B (part A) | `/settings` (exists: thresholds, breach contacts) | Section list (`Tabs` vertical or `LinkCard` list) + forms (`TextInput`, `Select`) + "effective from" + history `Drawer` (sc_22 version history timeline) | Settings group pattern = SC-28 |
+| **SC-36** Global search | B | command palette (header `/` or Ctrl K) | `Modal` (top-anchored) + `TextInput` (sc_01 header search) + grouped result list (`LinkCard` rows) + `EmptyState` | Header search input is not rendered until SC-36 ships |
+| **SC-38** Distributor notifications and profile | B | `/portal/more/notifications`, `/portal/more/language` | `PortalShell` + list pattern from SC-21 (`CustomerCard` geometry) + `Switch` (new: immediate settings only) + `Select` (language) | |
+| **SC-41** Public privacy request form | B | `/privacy-request` | `CardLayout` (sc_27) without nav + `TextInput`, `Select`, `Button`; confirmation shows reference number only | Rate limited, bot-protected (no CAPTCHA widget is drawn; server-side) |
+| **SC-43** Rank and qualification detail (staff) | B | `/people/:id/qualification` | SC-09 record pattern: `PageHeader` + `Tabs` + `DataTable` (period table) + diff highlight row style (sc_42 selected row) | |
+| **SC-23** Earnings disclosure builder | V1 | `/compliance/disclosure` | `Stepper` (sc_12 wizard) + preview pane (`Card`) + version list (`DataTable`) + `ApprovalBar` | |
+| **SC-40** Public earnings disclosure page | V1 | `/earnings-disclosure` | Static T4 720 column: `PageHeader` (portal sizes) + bands `DataTable` incl. zero band + basis statement text | No call to action to join |
+| **SC-45** Integrity signals | V1 | `/compliance/signals` | List + drawer pattern (SC-11): `FiltersBar` + `DataTable` + `Drawer` + "Indicator (not a finding)" `StatusBadge` | |
+
+Screens that exist in the app without a design but also without a spec id: `/profile` (none yet), `/vendor/users`, `/vendor/audit`, `/invitation`. Build them from the same components (vendor users = SC-28 table pattern; vendor audit = SC-30; invitation = SC-27 card).
+
+## 5. Responsive gaps
+
+| Area | Drawn | Required (UI_UX §7) | Fill |
+|---|---|---|---|
+| Staff shell | Fixed sidebar (`w-52`/`w-72`), no collapse, no menu button | 208 px at lg/xl; 56 px collapsed overlay at md; menu toggle below lg (the current `AppShell` already has a Menu button) | `AppShell` from sc_01 + collapsed rail (icons only, tooltips, same nav items) + overlay at <1024 |
+| Staff list + inspector pages (SC-02, 03, 06, 07, 10, 11, 15, 30, 31, 34, 42) | Docked 4–5 column inspector at lg/xl | Drawer over list at md; 60/40 at lg+ | `Drawer` overlay variant (sc_35) below lg, docked variant (sc_30) at lg+ |
+| Staff phone approvals (SC-02 commit, SC-03 batch approve, SC-14 decide) | Not drawn | Summary, totals, exceptions as cards, pinned approval bar, step-up | `KpiCard` stacked, `Checklist` cards, `ApprovalBar` with `left-0` below lg, `StepUpModal` as full-screen sheet |
+| Other staff pages below 1024 | — | Notice "This page works best on a larger screen", operable by scrolling | `Banner` info in `AppShell` below md |
+| Tables at md | `overflow-x-auto` in 28 files | Horizontal scroll with sticky first column | `DataTable` `stickyFirstColumn` |
+| Portal tablet/desktop | Not drawn (no breakpoint classes in any portal file) | Top bar md+ (≤6 items), centred 600 (sm) / 720 (md+), side panel 360 at ≥1024 for line explanation, customers 2-col cards (sm) / table (md+), team tree + node panel (md+) | `PortalShell` desktop variant: sc_37 header widened + nav links; content `max-w-[600px] sm` / `max-w-[720px] md` |
+| Reflow at 320 px | Portal drawn at ~390 px | No horizontal scroll at 320/360 | Verify `px-margin-mobile` (16 px) and grid min widths |
+| Modals on phone | Centred cards | Full-screen sheet | `Modal` phone variant |
+
+## 6. Inconsistencies between Stitch screens
+
+| Topic | Variants found | Decision (binding, see guidelines) |
+|---|---|---|
+| Staff shell | 8 shell variants (S1–S8) with different header heights (48/56/64 px), sidebar widths (208/288 px), sidebar position (under or beside header), translucent vs solid headers, border vs shadow | **S1 (sc_01) is canonical**: header `h-12` fixed full width, sidebar `w-52` (208 px, matches UI_UX) under it |
+| Sidebar labels and grouping | 11 flat items (S1); 11 items in two groups with short labels "Comp Plans", "Exceptions", "Compliance" (S2); 17–19 items with SC ids or "(SC-xx)" suffixes and "Vendor Console" inside the tenant app (S3–S8) | Labels and entries come from the server (`GET /v1/me` navigation: "Compliance", "Data imports", "Users and roles", "Vendor access", "Audit log", "Settings"); no SC ids in UI; no "Vendor Console" or "System & Diagnostics" in the tenant nav unless the server sends them |
+| Sidebar icons for the same section | Periods: `history_toggle_off` / `event_repeat` / `calendar_month` / `schedule` / `history`; Cases: `rule_folder` / `report_problem` / `warning` / `rule`; Finance: `account_balance` / `menu_book` / `balance` / `account_balance_wallet`; Compliance: `verified_user` / `verified` / `policy`; Data: `sync_alt` / `upload_file` / `cloud_upload` / `database`; Settings: `tune` / `lock_reset` | Use the S1 (sc_01) icon set; table in guidelines §8.1 |
+| Header contents | Tenant chip with dropdown (S1), labelled Tenant/Market selectors (S3), multi-tenant switcher (S5), "FTC/SEC INVARIANTS" chip (S4), Glossary button (S1/S2) | Tenant name static text (resolved from hostname, no picker); market switcher only where a page uses market scope; no claim chips |
+| Active nav state | `bg-primary-container text-on-primary` (S1 `data-active-classes`), others use `bg-secondary-container`, `border-l-2 border-primary` or bold text | `aria-current="page"` + S1 active classes |
+| Portal bottom nav | Home · Earnings · Rank · Customers · **Team** (5 files) vs **More** (sc_18) | sc_18 is canonical (matches UI_UX §4.4); Team replaces Customers only for sponsoring participants with a downline |
+| Portal header title | sc_22 header says "Distributor Home" on the bank/tax page | Header title = current page |
+| Rank names | "Diamond Director" (sc_19, sc_37) vs "Crown Diamond" (sc_20) for the same person | Rank labels from API |
+| Cards | `rounded-xl shadow-sm` without border (most), `border border-outline-variant` (some), translucent | `rounded-xl` + `border border-outline-variant` (DESIGN.md: 1px border, no shadow on static containers) — see guidelines §2.4 |
+| Status chips | `rounded` vs `rounded-full`, `text-[11px]` vs `text-caption`, `bg-tertiary-fixed` vs `bg-[#E8F5EE]` for success, amber palette vs `#FFF4D6` for warning | One `StatusBadge` with five tones (guidelines §8) |
+| Primary button | `bg-primary hover:bg-primary-container` (darker → lighter on hover) in all files; DESIGN.md says hover is darker (#173E82) | Keep Stitch classes (visual fidelity) |
+| Status/footer bars | None (S1), `h-8` (S6), `h-10` (S8), page footer (S2) | Not rendered (no data source) |
+| Pagination | chevrons (sc_01), Previous/1/2/3/Next with last-page number (sc_30, 31, 42), PREV/NEXT (sc_24, 28) | Cursor pagination: Previous / Next + range text ("1–50 of about 12,000") |
+| Tabs | underline (`border-b-2 border-primary`, sc_01), contained/pill (sc_33), `nav` with links (sc_03, sc_09) | Underline for page tabs, contained for in-card tabs (UI_UX §3.2) |
+| Selects | native `<select>` (sc_02, 06, 11, 12, 15, 19, 25, 31, 33, 34, 39, 42, 44, 47) vs `div` fakes (sc_30, sc_35 market dropdown, header chips) | Native `<select>` (or the combobox pattern when >12 options) |
+| Step-up | Hardware key + TOTP fallback (sc_02-modal), PIN password (sc_03), hardware token password (sc_16), WebAuthn (sc_08), passkey (sc_22) | TOTP code via existing `POST /v1/auth/sessions/current/step-up`; one `StepUpModal` |
+| Modal accessibility | `role="dialog" aria-modal` only in sc_02-modal; sc_16, sc_44, sc_35, sc_18 overlays have none | All overlays use the `Modal`/`Drawer`/`BottomSheet` components (focus trap, labelled) |
+
+## 7. Order of work (recommended)
+
+1. Foundation: Tailwind + fonts + icons + shared components (guidelines §2–§8).
+2. Re-skin shipped MVP-A routes: SC-27 (all auth pages), shell, SC-46 (no design), SC-10, SC-26 (no design), SC-24, SC-25, SC-28, SC-14, SC-30, SC-29 settings, SC-39 vendor console pages.
+3. MVP-B screens as their APIs land, starting with the five highest-risk screens (SC-02, SC-04+42, SC-18, SC-07+20, SC-06).

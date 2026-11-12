@@ -19,3 +19,8 @@ BUG-001..004 (MEDIUM, all confirmed present). Deferred until stage 2 lands becau
 - Seed host check cannot see through a tunnel that forwards loopback to a remote server.
 - holdsWithin ignores future-dated grants (loadGrants loads only valid_from <= now) — conservative.
 - Still open: BUG-006/007 (IAM), SECURITY DEFINER under a non-superuser owner, per-session revocation audit.
+
+## 2026-11-12 (backend agent)
+- BUG-006/007 fixed in IAM (403 SCOPE_NOT_HELD; step-up for privileged removals; LAST_ADMIN kept). Removal has no second-admin control.
+- Session INSERT binding re-checked: 0041 already binds it (nmp_app has no INSERT; auth_open_session uses app_user_id()). Nothing added.
+

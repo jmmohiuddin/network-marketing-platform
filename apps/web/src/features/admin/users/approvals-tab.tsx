@@ -6,6 +6,7 @@ import { Button } from '../../../components/button'
 import { Table, type TableColumn } from '../../../components/table'
 import { useToast } from '../../../components/toast'
 import { useSession } from '../../../lib/session'
+import type { Market } from '../../../lib/markets'
 import { formatDateTime, marketScopeLabel, personLabel, shortId } from '../format'
 import { FormDialog, TextAreaField } from '../form-dialog'
 import { useResource } from '../../../lib/use-resource'
@@ -39,12 +40,14 @@ interface DecisionDialogProps {
   readonly request: GrantRequest
   readonly decision: Decision
   readonly roleName: string
+  /** The requested market scope, in words. */
+  readonly scope: string
   readonly onClose: () => void
   readonly onDecided: () => void
 }
 
 /** POST /v1/role-grant-requests/:id/decision: step-up (the API asks, ApiProvider prompts), Idempotency-Key. */
-function DecisionDialog({ request, decision, roleName, onClose, onDecided }: DecisionDialogProps) {
+function DecisionDialog({ request, decision, roleName, scope, onClose, onDecided }: DecisionDialogProps) {
   const api = useApi()
   const toast = useToast()
   const [reason, setReason] = useState('')
@@ -70,7 +73,7 @@ function DecisionDialog({ request, decision, roleName, onClose, onDecided }: Dec
     >
       <p>
         {approving
-          ? `${roleName} (${marketScopeLabel(request.market_ids)}) takes effect as soon as you approve. You did not ask for this grant and it is not for you.`
+          ? `${roleName} (${scope}) takes effect as soon as you approve. You did not ask for this grant and it is not for you.`
           : `${roleName} is not granted. The admin who asked can ask again.`}
       </p>
       <p className="admin-note">You will be asked for a code from your authenticator app.</p>
@@ -82,12 +85,14 @@ function DecisionDialog({ request, decision, roleName, onClose, onDecided }: Dec
 export interface ApprovalsTabProps {
   readonly requests: PagedList<GrantRequest>
   readonly roles: readonly RoleView[]
+  /** Names the requested markets by code. */
+  readonly markets: readonly Market[]
   readonly users: readonly UserView[]
   readonly onChanged: () => void
 }
 
 /** SC-28 pending approvals: privileged grants waiting for a second admin (AC-36.1). */
-export function ApprovalsTab({ requests, roles, users, onChanged }: ApprovalsTabProps) {
+export function ApprovalsTab({ requests, roles, markets, users, onChanged }: ApprovalsTabProps) {
   const { me, readOnly } = useSession()
   const [deciding, setDeciding] = useState<{ request: GrantRequest; decision: Decision } | null>(null)
   const roleNames = new Map(roles.map((role) => [role.id, role.name]))
@@ -95,7 +100,7 @@ export function ApprovalsTab({ requests, roles, users, onChanged }: ApprovalsTab
   const roleOf = (request: GrantRequest) => roleNames.get(request.role_id) ?? 'Role'
   const columns: readonly TableColumn<GrantRequest>[] = [
     { key: 'user', header: 'For', cell: (request) => <UserName userId={request.user_id} users={userMap} /> },
-    { key: 'role', header: 'Role', cell: (request) => `${roleOf(request)} · ${marketScopeLabel(request.market_ids)}` },
+    { key: 'role', header: 'Role', cell: (request) => `${roleOf(request)} · ${marketScopeLabel(request.market_ids, markets)}` },
     { key: 'by', header: 'Asked by', cell: (request) => (request.requested_by === me.user.id ? 'You' : <UserName userId={request.requested_by} users={userMap} />) },
     { key: 'at', header: 'Asked at', cell: (request) => formatDateTime(request.created_at) },
     {
@@ -126,12 +131,14 @@ export function ApprovalsTab({ requests, roles, users, onChanged }: ApprovalsTab
         error={tableError(requests)}
         empty={{ title: 'No grants are waiting for a decision.' }}
         pagination={requests.pagination}
+        stackOnPhone
       />
       {deciding !== null && (
         <DecisionDialog
           request={deciding.request}
           decision={deciding.decision}
           roleName={roleOf(deciding.request)}
+          scope={marketScopeLabel(deciding.request.market_ids, markets)}
           onClose={() => setDeciding(null)}
           onDecided={() => {
             setDeciding(null)

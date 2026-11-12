@@ -1,4 +1,4 @@
-import { ComplianceInputError, type Drill, type ReportPeriod } from '@nmp/compliance'
+import { ComplianceInputError, type ReportPeriod } from '@nmp/compliance'
 import type { Tx } from '@nmp/db'
 import { z } from 'zod'
 import { recordAudit } from '../../lib/audit.js'
@@ -22,11 +22,6 @@ function isTransient(error: unknown): boolean {
   return typeof code === 'string' && TRANSIENT_SQLSTATE.test(code)
 }
 
-/** The rows behind a figure: its denominator set when it has one, otherwise its numerator set. */
-function populationCount(drill: Drill): number {
-  return drill.denominatorCount > 0 ? drill.denominatorCount : drill.numeratorCount
-}
-
 /** compliance_figure.period: first day of the month, or 1 January for a year (period_kind tells them apart). */
 export function periodDate(period: string): string {
   return period.length === 'YYYY'.length ? `${period}-01-01` : `${period}-01`
@@ -41,7 +36,7 @@ function figureRecords(period: ReportPeriod) {
   const computed = period.figures.map((figure, position) => ({
     ...common, position, key: figure.key, unit: figure.unit, value: figure.value,
     numerator: figure.numerator?.toString() ?? null, denominator: figure.denominator?.toString() ?? null,
-    population_count: populationCount(figure.drill), population: figure.population, method: figure.method,
+    population_count: figure.populationCount, population: figure.population, method: figure.method,
     method_version: figure.methodVersion, note: figure.note,
   }))
   const omitted = period.omitted.map((indicator, index) => ({

@@ -81,11 +81,13 @@ const PROBES: Readonly<Record<string, readonly Probe[]>> = {
   'GET /v1/settings/:key': SETTING_KEYS.map((key) => read(SETTING_READERS[key], `/v1/settings/${key}`)),
   // No If-Match: 428 once past the permission and step-up checks.
   'PUT /v1/settings/:key': SETTING_KEYS.map((key) => probe(all('settings.manage'), 'PUT', `/v1/settings/${key}`, {})),
+  'GET /v1/markets': [read(everyone, '/v1/markets')],
   'GET /v1/audit-events': [read(all('audit.read'), '/v1/audit-events')],
   'GET /v1/audit-chain/verification': [read(all('audit.read'), '/v1/audit-chain/verification')],
   'POST /v1/audit-exports': [probe(all('audit.read', 'export'), 'POST', '/v1/audit-exports', { unknown: true })],
   'GET /v1/audit-exports/:id/download': [read(all('audit.read', 'export'), `/v1/audit-exports/${NOWHERE}/download`)],
   'POST /v1/support-sessions': [probe(nobody, 'POST', '/v1/support-sessions', {})],
+  'GET /v1/support-sessions/limits': [read(nobody, '/v1/support-sessions/limits')],
   'GET /v1/support-sessions': [read(all('vendor_access.decide'), '/v1/support-sessions')],
   'GET /v1/support-sessions/:id': [read(all('vendor_access.decide'), `/v1/support-sessions/${NOWHERE}`)],
   'POST /v1/support-sessions/:id/decision': [probe(all('vendor_access.decide'), 'POST', `/v1/support-sessions/${NOWHERE}/decision`, {})],
@@ -97,7 +99,13 @@ const PROBES: Readonly<Record<string, readonly Probe[]>> = {
   'POST /v1/tenants': [probe(nobody, 'POST', '/v1/tenants', {})],
   'POST /v1/tenants/:id/approve': [probe(nobody, 'POST', `/v1/tenants/${NOWHERE}/approve`)],
   'POST /v1/tenants/:id/go-live': [probe(nobody, 'POST', `/v1/tenants/${NOWHERE}/go-live`)],
+  'GET /v1/vendor-audit-events': [read(nobody, '/v1/vendor-audit-events')],
+  'GET /v1/vendor-users': [read(nobody, '/v1/vendor-users')],
+  'POST /v1/vendor-users': [probe(nobody, 'POST', '/v1/vendor-users', {})],
+  'POST /v1/vendor-users/:id/invitation': [probe(nobody, 'POST', `/v1/vendor-users/${NOWHERE}/invitation`)],
+  'POST /v1/vendor-users/:id/deactivate': [probe(nobody, 'POST', `/v1/vendor-users/${NOWHERE}/deactivate`)],
   'POST /v1/imports': [probe(all('import.manage'), 'POST', '/v1/imports', {})],
+  'GET /v1/imports/limits': [read(all('import.manage'), '/v1/imports/limits')],
   'GET /v1/imports': [read(all('import.manage'), '/v1/imports')],
   'GET /v1/imports/:id': [read(all('import.manage'), `/v1/imports/${NOWHERE}`)],
   'GET /v1/imports/:id/errors': [read(all('import.manage'), `/v1/imports/${NOWHERE}/errors`)],
@@ -249,56 +257,81 @@ describe('AC-36.2 / E-SEC-02: a role scoped to another market sees nothing of th
   })
 })
 
-// Known defects (engineering/BUG_REGISTER.md), kept here as the TS-36 regression tests: test.fails passes while the
-// defect is present; when it is fixed, change test.fails to test.
+// BUG-006 / BUG-007 (engineering/BUG_REGISTER.md, fixed): a market-scoped admin neither approves nor removes more
+// than its own markets cover.
 describe('a Tenant admin scoped to one market against all-markets admins', () => {
   let scopedAdmin: TestUser
+  let scopedMarket: string
 
   beforeAll(async () => {
-    const market = await createMarket(seeded.a.id, 'M2')
-    scopedAdmin = await createSignedInUser({ tenantId: seeded.a.id, roles: ['Tenant admin'], marketIds: [market], stepUp: true })
+    scopedMarket = await createMarket(seeded.a.id, 'M2')
+    scopedAdmin = await createSignedInUser({ tenantId: seeded.a.id, roles: ['Tenant admin'], marketIds: [scopedMarket], stepUp: true })
   })
 
   const activeAssignments = (userId: string) =>
     ownerRows('SELECT id FROM role_assignment WHERE user_id = $1 AND (valid_to IS NULL OR valid_to > now())', [userId])
-
-  // BUG-006: the approver of a privileged grant is not checked against the grant's market scope.
-  test.fails('cannot approve an all-markets privileged grant (BUG-006)', async () => {
+  const requestGrant = async (marketIds: string[] | null) => {
     const grantee = await createSignedInUser({ tenantId: seeded.a.id })
     const requested = await call(app, {
       method: 'POST', url: `/v1/users/${grantee.id}/role-assignments`, as: seeded.owner,
-      body: { role_id: await baseRoleId('Tenant admin') }, idempotencyKey: true,
+      body: { role_id: await baseRoleId('Tenant admin'), market_ids: marketIds }, idempotencyKey: true,
     })
+    return { grantee, requestId: requested.json().data.request.id as string, status: requested.statusCode }
+  }
+  const approve = (requestId: string) => call(app, {
+    method: 'POST', url: `/v1/role-grant-requests/${requestId}/decision`, as: scopedAdmin, body: { decision: 'approved' }, idempotencyKey: true,
+  })
 
-    const decided = await call(app, {
-      method: 'POST', url: `/v1/role-grant-requests/${requested.json().data.request.id}/decision`, as: scopedAdmin,
-      body: { decision: 'approved' }, idempotencyKey: true,
-    })
+  test('cannot approve an all-markets privileged grant (BUG-006)', async () => {
+    const { grantee, requestId, status } = await requestGrant(null)
 
-    expect(requested.statusCode).toBe(202)
-    expect([403, 422]).toContain(decided.statusCode)
+    const decided = await approve(requestId)
+
+    expect(status).toBe(202)
+    expect(decided.statusCode).toBe(403)
+    expect(decided.json().error.code).toBe('SCOPE_NOT_HELD')
     expect(await activeAssignments(grantee.id)).toEqual([])
   })
 
-  // BUG-007: revoke checks only user.manage (no market scope, no step-up, no second admin for privileged roles).
-  test.fails('cannot revoke an all-markets admin\'s assignment (BUG-007)', async () => {
+  test('approves a privileged grant within its own market (BUG-006 is not a blanket refusal)', async () => {
+    const { grantee, requestId } = await requestGrant([scopedMarket])
+
+    const decided = await approve(requestId)
+
+    expect(decided.statusCode).toBe(200)
+    expect(await activeAssignments(grantee.id)).toHaveLength(1)
+  })
+
+  test('cannot revoke an all-markets admin\'s assignment (BUG-007)', async () => {
     const admin = await createSignedInUser({ tenantId: seeded.a.id, roles: ['Tenant admin'] })
     const [assignment] = await activeAssignments(admin.id)
 
     const response = await call(app, { method: 'POST', url: `/v1/role-assignments/${(assignment as { id: string }).id}/revoke`, as: scopedAdmin })
 
-    expect([403, 422]).toContain(response.statusCode)
+    expect(response.statusCode).toBe(403)
+    expect(response.json().error.code).toBe('SCOPE_NOT_HELD')
     expect(await activeAssignments(admin.id)).toHaveLength(1)
   })
 
-  // BUG-007: deactivation has the same gap.
-  test.fails('cannot deactivate an all-markets admin (BUG-007)', async () => {
+  test('cannot deactivate an all-markets admin (BUG-007)', async () => {
     const admin = await createSignedInUser({ tenantId: seeded.a.id, roles: ['Tenant admin'] })
 
     const response = await call(app, { method: 'POST', url: `/v1/users/${admin.id}/deactivate`, as: scopedAdmin })
     const [stored] = await ownerRows<{ state: string }>('SELECT state FROM user_account WHERE id = $1', [admin.id])
 
-    expect([403, 422]).toContain(response.statusCode)
+    expect(response.statusCode).toBe(403)
+    expect(response.json().error.code).toBe('SCOPE_NOT_HELD')
     expect(stored).toEqual({ state: 'active' })
+  })
+
+  test('revokes and deactivates within its own market (BUG-007 is not a blanket refusal)', async () => {
+    const local = await createSignedInUser({ tenantId: seeded.a.id, roles: ['Compliance officer', 'Tenant admin'], marketIds: [scopedMarket] })
+    const [first] = await activeAssignments(local.id)
+
+    const revoked = await call(app, { method: 'POST', url: `/v1/role-assignments/${(first as { id: string }).id}/revoke`, as: scopedAdmin })
+    const deactivated = await call(app, { method: 'POST', url: `/v1/users/${local.id}/deactivate`, as: scopedAdmin })
+
+    expect([revoked.statusCode, deactivated.statusCode]).toEqual([200, 200])
+    expect(deactivated.json().data.state).toBe('deactivated')
   })
 })

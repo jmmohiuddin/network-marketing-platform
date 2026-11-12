@@ -17,3 +17,4 @@ export const supportModule: ApiModule = {
 export { registerSupportSessionAccess, SUPPORT_SESSION_HEADER } from './access.js'
 export { assertSameRequest, vendorIdempotency, type VendorIdempotency } from './vendor-idempotency.js'
 export { inVendorThenTenant, lockTenant, type TenantRow } from './vendor-tx.js'
+export { getSession as getSupportSession, type SupportSessionView } from './sessions.js'

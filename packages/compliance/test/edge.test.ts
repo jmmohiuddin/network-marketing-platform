@@ -222,6 +222,27 @@ describe('product resolutions', () => {
     expect(figure(reports, 'R4', JAN, 'late_threshold_crossing_orders').drill).toMatchObject({ numeratorIds: ['O2', 'O3'], numeratorCount: 2 })
   })
 
+  test('BUG-019: the population count counts the set the population text names', () => {
+    const facts: ComplianceFacts = {
+      participants: PEOPLE,
+      orders: [
+        order('O2', 28, 'D2', 6000n, 'personal'), order('O1', 28, 'D2', 4000n, 'personal'),
+        order('O3', 27, 'D1', 12000n, 'personal'), order('O4', 2, 'D1', 100n, 'personal'), order('O5', 29, 'C1', 100n, 'customer'),
+      ],
+      payoutLines: [line('L1', JAN, 'D1', 'pool', null, 1000n), line('L2', JAN, 'D1', 'clawback', null, -200n)],
+    }
+    const reports = computeReports(facts, FIXTURE_CONFIG)
+    const crossings = figure(reports, 'R4', JAN, 'of_which_refunded_later')
+    const lateOrders = figure(reports, 'R4', JAN, 'late_threshold_crossing_orders')
+
+    expect(period(reports, 'R3', JAN).figures.map((f) => f.populationCount)).toEqual(period(reports, 'R3', JAN).figures.map(() => 2))
+    expect(figure(reports, 'R3', JAN, 'clawback_cents').populationCount).toBe(2)
+    expect([crossings.denominator, crossings.populationCount]).toEqual([4n, 4])
+    expect(crossings.population).toContain('once for each threshold it crosses')
+    // Late own orders of earning-type participants: O1, O2, O3 (O4 is early, O5 is a customer's).
+    expect([lateOrders.value, lateOrders.populationCount]).toEqual(['4', 3])
+  })
+
   test('same-day orders supplied out of reference order cross in reference order, and the method says so', () => {
     const supplied = [order('O2', 28, 'D2', 4000n, 'personal'), order('O1', 28, 'D2', 2000n, 'personal', { refundedMinor: 2000n, refundMonth: JAN })]
     for (const orders of [supplied, [...supplied].reverse()]) {

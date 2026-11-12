@@ -103,6 +103,9 @@
    * Support-session frame (UI-04): its own hue, so it is never read as a state colour. Engineering value until the
    * design-system owner names the token (O-06).
    */
+  /* Data-vis (UI-03 §2.5): the two slots in use, checked with the dataviz palette validator against the white
+     surface (2026-11-12: CVD ΔE 23.2 protan, normal ΔE 31.8, contrast >= 3:1). Single series use --color-action-primary. */
+  --dataviz-1: #1E4FA3; --dataviz-2: #C2410C;
   --color-support-frame: var(--violet-800);
   --color-text-on-support-frame: var(--white);
 }

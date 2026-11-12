@@ -71,6 +71,8 @@ describe('POST /v1/compliance/snapshots', () => {
     expect(created.json().data.inputs_hash).toMatch(/^[0-9a-f]{64}$/)
     expect(queued).toBe(1)
     expect(body.data.state).toBe('ready')
+    expect(body.data.market).toEqual({ id: acmeMarket, code: 'GB', name: 'United Kingdom' })
+    expect(created.json().data.market).toEqual(body.data.market)
     expect(body.data.input_data_quality).toEqual([
       { batch_id: batchId, data_quality: expect.objectContaining({ orders: 3, refunded_orders: 1, payout_lines: 4 }) },
     ])
@@ -225,6 +227,8 @@ describe('GET /v1/compliance/snapshots and /:id', () => {
     expect(next.json().data[0].id).toBe(all.json().data[1].id)
     expect(all.json().data.length).toBeGreaterThan(2)
     expect(all.json().data.every((s: { market_id: string }) => s.market_id === acmeMarket)).toBe(true)
+    expect(all.json().data.every((s: { market: unknown }) =>
+      JSON.stringify(s.market) === JSON.stringify({ id: acmeMarket, code: 'GB', name: 'United Kingdom' }))).toBe(true)
     expect(globex.json().data).toEqual([])
     expect((await call(app, { method: 'GET', url: '/v1/compliance/snapshots?cursor=bad', as: executive })).json().error.code).toBe('INVALID_CURSOR')
   })

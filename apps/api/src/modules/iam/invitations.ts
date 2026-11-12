@@ -2,7 +2,7 @@ import { randomBytes } from 'node:crypto'
 import { withSystem, type Tx } from '@nmp/db'
 import { z } from 'zod'
 import type { Config } from '../../config.js'
-import { recordAudit } from '../../lib/audit.js'
+import { auditInRealm, recordAudit } from '../../lib/audit.js'
 import { ApiError } from '../../lib/errors.js'
 import { defineTenantJob } from '../../lib/jobs.js'
 import { sendMail, type Mail } from '../../lib/mailer.js'
@@ -12,13 +12,14 @@ import { asUser } from './realm.js'
 
 const TOKEN_BYTES = 32
 
-interface IssuedInvitation {
+export interface IssuedInvitation {
   readonly token: string
   readonly expires_at: Date
 }
 
-// Revokes the user's open invitations; stores only the token's SHA-256 and the inviter (created_by).
-async function issueInvitation(tx: Tx, userId: string, ttlHours: number, invitedBy: string): Promise<IssuedInvitation> {
+// Revokes the user's open invitations; stores only the token's SHA-256 and the inviter (created_by). In the vendor
+// realm app_tenant_id() is NULL: a vendor user's invitation has no tenant (0042).
+export async function issueInvitation(tx: Tx, userId: string, ttlHours: number, invitedBy: string): Promise<IssuedInvitation> {
   await tx.query(
     'UPDATE user_invitation SET revoked_at = now() WHERE user_id = $1 AND used_at IS NULL AND revoked_at IS NULL',
     [userId],
@@ -37,12 +38,21 @@ interface Invitee {
   email: string
   state: string
   tenant_name: string
+  tenant_slug: string
   inviter: string | null
+}
+
+/**
+ * The accept page's link. The token travels in the URL fragment, which browsers never send to a server or put in a
+ * Referer; the tenant slug in the query lets the web prefill the company on sign-in after accepting.
+ */
+export function invitationLink(webUrl: string, tenantSlug: string, token: string): string {
+  return `${webUrl}/invitation?tenant=${encodeURIComponent(tenantSlug)}#token=${token}`
 }
 
 async function findInvitee(tx: Tx, userId: string, invitedBy: string): Promise<Invitee | undefined> {
   const { rows } = await tx.query<Invitee>(
-    `SELECT u.email, u.state, t.legal_name AS tenant_name,
+    `SELECT u.email, u.state, t.legal_name AS tenant_name, t.slug AS tenant_slug,
             (SELECT coalesce(i.display_name, i.email) FROM user_account i WHERE i.id = $2) AS inviter
      FROM user_account u JOIN tenant t ON t.id = u.tenant_id WHERE u.id = $1`,
     [userId, invitedBy],
@@ -50,7 +60,6 @@ async function findInvitee(tx: Tx, userId: string, invitedBy: string): Promise<I
   return rows[0]
 }
 
-// The token travels in the URL fragment, which browsers never send to a server or put in a Referer.
 function invitationMail(config: Config, invitee: Invitee, invitation: IssuedInvitation): Mail {
   return {
     to: invitee.email,
@@ -59,7 +68,7 @@ function invitationMail(config: Config, invitee: Invitee, invitation: IssuedInvi
       `${invitee.inviter ?? 'An administrator'} invited you to ${invitee.tenant_name}.`,
       '',
       `Choose your password with this link. It works once, until ${invitation.expires_at.toISOString()}:`,
-      `${config.webUrl}/invitation#token=${invitation.token}`,
+      invitationLink(config.webUrl, invitee.tenant_slug, invitation.token),
       '',
       'If you did not expect this invitation, ignore this email.',
     ].join('\n'),
@@ -90,10 +99,10 @@ export const sendInvitationJob = defineTenantJob({
 const invalidInvitation = (): ApiError =>
   new ApiError(422, 'INVITATION_INVALID', 'This invitation link is not valid. Ask your administrator for a new one.')
 
-/** Sets the invitee's password and activates the account; the token works once (FR-IAM-003 invite). */
+/** Sets the invitee's password and activates the account, tenant or vendor user; the token works once (FR-IAM-003 invite). */
 export async function acceptInvitation(token: string, password: string, requestId: string): Promise<void> {
   const { rows } = await withSystem((tx) =>
-    tx.query<{ invitation_id: string; tenant_id: string; user_id: string }>(
+    tx.query<{ invitation_id: string; tenant_id: string | null; user_id: string }>(
       'SELECT * FROM auth_find_invitation($1)',
       [hashToken(token)],
     ),
@@ -101,7 +110,8 @@ export async function acceptInvitation(token: string, password: string, requestI
   const invitation = rows[0]
   if (invitation === undefined) throw invalidInvitation()
   const passwordHash = await hashPassword(password) // slow: hashed before the transaction opens
-  const user = { userId: invitation.user_id, tenantId: invitation.tenant_id, realm: 'tenant' as const }
+  const realm = invitation.tenant_id === null ? 'vendor' as const : 'tenant' as const
+  const user = { userId: invitation.user_id, tenantId: invitation.tenant_id, realm }
   await asUser(user, requestId, async (tx) => {
     const used = await tx.query(
       'UPDATE user_invitation SET used_at = now() WHERE id = $1 AND used_at IS NULL AND revoked_at IS NULL',
@@ -114,6 +124,6 @@ export async function acceptInvitation(token: string, password: string, requestI
       [invitation.user_id, passwordHash],
     )
     await tx.query(`UPDATE user_account SET state = 'active' WHERE id = $1 AND state = 'invited'`, [invitation.user_id])
-    await recordAudit(tx, { action: 'USER.ACTIVATED', objectType: 'user_account', objectId: invitation.user_id })
+    await auditInRealm(tx, realm, { action: 'USER.ACTIVATED', objectType: 'user_account', objectId: invitation.user_id })
   })
 }

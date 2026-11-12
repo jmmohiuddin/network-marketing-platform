@@ -163,6 +163,17 @@ describe('reading batches (API-02)', () => {
   })
 })
 
+describe('GET /v1/imports/limits', () => {
+  test('gives import managers the file size limit the upload enforces; others are refused', async () => {
+    const limits = await get(consultant, '/v1/imports/limits')
+
+    expect(limits.statusCode).toBe(200)
+    expect(limits.json().data).toEqual({ max_file_bytes: MAX_FILE_BYTES })
+    expect((await get(analyst, '/v1/imports/limits')).json().error.code).toBe('PERMISSION_DENIED')
+    expect((await get(globexConsultant, '/v1/imports/limits')).json().data).toEqual({ max_file_bytes: MAX_FILE_BYTES })
+  })
+})
+
 describe('authorisation and isolation', () => {
   let batchId: string
 

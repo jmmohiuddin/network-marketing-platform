@@ -9,6 +9,7 @@ import { StatusChip } from '../../components/status-chip'
 import { Table, type TableColumn } from '../../components/table'
 import { useCursorPages } from '../../lib/cursor-pages'
 import { errorMessage, isNotAvailable } from '../../lib/messages'
+import { marketName } from '../../lib/markets'
 import { useSession } from '../../lib/session'
 import { CreateSnapshotDialog } from './create-snapshot-dialog'
 import { dateTime, periodRange } from './format'
@@ -22,7 +23,7 @@ const versions = (snapshot: Snapshot) =>
 
 const COLUMNS: readonly TableColumn<Snapshot>[] = [
   { key: 'period', header: 'Period', cell: (snapshot) => <Link href={`/compliance/snapshots/${snapshot.id}`}>{periodRange(snapshot.period_from, snapshot.period_to)}</Link> },
-  { key: 'market', header: 'Market', cell: (snapshot) => <span className="data-id">{snapshot.market_id}</span> },
+  { key: 'market', header: 'Market', cell: (snapshot) => marketName(snapshot.market) },
   { key: 'state', header: 'State', cell: (snapshot) => <StatusChip state={snapshot.state} /> },
   { key: 'reports', header: 'Reports', cell: (snapshot) => snapshot.reports.join(', ') },
   { key: 'mapping', header: 'Mapping versions', cell: versions },

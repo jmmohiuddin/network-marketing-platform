@@ -8,7 +8,7 @@ import { TextField } from '../../components/form-field'
 import { LoadingState } from '../../components/states'
 import { isApiError } from '../../lib/api'
 import { errorMessage, fieldErrors } from '../../lib/messages'
-import { tenantSignInPath, tenantSlug } from '../../lib/navigation'
+import { tenantSignInPath, tenantSlug, VENDOR_SIGN_IN_PATH } from '../../lib/navigation'
 import { PASSWORD_MIN_LENGTH, passwordError } from '../../lib/validation'
 
 const PASSWORD_ID = 'invitation-password'
@@ -37,7 +37,8 @@ function confirmError(password: string, confirm: string): string | null {
 
 /**
  * ${WEB_URL}/invitation?tenant=<slug>#token=...: the invitee chooses a password (FR-IAM-003 invite), then signs in
- * with the company already filled in from ?tenant=.
+ * with the company already filled in from ?tenant=. A vendor user's link carries ?realm=vendor instead (BUG-011) and
+ * leads to the vendor sign-in.
  */
 export function InvitationForm() {
   const api = useApi()
@@ -50,12 +51,15 @@ export function InvitationForm() {
   const [busy, setBusy] = useState(false)
   const [outcome, setOutcome] = useState<'done' | 'invalid' | null>(null)
   const [tenant, setTenant] = useState<string | null>(null)
+  const [vendor, setVendor] = useState(false)
 
   useEffect(() => {
     const found = tokenFromHash(window.location.hash)
     // Keeps the first token read: a repeated effect (React StrictMode) finds the fragment already removed.
     setToken((current) => current ?? found)
-    setTenant(tenantSlug(new URLSearchParams(window.location.search).get('tenant')))
+    const query = new URLSearchParams(window.location.search)
+    setTenant(tenantSlug(query.get('tenant')))
+    setVendor(query.get('realm') === 'vendor')
     // The token leaves the address bar and the history entry, so it is not shown, bookmarked or synced.
     if (window.location.hash !== '') window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}`)
   }, [])
@@ -89,14 +93,14 @@ export function InvitationForm() {
   if (token === null) {
     return <Outcome title="This invitation link is not complete">Open the link from your invitation email again. If it still does not work, ask your administrator for a new invitation.</Outcome>
   }
-  if (outcome === 'done') return <Outcome title="Your password is set" signIn={tenantSignInPath(tenant)}>Sign in with your email address and the new password.</Outcome>
+  if (outcome === 'done') return <Outcome title="Your password is set" signIn={vendor ? VENDOR_SIGN_IN_PATH : tenantSignInPath(tenant)}>Sign in with your email address and the new password.</Outcome>
   if (outcome === 'invalid') {
     return <Outcome title="This invitation link does not work">It was already used, has expired or was replaced by a newer invitation. Ask your administrator for a new one.</Outcome>
   }
   return (
     <>
       <h1 className="card-title">Choose your password</h1>
-      <p>You were invited to sign in to your company’s staff application. Choose a password to activate your account.</p>
+      <p>You were invited to sign in to {vendor ? 'the vendor operations console' : 'your company’s staff application'}. Choose a password to activate your account.</p>
       <form className="form" onSubmit={submit} noValidate>
         <ErrorSummary items={summary} />
         <TextField

@@ -7,7 +7,7 @@ import type { SummaryItem } from '../../../components/error-summary'
 import { useToast } from '../../../components/toast'
 import { errorMessage } from '../../../lib/messages'
 import { requiredError } from '../../../lib/validation'
-import { durationLabel, permissionLabel, SUPPORT_SCOPE_PERMISSIONS } from '../format'
+import { durationLabel, supportScopeLabel } from '../format'
 import { FormDialog, TextAreaField } from '../form-dialog'
 import { useResource } from '../../../lib/use-resource'
 import type { TenantView } from '../types'
@@ -16,19 +16,23 @@ const TENANT_ID = 'session-tenant'
 const REASON_ID = 'session-reason'
 const SCOPE_ID = 'session-scope'
 const MINUTES_ID = 'session-minutes'
-/** support/sessions.ts SUPPORT_SESSION_MAX_MINUTES. */
-const MAX_MINUTES = 480
 const WHOLE_NUMBER = /^\d+$/
 // Only tenants whose staff can decide (support/requests.ts SUPPORTED_TENANT_STATES).
 const SUPPORTED_STATES = new Set(['implementation', 'live'])
 // shortcut: the tenant choice lists the first 200 tenants by slug; switch to a searchable combobox when there are more.
 const TENANT_PAGE_SIZE = 200
 
-export function sessionMinutesError(value: string): string | null {
+/** GET /v1/support-sessions/limits: the longest session and the areas a vendor user may ask to read. */
+export interface SupportSessionLimits {
+  readonly max_minutes: number
+  readonly scopes: readonly string[]
+}
+
+export function sessionMinutesError(value: string, maxMinutes: number): string | null {
   const trimmed = value.trim()
   if (!WHOLE_NUMBER.test(trimmed)) return 'Enter the duration in minutes as a whole number.'
   const minutes = Number(trimmed)
-  return minutes >= 1 && minutes <= MAX_MINUTES ? null : `Ask for 1 to ${MAX_MINUTES} minutes (${durationLabel(MAX_MINUTES)}).`
+  return minutes >= 1 && minutes <= maxMinutes ? null : `Ask for 1 to ${maxMinutes} minutes (${durationLabel(maxMinutes)}).`
 }
 
 export interface RequestSessionDialogProps {
@@ -46,6 +50,8 @@ export function RequestSessionDialog({ tenant, onClose, onRequested }: RequestSe
   const api = useApi()
   const toast = useToast()
   const tenants = useResource<TenantView[]>(tenant === undefined ? '/v1/tenants' : null, { limit: TENANT_PAGE_SIZE })
+  const limits = useResource<SupportSessionLimits>('/v1/support-sessions/limits')
+  const scopes = limits.data?.scopes ?? []
   const [tenantId, setTenantId] = useState(tenant?.id ?? '')
   const [reason, setReason] = useState('')
   const [scope, setScope] = useState<ReadonlySet<string>>(new Set())
@@ -60,8 +66,8 @@ export function RequestSessionDialog({ tenant, onClose, onRequested }: RequestSe
     const found = {
       tenant: tenantId === '' ? 'Choose the tenant.' : null,
       reason: requiredError('why you need access', reason),
-      scope: scope.size === 0 ? 'Choose at least one area to read.' : null,
-      minutes: sessionMinutesError(minutes),
+      scope: scope.size === 0 ? 'Choose at least one area to see.' : null,
+      minutes: limits.data === null ? 'The session limits could not be loaded. Close the dialog and try again.' : sessionMinutesError(minutes, limits.data.max_minutes),
     }
     setErrors(found)
     const ids = { tenant: TENANT_ID, reason: REASON_ID, scope: SCOPE_ID, minutes: MINUTES_ID } as const
@@ -70,7 +76,7 @@ export function RequestSessionDialog({ tenant, onClose, onRequested }: RequestSe
       return message === null ? [] : [{ fieldId: ids[key], message }]
     })
     if (items.length > 0) return { items }
-    const body = { tenant: tenantId, reason: reason.trim(), scope: { permissions: SUPPORT_SCOPE_PERMISSIONS.filter((item) => scope.has(item)) }, minutes: Number(minutes.trim()) }
+    const body = { tenant: tenantId, reason: reason.trim(), scope: { permissions: scopes.filter((item) => scope.has(item)) }, minutes: Number(minutes.trim()) }
     return {
       items,
       fieldIds: { tenant: TENANT_ID, reason: REASON_ID, 'scope.permissions': SCOPE_ID, minutes: MINUTES_ID },
@@ -102,18 +108,23 @@ export function RequestSessionDialog({ tenant, onClose, onRequested }: RequestSe
         : <p>Tenant: {tenant.legal_name} ({tenant.slug})</p>}
       <TextAreaField id={REASON_ID} label="Reason" helper="For example the ticket number and what you need to check." value={reason} error={errors.reason} onChange={setReason} />
       <fieldset className="admin-fieldset" id={SCOPE_ID} tabIndex={-1} aria-describedby={errors.scope ? `${SCOPE_ID}-error` : undefined}>
-        <legend>What you need to read</legend>
+        <legend>Areas you need to see</legend>
+        <p className="admin-note">View only: nothing can be changed in a support session.</p>
         {errors.scope && <p id={`${SCOPE_ID}-error`} className="field-error">{errors.scope}</p>}
+        {limits.loading && <p className="admin-note">Loading the areas you may ask for…</p>}
+        {limits.error !== null && <p className="field-error">{errorMessage(limits.error)}</p>}
         <div className="admin-check-grid">
-          {SUPPORT_SCOPE_PERMISSIONS.map((permission) => (
-            <Checkbox key={permission} label={permissionLabel(permission)} checked={scope.has(permission)} onChange={(event) => toggle(permission, event.target.checked)} />
+          {scopes.map((permission) => (
+            <Checkbox key={permission} label={supportScopeLabel(permission)} checked={scope.has(permission)} onChange={(event) => toggle(permission, event.target.checked)} />
           ))}
         </div>
       </fieldset>
       <TextField
         id={MINUTES_ID}
         label="Duration in minutes"
-        helper={`Up to ${MAX_MINUTES} minutes (${durationLabel(MAX_MINUTES)}). The window starts when the tenant approves.`}
+        helper={limits.data === null
+          ? 'The window starts when the tenant approves.'
+          : `Up to ${limits.data.max_minutes} minutes (${durationLabel(limits.data.max_minutes)}). The window starts when the tenant approves.`}
         inputMode="numeric"
         value={minutes}
         error={errors.minutes}

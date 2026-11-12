@@ -11,7 +11,7 @@ import { Table, type TableColumn } from '../../../components/table'
 import { TabPanel, Tabs } from '../../../components/tabs'
 import { useToast } from '../../../components/toast'
 import { useSession } from '../../../lib/session'
-import { durationLabel, formatDateTime, permissionLabel, remainingLabel } from '../format'
+import { actorLabel, durationLabel, formatDateTime, remainingLabel, supportScopeText } from '../format'
 import { LoadFailure, useTabParam } from '../page-states'
 import { useNow } from '../../../lib/use-now'
 import { useResource } from '../../../lib/use-resource'
@@ -27,6 +27,7 @@ const COUNTDOWN_TICK_MS = 30_000
 // has more open at once.
 const OPEN_PAGE_SIZE = 200
 const PATH = '/v1/support-sessions'
+const NO_NAMES: ReadonlyMap<string, string> = new Map()
 
 type Dialogs =
   | { readonly kind: 'decide'; readonly session: SupportSession; readonly approve: boolean }
@@ -34,7 +35,7 @@ type Dialogs =
   | { readonly kind: 'log'; readonly session: SupportSession }
 
 function scopeText(session: SupportSession): string {
-  return session.scope.permissions.map(permissionLabel).join(', ')
+  return supportScopeText(session.scope.permissions)
 }
 
 function RequestCard({ session, tenantRegion, onDecide }: {
@@ -51,8 +52,11 @@ function RequestCard({ session, tenantRegion, onDecide }: {
         <StatusChip state="requested" label="Waiting for your decision" />
       </div>
       <dl className="admin-details">
+        {/* shortcut: the tenant cannot read vendor users, so the requester shows as in the audit log; name them once the
+            session view carries the requester's name. */}
+        <dt>Asked by</dt><dd>{actorLabel({ actor_type: 'vendor_user', actor_id: session.requester_id }, NO_NAMES)}</dd>
         <dt>Reason</dt><dd>{session.reason}</dd>
-        <dt>Access asked for (read-only)</dt><dd>{scopeText(session)}</dd>
+        <dt>Areas asked for (view only)</dt><dd>{scopeText(session)}</dd>
         <dt>Duration asked for</dt><dd>{durationLabel(session.requested_minutes)}</dd>
         <dt>Data region</dt>
         <dd>{outOfRegion(session, tenantRegion) ? 'The requester works outside your data region. Approving needs your explicit region approval.' : 'Same as your data'}</dd>
@@ -103,7 +107,7 @@ function ActiveTab({ onEnd, onLog }: { readonly onEnd: (session: SupportSession)
   const rows = [...(active.data ?? []), ...(approved.data ?? [])].sort((left, right) => (left.ends_at ?? '').localeCompare(right.ends_at ?? ''))
   const columns: readonly TableColumn<SupportSession>[] = [
     { key: 'reason', header: 'Reason', cell: (session) => session.reason },
-    { key: 'scope', header: 'Access (read-only)', cell: scopeText },
+    { key: 'scope', header: 'Areas (view only)', cell: scopeText },
     { key: 'start', header: 'Window started', cell: (session) => formatDateTime(session.starts_at) },
     { key: 'ends', header: 'Ends', cell: (session) => (session.ends_at === null ? '—' : `${formatDateTime(session.ends_at)} (in ${remainingLabel(session.ends_at, now)})`) },
     { key: 'state', header: 'State', cell: (session) => <StatusChip state={session.state} label={session.state === 'approved' ? 'Approved, not used yet' : undefined} /> },
@@ -137,7 +141,7 @@ function HistoryTab({ onLog }: { readonly onLog: (session: SupportSession) => vo
   const columns: readonly TableColumn<SupportSession>[] = [
     { key: 'asked', header: 'Asked at', cell: (session) => formatDateTime(session.created_at) },
     { key: 'reason', header: 'Reason', cell: (session) => session.reason },
-    { key: 'scope', header: 'Access (read-only)', cell: scopeText },
+    { key: 'scope', header: 'Areas (view only)', cell: scopeText },
     { key: 'window', header: 'Window', cell: (session) => (session.starts_at === null ? '—' : `${formatDateTime(session.starts_at)} to ${formatDateTime(session.ends_at)}`) },
     { key: 'state', header: 'State', cell: (session) => <StatusChip state={session.state} /> },
     { key: 'log', header: 'Log', align: 'end', cell: (session) => <Button variant="tertiary" onClick={() => onLog(session)}>View log</Button> },

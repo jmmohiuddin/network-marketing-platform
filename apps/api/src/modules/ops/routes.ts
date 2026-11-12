@@ -28,6 +28,10 @@ const market = z.strictObject({
   languages: z.array(z.string().regex(/^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$/, 'must be a BCP 47 tag')).min(1).max(20),
   market_pack: z.string().trim().min(1).max(64),
 })
+const admin = z.strictObject({
+  email: z.email().max(320).transform((email) => email.toLowerCase()),
+  display_name: z.string().trim().min(1).max(200).nullable().default(null),
+})
 const createBody = z.strictObject({
   legal_name: z.string().trim().min(1).max(200),
   slug: z.string().regex(SLUG, 'lower-case letters, digits and hyphens'),
@@ -36,10 +40,11 @@ const createBody = z.strictObject({
   dpa_document_id: z.uuid(),
   markets: z.array(market).min(1).max(50)
     .refine((list) => new Set(list.map((item) => item.code)).size === list.length, 'market codes must be unique'),
-  first_admin: z.strictObject({
-    email: z.email().max(320).transform((email) => email.toLowerCase()),
-    display_name: z.string().trim().min(1).max(200).nullable().default(null),
-  }),
+  first_admin: admin,
+  // BUG-014: a second admin from the start, so privileged grants have an approver (SEC-27 needs two admins).
+  second_admin: admin.nullable().default(null),
+}).refine((body) => body.second_admin?.email !== body.first_admin.email, {
+  path: ['second_admin', 'email'], message: 'must differ from the first admin\'s email',
 })
 const listQuery = z.strictObject({ ...pageQuery, state: z.enum(['provisioning', 'implementation', 'live', 'archived']).optional() })
 const idParams = z.object({ id: z.uuid() })
@@ -67,7 +72,8 @@ export function registerOpsRoutes(app: FastifyInstance): void {
     const input = {
       legalName: body.legal_name, slug: body.slug, region: body.region, isolationTier: body.isolation_tier,
       dpaDocumentId: body.dpa_document_id, markets: body.markets,
-      firstAdmin: { email: body.first_admin.email, displayName: body.first_admin.display_name },
+      admins: [body.first_admin, ...(body.second_admin === null ? [] : [body.second_admin])]
+        .map((person) => ({ email: person.email, displayName: person.display_name })),
     }
     const created = await createTenant(request, input, vendorIdempotency(request))
     return sendIdempotent(reply, { statusCode: 201, body: envelope(created.tenant), replayed: created.replayed })

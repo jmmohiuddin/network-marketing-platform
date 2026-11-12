@@ -13,12 +13,14 @@ import { useToast } from '../../components/toast'
 import { useCursorPages } from '../../lib/cursor-pages'
 import { errorMessage, isNotAvailable } from '../../lib/messages'
 import { useSession } from '../../lib/session'
-import { figureLabel, figureValue, humanize, integer, marketLabel, parseFigureId, REPORT_NAMES } from './format'
+import { marketName } from '../../lib/markets'
+import { figureLabel, figureValue, humanize, integer, parseFigureId, REPORT_NAMES } from './format'
 import { downloadCsv, saveFile } from './transfer'
 import type { FigureSummary, PageMeta, Snapshot } from './types'
 import { useResource } from '../../lib/use-resource'
 
 const PAGE_SIZE = 50
+const WHOLE_NUMBER = /^-?\d+$/
 const TABS_ID = 'rows'
 const SETS = [{ id: 'numerator', label: 'Numerator rows' }, { id: 'denominator', label: 'Denominator rows' }] as const
 type RowSet = (typeof SETS)[number]['id']
@@ -30,6 +32,10 @@ interface RowsMeta extends PageMeta {
   readonly row_count?: number
   readonly figure?: FigureSummary
   readonly notice?: string
+  /** Sum of every *_minor column over the whole set (not the page), as bigint strings. */
+  readonly sums?: Readonly<Record<string, string>>
+  /** The figure component those sums must equal (AC-41.1). */
+  readonly component?: { readonly key: string; readonly expected_minor: string } | null
 }
 
 const ENTITY_NAMES: Readonly<Record<string, string>> = { order: 'orders', payout_line: 'payout lines', participant: 'participants' }
@@ -64,6 +70,26 @@ function Definition({ figure }: { readonly figure: FigureSummary }) {
       {figure.note !== null && <><dt>Note</dt><dd>{figure.note}</dd></>}
     </dl>
   )
+}
+
+/** Columns whose whole-set sum equals the component (exact: bigint). */
+export function matchingSums(sums: Readonly<Record<string, string>>, expected: string): readonly string[] {
+  if (!WHOLE_NUMBER.test(expected)) return []
+  return Object.entries(sums).filter(([, sum]) => WHOLE_NUMBER.test(sum) && BigInt(sum) === BigInt(expected)).map(([column]) => column)
+}
+
+/** AC-41.1 sums line: the set's sums against the figure component they must equal. */
+function SumsLine({ meta, set }: { readonly meta: RowsMeta; readonly set: RowSet }) {
+  const sums = Object.entries(meta.sums ?? {})
+  const component = meta.component ?? null
+  if (sums.length === 0 && component === null) return null
+  const listed = sums.map(([column, sum]) => `${humanize(column)} ${integer(sum)}`).join(' · ')
+  if (component === null) return <p className="data-note">Sums over the whole {set} set: {listed}.</p>
+  const matching = matchingSums(meta.sums ?? {}, component.expected_minor)
+  const target = `the figure's ${humanize(component.key).toLowerCase()}, ${integer(component.expected_minor)} minor units`
+  return matching.length > 0
+    ? <Banner tone="success" title="Sums match the figure">Sums over the whole {set} set: {listed}. {matching.map(humanize).join(' and ')} equals {target}.</Banner>
+    : <Banner tone="danger" title="Sums do not match the figure">Sums over the whole {set} set: {listed || 'no amount columns'}. None equals {target}. The rows shown may not be the rows behind the figure: report this page to support.</Banner>
 }
 
 /** SC-26 drill-down: the numerator and denominator rows of one figure, paged; logged CSV export with `export`. */
@@ -111,7 +137,7 @@ export function FigureRows({ snapshotId }: { readonly snapshotId: string }) {
       <PageHeader
         title={title}
         summary={[
-          snapshot.data === null ? null : `Snapshot of ${marketLabel(snapshot.data.market_id)}.`,
+          snapshot.data === null ? null : `Snapshot of ${marketName(snapshot.data.market)}.`,
           figure === undefined ? null : `Value ${figureValue(figure)}. These are the rows the figure was computed from.`,
         ].filter((part) => part !== null).join(' ') || undefined}
         actions={<>{back}{can('export') && <Button variant="primary" onClick={() => setExporting(true)}>Export rows (logged)</Button>}</>}
@@ -122,6 +148,7 @@ export function FigureRows({ snapshotId }: { readonly snapshotId: string }) {
       </div>
       <Tabs label="Row sets" idPrefix={TABS_ID} tabs={SETS} selected={set} onSelect={chooseSet} />
       <TabPanel idPrefix={TABS_ID} tabId={set}>
+        {data !== null && <SumsLine meta={rowsMeta} set={set} />}
         <Table
           caption={`${integer(rowsMeta.row_count ?? rows.length)} ${entity} in the ${set} set`}
           columns={columnsOf(rows)}

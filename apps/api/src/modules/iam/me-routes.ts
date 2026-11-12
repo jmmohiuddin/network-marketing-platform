@@ -1,9 +1,10 @@
 import type { Tx } from '@nmp/db'
-import type { FastifyInstance } from 'fastify'
+import type { FastifyInstance, FastifyRequest } from 'fastify'
 import { currentAuth, requireAuth, type AuthContext } from '../../lib/auth.js'
-import { inOwnRealm } from '../../lib/db.js'
+import { inOwnRealm, runInVendor } from '../../lib/db.js'
 import { envelope } from '../../lib/http.js'
 import type { Permission } from '../../lib/permissions.js'
+import { getSupportSession } from '../support/index.js'
 
 export interface NavigationEntry {
   readonly key: string
@@ -36,22 +37,46 @@ export function navigationFor(auth: AuthContext): NavigationEntry[] {
   )
 }
 
-async function loadProfile(tx: Tx, auth: AuthContext) {
-  const user = await tx.query<{ id: string; email: string; display_name: string | null }>(
-    'SELECT id, email, display_name FROM user_account WHERE id = $1',
-    [auth.userId],
-  )
-  const tenant = auth.tenantId === null
-    ? null
-    : (await tx.query('SELECT id, slug, legal_name, region, state FROM tenant WHERE id = $1', [auth.tenantId])).rows[0]
-  return { user: user.rows[0]!, tenant: tenant ?? null }
+const USER_SELECT = 'SELECT id, email, display_name FROM user_account WHERE id = $1'
+
+interface Profile {
+  user: { id: string; email: string; display_name: string | null }
+  tenant: unknown
+  support_session: { id: string; tenant_slug: string; ends_at: Date | null; scope: unknown } | null
+}
+
+async function loadTenant(tx: Tx, auth: AuthContext): Promise<unknown> {
+  if (auth.tenantId === null) return null
+  const { rows } = await tx.query('SELECT id, slug, legal_name, region, state FROM tenant WHERE id = $1', [auth.tenantId])
+  return rows[0] ?? null
+}
+
+async function loadProfile(tx: Tx, auth: AuthContext): Promise<Profile> {
+  const user = await tx.query<Profile['user']>(USER_SELECT, [auth.userId])
+  return { user: user.rows[0]!, tenant: await loadTenant(tx, auth), support_session: null }
+}
+
+/**
+ * A vendor inside a support session works in the tenant's realm, where vendor users are invisible (RLS): the tenant
+ * and the session are read there, the vendor user through the vendor realm.
+ */
+async function loadSupportProfile(request: FastifyRequest, auth: AuthContext, sessionId: string): Promise<Profile> {
+  const inSession = await inOwnRealm(request, async (tx) => {
+    const { id, tenant_slug, ends_at, scope } = await getSupportSession(tx, sessionId)
+    return { tenant: await loadTenant(tx, auth), support_session: { id, tenant_slug, ends_at, scope } }
+  })
+  const actor = { actorType: 'vendor_user' as const, requestId: request.id, supportSessionId: sessionId }
+  const user = await runInVendor(auth.userId, actor, (tx) => tx.query<Profile['user']>(USER_SELECT, [auth.userId]))
+  return { user: user.rows[0]!, ...inSession }
 }
 
 /** GET /v1/me: who am I, what may I do, what must I do next (MFA). Reachable while MFA is pending. */
 export function registerMeRoutes(app: FastifyInstance): void {
   app.get('/v1/me', { preHandler: [requireAuth()], config: { allowPendingMfa: true } }, async (request) => {
     const auth = currentAuth(request)
-    const profile = await inOwnRealm(request, (tx) => loadProfile(tx, auth))
+    const profile = auth.supportSessionId === null
+      ? await inOwnRealm(request, (tx) => loadProfile(tx, auth))
+      : await loadSupportProfile(request, auth, auth.supportSessionId)
     return envelope({
       ...profile,
       realm: auth.realm,

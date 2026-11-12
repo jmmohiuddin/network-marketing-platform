@@ -67,7 +67,7 @@ describe('BatchDetail', () => {
     const dialog = screen.getByRole('dialog', { name: 'Load batch' })
     expect(dialog.textContent).toContain('mapping version 2')
     await user.click(within(dialog).getByRole('button', { name: 'Load batch' }))
-    expect(await screen.findByText('Batch loaded. 1 earlier batch(es) of this period are now superseded.')).toBeTruthy()
+    expect(await screen.findByText('Batch loaded. 1 earlier batch of this period is now superseded.')).toBeTruthy()
     expect(await screen.findByRole('heading', { name: 'Data-quality report' })).toBeTruthy()
     expect(screen.getByText('1 of 3')).toBeTruthy()
     expect(screen.getByText('R')).toBeTruthy()

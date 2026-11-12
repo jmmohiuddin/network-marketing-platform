@@ -67,11 +67,19 @@ function toView(row: EventRow): AuditEventView {
   return { ...rest, ...decodeRefs(beforeRef, afterRef) }
 }
 
-/** Newest first; the cursor is the seq of the last event shown (RLS keeps the caller in its tenant). */
-export async function listAuditEvents(tx: Tx, filter: AuditFilter, beforeSeq: string | undefined, limit: number) {
+/** The tenant's log (audit_event) or the vendor log (vendor_event, E-ADR-06): same columns, one chain each. */
+export type AuditLog = 'audit.audit_event' | 'audit.vendor_event'
+
+/**
+ * Newest first; the cursor is the seq of the last event shown. RLS keeps a tenant caller in its tenant's log and
+ * gives the vendor log to the vendor realm only.
+ */
+export async function listAuditEvents(
+  tx: Tx, filter: AuditFilter, beforeSeq: string | undefined, limit: number, log: AuditLog = 'audit.audit_event',
+): Promise<AuditEventView[]> {
   const clause = where(filter, null, beforeSeq ?? null)
   const { rows } = await tx.query<EventRow>(
-    `SELECT ${COLUMNS} FROM audit.audit_event WHERE ${clause.sql} ORDER BY seq DESC LIMIT $${clause.params.length + 1}`,
+    `SELECT ${COLUMNS} FROM ${log} WHERE ${clause.sql} ORDER BY seq DESC LIMIT $${clause.params.length + 1}`,
     [...clause.params, limit + 1],
   )
   return rows.map(toView)

@@ -88,7 +88,37 @@ describe('GET /v1/compliance/snapshots/:id/figures/:figure/rows', () => {
       set: 'denominator', entity: 'order', row_count: 3, next_cursor: null,
       figure: { id: 'R1.2025-01.customer_share_pct', value: '62.50', numerator: '10000', denominator: '16000' },
     })
+    expect(denominator.json().meta).toMatchObject({
+      sums: { net_minor: '16000' }, component: { key: 'net_minor', expected_minor: '16000' },
+    })
+    expect(Object.keys(denominator.json().meta.sums)).toEqual(['amount_minor', 'volume_minor', 'refunded_minor', 'net_minor'])
+    expect(numerator.json().meta.component).toEqual({ key: 'net_minor', expected_minor: '10000' })
     expect(numerator.json().meta.notice).toContain('not income projections')
+  })
+
+  test('AC-41.1: meta.sums cover the whole set, not the page, and meta.component names the sum equal to the component', async () => {
+    const results = (await getSnapshot(app, officer, snapshotId)).json().data.results as { figures: FigureView[] }[]
+    const figures = results.flatMap((r) => r.figures).filter((f) => !f.id.endsWith('.flag_threshold') && f.numerator !== null)
+    const mismatches: string[] = []
+    let compared = 0
+    for (const figure of figures) {
+      for (const set of ['numerator', 'denominator'] as const) {
+        const page = (await getRows(app, officer, snapshotId, figure.id, `?set=${set}&limit=1`)).json()
+        const all: Row[] = (await getRows(app, officer, snapshotId, figure.id, `?set=${set}&limit=200`)).json().data
+        const { sums, component } = page.meta as { sums: Record<string, string>; component: { key: string; expected_minor: string } | null }
+        const whole = Object.fromEntries(Object.keys(sums).map((key) => [key, sum(all, (row) => BigInt(row[key] as string)).toString()]))
+        if (JSON.stringify(sums) !== JSON.stringify(whole)) mismatches.push(`${figure.id} ${set}: sums ${JSON.stringify(sums)}`)
+        if (component === null) continue
+        compared += 1
+        if (sums[component.key] !== component.expected_minor || component.expected_minor !== figure[set]) {
+          mismatches.push(`${figure.id} ${set}: ${JSON.stringify(component)}`)
+        }
+      }
+    }
+
+    expect(mismatches).toEqual([])
+    expect(compared).toBeGreaterThan(10)
+    expect((await getRows(app, officer, snapshotId, 'R4.2025-01.active_distributors')).json().meta.component).toBeNull()
   })
 
   test('payout-line and participant figures drill to their rows, with no genealogy or other personal data', async () => {
@@ -134,7 +164,7 @@ describe('GET /v1/compliance/snapshots/:id/figures/:figure/rows', () => {
 
     expect(exported.statusCode).toBe(200)
     expect(exported.headers['content-type']).toContain('text/csv')
-    expect(lines[0]).toBe('set,order_ref,order_month,order_day,buyer_ref,amount_minor,volume_minor,refunded_minor,refund_month,purpose,is_starter_kit,watermark')
+    expect(lines[0]).toBe('set,order_ref,order_month,order_day,buyer_ref,amount_minor,volume_minor,refunded_minor,net_minor,refund_month,purpose,is_starter_kit,watermark')
     expect(lines.slice(1).map((line) => line.split(',').slice(0, 2).join(','))).toEqual([
       'numerator,O1', 'denominator,O1', 'denominator,O2', 'denominator,O3',
     ])

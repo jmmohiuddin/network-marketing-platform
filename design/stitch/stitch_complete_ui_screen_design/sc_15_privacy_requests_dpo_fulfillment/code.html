@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+
+<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_dashboard" name="shell-type"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        "colors": {
+          "secondary": "#565e74",
+          "primary-fixed-dim": "#afc6ff",
+          "tertiary-container": "#0d5f36",
+          "surface-container": "#e6eeff",
+          "on-primary-container": "#afc6ff",
+          "on-tertiary": "#ffffff",
+          "on-error-container": "#93000a",
+          "on-tertiary-fixed": "#00210f",
+          "secondary-fixed-dim": "#bec6e0",
+          "inverse-primary": "#afc6ff",
+          "surface-dim": "#ccdbf3",
+          "on-secondary": "#ffffff",
+          "inverse-on-surface": "#eaf1ff",
+          "on-secondary-fixed": "#131b2e",
+          "on-primary": "#ffffff",
+          "on-primary-fixed-variant": "#074397",
+          "tertiary-fixed": "#a7f3be",
+          "surface-container-high": "#dce9ff",
+          "surface-tint": "#2e5bb0",
+          "primary-container": "#1e4fa3",
+          "on-primary-fixed": "#001944",
+          "tertiary-fixed-dim": "#8cd7a3",
+          "surface-container-lowest": "#ffffff",
+          "on-error": "#ffffff",
+          "on-background": "#0d1c2e",
+          "on-surface-variant": "#434752",
+          "outline": "#737783",
+          "on-tertiary-fixed-variant": "#00522d",
+          "surface-bright": "#f8f9ff",
+          "surface-variant": "#d5e3fc",
+          "outline-variant": "#c3c6d3",
+          "surface": "#f8f9ff",
+          "on-secondary-fixed-variant": "#3f465c",
+          "surface-container-low": "#eff4ff",
+          "primary": "#003883",
+          "secondary-container": "#dae2fd",
+          "tertiary": "#004525",
+          "inverse-surface": "#233144",
+          "primary-fixed": "#d9e2ff",
+          "error": "#ba1a1a",
+          "background": "#f8f9ff",
+          "on-tertiary-container": "#8cd7a3",
+          "error-container": "#ffdad6",
+          "on-surface": "#0d1c2e",
+          "surface-container-highest": "#d5e3fc",
+          "secondary-fixed": "#dae2fd",
+          "on-secondary-container": "#5c647a"
+        },
+        "borderRadius": {
+          "DEFAULT": "0.125rem",
+          "lg": "0.25rem",
+          "xl": "0.5rem",
+          "full": "0.75rem"
+        },
+        "spacing": {
+          "space-md": "1rem",
+          "margin": "1.5rem",
+          "space-xxs": "0.125rem",
+          "space-lg": "1.5rem",
+          "space-xl": "2rem",
+          "space-xs": "0.25rem",
+          "gutter-compact": "0.75rem",
+          "gutter": "1.5rem",
+          "space-2xl": "3rem",
+          "margin-mobile": "1rem",
+          "space-sm": "0.5rem"
+        },
+        "fontFamily": {
+          "display-mobile": [
+            "Inter"
+          ],
+          "data-mono-md": [
+            "JetBrains Mono"
+          ],
+          "body-md": [
+            "Inter"
+          ],
+          "title-lg-mobile": [
+            "Inter"
+          ],
+          "caption": [
+            "Inter"
+          ],
+          "display": [
+            "Inter"
+          ],
+          "title-md": [
+            "Inter"
+          ],
+          "title-lg": [
+            "Inter"
+          ],
+          "section-heading": [
+            "Inter"
+          ],
+          "body-lg": [
+            "Inter"
+          ],
+          "data-mono-sm": [
+            "JetBrains Mono"
+          ],
+          "body-sm": [
+            "Inter"
+          ],
+          "data-mono-lg": [
+            "JetBrains Mono"
+          ]
+        },
+        "fontSize": {
+          "display-mobile": [
+            "26px",
+            {
+              "lineHeight": "32px",
+              "letterSpacing": "-0.015em",
+              "fontWeight": "600"
+            }
+          ],
+          "data-mono-md": [
+            "14px",
+            {
+              "lineHeight": "20px",
+              "letterSpacing": "-0.01em",
+              "fontWeight": "500"
+            }
+          ],
+          "body-md": [
+            "14px",
+            {
+              "lineHeight": "20px",
+              "letterSpacing": "0em",
+              "fontWeight": "400"
+            }
+          ],
+          "title-lg-mobile": [
+            "20px",
+            {
+              "lineHeight": "28px",
+              "letterSpacing": "-0.01em",
+              "fontWeight": "600"
+            }
+          ],
+          "caption": [
+            "12px",
+            {
+              "lineHeight": "16px",
+              "letterSpacing": "0.01em",
+              "fontWeight": "500"
+            }
+          ],
+          "display": [
+            "32px",
+            {
+              "lineHeight": "40px",
+              "letterSpacing": "-0.02em",
+              "fontWeight": "600"
+            }
+          ],
+          "title-md": [
+            "20px",
+            {
+              "lineHeight": "28px",
+              "letterSpacing": "-0.01em",
+              "fontWeight": "600"
+            }
+          ],
+          "title-lg": [
+            "24px",
+            {
+              "lineHeight": "32px",
+              "letterSpacing": "-0.015em",
+              "fontWeight": "600"
+            }
+          ],
+          "section-heading": [
+            "16px",
+            {
+              "lineHeight": "24px",
+              "letterSpacing": "-0.005em",
+              "fontWeight": "600"
+            }
+          ],
+          "body-lg": [
+            "16px",
+            {
+              "lineHeight": "24px",
+              "letterSpacing": "0em",
+              "fontWeight": "400"
+            }
+          ],
+          "data-mono-sm": [
+            "12px",
+            {
+              "lineHeight": "16px",
+              "letterSpacing": "0em",
+              "fontWeight": "500"
+            }
+          ],
+          "body-sm": [
+            "13px",
+            {
+              "lineHeight": "18px",
+              "letterSpacing": "0.005em",
+              "fontWeight": "400"
+            }
+          ],
+          "data-mono-lg": [
+            "24px",
+            {
+              "lineHeight": "32px",
+              "letterSpacing": "-0.02em",
+              "fontWeight": "600"
+            }
+          ]
+        }
+      },
+    },
+  };</script></head><body class="bg-surface font-body-md text-body-md text-on-surface antialiased"><aside class="fixed left-0 top-0 h-full w-72 bg-surface-container-lowest border-r border-outline-variant z-50 flex flex-col justify-between select-none"><div class="flex flex-col h-[calc(100%-80px)]"><div class="h-14 px-space-lg flex items-center gap-space-sm border-b border-outline-variant bg-surface-container-lowest"><span class="material-symbols-outlined text-primary text-[22px]">assured_workload</span><div class="flex flex-col"><span class="font-section-heading text-section-heading text-primary font-bold tracking-tight leading-none">AuditLedger</span><span class="font-caption text-caption text-secondary font-mono tracking-wider text-[10px] mt-0.5">FIN-CORE COMPLIANCE</span></div></div><div class="overflow-y-auto flex-1 py-space-sm"><nav class="px-space-sm space-y-space-xxs" data-active-classes="bg-primary text-on-primary font-medium rounded-lg"><div class="px-space-sm py-space-xs font-caption text-caption uppercase text-secondary font-semibold tracking-wider">COMMISSION SYSTEM</div><a class="flex items-center justify-between px-space-sm py-1.5 text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface rounded-lg transition-colors group" data-path="overview" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[18px] text-secondary group-hover:text-on-surface">space_dashboard</span><span class="font-body-sm text-body-sm">Overview</span></div><span class="font-data-mono-sm text-data-mono-sm text-secondary">SC-35</span></a><a class="flex items-center justify-between px-space-sm py-1.5 text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface rounded-lg transition-colors group" data-path="periods-and-runs" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[18px] text-secondary group-hover:text-on-surface">calendar_month</span><span class="font-body-sm text-body-sm">Periods &amp; Runs</span></div><span class="font-data-mono-sm text-data-mono-sm text-secondary">SC-01/32</span></a><a class="flex items-center justify-between px-space-sm py-1.5 text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface rounded-lg transition-colors group" data-path="comp-plans" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[18px] text-secondary group-hover:text-on-surface">schema</span><span class="font-body-sm text-body-sm">Comp Plans</span></div><span class="font-data-mono-sm text-data-mono-sm text-secondary">SC-04</span></a><a class="flex items-center justify-between px-space-sm py-1.5 text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface rounded-lg transition-colors group" data-path="people-and-tree" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[18px] text-secondary group-hover:text-on-surface">account_tree</span><span class="font-body-sm text-body-sm">People &amp; Tree</span></div><span class="font-data-mono-sm text-data-mono-sm text-secondary">SC-07</span></a><a class="flex items-center justify-between px-space-sm py-1.5 text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface rounded-lg transition-colors group" data-path="orders-and-returns" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[18px] text-secondary group-hover:text-on-surface">receipt_long</span><span class="font-body-sm text-body-sm">Orders &amp; Returns</span></div><span class="font-data-mono-sm text-data-mono-sm text-secondary">SC-31</span></a><a class="flex items-center justify-between px-space-sm py-1.5 text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface rounded-lg transition-colors group" data-path="cases-and-exceptions" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[18px] text-secondary group-hover:text-on-surface">warning</span><span class="font-body-sm text-body-sm">Cases &amp; Exceptions</span></div><span class="font-data-mono-sm text-data-mono-sm text-secondary">SC-06</span></a><a class="flex items-center justify-between px-space-sm py-1.5 text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface rounded-lg transition-colors group" data-path="payouts" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[18px] text-secondary group-hover:text-on-surface">payments</span><span class="font-body-sm text-body-sm">Payouts</span></div><span class="font-data-mono-sm text-data-mono-sm text-secondary">SC-03</span></a><a class="flex items-center justify-between px-space-sm py-1.5 text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface rounded-lg transition-colors group" data-path="finance-and-ledger" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[18px] text-secondary group-hover:text-on-surface">account_balance</span><span class="font-body-sm text-body-sm">Finance &amp; Ledger</span></div><span class="font-data-mono-sm text-data-mono-sm text-secondary">SC-33</span></a><a class="flex items-center justify-between px-space-sm py-1.5 text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface rounded-lg transition-colors group" data-path="compliance-reports" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[18px] text-secondary group-hover:text-on-surface">verified</span><span class="font-body-sm text-body-sm">Compliance Reports</span></div><span class="font-data-mono-sm text-data-mono-sm text-secondary">SC-10</span></a><div class="pt-space-sm pb-space-xs px-space-sm font-caption text-caption uppercase text-secondary font-semibold tracking-wider">DATA &amp; ADMINISTRATION</div><a class="flex items-center justify-between px-space-sm py-1.5 text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface rounded-lg transition-colors group" data-path="data-imports" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[18px] text-secondary group-hover:text-on-surface">upload_file</span><span class="font-body-sm text-body-sm">Data Imports</span></div><span class="font-data-mono-sm text-data-mono-sm text-secondary">SC-24/25</span></a><a class="flex items-center justify-between px-space-sm py-1.5 text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface rounded-lg transition-colors group" data-path="migration-and-parallel" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[18px] text-secondary group-hover:text-on-surface">sync_alt</span><span class="font-body-sm text-body-sm">Migration &amp; Parallel</span></div><span class="font-data-mono-sm text-data-mono-sm text-secondary">SC-16</span></a><a class="flex items-center justify-between px-space-sm py-1.5 text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface rounded-lg transition-colors group" data-path="market-launch" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[18px] text-secondary group-hover:text-on-surface">rocket_launch</span><span class="font-body-sm text-body-sm">Market Launch</span></div><span class="font-data-mono-sm text-data-mono-sm text-secondary">SC-17</span></a><a class="flex items-center justify-between px-space-sm py-1.5 text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface rounded-lg transition-colors group" data-path="vendor-access" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[18px] text-secondary group-hover:text-on-surface">badge</span><span class="font-body-sm text-body-sm">Vendor Access</span></div><span class="font-data-mono-sm text-data-mono-sm text-secondary">SC-14</span></a><a class="flex items-center justify-between px-space-sm py-1.5 text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface rounded-lg transition-colors group" data-path="audit-log" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[18px] text-secondary group-hover:text-on-surface">history_edu</span><span class="font-body-sm text-body-sm">Audit Log</span></div><span class="font-data-mono-sm text-data-mono-sm text-secondary">SC-30</span></a><a aria-current="page" class="flex items-center justify-between px-space-sm py-1.5 transition-colors group bg-primary text-on-primary font-medium rounded-lg" data-path="privacy-requests" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[18px] text-secondary group-hover:text-on-surface">lock_person</span><span class="font-body-sm text-body-sm">Privacy Requests</span></div><span class="font-data-mono-sm text-data-mono-sm text-secondary">SC-15</span></a><a class="flex items-center justify-between px-space-sm py-1.5 text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface rounded-lg transition-colors group" data-path="users-and-roles" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[18px] text-secondary group-hover:text-on-surface">manage_accounts</span><span class="font-body-sm text-body-sm">Users &amp; Roles</span></div><span class="font-data-mono-sm text-data-mono-sm text-secondary">SC-28</span></a><a class="flex items-center justify-between px-space-sm py-1.5 text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface rounded-lg transition-colors group" data-path="integrations" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[18px] text-secondary group-hover:text-on-surface">hub</span><span class="font-body-sm text-body-sm">Integrations</span></div><span class="font-data-mono-sm text-data-mono-sm text-secondary">SC-13</span></a><a class="flex items-center justify-between px-space-sm py-1.5 text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface rounded-lg transition-colors group" data-path="vendor-console" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[18px] text-secondary group-hover:text-on-surface">terminal</span><span class="font-body-sm text-body-sm">Vendor Console</span></div><span class="font-data-mono-sm text-data-mono-sm text-secondary">SC-39</span></a></nav></div></div><div class="h-20 p-space-sm border-t border-outline-variant bg-surface-container-low flex flex-col justify-center"><div class="flex items-center gap-2 px-space-xs"><span class="material-symbols-outlined text-tertiary text-[18px]">verified_user</span><div class="flex flex-col"><span class="font-caption text-caption text-on-surface font-semibold text-[11px] leading-tight">SEC-17a-4 COMPLIANT</span><span class="font-data-mono-sm text-data-mono-sm text-secondary text-[10px] leading-tight mt-0.5">WORM IMMUTABLE STORAGE</span></div></div><div class="mt-1.5 flex items-center justify-between px-space-xs"><span class="font-caption text-caption text-secondary text-[10px]">HASH: #8F9A-40C2</span><span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-mono font-medium bg-tertiary-fixed text-on-tertiary-fixed">ACTIVE</span></div></div></aside><div class="pl-72"><header class="fixed top-0 left-72 right-0 h-14 bg-surface-container-lowest border-b border-outline-variant z-40 px-space-lg flex items-center justify-between shadow-[0_1px_4px_rgba(15,23,42,0.04)]"><div class="flex items-center gap-space-md"><div class="flex items-center gap-space-xs border border-outline-variant rounded-lg px-2.5 py-1 bg-surface-container-low"><span class="material-symbols-outlined text-secondary text-[18px]">corporate_fare</span><span class="font-body-sm text-body-sm text-on-surface font-medium">Acrobex Global</span><span class="font-data-mono-sm text-data-mono-sm text-secondary text-[11px] bg-surface-container-high px-1 rounded">TEN-842</span><span class="material-symbols-outlined text-secondary text-[16px]">unfold_more</span></div><div class="h-4 w-px bg-outline-variant"></div><div class="flex items-center gap-space-xs border border-outline-variant rounded-lg px-2.5 py-1 bg-surface-container-low"><span class="material-symbols-outlined text-secondary text-[18px]">public</span><span class="font-body-sm text-body-sm text-on-surface">US - United States (USD $)</span><span class="material-symbols-outlined text-secondary text-[16px]">expand_more</span></div><div class="h-4 w-px bg-outline-variant"></div><div class="relative flex items-center"><span class="material-symbols-outlined absolute left-2.5 text-secondary text-[18px]">search</span><input class="w-72 pl-8 pr-12 py-1 bg-surface text-on-surface border border-outline-variant rounded-lg font-body-sm text-body-sm placeholder:text-secondary focus:outline-none focus:border-primary" placeholder="Search ledger, accounts, rules..." readonly="" type="text"/><kbd class="absolute right-2 px-1.5 py-0.5 text-[10px] font-mono bg-surface-container border border-outline-variant text-secondary rounded">/ or ⌘K</kbd></div></div><div class="flex items-center gap-space-md"><button class="relative p-1.5 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high rounded-lg transition-colors"><span class="material-symbols-outlined text-[20px]">notifications</span><span class="absolute top-1 right-1 w-2 h-2 bg-error rounded-full"></span></button><div class="h-5 w-px bg-outline-variant"></div><div class="flex items-center gap-space-sm pl-1"><div class="text-right flex flex-col"><span class="font-body-sm text-body-sm text-on-surface font-semibold leading-tight">Elena Rostova</span><span class="font-caption text-caption text-secondary text-[11px] leading-tight">Lead Commission Analyst</span></div><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="w-full pt-14 bg-surface min-h-screen"><div class="flex flex-col w-full p-space-lg gap-space-lg text-on-surface">
+<!-- Top Breadcrumb & Executive Title Header -->
+<div class="flex flex-col gap-space-xs">
+<div class="flex items-center gap-space-xs font-caption text-caption text-secondary">
+<span class="hover:text-primary transition-colors cursor-pointer">Compliance &amp; Settings</span>
+<span class="material-symbols-outlined text-[14px]">chevron_right</span>
+<span class="text-on-surface font-medium">Privacy Requests &amp; Statutory DPO Fulfillment</span>
+<span class="mx-space-xs text-outline-variant">•</span>
+<span class="font-data-mono-sm text-data-mono-sm text-primary">SC-15 (FR-PRV-001 / BR-DAT-06)</span>
+</div>
+<div class="flex flex-col xl:flex-row xl:items-center justify-between gap-space-md mt-space-xs">
+<div class="flex flex-col gap-1">
+<div class="flex flex-wrap items-center gap-space-sm">
+<h1 class="font-title-lg text-title-lg text-on-surface font-bold tracking-tight">SC-15 Privacy Requests &amp; Statutory DPO Fulfillment</h1>
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-tertiary-fixed text-on-tertiary-fixed font-caption text-caption uppercase tracking-wider font-semibold">
+<span class="material-symbols-outlined text-[14px]">verified</span>
+            GDPR Art. 17 / CCPA Compliant
+          </span>
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-surface-container-high text-primary font-caption text-caption uppercase tracking-wider font-semibold">
+<span class="material-symbols-outlined text-[14px]">lock</span>
+            Processor Duty Locked
+          </span>
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-error-container text-on-error-container font-caption text-caption uppercase tracking-wider font-semibold">
+<span class="material-symbols-outlined text-[14px]">gavel</span>
+            Statutory Override Active (BR-DAT-06)
+          </span>
+</div>
+<p class="font-body-sm text-body-sm text-secondary">
+          Statutory subject rights ledger with cryptographic HMAC identity salt pipelines, dual-key signing, and non-erodible financial ledger preservation under IRS § 6041 &amp; SEC Rule 17a-4.
+        </p>
+</div>
+<!-- Action Cluster -->
+<div class="flex flex-wrap items-center gap-space-xs self-start xl:self-auto">
+<button class="inline-flex items-center gap-space-xs px-3 py-1.5 rounded bg-surface-container-lowest text-on-surface hover:bg-surface-container-high transition-colors font-body-sm text-body-sm font-medium shadow-sm">
+<span class="material-symbols-outlined text-secondary text-[18px]">fingerprint</span>
+          Verify Identity Token
+        </button>
+<button class="inline-flex items-center gap-space-xs px-3 py-1.5 rounded bg-surface-container-lowest text-on-surface hover:bg-surface-container-high transition-colors font-body-sm text-body-sm font-medium shadow-sm">
+<span class="material-symbols-outlined text-secondary text-[18px]">policy</span>
+          Record Legal Basis
+        </button>
+<button class="inline-flex items-center gap-space-xs px-3 py-1.5 rounded bg-surface-container-lowest text-on-surface hover:bg-surface-container-high transition-colors font-body-sm text-body-sm font-medium shadow-sm">
+<span class="material-symbols-outlined text-secondary text-[18px]">file_download</span>
+          Export Data Map
+        </button>
+<button class="inline-flex items-center gap-space-xs px-3.5 py-1.5 rounded bg-primary-container text-on-primary hover:bg-primary transition-colors font-body-sm text-body-sm font-semibold shadow-sm ml-space-xs">
+<span class="material-symbols-outlined text-on-primary text-[18px]">shield_person</span>
+          Fulfil Request (Dual-Sign)
+        </button>
+</div>
+</div>
+</div>
+<!-- Top KPI Cards Row -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-space-md">
+<!-- Card 1 -->
+<div class="bg-surface-container-lowest p-space-md rounded shadow-sm flex flex-col justify-between">
+<div class="flex items-center justify-between">
+<span class="font-caption text-caption text-secondary uppercase font-semibold tracking-wider">Active Subject Requests</span>
+<span class="material-symbols-outlined text-primary text-[20px]">assignment_turned_in</span>
+</div>
+<div class="my-space-sm flex items-baseline justify-between">
+<span class="font-data-mono-lg text-data-mono-lg text-on-surface font-bold">14 Open</span>
+<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-tertiary-fixed text-on-tertiary-fixed">SLA 100% OK</span>
+</div>
+<div class="flex items-center gap-2 pt-space-xs bg-surface-container-low px-2 py-1.5 rounded">
+<span class="font-caption text-caption text-secondary font-mono text-[11px]">8 Erasure</span>
+<span class="text-outline-variant">•</span>
+<span class="font-caption text-caption text-secondary font-mono text-[11px]">4 Portability</span>
+<span class="text-outline-variant">•</span>
+<span class="font-caption text-caption text-secondary font-mono text-[11px]">2 Rectify</span>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="bg-surface-container-lowest p-space-md rounded shadow-sm flex flex-col justify-between">
+<div class="flex items-center justify-between">
+<span class="font-caption text-caption text-secondary uppercase font-semibold tracking-wider">Statutory Ledger Holds</span>
+<span class="material-symbols-outlined text-error text-[20px]">lock_clock</span>
+</div>
+<div class="my-space-sm flex items-baseline justify-between">
+<span class="font-data-mono-lg text-data-mono-lg text-error font-bold">6 Active Payees</span>
+<span class="font-caption text-caption text-secondary font-mono text-[11px]">BR-DAT-06</span>
+</div>
+<p class="font-caption text-caption text-on-surface-variant bg-surface-container-low px-2 py-1.5 rounded text-[11px] leading-tight">
+        Erasure deferred: Open payables or 7-yr IRS/SEC Rule 17a-4 tax audit lock.
+      </p>
+</div>
+<!-- Card 3 -->
+<div class="bg-surface-container-lowest p-space-md rounded shadow-sm flex flex-col justify-between">
+<div class="flex items-center justify-between">
+<span class="font-caption text-caption text-secondary uppercase font-semibold tracking-wider">Pseudonymization Runs</span>
+<span class="material-symbols-outlined text-tertiary text-[20px]">enhanced_encryption</span>
+</div>
+<div class="my-space-sm flex items-baseline justify-between">
+<span class="font-data-mono-lg text-data-mono-lg text-on-surface font-bold">142 Done</span>
+<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-tertiary-fixed text-on-tertiary-fixed">SHA-256 HMAC</span>
+</div>
+<div class="flex items-center gap-1.5 bg-surface-container-low px-2 py-1.5 rounded">
+<span class="material-symbols-outlined text-tertiary text-[14px]">check_circle</span>
+<span class="font-caption text-caption text-secondary text-[11px] truncate">100% ledger postings intact with non-null tokens</span>
+</div>
+</div>
+<!-- Card 4 -->
+<div class="bg-surface-container-lowest p-space-md rounded shadow-sm flex flex-col justify-between">
+<div class="flex items-center justify-between">
+<span class="font-caption text-caption text-secondary uppercase font-semibold tracking-wider">Breach Notification SLA</span>
+<span class="material-symbols-outlined text-secondary text-[20px]">timer</span>
+</div>
+<div class="my-space-sm flex items-baseline justify-between">
+<span class="font-data-mono-lg text-data-mono-lg text-primary font-bold">72h Mandate</span>
+<span class="font-caption text-caption text-secondary text-[11px]">DPA Triggered: 0</span>
+</div>
+<div class="flex items-center justify-between bg-surface-container-low px-2 py-1.5 rounded text-[11px]">
+<span class="font-caption text-caption text-secondary truncate">DPO: Marcus Vance</span>
+<span class="font-data-mono-sm text-data-mono-sm text-primary">dpo@acrobex.com</span>
+</div>
+</div>
+</div>
+<!-- Master / Detail Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-space-lg items-start">
+<!-- Left Column: Master Table of Subject Requests (60% / 7 cols) -->
+<div class="lg:col-span-7 flex flex-col gap-space-md">
+<!-- Filter Bar -->
+<div class="bg-surface-container-lowest p-space-md rounded shadow-sm flex flex-col gap-space-sm">
+<div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-space-sm">
+<div class="relative flex-1">
+<span class="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-secondary text-[18px]">search</span>
+<input class="w-full pl-8 pr-3 py-1.5 bg-surface-container-low text-on-surface rounded font-body-sm text-body-sm placeholder:text-secondary focus:outline-none focus:ring-1 focus:ring-primary" placeholder="Search by Request ID, Hash, or Pseudonym Token..." type="text" value="#PRV-8812"/>
+</div>
+<div class="flex items-center gap-space-xs">
+<button class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded bg-surface-container-low text-on-surface-variant hover:text-on-surface text-body-sm font-medium">
+<span class="material-symbols-outlined text-[16px]">tune</span>
+              Filters (3)
+            </button>
+<button class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded bg-surface-container-low text-on-surface-variant hover:text-on-surface text-body-sm font-medium">
+<span class="material-symbols-outlined text-[16px]">refresh</span>
+              Sync
+            </button>
+</div>
+</div>
+<!-- Filter Chips Row -->
+<div class="flex flex-wrap items-center gap-1.5 pt-space-xs text-[11px]">
+<span class="font-caption text-caption text-secondary uppercase font-semibold mr-1">Active:</span>
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-surface-container-high text-primary font-medium">
+            Type: All Active
+            <span class="material-symbols-outlined text-[12px] cursor-pointer">close</span>
+</span>
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-surface-container-high text-primary font-medium">
+            Jurisdiction: EU/GDPR + CCPA
+            <span class="material-symbols-outlined text-[12px] cursor-pointer">close</span>
+</span>
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-surface-container-high text-primary font-medium">
+            Queue: High SLA Priority
+            <span class="material-symbols-outlined text-[12px] cursor-pointer">close</span>
+</span>
+<button class="text-primary hover:underline font-caption text-caption ml-auto font-medium">Reset All</button>
+</div>
+</div>
+<!-- Requests Data Table (Staff Dense) -->
+<div class="bg-surface-container-lowest rounded shadow-sm overflow-hidden flex flex-col">
+<div class="px-space-md py-space-sm bg-surface-container flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[18px]">view_timeline</span>
+<span class="font-section-heading text-section-heading text-on-surface font-semibold">Active Subject Request Queue</span>
+<span class="font-data-mono-sm text-data-mono-sm text-secondary bg-surface-container-lowest px-1.5 py-0.5 rounded">5 displayed</span>
+</div>
+<span class="font-caption text-caption text-secondary font-mono text-[11px]">SYNC_TX: #8F9A-40C2</span>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-low text-secondary font-caption text-caption uppercase tracking-wider text-[11px]">
+<th class="px-3 py-2 font-semibold">Request ID</th>
+<th class="px-3 py-2 font-semibold">Data Subject (Masked)</th>
+<th class="px-3 py-2 font-semibold">Type &amp; Jurisdiction</th>
+<th class="px-3 py-2 font-semibold text-right">Deadline Clock</th>
+<th class="px-3 py-2 font-semibold">Statutory Status</th>
+<th class="px-3 py-2 font-semibold text-right">Actions</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-surface-container">
+<!-- Row 1 (Selected) -->
+<tr class="bg-secondary-container/40 hover:bg-secondary-container transition-colors cursor-pointer">
+<td class="px-3 py-2.5">
+<div class="flex items-center gap-1.5">
+<span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+<span class="font-data-mono-sm text-data-mono-sm text-primary font-bold">#PRV-8812</span>
+</div>
+</td>
+<td class="px-3 py-2.5">
+<div class="flex flex-col">
+<span class="font-body-sm text-body-sm font-semibold text-on-surface">Elena Gomez</span>
+<span class="font-data-mono-sm text-data-mono-sm text-secondary text-[11px]">POS-01948</span>
+</div>
+</td>
+<td class="px-3 py-2.5">
+<div class="flex flex-col">
+<span class="font-body-sm text-body-sm text-on-surface font-medium">Right to Erasure</span>
+<span class="font-caption text-caption text-secondary text-[11px]">EU-GDPR Art. 17</span>
+</div>
+</td>
+<td class="px-3 py-2.5 text-right">
+<div class="flex flex-col items-end">
+<span class="font-data-mono-sm text-data-mono-sm text-on-surface font-semibold">18d remaining</span>
+<span class="font-caption text-caption text-secondary text-[10px]">Nov 30, 2026</span>
+</div>
+</td>
+<td class="px-3 py-2.5">
+<span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-surface-container-high text-primary">
+                    Under Review
+                  </span>
+</td>
+<td class="px-3 py-2.5 text-right">
+<span class="material-symbols-outlined text-primary text-[20px]">arrow_forward</span>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-surface-container-low transition-colors cursor-pointer">
+<td class="px-3 py-2.5">
+<div class="flex items-center gap-1.5">
+<span class="w-1.5 h-1.5 rounded-full bg-error"></span>
+<span class="font-data-mono-sm text-data-mono-sm text-on-surface font-medium">#PRV-8809</span>
+</div>
+</td>
+<td class="px-3 py-2.5">
+<div class="flex flex-col">
+<span class="font-body-sm text-body-sm font-medium text-on-surface">David Miller</span>
+<span class="font-data-mono-sm text-data-mono-sm text-secondary text-[11px]">POS-03112</span>
+</div>
+</td>
+<td class="px-3 py-2.5">
+<div class="flex flex-col">
+<span class="font-body-sm text-body-sm text-on-surface font-medium">Data Portability</span>
+<span class="font-caption text-caption text-secondary text-[11px]">GDPR Art. 20</span>
+</div>
+</td>
+<td class="px-3 py-2.5 text-right">
+<div class="flex flex-col items-end">
+<span class="font-data-mono-sm text-data-mono-sm text-error font-bold">4d remaining</span>
+<span class="font-caption text-caption text-error text-[10px]">URGENT SLA</span>
+</div>
+</td>
+<td class="px-3 py-2.5">
+<span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-tertiary-fixed text-on-tertiary-fixed">
+                    Export Staged (24 MB)
+                  </span>
+</td>
+<td class="px-3 py-2.5 text-right">
+<button class="text-secondary hover:text-primary p-1">
+<span class="material-symbols-outlined text-[18px]">download</span>
+</button>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-surface-container-low transition-colors cursor-pointer">
+<td class="px-3 py-2.5">
+<div class="flex items-center gap-1.5">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+<span class="font-data-mono-sm text-data-mono-sm text-on-surface font-medium">#PRV-8798</span>
+</div>
+</td>
+<td class="px-3 py-2.5">
+<div class="flex flex-col">
+<span class="font-body-sm text-body-sm font-medium text-on-surface">Sarah Jenkins</span>
+<span class="font-data-mono-sm text-data-mono-sm text-secondary text-[11px]">POS-08412</span>
+</div>
+</td>
+<td class="px-3 py-2.5">
+<div class="flex flex-col">
+<span class="font-body-sm text-body-sm text-on-surface font-medium">Erasure</span>
+<span class="font-caption text-caption text-secondary text-[11px]">US-CCPA § 1798.105</span>
+</div>
+</td>
+<td class="px-3 py-2.5 text-right">
+<div class="flex flex-col items-end">
+<span class="font-data-mono-sm text-data-mono-sm text-on-surface font-semibold">22d remaining</span>
+<span class="font-caption text-caption text-secondary text-[10px]">Dec 04, 2026</span>
+</div>
+</td>
+<td class="px-3 py-2.5">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-error-container text-on-error-container">
+<span class="material-symbols-outlined text-[12px]">pause_circle</span>
+                    Statutory Hold ($412 Unsettled)
+                  </span>
+</td>
+<td class="px-3 py-2.5 text-right">
+<button class="text-secondary hover:text-primary p-1">
+<span class="material-symbols-outlined text-[18px]">visibility</span>
+</button>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="hover:bg-surface-container-low transition-colors cursor-pointer">
+<td class="px-3 py-2.5">
+<div class="flex items-center gap-1.5">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+<span class="font-data-mono-sm text-data-mono-sm text-on-surface font-medium">#PRV-8785</span>
+</div>
+</td>
+<td class="px-3 py-2.5">
+<div class="flex flex-col">
+<span class="font-body-sm text-body-sm font-medium text-on-surface">Liam Vance</span>
+<span class="font-data-mono-sm text-data-mono-sm text-secondary text-[11px]">POS-07742</span>
+</div>
+</td>
+<td class="px-3 py-2.5">
+<div class="flex flex-col">
+<span class="font-body-sm text-body-sm text-on-surface font-medium">Rectification (Tax ID)</span>
+<span class="font-caption text-caption text-secondary text-[11px]">UK-DPA 2018</span>
+</div>
+</td>
+<td class="px-3 py-2.5 text-right">
+<div class="flex flex-col items-end">
+<span class="font-data-mono-sm text-data-mono-sm text-on-surface font-semibold">12d remaining</span>
+<span class="font-caption text-caption text-secondary text-[10px]">Nov 24, 2026</span>
+</div>
+</td>
+<td class="px-3 py-2.5">
+<span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-surface-container-high text-primary">
+                    Pending Dual Sign-off
+                  </span>
+</td>
+<td class="px-3 py-2.5 text-right">
+<button class="text-secondary hover:text-primary p-1">
+<span class="material-symbols-outlined text-[18px]">draw</span>
+</button>
+</td>
+</tr>
+<!-- Row 5 -->
+<tr class="hover:bg-surface-container-low transition-colors cursor-pointer opacity-75">
+<td class="px-3 py-2.5">
+<div class="flex items-center gap-1.5">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>
+<span class="font-data-mono-sm text-data-mono-sm text-on-surface">#PRV-8761</span>
+</div>
+</td>
+<td class="px-3 py-2.5">
+<div class="flex flex-col">
+<span class="font-body-sm text-body-sm font-medium text-on-surface line-through">Rachel Hayes</span>
+<span class="font-data-mono-sm text-data-mono-sm text-secondary text-[10px]">ANON-POS-09941</span>
+</div>
+</td>
+<td class="px-3 py-2.5">
+<div class="flex flex-col">
+<span class="font-body-sm text-body-sm text-on-surface font-medium">Erasure</span>
+<span class="font-caption text-caption text-secondary text-[11px]">GDPR Art. 17</span>
+</div>
+</td>
+<td class="px-3 py-2.5 text-right">
+<div class="flex flex-col items-end">
+<span class="font-data-mono-sm text-data-mono-sm text-tertiary font-bold">Executed</span>
+<span class="font-caption text-caption text-secondary text-[10px]">Oct 28, 2026</span>
+</div>
+</td>
+<td class="px-3 py-2.5">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-tertiary-fixed text-on-tertiary-fixed">
+<span class="material-symbols-outlined text-[12px]">done_all</span>
+                    HMAC Scrubbed
+                  </span>
+</td>
+<td class="px-3 py-2.5 text-right">
+<button class="text-secondary hover:text-primary p-1">
+<span class="material-symbols-outlined text-[18px]">verified</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Table Pagination Footer -->
+<div class="px-space-md py-space-xs bg-surface-container-lowest flex items-center justify-between text-body-sm">
+<span class="font-caption text-caption text-secondary">Showing 1 to 5 of 14 requests</span>
+<div class="flex items-center gap-1">
+<button class="px-2 py-1 rounded bg-surface-container-low text-secondary hover:text-on-surface text-caption font-medium disabled:opacity-50" disabled="">Previous</button>
+<span class="px-2 py-0.5 rounded bg-primary text-on-primary font-caption text-caption font-bold">1</span>
+<button class="px-2 py-1 rounded bg-surface-container-low text-secondary hover:text-on-surface text-caption font-medium">2</button>
+<button class="px-2 py-1 rounded bg-surface-container-low text-secondary hover:text-on-surface text-caption font-medium">3</button>
+<button class="px-2 py-1 rounded bg-surface-container-low text-secondary hover:text-on-surface text-caption font-medium">Next</button>
+</div>
+</div>
+</div>
+<!-- Quick Regulatory Reference Matrix Bar -->
+<div class="bg-surface-container-low p-space-md rounded flex items-center justify-between">
+<div class="flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-primary text-[24px]">balance</span>
+<div class="flex flex-col">
+<span class="font-body-sm text-body-sm font-semibold text-on-surface">Dual Invariant BR-DAT-06 &amp; BR-DAT-07 Compliance State</span>
+<span class="font-caption text-caption text-secondary">Ledger immutability takes legal precedence over blanket database drops.</span>
+</div>
+</div>
+<button class="px-3 py-1 rounded bg-surface-container-lowest hover:bg-surface-container-high text-primary font-caption text-caption font-semibold transition-colors">
+          View Legal Precedent Brief
+        </button>
+</div>
+</div>
+<!-- Right Column: DPO Subject Detail & Pseudonymization Inspector (40% / 5 cols) -->
+<div class="lg:col-span-5 flex flex-col gap-space-md">
+<div class="bg-surface-container-lowest rounded shadow-md overflow-hidden flex flex-col">
+<!-- Inspector Top Ribbon -->
+<div class="px-space-md py-space-sm bg-primary text-on-primary flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">verified_user</span>
+<span class="font-section-heading text-section-heading font-bold text-on-primary">Request Inspector: #PRV-8812</span>
+</div>
+<span class="font-data-mono-sm text-data-mono-sm px-1.5 py-0.5 rounded bg-primary-container text-on-primary">GDPR ART. 17</span>
+</div>
+<div class="p-space-md flex flex-col gap-space-md">
+<!-- Subject Profile Overview -->
+<div class="flex items-start justify-between bg-surface-container-low p-space-sm rounded">
+<div class="flex flex-col gap-0.5">
+<span class="font-caption text-caption uppercase text-secondary font-semibold">Subject Identifier</span>
+<span class="font-title-md text-title-md font-bold text-on-surface">Elena Gomez</span>
+<span class="font-data-mono-sm text-data-mono-sm text-primary">POS-01948 • Acrobex Global Network</span>
+</div>
+<div class="flex flex-col items-end">
+<span class="font-caption text-caption uppercase text-secondary font-semibold">Jurisdiction</span>
+<span class="font-body-sm text-body-sm font-bold text-on-surface">US / EU Dual Nexus</span>
+<span class="inline-flex items-center gap-1 font-caption text-caption text-tertiary font-semibold mt-0.5">
+<span class="material-symbols-outlined text-[14px]">format_image_left</span>
+                IDV: High (WebAuthn)
+              </span>
+</div>
+</div>
+<!-- Verified Identity Proof Drawer -->
+<div class="flex flex-col gap-1.5">
+<div class="flex items-center justify-between">
+<span class="font-caption text-caption uppercase text-secondary font-semibold">Verified Identity Proof</span>
+<span class="font-caption text-caption text-primary cursor-pointer hover:underline">Inspect Biometric Hash</span>
+</div>
+<div class="bg-surface-container p-space-sm rounded font-data-mono-sm text-data-mono-sm text-[11px] text-on-surface flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="text-secondary">Passport Hash SHA-256:</span>
+<span class="text-primary font-bold">9b817c12f458...90a1</span>
+</div>
+<div class="flex items-center justify-between">
+<span class="text-secondary">Identity Proof Method:</span>
+<span>FIDO2 / WebAuthn Hardware Token</span>
+</div>
+<div class="flex items-center justify-between">
+<span class="text-secondary">Authentication Timestamp:</span>
+<span>2026-11-01 09:41:22 UTC</span>
+</div>
+</div>
+</div>
+<!-- Statutory Balancing Matrix (BR-DAT-06 Invariant) -->
+<div class="flex flex-col gap-space-xs">
+<div class="flex items-center justify-between">
+<span class="font-caption text-caption uppercase text-secondary font-semibold">Statutory Balancing Matrix</span>
+<span class="font-caption text-caption text-error font-semibold">BR-DAT-06 Invariant</span>
+</div>
+<!-- Matrix Breakdown Table -->
+<div class="flex flex-col gap-2">
+<!-- Personal Data to Erase (Green Scrub) -->
+<div class="p-space-sm rounded bg-surface-container-low flex flex-col gap-1">
+<div class="flex items-center justify-between text-tertiary font-semibold text-body-sm">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px]">delete_sweep</span>
+<span>Personal Data to Erase</span>
+</div>
+<span class="text-[11px] font-mono bg-tertiary-fixed text-on-tertiary-fixed px-1.5 py-0.2 rounded">SCHEDULED FOR SCRUB</span>
+</div>
+<p class="font-caption text-caption text-on-surface-variant text-[11px]">
+                  Legal full name, mobile number, home domicile address, personal email, device MAC/IP telemetry, browser fingerprints, payout IBAN/routing.
+                </p>
+<div class="mt-1 flex items-center justify-between text-[11px] font-mono bg-surface-container-lowest p-1.5 rounded text-secondary">
+<span>Target Hash Salt:</span>
+<span class="text-on-surface">HMAC-SHA256(POS-01948, K_DPO_MASTER)</span>
+</div>
+</div>
+<!-- Retained Obligations (Amber Lock) -->
+<div class="p-space-sm rounded bg-surface-container-low flex flex-col gap-1">
+<div class="flex items-center justify-between text-on-surface font-semibold text-body-sm">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-primary text-[16px]">lock</span>
+<span>Statutory Retained Obligations (SEC 17a-4 / IRS § 6041)</span>
+</div>
+<span class="text-[11px] font-mono bg-surface-container-high text-primary px-1.5 py-0.2 rounded font-bold">MANDATORY RETENTION</span>
+</div>
+<p class="font-caption text-caption text-on-surface-variant text-[11px]">
+                  142 historical ledger journal vouchers, $64,280.00 cumulative payouts, 1099-NEC tax filings (7-yr statutory audit), and genealogy matrix downline nodes.
+                </p>
+<div class="mt-1 flex items-center justify-between text-[11px] font-mono bg-surface-container-lowest p-1.5 rounded text-secondary">
+<span>Assigned Pseudonym:</span>
+<span class="text-primary font-bold">ANON-POS-01948-e8f2</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Active Decision Controls -->
+<div class="flex flex-col gap-space-sm pt-space-xs">
+<span class="font-caption text-caption uppercase text-secondary font-semibold">Active DPO Action Selection</span>
+<div class="grid grid-cols-1 gap-2">
+<label class="flex items-start gap-2 p-2 rounded bg-surface-container-low cursor-pointer hover:bg-surface-container transition-colors">
+<input checked="" class="mt-1 text-primary focus:ring-primary" name="dpo_action" type="radio"/>
+<div class="flex flex-col">
+<span class="font-body-sm text-body-sm font-semibold text-on-surface">Execute Pseudonymization &amp; Identity Scrub</span>
+<span class="font-caption text-caption text-secondary text-[11px]">Nullifies PII tables, salt-hashes references, preserves ledger accounting under token.</span>
+</div>
+</label>
+<label class="flex items-start gap-2 p-2 rounded bg-surface-container-low cursor-pointer hover:bg-surface-container transition-colors">
+<input class="mt-1 text-primary focus:ring-primary" name="dpo_action" type="radio"/>
+<div class="flex flex-col">
+<span class="font-body-sm text-body-sm font-semibold text-on-surface">Defer Erasure (Statutory / Financial Audit Hold)</span>
+<span class="font-caption text-caption text-secondary text-[11px]">Freezes execution clock under Article 17(3) legal defense exceptions.</span>
+</div>
+</label>
+</div>
+<!-- Reason Code Selector -->
+<div class="flex flex-col gap-1">
+<label class="font-caption text-caption text-secondary font-semibold">Retention Legal Basis Justification</label>
+<select class="w-full bg-surface-container-low text-on-surface rounded p-2 text-body-sm focus:outline-none focus:ring-1 focus:ring-primary">
+<option selected="">Voluntary Account Termination - Retain Financial Postings Only (BR-DAT-06)</option>
+<option>Active Financial Dispute / Chargeback Hold (IRS Tax Invariant)</option>
+<option>Litigation Hold - Subpoena Compliance Safe Harbor</option>
+</select>
+</div>
+<!-- Dual-Admin Key Signatures Status Ribbon -->
+<div class="bg-surface-container p-space-sm rounded flex flex-col gap-2">
+<span class="font-caption text-caption uppercase text-secondary font-semibold text-[10px] tracking-wider">Dual-Key Separation of Duties (2-Person Rule)</span>
+<!-- Sign-off 1 -->
+<div class="flex items-center justify-between text-body-sm">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-tertiary text-[18px]">verified</span>
+<span class="font-semibold text-on-surface">Marcus Vance (DPO)</span>
+</div>
+<span class="font-data-mono-sm text-data-mono-sm text-tertiary text-[11px] font-bold">SIGNED • 2026-11-01 10:14 UTC</span>
+</div>
+<!-- Sign-off 2 -->
+<div class="flex items-center justify-between text-body-sm bg-surface-container-lowest p-2 rounded">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-primary text-[18px]">hourglass_top</span>
+<div class="flex flex-col">
+<span class="font-semibold text-on-surface">Elena Rostova (Lead Analyst)</span>
+<span class="font-caption text-caption text-secondary text-[10px]">Your current authenticated session</span>
+</div>
+</div>
+<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-primary text-on-primary">
+                  AWAITING YOUR KEY
+                </span>
+</div>
+</div>
+<!-- Submission Actions -->
+<div class="flex flex-col gap-2 pt-space-xs">
+<button class="w-full py-2.5 px-4 rounded bg-primary text-on-primary hover:bg-primary-container transition-colors font-body-sm text-body-sm font-bold flex items-center justify-center gap-2 shadow-sm">
+<span class="material-symbols-outlined text-[18px]">lock_reset</span>
+                Approve &amp; Execute Irreversible Pseudonymization
+              </button>
+<button class="w-full py-2 px-4 rounded bg-surface-container-low hover:bg-surface-container text-on-surface transition-colors font-body-sm text-body-sm font-medium flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-secondary text-[18px]">archive</span>
+                Export Redacted Data Subject Dossier (.ZIP)
+              </button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Bottom Regulatory Notice Banner -->
+<div class="bg-surface-container-lowest p-space-md rounded shadow-sm flex items-start gap-space-md border-l-4 border-primary">
+<span class="material-symbols-outlined text-primary text-[28px] mt-0.5">policy</span>
+<div class="flex flex-col gap-1">
+<span class="font-section-heading text-section-heading font-bold text-on-surface">
+        Statutory Non-Destruction Notice (SEC Rule 17a-4 / IRS § 6041 / GDPR Art. 17(3)(b))
+      </span>
+<p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
+        GDPR Article 17(3)(b) &amp; (e) expressly exempts processing necessary for compliance with legal obligations and the establishment, exercise, or defence of legal claims from subject erasure. Platform Invariant <strong class="text-on-surface font-semibold">BR-DAT-06</strong> and <strong class="text-on-surface font-semibold">BR-DAT-07</strong> prohibit raw SQL record deletion of double-entry ledger postings, tax forms, or commission distributions. All erasure mandates are satisfied exclusively via cryptographic pseudonymization (replacing direct participant PII with salted irreversible HMAC hashes while preserving balance integrity).
+      </p>
+</div>
+</div>
+</div></main></div></body></html>

@@ -98,7 +98,7 @@ describe('POST /v1/users (invite) and POST /v1/auth/invitations/accept', () => {
     expect(JSON.stringify(invited.json())).not.toContain(token) // the inviting admin never sees the token
     expect(replay.headers['idempotent-replayed']).toBe('true')
     expect(replay.json()).toEqual(invited.json())
-    expect(mail).toContain(`/invitation#token=${token}`)
+    expect(mail).toContain(`/invitation?tenant=${acme.slug}#token=${token}`)
     expect(stored).toEqual({ created_by: admin.id }) // the inviter is recorded
     expect(weak.statusCode).toBe(400)
     expect(accepted.statusCode).toBe(204)
@@ -176,31 +176,56 @@ describe('POST /v1/users/:id/deactivate', () => {
     expect(await ownerRows(`SELECT 1 FROM audit.audit_event WHERE action = 'USER.DEACTIVATED' AND object_id = $1`, [leaver.id])).toHaveLength(1)
   })
 
-  test('FR-IAM-003 under concurrency: two admins deactivating each other at once leave one admin', async () => {
-    const pair = await createTenant()
+  test('FR-IAM-003 under concurrency: of three admins, two deactivating each other at once leave two admins', async () => {
+    const trio = await createTenant()
     const [first, second] = [
-      await createSignedInUser({ tenantId: pair.id, roles: ['Tenant admin'] }),
-      await createSignedInUser({ tenantId: pair.id, roles: ['Tenant admin'] }),
+      await createSignedInUser({ tenantId: trio.id, roles: ['Tenant admin'], stepUp: true }),
+      await createSignedInUser({ tenantId: trio.id, roles: ['Tenant admin'], stepUp: true }),
+      await createSignedInUser({ tenantId: trio.id, roles: ['Tenant admin'] }),
     ]
 
     const responses = await Promise.all([
       call(app, { method: 'POST', url: `/v1/users/${second.id}/deactivate`, as: first }),
       call(app, { method: 'POST', url: `/v1/users/${first.id}/deactivate`, as: second }),
     ])
-    const active = await ownerRows(`SELECT 1 FROM user_account WHERE tenant_id = $1 AND state = 'active'`, [pair.id])
+    const active = await ownerRows(`SELECT 1 FROM user_account WHERE tenant_id = $1 AND state = 'active'`, [trio.id])
 
     expect(responses.filter((response) => response.statusCode === 200)).toHaveLength(1)
-    expect(active).toHaveLength(1)
+    expect(active).toHaveLength(2)
+  })
+
+  test('BUG-014: the second-last admin cannot be deactivated (422 SECOND_ADMIN_REQUIRED)', async () => {
+    const pair = await createTenant()
+    const first = await createSignedInUser({ tenantId: pair.id, roles: ['Tenant admin'], stepUp: true })
+    const second = await createSignedInUser({ tenantId: pair.id, roles: ['Tenant admin'], stepUp: true })
+
+    const response = await call(app, { method: 'POST', url: `/v1/users/${second.id}/deactivate`, as: first })
+    const [stored] = await ownerRows<{ state: string }>('SELECT state FROM user_account WHERE id = $1', [second.id])
+
+    expect(response.statusCode).toBe(422)
+    expect(response.json().error.code).toBe('SECOND_ADMIN_REQUIRED')
+    expect(stored).toEqual({ state: 'active' })
   })
 
   test('the last admin cannot be deactivated', async () => {
     const solo = await createTenant()
-    const soloAdmin = await createSignedInUser({ tenantId: solo.id, roles: ['Tenant admin'] })
+    const soloAdmin = await createSignedInUser({ tenantId: solo.id, roles: ['Tenant admin'], stepUp: true })
 
     const response = await call(app, { method: 'POST', url: `/v1/users/${soloAdmin.id}/deactivate`, as: soloAdmin })
 
     expect(response.statusCode).toBe(422)
     expect(response.json().error.code).toBe('LAST_ADMIN')
+  })
+
+  test('BUG-007: deactivating a user who holds a privileged role needs a fresh second factor', async () => {
+    const officer = await createSignedInUser({ tenantId: acme.id, roles: ['Compliance officer'] })
+    const stepped = await createSignedInUser({ tenantId: acme.id, roles: ['Tenant admin'], stepUp: true })
+
+    const refused = await call(app, { method: 'POST', url: `/v1/users/${officer.id}/deactivate`, as: admin })
+    const done = await call(app, { method: 'POST', url: `/v1/users/${officer.id}/deactivate`, as: stepped })
+
+    expect(refused.json().error.code).toBe('STEP_UP_REQUIRED')
+    expect(done.json().data.state).toBe('deactivated')
   })
 
   test('another tenant gets 404; analysts get 403', async () => {
