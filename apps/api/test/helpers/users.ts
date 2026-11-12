@@ -115,6 +115,13 @@ export async function createSignedInUser(options: TestUserOptions): Promise<Test
   return { id: created.id, tenantId, email: created.email, sessionId, totpSecret, cookie: `${SESSION_COOKIE}=${token}` }
 }
 
+/** A session for a user that already exists (e.g. one invited and approved through the API): MFA enrolled and verified. */
+export async function signInExisting(user: { id: string; tenantId: string | null; email: string }, stepUp = true): Promise<TestUser> {
+  const totpSecret = await enrol(user.id)
+  const { token, sessionId } = await openSession(user, 'verified', stepUp)
+  return { ...user, sessionId, totpSecret, cookie: `${SESSION_COOKIE}=${token}` }
+}
+
 /** The current TOTP code for a seed (offsetSteps -1 = the previous 30-second step). */
 export function totpCode(secret: string, offsetSteps = 0): string {
   return authenticator.clone({ epoch: Date.now() + offsetSteps * 30_000 }).generate(secret)

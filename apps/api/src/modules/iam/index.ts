@@ -22,4 +22,6 @@ export const iamModule: ApiModule = {
   jobs: [sendInvitationJob],
 }
 
-export { invitationLink } from './invitations.js'
+export { acceptInvitation, invitationLink } from './invitations.js'
+export { bootstrapVendorUser, type BootstrapVendorUser } from './vendor-users.js'
+export { assertSecondPerson, loggingSecondPersonRefusals, type SecondPersonStep } from './second-person.js'

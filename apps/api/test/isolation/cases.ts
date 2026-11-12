@@ -115,6 +115,8 @@ export const ROUTE_CASES: Readonly<Record<string, RouteCase>> = {
   'POST /v1/vendor-users': vendor((t) => json('POST', '/v1/vendor-users', { email: t.email }, true)),
   'POST /v1/vendor-users/:id/invitation': vendor((t) => json('POST', `/v1/vendor-users/${t.user}/invitation`)),
   'POST /v1/vendor-users/:id/deactivate': vendor((t) => json('POST', `/v1/vendor-users/${t.user}/deactivate`)),
+  'POST /v1/vendor-users/:id/approve': vendor((t) => json('POST', `/v1/vendor-users/${t.user}/approve`, undefined, true)),
+  'POST /v1/vendor-users/:id/reject': vendor((t) => json('POST', `/v1/vendor-users/${t.user}/reject`, undefined, true)),
   // IMP: tenant A's market code means nothing in tenant B.
   'POST /v1/imports': own('tenant', 422, uploadRequest),
   'GET /v1/imports/limits': collection('tenant', () => get('/v1/imports/limits')),

@@ -1,5 +1,6 @@
-// Local development data (nmp_dev) and the browser-test seed (nmp_e2e, `pnpm --filter @nmp/api seed:e2e`): a vendor
-// operator with MFA and two tenants with staff (no MFA: their forced enrolment is part of the browser test).
+// Local development data (nmp_dev) and the browser-test seed (nmp_e2e, `pnpm --filter @nmp/api seed:e2e`): two
+// independent vendor operators with MFA (BUG-031: bootstrap users, no inviter, so either can be the other's second
+// person) and two tenants with staff (no MFA: their forced enrolment is part of the browser test).
 // Idempotent: existing rows are kept and their passwords are not changed. Refuses production, any database but the
 // local ones, and any database server not on this machine.
 import { randomBytes, randomUUID } from 'node:crypto'
@@ -14,7 +15,10 @@ import { seal } from './lib/secret-box.js'
 import { generateTotpSecret, totpUri } from './lib/totp.js'
 
 const SYSTEM: ActorContext = { actorType: 'system', requestId: 'seed', supportSessionId: null }
-const VENDOR_EMAIL = 'operator@vendor.example'
+const VENDORS = [
+  { email: 'operator@vendor.example', name: 'Vendor Operator' },
+  { email: 'operator2@vendor.example', name: 'Second Vendor Operator' },
+] as const
 const TENANTS = [
   { slug: 'acme', legalName: 'Acme Direct Ltd' },
   { slug: 'globex', legalName: 'Globex Wellness Ltd' },
@@ -54,11 +58,13 @@ async function existingUser(tx: Tx, email: string): Promise<string | undefined> 
   return rows[0]?.id
 }
 
-/** The vendor operator, MFA enrolled (all vendor staff use MFA, SEC-03). printTotp: print its otpauth URI once. */
-async function seedVendor(config: Config, passwordHash: string, printTotp: boolean, print: Print): Promise<boolean> {
+/** A vendor operator, MFA enrolled (all vendor staff use MFA, SEC-03). printTotp: print its otpauth URI once. */
+async function seedVendor(
+  config: Config, vendor: (typeof VENDORS)[number], passwordHash: string, printTotp: boolean, print: Print,
+): Promise<boolean> {
   return runInVendor(SYSTEM_ACTOR_ID, SYSTEM, async (tx) => {
-    if ((await existingUser(tx, VENDOR_EMAIL)) !== undefined) return false
-    const id = await insertUser(tx, { tenantId: null, email: VENDOR_EMAIL, name: 'Vendor Operator', passwordHash })
+    if ((await existingUser(tx, vendor.email)) !== undefined) return false
+    const id = await insertUser(tx, { tenantId: null, email: vendor.email, name: vendor.name, passwordHash })
     const secret = generateTotpSecret()
     await asSelf(tx, id, () =>
       tx.query(
@@ -68,9 +74,9 @@ async function seedVendor(config: Config, passwordHash: string, printTotp: boole
     )
     await tx.query('UPDATE user_account SET mfa_enrolled = true WHERE id = $1', [id])
     await recordVendorAudit(tx, { action: 'SEED.USER_CREATED', objectType: 'user_account', objectId: id })
-    print(`vendor: ${VENDOR_EMAIL}`)
+    print(`vendor: ${vendor.email}`)
     // Local databases only (assertSeedable): the operator, or the browser test, needs it once for an authenticator.
-    if (printTotp) print(`vendor TOTP: ${totpUri(VENDOR_EMAIL, secret)}`)
+    if (printTotp) print(`vendor TOTP: ${totpUri(vendor.email, secret)}`)
     return true
   })
 }
@@ -150,6 +156,9 @@ export interface SeedTarget {
 const isLoopback = (address: string | null): boolean =>
   address === null || address === '::1' || /^(::ffff:)?127\./.test(address)
 
+/** One of the local databases of PROJECT_ENGINEERING_CONTEXT, on a server reached over a Unix socket or loopback. */
+export const isLocalDatabase = (target: SeedTarget): boolean => isLoopback(target.serverAddress) && SEEDABLE_DATABASES.has(target.database)
+
 /**
  * Throws unless seeding is allowed: never in production, only into a local database on a server reached over a
  * Unix socket or loopback, a fixed password only where listed.
@@ -180,7 +189,8 @@ export async function seed(config: Config, password: string | undefined, print: 
   const effective = password ?? randomBytes(18).toString('base64url')
   const passwordHash = await hashPassword(effective)
   const printTotp = config.env === 'development' || password !== undefined
-  let created = await seedVendor(config, passwordHash, printTotp, print)
+  let created = false
+  for (const vendor of VENDORS) created = (await seedVendor(config, vendor, passwordHash, printTotp, print)) || created
   for (const tenant of TENANTS) created = (await seedTenant(tenant.slug, tenant.legalName, passwordHash, print)) || created
   if (created && password === undefined) print(`password of the accounts created now: ${effective}`)
 }

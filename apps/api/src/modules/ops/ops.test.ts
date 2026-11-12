@@ -157,7 +157,8 @@ describe('POST /v1/tenants/:id/approve (second-person approval)', () => {
     expect(sent).toBe(1)
     expect(accepted.statusCode).toBe(204)
     expect(signIn.json().data.next_step).toBe('mfa_enrolment')
-    expect(await vendorActions(tenant.id)).toEqual(['TENANT.CREATED', 'TENANT.PROVISIONING_APPROVED'])
+    // BUG-031: the creator's refused self-approval is in the vendor log too.
+    expect(await vendorActions(tenant.id)).toEqual(['TENANT.CREATED', 'SECOND_PERSON.REFUSED', 'TENANT.PROVISIONING_APPROVED'])
     expect(await auditActions(tenant.id)).toEqual(expect.arrayContaining(['TENANT.PROVISIONING_APPROVED', 'USER.INVITATION_SENT', 'USER.ACTIVATED']))
     expect((await approve(tenant.id)).json().error.code).toBe('TENANT_STATE_INVALID')
   })

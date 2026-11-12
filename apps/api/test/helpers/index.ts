@@ -10,6 +10,7 @@ export {
   createTenant,
   ownerRows,
   resetApiDb,
+  signInExisting,
   totpCode,
   type MfaState,
   type TestTenant,

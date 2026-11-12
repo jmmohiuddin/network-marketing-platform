@@ -9,7 +9,7 @@ beforeAll(async () => {
 })
 
 describe('seed', () => {
-  test('creates the vendor operator and two tenants with staff, and is idempotent', async () => {
+  test('creates two independent vendor operators and two tenants with staff, and is idempotent', async () => {
     const first: string[] = []
     const second: string[] = []
 
@@ -27,16 +27,25 @@ describe('seed', () => {
       'SELECT (SELECT count(*)::int FROM password_credential) AS passwords, (SELECT count(*)::int FROM mfa_credential) AS factors',
     )
 
-    expect(users).toHaveLength(9)
-    expect(credentials).toEqual([{ passwords: 9, factors: 1 }]) // written as their own users; only the vendor has a factor
-    expect(users.find((user) => user.realm === 'vendor')).toEqual({ email: 'operator@vendor.example', realm: 'vendor', mfa_enrolled: true })
+    const vendors = await ownerRows(`SELECT email, created_by FROM user_account WHERE realm = 'vendor' ORDER BY email`)
+
+    expect(users).toHaveLength(10)
+    expect(credentials).toEqual([{ passwords: 10, factors: 2 }]) // written as their own users; only vendors have a factor
+    expect(users.filter((user) => user.realm === 'vendor')).toEqual([
+      { email: 'operator@vendor.example', realm: 'vendor', mfa_enrolled: true },
+      { email: 'operator2@vendor.example', realm: 'vendor', mfa_enrolled: true },
+    ])
+    // BUG-031: bootstrap users, no inviter, so each can be the other's second person.
+    expect(vendors).toEqual([
+      { email: 'operator@vendor.example', created_by: null }, { email: 'operator2@vendor.example', created_by: null },
+    ])
     expect(grants).toEqual([
       { name: 'Commission analyst', approved: false },
       { name: 'Compliance officer', approved: true },
       { name: 'Tenant admin', approved: false },
       { name: 'Tenant admin', approved: false },
     ])
-    expect(first.some((line) => line.startsWith('vendor TOTP: otpauth://'))).toBe(true)
+    expect(first.filter((line) => line.startsWith('vendor TOTP: otpauth://'))).toHaveLength(2)
     expect(first.some((line) => line.startsWith('password of the accounts created now: '))).toBe(true)
     expect(second).toEqual([])
   })

@@ -4,6 +4,7 @@ import { recordAudit, recordVendorAudit } from '../../lib/audit.js'
 import { currentAuth } from '../../lib/auth.js'
 import { ApiError } from '../../lib/errors.js'
 import { enqueue } from '../../lib/jobs.js'
+import { assertSecondPerson } from '../iam/index.js'
 import { assertBreachContactRecorded } from '../prv/index.js'
 import { assertSameRequest, inVendorThenTenant, lockTenant, type TenantRow, type VendorIdempotency } from '../support/index.js'
 import { sendFirstAdminInvitationJob } from './first-admin-invitation.js'
@@ -36,8 +37,8 @@ interface Transition {
   readonly from: string
   readonly to: string
   readonly action: string
-  /** Extra vendor-side check on the locked tenant. */
-  readonly check?: (tenant: TenantRow) => void
+  /** Vendor-side step on the locked tenant in the expected state, before its state changes (checks, actor column). */
+  readonly before?: (tx: Tx, tenant: TenantRow) => Promise<void>
 }
 
 const tenantChange = (tenantId: string, transition: Transition) => ({
@@ -50,7 +51,7 @@ async function moveState(tx: Tx, tenantId: string, transition: Transition): Prom
   if (tenant.state !== transition.from) {
     throw new ApiError(409, 'TENANT_STATE_INVALID', `The tenant is ${tenant.state}; this step needs ${transition.from}.`)
   }
-  transition.check?.(tenant)
+  await transition.before?.(tx, tenant)
   await tx.query('UPDATE tenant SET state = $2 WHERE id = $1', [tenant.id, transition.to])
   await recordVendorAudit(tx, tenantChange(tenant.id, transition))
   return { tenantId: tenant.id }
@@ -74,6 +75,7 @@ async function approvalReplay(tx: Tx, approverId: string, idempotency: VendorIde
   return rows[0].id
 }
 
+// approved_by is set while the tenant is still provisioning, then the state moves (0043 checks both on the row).
 async function recordApprover(tx: Tx, tenantId: string, approverId: string, idempotency: VendorIdempotency): Promise<void> {
   try {
     await tx.query(
@@ -97,8 +99,13 @@ async function approveInVendorRealm(
   await lockTenant(tx, tenantId)
   const earlier = await approvalReplay(tx, approverId, idempotency)
   if (earlier !== null) return { tenantId: earlier, replayed: true }
-  await moveState(tx, tenantId, transition)
-  await recordApprover(tx, tenantId, approverId, idempotency)
+  await moveState(tx, tenantId, {
+    ...transition,
+    before: async (stepTx, tenant) => {
+      await assertSecondPerson(stepTx, { actorId: approverId, initiatorId: tenant.created_by, action: transition.action })
+      await recordApprover(stepTx, tenant.id, approverId, idempotency)
+    },
+  })
   return { tenantId, replayed: false }
 }
 
@@ -114,19 +121,12 @@ async function activateFirstAdmins(tx: Tx, tenantId: string, transition: Transit
 
 /**
  * FR-TEN-001 second-person approval (step-up checked by the route, Idempotency-Key required): a vendor user other
- * than the creator moves the tenant to implementation, grants the first admin Tenant admin and queues the
+ * than the creator and not tied to them (BUG-031) moves the tenant to implementation, grants the first admin Tenant admin and queues the
  * invitation. Any failure rolls the whole step back, so the tenant stays in provisioning and can be approved again.
  */
 export function approveProvisioning(request: FastifyRequest, tenantId: string, idempotency: VendorIdempotency): Promise<ApprovedTenant> {
   const approverId = currentAuth(request).userId
-  const transition: Transition = {
-    from: 'provisioning', to: 'implementation', action: 'TENANT.PROVISIONING_APPROVED',
-    check: (tenant) => {
-      if (tenant.created_by === approverId) {
-        throw new ApiError(422, 'SOD_SELF_APPROVAL', 'A second vendor user must approve the tenant you created.')
-      }
-    },
-  }
+  const transition: Transition = { from: 'provisioning', to: 'implementation', action: 'TENANT.PROVISIONING_APPROVED' }
   return inVendorThenTenant(
     request,
     (tx) => approveInVendorRealm(tx, tenantId, transition, approverId, idempotency),
@@ -137,9 +137,19 @@ export function approveProvisioning(request: FastifyRequest, tenantId: string, i
   )
 }
 
-/** Go-live (implementation -> live): blocked until a breach contact is recorded (AC-53.1, MVP_A C-21). */
+/**
+ * Go-live (implementation -> live): blocked until a breach contact is recorded (AC-53.1, MVP_A C-21). A second-person
+ * step (BUG-031): not the tenant's creator nor anyone tied to them; recorded as went_live_by.
+ */
 export function goLive(request: FastifyRequest, tenantId: string): Promise<TenantDetail> {
-  const transition: Transition = { from: 'implementation', to: 'live', action: 'TENANT.WENT_LIVE' }
+  const actorId = currentAuth(request).userId
+  const transition: Transition = {
+    from: 'implementation', to: 'live', action: 'TENANT.WENT_LIVE',
+    before: async (tx, tenant) => {
+      await assertSecondPerson(tx, { actorId, initiatorId: tenant.created_by, action: 'TENANT.WENT_LIVE' })
+      await tx.query('UPDATE tenant SET went_live_by = $2 WHERE id = $1', [tenant.id, actorId])
+    },
+  }
   return inVendorThenTenant(
     request,
     (tx) => moveState(tx, tenantId, transition),

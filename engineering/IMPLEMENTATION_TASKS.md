@@ -14,7 +14,7 @@ MVP-B tasks are written per increment when it starts. Done = code + tests green 
 | T-A07 | security | Generated cross-tenant isolation suite over every route (TS-21) | qa | T-A06 | TS-21 | P0 | Implemented |
 | T-A07b | db/IAM | Hardening migration 0040 for BUG-001..004 (support request impersonation, credential row scope, session column immutability, sessions of deactivated users) + BUG-005 grant market scope | security | stage 2 | BUG_REGISTER | P0 | Implemented |
 | T-A07c | IAM | Fix BUG-006 (approver scope on pending grants) and BUG-007 (revoke/deactivate scope + step-up) | security | stage 3 | BUG_REGISTER | P0 | Completed |
-| T-A07d | IAM/OPS | Fix BUG-031 vendor-user invitation two-person control | security | — | BUG_REGISTER | P0 | In Progress |
+| T-A07d | IAM/OPS | Fix BUG-031 vendor-user invitation two-person control | security | — | BUG_REGISTER | P0 | Completed |
 | T-A08 | IMP | Upload, validation (15 rules, forbidden tokens), row errors | backend | T-A05 | FR-IMP-001 | P1 | Implemented |
 | T-A09 | IMP | Mapping (draft/approved), load to cpl_fact_*, supersede | backend | T-A08 | FR-IMP-002 003 | P1 | Implemented |
 | T-A10 | CPL | packages/compliance: R1–R5 pure, bigint, golden + TS-31 tests | compensation | T-000 | FR-CPL-001..005 | P1 | Completed |

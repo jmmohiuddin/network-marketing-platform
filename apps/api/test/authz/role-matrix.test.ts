@@ -104,6 +104,8 @@ const PROBES: Readonly<Record<string, readonly Probe[]>> = {
   'POST /v1/vendor-users': [probe(nobody, 'POST', '/v1/vendor-users', {})],
   'POST /v1/vendor-users/:id/invitation': [probe(nobody, 'POST', `/v1/vendor-users/${NOWHERE}/invitation`)],
   'POST /v1/vendor-users/:id/deactivate': [probe(nobody, 'POST', `/v1/vendor-users/${NOWHERE}/deactivate`)],
+  'POST /v1/vendor-users/:id/approve': [probe(nobody, 'POST', `/v1/vendor-users/${NOWHERE}/approve`)],
+  'POST /v1/vendor-users/:id/reject': [probe(nobody, 'POST', `/v1/vendor-users/${NOWHERE}/reject`)],
   'POST /v1/imports': [probe(all('import.manage'), 'POST', '/v1/imports', {})],
   'GET /v1/imports/limits': [read(all('import.manage'), '/v1/imports/limits')],
   'GET /v1/imports': [read(all('import.manage'), '/v1/imports')],

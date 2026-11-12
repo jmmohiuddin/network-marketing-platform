@@ -85,3 +85,10 @@ _Agent: backend. Read before every task; update after every task. Keep concise â
 - iam/index exports `assertSecondPerson(tx, {actorId, initiatorId, action})` and `loggingSecondPersonRefusals(request, {objectType, objectId}, fn)` (route wrapper: logs SECOND_PERSON.REFUSED {action, initiator_id, refusal} in its own vendor tx). Any new vendor second-person action must use both. Also exports `bootstrapVendorUser`, `acceptInvitation`.
 - New vendor audit actions: USER.INVITATION_APPROVED, USER.INVITATION_REJECTED, USER.BOOTSTRAPPED, SECOND_PERSON.REFUSED. USER.INVITATION_SENT is now written by the approver.
 - Seed: operator@ and operator2@vendor.example (both MFA, independent). Test helper `signInExisting(user, stepUp?)` opens a verified session for an existing user. `pnpm --filter @nmp/api create-vendor-user --email ...`.
+
+## Contracts after BUG-031 review fixes (2026-11-12) â€” web builds against these
+- POST /v1/tenants/:id/go-live now needs step-up (403 STEP_UP_REQUIRED): the web Go-live action must run the step-up prompt first.
+- Vendor Idempotency-Key hash includes the route: reusing a key across approve/reject (or any two vendor routes) -> 422 IDEMPOTENCY_KEY_REUSED.
+- A rejected/deactivated vendor email can be invited again via POST /v1/vendor-users (new user id; the closed row stays in the list). 409 EMAIL_TAKEN only while a non-deactivated vendor user has the address. GET /v1/vendor-users is ordered by (email, id); the cursor is still opaque.
+- 403 APPROVER_NOT_INDEPENDENT also covers the whole invitation line (migration 0044); message text changed.
+- create-vendor-user CLI: refuses (unless --i-understand + NMP_ALLOW_VENDOR_BOOTSTRAP=yes) any database that is not local nmp_dev/test/e2e; refuses when 2 usable vendor users already exist. `BootstrapVendorUser` input now needs `operator: {osUser, host}`.

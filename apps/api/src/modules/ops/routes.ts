@@ -5,6 +5,7 @@ import { inVendor } from '../../lib/db.js'
 import { envelope, parse } from '../../lib/http.js'
 import { sendIdempotent } from '../../lib/idempotency.js'
 import { decodeCursor, pageQuery, toPage } from '../../lib/pagination.js'
+import { loggingSecondPersonRefusals } from '../iam/index.js'
 import { vendorIdempotency } from '../support/index.js'
 import { approveProvisioning, createTenant, goLive } from './provisioning.js'
 import { getTenant, listTenants } from './tenants.js'
@@ -50,7 +51,7 @@ const listQuery = z.strictObject({ ...pageQuery, state: z.enum(['provisioning', 
 const idParams = z.object({ id: z.uuid() })
 
 const vendor = { preHandler: [requireRealm('vendor')] }
-// The second-person approval of FR-TEN-001 confirms with a fresh second factor (MVP_A C-4) and an Idempotency-Key.
+// Second-person steps (FR-TEN-001 approval, go-live) confirm with a fresh second factor (MVP_A C-4).
 const approver = { preHandler: [requireRealm('vendor'), requireStepUp()] }
 
 /** Vendor operations console (FR-OPS-001, SC-39) and tenant provisioning (FR-TEN-001). Vendor realm only. */
@@ -81,12 +82,14 @@ export function registerOpsRoutes(app: FastifyInstance): void {
 
   app.post('/v1/tenants/:id/approve', approver, async (request, reply) => {
     const { id } = parse(idParams, request.params)
-    const approved = await approveProvisioning(request, id, vendorIdempotency(request))
+    const idempotency = vendorIdempotency(request)
+    const approved = await loggingSecondPersonRefusals(request, { objectType: 'tenant', objectId: id }, () =>
+      approveProvisioning(request, id, idempotency))
     return sendIdempotent(reply, { statusCode: 200, body: envelope(approved.tenant), replayed: approved.replayed })
   })
 
-  app.post('/v1/tenants/:id/go-live', vendor, async (request) => {
+  app.post('/v1/tenants/:id/go-live', approver, async (request) => {
     const { id } = parse(idParams, request.params)
-    return envelope(await goLive(request, id))
+    return envelope(await loggingSecondPersonRefusals(request, { objectType: 'tenant', objectId: id }, () => goLive(request, id)))
   })
 }

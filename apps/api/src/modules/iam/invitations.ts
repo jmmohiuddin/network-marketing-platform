@@ -18,8 +18,9 @@ export interface IssuedInvitation {
 }
 
 // Revokes the user's open invitations; stores only the token's SHA-256 and the inviter (created_by). In the vendor
-// realm app_tenant_id() is NULL: a vendor user's invitation has no tenant (0042).
-export async function issueInvitation(tx: Tx, userId: string, ttlHours: number, invitedBy: string): Promise<IssuedInvitation> {
+// realm app_tenant_id() is NULL: a vendor user's invitation has no tenant (0042). invitedBy null = operator bootstrap
+// (scripts/create-vendor-user.ts).
+export async function issueInvitation(tx: Tx, userId: string, ttlHours: number, invitedBy: string | null): Promise<IssuedInvitation> {
   await tx.query(
     'UPDATE user_invitation SET revoked_at = now() WHERE user_id = $1 AND used_at IS NULL AND revoked_at IS NULL',
     [userId],

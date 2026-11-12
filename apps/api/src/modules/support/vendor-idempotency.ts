@@ -22,7 +22,7 @@ function canonical(value: unknown): unknown {
 /**
  * Vendor creating POSTs cannot use lib/idempotency.ts (idempotency_key rows need a tenant), so the created
  * row keeps the key and this hash (migration 0010), unique per creator. Same rules: the header is required,
- * the hash covers params and body, a replay of the same request returns the resource with
+ * the hash covers the route, params and body (approve and reject share a key namespace), a replay of the same request returns the resource with
  * Idempotent-Replayed: true, a different request under the same key is 422 IDEMPOTENCY_KEY_REUSED.
  */
 export function vendorIdempotency(request: FastifyRequest): VendorIdempotency {
@@ -30,7 +30,7 @@ export function vendorIdempotency(request: FastifyRequest): VendorIdempotency {
   if (typeof key !== 'string' || !KEY_PATTERN.test(key)) {
     throw new ApiError(400, 'IDEMPOTENCY_KEY_REQUIRED', 'Send an Idempotency-Key header (1-255 printable characters).')
   }
-  const material = JSON.stringify(canonical({ params: request.params ?? null, body: request.body ?? null }))
+  const material = JSON.stringify(canonical({ route: request.routeOptions.url ?? null, params: request.params ?? null, body: request.body ?? null }))
   return { key, hash: createHash('sha256').update(material).digest() }
 }
 
