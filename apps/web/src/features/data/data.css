@@ -1,0 +1,43 @@
+/* Imports and compliance screens (SC-10, SC-24, SC-25, SC-26). Semantic tokens only. */
+.data-section { display: flex; flex-direction: column; gap: var(--space-4); margin-top: var(--space-8); }
+.data-section > h2 { font: var(--font-heading); }
+.data-stack { display: flex; flex-direction: column; gap: var(--space-4); }
+.data-row { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--space-3); }
+.data-row .field { min-width: 12rem; }
+.data-note { color: var(--color-text-secondary); font: var(--font-body-sm); max-width: var(--prose-max-width); }
+.data-code { font: var(--font-mono); overflow-wrap: anywhere; }
+.data-list { display: flex; flex-direction: column; gap: var(--space-1); padding-inline-start: var(--space-5); }
+
+.data-facts { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: var(--space-2) var(--space-6); margin: 0; }
+.data-facts dt { color: var(--color-text-secondary); }
+.data-facts dd { margin: 0; font-variant-numeric: var(--font-numeric); overflow-wrap: anywhere; }
+
+.data-progress { display: flex; flex-direction: column; gap: var(--space-2); max-width: var(--form-max); }
+.data-progress progress { width: 100%; height: var(--space-2); accent-color: var(--color-action-primary); }
+
+.data-fieldset { display: flex; flex-direction: column; gap: var(--space-2); border: 0; margin: 0; padding: 0; }
+.data-fieldset legend { font-weight: var(--font-weight-medium); margin-bottom: var(--space-1); }
+
+.data-cell-select { min-width: 12rem; }
+
+.figure-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(20rem, 1fr)); gap: var(--space-4); }
+.figure-card {
+  display: flex; flex-direction: column; gap: var(--space-3);
+  padding: var(--space-5);
+  background: var(--color-bg-surface);
+  border: var(--border-width-default) solid var(--color-border-default);
+  border-radius: var(--radius-md);
+}
+.figure-card h3 { font: var(--font-body-md); font-weight: var(--font-weight-medium); }
+.figure-value { font: var(--font-display); font-variant-numeric: var(--font-numeric); }
+.figure-card .data-facts { font: var(--font-body-sm); }
+
+@media (max-width: 599px) {
+  .data-facts { grid-template-columns: minmax(0, 1fr); gap: 0 var(--space-4); }
+  .data-facts dd { margin-bottom: var(--space-2); }
+  .figure-grid { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* Ids shown until the API gives names (market codes). */
+.data-id { font: var(--font-mono); overflow-wrap: anywhere; }
+.kpi-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr)); gap: var(--space-4); }

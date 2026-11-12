@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto'
 import { afterAll } from 'vitest'
 import { closePool, getPool, type Tx } from '../src/index.js'
 import { closeOwnerPool } from '../src/testing.js'
@@ -23,6 +24,21 @@ export async function insertRow(tx: Tx, table: string, row: Record<string, unkno
     Object.values(row),
   )
   return rows[0]!.id
+}
+
+export interface OpenedSession {
+  id: string
+  tokenHash: Buffer
+  expiresAt: Date
+}
+
+/** Opens an AAL1 session for the transaction's acting user, the only way nmp_app can (auth_open_session, 0041). */
+export async function openSession(tx: Tx, minutes = 60, tokenHash: Buffer = randomBytes(32)): Promise<OpenedSession> {
+  const { rows } = await tx.query<{ session_id: string; session_expires_at: Date }>(
+    'SELECT session_id, session_expires_at FROM auth_open_session($1, $2, NULL, NULL)',
+    [tokenHash, minutes],
+  )
+  return { id: rows[0]!.session_id, tokenHash, expiresAt: rows[0]!.session_expires_at }
 }
 
 export function insertMarket(tx: Tx, tenantId: string, code = 'GB'): Promise<string> {

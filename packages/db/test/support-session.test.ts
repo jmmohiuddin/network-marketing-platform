@@ -69,6 +69,7 @@ describe('vendor realm', () => {
     ['requested but already decided', () => ({ decided_by: admin.userId })],
     ['requested with a window', () => ({ starts_at: new Date(), ends_at: new Date(Date.now() + MINUTE_MS) })],
     ['requested in the name of a tenant user', () => ({ requester_id: admin.userId })],
+    ['requested in the name of another vendor user (BUG-001)', () => ({ requester_id: otherVendorUserId })],
   ])('cannot create a session that is %s', async (_case, overrides) => {
     await expect(request(overrides())).rejects.toThrow(RLS_VIOLATION)
   })

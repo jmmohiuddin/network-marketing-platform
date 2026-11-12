@@ -83,13 +83,15 @@ export async function reissueInvitation(tx: Tx, userId: string, invitedBy: strin
   return user
 }
 
-/** Deactivates a user, revokes their sessions and open invitations (SEC-34). Not the last admin. */
+/**
+ * Deactivates a user and revokes their open invitations (SEC-34); the state change revokes their sessions in the
+ * database (trigger user_account_closed_revokes_sessions, 0040). Not the last admin.
+ */
 export async function deactivateUser(tx: Tx, userId: string): Promise<UserView> {
   const user = await getUser(tx, userId)
   if (user.state === 'deactivated') return user
   await assertAdminRemains(tx, { userId })
   await tx.query(`UPDATE user_account SET state = 'deactivated' WHERE id = $1`, [userId])
-  await tx.query('UPDATE session SET revoked_at = now() WHERE user_id = $1 AND revoked_at IS NULL', [userId])
   await tx.query(
     'UPDATE user_invitation SET revoked_at = now() WHERE user_id = $1 AND used_at IS NULL AND revoked_at IS NULL',
     [userId],

@@ -9,6 +9,7 @@ Consolidated facts every session needs. Newest first. Keep under 150 lines.
 
 ## Machine
 - Apple M4, 16 GB, tight memory. No Docker (daemon hangs). PostgreSQL 16 on 5432 (superuser = OS user), Redis on 6379. Ports 5000, 7000, 3599 are taken; use api 4000, web 3100.
+- NEVER stop processes by name pattern (`pkill -f src/server.ts` also matches the user's other projects, e.g. Routine-Management-System). Start servers with `echo $! > var/<name>.pid` and stop with `kill $(cat var/<name>.pid)`.
 - Hooks: a "Fact-Forcing Gate" blocks the first Bash and each new-file Write until facts are stated; creating files via shell heredoc avoids the per-file gate.
 
 ## Golden references

@@ -5,13 +5,13 @@ Statuses: Not Started · Planning · In Progress · Blocked · Implemented · Te
 | Module | Rel | Agent | Status | Backend | Frontend | DB | Unit | Integration | Playwright | Review | Open defects | % |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | db/RLS | A | database | Implemented | n/a | n/a | done | 76 pass | 76 pass | - | reviewed+fixed | 0 | 70 |
-| IAM | A | backend | Implemented | done | - | done | pass | pass | - | reviewed+fixed | BUG-001..004 | 75 |
+| IAM | A | backend | Implemented | done | built | done | pass | pass | - | reviewed+fixed | BUG-006, BUG-007 | 80 |
 | AUD | A | backend | Implemented | done | - | done | pass | pass | - | reviewed+fixed | 0 | 75 |
 | TEN/OPS | A | backend | Implemented | done | - | done | pass | pass | - | reviewed+fixed | 0 | 75 |
 | IMP | A | backend | Implemented | done | - | done | pass | pass | - | reviewed+fixed | 0 | 75 |
 | CPL reports | A | compensation | Implemented | done | - | done | pass | pass | - | reviewed+fixed | 0 | 75 |
 | PRV-004 | A | backend | Implemented | done | - | done | pass | pass | - | reviewed+fixed | 0 | 75 |
-| Web (A screens) | A | - | Planning | - | - | - | - | - | - | - | 0 | 0 |
+| Web (A screens) | A | frontend | Implemented | - | built, reviewed+fixed | - | 177 pass | - | not yet | reviewed+fixed | gaps: SC-10 charts, SC-46, vendor audit view | 70 |
 | B1 foundations | B | - | Not Started | - | - | - | - | - | - | - | 0 | 0 |
 | PAR/GEN | B | - | Not Started | - | - | - | - | - | - | - | 0 | 0 |
 | ORD/CRM | B | - | Not Started | - | - | - | - | - | - | - | 0 | 0 |

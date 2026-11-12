@@ -1,5 +1,5 @@
 import type { Tx } from '@nmp/db'
-import { marketScope, type AuthContext } from '../../lib/auth.js'
+import { marketScope, type AuthContext, type RoleGrant } from '../../lib/auth.js'
 import { recordAudit } from '../../lib/audit.js'
 import { ApiError } from '../../lib/errors.js'
 import { BASE_ROLES, isPermission, isPrivileged, requiresMfa, type Permission } from '../../lib/permissions.js'
@@ -43,14 +43,22 @@ export async function findRole(tx: Tx, roleId: string): Promise<RoleView | null>
   return rows[0] === undefined ? null : toView(rows[0])
 }
 
+// A grant ending no earlier than `until` (null = open-ended: only an open-ended grant lasts that long).
+const lastsUntil = (grant: RoleGrant, until: Date | null): boolean =>
+  grant.validTo === null || (until !== null && until <= grant.validTo)
+
 /**
- * The caller holds every permission listed over at least the given markets (null = every market): what one
- * may grant alone (BR-SEC-05), market scope included (SEC-26, AC-36.2).
+ * The caller holds every permission listed over at least the given markets (null = every market) until at least
+ * validTo (null = open-ended): what one may grant alone (BR-SEC-05), market scope (SEC-26, AC-36.2) and validity
+ * window (SECURITY_IAM_TENANCY assignment scope) included. Only grants lasting that long count.
  */
-export function holdsWithin(auth: AuthContext, permissions: readonly string[], marketIds: readonly string[] | null): boolean {
+export function holdsWithin(
+  auth: AuthContext, permissions: readonly string[], marketIds: readonly string[] | null, validTo: Date | null,
+): boolean {
+  const lasting: AuthContext = { ...auth, roles: auth.roles.filter((grant) => lastsUntil(grant, validTo)) }
   return permissions.every((permission) => {
-    if (!isPermission(permission) || !auth.permissions.has(permission)) return false
-    const scope = marketScope(auth, permission)
+    if (!isPermission(permission) || !lasting.roles.some((grant) => grant.permissions.includes(permission))) return false
+    const scope = marketScope(lasting, permission)
     return scope === null || (marketIds !== null && marketIds.every((id) => scope.includes(id)))
   })
 }

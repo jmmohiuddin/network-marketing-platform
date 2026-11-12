@@ -1,5 +1,7 @@
-// Local development data (nmp_dev): a vendor operator and two tenants with staff. Idempotent: existing rows
-// are kept and their passwords are not changed. Refuses production and any database but the local ones.
+// Local development data (nmp_dev) and the browser-test seed (nmp_e2e, `pnpm --filter @nmp/api seed:e2e`): a vendor
+// operator with MFA and two tenants with staff (no MFA: their forced enrolment is part of the browser test).
+// Idempotent: existing rows are kept and their passwords are not changed. Refuses production, any database but the
+// local ones, and any database server not on this machine.
 import { randomBytes, randomUUID } from 'node:crypto'
 import { closePool, withSystem, type Tx } from '@nmp/db'
 import { pathToFileURL } from 'node:url'
@@ -26,6 +28,14 @@ const STAFF: readonly { local: string; name: string; role: BaseRoleName }[] = [
 
 type Print = (line: string) => void
 
+// Credentials are reachable only by their own user (0040, BUG-002): the seed writes them as that user, then acts as
+// the system again.
+async function asSelf(tx: Tx, userId: string, write: () => Promise<unknown>): Promise<void> {
+  await tx.query(`SELECT set_config('app.user_id', $1, true)`, [userId])
+  await write()
+  await tx.query(`SELECT set_config('app.user_id', $1, true)`, [SYSTEM_ACTOR_ID])
+}
+
 async function insertUser(tx: Tx, user: { tenantId: string | null; email: string; name: string; passwordHash: string }) {
   const { rows } = await tx.query<{ id: string }>(
     `INSERT INTO user_account (tenant_id, realm, idp_subject, email, display_name, state, created_by)
@@ -33,7 +43,9 @@ async function insertUser(tx: Tx, user: { tenantId: string | null; email: string
     [user.tenantId, user.tenantId === null ? 'vendor' : 'tenant', `local:${randomUUID()}`, user.email, user.name],
   )
   const id = rows[0]!.id
-  await tx.query('INSERT INTO password_credential (user_id, password_hash) VALUES ($1, $2)', [id, user.passwordHash])
+  await asSelf(tx, id, () =>
+    tx.query('INSERT INTO password_credential (user_id, password_hash) VALUES ($1, $2)', [id, user.passwordHash]),
+  )
   return id
 }
 
@@ -42,21 +54,23 @@ async function existingUser(tx: Tx, email: string): Promise<string | undefined> 
   return rows[0]?.id
 }
 
-/** The vendor operator, MFA enrolled (all vendor staff use MFA, SEC-03). */
-async function seedVendor(config: Config, passwordHash: string, print: Print): Promise<boolean> {
+/** The vendor operator, MFA enrolled (all vendor staff use MFA, SEC-03). printTotp: print its otpauth URI once. */
+async function seedVendor(config: Config, passwordHash: string, printTotp: boolean, print: Print): Promise<boolean> {
   return runInVendor(SYSTEM_ACTOR_ID, SYSTEM, async (tx) => {
     if ((await existingUser(tx, VENDOR_EMAIL)) !== undefined) return false
     const id = await insertUser(tx, { tenantId: null, email: VENDOR_EMAIL, name: 'Vendor Operator', passwordHash })
     const secret = generateTotpSecret()
-    await tx.query(
-      `INSERT INTO mfa_credential (user_id, type, secret_encrypted, confirmed_at) VALUES ($1, 'totp', $2, now())`,
-      [id, seal(config.secretKey, secret, id)],
+    await asSelf(tx, id, () =>
+      tx.query(
+        `INSERT INTO mfa_credential (user_id, type, secret_encrypted, confirmed_at) VALUES ($1, 'totp', $2, now())`,
+        [id, seal(config.secretKey, secret, id)],
+      ),
     )
     await tx.query('UPDATE user_account SET mfa_enrolled = true WHERE id = $1', [id])
     await recordVendorAudit(tx, { action: 'SEED.USER_CREATED', objectType: 'user_account', objectId: id })
     print(`vendor: ${VENDOR_EMAIL}`)
-    // Development only: the operator needs this once to add the account to an authenticator app.
-    if (config.env === 'development') print(`vendor TOTP: ${totpUri(VENDOR_EMAIL, secret)}`)
+    // Local databases only (assertSeedable): the operator, or the browser test, needs it once for an authenticator.
+    if (printTotp) print(`vendor TOTP: ${totpUri(VENDOR_EMAIL, secret)}`)
     return true
   })
 }
@@ -124,29 +138,57 @@ async function seedTenant(slug: string, legalName: string, passwordHash: string,
 
 // The seed creates known staff accounts: only the local databases of PROJECT_ENGINEERING_CONTEXT may get them.
 const SEEDABLE_DATABASES: ReadonlySet<string> = new Set(['nmp_dev', 'nmp_test', 'nmp_e2e'])
+// A fixed password (SEED_PASSWORD) makes every seeded account known: development and browser-test databases only.
+const FIXED_PASSWORD_DATABASES: ReadonlySet<string> = new Set(['nmp_dev', 'nmp_e2e'])
 
-/** Throws unless seeding is allowed: never in production, only into a local database. */
-export function assertSeedable(env: Config['env'], database: string): void {
+/** The database the seed is connected to: its name and the server's address (null over a Unix socket). */
+export interface SeedTarget {
+  readonly database: string
+  readonly serverAddress: string | null
+}
+
+const isLoopback = (address: string | null): boolean =>
+  address === null || address === '::1' || /^(::ffff:)?127\./.test(address)
+
+/**
+ * Throws unless seeding is allowed: never in production, only into a local database on a server reached over a
+ * Unix socket or loopback, a fixed password only where listed.
+ */
+export function assertSeedable(env: Config['env'], target: SeedTarget, fixedPassword: boolean): void {
   if (env === 'production') throw new Error('seed refuses to run with NODE_ENV=production')
+  if (!isLoopback(target.serverAddress)) {
+    throw new Error(`seed refuses the database server at ${target.serverAddress}: only a local server (Unix socket or loopback)`)
+  }
+  const { database } = target
   if (!SEEDABLE_DATABASES.has(database)) {
     throw new Error(`seed refuses database ${database}: only ${[...SEEDABLE_DATABASES].join(', ')}`)
   }
+  if (fixedPassword && !FIXED_PASSWORD_DATABASES.has(database)) {
+    throw new Error(`seed refuses SEED_PASSWORD for database ${database}: only ${[...FIXED_PASSWORD_DATABASES].join(', ')}`)
+  }
 }
 
-/** Seeds the database behind DATABASE_URL. The password comes from SEED_PASSWORD or is generated and printed. */
+/**
+ * Seeds the database behind DATABASE_URL. password (SEED_PASSWORD) is used for every account created now; without
+ * it a random one is generated and printed. The vendor's otpauth URI is printed in development or with a password.
+ */
 export async function seed(config: Config, password: string | undefined, print: Print): Promise<void> {
-  const { rows } = await withSystem((tx) => tx.query<{ name: string }>('SELECT current_database() AS name'))
-  assertSeedable(config.env, rows[0]!.name)
+  const { rows } = await withSystem((tx) =>
+    tx.query<SeedTarget>('SELECT current_database() AS database, host(inet_server_addr()) AS "serverAddress"'),
+  )
+  assertSeedable(config.env, rows[0]!, password !== undefined)
   const effective = password ?? randomBytes(18).toString('base64url')
   const passwordHash = await hashPassword(effective)
-  let created = await seedVendor(config, passwordHash, print)
+  const printTotp = config.env === 'development' || password !== undefined
+  let created = await seedVendor(config, passwordHash, printTotp, print)
   for (const tenant of TENANTS) created = (await seedTenant(tenant.slug, tenant.legalName, passwordHash, print)) || created
   if (created && password === undefined) print(`password of the accounts created now: ${effective}`)
 }
 
 if (process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const print: Print = (line) => process.stdout.write(`${line}\n`)
-  seed(loadConfig(process.env), process.env.SEED_PASSWORD, print)
+  const fixedPassword = process.env.SEED_PASSWORD
+  seed(loadConfig(process.env), fixedPassword === '' ? undefined : fixedPassword, print)
     .catch((error: unknown) => {
       process.stderr.write(`seed failed: ${error instanceof Error ? error.message : String(error)}\n`)
       process.exitCode = 1

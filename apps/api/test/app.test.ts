@@ -4,7 +4,7 @@ import { z } from 'zod'
 import { requireAuth } from '../src/lib/auth.js'
 import { envelope, parse } from '../src/lib/http.js'
 import type { ApiModule } from '../src/lib/module.js'
-import { auditActions, buildTestApp, call, closePoolsAfterAll, createSignedInUser, createTenant, ownerRows, resetApiDb } from './helpers/index.js'
+import { buildTestApp, call, closePoolsAfterAll, createSignedInUser, createTenant, ownerRows, resetApiDb } from './helpers/index.js'
 
 // A probe module: one public route with validation, one authenticated route.
 const probe: ApiModule = {
@@ -120,17 +120,17 @@ describe('session resolution', () => {
     expect(events).toEqual([{ actor_type: 'system', actor_id: null, request_id: response.headers['x-request-id'] }])
   })
 
-  test('sessions of deactivated users and archived tenants stop working', async () => {
+  test('BUG-004: sessions of deactivated users and archived tenants stop working, and deactivation revokes them', async () => {
     const deactivated = await createSignedInUser({ tenantId })
     const archivedTenant = await createTenant({ state: 'archived' })
     const archived = await createSignedInUser({ tenantId: archivedTenant.id })
     await ownerRows(`UPDATE user_account SET state = 'deactivated' WHERE id = $1`, [deactivated.id])
 
     const responses = await Promise.all([deactivated, archived].map((as) => call(app, { method: 'GET', url: '/v1/probe/whoami', as })))
+    const liveSessions = await ownerRows('SELECT 1 FROM session WHERE id = $1 AND revoked_at IS NULL', [deactivated.sessionId])
 
     expect(responses.map((response) => response.statusCode)).toEqual([401, 401])
-    expect(await auditActions(tenantId)).toContain('AUTH.SESSION_REVOKED')
-    expect(await auditActions(archivedTenant.id)).toContain('AUTH.SESSION_REVOKED')
+    expect(liveSessions).toEqual([])
   })
 })
 

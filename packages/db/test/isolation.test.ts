@@ -101,7 +101,7 @@ describe('row visibility as nmp_app', () => {
       'the vendor realm carrying tenant A id',
       () => (fn) => withSettings({ 'app.realm': 'vendor', 'app.tenant_id': a.tenantId }, fn),
       VENDOR_READABLE_TENANT_TABLES,
-      VENDOR_TABLES,
+      VENDOR_TABLES.filter((table) => table !== 'password_credential'), // no acting user: no credential (BUG-002)
     ],
   ])('%s sees only the rows it is entitled to', async (_context, run, tenantTables, vendorTables) => {
     const seesOfTenantA = await run()((tx) => tablesShowing(tx, tenantARows()))

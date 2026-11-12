@@ -1,0 +1,127 @@
+/* Layout templates (WF-02 §2): T1 staff/vendor shell, T4 centred card. */
+
+/* ---------- T4 centred card ---------- */
+.card-page, .state-page { display: flex; justify-content: center; padding: var(--space-12) var(--space-4); }
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  width: 100%;
+  max-width: var(--card-max);
+  padding: var(--space-8);
+  border: var(--border-width-default) solid var(--color-border-default);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-surface);
+}
+.card-title { font: var(--font-title-lg); }
+.card .state-block { padding: 0; }
+@media (max-width: 599px) {
+  .card-page { padding: var(--space-4); }
+  .card { padding: var(--space-5) var(--space-4); }
+  .card .form-actions { flex-direction: column-reverse; align-items: stretch; }
+}
+
+/* ---------- T1 shell: header 48, sidebar 208 (>= 1024), content capped at 1440 ---------- */
+.shell {
+  display: grid;
+  grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
+  grid-template-rows: var(--header-height) 1fr;
+  grid-template-areas: "header header" "nav main";
+  min-height: 100vh;
+}
+.shell-header {
+  grid-area: header;
+  position: sticky;
+  top: 0;
+  z-index: var(--z-header);
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: 0 var(--space-6);
+  border-bottom: var(--border-width-default) solid var(--color-border-default);
+  background: var(--color-bg-surface);
+}
+.shell-title { font: var(--font-heading); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.shell-user { display: flex; align-items: center; gap: var(--space-4); margin-inline-start: auto; }
+.shell-user-name { color: var(--color-text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 24ch; }
+.shell-menu-button { display: none; }
+.shell-nav {
+  grid-area: nav;
+  position: sticky;
+  top: var(--header-height);
+  align-self: start;
+  height: calc(100vh - var(--header-height));
+  overflow-y: auto;
+  padding: var(--space-4) var(--space-2);
+  border-inline-end: var(--border-width-default) solid var(--color-border-default);
+  background: var(--color-bg-surface);
+}
+.shell-nav ul { display: flex; flex-direction: column; gap: var(--space-1); padding: 0; list-style: none; }
+.shell-nav a {
+  display: flex;
+  align-items: center;
+  min-height: var(--button-height-md);
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-primary);
+  text-decoration: none;
+}
+.shell-nav a:hover { background: var(--color-bg-subtle); }
+.shell-nav a[aria-current="page"] { background: var(--color-action-subtle); color: var(--color-text-link); font-weight: var(--font-weight-semibold); }
+.shell-main { grid-area: main; width: 100%; max-width: var(--content-max); padding: var(--space-6) var(--space-6) var(--space-12); }
+.shell-main:focus { outline: none; }
+@media (min-width: 1280px) {
+  .shell-main { padding-inline: var(--space-8); }
+}
+
+/* Below 1024 the staff app is not optimised (UI-05): the sidebar folds into a Menu disclosure. */
+@media (max-width: 1023px) {
+  .shell { grid-template-columns: minmax(0, 1fr); grid-template-areas: "header" "main"; }
+  .shell-menu-button { display: inline-flex; }
+  .shell-header { padding: 0 var(--space-4); gap: var(--space-2); }
+  .shell-user-name { display: none; }
+  .shell-nav {
+    display: none;
+    position: fixed;
+    inset: var(--header-height) 0 auto 0;
+    z-index: var(--z-drawer);
+    height: auto;
+    max-height: calc(100vh - var(--header-height));
+    border-inline-end: 0;
+    border-bottom: var(--border-width-default) solid var(--color-border-default);
+    box-shadow: var(--shadow-overlay);
+  }
+  .shell-nav[data-open="true"] { display: block; }
+  .shell-main { padding: var(--space-4) var(--space-4) var(--space-12); }
+}
+
+/* ---------- Support-session frame (UI-04): border around the viewport + bar above the header ---------- */
+.support-frame { --support-bar-height: 40px; --support-border-width: 4px; }
+.support-frame::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-tooltip);
+  border: var(--support-border-width) solid var(--color-support-frame);
+  pointer-events: none;
+}
+.support-frame-bar {
+  position: sticky;
+  top: 0;
+  z-index: calc(var(--z-header) + 1);
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  min-height: var(--support-bar-height);
+  padding: var(--space-1) var(--space-6);
+  background: var(--color-support-frame);
+  color: var(--color-text-on-support-frame);
+  font: var(--font-body-md);
+}
+.support-frame-bar p { margin: 0; font-variant-numeric: var(--font-numeric); }
+.support-frame-bar .btn { margin-inline-start: auto; }
+.support-frame .shell-header { top: var(--support-bar-height); }
+.support-frame .shell-nav {
+  top: calc(var(--header-height) + var(--support-bar-height));
+  height: calc(100vh - var(--header-height) - var(--support-bar-height));
+}

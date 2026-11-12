@@ -8,9 +8,13 @@ import { TEST_SECRET_KEY, type Caller } from './app.js'
 
 const SESSION_MINUTES = 60
 
-/** Empties the test database and seeds the platform base roles (resetTestDb also truncates role). */
+/**
+ * Empties the test database and seeds the platform base roles (resetTestDb also truncates role). Queued jobs go too:
+ * resetTestDb leaves the pgboss schema, so a job a previous run left queued would be picked up by runQueuedJobs.
+ */
 export async function resetApiDb(): Promise<void> {
   await resetTestDb()
+  await getOwnerPool().query('TRUNCATE pgboss.job')
   await getOwnerPool().query(renderBaseRoleSeed())
 }
 
@@ -42,6 +46,8 @@ export interface TestUserOptions {
   readonly roles?: readonly BaseRoleName[]
   /** Market scope for every role given (null = all markets). */
   readonly marketIds?: readonly string[] | null
+  /** End of every role given (default: open-ended). */
+  readonly validTo?: Date
   /** 'verified' (default): enrolled and verified in this session. 'unverified': enrolled, not yet verified. */
   readonly mfa?: MfaState
   /** A second factor verified just now (step-up fresh). Implies mfa 'verified'. */
@@ -70,11 +76,11 @@ async function enrol(userId: string): Promise<string> {
   return secret
 }
 
-async function grantRoles(user: { id: string; tenantId: string }, roles: readonly BaseRoleName[], marketIds: readonly string[] | null) {
+async function grantRoles(user: { id: string; tenantId: string }, roles: readonly BaseRoleName[], options: TestUserOptions) {
   for (const role of roles) {
     await getOwnerPool().query(
-      `INSERT INTO role_assignment (tenant_id, user_id, role_id, market_ids, valid_from) VALUES ($1, $2, $3, $4, now())`,
-      [user.tenantId, user.id, await baseRoleId(role), marketIds],
+      `INSERT INTO role_assignment (tenant_id, user_id, role_id, market_ids, valid_from, valid_to) VALUES ($1, $2, $3, $4, now(), $5)`,
+      [user.tenantId, user.id, await baseRoleId(role), options.marketIds ?? null, options.validTo ?? null],
     )
   }
 }
@@ -102,7 +108,7 @@ export async function createSignedInUser(options: TestUserOptions): Promise<Test
     ...(options.passwordHash === undefined ? {} : { passwordHash: options.passwordHash }),
   })
   const tenantId = options.tenantId
-  if (tenantId !== null) await grantRoles({ id: created.id, tenantId }, options.roles ?? [], options.marketIds ?? null)
+  if (tenantId !== null) await grantRoles({ id: created.id, tenantId }, options.roles ?? [], options)
   const mfa = options.stepUp === true ? 'verified' : (options.mfa ?? 'verified')
   const totpSecret = mfa === 'none' ? null : await enrol(created.id)
   const { token, sessionId } = await openSession({ id: created.id, tenantId }, mfa, options.stepUp === true)

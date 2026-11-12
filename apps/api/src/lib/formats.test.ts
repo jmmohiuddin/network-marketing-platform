@@ -22,12 +22,13 @@ describe('config', () => {
     expect(loadConfig({ ...ENV, WEB_URL: 'https://app.example/' }).webUrl).toBe('https://app.example')
   })
 
-  test('fails closed: NODE_ENV has no default and COOKIE_SECURE takes only boolean words', () => {
+  test('fails closed: NODE_ENV has no default, COOKIE_SECURE takes only boolean words, a session lasts at most 12 h', () => {
     const { NODE_ENV: _omitted, ...withoutEnv } = ENV
 
     expect(() => loadConfig(withoutEnv)).toThrow(/^NODE_ENV: /m)
     expect(() => loadConfig({ ...ENV, COOKIE_SECURE: 'maybe' })).toThrow(/^COOKIE_SECURE: /m)
     expect(() => loadConfig({ ...ENV, WEB_URL: 'javascript:alert(1)' })).toThrow(/^WEB_URL: /m)
+    expect(() => loadConfig({ ...ENV, SESSION_ABSOLUTE_MINUTES: '721' })).toThrow(/^SESSION_ABSOLUTE_MINUTES: /m)
   })
 
   test('fails fast with every problem: missing database URL, short key, bad port', () => {
@@ -91,7 +92,7 @@ describe('audit references', () => {
 
 describe('market scope (SEC-26 a, AC-36.2)', () => {
   const grant = (permissions: RoleGrant['permissions'], marketIds: string[] | null): RoleGrant => ({
-    assignmentId: 'a', roleId: 'r', name: 'n', permissions, marketIds,
+    assignmentId: 'a', roleId: 'r', name: 'n', permissions, marketIds, validTo: null,
   })
   const auth = (roles: RoleGrant[]) => ({ roles }) as unknown as AuthContext
 

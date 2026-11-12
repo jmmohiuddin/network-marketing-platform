@@ -1,6 +1,8 @@
 import { z } from 'zod'
 
 const AES_256_KEY_BYTES = 32
+// NIST SP 800-63B AAL2 reauthentication bound; auth_open_session (migration 0041) refuses longer sessions.
+const SESSION_MAX_MINUTES = 720
 
 const positiveInt = (fallback: number) => z.coerce.number().int().positive().default(fallback)
 
@@ -20,7 +22,7 @@ const EnvSchema = z.object({
   API_PORT: z.coerce.number().int().min(1).max(65_535).default(4000),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
   SECRET_ENCRYPTION_KEY: secretKey,
-  SESSION_ABSOLUTE_MINUTES: positiveInt(720),
+  SESSION_ABSOLUTE_MINUTES: z.coerce.number().int().positive().max(SESSION_MAX_MINUTES).default(SESSION_MAX_MINUTES),
   SESSION_IDLE_MINUTES: positiveInt(30),
   STEP_UP_MAX_AGE_SECONDS: positiveInt(600),
   LOCKOUT_MAX_FAILURES: positiveInt(5),

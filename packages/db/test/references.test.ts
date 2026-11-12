@@ -1,8 +1,8 @@
 // Referential checks bypass RLS, so the keys themselves must keep a row inside its tenant.
 import { randomBytes, randomUUID } from 'node:crypto'
 import { beforeAll, describe, expect, test } from 'vitest'
-import { withSystem, withTenant, withVendor, type TenantContext, type Tx } from '../src/index.js'
-import { createTenant, createUser, resetTestDb } from '../src/testing.js'
+import { withSystem, withTenant, type TenantContext } from '../src/index.js'
+import { createTenant, createUser, getOwnerPool, resetTestDb } from '../src/testing.js'
 import { inOneHour, seedTenantRows, seedVendorRows, type TenantSeed, type VendorSeed } from './seed.js'
 import { closePoolsAfterAll, FOREIGN_KEY_VIOLATION, insertRow } from './support.js'
 
@@ -37,10 +37,15 @@ function assignRole(userId: string, roleId: string): Promise<string> {
   )
 }
 
-function insertSession(tx: Tx, row: { user_id: string; tenant_id: string | null; realm: string; token_hash?: Buffer }) {
-  return insertRow(tx, 'session', {
-    token_hash: randomBytes(32), assurance_level: 'aal2', expires_at: inOneHour(), ...row,
-  })
+// nmp_app opens sessions only through auth_open_session (0041), which inserts as the owner: the keys must hold
+// for the owner role, so these inserts run as the owner.
+async function insertSession(row: { user_id: string; tenant_id: string | null; realm: string; token_hash?: Buffer }) {
+  const owner = await getOwnerPool().connect()
+  try {
+    return await insertRow(owner, 'session', { token_hash: randomBytes(32), assurance_level: 'aal2', expires_at: inOneHour(), ...row })
+  } finally {
+    owner.release()
+  }
 }
 
 /** The parts of a rejection that a caller could tell apart; ids in the detail text are left out. */
@@ -125,8 +130,7 @@ describe('references from tenant A to rows it cannot see', () => {
 describe('sessions', () => {
   test('a tenant session cannot pair the tenant with a user of another tenant', async () => {
     const tokenHash = randomBytes(32)
-    const pair = (userId: string) =>
-      withTenant(a, (tx) => insertSession(tx, { user_id: userId, tenant_id: a.tenantId, realm: 'tenant', token_hash: tokenHash }))
+    const pair = (userId: string) => insertSession({ user_id: userId, tenant_id: a.tenantId, realm: 'tenant', token_hash: tokenHash })
 
     const foreign = await rejection(pair(b.userId))
     const unknown = await rejection(pair(randomUUID()))
@@ -140,11 +144,7 @@ describe('sessions', () => {
   test('the session realm must be the realm of its user', async () => {
     const realmMismatch = { code: FOREIGN_KEY_VIOLATION, constraint: 'session_user_id_realm_fkey' }
 
-    await expect(
-      withVendor({ userId: vendorUserId }, (tx) => insertSession(tx, { user_id: a.userId, tenant_id: null, realm: 'vendor' })),
-    ).rejects.toMatchObject(realmMismatch)
-    await expect(
-      withTenant(a, (tx) => insertSession(tx, { user_id: a.userId, tenant_id: a.tenantId, realm: 'portal' })),
-    ).rejects.toMatchObject(realmMismatch)
+    await expect(insertSession({ user_id: a.userId, tenant_id: null, realm: 'vendor' })).rejects.toMatchObject(realmMismatch)
+    await expect(insertSession({ user_id: a.userId, tenant_id: a.tenantId, realm: 'portal' })).rejects.toMatchObject(realmMismatch)
   })
 })

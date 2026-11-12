@@ -28,7 +28,7 @@ _Agent: backend. Read before every task; update after every task. Keep concise â
 - Sign-in/vendor sign-in: 429 RATE_LIMITED (+ Retry-After) per IP and per tenant:email; accept-invitation per IP only. Config SIGN_IN_RATE_LIMIT_PER_MINUTE applies to each counter.
 - New env: NODE_ENV required (no default), COOKIE_SECURE (default true), MAIL_DIR (default var/mail), WEB_URL (default http://127.0.0.1:3100).
 - New error codes: GRANT_EXPIRED (422). Removed: IDEMPOTENCY_REQUEST_IN_PROGRESS (could never occur).
-- New audit actions: USER.INVITATION_SENT, AUTH.SESSION_EXPIRED, AUTH.SESSION_REVOKED (actor system); AUTH.MFA_FAILED after = { purpose, reason: invalid_code | locked }.
+- New audit actions: USER.INVITATION_SENT, AUTH.SESSION_EXPIRED (actor system); AUTH.MFA_FAILED after = { purpose, reason: invalid_code | locked }. AUTH.SESSION_REVOKED removed in T-A07b (closed accounts never resolve; 0040 triggers revoke).
 - `auditInRealm(tx, realm, event)` now lives in lib/audit.ts.
 
 ## State after T-A08/T-A09 IMP module (2026-11-12)
@@ -54,3 +54,6 @@ _Agent: backend. Read before every task; update after every task. Keep concise â
 - buildApp/buildTestApp always install the hook: in-session tests just mount the tenant module (support/access.test.ts). Vendor test users need `UPDATE user_account SET work_region = 'eu'` to be in an 'eu' tenant's region.
 - Audit actions added: TENANT.CREATED, TENANT.PROVISIONING_APPROVED, TENANT.WENT_LIVE (vendor + tenant logs), SUPPORT_SESSION.{REQUESTED, APPROVED, DENIED, STARTED, ACCESSED, ACCESS_REFUSED, ENDED, EXPIRED, AUTO_DENIED}, BREACH_CONTACTS.READ. Outbox topics: support_session.requested, support_session.decided, support_session.ended, support_session.closed.
 - Error codes added: 409 SLUG_TAKEN, TENANT_STATE_INVALID, SUPPORT_SESSION_NOT_OPEN; 422 REGION_UNAVAILABLE, TIER_NOT_AVAILABLE, TENANT_NOT_AVAILABLE, TENANT_HAS_NO_ADMIN, SUPPORT_SESSION_DURATION_INVALID, SUPPORT_SCOPE_NOT_HELD, REGION_APPROVAL_REQUIRED, SUPPORT_REQUEST_EXPIRED, BREACH_CONTACT_REQUIRED; 403 SUPPORT_SESSION_INACTIVE, SUPPORT_SESSION_READ_ONLY. Reused REQUEST_ALREADY_DECIDED, SOD_SELF_APPROVAL, IDEMPOTENCY_KEY_*.
+
+## Security changes T-A07b (2026-11-12) that bind backend code (details: agent-memory/security/MEMORY.md)
+- Credentials (password_credential, mfa_credential) are visible only with app.user_id = their user. Session columns: nmp_app may UPDATE last_seen_at and revoked_at only; MFA elevation = `elevateSession(tx, sessionId, rotate)` in lib/session.ts (sign-in/enrolment verification creates a NEW session row: the session id changes with the cookie). Closing a user or archiving a tenant revokes sessions in the database.

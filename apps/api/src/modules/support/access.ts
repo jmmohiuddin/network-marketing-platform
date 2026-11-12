@@ -22,13 +22,14 @@ interface SessionRow {
   tenant_id: string
   requester_id: string
   scope: unknown
+  ends_at: Date
   open: boolean
 }
 
 function loadSession(request: FastifyRequest, id: string): Promise<SessionRow | undefined> {
   return inVendor(request, async (tx) => {
     const { rows } = await tx.query<SessionRow>(
-      `SELECT id, tenant_id, requester_id, scope, ${OPEN} AS open FROM support_session WHERE id = $1`,
+      `SELECT id, tenant_id, requester_id, scope, ends_at, ${OPEN} AS open FROM support_session WHERE id = $1`,
       [id],
     )
     return rows[0]
@@ -103,7 +104,7 @@ function recordAccess(request: FastifyRequest, auth: AuthContext, session: Sessi
  */
 function inSession(auth: AuthContext, session: SessionRow): AuthContext {
   const { permissions } = sessionScope.parse(session.scope)
-  const role = { assignmentId: session.id, roleId: session.id, name: SESSION_ROLE, permissions, marketIds: null }
+  const role = { assignmentId: session.id, roleId: session.id, name: SESSION_ROLE, permissions, marketIds: null, validTo: session.ends_at }
   return {
     ...auth, realm: 'tenant', tenantId: session.tenant_id, roles: [role], permissions: new Set(permissions),
     stepUpAt: null, supportSessionId: session.id,

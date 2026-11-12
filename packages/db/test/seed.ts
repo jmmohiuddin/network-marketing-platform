@@ -1,6 +1,6 @@
 import { randomBytes } from 'node:crypto'
 import { withTenant, withVendor, type TenantContext } from '../src/index.js'
-import { insertAuditEvent, insertMarket, insertOutboxEvent, insertRow } from './support.js'
+import { insertAuditEvent, insertMarket, insertOutboxEvent, insertRow, openSession } from './support.js'
 
 const PERIOD = { period_from: '2026-01-01', period_to: '2026-01-31' }
 const ONE_HOUR_MS = 3_600_000
@@ -79,10 +79,7 @@ export function seedTenantRows(ctx: TenantContext, secondUserId: string): Promis
     await insertRow(tx, 'export_job', {
       tenant_id, kind: 'audit', document_id: documentId, requested_by: ctx.userId, state: 'done',
     })
-    await insertRow(tx, 'session', {
-      token_hash: randomBytes(32), user_id: ctx.userId, tenant_id, realm: 'tenant', assurance_level: 'aal1',
-      expires_at: inOneHour(),
-    })
+    await openSession(tx)
     await insertRow(tx, 'mfa_credential', { user_id: ctx.userId, type: 'totp', secret_encrypted: 'seed' })
     // The next two tables have no id column.
     await tx.query(`INSERT INTO password_credential (user_id, password_hash) VALUES ($1, 'seed')`, [ctx.userId])
@@ -108,10 +105,7 @@ export function seedVendorRows(vendorUserId: string, tenantId: string): Promise<
     const platformRole = { permissions: ['user.manage'], mfa_required: true, created_by: vendorUserId }
     const baseRoleId = await insertRow(tx, 'role', { ...platformRole, name: 'Tenant admin', is_base: true })
     const vendorRoleId = await insertRow(tx, 'role', { ...platformRole, name: 'Vendor ops', is_base: false })
-    await insertRow(tx, 'session', {
-      token_hash: randomBytes(32), user_id: vendorUserId, realm: 'vendor', assurance_level: 'aal2',
-      expires_at: inOneHour(),
-    })
+    await openSession(tx)
     await tx.query(`INSERT INTO password_credential (user_id, password_hash) VALUES ($1, 'seed')`, [vendorUserId])
     await insertRow(tx, 'audit.vendor_event', {
       actor_type: 'vendor_user', actor_id: vendorUserId, action: 'SUPPORT.REQUEST',

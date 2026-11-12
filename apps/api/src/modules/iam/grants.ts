@@ -77,16 +77,17 @@ async function insertAssignment(tx: Tx, userId: string, input: GrantInput, appro
 
 /**
  * API-40 role grant (FR-IAM-003). A role is assigned at once only when it is not an admin or approver role
- * (SEC-27) and the granter holds every permission in it over every market granted (BR-SEC-05, SEC-26).
- * Otherwise it becomes a pending request that a different admin must approve (AC-36.1): nobody grants alone
- * what they do not hold, nor a wider market scope than their own.
+ * (SEC-27), the grantee is someone else, and the granter holds every permission in it over every market granted
+ * until the grant's end (BR-SEC-05, SEC-26). Otherwise it becomes a pending request that a different admin must
+ * approve (AC-36.1): nobody grants alone what they do not hold, a wider market scope or a longer validity than
+ * their own, nor anything to themselves.
  */
 export async function grantRole(tx: Tx, auth: AuthContext, userId: string, input: GrantInput): Promise<GrantOutcome> {
   await assertGrantee(tx, userId)
   const role = await assignableRole(tx, input.roleId)
   await assertMarkets(tx, input.marketIds)
   const scope = { role_id: role.id, role: role.name, market_ids: input.marketIds }
-  if (!role.privileged && holdsWithin(auth, role.permissions, input.marketIds)) {
+  if (!role.privileged && userId !== auth.userId && holdsWithin(auth, role.permissions, input.marketIds, input.validTo)) {
     const assignment = await insertAssignment(tx, userId, input, null)
     await recordAudit(tx, { action: 'ROLE.GRANTED', objectType: 'role_assignment', objectId: assignment.id, after: { user_id: userId, ...scope } })
     return { kind: 'assignment', assignment }

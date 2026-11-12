@@ -1,0 +1,59 @@
+/* Base styles: reset, type, focus, utilities. Semantic tokens only. */
+*, *::before, *::after { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--color-bg-page);
+  color: var(--color-text-primary);
+  font: var(--font-body-md);
+}
+
+h1, h2, h3, p, ul, ol { margin: 0; }
+h1 { font: var(--font-title-md); }
+h2 { font: var(--font-heading); }
+p { max-width: var(--prose-max-width); }
+
+a { color: var(--color-text-link); text-underline-offset: 2px; }
+
+code, kbd { font: var(--font-mono); }
+
+button, input, select, textarea { font: inherit; color: inherit; }
+
+/* Focus is never removed (UI-03 component tokens); outlines survive forced-colours mode. */
+:focus-visible { outline: var(--focus-ring); outline-offset: var(--focus-ring-offset); }
+
+svg { flex-shrink: 0; }
+
+.numeric { font-variant-numeric: var(--font-numeric); }
+
+.visually-hidden {
+  position: absolute;
+  width: 1px; height: 1px;
+  margin: -1px; padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.skip-link {
+  position: absolute;
+  inset-inline-start: var(--space-2);
+  top: var(--space-2);
+  z-index: var(--z-tooltip);
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-bg-surface);
+  border-radius: var(--radius-sm);
+  transform: translateY(-200%);
+}
+.skip-link:focus-visible { transform: none; }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes pulse { 50% { opacity: 0.5; } }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0s !important; animation-iteration-count: 1 !important; transition-duration: 0s !important; }
+}

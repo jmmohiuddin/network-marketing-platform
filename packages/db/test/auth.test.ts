@@ -2,7 +2,7 @@ import { createHash, randomBytes } from 'node:crypto'
 import { beforeAll, describe, expect, test } from 'vitest'
 import { getPool, withSystem, withTenant, withVendor, type TenantContext } from '../src/index.js'
 import { createTenant, createUser, getOwnerPool, resetTestDb, type TestTenant } from '../src/testing.js'
-import { closePoolsAfterAll, count, PERMISSION_DENIED, RLS_VIOLATION } from './support.js'
+import { closePoolsAfterAll, count, openSession, PERMISSION_DENIED, RLS_VIOLATION } from './support.js'
 
 const ACCOUNT_KEY = 'acme:ada@example.test'
 
@@ -67,13 +67,7 @@ describe('auth_find_user', () => {
 describe('sessions', () => {
   test('a session created in tenant context is found by token hash until revoked', async () => {
     const tokenHash = newTokenHash()
-    await withTenant(ctx, (tx) =>
-      tx.query(
-        `INSERT INTO session (token_hash, user_id, tenant_id, realm, assurance_level, expires_at)
-         VALUES ($1, $2, $3, 'tenant', 'aal1', now() + interval '12 hours')`,
-        [tokenHash, ctx.userId, ctx.tenantId],
-      ),
-    )
+    await withTenant(ctx, (tx) => openSession(tx, 720, tokenHash))
     const find = () => withSystem((tx) => tx.query('SELECT user_id, tenant_id FROM auth_find_session($1)', [tokenHash]))
 
     const found = await find()
@@ -98,13 +92,7 @@ describe('sessions', () => {
   })
 
   test('vendor sessions are visible in the vendor realm only', async () => {
-    await withVendor({ userId: vendorUserId }, (tx) =>
-      tx.query(
-        `INSERT INTO session (token_hash, user_id, realm, assurance_level, expires_at)
-         VALUES ($1, $2, 'vendor', 'aal2', now() + interval '1 hour')`,
-        [newTokenHash(), vendorUserId],
-      ),
-    )
+    await withVendor({ userId: vendorUserId }, (tx) => openSession(tx))
 
     const vendorSees = await withVendor({ userId: vendorUserId }, (tx) => count(tx, 'session'))
     const otherTenantSees = await withTenant(otherCtx, (tx) => count(tx, 'session'))
@@ -122,6 +110,27 @@ describe('credentials', () => {
     await expect(
       withTenant(otherCtx, (tx) =>
         tx.query(`INSERT INTO mfa_credential (user_id, type, secret_encrypted) VALUES ($1, 'totp', 'x')`, [ctx.userId]),
+      ),
+    ).rejects.toThrow(RLS_VIOLATION)
+  })
+
+  test('BUG-002: another user of the same tenant can neither read nor write them', async () => {
+    const colleague = { tenantId: tenant.id, userId: (await createUser({ tenantId: tenant.id })).id }
+    const newcomerId = (await createUser({ tenantId: tenant.id, state: 'invited' })).id
+    await withTenant(ctx, (tx) =>
+      tx.query(`INSERT INTO mfa_credential (user_id, type, secret_encrypted) VALUES ($1, 'totp', 'sealed')`, [ctx.userId]),
+    )
+
+    const seen = await withTenant(colleague, async (tx) => [await count(tx, 'password_credential'), await count(tx, 'mfa_credential')])
+    const overwritten = await withTenant(colleague, (tx) =>
+      tx.query(`UPDATE password_credential SET password_hash = 'chosen' WHERE user_id = $1`, [ctx.userId]),
+    )
+
+    expect(seen).toEqual([0, 0])
+    expect(overwritten.rowCount).toBe(0)
+    await expect(
+      withTenant(colleague, (tx) =>
+        tx.query(`INSERT INTO password_credential (user_id, password_hash) VALUES ($1, 'chosen')`, [newcomerId]),
       ),
     ).rejects.toThrow(RLS_VIOLATION)
   })

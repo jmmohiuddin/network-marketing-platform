@@ -1,0 +1,94 @@
+/* Admin and vendor console screens (SC-14, SC-28, SC-30, SC-39, tenant settings). Semantic tokens only. */
+
+.admin-stack { display: flex; flex-direction: column; gap: var(--space-6); }
+.admin-section { display: flex; flex-direction: column; gap: var(--space-4); }
+.admin-section-title { font: var(--font-heading); }
+.admin-toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-3); }
+.admin-row-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: var(--space-2); }
+.admin-note { color: var(--color-text-secondary); font: var(--font-body-sm); }
+.admin-plain-list { display: flex; flex-direction: column; gap: var(--space-1); padding: 0; margin: 0; list-style: none; }
+.admin-inline-list { display: flex; flex-wrap: wrap; gap: var(--space-2); padding: 0; margin: 0; list-style: none; }
+.admin-role-line { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+
+/* Description lists: label / value pairs. */
+.admin-details { display: grid; grid-template-columns: minmax(10rem, max-content) 1fr; gap: var(--space-2) var(--space-6); margin: 0; }
+.admin-details dt { color: var(--color-text-secondary); }
+.admin-details dd { margin: 0; overflow-wrap: anywhere; }
+
+/* Cards: support requests, setting rows. */
+.admin-cards { display: flex; flex-direction: column; gap: var(--space-4); padding: 0; margin: 0; list-style: none; }
+.admin-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-5);
+  border: var(--border-width-default) solid var(--color-border-default);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-surface);
+}
+.admin-card-header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-3); }
+.admin-card-title { font: var(--font-heading); }
+
+/* Filter bar (UX-05 6.3). */
+.admin-filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  align-items: end;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  border: var(--border-width-default) solid var(--color-border-default);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-surface);
+}
+.admin-filters .form-actions, .admin-filters .error-summary { grid-column: 1 / -1; }
+
+/* Fieldsets: radio groups, checkbox groups, repeated groups. */
+.admin-fieldset { display: flex; flex-direction: column; gap: var(--space-3); min-width: 0; padding: 0; margin: 0; border: 0; }
+.admin-fieldset legend { margin-bottom: var(--space-2); font-weight: var(--font-weight-medium); }
+.admin-choice { display: flex; align-items: center; gap: var(--space-2); }
+.admin-choice input { width: var(--space-5); height: var(--space-5); margin: 0; accent-color: var(--color-action-primary); }
+.admin-check-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr)); gap: var(--space-3); }
+.admin-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  border: var(--border-width-default) solid var(--color-border-default);
+  border-radius: var(--radius-md);
+}
+.admin-group-header { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); }
+.admin-pair { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); }
+.admin-textarea { min-height: calc(var(--input-height-md) * 2); resize: vertical; }
+
+/* Vendor console sections (one API navigation entry, several sections). */
+.console-nav { margin-bottom: var(--space-6); border-bottom: var(--border-width-default) solid var(--color-border-default); }
+.console-nav ul { display: flex; flex-wrap: wrap; gap: var(--space-1); padding: 0; margin: 0; list-style: none; }
+.console-nav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--button-height-md);
+  padding: 0 var(--space-3);
+  border-bottom: var(--border-width-strong) solid transparent;
+  color: var(--color-text-primary);
+  text-decoration: none;
+}
+.console-nav a[aria-current="page"] { border-bottom-color: var(--color-action-primary); color: var(--color-text-link); font-weight: var(--font-weight-semibold); }
+
+/* Raw audit payloads. */
+.admin-json {
+  max-height: 16rem;
+  overflow: auto;
+  padding: var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-subtle);
+  font: var(--font-mono);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.admin-mono { font-family: var(--font-family-mono); }
+
+@media (max-width: 599px) {
+  .admin-details { grid-template-columns: 1fr; }
+  .admin-pair { grid-template-columns: 1fr; }
+  .admin-row-actions { justify-content: flex-start; }
+}

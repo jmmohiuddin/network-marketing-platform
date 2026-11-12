@@ -5,13 +5,14 @@ import type { Permission } from './permissions.js'
 export type Realm = 'tenant' | 'vendor'
 export type Assurance = 'aal1' | 'aal2'
 
-/** One active role assignment. marketIds null = every market of the tenant (SEC-26 attribute a). */
+/** One active role assignment. marketIds null = every market of the tenant (SEC-26 attribute a); validTo null = open-ended. */
 export interface RoleGrant {
   readonly assignmentId: string
   readonly roleId: string
   readonly name: string
   readonly permissions: readonly Permission[]
   readonly marketIds: readonly string[] | null
+  readonly validTo: Date | null
 }
 
 /** Who is calling. Built from the session cookie only: the tenant id never comes from client input. */

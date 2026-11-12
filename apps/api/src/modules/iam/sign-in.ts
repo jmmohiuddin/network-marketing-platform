@@ -75,7 +75,6 @@ async function mfaRequiredByRoles(tx: Tx, user: FoundUser): Promise<boolean> {
 async function openSession(config: Config, input: SignInInput, user: FoundUser) {
   return asUser(known(user), input.requestId, async (tx) => {
     const session = await insertSession(tx, {
-      userId: user.user_id, tenantId: user.tenant_id, realm: user.realm,
       absoluteMinutes: config.sessionAbsoluteMinutes, ip: input.ip, userAgent: input.userAgent,
     })
     await tx.query('UPDATE user_account SET last_sign_in_at = now() WHERE id = $1', [user.user_id])

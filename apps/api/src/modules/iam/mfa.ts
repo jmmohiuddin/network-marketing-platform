@@ -4,7 +4,7 @@ import { auditInRealm } from '../../lib/audit.js'
 import type { AuthContext } from '../../lib/auth.js'
 import { ApiError } from '../../lib/errors.js'
 import { open, seal } from '../../lib/secret-box.js'
-import { rotateSessionToken, type IssuedSession } from '../../lib/session.js'
+import { elevateSession, type IssuedSession } from '../../lib/session.js'
 import { generateTotpSecret, matchTotp, totpUri } from '../../lib/totp.js'
 import { recordSuccess, reserveAttempt } from './attempts.js'
 
@@ -95,12 +95,7 @@ export async function verifyFactor(
     return null
   }
   if (purpose === 'enrolment') await tx.query('UPDATE user_account SET mfa_enrolled = true WHERE id = $1', [auth.userId])
-  await tx.query(
-    `UPDATE session SET assurance_level = 'aal2', mfa_verified_at = coalesce(mfa_verified_at, now()), step_up_at = now()
-     WHERE id = $1`,
-    [auth.sessionId],
-  )
-  const session = purpose === 'step_up' ? null : await rotateSessionToken(tx, auth.sessionId)
+  const session = await elevateSession(tx, auth.sessionId, purpose !== 'step_up')
   await auditInRealm(tx, auth.realm, { ...subject, action: AUDIT_ACTION[purpose] })
   return { session }
 }

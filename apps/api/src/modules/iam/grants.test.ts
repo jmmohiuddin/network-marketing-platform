@@ -116,6 +116,24 @@ describe('POST /v1/users/:id/role-assignments', () => {
     expect((await call(app, { method: 'GET', url: '/v1/me', as: user })).json().data.roles).toMatchObject([{ market_ids: [gb] }])
   })
 
+  test('a time-boxed admin grants alone only until their own grant ends, and never to themselves', async () => {
+    const adminEnds = new Date(Date.now() + 86_400_000)
+    const timeBoxed = await createSignedInUser({ tenantId: acme.id, roles: ['Tenant admin'], validTo: adminEnds })
+    const user = await createSignedInUser({ tenantId: acme.id })
+    const roleId = await baseRoleId('Implementation consultant')
+    const until = (offsetMs: number) => ({ role_id: roleId, valid_to: new Date(adminEnds.getTime() + offsetMs).toISOString() })
+
+    const openEnded = await grant(timeBoxed, user.id, { role_id: roleId })
+    const outlasting = await grant(timeBoxed, user.id, until(60_000))
+    const atEnd = await grant(timeBoxed, user.id, until(0))
+    const self = await grant(timeBoxed, timeBoxed.id, until(-60_000))
+    const selfByOpenEndedAdmin = await grant(admin, admin.id, { role_id: roleId })
+
+    expect([openEnded, outlasting, atEnd, self, selfByOpenEndedAdmin].map((response) => response.statusCode))
+      .toEqual([202, 202, 201, 202, 202])
+    expect(atEnd.json().data.assignment.valid_to).toBe(adminEnds.toISOString())
+  })
+
   test('valid_to must be in the future (400, not a database error)', async () => {
     const user = await createSignedInUser({ tenantId: acme.id })
 

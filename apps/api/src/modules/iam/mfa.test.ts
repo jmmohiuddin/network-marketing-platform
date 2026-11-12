@@ -1,6 +1,8 @@
 import type { FastifyInstance } from 'fastify'
 import { authenticator } from 'otplib'
+import { withTenant } from '@nmp/db'
 import { afterAll, beforeAll, describe, expect, test } from 'vitest'
+import { elevateSession } from '../../lib/session.js'
 import {
   auditActions, buildTestApp, call, closePoolsAfterAll, createSignedInUser, createTenant, ownerRows, resetApiDb, sessionFrom,
   totpCode, type Caller, type TestTenant,
@@ -22,10 +24,12 @@ afterAll(async () => {
 })
 
 const protectedRead = (as: Caller) => call(app, { method: 'GET', url: '/v1/settings/compliance.late_order_day', as })
-const sessionRow = (id: string) =>
+// The user's live sessions: elevation at sign-in replaces the session (new row, new token), step-up keeps it.
+const liveSessions = (userId: string) =>
   ownerRows<{ assurance_level: string; verified: boolean; stepped_up: boolean }>(
-    `SELECT assurance_level, mfa_verified_at IS NOT NULL AS verified, step_up_at IS NOT NULL AS stepped_up FROM session WHERE id = $1`,
-    [id],
+    `SELECT assurance_level, mfa_verified_at IS NOT NULL AS verified, step_up_at IS NOT NULL AS stepped_up
+     FROM session WHERE user_id = $1 AND revoked_at IS NULL`,
+    [userId],
   )
 
 describe('AC-35.1 forced enrolment', () => {
@@ -61,7 +65,7 @@ describe('AC-35.1 forced enrolment', () => {
     expect(confirmed.statusCode).toBe(200)
     expect(opened.statusCode).toBe(200)
     expect(preMfaToken.statusCode).toBe(401) // elevated with a new token
-    expect(await sessionRow(user.sessionId)).toEqual([{ assurance_level: 'aal2', verified: true, stepped_up: true }])
+    expect(await liveSessions(user.id)).toEqual([{ assurance_level: 'aal2', verified: true, stepped_up: true }])
     expect(await auditActions(tenant.id)).toEqual(expect.arrayContaining(['MFA.ENROLMENT_STARTED', 'AUTH.MFA_FAILED', 'MFA.ENROLLED']))
   })
 
@@ -85,7 +89,7 @@ describe('second factor at sign-in', () => {
     expect(blocked.json().error.code).toBe('MFA_VERIFICATION_REQUIRED')
     expect(verified.statusCode).toBe(200)
     expect(opened.statusCode).toBe(200)
-    expect((await sessionRow(user.sessionId))[0]!.assurance_level).toBe('aal2')
+    expect(await liveSessions(user.id)).toMatchObject([{ assurance_level: 'aal2' }])
   })
 
   test('ASVS V3.2.1: the token issued before the second factor never reaches AAL2', async () => {
@@ -98,6 +102,16 @@ describe('second factor at sign-in', () => {
     expect(verified.headers['set-cookie']).toMatch(/^nmp_session=[\w-]{43}; .*HttpOnly/)
     expect(oldToken.statusCode).toBe(401)
     expect(newToken.json().data.mfa).toMatchObject({ verified: true })
+  })
+
+  test('a session that ended while its code was checked is refused with 401, never elevated', async () => {
+    const user = await createSignedInUser({ tenantId: tenant.id, mfa: 'unverified' })
+    await ownerRows('UPDATE session SET revoked_at = now() WHERE id = $1', [user.sessionId])
+
+    const elevation = withTenant({ tenantId: tenant.id, userId: user.id }, (tx) => elevateSession(tx, user.sessionId, true))
+
+    await expect(elevation).rejects.toMatchObject({ statusCode: 401, code: 'UNAUTHENTICATED' })
+    expect(await liveSessions(user.id)).toEqual([])
   })
 
   test('a code is accepted once: replaying it for step-up fails (last_used_step)', async () => {
@@ -149,7 +163,7 @@ describe('step-up', () => {
 
     expect(response.statusCode).toBe(200)
     expect(response.headers['set-cookie']).toBeUndefined() // already AAL2: the token stays
-    expect((await sessionRow(user.sessionId))[0]!.stepped_up).toBe(true)
+    expect(await liveSessions(user.id)).toMatchObject([{ stepped_up: true }])
     expect(await auditActions(tenant.id)).toContain('AUTH.STEP_UP')
   })
 

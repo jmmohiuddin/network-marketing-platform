@@ -29,7 +29,9 @@ type Policy = [table: string, name: string, command: string, using: string | nul
 const OWN_TENANT = "((app_realm() = 'tenant'::text) AND (tenant_id = app_tenant_id()))"
 const VENDOR = "(app_realm() = 'vendor'::text)"
 const VENDOR_OWNED = "((app_realm() = 'vendor'::text) AND (tenant_id IS NULL))"
-const visibleOwner = (table: string) => `(EXISTS ( SELECT 1 FROM user_account u WHERE (u.id = ${table}.user_id)))`
+// BUG-002 (0040): a credential is reachable only by its own user, in that user's realm.
+const actingUser = (table: string) =>
+  `((user_id = app_user_id()) AND (EXISTS ( SELECT 1 FROM user_account u WHERE (u.id = ${table}.user_id))))`
 const POLICIES_BEYOND_TENANT_ISOLATION: Policy[] = [
   ['tenant', 'tenant_self_read', 'r', "((app_realm() = 'tenant'::text) AND (id = app_tenant_id()))", null],
   ['tenant', 'vendor_manage', '*', VENDOR, VENDOR],
@@ -41,7 +43,8 @@ const POLICIES_BEYOND_TENANT_ISOLATION: Policy[] = [
   ['support_session', 'vendor_read', 'r', VENDOR, null],
   [
     'support_session', 'vendor_request', 'a', null,
-    "((app_realm() = 'vendor'::text) AND (state = 'requested'::text) AND (decided_by IS NULL) AND (starts_at IS NULL)" +
+    "((app_realm() = 'vendor'::text) AND (requester_id = app_user_id()) AND (state = 'requested'::text)" +
+      ' AND (decided_by IS NULL) AND (starts_at IS NULL)' +
       ' AND (ends_at IS NULL) AND (EXISTS ( SELECT 1 FROM user_account u' +
       " WHERE ((u.id = support_session.requester_id) AND (u.realm = 'vendor'::text)))))",
   ],
@@ -51,13 +54,13 @@ const POLICIES_BEYOND_TENANT_ISOLATION: Policy[] = [
     "((app_realm() = 'vendor'::text) AND (state = 'ended'::text))",
   ],
   ['audit.vendor_event', 'vendor_only', '*', VENDOR, VENDOR],
-  ['password_credential', 'owner_visible', '*', visibleOwner('password_credential'), visibleOwner('password_credential')],
-  ['mfa_credential', 'owner_visible', '*', visibleOwner('mfa_credential'), visibleOwner('mfa_credential')],
+  ['password_credential', 'acting_user', '*', actingUser('password_credential'), actingUser('password_credential')],
+  ['mfa_credential', 'acting_user', '*', actingUser('mfa_credential'), actingUser('mfa_credential')],
 ]
 // Foreign keys to a tenant-scoped table that do not carry tenant_id, each kept in its tenant by other means.
 const KEYS_WITHOUT_TENANT_ID = [
-  'mfa_credential_user_id_fkey', // no tenant_id column: policy owner_visible
-  'password_credential_user_id_fkey', // no tenant_id column: policy owner_visible
+  'mfa_credential_user_id_fkey', // no tenant_id column: policy acting_user
+  'password_credential_user_id_fkey', // no tenant_id column: policy acting_user
   'role_assignment_role_id_fkey', // base roles have no tenant: trigger role_assignment_role_in_tenant
   'role_grant_request_role_id_fkey', // base roles have no tenant: trigger role_grant_request_role_in_tenant
   'session_user_id_realm_fkey', // realm match; session_tenant_id_user_id_fkey carries the tenant
