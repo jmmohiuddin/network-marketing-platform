@@ -212,6 +212,23 @@ describe('brands (AC-TEN2-6)', () => {
     expect((await call(app, { method: 'PATCH', url: `/v1/brands/${id}`, as: globexReader, body: { name: 'x', reason: 'x' } })).statusCode).toBe(404)
     expect((await call(app, { method: 'POST', url: '/v1/brands', as: reader, body: { name: 'x', reason: 'x' }, idempotencyKey: true })).statusCode).toBe(403)
   })
+
+  test('brands are tenant-wide: an admin limited to one market cannot create, rename or delete them', async () => {
+    const id = (await call(app, { method: 'POST', url: '/v1/brands', as: admin, body: { name: 'Acme Sport', reason: 'launch' }, idempotencyKey: true })).json().data.id as string
+    const scopeNotHeld = { code: 'SCOPE_NOT_HELD', details: { permission: 'settings.manage' } }
+
+    const created = await call(app, { method: 'POST', url: '/v1/brands', as: scopedAdmin, body: { name: 'GB Only', reason: 'x' }, idempotencyKey: true })
+    const renamed = await call(app, { method: 'PATCH', url: `/v1/brands/${id}`, as: scopedAdmin, body: { name: 'Hijacked', reason: 'x' } })
+    const deleted = await call(app, { method: 'DELETE', url: `/v1/brands/${id}`, as: scopedAdmin, body: { reason: 'x' } })
+
+    for (const response of [created, renamed, deleted]) {
+      expect(response.statusCode).toBe(403)
+      expect(response.json().error).toMatchObject(scopeNotHeld)
+    }
+    const names = (await call(app, { method: 'GET', url: '/v1/brands', as: reader })).json().data.map((brand: { name: string }) => brand.name)
+    expect(names).toContain('Acme Sport')
+    expect(names).not.toContain('GB Only')
+  })
 })
 
 describe('structure versions (T-B1-04)', () => {

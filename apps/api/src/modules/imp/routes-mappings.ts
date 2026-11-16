@@ -1,6 +1,6 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify'
 import { z } from 'zod'
-import { currentAuth, requirePermission, requireRealm, requireStepUp } from '../../lib/auth.js'
+import { currentAuth, requireAllMarkets, requirePermission, requireRealm, requireStepUp } from '../../lib/auth.js'
 import { inTenant } from '../../lib/db.js'
 import { ApiError, notFound } from '../../lib/errors.js'
 import { envelope, parse } from '../../lib/http.js'
@@ -51,7 +51,8 @@ function registerWrites(app: FastifyInstance): void {
   // API-03: saving creates the next version as a draft; If-Match carries the latest version the client saw.
   app.put(
     '/v1/import-mappings',
-    { preHandler: [requireRealm('tenant'), requirePermission('mapping.edit')] },
+    // One mapping serves every market's imports, so editing and approving it need all markets.
+    { preHandler: [requireRealm('tenant'), requirePermission('mapping.edit'), requireAllMarkets('mapping.edit')] },
     async (request, reply) => {
       const version = expectedVersion(request)
       const body = parse(putBody, request.body)
@@ -64,7 +65,7 @@ function registerWrites(app: FastifyInstance): void {
 
   app.post(
     '/v1/import-mappings/:id/approve',
-    { preHandler: [requireRealm('tenant'), requirePermission('mapping.approve'), requireStepUp()] },
+    { preHandler: [requireRealm('tenant'), requirePermission('mapping.approve'), requireAllMarkets('mapping.approve'), requireStepUp()] },
     async (request) => {
       const { id } = parse(idParams, request.params)
       const body = parse(approveBody, request.body ?? {})

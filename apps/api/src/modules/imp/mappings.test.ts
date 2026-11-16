@@ -172,3 +172,23 @@ describe('AC-40.1: saving a new mapping version outdates the snapshots computed 
     expect((await auditActions(acme.id)).slice(-2)).toEqual(['SNAPSHOT.OUTDATED', 'MAPPING.VERSION_CREATED'])
   })
 })
+
+describe('mappings are tenant-wide: editing and approving need all markets', () => {
+  test('a consultant or Compliance officer limited to one market is refused', async () => {
+    const mm = await createMarket(acme.id, 'MM')
+    const scopedConsultant = await createSignedInUser({ tenantId: acme.id, roles: ['Implementation consultant'], marketIds: [mm] })
+    const scopedApprover = await createSignedInUser({ tenantId: acme.id, roles: ['Compliance officer'], marketIds: [mm], stepUp: true })
+    const rows = await ownerRows<{ latest: number | null }>('SELECT max(version) AS latest FROM import_mapping WHERE tenant_id = $1', [acme.id])
+    const draft = await put(consultant, { mappings: TINY_MAPPING }, `"${rows[0]?.latest ?? 0}"`)
+    expect(draft.statusCode).toBe(201)
+    const draftId = draft.json().data.id as string
+
+    const edited = await put(scopedConsultant, { mappings: TINY_MAPPING }, draft.headers.etag as string)
+    const approved = await approve(scopedApprover, draftId)
+
+    expect(edited.statusCode).toBe(403)
+    expect(edited.json().error).toMatchObject({ code: 'SCOPE_NOT_HELD', details: { permission: 'mapping.edit' } })
+    expect(approved.statusCode).toBe(403)
+    expect(approved.json().error).toMatchObject({ code: 'SCOPE_NOT_HELD', details: { permission: 'mapping.approve' } })
+  })
+})

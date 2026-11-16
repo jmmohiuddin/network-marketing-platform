@@ -390,3 +390,17 @@ describe('BUG-006, BUG-010: the second admin approves within their own admin mar
     expect(await permissionsOf(grantee)).toEqual(expect.arrayContaining(['snapshot.create', 'export', 'mapping.approve']))
   })
 })
+
+describe('roles are tenant-wide: creating one needs user.manage for all markets', () => {
+  test('a Tenant admin limited to one market cannot add a role to the catalogue', async () => {
+    const gb = await createMarket(acme.id, 'RG')
+    const scopedAdmin = await createSignedInUser({ tenantId: acme.id, roles: ['Tenant admin'], marketIds: [gb] })
+    const body = { name: 'Scoped Auditor', permissions: ['audit.read'] }
+
+    const created = await call(app, { method: 'POST', url: '/v1/roles', as: scopedAdmin, body, idempotencyKey: true })
+
+    expect(created.statusCode).toBe(403)
+    expect(created.json().error).toMatchObject({ code: 'SCOPE_NOT_HELD', details: { permission: 'user.manage' } })
+    expect(await ownerRows('SELECT 1 FROM role WHERE tenant_id = $1 AND name = $2', [acme.id, body.name])).toHaveLength(0)
+  })
+})

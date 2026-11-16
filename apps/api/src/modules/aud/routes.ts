@@ -1,6 +1,6 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify'
 import { z } from 'zod'
-import { requirePermission, requireRealm } from '../../lib/auth.js'
+import { requireAllMarkets, requirePermission, requireRealm } from '../../lib/auth.js'
 import { inTenant, inVendor } from '../../lib/db.js'
 import { envelope, parse } from '../../lib/http.js'
 import { idempotent, sendIdempotent, type StoredResponse } from '../../lib/idempotency.js'
@@ -32,8 +32,9 @@ function exportResponse(request: FastifyRequest, decision: ExportDecision): Stor
 
 /** API-09 audit search, FR-AUD-002 audit export, SEC-38 chain verification. */
 export function registerAuditRoutes(app: FastifyInstance): void {
-  const read = { preHandler: [requireRealm('tenant'), requirePermission('audit.read')] }
-  const exporting = { preHandler: [requireRealm('tenant'), requirePermission('audit.read', 'export')] }
+  // Audit events carry no market, so a holder limited to some markets would see every market's events.
+  const read = { preHandler: [requireRealm('tenant'), requirePermission('audit.read'), requireAllMarkets('audit.read')] }
+  const exporting = { preHandler: [...read.preHandler, requirePermission('export'), requireAllMarkets('export')] }
 
   app.get('/v1/audit-events', read, async (request) => {
     const { cursor, limit, ...filter } = parse(listQuery, request.query)

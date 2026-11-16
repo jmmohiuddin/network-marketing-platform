@@ -2,7 +2,7 @@ import { withTenant } from '@nmp/db'
 import type { FastifyInstance } from 'fastify'
 import { afterAll, beforeAll, describe, expect, test } from 'vitest'
 import {
-  auditActions, buildTestApp, call, closePoolsAfterAll, createSignedInUser, createTenant, ownerRows, resetApiDb, testConfig,
+  auditActions, buildTestApp, call, closePoolsAfterAll, createMarket, createSignedInUser, createTenant, ownerRows, resetApiDb, testConfig,
   type TestTenant, type TestUser,
 } from '../../../test/helpers/index.js'
 import { recordAudit } from '../../lib/audit.js'
@@ -163,5 +163,25 @@ describe('chain verification (AC-54.2, TS-56)', () => {
 
   test('needs audit.read', async () => {
     expect((await call(app, { method: 'GET', url: '/v1/audit-chain/verification', as: analyst })).statusCode).toBe(403)
+  })
+})
+
+describe('the audit log covers every market: reading and exporting need audit.read for all markets', () => {
+  test('a Compliance officer limited to one market cannot search, verify or export', async () => {
+    const am = await createMarket(acme.id, 'AM')
+    const scopedOfficer = await createSignedInUser({ tenantId: acme.id, roles: ['Compliance officer'], marketIds: [am] })
+
+    const responses = [
+      await call(app, { method: 'GET', url: '/v1/audit-events', as: scopedOfficer }),
+      await call(app, { method: 'GET', url: '/v1/audit-chain/verification', as: scopedOfficer }),
+      await exportAudit(scopedOfficer, {}),
+    ]
+
+    for (const response of responses) {
+      expect(response.statusCode).toBe(403)
+      expect(response.json().error).toMatchObject({ code: 'SCOPE_NOT_HELD', details: { permission: 'audit.read' } })
+    }
+    const me = (await call(app, { method: 'GET', url: '/v1/me', as: scopedOfficer })).json().data
+    expect(me.navigation.map((entry: { key: string }) => entry.key)).not.toContain('audit')
   })
 })

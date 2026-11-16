@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
-import { assertStepUp, currentAuth, requirePermission, requireRealm, requireStepUp } from '../../lib/auth.js'
+import { assertStepUp, currentAuth, requireAllMarkets, requirePermission, requireRealm, requireStepUp } from '../../lib/auth.js'
 import { inTenant } from '../../lib/db.js'
 import { envelope, parse } from '../../lib/http.js'
 import { idempotent, sendIdempotent } from '../../lib/idempotency.js'
@@ -38,7 +38,8 @@ export function registerRoleRoutes(app: FastifyInstance): void {
   app.get('/v1/roles', guard, async (request) =>
     envelope(await inTenant(request, listRoles), { permissions: PERMISSIONS }))
 
-  app.post('/v1/roles', guard, async (request, reply) => {
+  // A role is one catalogue entry for every market, so adding one needs user.manage for all markets.
+  app.post('/v1/roles', { preHandler: [...guard.preHandler, requireAllMarkets('user.manage')] }, async (request, reply) => {
     const body = parse(roleBody, request.body)
     const role = { name: body.name, permissions: body.permissions, mfaRequired: body.mfa_required }
     const result = await inTenant(request, (tx) =>

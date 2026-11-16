@@ -20,7 +20,7 @@ const TENANT_NAVIGATION: readonly (NavigationEntry & { readonly anyOf: readonly 
   { key: 'imports', path: '/imports', label: 'Data imports', anyOf: ['import.manage'] },
   { key: 'users', path: '/settings/users', label: 'Users and roles', anyOf: ['user.manage'] },
   { key: 'vendor_access', path: '/settings/vendor-access', label: 'Vendor access', anyOf: ['vendor_access.decide'] },
-  { key: 'audit', path: '/settings/audit', label: 'Audit log', anyOf: ['audit.read'] },
+  { key: 'audit', path: '/settings/audit', label: 'Audit log', anyOf: ['audit.read'], allMarkets: true },
   { key: 'settings', path: '/settings', label: 'Settings', anyOf: ['settings.manage', 'settings.approve'] },
   { key: 'markets', path: '/settings/markets', label: 'Markets', anyOf: ['settings.manage', 'market.manage', 'market.signoff'] },
   { key: 'integrations', path: '/settings/integrations', label: 'Integrations', anyOf: ['integration.manage'], allMarkets: true },

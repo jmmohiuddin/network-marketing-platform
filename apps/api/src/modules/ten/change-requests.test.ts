@@ -255,3 +255,17 @@ describe('settings are tenant-wide: approving and requesting need all-markets sc
     await withdraw(preparer, id)
   })
 })
+
+describe('only the requester can withdraw a tenant-wide change request', () => {
+  test('an admin limited to one market gets 404; the request stays pending', async () => {
+    const wm = await createMarket(acme.id, 'WM')
+    const scopedAdmin = await createSignedInUser({ tenantId: acme.id, roles: ['Tenant admin'], marketIds: [wm] })
+    const id = (await requestChange(preparer, 'money.rounding_mode', 'half_up', inDays(20))).json().data.change_request.id as string
+
+    const withdrawn = await withdraw(scopedAdmin, id)
+
+    expect(withdrawn.statusCode).toBe(404)
+    expect((await ownerRows('SELECT state FROM setting_change_request WHERE id = $1', [id]))[0]).toMatchObject({ state: 'pending' })
+    await withdraw(preparer, id)
+  })
+})

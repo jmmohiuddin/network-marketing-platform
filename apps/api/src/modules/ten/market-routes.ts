@@ -1,6 +1,6 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify'
 import { z } from 'zod'
-import { assertStepUp, currentAuth, marketScope, requirePermission, requireRealm } from '../../lib/auth.js'
+import { assertStepUp, currentAuth, marketScope, requireAllMarkets, requirePermission, requireRealm } from '../../lib/auth.js'
 import { inTenant } from '../../lib/db.js'
 import { ApiError, permissionDenied } from '../../lib/errors.js'
 import { envelope, parse } from '../../lib/http.js'
@@ -99,19 +99,21 @@ export function registerMarketRoutes(app: FastifyInstance): void {
   })
 
   app.get('/v1/brands', { preHandler: [requireRealm('tenant')] }, async (request) => envelope(await inTenant(request, listBrands)))
+  // Brands have no market: changing one changes the tenant-wide structure, so every market must be in scope.
+  const manageBrands = { preHandler: [...manage.preHandler, requireAllMarkets('settings.manage')] }
 
-  app.post('/v1/brands', manage, async (request, reply) => {
+  app.post('/v1/brands', manageBrands, async (request, reply) => {
     const body = parse(brandBody, request.body)
     return sendIdempotent(reply, await creating(request, 201, (tx) => createBrand(tx, body.name, body.reason)))
   })
 
-  app.patch('/v1/brands/:id', manage, async (request) => {
+  app.patch('/v1/brands/:id', manageBrands, async (request) => {
     const { id } = parse(idParams, request.params)
     const body = parse(brandBody, request.body)
     return envelope(await inTenant(request, (tx) => renameBrand(tx, id, body.name, body.reason)))
   })
 
-  app.delete('/v1/brands/:id', manage, async (request, reply) => {
+  app.delete('/v1/brands/:id', manageBrands, async (request, reply) => {
     const { id } = parse(idParams, request.params)
     const body = parse(reasonBody, request.body)
     await inTenant(request, (tx) => deleteBrand(tx, id, body.reason))
