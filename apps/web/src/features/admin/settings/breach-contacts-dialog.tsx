@@ -90,7 +90,7 @@ export function BreachContactsDialog({ current, ...props }: ThresholdDialogProps
         </fieldset>
       ))}
       {rows.length < MAX_CONTACTS && <div><Button id="contact-add" onClick={add}>Add contact</Button></div>}
-      <p className={NOTE}>Saving asks for a code from your authenticator app.</p>
+      <p className={NOTE}>You may be asked for a code from your authenticator app.</p>
     </SettingDialog>
   )
 }

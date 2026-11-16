@@ -1,6 +1,8 @@
 import { requiredError } from '../../lib/validation'
 
-const MONTH = /^\d{4}-(0[1-9]|1[0-2])$/
+/** YYYY-MM with month 01-12; MONTH_PATTERN is the same rule for the input's pattern attribute. */
+export const MONTH_PATTERN = '\\d{4}-(0[1-9]|1[0-2])'
+const MONTH = new RegExp(`^${MONTH_PATTERN}$`)
 
 function monthError(label: string, value: string): string | null {
   return requiredError(label, value) ?? (MONTH.test(value.trim()) ? null : `Enter ${label} as year and month, for example 2025-01.`)

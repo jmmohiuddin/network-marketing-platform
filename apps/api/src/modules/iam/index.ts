@@ -1,4 +1,5 @@
 import type { ApiModule } from '../../lib/module.js'
+import { registerApiKeyRoutes } from './api-keys-routes.js'
 import { registerAuthRoutes } from './auth-routes.js'
 import { registerGrantRoutes, registerRoleRoutes } from './grants-routes.js'
 import { sendInvitationJob } from './invitations.js'
@@ -7,7 +8,10 @@ import { registerMfaRoutes } from './mfa-routes.js'
 import { registerUserRoutes } from './users-routes.js'
 import { registerVendorUserRoutes } from './vendor-users-routes.js'
 
-/** Identity and access (FR-IAM-001/002/003): sessions, MFA, me, users, vendor users, roles, grants and approvals, invitation mail. */
+/**
+ * Identity and access (FR-IAM-001/002/003/006): sessions, MFA, me, users, vendor users, roles, grants and approvals,
+ * invitation mail, service accounts and API keys.
+ */
 export const iamModule: ApiModule = {
   name: 'iam',
   register(app) {
@@ -18,6 +22,7 @@ export const iamModule: ApiModule = {
     registerRoleRoutes(app)
     registerGrantRoutes(app)
     registerVendorUserRoutes(app)
+    registerApiKeyRoutes(app)
   },
   jobs: [sendInvitationJob],
 }
@@ -25,3 +30,5 @@ export const iamModule: ApiModule = {
 export { acceptInvitation, invitationLink } from './invitations.js'
 export { bootstrapVendorUser, type BootstrapVendorUser } from './vendor-users.js'
 export { assertSecondPerson, loggingSecondPersonRefusals, type SecondPersonStep } from './second-person.js'
+export { apiKeyOrSession } from './api-key-auth.js'
+export { API_SCOPES, type ApiScope } from './api-scopes.js'

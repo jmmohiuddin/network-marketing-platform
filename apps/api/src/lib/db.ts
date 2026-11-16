@@ -3,7 +3,25 @@ import type { FastifyRequest } from 'fastify'
 import { currentAuth, type AuthContext } from './auth.js'
 import { ApiError } from './errors.js'
 
-export type ActorType = 'user' | 'vendor_user' | 'system'
+export type ActorType = 'user' | 'vendor_user' | 'service_account' | 'system'
+
+/**
+ * A caller authenticated by an API key (D-B1-05): set by iam's key authentication, never together with a session
+ * (request.auth stays null, so every session-only route refuses it). Its scopes are its only authority.
+ */
+export interface ApiKeyCaller {
+  readonly keyId: string
+  readonly tenantId: string
+  readonly serviceAccountId: string
+  readonly scopes: readonly string[]
+  readonly rateTier: 'standard' | 'high'
+}
+
+declare module 'fastify' {
+  interface FastifyRequest {
+    apiKey?: ApiKeyCaller
+  }
+}
 
 /** app.user_id for work done by the platform itself (jobs, refused sign-ins); stored as actor NULL in audit. */
 export const SYSTEM_ACTOR_ID = '00000000-0000-0000-0000-000000000000'
@@ -49,8 +67,16 @@ function actorOf(request: FastifyRequest, auth: AuthContext): ActorContext {
   }
 }
 
-/** Runs fn in a transaction scoped to the caller's tenant (taken from the session, never from input). */
+/**
+ * Runs fn in a transaction scoped to the caller's tenant (taken from the session or the API key, never from input).
+ * A key caller acts as its service account (D-B1-19): audit rows carry actor type service_account and its id.
+ */
 export function inTenant<T>(request: FastifyRequest, fn: (tx: Tx) => Promise<T>): Promise<T> {
+  const key = request.apiKey
+  if (key !== undefined) {
+    const actor: ActorContext = { actorType: 'service_account', requestId: request.id, supportSessionId: null }
+    return runInTenant({ tenantId: key.tenantId, userId: key.serviceAccountId }, actor, fn)
+  }
   const auth = currentAuth(request)
   if (auth.tenantId === null) {
     throw new ApiError(403, 'REALM_FORBIDDEN', 'This endpoint is not available to your account type.')

@@ -64,3 +64,22 @@ _Agent: backend. Read before every task; update after every task. Keep concise �
 - Vendor invitation mail is sent inside the request transaction (no vendor job runner); commit failure after send = dead link. work_region still has no API (vendor-user invite could take it; region catalogue lives in ops).
 - One person controlling two vendor accounts (invited by themselves) defeats two-person provisioning; only the vendor log shows who invited whom.
 - Old CPL snapshots keep their previous population_count until recomputed. nmp_dev / nmp_e2e not migrated to 0042.
+
+## From B1 BE1 (2026-11-17)
+- Integrator: register `intModule` in modules/index.ts; add API_KEY_*, WEBHOOK_* to .env.example; workers pick the int job up from defaultModules.
+- Integrator: lib/web-security.ts registerRateLimit allowList for `Authorization: Bearer nmpk_` (D-B1-18) — until then bearer requests also count against ip:<ip>, so a high-tier key cannot exceed API_RATE_LIMIT_PER_MINUTE.
+- Integrator: test/isolation/seed.ts SUPPORT_SCOPE must drop settings.approve, market.signoff, integration.manage (use `supportScopePermission.options`); isolation cases + role matrix for the new routes.
+- Not built: per-key pagination caps (deferred B2); OpenAPI validated structurally only (no validator dependency).
+
+## From B1 BE2 ten-pay (2026-11-17)
+- Integrator: add `payModule` to modules/index.ts; isolation cases + role matrix for every new TEN/PAY route; role-matrix SETTING_READERS needs the 3 new keys (tsc error until then).
+- Period extension (POST /v1/calendars/:id/periods) does not append a structure version (structure holds calendars, not periods).
+- Country validation = Intl region name minus user-assigned/EU/EZ/UN codes; exceptionally reserved codes CLDR names (IC, EA, TA...) are accepted.
+- Immediate settings writes are refused while now() lies in a committed period (only possible with owner-pool fixtures in B1).
+- (B1 review) Undecryptable webhook secret: delivery stays scheduled and is re-claimed each lease, never dead-lettered. Needs a 01xx migration (DB owner) adding 'SECRET_UNAVAILABLE' to webhook_delivery.error CHECK; then catch `open()` in dispatch attempt() and return that error.
+- (B1 review) int/test-tls.ts (self-signed cert + key, test-only) sits in src; move to apps/api/test/helpers (integrator-owned). PLAN §2.7 table should read PATCH webhook endpoint = step-up for url / re-enable.
+
+## From B1 integration (2026-11-17)
+- CAS: POST /v1/cases parses the body before the create-permission check, so a caller without any create permission gets 400 for a bad body (role-matrix probe sends a valid body). Schema only, nothing tenant-specific leaks.
+- Still open for DB owner/BE1: SECRET_UNAVAILABLE in webhook_delivery.error CHECK; IAM assertMarkets FOR KEY SHARE; PLAN decision on market-scoped authority over tenant-wide objects; PLAN §2.7 PATCH step-up text and D-B1-18 wording.
+- (2026-11-17) Root `.env.example` (not owned) should document TRUST_PROXY (e.g. `loopback` when the web app proxies /v1). Not verified that Next's rewrite proxy sets X-Forwarded-For (needs servers running).

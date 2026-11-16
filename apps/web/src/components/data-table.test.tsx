@@ -36,6 +36,13 @@ describe('Table', () => {
     expect(within(table).getByRole('cell', { name: '10' }).getAttribute('data-label')).toBe('Rows')
   })
 
+  it('contains its sr-only content in the scroll area, so a wide table never widens the page (BUG-051)', () => {
+    render(<DataTable {...base} rows={[{ id: 'b-1', rows: 10 }]} />)
+    const scroller = screen.getByRole('table').parentElement!
+    expect(scroller.className).toContain('overflow-x-auto')
+    expect(scroller.className).toContain('relative')
+  })
+
   it('draws its own card unless it sits bare inside one', () => {
     const { rerender, container } = render(<DataTable {...base} rows={[]} />)
     expect((container.firstElementChild as HTMLElement).className).toContain('shadow-sm')

@@ -42,3 +42,8 @@ _Agent: frontend. Read before every task; update after every task. Keep concise 
 - FE-36 (Stitch) SC-14 follows sc_14's single page (decision queue | open sessions | history) instead of tabs; each open session card reads its newest 5 log entries (`/log?limit=5`) as the sc_14 request trace.
 - FE-37 (Stitch) A list of approvals never has a primary per item: Approve is primary only when exactly one request is listed (one primary per view).
 - FE-38 (Stitch) KPI cards show only values the API gives; counts over a cursor-paged list say "on this page" rather than inventing totals.
+- FE-39 (B1 BUG-045) Step-up never stacks: ApiProvider closes open dialogs while StepUpModal shows, re-opens them after and focuses the action's control; the retry keeps the Idempotency-Key.
+- FE-40 (B1 BUG-028) Dialog focus return: `returnFocusTo` selector (rows removed by the action), else opener if still in the page, else `main h1`; never body.
+- FE-41 (B1 SC-13) One-time credentials (API key token, webhook secret) are only in component state of a "Done" dialog; a replay says it cannot be shown again. KPI cards count loaded lists only.
+- FE-39 (B1) Money/plan policy changes go through one "Save new version with effective date" dialog (key select); thresholds keep their per-key dialogs (apply now). Effective date = datetime-local in the browser zone -> ISO.
+- FE-40 (B1) SC-17 strip cards and the SC-29 diff drawer use their Stitch markup locally (KpiCard and Drawer differ in classes/width); entry forms remount per recorded entry so a referenced document is never re-sent.

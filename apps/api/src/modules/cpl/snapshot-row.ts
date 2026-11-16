@@ -69,7 +69,7 @@ export function toSnapshot(record: SnapshotRecord): Snapshot {
 export function snapshotView(snapshot: Snapshot) {
   const { inputs, market_code: code, ...rest } = snapshot
   return {
-    ...rest, market: { id: rest.market_id, code, name: marketName(code) }, reports: inputs.reports, input_batch_ids: inputs.batch_ids, input_mapping_ids: inputs.mapping_ids,
+    ...rest, created_at: rest.created_at.toISOString(), market: { id: rest.market_id, code, name: marketName(code) }, reports: inputs.reports, input_batch_ids: inputs.batch_ids, input_mapping_ids: inputs.mapping_ids,
     input_mapping_versions: inputs.mapping_versions,
   }
 }

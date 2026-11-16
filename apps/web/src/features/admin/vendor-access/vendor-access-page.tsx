@@ -12,13 +12,14 @@ import { RequestCard } from '../../../components/request-card'
 import { EmptyState, LoadingState } from '../../../components/states'
 import { StatusBadge } from '../../../components/status-badge'
 import { useToast } from '../../../components/toast'
+import { Banner } from '../../../components/banner'
 import { useSession } from '../../../lib/session'
 import { useNow } from '../../../lib/use-now'
 import { useResource, type Resource } from '../../../lib/use-resource'
-import { actorLabel, durationLabel, formatDateTime, remainingLabel, shortId, supportScopeText } from '../format'
+import { durationLabel, formatDateTime, personLabel, remainingLabel, shortId, supportScopeText, unapprovableAreas } from '../format'
 import { LoadFailure } from '../page-states'
 import { tableError, usePagedList, type PagedList } from '../resource'
-import type { AuditEvent, SupportSession } from '../types'
+import type { AuditEvent, SupportSession, TenantSupportSession } from '../types'
 import { MONO, NOTE, NoticeCard, NumberedHeading } from '../ui'
 import { outOfRegion, SupportDecisionDialog } from './decision-dialog'
 import { logDetails, SessionLogDialog } from './session-log-dialog'
@@ -31,12 +32,17 @@ const OPEN_PAGE_SIZE = 200
 const TRACE_SIZE = 5
 const PATH = '/v1/support-sessions'
 const AUDIT_PATH = '/settings/audit'
-const NO_NAMES: ReadonlyMap<string, string> = new Map()
+const OPEN_HEADING_ID = 'access-open'
+
+/** "Ada Vendor (ada@vendor.example)"; "Vendor user 1a2b3c4d" when the requester is not resolved. */
+function requesterLabel(session: TenantSupportSession): string {
+  return session.requester === null ? `Vendor user ${shortId(session.requester_id)}` : personLabel(session.requester)
+}
 
 type Dialogs =
-  | { readonly kind: 'decide'; readonly session: SupportSession; readonly approve: boolean }
-  | { readonly kind: 'end'; readonly session: SupportSession }
-  | { readonly kind: 'log'; readonly session: SupportSession }
+  | { readonly kind: 'decide'; readonly session: TenantSupportSession; readonly approve: boolean }
+  | { readonly kind: 'end'; readonly session: TenantSupportSession }
+  | { readonly kind: 'log'; readonly session: TenantSupportSession }
 
 function scopeText(session: SupportSession): string {
   return supportScopeText(session.scope.permissions)
@@ -44,8 +50,8 @@ function scopeText(session: SupportSession): string {
 
 /** Approved and active sessions, soonest end first. */
 function useOpenSessions() {
-  const active = useResource<SupportSession[]>(PATH, { state: 'active', limit: OPEN_PAGE_SIZE })
-  const approved = useResource<SupportSession[]>(PATH, { state: 'approved', limit: OPEN_PAGE_SIZE })
+  const active = useResource<TenantSupportSession[]>(PATH, { state: 'active', limit: OPEN_PAGE_SIZE })
+  const approved = useResource<TenantSupportSession[]>(PATH, { state: 'approved', limit: OPEN_PAGE_SIZE })
   const rows = [...(active.data ?? []), ...(approved.data ?? [])].sort((left, right) => (left.ends_at ?? '').localeCompare(right.ends_at ?? ''))
   return {
     rows,
@@ -61,7 +67,7 @@ function useOpenSessions() {
 /** sc_14 KPI cards: open sessions with the soonest end (the support-session countdown is the one allowed), requests, region. */
 function AccessKpis({ open, requests, region, now }: {
   readonly open: ReturnType<typeof useOpenSessions>
-  readonly requests: PagedList<SupportSession>
+  readonly requests: PagedList<TenantSupportSession>
   readonly region: string | null
   readonly now: number
 }) {
@@ -82,11 +88,11 @@ function AccessKpis({ open, requests, region, now }: {
 }
 
 function DecisionQueue({ requests, tenantRegion, onDecide }: {
-  readonly requests: PagedList<SupportSession>
+  readonly requests: PagedList<TenantSupportSession>
   readonly tenantRegion: string | null
-  readonly onDecide: (session: SupportSession, approve: boolean) => void
+  readonly onDecide: (session: TenantSupportSession, approve: boolean) => void
 }) {
-  const { readOnly } = useSession()
+  const { me, readOnly } = useSession()
   if (requests.error !== null) return <LoadFailure error={requests.error} onRetry={requests.reload} section />
   if (requests.loading) return <LoadingState label="Loading requests" />
   if (requests.rows.length === 0) return <EmptyState title="No requests. When vendor staff ask for access, the request appears here." />
@@ -94,16 +100,16 @@ function DecisionQueue({ requests, tenantRegion, onDecide }: {
   return (
     <>
       <ul className="flex flex-col gap-space-md">
-        {requests.rows.map((session) => (
+        {requests.rows.map((session) => {
+          const blocked = unapprovableAreas(me, session.scope.permissions)
+          return (
           <li key={session.id}>
             <RequestCard
               reference={shortId(session.id)}
               title="Vendor support request"
               state={<StatusBadge state="requested" label="Waiting for your decision" />}
               fields={[
-                // shortcut: the tenant cannot read vendor users, so the requester shows as in the audit log; name them once the
-                // session view carries the requester's name.
-                { label: 'Asked by', icon: 'badge', value: actorLabel({ actor_type: 'vendor_user', actor_id: session.requester_id }, NO_NAMES), detail: `Asked at ${formatDateTime(session.created_at)}` },
+                { label: 'Asked by', icon: 'badge', value: requesterLabel(session), detail: `Asked at ${formatDateTime(session.created_at)}` },
                 { label: 'Areas asked for (view only)', icon: 'visibility', value: scopeText(session) },
                 { label: 'Duration asked for', icon: 'timer', value: durationLabel(session.requested_minutes), detail: 'Starts when you approve and ends automatically' },
                 {
@@ -127,9 +133,15 @@ function DecisionQueue({ requests, tenantRegion, onDecide }: {
                 <Icon name="shield_lock" size={20} className="text-tertiary shrink-0 mt-0.5" />
                 <p className="font-body-sm text-body-sm text-on-surface-variant">Nothing can be accessed until you approve. Access is read-only and every view is logged here. A request nobody decides in time is denied automatically.</p>
               </div>
+              {!readOnly && blocked.length > 0 && (
+                <Banner tone="warning" title={`You cannot approve: ${supportScopeText(blocked)}`}>
+                  You approve only areas you hold yourself for all markets. Ask an admin who holds them to approve, or deny the request.
+                </Banner>
+              )}
             </RequestCard>
           </li>
-        ))}
+          )
+        })}
       </ul>
       {(pagination.hasPrevious || pagination.hasNext) && <div className="rounded overflow-hidden"><PaginationBar label="Pages of requests" pagination={pagination} /></div>}
     </>
@@ -156,7 +168,7 @@ function Trace({ log }: { readonly log: Resource<AuditEvent[]> }) {
 
 /** sc_14 active session monitor card. */
 function OpenSessionCard({ session, now, onEnd, onLog }: {
-  readonly session: SupportSession
+  readonly session: TenantSupportSession
   readonly now: number
   readonly onEnd?: () => void
   readonly onLog: () => void
@@ -186,6 +198,10 @@ function OpenSessionCard({ session, now, onEnd, onLog }: {
           )}
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-space-xs font-caption text-caption">
+          <div className="bg-surface-container px-3 py-2 rounded sm:col-span-2">
+            <span className="text-on-surface-variant block">Asked by</span>
+            <span className="font-body-sm text-body-sm text-on-surface font-semibold block break-words">{requesterLabel(session)}</span>
+          </div>
           <div className="bg-surface-container px-3 py-2 rounded">
             <span className="text-on-surface-variant block">Areas (view only)</span>
             <span className="font-body-sm text-body-sm text-on-surface font-semibold block">{scopeText(session)}</span>
@@ -211,8 +227,8 @@ function OpenSessionCard({ session, now, onEnd, onLog }: {
 function SessionMonitor({ open, now, onEnd, onLog }: {
   readonly open: ReturnType<typeof useOpenSessions>
   readonly now: number
-  readonly onEnd: (session: SupportSession) => void
-  readonly onLog: (session: SupportSession) => void
+  readonly onEnd: (session: TenantSupportSession) => void
+  readonly onLog: (session: TenantSupportSession) => void
 }) {
   const { readOnly } = useSession()
   if (open.error !== null) return <LoadFailure error={open.error} onRetry={open.reload} section />
@@ -227,10 +243,11 @@ function SessionMonitor({ open, now, onEnd, onLog }: {
   )
 }
 
-function HistoryTable({ onLog }: { readonly onLog: (session: SupportSession) => void }) {
-  const sessions = usePagedList<SupportSession>(PATH)
-  const columns: readonly DataTableColumn<SupportSession>[] = [
+function HistoryTable({ onLog }: { readonly onLog: (session: TenantSupportSession) => void }) {
+  const sessions = usePagedList<TenantSupportSession>(PATH)
+  const columns: readonly DataTableColumn<TenantSupportSession>[] = [
     { key: 'asked', header: 'Asked at', cell: (session) => <span className={`${MONO} text-primary`}>{formatDateTime(session.created_at)}</span> },
+    { key: 'requester', header: 'Asked by', cell: requesterLabel },
     { key: 'reason', header: 'Reason', cell: (session) => session.reason },
     { key: 'scope', header: 'Areas (view only)', cell: scopeText },
     { key: 'window', header: 'Window', cell: (session) => (session.starts_at === null ? '—' : <span className={MONO}>{formatDateTime(session.starts_at)} to {formatDateTime(session.ends_at)}</span>) },
@@ -256,7 +273,7 @@ export function VendorAccessPage() {
   const { me } = useSession()
   const api = useApi()
   const toast = useToast()
-  const requests = usePagedList<SupportSession>(PATH, { state: 'requested' })
+  const requests = usePagedList<TenantSupportSession>(PATH, { state: 'requested' })
   const open = useOpenSessions()
   const now = useNow(COUNTDOWN_TICK_MS)
   const [dialog, setDialog] = useState<Dialogs | null>(null)
@@ -286,8 +303,8 @@ export function VendorAccessPage() {
           <NumberedHeading id="access-requests" number={1} title="Requests waiting for your decision" />
           <DecisionQueue requests={requests} tenantRegion={tenantRegion} onDecide={(session, approve) => setDialog({ kind: 'decide', session, approve })} />
         </section>
-        <section aria-labelledby="access-open" className="xl:col-span-5 flex flex-col gap-space-md">
-          <NumberedHeading id="access-open" number={2} title="Open sessions" />
+        <section aria-labelledby={OPEN_HEADING_ID} className="xl:col-span-5 flex flex-col gap-space-md">
+          <NumberedHeading id={OPEN_HEADING_ID} number={2} title="Open sessions" />
           <SessionMonitor open={open} now={now} onEnd={(session) => setDialog({ kind: 'end', session })} onLog={(session) => setDialog({ kind: 'log', session })} />
         </section>
       </div>
@@ -305,6 +322,7 @@ export function VendorAccessPage() {
         consequence="Vendor staff lose access at once. The session log stays available."
         confirmLabel="End session now"
         destructive
+        returnFocusTo={`#${OPEN_HEADING_ID}`}
         onCancel={() => setDialog(null)}
         onConfirm={async () => {
           if (dialog?.kind !== 'end') return

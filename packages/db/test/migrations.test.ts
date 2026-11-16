@@ -15,9 +15,25 @@ const ENGINEERING_TABLES = [
   'session', 'password_credential', 'mfa_credential', 'login_attempt', 'idempotency_key', 'audit.vendor_event',
   'role_grant_request', 'user_invitation',
 ]
+// PLAN B1 section 1 (guardrail_rule and tax_rule are platform tables without tenant_id).
+const B1_TABLES = [
+  'brand', 'calendar', 'period', 'setting_change_request', 'provider_config', 'market_checklist_entry',
+  'market_go_live_request', 'guardrail_rule', 'tax_rule', 'service_account', 'api_key', 'case_file', 'case_event',
+  'case_evidence', 'webhook_endpoint', 'webhook_delivery',
+]
 const INSERT_ONLY_TABLES = [
   'audit.audit_event', 'audit.vendor_event', 'outbox_event', 'approval', 'tenant_setting_version',
+  'market_checklist_entry', 'case_event', 'case_evidence', 'document',
 ]
+// market_references (0105, AC-TEN2-3) counts every table with a key to market under these names, plus 'grants'
+// (market_ids arrays carry no key).
+const MARKET_REFERENCES: Record<string, string> = {
+  calendar: 'calendars', import_batch: 'imports', compliance_report_snapshot: 'snapshots',
+  cpl_fact_participant: 'fact_participants', provider_config: 'providers', market_checklist_entry: 'checklist_entries',
+  market_go_live_request: 'go_live_requests', case_file: 'cases',
+}
+// PLAN B1 1.1 (FR-TEN-003). The TEN settings registry pins its money-affecting keys against money_setting_keys().
+const MONEY_SETTING_KEYS = ['money.rounding_mode', 'money.clawback_policy']
 const TENANT_ID_TABLES = `
   SELECT c.oid, c.oid::regclass::text AS name, c.relrowsecurity AS enabled, c.relforcerowsecurity AS forced
   FROM pg_class c JOIN pg_attribute a ON a.attrelid = c.oid AND a.attname = 'tenant_id' AND NOT a.attisdropped
@@ -30,6 +46,7 @@ const OWN_TENANT = "((app_realm() = 'tenant'::text) AND (tenant_id = app_tenant_
 const VENDOR = "(app_realm() = 'vendor'::text)"
 const VENDOR_OWNED = "((app_realm() = 'vendor'::text) AND (tenant_id IS NULL))"
 // BUG-002 (0040): a credential is reachable only by its own user, in that user's realm.
+const PLATFORM_READ = "(app_realm() = ANY (ARRAY['tenant'::text, 'vendor'::text, 'system'::text]))"
 const actingUser = (table: string) =>
   `((user_id = app_user_id()) AND (EXISTS ( SELECT 1 FROM user_account u WHERE (u.id = ${table}.user_id))))`
 const POLICIES_BEYOND_TENANT_ISOLATION: Policy[] = [
@@ -62,6 +79,9 @@ const POLICIES_BEYOND_TENANT_ISOLATION: Policy[] = [
   ['audit.vendor_event', 'vendor_only', '*', VENDOR, VENDOR],
   ['password_credential', 'acting_user', '*', actingUser('password_credential'), actingUser('password_credential')],
   ['mfa_credential', 'acting_user', '*', actingUser('mfa_credential'), actingUser('mfa_credential')],
+  // FR-CPL-012 (0101): every realm reads the platform market-pack rules; nobody writes them at runtime.
+  ['guardrail_rule', 'platform_read', 'r', PLATFORM_READ, null],
+  ['tax_rule', 'platform_read', 'r', PLATFORM_READ, null],
 ]
 // Foreign keys to a tenant-scoped table that do not carry tenant_id, each kept in its tenant by other means.
 const KEYS_WITHOUT_TENANT_ID = [
@@ -86,14 +106,14 @@ describe('migrations', () => {
     expect(again).toEqual([])
   })
 
-  test('create every release A table and the engineering additions', async () => {
+  test('create every release A table, the engineering additions and the B1 tables', async () => {
     const { rows } = await getOwnerPool().query<{ name: string }>(
       `SELECT CASE schemaname WHEN 'public' THEN tablename ELSE schemaname || '.' || tablename END AS name
        FROM pg_tables WHERE schemaname IN ('public', 'audit')`,
     )
 
     expect(rows.map((row) => row.name).sort()).toEqual(
-      [...RELEASE_A_TABLES, ...ENGINEERING_TABLES, 'schema_migration'].sort(),
+      [...RELEASE_A_TABLES, ...ENGINEERING_TABLES, ...B1_TABLES, 'schema_migration'].sort(),
     )
   })
 
@@ -104,6 +124,28 @@ describe('migrations', () => {
     )
 
     expect(rows).toEqual([])
+  })
+})
+
+describe('shared functions match the catalogue', () => {
+  test('market_references counts every table with a foreign key to market', async () => {
+    const owner = getOwnerPool()
+    const keys = await owner.query<{ name: string }>(
+      `SELECT DISTINCT conrelid::regclass::text AS name FROM pg_constraint
+       WHERE contype = 'f' AND confrelid = 'market'::regclass ORDER BY 1`,
+    )
+    const counted = await owner.query<{ keys: string[] }>(
+      'SELECT array(SELECT jsonb_object_keys(market_references(gen_random_uuid())) ORDER BY 1) AS keys',
+    )
+
+    expect(keys.rows.map((row) => row.name)).toEqual(Object.keys(MARKET_REFERENCES).sort())
+    expect(counted.rows[0]!.keys).toEqual([...Object.values(MARKET_REFERENCES), 'grants'].sort())
+  })
+
+  test('money_setting_keys is the PLAN list of money-affecting settings', async () => {
+    const { rows } = await getOwnerPool().query<{ keys: string[] }>('SELECT money_setting_keys() AS keys')
+
+    expect(rows[0]!.keys).toEqual(MONEY_SETTING_KEYS)
   })
 })
 

@@ -13,6 +13,8 @@ import { StatusBadge } from '../../components/status-badge'
 import { useToast } from '../../components/toast'
 import { errorMessage, isNotAvailable } from '../../lib/messages'
 import { useSession } from '../../lib/session'
+import { personLabel } from '../admin/format'
+import type { UserView } from '../admin/types'
 import { dateTime } from './format'
 import { isDomain, MappingForm, type Domain } from './mapping-form'
 import { NOTE, ScopeStrip } from './ui'
@@ -22,6 +24,8 @@ import { useResource } from '../../lib/use-resource'
 
 // shortcut: the newest 200 versions (one API page) are offered; page through the list if a tenant ever has more.
 const VERSIONS_LIMIT = 200
+// shortcut: names come from the first 200 users (one API page); others show as "another user".
+const USERS_LIMIT = 200
 const REASON_MAX = 500
 
 interface BatchSourceValues {
@@ -67,7 +71,11 @@ function ApproveDialog({ version, onClose, onApproved }: { readonly version: Map
   )
 }
 
-const who = (userId: string | null, me: string) => (userId === null ? '—' : userId === me ? 'you' : 'another user')
+/** BUG-029: "you", the user's name when GET /v1/users is readable (user.manage), else "another user". */
+function who(userId: string | null, me: string, names: ReadonlyMap<string, string>): string {
+  if (userId === null) return '—'
+  return userId === me ? 'you' : names.get(userId) ?? 'another user'
+}
 
 /**
  * SC-25 import mapping: version selector, the mapping of the chosen version (plus the partner codes of
@@ -85,6 +93,9 @@ export function MappingEditor() {
   const mapping = useResource<MappingVersion>(selectedId === null ? null : `/v1/import-mappings/${selectedId}`)
   const batch = useResource<BatchSourceValues>(batchId === null ? null : `/v1/imports/${batchId}/source-values`)
   const [approving, setApproving] = useState(false)
+  // A failed user list only costs the names: it never blocks the mapping.
+  const users = useResource<UserView[]>(can('user.manage') ? '/v1/users' : null, { limit: USERS_LIMIT })
+  const names = new Map((users.data ?? []).map((user) => [user.id, personLabel(user)]))
 
   const failure = [versions.error, mapping.error, batch.error].find((error) => error !== null)
   if (failure !== undefined) {
@@ -155,7 +166,7 @@ export function MappingEditor() {
         {version !== null && (
           // Basis 20rem: the strip moves under the Version select on a phone instead of being squeezed beside it (BUG-037).
           <div className="grow basis-80 min-w-0">
-            <ScopeStrip items={[['Saved', `${dateTime(version.created_at)} by ${who(version.created_by, me.user.id)}`], ['Approved by', who(version.approved_by, me.user.id)], ['Note', version.notes ?? '—']]} />
+            <ScopeStrip items={[['Saved', `${dateTime(version.created_at)} by ${who(version.created_by, me.user.id, names)}`], ['Approved by', who(version.approved_by, me.user.id, names)], ['Note', version.notes ?? '—']]} />
           </div>
         )}
       </div>
@@ -173,7 +184,7 @@ export function MappingEditor() {
           {/* Room for the fixed approval bar. */}
           <div aria-hidden="true" className="h-12" />
           <ApprovalBar
-            preparedBy={`Saved by ${who(draft.created_by, me.user.id)}`}
+            preparedBy={`Saved by ${who(draft.created_by, me.user.id, names)}`}
             preparedAt={dateTime(draft.created_at)}
             blockedReason={ownDraft ? 'Another user must approve this version.' : undefined}
             approvers="Approval by a user with approval rights who did not save it"

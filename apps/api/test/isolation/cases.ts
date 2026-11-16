@@ -1,9 +1,11 @@
 // TS-21 route cases: one per route buildApp registers (`METHOD /url`), keyed exactly as Fastify reports it. The
 // isolation suite fails when a route has no case here, or a case has no route.
+import { documentBody } from '../../src/modules/aud/test-support.js'
+import { FIXTURE_REASONS, FIXTURE_SUBJECT } from '../../src/modules/cas/test-support.js'
 import { multipartBody, TINY_MAPPING, tinyFiles } from '../../src/modules/imp/test-support.js'
 import { PROTOTYPE_SETTINGS } from '../../src/modules/cpl/test-fixtures.js'
 import type { CallOptions } from '../helpers/index.js'
-import { PASSWORD, SUPPORT_SCOPE, type Targets } from './seed.js'
+import { DRAFT_MARKET_CODE, PACK, PASSWORD, RECORDABLE_ITEM, SUPPORT_SCOPE, type Targets } from './seed.js'
 
 /**
  * Who the route is for. public: no session (sign-in, invitation); self: the caller's own session or account;
@@ -24,8 +26,12 @@ export interface RouteCase {
   readonly shape: Shape
   /** Tenant B's status for shape own. */
   readonly own?: number
-  /** Status of the read inside tenant A's support session when not 200. */
+  /** Tenant B's refusal for shape object when not 404 NOT_FOUND: an A id in the body, answered as an unknown one. */
+  readonly refusedAs?: readonly [number, string]
+  /** Status of the read inside tenant A's support session when not 200 (403: a permission no session may hold). */
   readonly inSession?: number
+  /** Status without a session of a public route that answers anyone (holds no tenant data); default: refused (>= 400). */
+  readonly anonymous?: number
   /**
    * The vendor log (E-ADR-22): it repeats the path params and query that vendor users sent in refused requests, which
    * may be tenant ids they named themselves; nothing else of a tenant may show.
@@ -49,7 +55,19 @@ function uploadRequest(t: Targets): CaseRequest {
 const object = (access: Access, request: (t: Targets) => CaseRequest): RouteCase => ({ access, shape: 'object', request })
 const collection = (access: Access, request: (t: Targets) => CaseRequest): RouteCase => ({ access, shape: 'collection', request })
 const own = (access: Access, status: number, request: (t: Targets) => CaseRequest): RouteCase => ({ access, shape: 'own', own: status, request })
+/** An A object named in the body: refused as an unknown one, and identical to a phantom's answer. */
+const named = (status: number, code: string, request: (t: Targets) => CaseRequest): RouteCase =>
+  ({ access: 'tenant', shape: 'object', refusedAs: [status, code], request })
 const vendor = (request: (t: Targets) => CaseRequest): RouteCase => ({ access: 'vendor', shape: 'object', request })
+
+const withReason = (body: Record<string, unknown> = {}) => ({ ...body, reason: 'isolation' })
+/** integration.manage is a tenant-own decision no support session may hold (support/sessions.ts). */
+const integrationRead = (shape: Shape, request: (t: Targets) => CaseRequest): RouteCase => ({ access: 'tenant', shape, inSession: 403, request })
+
+function documentRequest(): CaseRequest {
+  const { payload, contentType } = documentBody()
+  return { method: 'POST', url: '/v1/documents', body: payload, headers: { 'content-type': contentType }, idempotencyKey: true }
+}
 
 const rows = (t: Targets) => `/v1/compliance/snapshots/${t.snapshot}/figures/${encodeURIComponent(t.figure)}/rows`
 
@@ -80,7 +98,9 @@ export const ROUTE_CASES: Readonly<Record<string, RouteCase>> = {
     json('POST', `/v1/role-grant-requests/${t.grantRequest}/decision`, { decision: 'approved' }, true)),
   // TEN: per-tenant values; tenant B reads and writes its own.
   'GET /v1/settings/:key': collection('tenant', () => get('/v1/settings/privacy.breach_contacts')),
-  'PUT /v1/settings/:key': own('tenant', 200, () => ({
+  // Tenant B's own structure writes (POST /v1/brands, /v1/markets: sorted earlier) moved B's counter past 0, so the
+  // stale If-Match is B's own conflict; tenant A's counter is never consulted.
+  'PUT /v1/settings/:key': own('tenant', 412, () => ({
     method: 'PUT', url: '/v1/settings/compliance.late_order_day', headers: { 'if-match': '"0"' },
     body: { value: PROTOTYPE_SETTINGS['compliance.late_order_day'], reason: 'isolation' },
   })),
@@ -138,6 +158,95 @@ export const ROUTE_CASES: Readonly<Record<string, RouteCase>> = {
   'GET /v1/compliance/snapshots': collection('tenant', () => get('/v1/compliance/snapshots?limit=200')),
   'GET /v1/compliance/snapshots/:id': object('tenant', (t) => get(`/v1/compliance/snapshots/${t.snapshot}`)),
   'GET /v1/compliance/snapshots/:id/figures/:figure/rows': object('tenant', (t) => get(rows(t))),
+  // TEN B1: settings history and money change requests (FR-TEN-003)
+  'GET /v1/settings': collection('tenant', () => get('/v1/settings')),
+  'GET /v1/settings/versions': collection('tenant', () => get('/v1/settings/versions?limit=200')),
+  'GET /v1/settings/versions/:version': object('tenant', (t) => get(`/v1/settings/versions/${t.settingsVersion}`)),
+  'GET /v1/setting-change-requests': collection('tenant', () => get('/v1/setting-change-requests?state=all&limit=200')),
+  'POST /v1/setting-change-requests/:id/decision': object('tenant', (t) =>
+    json('POST', `/v1/setting-change-requests/${t.changeRequest}/decision`, { decision: 'approve', reason: 'isolation' }, true)),
+  'POST /v1/setting-change-requests/:id/withdraw': object('tenant', (t) =>
+    json('POST', `/v1/setting-change-requests/${t.changeRequest}/withdraw`, withReason())),
+  // TEN B1: markets, brands, calendars (FR-TEN-002). Tenant A's market code and brand name are free in tenant B.
+  'GET /v1/markets/:id': object('tenant', (t) => get(`/v1/markets/${t.draftMarket}`)),
+  'POST /v1/markets': own('tenant', 201, () => json('POST', '/v1/markets', withReason({
+    code: DRAFT_MARKET_CODE, currency: 'EUR', time_zone: 'Europe/Berlin', languages: ['de'], market_pack: PACK,
+  }), true)),
+  'PATCH /v1/markets/:id': object('tenant', (t) => json('PATCH', `/v1/markets/${t.draftMarket}`, withReason({ languages: ['de', 'en'] }))),
+  'DELETE /v1/markets/:id': object('tenant', (t) => json('DELETE', `/v1/markets/${t.draftMarket}`, withReason())),
+  'GET /v1/brands': collection('tenant', () => get('/v1/brands')),
+  'POST /v1/brands': own('tenant', 201, (t) => json('POST', '/v1/brands', withReason({ name: t.brandName }), true)),
+  'PATCH /v1/brands/:id': object('tenant', (t) => json('PATCH', `/v1/brands/${t.brand}`, withReason({ name: 'Renamed in isolation' }))),
+  'DELETE /v1/brands/:id': object('tenant', (t) => json('DELETE', `/v1/brands/${t.brand}`, withReason())),
+  'GET /v1/calendars': collection('tenant', () => get('/v1/calendars')),
+  'POST /v1/calendars': named(422, 'VALIDATION_FAILED', (t) => json('POST', '/v1/calendars', withReason({
+    market_id: t.draftMarket, name: 'Monthly', cadence: 'monthly', cutoff_time_zone: 'Europe/Berlin', first_period_start: '2026-01-01',
+    periods_ahead: 3,
+  }), true)),
+  'PATCH /v1/calendars/:id': object('tenant', (t) => json('PATCH', `/v1/calendars/${t.calendar}`, withReason({ name: 'Renamed in isolation' }))),
+  'DELETE /v1/calendars/:id': object('tenant', (t) => json('DELETE', `/v1/calendars/${t.calendar}`, withReason())),
+  'POST /v1/calendars/:id/periods': object('tenant', (t) =>
+    json('POST', `/v1/calendars/${t.calendar}/periods`, withReason({ through: '2026-12-31' }), true)),
+  'GET /v1/calendars/:id/periods': object('tenant', (t) => get(`/v1/calendars/${t.calendar}/periods`)),
+  // TEN + PAY B1: launch checklist, go-live and provider eligibility (FR-TEN-004)
+  'GET /v1/markets/:id/checklist': object('tenant', (t) => get(`/v1/markets/${t.draftMarket}/checklist`)),
+  'POST /v1/markets/:id/checklist/:item/entries': object('tenant', (t) =>
+    json('POST', `/v1/markets/${t.draftMarket}/checklist/${RECORDABLE_ITEM}/entries`, { document_id: t.freeDocument }, true)),
+  'POST /v1/markets/:id/go-live-requests': object('tenant', (t) => json('POST', `/v1/markets/${t.draftMarket}/go-live-requests`, {}, true)),
+  'GET /v1/markets/:id/go-live-requests': object('tenant', (t) => get(`/v1/markets/${t.draftMarket}/go-live-requests`)),
+  'POST /v1/market-go-live-requests/:id/withdraw': object('tenant', (t) =>
+    json('POST', `/v1/market-go-live-requests/${t.goLiveRequest}/withdraw`, withReason())),
+  'POST /v1/market-go-live-requests/:id/decision': object('tenant', (t) =>
+    json('POST', `/v1/market-go-live-requests/${t.goLiveRequest}/decision`, { decision: 'approve', reason: 'isolation' }, true)),
+  'GET /v1/provider-configs': collection('tenant', () => get('/v1/provider-configs')),
+  'POST /v1/provider-configs': named(422, 'VALIDATION_FAILED', (t) => json('POST', '/v1/provider-configs', {
+    market_id: t.draftMarket, kind: 'payout', provider: 'Sandbox payout', approved_description: 'Approved', approved_at: '2026-10-01',
+    approval_document_id: t.freeDocument, funds_holder: 'Sandbox bank',
+  }, true)),
+  'POST /v1/provider-configs/:id/withdraw': object('tenant', (t) => json('POST', `/v1/provider-configs/${t.providerConfig}/withdraw`, withReason())),
+  // CPL B1: market-pack rules are platform data, the same for every tenant.
+  'GET /v1/market-packs/:pack/rules': collection('tenant', () => get(`/v1/market-packs/${PACK}/rules`)),
+  // IAM B1: service accounts and API keys (FR-IAM-006)
+  'GET /v1/api-keys/options': integrationRead('collection', () => get('/v1/api-keys/options')),
+  'GET /v1/service-accounts': integrationRead('collection', () => get('/v1/service-accounts?limit=200')),
+  'POST /v1/service-accounts': own('tenant', 201, (t) =>
+    json('POST', '/v1/service-accounts', { name: t.serviceAccountName, purpose: 'Isolation suite' }, true)),
+  'POST /v1/service-accounts/:id/disable': object('tenant', (t) => json('POST', `/v1/service-accounts/${t.serviceAccount}/disable`, withReason())),
+  'POST /v1/service-accounts/:id/keys': object('tenant', (t) => json('POST', `/v1/service-accounts/${t.serviceAccount}/keys`, {
+    name: 'Isolation', scopes: ['compliance:read'], rate_tier: 'standard',
+  }, true)),
+  'POST /v1/api-keys/:id/rotate': object('tenant', (t) => json('POST', `/v1/api-keys/${t.apiKey}/rotate`, { grace_minutes: 0 }, true)),
+  'POST /v1/api-keys/:id/revoke': object('tenant', (t) => json('POST', `/v1/api-keys/${t.apiKey}/revoke`, withReason())),
+  // INT B1: OpenAPI document and webhooks (FR-INT-001)
+  'GET /v1/openapi.json': { ...object('public', () => get('/v1/openapi.json')), anonymous: 200 },
+  'GET /v1/webhook-topics': integrationRead('collection', () => get('/v1/webhook-topics')),
+  'GET /v1/webhook-endpoints': integrationRead('collection', () => get('/v1/webhook-endpoints?limit=200')),
+  'POST /v1/webhook-endpoints': own('tenant', 201, () =>
+    json('POST', '/v1/webhook-endpoints', { url: 'https://hooks.example.com/isolation', topics: ['market.went_live'] }, true)),
+  'GET /v1/webhook-endpoints/:id': integrationRead('object', (t) => get(`/v1/webhook-endpoints/${t.webhookEndpoint}`)),
+  'PATCH /v1/webhook-endpoints/:id': object('tenant', (t) => json('PATCH', `/v1/webhook-endpoints/${t.webhookEndpoint}`, { state: 'disabled' })),
+  'POST /v1/webhook-endpoints/:id/rotate-secret': object('tenant', (t) =>
+    json('POST', `/v1/webhook-endpoints/${t.webhookEndpoint}/rotate-secret`, { grace_minutes: 0 }, true)),
+  'POST /v1/webhook-endpoints/:id/test': object('tenant', (t) => json('POST', `/v1/webhook-endpoints/${t.webhookEndpoint}/test`, {}, true)),
+  'GET /v1/webhook-endpoints/:id/deliveries': integrationRead('object', (t) => get(`/v1/webhook-endpoints/${t.webhookEndpoint}/deliveries`)),
+  'POST /v1/webhook-deliveries/:id/retry': object('tenant', (t) => json('POST', `/v1/webhook-deliveries/${t.webhookDelivery}/retry`, {}, true)),
+  // AUD B1: evidence documents (D-B1-04)
+  'GET /v1/documents/limits': collection('tenant', () => get('/v1/documents/limits')),
+  'POST /v1/documents': own('tenant', 201, documentRequest),
+  'GET /v1/documents/:id': object('tenant', (t) => get(`/v1/documents/${t.document}`)),
+  'GET /v1/documents/:id/content': object('tenant', (t) => get(`/v1/documents/${t.document}/content`)),
+  // CAS B1 with the fixture case type (D-B1-13): tenant A's market is no subject in tenant B.
+  'POST /v1/cases': named(422, 'SUBJECT_NOT_FOUND', (t) => json('POST', '/v1/cases', {
+    type: 'adjustment', subject_type: FIXTURE_SUBJECT, subject_id: t.draftMarket, reason_code: FIXTURE_REASONS[0], payload: { amount_minor: '1' },
+  }, true)),
+  'GET /v1/cases': collection('tenant', () => get('/v1/cases?limit=200')),
+  'GET /v1/cases/:id': object('tenant', (t) => get(`/v1/cases/${t.case}`)),
+  'POST /v1/cases/:id/evidence': object('tenant', (t) => json('POST', `/v1/cases/${t.case}/evidence`, { document_id: t.freeDocument }, true)),
+  'POST /v1/cases/:id/assign': object('tenant', (t) => json('POST', `/v1/cases/${t.case}/assign`, { user_id: null })),
+  'POST /v1/cases/:id/submit': object('tenant', (t) => json('POST', `/v1/cases/${t.case}/submit`, {})),
+  'POST /v1/cases/:id/decision': object('tenant', (t) =>
+    json('POST', `/v1/cases/${t.case}/decision`, { decision: 'approve', reason: 'isolation' }, true)),
+  'POST /v1/cases/:id/withdraw': object('tenant', (t) => json('POST', `/v1/cases/${t.case}/withdraw`, withReason())),
 }
 
 /** The case of a route; Fastify's HEAD routes run their GET handler, so they take the GET case with method HEAD. */

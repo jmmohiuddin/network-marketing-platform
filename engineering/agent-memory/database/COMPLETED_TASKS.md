@@ -15,3 +15,15 @@ _Agent: database. Read before every task; update after every task. Keep concise 
 - MEDIUM vacuous tests: `test/seed.ts` puts a tenant A row and a vendor row in every readable table; isolation is a context x table matrix; `migrations.test.ts` compares the full policy set and lists every key that lacks tenant_id.
 - Migrations 0001, 0002, 0004, 0005, 0006 were edited in place (pre-release, as instructed); nmp_test and nmp_dev rebuilt with `--reset`.
 - Verified: `pnpm vitest run packages/db` 76/76 (fewer, wider tests), `tsc -p packages/db --noEmit` clean. Mutation checks: a `USING (true)` policy on import_row_error fails 7 isolation tests; removing the blank context from withVendor/withSystem fails the pool test.
+
+## B1 review fixes — 8 findings confirmed (2026-11-12)
+- 0107: HIGH document takeover/swap (revoke UPDATE + trigger); HIGH forged sign-offs (actor binding, born-pending/open, approval must match object/decision/decider, case SoD); MEDIUM backdated money baseline (deferred chain walk); LOW UNIQUE (tenant_id,id) on case_event/case_evidence/webhook_delivery, webhook insert guard + outcome CHECK, withdraw reason, document reference race (advisory lock).
+- Tests: +29 (approvals, b1-guards, catalogue pins); red without 0107. `pnpm vitest run packages apps/api`: 947 pass, 26 fail = same set as baseline (ops/seed/permissions/second-person, outside packages/db). typecheck clean.
+
+## B1 DB package completion (2026-11-17)
+- Schema 0100-0107 already in place and verified (all §1 tables FORCE RLS, all §1.4/1.5/1.7/1.8 functions present); no new migration needed.
+- §3: permissions.test.ts pins B1 catalogue + matrix, 0007 = RELEASE_A_BASE_ROLES_SEED, 0106 = renderBaseRoleUpdate(B1_UPDATED_BASE_ROLES), 0007+0106 = BASE_ROLES. mfa.test /v1/me fixture gains market.signoff.
+- §6 seed.ts: finance@ staff (Finance approver, approved grant), approvals written as admin2 via asSelf, DEMO market draft, `seedFixturePack` (owner pool, refuses if owner DB != app DB) on nmp_e2e only; seed:e2e passes MIGRATE_DATABASE_URL=nmp_e2e to the seed step (.env points it at nmp_dev).
+- §P: config.ts D-B1-16 keys (+ retry base/max/give-up) with test in formats.test; db.ts `ApiKeyCaller`, `request.apiKey`, ActorType 'service_account', inTenant key branch (db.test.ts); ops tenant-creation inserts markets draft.
+- Verified: `pnpm vitest run packages/db apps/api` 869/869, typecheck + web tsc clean, seed:e2e run OK.
+- 2026-11-17 B1 review round 2: 0108 (actor binding, case submission/evidence integrity, money same-date supersede, webhook scheduled CHECK, pack-rule versions EXCLUDE) + 7 regression tests in b1-guards.test.ts. `pnpm vitest run packages apps/api` 1266/1266, typecheck clean.

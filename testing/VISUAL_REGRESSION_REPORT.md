@@ -1885,3 +1885,269 @@ Style differences:
 | 390x844 | tableHeader | mismatch | medium | background | `rgb(230, 238, 255)` | `rgb(239, 244, 255)` |
 | 390x844 | card | mismatch | medium | border-radius | `0px` | `2px` |
 
+### 2026-11-16T22:01:46.414Z · SC-29 tenant-settings — role tenant-admin
+
+- Page: `http://127.0.0.1:3100/settings` · Stitch: `sc_29_tenant_settings`
+- Pixel mismatch is informational (sample data differs from API data); style fidelity is the check.
+
+| Viewport | Screenshot | Diff image | Pixel mismatch | App / reference size | Landmarks matched | Worst severity |
+|---|---|---|---|---|---|---|
+| 1440x900 | `testing/ui-screenshots/app/settings/tenant-settings/tenant-admin/1440x900.png` | `testing/ui-screenshots/app/settings/tenant-settings/tenant-admin/1440x900.diff.png` | 4.66% | 1440x2662 / 1440x1818 | 6/8 | high |
+| 1280x800 | `testing/ui-screenshots/app/settings/tenant-settings/tenant-admin/1280x800.png` | `testing/ui-screenshots/app/settings/tenant-settings/tenant-admin/1280x800.diff.png` | 5.05% | 1280x2716 / 1280x1992 | 6/8 | high |
+| 768x1024 | `testing/ui-screenshots/app/settings/tenant-settings/tenant-admin/768x1024.png` | `testing/ui-screenshots/app/settings/tenant-settings/tenant-admin/768x1024.diff.png` | 4.61% | 768x3184 / 982x3723 | 4/6 | high |
+| 390x844 | `testing/ui-screenshots/app/settings/tenant-settings/tenant-admin/390x844.png` | `testing/ui-screenshots/app/settings/tenant-settings/tenant-admin/390x844.diff.png` | 1.92% | 390x4202 / 982x8578 | 3/6 | high |
+
+Style differences:
+
+| Viewport | Landmark | Status | Severity | Property | Stitch | App |
+|---|---|---|---|---|---|---|
+| 1440x900 | primaryButton | mismatch | high | background-color | `rgb(30, 79, 163)` | `rgb(0, 56, 131)` |
+| 1440x900 | primaryButton | mismatch | high | font-weight | `500` | `600` |
+| 1440x900 | tableHeader | mismatch | medium | font-size | `12px` | `11px` |
+| 1440x900 | tableHeader | mismatch | medium | font-weight | `700` | `600` |
+| 1280x800 | primaryButton | mismatch | high | background-color | `rgb(30, 79, 163)` | `rgb(0, 56, 131)` |
+| 1280x800 | primaryButton | mismatch | high | font-weight | `500` | `600` |
+| 1280x800 | tableHeader | mismatch | medium | font-size | `12px` | `11px` |
+| 1280x800 | tableHeader | mismatch | medium | font-weight | `700` | `600` |
+| 768x1024 | primaryButton | mismatch | high | background-color | `rgb(30, 79, 163)` | `rgb(0, 56, 131)` |
+| 768x1024 | primaryButton | mismatch | high | font-weight | `500` | `600` |
+| 768x1024 | tableHeader | mismatch | medium | font-size | `12px` | `11px` |
+| 768x1024 | tableHeader | mismatch | medium | font-weight | `700` | `600` |
+| 390x844 | title | mismatch | medium | font-size | `24px` | `20px` |
+| 390x844 | title | mismatch | medium | line-height | `32px` | `28px` |
+| 390x844 | primaryButton | mismatch | high | background-color | `rgb(30, 79, 163)` | `rgb(0, 56, 131)` |
+| 390x844 | primaryButton | mismatch | high | font-weight | `500` | `600` |
+| 390x844 | tableHeader | mismatch | medium | font-size | `12px` | `11px` |
+| 390x844 | tableHeader | mismatch | medium | font-weight | `700` | `600` |
+
+### 2026-11-16T22:01:58.528Z · SC-13 integrations — role tenant-admin
+
+- Page: `http://127.0.0.1:3100/settings/integrations` · Stitch: `sc_13_integrations_and_sync_health` · config brace patched: sc_13_integrations_and_sync_health
+- Pixel mismatch is informational (sample data differs from API data); style fidelity is the check.
+
+| Viewport | Screenshot | Diff image | Pixel mismatch | App / reference size | Landmarks matched | Worst severity |
+|---|---|---|---|---|---|---|
+| 1440x900 | `testing/ui-screenshots/app/settings/integrations/tenant-admin/1440x900.png` | `testing/ui-screenshots/app/settings/integrations/tenant-admin/1440x900.diff.png` | 5.61% | 1440x900 / 1440x1513 | 6/7 | high |
+| 1280x800 | `testing/ui-screenshots/app/settings/integrations/tenant-admin/1280x800.png` | `testing/ui-screenshots/app/settings/integrations/tenant-admin/1280x800.diff.png` | 5.79% | 1280x800 / 1280x1647 | 6/7 | high |
+| 768x1024 | `testing/ui-screenshots/app/settings/integrations/tenant-admin/768x1024.png` | `testing/ui-screenshots/app/settings/integrations/tenant-admin/768x1024.diff.png` | 4.48% | 768x1024 / 831x3141 | 4/5 | high |
+| 390x844 | `testing/ui-screenshots/app/settings/integrations/tenant-admin/390x844.png` | `testing/ui-screenshots/app/settings/integrations/tenant-admin/390x844.diff.png` | 2.68% | 390x1292 / 553x6873 | 3/5 | high |
+
+Style differences:
+
+| Viewport | Landmark | Status | Severity | Property | Stitch | App |
+|---|---|---|---|---|---|---|
+| 1440x900 | page | mismatch | high | background | `rgb(248, 250, 252)` | `rgb(248, 249, 255)` |
+| 1440x900 | tableHeader | absent-in-stitch | info | — | — | — |
+| 1280x800 | page | mismatch | high | background | `rgb(248, 250, 252)` | `rgb(248, 249, 255)` |
+| 1280x800 | tableHeader | absent-in-stitch | info | — | — | — |
+| 768x1024 | page | mismatch | high | background | `rgb(248, 250, 252)` | `rgb(248, 249, 255)` |
+| 768x1024 | tableHeader | absent-in-stitch | info | — | — | — |
+| 390x844 | page | mismatch | high | background | `rgb(248, 250, 252)` | `rgb(248, 249, 255)` |
+| 390x844 | title | mismatch | medium | font-size | `24px` | `20px` |
+| 390x844 | title | mismatch | medium | line-height | `32px` | `28px` |
+| 390x844 | tableHeader | absent-in-stitch | info | — | — | — |
+
+### 2026-11-16T22:02:10.843Z · SC-17 market-launch-checklist — role tenant-admin
+
+- Page: `http://127.0.0.1:3100/settings/markets/bbc9ad7e-4517-4298-8d4d-566793fc8202` · Stitch: `sc_17_market_launch_checklist`
+- Pixel mismatch is informational (sample data differs from API data); style fidelity is the check.
+
+| Viewport | Screenshot | Diff image | Pixel mismatch | App / reference size | Landmarks matched | Worst severity |
+|---|---|---|---|---|---|---|
+| 1440x900 | `testing/ui-screenshots/app/settings/market-launch-checklist/tenant-admin/1440x900.png` | `testing/ui-screenshots/app/settings/market-launch-checklist/tenant-admin/1440x900.diff.png` | 9.51% | 1440x1406 / 1440x1153 | 6/8 | high |
+| 1280x800 | `testing/ui-screenshots/app/settings/market-launch-checklist/tenant-admin/1280x800.png` | `testing/ui-screenshots/app/settings/market-launch-checklist/tenant-admin/1280x800.diff.png` | 9.87% | 1280x1410 / 1280x1226 | 6/8 | high |
+| 768x1024 | `testing/ui-screenshots/app/settings/market-launch-checklist/tenant-admin/768x1024.png` | `testing/ui-screenshots/app/settings/market-launch-checklist/tenant-admin/768x1024.diff.png` | 7.1% | 768x1918 / 993x2508 | 4/6 | high |
+| 390x844 | `testing/ui-screenshots/app/settings/market-launch-checklist/tenant-admin/390x844.png` | `testing/ui-screenshots/app/settings/market-launch-checklist/tenant-admin/390x844.diff.png` | 4.46% | 526x2482 / 597x4730 | 3/6 | high |
+
+Style differences:
+
+| Viewport | Landmark | Status | Severity | Property | Stitch | App |
+|---|---|---|---|---|---|---|
+| 1440x900 | primaryButton | missing-in-app | high | background-color | `rgb(30, 79, 163)` | — |
+| 1440x900 | primaryButton | missing-in-app | high | color | `rgb(255, 255, 255)` | — |
+| 1440x900 | primaryButton | missing-in-app | high | border-radius | `2px` | — |
+| 1440x900 | primaryButton | missing-in-app | high | height | `32px` | — |
+| 1440x900 | primaryButton | missing-in-app | high | font-family | `Inter` | — |
+| 1440x900 | primaryButton | missing-in-app | high | font-size | `13px` | — |
+| 1440x900 | primaryButton | missing-in-app | high | font-weight | `600` | — |
+| 1440x900 | tableHeader | mismatch | medium | font-size | `12px` | `11px` |
+| 1440x900 | tableHeader | mismatch | medium | font-weight | `700` | `600` |
+| 1440x900 | tableHeader | mismatch | medium | background | `rgb(220, 233, 255)` | `rgb(239, 244, 255)` |
+| 1280x800 | primaryButton | missing-in-app | high | background-color | `rgb(30, 79, 163)` | — |
+| 1280x800 | primaryButton | missing-in-app | high | color | `rgb(255, 255, 255)` | — |
+| 1280x800 | primaryButton | missing-in-app | high | border-radius | `2px` | — |
+| 1280x800 | primaryButton | missing-in-app | high | height | `32px` | — |
+| 1280x800 | primaryButton | missing-in-app | high | font-family | `Inter` | — |
+| 1280x800 | primaryButton | missing-in-app | high | font-size | `13px` | — |
+| 1280x800 | primaryButton | missing-in-app | high | font-weight | `600` | — |
+| 1280x800 | tableHeader | mismatch | medium | font-size | `12px` | `11px` |
+| 1280x800 | tableHeader | mismatch | medium | font-weight | `700` | `600` |
+| 1280x800 | tableHeader | mismatch | medium | background | `rgb(220, 233, 255)` | `rgb(239, 244, 255)` |
+| 768x1024 | primaryButton | missing-in-app | high | background-color | `rgb(30, 79, 163)` | — |
+| 768x1024 | primaryButton | missing-in-app | high | color | `rgb(255, 255, 255)` | — |
+| 768x1024 | primaryButton | missing-in-app | high | border-radius | `2px` | — |
+| 768x1024 | primaryButton | missing-in-app | high | height | `32px` | — |
+| 768x1024 | primaryButton | missing-in-app | high | font-family | `Inter` | — |
+| 768x1024 | primaryButton | missing-in-app | high | font-size | `13px` | — |
+| 768x1024 | primaryButton | missing-in-app | high | font-weight | `600` | — |
+| 768x1024 | tableHeader | mismatch | medium | font-size | `12px` | `11px` |
+| 768x1024 | tableHeader | mismatch | medium | font-weight | `700` | `600` |
+| 768x1024 | tableHeader | mismatch | medium | background | `rgb(220, 233, 255)` | `rgb(239, 244, 255)` |
+| 390x844 | title | mismatch | medium | font-size | `24px` | `20px` |
+| 390x844 | title | mismatch | medium | line-height | `32px` | `28px` |
+| 390x844 | primaryButton | missing-in-app | high | background-color | `rgb(30, 79, 163)` | — |
+| 390x844 | primaryButton | missing-in-app | high | color | `rgb(255, 255, 255)` | — |
+| 390x844 | primaryButton | missing-in-app | high | border-radius | `2px` | — |
+| 390x844 | primaryButton | missing-in-app | high | height | `32px` | — |
+| 390x844 | primaryButton | missing-in-app | high | font-family | `Inter` | — |
+| 390x844 | primaryButton | missing-in-app | high | font-size | `13px` | — |
+| 390x844 | primaryButton | missing-in-app | high | font-weight | `600` | — |
+| 390x844 | tableHeader | mismatch | medium | font-size | `12px` | `11px` |
+| 390x844 | tableHeader | mismatch | medium | font-weight | `700` | `600` |
+| 390x844 | tableHeader | mismatch | medium | background | `rgb(220, 233, 255)` | `rgb(239, 244, 255)` |
+
+
+## Increment B1 — round 1 (2026-11-17)
+
+Harness `testing/visual/compare.ts`, role tenant-admin, session cookie from a saved storage state, app on `next start` :3100 (nmp_e2e after the B1 workflows: FR live, versions 1–11, one service account with three keys, one disabled webhook endpoint). Results `testing/visual/results/SC-{29,13,17}__tenant-admin.json`, captures `testing/ui-screenshots/app/settings/{tenant-settings,integrations,market-launch-checklist}/tenant-admin/`, run sections above (2026-11-16T22:01Z UTC). The Markets page has no Stitch reference (guidelines §9) and was judged in the browser only.
+
+| Screen | 1440x900 | 1280x800 | 768x1024 | 390x844 | Harness findings | Judgement |
+|---|---|---|---|---|---|---|
+| SC-29 Tenant settings | 4.66 % | 5.05 % | 4.61 % | 1.92 % | high: primary button `#003883` vs sc_29 `#1E4FA3`; medium: table header 11 px/600 vs 12 px/700, title 20 vs 24 px at 390 | canonical sc_01 tokens (same as MVP-A, design note). Real differences are content by plan: privacy/visibility, retention, write-off, payout cards and Revert are must-not-implement in B1. Versions table content misleading (BUG-049, BUG-050) |
+| SC-13 Integrations | 5.61 % | 5.79 % | 4.48 % | 2.68 % | high: page background `#F8F9FF` vs `#F8FAFC`; medium: title size at 390 | canonical background (design note). Connector cards, sync telemetry, backfill and sparkline omitted by plan. No real defect in the capture |
+| SC-17 Market launch checklist | 9.51 % | 9.87 % | 7.10 % | 4.46 % | high: primary button missing in app; medium: table header weight/size, title size at 390 | "missing" primary is state, not drift: FR is Live, so Request go-live is not shown. Real differences: the gate table is clipped beside the inspector at 1440/1280 (BUG-052); the 390 capture is 526 px wide, the page scrolls sideways (BUG-051). Override, Filing Packet and statutory-lock banner omitted by plan |
+
+Shell landmarks (header, sidebar) matched sc_01 at 1440 and 1280 on all three screens. No new style drift beyond the canonical values recorded for MVP-A.
+### 2026-11-16T22:33:16.487Z · SC-29 tenant-settings — role tenant-admin
+
+- Page: `http://127.0.0.1:3100/settings` · Stitch: `sc_29_tenant_settings`
+- Pixel mismatch is informational (sample data differs from API data); style fidelity is the check.
+
+| Viewport | Screenshot | Diff image | Pixel mismatch | App / reference size | Landmarks matched | Worst severity |
+|---|---|---|---|---|---|---|
+| 1440x900 | `testing/ui-screenshots/app/settings/tenant-settings/tenant-admin/1440x900.png` | `testing/ui-screenshots/app/settings/tenant-settings/tenant-admin/1440x900.diff.png` | 4.6% | 1440x2731 / 1440x1818 | 6/8 | high |
+| 1280x800 | `testing/ui-screenshots/app/settings/tenant-settings/tenant-admin/1280x800.png` | `testing/ui-screenshots/app/settings/tenant-settings/tenant-admin/1280x800.diff.png` | 4.75% | 1280x2929 / 1280x1992 | 6/8 | high |
+| 768x1024 | `testing/ui-screenshots/app/settings/tenant-settings/tenant-admin/768x1024.png` | `testing/ui-screenshots/app/settings/tenant-settings/tenant-admin/768x1024.diff.png` | 4.67% | 768x3287 / 982x3723 | 4/6 | high |
+| 390x844 | `testing/ui-screenshots/app/settings/tenant-settings/tenant-admin/390x844.png` | `testing/ui-screenshots/app/settings/tenant-settings/tenant-admin/390x844.diff.png` | 1.93% | 390x4305 / 982x8578 | 3/6 | high |
+
+Style differences:
+
+| Viewport | Landmark | Status | Severity | Property | Stitch | App |
+|---|---|---|---|---|---|---|
+| 1440x900 | primaryButton | mismatch | high | background-color | `rgb(30, 79, 163)` | `rgb(0, 56, 131)` |
+| 1440x900 | primaryButton | mismatch | high | font-weight | `500` | `600` |
+| 1440x900 | tableHeader | mismatch | medium | font-size | `12px` | `11px` |
+| 1440x900 | tableHeader | mismatch | medium | font-weight | `700` | `600` |
+| 1280x800 | primaryButton | mismatch | high | background-color | `rgb(30, 79, 163)` | `rgb(0, 56, 131)` |
+| 1280x800 | primaryButton | mismatch | high | font-weight | `500` | `600` |
+| 1280x800 | tableHeader | mismatch | medium | font-size | `12px` | `11px` |
+| 1280x800 | tableHeader | mismatch | medium | font-weight | `700` | `600` |
+| 768x1024 | primaryButton | mismatch | high | background-color | `rgb(30, 79, 163)` | `rgb(0, 56, 131)` |
+| 768x1024 | primaryButton | mismatch | high | font-weight | `500` | `600` |
+| 768x1024 | tableHeader | mismatch | medium | font-size | `12px` | `11px` |
+| 768x1024 | tableHeader | mismatch | medium | font-weight | `700` | `600` |
+| 390x844 | title | mismatch | medium | font-size | `24px` | `20px` |
+| 390x844 | title | mismatch | medium | line-height | `32px` | `28px` |
+| 390x844 | primaryButton | mismatch | high | background-color | `rgb(30, 79, 163)` | `rgb(0, 56, 131)` |
+| 390x844 | primaryButton | mismatch | high | font-weight | `500` | `600` |
+| 390x844 | tableHeader | mismatch | medium | font-size | `12px` | `11px` |
+| 390x844 | tableHeader | mismatch | medium | font-weight | `700` | `600` |
+
+### 2026-11-16T22:33:28.622Z · SC-13 integrations — role tenant-admin
+
+- Page: `http://127.0.0.1:3100/settings/integrations` · Stitch: `sc_13_integrations_and_sync_health` · config brace patched: sc_13_integrations_and_sync_health
+- Pixel mismatch is informational (sample data differs from API data); style fidelity is the check.
+
+| Viewport | Screenshot | Diff image | Pixel mismatch | App / reference size | Landmarks matched | Worst severity |
+|---|---|---|---|---|---|---|
+| 1440x900 | `testing/ui-screenshots/app/settings/integrations/tenant-admin/1440x900.png` | `testing/ui-screenshots/app/settings/integrations/tenant-admin/1440x900.diff.png` | 5.6% | 1440x900 / 1440x1513 | 6/7 | high |
+| 1280x800 | `testing/ui-screenshots/app/settings/integrations/tenant-admin/1280x800.png` | `testing/ui-screenshots/app/settings/integrations/tenant-admin/1280x800.diff.png` | 5.79% | 1280x800 / 1280x1647 | 6/7 | high |
+| 768x1024 | `testing/ui-screenshots/app/settings/integrations/tenant-admin/768x1024.png` | `testing/ui-screenshots/app/settings/integrations/tenant-admin/768x1024.diff.png` | 4.48% | 768x1024 / 831x3141 | 4/5 | high |
+| 390x844 | `testing/ui-screenshots/app/settings/integrations/tenant-admin/390x844.png` | `testing/ui-screenshots/app/settings/integrations/tenant-admin/390x844.diff.png` | 2.68% | 390x1292 / 553x6873 | 3/5 | high |
+
+Style differences:
+
+| Viewport | Landmark | Status | Severity | Property | Stitch | App |
+|---|---|---|---|---|---|---|
+| 1440x900 | page | mismatch | high | background | `rgb(248, 250, 252)` | `rgb(248, 249, 255)` |
+| 1440x900 | tableHeader | absent-in-stitch | info | — | — | — |
+| 1280x800 | page | mismatch | high | background | `rgb(248, 250, 252)` | `rgb(248, 249, 255)` |
+| 1280x800 | tableHeader | absent-in-stitch | info | — | — | — |
+| 768x1024 | page | mismatch | high | background | `rgb(248, 250, 252)` | `rgb(248, 249, 255)` |
+| 768x1024 | tableHeader | absent-in-stitch | info | — | — | — |
+| 390x844 | page | mismatch | high | background | `rgb(248, 250, 252)` | `rgb(248, 249, 255)` |
+| 390x844 | title | mismatch | medium | font-size | `24px` | `20px` |
+| 390x844 | title | mismatch | medium | line-height | `32px` | `28px` |
+| 390x844 | tableHeader | absent-in-stitch | info | — | — | — |
+
+### 2026-11-16T22:33:41.214Z · SC-17 market-launch-checklist — role tenant-admin
+
+- Page: `http://127.0.0.1:3100/settings/markets/5d0b3dd0-2498-43fe-8035-905c30c697cd` · Stitch: `sc_17_market_launch_checklist`
+- Pixel mismatch is informational (sample data differs from API data); style fidelity is the check.
+
+| Viewport | Screenshot | Diff image | Pixel mismatch | App / reference size | Landmarks matched | Worst severity |
+|---|---|---|---|---|---|---|
+| 1440x900 | `testing/ui-screenshots/app/settings/market-launch-checklist/tenant-admin/1440x900.png` | `testing/ui-screenshots/app/settings/market-launch-checklist/tenant-admin/1440x900.diff.png` | 10.24% | 1440x1319 / 1440x1153 | 6/8 | high |
+| 1280x800 | `testing/ui-screenshots/app/settings/market-launch-checklist/tenant-admin/1280x800.png` | `testing/ui-screenshots/app/settings/market-launch-checklist/tenant-admin/1280x800.diff.png` | 8.57% | 1280x1743 / 1280x1226 | 6/8 | high |
+| 768x1024 | `testing/ui-screenshots/app/settings/market-launch-checklist/tenant-admin/768x1024.png` | `testing/ui-screenshots/app/settings/market-launch-checklist/tenant-admin/768x1024.diff.png` | 7.09% | 768x1915 / 993x2508 | 4/6 | high |
+| 390x844 | `testing/ui-screenshots/app/settings/market-launch-checklist/tenant-admin/390x844.png` | `testing/ui-screenshots/app/settings/market-launch-checklist/tenant-admin/390x844.diff.png` | 4.08% | 390x2430 / 597x4730 | 3/6 | high |
+
+Style differences:
+
+| Viewport | Landmark | Status | Severity | Property | Stitch | App |
+|---|---|---|---|---|---|---|
+| 1440x900 | primaryButton | missing-in-app | high | background-color | `rgb(30, 79, 163)` | — |
+| 1440x900 | primaryButton | missing-in-app | high | color | `rgb(255, 255, 255)` | — |
+| 1440x900 | primaryButton | missing-in-app | high | border-radius | `2px` | — |
+| 1440x900 | primaryButton | missing-in-app | high | height | `32px` | — |
+| 1440x900 | primaryButton | missing-in-app | high | font-family | `Inter` | — |
+| 1440x900 | primaryButton | missing-in-app | high | font-size | `13px` | — |
+| 1440x900 | primaryButton | missing-in-app | high | font-weight | `600` | — |
+| 1440x900 | tableHeader | mismatch | medium | font-size | `12px` | `11px` |
+| 1440x900 | tableHeader | mismatch | medium | font-weight | `700` | `600` |
+| 1440x900 | tableHeader | mismatch | medium | background | `rgb(220, 233, 255)` | `rgb(239, 244, 255)` |
+| 1280x800 | primaryButton | missing-in-app | high | background-color | `rgb(30, 79, 163)` | — |
+| 1280x800 | primaryButton | missing-in-app | high | color | `rgb(255, 255, 255)` | — |
+| 1280x800 | primaryButton | missing-in-app | high | border-radius | `2px` | — |
+| 1280x800 | primaryButton | missing-in-app | high | height | `32px` | — |
+| 1280x800 | primaryButton | missing-in-app | high | font-family | `Inter` | — |
+| 1280x800 | primaryButton | missing-in-app | high | font-size | `13px` | — |
+| 1280x800 | primaryButton | missing-in-app | high | font-weight | `600` | — |
+| 1280x800 | tableHeader | mismatch | medium | font-size | `12px` | `11px` |
+| 1280x800 | tableHeader | mismatch | medium | font-weight | `700` | `600` |
+| 1280x800 | tableHeader | mismatch | medium | background | `rgb(220, 233, 255)` | `rgb(239, 244, 255)` |
+| 768x1024 | primaryButton | missing-in-app | high | background-color | `rgb(30, 79, 163)` | — |
+| 768x1024 | primaryButton | missing-in-app | high | color | `rgb(255, 255, 255)` | — |
+| 768x1024 | primaryButton | missing-in-app | high | border-radius | `2px` | — |
+| 768x1024 | primaryButton | missing-in-app | high | height | `32px` | — |
+| 768x1024 | primaryButton | missing-in-app | high | font-family | `Inter` | — |
+| 768x1024 | primaryButton | missing-in-app | high | font-size | `13px` | — |
+| 768x1024 | primaryButton | missing-in-app | high | font-weight | `600` | — |
+| 768x1024 | tableHeader | mismatch | medium | font-size | `12px` | `11px` |
+| 768x1024 | tableHeader | mismatch | medium | font-weight | `700` | `600` |
+| 768x1024 | tableHeader | mismatch | medium | background | `rgb(220, 233, 255)` | `rgb(239, 244, 255)` |
+| 390x844 | title | mismatch | medium | font-size | `24px` | `20px` |
+| 390x844 | title | mismatch | medium | line-height | `32px` | `28px` |
+| 390x844 | primaryButton | missing-in-app | high | background-color | `rgb(30, 79, 163)` | — |
+| 390x844 | primaryButton | missing-in-app | high | color | `rgb(255, 255, 255)` | — |
+| 390x844 | primaryButton | missing-in-app | high | border-radius | `2px` | — |
+| 390x844 | primaryButton | missing-in-app | high | height | `32px` | — |
+| 390x844 | primaryButton | missing-in-app | high | font-family | `Inter` | — |
+| 390x844 | primaryButton | missing-in-app | high | font-size | `13px` | — |
+| 390x844 | primaryButton | missing-in-app | high | font-weight | `600` | — |
+| 390x844 | tableHeader | mismatch | medium | font-size | `12px` | `11px` |
+| 390x844 | tableHeader | mismatch | medium | font-weight | `700` | `600` |
+| 390x844 | tableHeader | mismatch | medium | background | `rgb(220, 233, 255)` | `rgb(239, 244, 255)` |
+
+
+## Increment B1 — round 2 (2026-11-17)
+
+Harness runs above dated 2026-11-16T22:33Z (UTC): role tenant-admin, `--url` on `next start` :3100, cookie from the saved storage state; `nmp_e2e` after the round-2 workflows (FR live, versions 1–12, one service account with keys, one disabled webhook endpoint).
+
+| Screen | 1440x900 | 1280x800 | 768x1024 | 390x844 | Harness findings | Judgement |
+|---|---|---|---|---|---|---|
+| SC-29 Tenant settings | 4.60 % | 4.75 % | 4.67 % | 1.93 % | as round 1 (canonical primary colour, table header weight, title size at 390) | design notes only; versions table now shows requester as Author and the right changed key (BUG-049/050 fixed) |
+| SC-13 Integrations | 5.60 % | 5.79 % | 4.48 % | 2.68 % | as round 1 (canonical background, title size at 390) | no real defect |
+| SC-17 Market launch checklist | 10.24 % | 8.57 % | 7.09 % | 4.08 % | as round 1: primary button "missing" (FR is Live, no Request go-live), table header weight/size | BUG-051 fixed: capture 390 px wide (round 1: 526). BUG-052 fixed: all four columns visible beside the inspector at 1440, inspector below at 1280. New BUG-060 LOW: "mandatory" split mid-word in the inspector's rule line (`break-all`). Higher 1440 % is the taller page (1319 vs 1153 px reference) |
+
+Shell landmarks matched sc_01 at 1440 and 1280 on all three screens. No new style drift.

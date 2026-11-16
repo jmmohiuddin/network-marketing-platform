@@ -189,6 +189,23 @@ describe('vendor console', () => {
     expect(headerOf(init, 'Idempotency-Key')).not.toBeNull()
   })
 
+  it('BUG-047 and BUG-048: names who can approve each area and never offers compensation plans', async () => {
+    const user = userEvent.setup()
+    renderAs(ME, <VendorSessionsPage />, fetchByRoute({
+      'GET /v1/support-sessions': () => ok([]),
+      'GET /v1/tenants': () => ok([tenant({ state: 'live' })]),
+      'GET /v1/support-sessions/limits': () => ok({ max_minutes: 120, scopes: ['audit.read', 'export', 'plan.activate'] }),
+    }))
+    await user.click(await screen.findByRole('button', { name: 'Request support session' }))
+    const dialog = screen.getByRole('dialog')
+    const audit = await within(dialog).findByLabelText('Audit log')
+    expect(document.getElementById(audit.getAttribute('aria-describedby')!)?.textContent).toBe('Approved by: Tenant admin')
+    const exports = within(dialog).getByLabelText('Row exports')
+    expect(document.getElementById(exports.getAttribute('aria-describedby')!)?.textContent).toMatch(/^No base role can approve this/)
+    expect(within(dialog).queryByLabelText('Compensation plans')).toBeNull()
+    expect(within(dialog).queryByLabelText('plan.activate')).toBeNull()
+  })
+
   it('ends only the vendor user’s own active session', async () => {
     const user = userEvent.setup()
     const fetchMock = fetchByRoute({

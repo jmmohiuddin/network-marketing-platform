@@ -6,13 +6,14 @@ import type { LightMyRequestResponse } from 'fastify'
 import { afterAll, beforeAll, describe, expect, test, vi } from 'vitest'
 import { BASE_ROLES, isPrivileged, type BaseRoleName, type Permission } from '../../src/lib/permissions.js'
 import type { SettingKey } from '../../src/modules/ten/settings.js'
+import { FIXTURE_REASONS, FIXTURE_SUBJECT } from '../../src/modules/cas/test-support.js'
 import { multipartBody, tinyFiles } from '../../src/modules/imp/test-support.js'
 import {
   baseRoleId, buildTestApp, call, closePoolsAfterAll, createMarket, createSignedInUser, ownerRows, resetApiDb, type TestUser,
 } from '../helpers/index.js'
 import type { CaseRequest } from '../isolation/cases.js'
 import { routesOf } from '../isolation/route-registry.js'
-import { MARKET_CODE, seedTenants, type Seeded } from '../isolation/seed.js'
+import { MARKET_CODE, PACK, seedTenants, SUITE_MODULES, type Seeded } from '../isolation/seed.js'
 
 // TS-36 (AC-36.1, AC-36.2, BR-SEC-05, E-SEC-02): every base role against every route buildApp() registers. A probe is
 // side-effect free (an id that exists nowhere, or a body that fails validation), so "allowed" is any answer past the
@@ -22,7 +23,7 @@ vi.mock('fastify', async (original) => (await import('../isolation/route-registr
 
 const uploadDir = await mkdtemp(join(tmpdir(), 'nmp-authz-'))
 vi.stubEnv('UPLOAD_DIR', uploadDir)
-const app = await buildTestApp({ env: { API_RATE_LIMIT_PER_MINUTE: '100000', SIGN_IN_RATE_LIMIT_PER_MINUTE: '100000' } })
+const app = await buildTestApp({ modules: SUITE_MODULES, env: { API_RATE_LIMIT_PER_MINUTE: '100000', SIGN_IN_RATE_LIMIT_PER_MINUTE: '100000' } })
 const routes = routesOf(app)
 
 type Needs = (held: ReadonlySet<Permission>) => boolean
@@ -52,9 +53,23 @@ const SETTING_READERS: Readonly<Record<SettingKey, Needs>> = {
   'compliance.late_order_day': any('settings.manage', 'compliance.read'),
   'compliance.personal_share_flag': any('settings.manage', 'compliance.read'),
   'privacy.breach_contacts': all('settings.manage'),
+  'money.rounding_mode': any('settings.manage', 'settings.approve'),
+  'money.clawback_policy': any('settings.manage', 'settings.approve'),
+  'plan.activation_notice_days': any('settings.manage', 'settings.approve'),
 }
 const SETTING_KEYS = Object.keys(SETTING_READERS) as SettingKey[]
 const MAPPING_READERS = any('import.manage', 'mapping.edit', 'mapping.approve')
+const SETTINGS_HISTORY = any('settings.manage', 'settings.approve')
+const STRUCTURE_READERS = any('settings.manage', 'market.manage', 'market.signoff')
+const LAUNCH_READERS = any('market.manage', 'market.signoff')
+const SETTINGS_MANAGE = all('settings.manage')
+const MARKET_MANAGE = all('market.manage')
+const INTEGRATION = all('integration.manage')
+// Evidence uploaders: launch preparers and signers, and the create permission of a registered case type (the suite
+// mounts CAS with its fixture type: create import.manage, read compliance.read).
+const UPLOADERS = any('market.manage', 'market.signoff', 'import.manage')
+// A case id that exists nowhere has no type, so no permission can be checked: 404 for every role.
+const caseProbe = (path: string, body?: unknown) => probe(everyone, 'POST', `/v1/cases/${NOWHERE}/${path}`, body)
 const ROWS = `/v1/compliance/snapshots/${NOWHERE}/figures/R1.2025-01.customer_share_pct/rows`
 
 const PROBES: Readonly<Record<string, readonly Probe[]>> = {
@@ -125,6 +140,68 @@ const PROBES: Readonly<Record<string, readonly Probe[]>> = {
     read(all('compliance.read'), ROWS),
     read(all('compliance.read', 'export'), `${ROWS}?export=true`),
   ],
+  'GET /v1/settings': [read(SETTINGS_HISTORY, '/v1/settings')],
+  'GET /v1/settings/versions': [read(SETTINGS_HISTORY, '/v1/settings/versions')],
+  'GET /v1/settings/versions/:version': [read(SETTINGS_HISTORY, '/v1/settings/versions/2000000000')],
+  'GET /v1/setting-change-requests': [read(SETTINGS_HISTORY, '/v1/setting-change-requests')],
+  'POST /v1/setting-change-requests/:id/decision': [probe(all('settings.approve'), 'POST', `/v1/setting-change-requests/${NOWHERE}/decision`, {})],
+  'POST /v1/setting-change-requests/:id/withdraw': [probe(SETTINGS_MANAGE, 'POST', `/v1/setting-change-requests/${NOWHERE}/withdraw`, {})],
+  'GET /v1/markets/:id': [read(STRUCTURE_READERS, `/v1/markets/${NOWHERE}`)],
+  'POST /v1/markets': [probe(SETTINGS_MANAGE, 'POST', '/v1/markets', {})],
+  'PATCH /v1/markets/:id': [probe(SETTINGS_MANAGE, 'PATCH', `/v1/markets/${NOWHERE}`, {})],
+  'DELETE /v1/markets/:id': [probe(SETTINGS_MANAGE, 'DELETE', `/v1/markets/${NOWHERE}`, {})],
+  'GET /v1/brands': [read(everyone, '/v1/brands')],
+  'POST /v1/brands': [probe(SETTINGS_MANAGE, 'POST', '/v1/brands', {})],
+  'PATCH /v1/brands/:id': [probe(SETTINGS_MANAGE, 'PATCH', `/v1/brands/${NOWHERE}`, {})],
+  'DELETE /v1/brands/:id': [probe(SETTINGS_MANAGE, 'DELETE', `/v1/brands/${NOWHERE}`, {})],
+  'GET /v1/calendars': [read(STRUCTURE_READERS, '/v1/calendars')],
+  'POST /v1/calendars': [probe(SETTINGS_MANAGE, 'POST', '/v1/calendars', {})],
+  'PATCH /v1/calendars/:id': [probe(SETTINGS_MANAGE, 'PATCH', `/v1/calendars/${NOWHERE}`, {})],
+  'DELETE /v1/calendars/:id': [probe(SETTINGS_MANAGE, 'DELETE', `/v1/calendars/${NOWHERE}`, {})],
+  'POST /v1/calendars/:id/periods': [probe(SETTINGS_MANAGE, 'POST', `/v1/calendars/${NOWHERE}/periods`, {})],
+  'GET /v1/calendars/:id/periods': [read(STRUCTURE_READERS, `/v1/calendars/${NOWHERE}/periods`)],
+  'GET /v1/markets/:id/checklist': [read(LAUNCH_READERS, `/v1/markets/${NOWHERE}/checklist`)],
+  'POST /v1/markets/:id/checklist/:item/entries': [probe(MARKET_MANAGE, 'POST', `/v1/markets/${NOWHERE}/checklist/licence_evidence/entries`, {})],
+  'POST /v1/markets/:id/go-live-requests': [probe(MARKET_MANAGE, 'POST', `/v1/markets/${NOWHERE}/go-live-requests`, {})],
+  'GET /v1/markets/:id/go-live-requests': [read(LAUNCH_READERS, `/v1/markets/${NOWHERE}/go-live-requests`)],
+  'POST /v1/market-go-live-requests/:id/withdraw': [probe(MARKET_MANAGE, 'POST', `/v1/market-go-live-requests/${NOWHERE}/withdraw`, {})],
+  'POST /v1/market-go-live-requests/:id/decision': [probe(all('market.signoff'), 'POST', `/v1/market-go-live-requests/${NOWHERE}/decision`, {})],
+  'GET /v1/provider-configs': [read(LAUNCH_READERS, '/v1/provider-configs')],
+  'POST /v1/provider-configs': [probe(MARKET_MANAGE, 'POST', '/v1/provider-configs', {})],
+  'POST /v1/provider-configs/:id/withdraw': [probe(MARKET_MANAGE, 'POST', `/v1/provider-configs/${NOWHERE}/withdraw`, {})],
+  'GET /v1/market-packs/:pack/rules': [read(any('market.manage', 'market.signoff', 'compliance.read'), `/v1/market-packs/${PACK}/rules`)],
+  'GET /v1/api-keys/options': [read(INTEGRATION, '/v1/api-keys/options')],
+  'GET /v1/service-accounts': [read(INTEGRATION, '/v1/service-accounts')],
+  'POST /v1/service-accounts': [probe(INTEGRATION, 'POST', '/v1/service-accounts', {})],
+  'POST /v1/service-accounts/:id/disable': [probe(INTEGRATION, 'POST', `/v1/service-accounts/${NOWHERE}/disable`, {})],
+  'POST /v1/service-accounts/:id/keys': [probe(INTEGRATION, 'POST', `/v1/service-accounts/${NOWHERE}/keys`, {})],
+  'POST /v1/api-keys/:id/rotate': [probe(INTEGRATION, 'POST', `/v1/api-keys/${NOWHERE}/rotate`, {})],
+  'POST /v1/api-keys/:id/revoke': [probe(INTEGRATION, 'POST', `/v1/api-keys/${NOWHERE}/revoke`, {})],
+  'GET /v1/openapi.json': [read(everyone, '/v1/openapi.json')],
+  'GET /v1/webhook-topics': [read(INTEGRATION, '/v1/webhook-topics')],
+  'GET /v1/webhook-endpoints': [read(INTEGRATION, '/v1/webhook-endpoints')],
+  'POST /v1/webhook-endpoints': [probe(INTEGRATION, 'POST', '/v1/webhook-endpoints', {})],
+  'GET /v1/webhook-endpoints/:id': [read(INTEGRATION, `/v1/webhook-endpoints/${NOWHERE}`)],
+  'PATCH /v1/webhook-endpoints/:id': [probe(INTEGRATION, 'PATCH', `/v1/webhook-endpoints/${NOWHERE}`, {})],
+  'POST /v1/webhook-endpoints/:id/rotate-secret': [probe(INTEGRATION, 'POST', `/v1/webhook-endpoints/${NOWHERE}/rotate-secret`, {})],
+  'POST /v1/webhook-endpoints/:id/test': [probe(INTEGRATION, 'POST', `/v1/webhook-endpoints/${NOWHERE}/test`, {})],
+  'GET /v1/webhook-endpoints/:id/deliveries': [read(INTEGRATION, `/v1/webhook-endpoints/${NOWHERE}/deliveries`)],
+  'POST /v1/webhook-deliveries/:id/retry': [probe(INTEGRATION, 'POST', `/v1/webhook-deliveries/${NOWHERE}/retry`, {})],
+  'GET /v1/documents/limits': [read(UPLOADERS, '/v1/documents/limits')],
+  'POST /v1/documents': [probe(UPLOADERS, 'POST', '/v1/documents', {})],
+  'GET /v1/documents/:id': [read(everyone, `/v1/documents/${NOWHERE}`)],
+  'GET /v1/documents/:id/content': [read(everyone, `/v1/documents/${NOWHERE}/content`)],
+  // The body is checked before the permission (cas/routes.ts): a valid one about a subject that exists nowhere.
+  'POST /v1/cases': [probe(all('import.manage'), 'POST', '/v1/cases', {
+    type: 'adjustment', subject_type: FIXTURE_SUBJECT, subject_id: NOWHERE, reason_code: FIXTURE_REASONS[0], payload: { amount_minor: '1' },
+  })],
+  'GET /v1/cases': [read(all('compliance.read'), '/v1/cases')],
+  'GET /v1/cases/:id': [read(everyone, `/v1/cases/${NOWHERE}`)],
+  'POST /v1/cases/:id/evidence': [caseProbe('evidence', {})],
+  'POST /v1/cases/:id/assign': [caseProbe('assign', {})],
+  'POST /v1/cases/:id/submit': [caseProbe('submit', {})],
+  'POST /v1/cases/:id/decision': [caseProbe('decision', {})],
+  'POST /v1/cases/:id/withdraw': [caseProbe('withdraw', {})],
 }
 
 /** Fastify's HEAD routes run their GET handler: they take the GET probes with method HEAD. */

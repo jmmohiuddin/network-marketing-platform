@@ -85,6 +85,17 @@ describe('AuditPage', () => {
     expect(bodyOf(callsTo(fetchMock, 'POST', '/v1/audit-exports')[0]![1])).toEqual({ filters: {} })
   })
 
+  it('BUG-027: counts one exported event in the singular', async () => {
+    const user = userEvent.setup()
+    renderAs(adminMe(), <AuditPage />, fetchByRoute({
+      'GET /v1/audit-events': () => ok([EVENT]),
+      'POST /v1/audit-exports': () => ok({ id: 'x1', row_count: '1', download: '/v1/audit-exports/x1/download' }, 201),
+    }))
+    await user.click(await screen.findByRole('button', { name: 'Export events' }))
+    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Export events' }))
+    expect((await screen.findByText(/^1 event\. Each download is recorded too\.$/))).toBeTruthy()
+  })
+
   it('offers the CSV of an export within the cap', async () => {
     const user = userEvent.setup()
     renderAs(adminMe(), <AuditPage />, fetchByRoute({

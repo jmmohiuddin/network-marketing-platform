@@ -47,7 +47,8 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
   const logger = config.logLevel === 'silent'
     ? false
     : { level: config.logLevel, redact: { paths: REDACTED_PATHS, censor: '[redacted]' } }
-  const app = fastify({ logger, genReqId: () => randomUUID(), requestIdHeader: false })
+  const trustProxy = config.trustProxy === false ? false : [...config.trustProxy]
+  const app = fastify({ logger, genReqId: () => randomUUID(), requestIdHeader: false, trustProxy })
   app.decorate('config', config)
   app.decorateRequest('auth', null)
   registerErrorHandling(app)

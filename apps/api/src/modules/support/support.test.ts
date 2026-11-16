@@ -75,7 +75,9 @@ describe('GET /v1/support-sessions/limits', () => {
     const tooLong = await fileRequest({ minutes: maxMinutes + 1 })
     const outOfScope = await fileRequest({ scope: { permissions: ['participant.unmask'] } })
 
-    expect(limits.json().data).toEqual({ max_minutes: 480, scopes: PERMISSIONS.filter((permission) => permission !== 'participant.unmask') })
+    const tenantOwn = ['participant.unmask', 'settings.approve', 'market.signoff', 'integration.manage']
+    expect(limits.json().data).toEqual({ max_minutes: 480, scopes: PERMISSIONS.filter((permission) => !tenantOwn.includes(permission)) })
+    expect(scopes).toContain('market.manage')
     expect(longest.statusCode).toBe(201)
     expect([tooLong.statusCode, outOfScope.statusCode]).toEqual([400, 400])
     expect((await call(app, { method: 'GET', url: '/v1/support-sessions/limits', as: admin })).json().error.code).toBe('REALM_FORBIDDEN')
@@ -121,12 +123,15 @@ describe('POST /v1/support-sessions (vendor request)', () => {
     const withoutAdmin = await createTenant()
 
     const unmask = await fileRequest({ scope: { permissions: ['participant.unmask'] } })
+    const tenantOwn = await Promise.all(['settings.approve', 'market.signoff', 'integration.manage'].map((permission) =>
+      fileRequest({ scope: { permissions: [permission] } })))
     const tooLong = await fileRequest({ minutes: 481 })
     const unknownTenant = await fileRequest({ tenant: randomUUID() })
     const notReady = await fileRequest({ tenant: provisioning.id })
     const noDecider = await fileRequest({ tenant: withoutAdmin.id })
 
     expect([unmask.statusCode, tooLong.statusCode]).toEqual([400, 400])
+    expect(tenantOwn.map((response) => response.statusCode)).toEqual([400, 400, 400])
     expect(unknownTenant.json().error.code).toBe('NOT_FOUND')
     expect(notReady.json().error.code).toBe('TENANT_NOT_AVAILABLE')
     expect(noDecider.json().error.code).toBe('TENANT_HAS_NO_ADMIN')
@@ -242,6 +247,22 @@ describe('GET /v1/support-sessions', () => {
     expect((await call(app, { method: 'GET', url: `/v1/support-sessions/${id}`, as: engineer })).json().data.id).toBe(id)
     expect((await call(app, { method: 'GET', url: `/v1/support-sessions/${id}`, as: globexAdmin })).statusCode).toBe(404)
     expect((await call(app, { method: 'GET', url: '/v1/support-sessions', as: analyst })).json().error.code).toBe('PERMISSION_DENIED')
+  })
+
+  test('BUG-023: tenant views name the vendor requester; vendor views are unchanged', async () => {
+    const id = await requested()
+    await ownerRows('UPDATE user_account SET display_name = $2 WHERE id = $1', [engineer.id, 'Eve Engineer'])
+    const requester = { id: engineer.id, display_name: 'Eve Engineer', email: engineer.email }
+
+    const detail = await call(app, { method: 'GET', url: `/v1/support-sessions/${id}`, as: admin })
+    const list = await call(app, { method: 'GET', url: '/v1/support-sessions?limit=200', as: admin })
+    const vendorDetail = await call(app, { method: 'GET', url: `/v1/support-sessions/${id}`, as: engineer })
+    const vendorList = await call(app, { method: 'GET', url: '/v1/support-sessions?limit=200', as: engineer })
+
+    expect(detail.json().data.requester).toEqual(requester)
+    expect(list.json().data.find((row: { id: string }) => row.id === id).requester).toEqual(requester)
+    expect(vendorDetail.json().data).not.toHaveProperty('requester')
+    expect(vendorList.json().data.every((row: object) => !('requester' in row))).toBe(true)
   })
 })
 

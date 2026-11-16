@@ -17,13 +17,15 @@ vi.mock('next/navigation', () => ({
   useSearchParams: () => new URLSearchParams(navigation.search),
 }))
 
-const ME = adminMe()
+const ADMIN_ROLE = { assignment_id: 'as1', role_id: 'r-admin', name: 'Tenant admin', market_ids: null }
+const ME = adminMe({ roles: [ADMIN_ROLE], permissions: ['user.manage', 'audit.read', 'settings.manage', 'vendor_access.decide', 'compliance.read', 'import.manage'] })
+const REQUESTER = { id: 'v1', display_name: 'Vera Vendor', email: 'vera@vendor.example' }
 
-function session(overrides: Partial<SupportSession> = {}): SupportSession {
+function session(overrides: Partial<SupportSession> = {}): SupportSession & { requester: typeof REQUESTER | null } {
   return {
     id: 's1', tenant_id: 't1', tenant_slug: 'acme', requester_id: 'v1', reason: 'Ticket 42: snapshot failed',
     scope: { permissions: ['compliance.read'], requester_region: 'us' }, requested_minutes: 240, state: 'requested',
-    decided_by: null, starts_at: null, ends_at: null, created_at: '2026-11-12T08:00:00.000Z', ...overrides,
+    decided_by: null, starts_at: null, ends_at: null, created_at: '2026-11-12T08:00:00.000Z', requester: REQUESTER, ...overrides,
   }
 }
 
@@ -101,13 +103,52 @@ describe('VendorAccessPage', () => {
     expect(callsTo(fetchMock, 'POST', '/v1/support-sessions/s1/end').length).toBe(1)
   })
 
-  it('shows who asked and the areas to view, never write actions (BUG-023)', async () => {
-    const asked = session({ requester_id: '7733a8df-0000-4000-8000-000000000003', scope: { permissions: ['import.manage', 'user.manage'], requester_region: 'eu' } })
-    renderAs(ME, <VendorAccessPage />, fetchByRoute({ 'GET /v1/support-sessions': sessionsByState({ requested: [asked] }) }))
+  it('BUG-023: names the vendor requester on request, open-session and history views', async () => {
+    const asked = session({ scope: { permissions: ['import.manage', 'user.manage'], requester_region: 'eu' } })
+    const active = session({ id: 's2', state: 'active', starts_at: '2026-11-12T09:00:00.000Z', ends_at: '2099-01-01T00:00:00.000Z' })
+    const unresolved = { ...session({ id: 's3', state: 'ended', requester_id: '7733a8df-0000-4000-8000-000000000003' }), requester: null }
+    renderAs(ME, <VendorAccessPage />, fetchByRoute({
+      'GET /v1/support-sessions': sessionsByState({ requested: [asked], active: [active], history: [unresolved] }),
+      'GET /v1/support-sessions/s2/log': () => ok([]),
+    }))
     expect(await screen.findByText('Areas asked for (view only)')).toBeTruthy()
     expect(screen.getByText('Data imports, Users and roles')).toBeTruthy()
-    expect(screen.getByText('Vendor user 7733a8df')).toBeTruthy()
+    expect(screen.getAllByText('Vera Vendor (vera@vendor.example)')).toHaveLength(2)
+    expect(await screen.findByRole('cell', { name: 'Vendor user 7733a8df' })).toBeTruthy()
     expect(screen.queryByText(/Upload and load|Manage users/)).toBeNull()
+  })
+
+  it('BUG-047: names the areas the admin cannot approve before Approve', async () => {
+    const asked = session({ scope: { permissions: ['compliance.read', 'export'], requester_region: 'eu' } })
+    renderAs(ME, <VendorAccessPage />, fetchByRoute({ 'GET /v1/support-sessions': sessionsByState({ requested: [asked] }) }))
+    expect(await screen.findByText('You cannot approve: Row exports')).toBeTruthy()
+  })
+
+  it('BUG-047: names areas held only for some markets', async () => {
+    const scoped = adminMe({ roles: [{ ...ADMIN_ROLE, market_ids: ['m1'] }], permissions: ME.permissions })
+    renderAs(scoped, <VendorAccessPage />, fetchByRoute({ 'GET /v1/support-sessions': sessionsByState({ requested: [session()] }) }))
+    expect(await screen.findByText('You cannot approve: Compliance reports')).toBeTruthy()
+  })
+
+  it('BUG-046: says a code may be asked for when deciding', async () => {
+    const user = userEvent.setup()
+    renderAs(ME, <VendorAccessPage />, fetchByRoute({ 'GET /v1/support-sessions': sessionsByState({ requested: [session()] }) }))
+    await user.click(await screen.findByRole('button', { name: 'Deny' }))
+    expect(within(screen.getByRole('dialog')).getByText('You may be asked for a code from your authenticator app.')).toBeTruthy()
+  })
+
+  it('BUG-028: after End now, focus lands on the open-sessions heading, not the body', async () => {
+    const user = userEvent.setup()
+    const active = session({ state: 'active', starts_at: '2026-11-12T09:00:00.000Z', ends_at: '2099-01-01T00:00:00.000Z' })
+    renderAs(ME, <VendorAccessPage />, fetchByRoute({
+      'GET /v1/support-sessions': sessionsByState({ active: [active] }),
+      'GET /v1/support-sessions/s1/log': () => ok([]),
+      'POST /v1/support-sessions/s1/end': () => ok(session({ state: 'ended' })),
+    }))
+    await user.click(await screen.findByRole('button', { name: 'End now' }))
+    await user.click(screen.getByRole('button', { name: 'End session now' }))
+    expect(await screen.findByText('The vendor session has ended.')).toBeTruthy()
+    expect(document.activeElement).toBe(screen.getByRole('heading', { name: 'Open sessions' }))
   })
 
   it('says when there are no requests, no open sessions and no history', async () => {

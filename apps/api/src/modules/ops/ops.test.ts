@@ -81,7 +81,7 @@ describe('POST /v1/tenants (FR-TEN-001 provisioning)', () => {
       slug: body.slug, region: 'eu', isolation_tier: 'pooled', state: 'provisioning', dpa_document_id: body.dpa_document_id,
       job_health: { queued: 0, running: 0, failed: 0 },
     })
-    expect(tenant.markets.map((market: { code: string; state: string }) => [market.code, market.state])).toEqual([['GB', 'live'], ['MY', 'live']])
+    expect(tenant.markets.map((market: { code: string; state: string }) => [market.code, market.state])).toEqual([['GB', 'draft'], ['MY', 'draft']])
     // The Tenant admin grant waits for the second person (the provisioning approval).
     expect(admin).toMatchObject({ email: body.first_admin.email.toLowerCase(), state: 'invited', grants: 0 })
     expect((await ownerRows('SELECT db_route, created_by FROM tenant WHERE id = $1', [tenant.id]))[0]).toEqual({ db_route: 'pooled', created_by: creator.id })

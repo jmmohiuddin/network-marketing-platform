@@ -73,3 +73,11 @@ _Agent: qa. Read before every task; update after every task. Keep concise — fa
 - Fix check: BUG-044 verified fixed (dialogs = content height, centred; long content caps at 90vh with scrolling body + visible footer, also 1280x720). BUG-030 not reproduced; 023, 025–029, 045–048 still present (028 also after Reject grant and End now).
 - L1 W1–W10 pass (figures = report.json; 1466/4775/7442; export cap "40 rows; limit 10"; step-up seen on Approve vendor access; first grant rejection exercised). L2 harness 11 x 4: same flags as round 2, captures viewport-wide. L3: detector source (2 side-tab notes) + rendered /signin,/signin/vendor clean; scripted a11y 25 routes clean. Score 15/16.
 - No new defects. Evidence var/e2e-screens/R6-*.png, var/e2e-fixtures/exports-r6. No 5xx.
+
+## 2026-11-17 — B1 browser round 1 (W-B1-1..6 + MVP-A regression, harness SC-29/13/17, Impeccable + a11y)
+- W-B1-1..6 all pass (W-B1-4 SCOPE_MISSING not executable: one scope in catalogue). Polish BUG-023, 025–029, 045–048 verified fixed. Regression sign-in/import (1466/4775/7442, sums = CSV)/snapshot (R1 2025-01 16.61 %)/audit (chain intact 100) pass. Isolation: analyst 403/NotAvailable, globex 404.
+- New: BUG-049, 050, 051 MEDIUM; BUG-052..059 LOW. No 5xx; console errors only intended 4xx. Evidence var/qa-b1/. Impeccable 11/16 (perf not scored).
+
+## 2026-11-17 — B1 browser round 2 (retest of BUG-049..059, quick W-B1-1..5 + regression, harness SC-29/13/17, Impeccable + a11y)
+- BUG-049..059 all verified fixed (055 client path only). W-B1-1..5 pass (new: webhook secret rotation with grace). Regression import 1466/4775/7442 + sums, snapshot R1 16.61 %/42.06 %, audit chain intact 44, isolation analyst/globex pass. No 5xx; console only intended 4xx.
+- New: BUG-060 LOW (gate inspector `break-all` splits "mandatory"). Score 14/16. Evidence var/qa-b1/R2-*.

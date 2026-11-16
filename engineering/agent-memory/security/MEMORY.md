@@ -42,3 +42,10 @@ _Agent: security. Read before every task; update after every task. Keep concise 
 - Before 0043 reaches any non-local database, run on it (works at 0042) and have every listed tenant re-approved / re-taken live by an independent vendor user:
   `SELECT t.slug, t.state, e.action, u.email FROM audit.vendor_event e JOIN tenant t ON t.id = e.object_id JOIN user_account u ON u.id = e.actor_id WHERE e.action IN ('TENANT.PROVISIONING_APPROVED','TENANT.WENT_LIVE') AND u.realm = 'vendor' AND u.created_by IS NOT NULL;` (nmp_e2e at 0042 lists initech, approved by operator2@vendor.example).
 - Tests: second-person.test.ts (chain A->X1->X2 for tenant approval, go-live, invitation approval both ways, approver-of-ancestor; DB cases a/b/c; key reuse approve->reject; reject -> re-invite -> approve -> accept -> sign in; go-live without step-up), create-vendor-user.test.ts (target check matrix, cap of 2, audit operator). Full `pnpm vitest run apps/api packages` 941 green, typecheck clean.
+
+## B1 adversarial review (2026-11-17, read-only): findings
+- HIGH: integration.manage (any market scope, no compliance.read needed) mints a compliance:read key that reads every market (key scope = null). Repro: GB-only Tenant admin, session GET IE snapshot 404, minted key 200.
+- MEDIUM: settings.approve / settings.manage are not checked for all-markets scope on tenant-wide money settings (GB-only Finance approver approved money.rounding_mode, 200); eligibleApprovers(marketId null) lists market-scoped approvers.
+- MEDIUM: no Fastify trustProxy; behind the Next /v1 rewrite request.ip is the proxy, so ip_allow and api-key-fail-ip limiter see one address (not run, code reading).
+- LOW: IP_NOT_ALLOWED path runs before any limiter (400 requests, 400x403, no 429).
+- Repro method: vitest test files in the scratchpad importing repo files by absolute path, config without imports, `--root <dir> --config <dir>/vitest.config.ts`, NMP_TEST_DB slot, via scripts/heavy.sh.

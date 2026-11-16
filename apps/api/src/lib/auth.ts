@@ -102,6 +102,19 @@ export function requirePermission(...permissions: Permission[]): preHandlerAsync
   }
 }
 
+/** 403 SCOPE_NOT_HELD unless the caller holds the permission for all markets: tenant-wide objects (keys, webhooks, settings). */
+export function assertAllMarkets(auth: AuthContext, permission: Permission): void {
+  if (marketScope(auth, permission) !== null) {
+    throw new ApiError(403, 'SCOPE_NOT_HELD', 'This applies to every market, so it needs the permission for all markets.', { permission })
+  }
+}
+
+export function requireAllMarkets(permission: Permission): preHandlerAsyncHookHandler {
+  return async (request) => {
+    assertAllMarkets(currentAuth(request), permission)
+  }
+}
+
 export function requireStepUp(maxAgeSeconds?: number): preHandlerAsyncHookHandler {
   return async (request) => {
     assertStepUp(request, maxAgeSeconds)

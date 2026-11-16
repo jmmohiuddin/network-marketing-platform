@@ -106,10 +106,10 @@ export async function insertTenant(tx: Tx, creatorId: string, input: NewTenant, 
 async function insertMarkets(tx: Tx, markets: readonly NewMarket[]): Promise<string[]> {
   const ids: string[] = []
   for (const market of markets) {
-    // An operating market of an existing business (the overlay reads its back-office exports): live.
+    // D-B1-17: every market starts draft and goes live only through its launch checklist (market_insert_guard).
     const { rows } = await tx.query<{ id: string }>(
       `INSERT INTO market (tenant_id, code, currency, minor_unit, time_zone, languages, market_pack, state, created_by)
-       VALUES (app_tenant_id(), $1, $2, $3, $4, $5, $6, 'live', current_setting('app.user_id')::uuid) RETURNING id`,
+       VALUES (app_tenant_id(), $1, $2, $3, $4, $5, $6, 'draft', current_setting('app.user_id')::uuid) RETURNING id`,
       [market.code, market.currency, market.minor_unit, market.time_zone, market.languages, market.market_pack],
     )
     ids.push(rows[0]!.id)

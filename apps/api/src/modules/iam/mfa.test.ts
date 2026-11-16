@@ -193,8 +193,20 @@ describe('GET /v1/me', () => {
     expect(body.user.id).toBe(user.id)
     expect(body.tenant).toMatchObject({ id: tenant.id, slug: tenant.slug })
     expect(body.roles.map((role: { name: string }) => role.name)).toEqual(['Compliance officer'])
-    expect(body.permissions).toEqual(['audit.read', 'compliance.read', 'export', 'mapping.approve', 'snapshot.create'])
-    expect(body.navigation.map((entry: { key: string }) => entry.key)).toEqual(['compliance', 'audit'])
+    expect(body.permissions).toEqual(['audit.read', 'compliance.read', 'export', 'mapping.approve', 'market.signoff', 'snapshot.create'])
+    expect(body.navigation.map((entry: { key: string }) => entry.key)).toEqual(['compliance', 'audit', 'markets'])
+  })
+
+  test('an entry opens with any one of its permissions (PLAN B1 2.10)', async () => {
+    const keys = async (roles: Parameters<typeof createSignedInUser>[0]['roles']) => {
+      const user = await createSignedInUser({ tenantId: tenant.id, roles })
+      return (await call(app, { method: 'GET', url: '/v1/me', as: user })).json().data.navigation.map((entry: { key: string }) => entry.key)
+    }
+
+    expect(await keys(['Tenant admin'])).toEqual(expect.arrayContaining(['settings', 'markets', 'integrations']))
+    expect(await keys(['Finance approver'])).toContain('settings')
+    expect(await keys(['Finance approver'])).not.toContain('markets')
+    expect(await keys(['Commission analyst'])).not.toContain('integrations')
   })
 
   test('a vendor user sees the vendor console only and no tenant', async () => {

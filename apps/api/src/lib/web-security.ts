@@ -5,6 +5,15 @@ import { ApiError } from './errors.js'
 const UNSAFE_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE'])
 const CSRF_HEADER = 'x-requested-with'
 const ONE_MINUTE = '1 minute'
+/** An API key bearer token (PLAN B1 2.6); the key guard reads the same pattern. */
+export const API_KEY_BEARER = /^Bearer (nmpk_\S*)$/
+
+declare module 'fastify' {
+  interface FastifyContextConfig {
+    /** The route takes API keys (apiKeyOrSession): bearer callers are limited per key, not here (D-B1-18). */
+    apiKey?: boolean
+  }
+}
 
 /**
  * CSRF defence for cookie authentication (SEC-35), on top of SameSite=Strict: every unsafe request must
@@ -21,7 +30,11 @@ export function registerCsrfCheck(app: FastifyInstance): void {
   })
 }
 
-/** API-wide limit per session (per IP when signed out). Sign-in routes use signInRateLimit instead. */
+/**
+ * API-wide limit per session (per IP when signed out). Sign-in routes use signInRateLimit instead. A signed-out bearer
+ * request to a route that takes API keys is not counted (D-B1-18): its per-key limiter and the failed-lookup limiter of
+ * apiKeyOrSession are its quota. On other routes a bearer header changes nothing.
+ */
 export async function registerRateLimit(app: FastifyInstance): Promise<void> {
   // shortcut: in-memory counters, per process; use a shared store (Redis) once the API runs on more than one node.
   await app.register(rateLimit, {
@@ -29,6 +42,8 @@ export async function registerRateLimit(app: FastifyInstance): Promise<void> {
     hook: 'onRequest', // runs after session resolution, so the key can be the session
     max: app.config.apiRateLimitPerMinute,
     timeWindow: ONE_MINUTE,
+    allowList: (request) =>
+      request.auth === null && request.routeOptions.config.apiKey === true && API_KEY_BEARER.test(request.headers.authorization ?? ''),
     keyGenerator: (request) => (request.auth === null ? `ip:${request.ip}` : `session:${request.auth.sessionId}`),
     errorResponseBuilder: (_request, context) =>
       new ApiError(429, 'RATE_LIMITED', `Too many requests. Try again in ${context.after}.`),

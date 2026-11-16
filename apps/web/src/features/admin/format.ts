@@ -60,6 +60,10 @@ const PERMISSION_LABELS: Readonly<Record<string, string>> = {
   'user.manage': 'Manage users and roles',
   'participant.unmask': 'See masked participant fields',
   'plan.activate': 'Activate compensation plans',
+  'settings.approve': 'Approve money settings',
+  'market.manage': 'Prepare market launches',
+  'market.signoff': 'Sign off market launches',
+  'integration.manage': 'Manage API keys and webhooks',
 }
 
 export function permissionLabel(permission: string): string {
@@ -81,7 +85,15 @@ const SUPPORT_SCOPE_LABELS: Readonly<Record<string, string>> = {
   'vendor_access.decide': 'Vendor access requests',
   'settings.manage': 'Settings',
   'user.manage': 'Users and roles',
-  'plan.activate': 'Compensation plans',
+  'market.manage': 'Market launches',
+}
+
+// BUG-048: areas with no screen to view yet (plans arrive in B3); never offered in a session request.
+const AREAS_WITHOUT_SCREEN: ReadonlySet<string> = new Set(['plan.activate'])
+
+/** The areas of GET /v1/support-sessions/limits a vendor user may ask for: those a session can show. */
+export function requestableScopes(scopes: readonly string[]): string[] {
+  return scopes.filter((scope) => !AREAS_WITHOUT_SCREEN.has(scope))
 }
 
 export function supportScopeLabel(permission: string): string {
@@ -123,4 +135,58 @@ export function fromLocalInput(value: string): string | null {
 /** "2 queued · 1 running · 0 failed": counts only, never job data (AC-57.1). */
 export function jobHealthLabel(health: { readonly queued: number; readonly running: number; readonly failed: number }): string {
   return `${health.queued} queued · ${health.running} running · ${health.failed} failed`
+}
+
+/** The tenant base roles and their permissions (apps/api/src/lib/permissions.ts BASE_ROLES, PLAN B1 section 3). */
+export const BASE_ROLE_PERMISSIONS: Readonly<Record<string, readonly string[]>> = {
+  'Tenant admin': [
+    'user.manage', 'settings.manage', 'import.manage', 'mapping.edit', 'mapping.approve', 'compliance.read',
+    'audit.read', 'vendor_access.decide', 'market.manage', 'integration.manage',
+  ],
+  'Commission analyst': ['compliance.read'],
+  'Plan administrator': ['compliance.read'],
+  'Finance approver': ['compliance.read', 'participant.unmask', 'plan.activate', 'settings.approve'],
+  'Payout officer': ['participant.unmask'],
+  'Compliance officer': ['mapping.approve', 'compliance.read', 'snapshot.create', 'export', 'audit.read', 'market.signoff'],
+  'Support agent': [],
+  DPO: ['compliance.read', 'audit.read', 'participant.unmask'],
+  'Implementation consultant': ['import.manage', 'mapping.edit'],
+  'Executive read-only': ['compliance.read'],
+  Integration: [],
+}
+
+const DECIDE_VENDOR_ACCESS = 'vendor_access.decide'
+
+/**
+ * BUG-047: base roles whose holders can approve a support session that includes this area. The approver decides
+ * vendor access and holds the area over all markets (support/decisions.ts SUPPORT_SCOPE_NOT_HELD).
+ */
+export function supportApproverRoles(permission: string): string[] {
+  return Object.entries(BASE_ROLE_PERMISSIONS)
+    .filter(([, permissions]) => permissions.includes(DECIDE_VENDOR_ACCESS) && permissions.includes(permission))
+    .map(([role]) => role)
+}
+
+/** Who can approve an area, in words, for the vendor's request dialog. */
+export function supportApproverText(permission: string): string {
+  const roles = supportApproverRoles(permission)
+  return roles.length === 0
+    ? 'No base role can approve this; the tenant needs a role that decides vendor access and holds this area.'
+    : `Approved by: ${roles.join(', ')}`
+}
+
+export interface PermissionHolder {
+  readonly permissions: readonly string[]
+  readonly roles: readonly { readonly name: string; readonly market_ids: readonly string[] | null }[]
+}
+
+/**
+ * BUG-047: the areas of a session request the signed-in user cannot approve, because they do not hold the area over
+ * all markets. shortcut: a role's permissions are known for base roles only (GET /v1/me names roles, not their
+ * permissions); a tenant role over all markets counts as holding what the user holds. The API decides either way.
+ */
+export function unapprovableAreas(holder: PermissionHolder, areas: readonly string[]): string[] {
+  return areas.filter((area) => !holder.permissions.includes(area) || !holder.roles.some(
+    (role) => role.market_ids === null && (BASE_ROLE_PERMISSIONS[role.name]?.includes(area) ?? true),
+  ))
 }

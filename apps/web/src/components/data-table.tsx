@@ -131,7 +131,8 @@ export function DataTable<T>({ caption, columns, rows, rowKey, loading = false, 
   }
   return (
     <div className={bare ? 'overflow-hidden' : 'bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden'}>
-      <div className="w-full overflow-x-auto">
+      {/* relative: absolutely positioned content (sr-only captions and labels) scrolls with the table instead of widening the page (BUG-051). */}
+      <div className="relative w-full overflow-x-auto">
         <table className={`w-full text-left border-collapse${stackOnPhone ? ' max-sm:block' : ''}`} role={role('table')} aria-busy={loading || undefined}>
           {/* Names the table for assistive technology; the section heading above already says it on screen (BUG-042). */}
           <caption className="sr-only">{caption}</caption>

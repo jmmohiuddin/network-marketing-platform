@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useId, useRef, useState, type KeyboardEvent, type ReactNode, type RefObject, type SyntheticEvent } from 'react'
+import { useEffect, useId, useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode, type RefObject, type SyntheticEvent } from 'react'
 import { errorMessage } from '../lib/messages'
 import { Banner } from './banner'
 import { Button } from './button'
@@ -33,22 +33,44 @@ export interface ModalDialog {
   readonly onCancel: (event: SyntheticEvent<HTMLDialogElement>) => void
 }
 
+/** Focuses an element, making a heading or other non-control focusable by script only (tabindex -1). */
+function focusElement(target: HTMLElement): void {
+  if (target.tabIndex < 0 && !target.hasAttribute('tabindex')) target.tabIndex = -1
+  target.focus()
+}
+
+/**
+ * Where focus goes when a dialog closes (BUG-028): the element matching the selector returnFocusTo when given (callers
+ * whose action removes the opener's row pass the list heading), else the opener while it is still in the page, else
+ * the page's <main> heading, so focus never falls back to the document body.
+ */
+function returnFocus(returnFocusTo: string | undefined, opener: HTMLElement | null): void {
+  const requested = returnFocusTo === undefined ? null : document.querySelector<HTMLElement>(returnFocusTo)
+  const target = requested ?? (opener?.isConnected === true ? opener : null) ?? document.querySelector<HTMLElement>('main h1') ?? document.querySelector<HTMLElement>('main')
+  if (target !== null) focusElement(target)
+}
+
 /**
  * Native <dialog> opened with showModal (top layer, page behind inert): focus trap, Escape calls onClose, focus
- * returns to the opener. The first element marked data-autofocus gets focus; else the browser's first control.
- * Shared by Modal and Drawer.
+ * returns to the opener (or returnFocusTo, see returnFocus). The first element marked data-autofocus gets focus; else
+ * the browser's first control. Shared by Modal and Drawer.
  */
-export function useModalDialog(open: boolean, onClose: () => void): ModalDialog {
+export function useModalDialog(open: boolean, onClose: () => void, returnFocusTo?: string): ModalDialog {
   const ref = useRef<HTMLDialogElement>(null)
+  const focusTarget = useRef(returnFocusTo)
+  useLayoutEffect(() => {
+    focusTarget.current = returnFocusTo
+  })
   useEffect(() => {
     const dialog = ref.current
     if (!open || dialog === null) return
-    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    const active = document.activeElement
+    const opener = active instanceof HTMLElement && active !== document.body ? active : null
     dialog.showModal()
     dialog.querySelector<HTMLElement>('[data-autofocus]')?.focus()
     return () => {
       dialog.close()
-      opener?.focus()
+      returnFocus(focusTarget.current, opener)
     }
   }, [open])
   return {
@@ -87,14 +109,16 @@ export interface ModalProps {
   readonly children: ReactNode
   /** Buttons, right-aligned; at most one primary. */
   readonly footer?: ReactNode
+  /** Selector of the element focused on close instead of the opener (the list heading when the action removes the row). */
+  readonly returnFocusTo?: string
 }
 
 /**
  * Modal dialog (sc_02-modal l.53-262): scrim, 720/560/400 card, header with close, scrolling body, footer strip.
  * Never open a dialog from inside another dialog.
  */
-export function Modal({ open, onClose, title, size = 'md', icon, description, children, footer }: ModalProps) {
-  const dialog = useModalDialog(open, onClose)
+export function Modal({ open, onClose, title, size = 'md', icon, description, children, footer, returnFocusTo }: ModalProps) {
+  const dialog = useModalDialog(open, onClose, returnFocusTo)
   const titleId = useId()
   if (!open) return null
   return (
@@ -147,15 +171,27 @@ export interface ConfirmDialogProps {
   /** A rejected promise keeps the dialog open with the error; the caller closes it on success. */
   readonly onConfirm: () => Promise<void>
   readonly onCancel: () => void
+  /**
+   * Selector of the element focused after the action (not after Cancel): the list heading when the action removes
+   * the opener's row (BUG-028), since the opener is gone once the list reloads.
+   */
+  readonly returnFocusTo?: string
 }
 
 /** Simple confirmation for irreversible but contained actions. */
-export function ConfirmDialog({ open, title, consequence, confirmLabel, destructive = false, onConfirm, onCancel }: ConfirmDialogProps) {
+export function ConfirmDialog({ open, title, consequence, confirmLabel, destructive = false, onConfirm, onCancel, returnFocusTo }: ConfirmDialogProps) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [cancelled, setCancelled] = useState(false)
   useEffect(() => {
-    if (open) setError(null)
+    if (!open) return
+    setError(null)
+    setCancelled(false)
   }, [open])
+  function cancel() {
+    setCancelled(true)
+    onCancel()
+  }
   async function confirm() {
     setBusy(true)
     setError(null)
@@ -169,12 +205,15 @@ export function ConfirmDialog({ open, title, consequence, confirmLabel, destruct
   }
   const footer = (
     <>
-      <Button variant="secondary" onClick={onCancel} disabled={busy}>Cancel</Button>
+      <Button variant="secondary" onClick={cancel} disabled={busy}>Cancel</Button>
       <Button variant={destructive ? 'destructive-solid' : 'primary'} loading={busy} onClick={confirm}>{confirmLabel}</Button>
     </>
   )
   return (
-    <Modal open={open} onClose={busy ? () => undefined : onCancel} title={title} size="sm" icon={destructive ? 'warning' : undefined} footer={footer}>
+    <Modal
+      open={open} onClose={busy ? () => undefined : cancel} title={title} size="sm" icon={destructive ? 'warning' : undefined} footer={footer}
+      returnFocusTo={cancelled ? undefined : returnFocusTo}
+    >
       <p>{consequence}</p>
       {error !== null && <Banner tone="danger">{error}</Banner>}
     </Modal>

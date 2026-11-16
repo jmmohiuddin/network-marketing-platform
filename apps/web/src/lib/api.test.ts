@@ -33,14 +33,17 @@ describe('api client requests', () => {
   })
 
   it('sends X-Requested-With on unsafe methods only, and JSON bodies', async () => {
-    const fetchMock = fetchReturning(ok({}), ok({}, 201), ok({}), noContent())
+    const fetchMock = fetchReturning(ok({}), ok({}, 201), ok({}), noContent(), ok({}))
     const { api } = client(fetchMock)
     await api.get('/v1/me')
     await api.post('/v1/users', { email: 'a@example.com' })
     await api.put('/v1/settings/x', { value: 1 })
     await api.delete('/v1/auth/sessions/current')
+    await api.patch('/v1/brands/b', { name: 'Nord' })
     expect(requestHeaders(fetchMock, 0).has('X-Requested-With')).toBe(false)
-    for (const call of [1, 2, 3]) expect(requestHeaders(fetchMock, call).get('X-Requested-With')).toBe('fetch')
+    expect(requestInit(fetchMock, 4).method).toBe('PATCH')
+    expect(requestBody(fetchMock, 4)).toEqual({ name: 'Nord' })
+    for (const call of [1, 2, 3, 4]) expect(requestHeaders(fetchMock, call).get('X-Requested-With')).toBe('fetch')
     expect(requestHeaders(fetchMock, 1).get('Content-Type')).toBe('application/json')
     expect(requestBody(fetchMock, 1)).toEqual({ email: 'a@example.com' })
   })
@@ -110,6 +113,15 @@ describe('api client errors', () => {
     expect(handlers.stepUp).toHaveBeenCalledTimes(1)
     expect(requestHeaders(fetchMock, 1).get('Idempotency-Key')).toBe('key-7')
     expect(requestBody(fetchMock, 1)).toEqual({ approved: true })
+  })
+
+  it('asks for step-up on PATCH and retries the same change once', async () => {
+    const fetchMock = fetchReturning(apiError(403, 'STEP_UP_REQUIRED'), ok({ id: 'e1' }))
+    const { api, handlers } = client(fetchMock)
+    await api.patch('/v1/webhook-endpoints/e1', { url: 'https://hooks.example.com/new' })
+    expect(handlers.stepUp).toHaveBeenCalledTimes(1)
+    expect(requestInit(fetchMock, 1).method).toBe('PATCH')
+    expect(requestBody(fetchMock, 1)).toEqual({ url: 'https://hooks.example.com/new' })
   })
 
   it('does not loop: a second STEP_UP_REQUIRED is thrown', async () => {

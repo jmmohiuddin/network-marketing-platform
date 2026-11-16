@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, test } from 'vitest'
 import { closePoolsAfterAll, ownerRows, resetApiDb, testConfig } from '../test/helpers/index.js'
-import { assertSeedable, seed } from './seed.js'
+import { assertSeedable, E2E_FIXTURE_PACK, seed, seedFixturePack } from './seed.js'
 
 closePoolsAfterAll()
 
@@ -29,8 +29,10 @@ describe('seed', () => {
 
     const vendors = await ownerRows(`SELECT email, created_by FROM user_account WHERE realm = 'vendor' ORDER BY email`)
 
-    expect(users).toHaveLength(10)
-    expect(credentials).toEqual([{ passwords: 10, factors: 2 }]) // written as their own users; only vendors have a factor
+    const markets = await ownerRows('SELECT code, state FROM market ORDER BY code')
+
+    expect(users).toHaveLength(12)
+    expect(credentials).toEqual([{ passwords: 12, factors: 2 }]) // written as their own users; only vendors have a factor
     expect(users.filter((user) => user.realm === 'vendor')).toEqual([
       { email: 'operator@vendor.example', realm: 'vendor', mfa_enrolled: true },
       { email: 'operator2@vendor.example', realm: 'vendor', mfa_enrolled: true },
@@ -42,9 +44,12 @@ describe('seed', () => {
     expect(grants).toEqual([
       { name: 'Commission analyst', approved: false },
       { name: 'Compliance officer', approved: true },
+      { name: 'Finance approver', approved: true },
       { name: 'Tenant admin', approved: false },
       { name: 'Tenant admin', approved: false },
     ])
+    expect(markets).toEqual([{ code: 'DEMO', state: 'draft' }, { code: 'DEMO', state: 'draft' }]) // D-B1-17
+    expect(await ownerRows('SELECT count(*)::int AS n FROM guardrail_rule')).toEqual([{ n: 0 }]) // fixture pack: nmp_e2e only
     expect(first.filter((line) => line.startsWith('vendor TOTP: otpauth://'))).toHaveLength(2)
     expect(first.some((line) => line.startsWith('password of the accounts created now: '))).toBe(true)
     expect(second).toEqual([])
@@ -61,6 +66,31 @@ describe('seed', () => {
       'refuses SEED_PASSWORD for database nmp_test',
     )
     await expect(seed(testConfig({ NODE_ENV: 'production' }), undefined, () => undefined)).rejects.toThrow('production')
+  })
+
+  test('the e2e fixture pack is labelled, idempotent and refused when the owner connection is on another database', async () => {
+    await resetApiDb()
+    const database = (await ownerRows<{ name: string }>('SELECT current_database() AS name'))[0]!.name
+
+    await seedFixturePack(database)
+    await seedFixturePack(database)
+    const rules = await ownerRows(
+      `SELECT 'guardrail' AS kind, id, title, mandatory, basis_status, source_ref FROM guardrail_rule WHERE market_pack = $1
+       UNION ALL SELECT 'tax', id, title, mandatory, basis_status, source_ref FROM tax_rule WHERE market_pack = $1 ORDER BY 1`,
+      [E2E_FIXTURE_PACK],
+    )
+
+    expect(rules).toEqual([
+      {
+        kind: 'guardrail', id: 'e2e-enrolment-only-bonus@2026-01-01', title: 'E2E FIXTURE — enrolment-only bonus',
+        mandatory: true, basis_status: 'screening', source_ref: 'E2E fixture, not a real market rule',
+      },
+      {
+        kind: 'tax', id: 'e2e-withholding@2026-01-01', title: 'E2E FIXTURE — withholding', mandatory: true,
+        basis_status: 'counsel_confirmed', source_ref: 'E2E fixture',
+      },
+    ])
+    await expect(seedFixturePack('nmp_e2e')).rejects.toThrow('not nmp_e2e')
   })
 
   test('seeds only the local databases, with a fixed password only in nmp_dev and nmp_e2e', () => {

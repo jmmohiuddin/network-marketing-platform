@@ -91,8 +91,9 @@ describe('references from tenant A to rows it cannot see', () => {
   })
 
   test('an approval cannot be prepared or given by a vendor user or a user of another tenant', async () => {
+    // Given by the acting user (approval_actor_guard), so the keys are what refuses these.
     const approve = (preparerId: string, approverId: string) =>
-      withTenant(a, (tx) =>
+      withTenant({ ...a, userId: approverId }, (tx) =>
         insertRow(tx, 'approval', {
           tenant_id: a.tenantId, object_type: 'role_assignment', object_id: randomUUID(), preparer_id: preparerId,
           approver_id: approverId, decision: 'approved', decided_at: new Date(),

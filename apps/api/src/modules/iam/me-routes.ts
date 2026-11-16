@@ -1,6 +1,6 @@
 import type { Tx } from '@nmp/db'
 import type { FastifyInstance, FastifyRequest } from 'fastify'
-import { currentAuth, requireAuth, type AuthContext } from '../../lib/auth.js'
+import { currentAuth, marketScope, requireAuth, type AuthContext } from '../../lib/auth.js'
 import { inOwnRealm, runInVendor } from '../../lib/db.js'
 import { envelope } from '../../lib/http.js'
 import type { Permission } from '../../lib/permissions.js'
@@ -12,15 +12,18 @@ export interface NavigationEntry {
   readonly label: string
 }
 
-// Release A screens (MVP_A 1.3) and the permission each needs. The server decides what the user may open;
-// every endpoint behind a screen checks again (SECURITY_IAM_TENANCY 4.1).
-const TENANT_NAVIGATION: readonly (NavigationEntry & { readonly permission: Permission })[] = [
-  { key: 'compliance', path: '/compliance', label: 'Compliance', permission: 'compliance.read' },
-  { key: 'imports', path: '/imports', label: 'Data imports', permission: 'import.manage' },
-  { key: 'users', path: '/settings/users', label: 'Users and roles', permission: 'user.manage' },
-  { key: 'vendor_access', path: '/settings/vendor-access', label: 'Vendor access', permission: 'vendor_access.decide' },
-  { key: 'audit', path: '/settings/audit', label: 'Audit log', permission: 'audit.read' },
-  { key: 'settings', path: '/settings', label: 'Settings', permission: 'settings.manage' },
+// Screens and the permissions that open them (any one of anyOf). The server decides what the user may open; every
+// endpoint behind a screen checks again (SECURITY_IAM_TENANCY 4.1).
+// allMarkets: the screen manages tenant-wide objects, so the permission must be held for all markets.
+const TENANT_NAVIGATION: readonly (NavigationEntry & { readonly anyOf: readonly Permission[]; readonly allMarkets?: true })[] = [
+  { key: 'compliance', path: '/compliance', label: 'Compliance', anyOf: ['compliance.read'] },
+  { key: 'imports', path: '/imports', label: 'Data imports', anyOf: ['import.manage'] },
+  { key: 'users', path: '/settings/users', label: 'Users and roles', anyOf: ['user.manage'] },
+  { key: 'vendor_access', path: '/settings/vendor-access', label: 'Vendor access', anyOf: ['vendor_access.decide'] },
+  { key: 'audit', path: '/settings/audit', label: 'Audit log', anyOf: ['audit.read'] },
+  { key: 'settings', path: '/settings', label: 'Settings', anyOf: ['settings.manage', 'settings.approve'] },
+  { key: 'markets', path: '/settings/markets', label: 'Markets', anyOf: ['settings.manage', 'market.manage', 'market.signoff'] },
+  { key: 'integrations', path: '/settings/integrations', label: 'Integrations', anyOf: ['integration.manage'], allMarkets: true },
 ]
 const VENDOR_NAVIGATION: readonly NavigationEntry[] = [{ key: 'console', path: '/vendor', label: 'Operations console' }]
 
@@ -32,7 +35,9 @@ function mfaPending(auth: AuthContext): boolean {
 export function navigationFor(auth: AuthContext): NavigationEntry[] {
   if (mfaPending(auth)) return []
   if (auth.realm === 'vendor') return [...VENDOR_NAVIGATION]
-  return TENANT_NAVIGATION.filter((entry) => auth.permissions.has(entry.permission)).map(
+  const opens = (permission: Permission, allMarkets: boolean) =>
+    auth.permissions.has(permission) && (!allMarkets || marketScope(auth, permission) === null)
+  return TENANT_NAVIGATION.filter((entry) => entry.anyOf.some((permission) => opens(permission, entry.allMarkets === true))).map(
     ({ key, path, label }) => ({ key, path, label }),
   )
 }

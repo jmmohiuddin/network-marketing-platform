@@ -92,6 +92,27 @@ describe('MappingEditor', () => {
     expect(requestBody(fetchMock, post)).toEqual({ reason: 'Checked with finance' })
   })
 
+  it('BUG-029: names the author and approver for a user.manage holder, "you" for self', async () => {
+    search.value = ''
+    const approved = { ...DRAFT, state: 'approved', approved_by: USER_ID }
+    const users = [{ id: 'someone-else', email: 'bob@acme.example', display_name: 'Bob Builder', state: 'active', mfa_enrolled: true, last_sign_in_at: null, created_at: DRAFT.created_at, roles: [] }]
+    const fetchMock = fetchRoutes(
+      ...routes(approved).slice(0, 2),
+      ['GET', /^\/v1\/users\?limit=200$/, () => json(200, { data: users, meta: { next_cursor: null } })],
+    )
+    renderWithProviders(withSession(<MappingEditor />, ['mapping.approve', 'user.manage']), fetchMock)
+    expect(await screen.findByText(/by Bob Builder \(bob@acme\.example\)$/)).toBeTruthy()
+    expect(screen.getByText('you')).toBeTruthy()
+  })
+
+  it('BUG-029: says "another user" without user.manage and never reads the user list', async () => {
+    search.value = ''
+    const fetchMock = fetchRoutes(...routes().slice(0, 2))
+    renderWithProviders(withSession(<MappingEditor />, ['mapping.approve']), fetchMock)
+    expect((await screen.findAllByText(/by another user$/)).length).toBeGreaterThan(0)
+    expect(callsOf(fetchMock).some((call) => call.includes('/v1/users'))).toBe(false)
+  })
+
   it('shows no approve button to the author of the draft', async () => {
     search.value = ''
     const fetchMock = fetchRoutes(...routes({ ...DRAFT, created_by: USER_ID }).slice(0, 2))

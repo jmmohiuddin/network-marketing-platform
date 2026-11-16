@@ -33,6 +33,8 @@ export interface UsersTableProps {
   readonly pending: readonly GrantRequest[]
   /** Something changed: reload users and requests. */
   readonly onChanged: () => void
+  /** Selector of the users list, focused after an action that removes the opener's row (BUG-028). */
+  readonly listSelector: string
 }
 
 /** sc_28 role chip and its market scope (globe icon), read as "Role · scope". */
@@ -115,7 +117,7 @@ function ResendDialog({ user, onClose, onDone }: { readonly user: UserView; read
 }
 
 /** SC-28 users tab: users with roles, market scopes, MFA state; assign and revoke roles, resend, deactivate. */
-export function UsersTable({ users, roles, markets, pending, onChanged }: UsersTableProps) {
+export function UsersTable({ users, roles, markets, pending, onChanged, listSelector }: UsersTableProps) {
   const { readOnly } = useSession()
   const api = useApi()
   const toast = useToast()
@@ -168,6 +170,7 @@ export function UsersTable({ users, roles, markets, pending, onChanged }: UsersT
         consequence={action?.kind === 'deactivate' ? `${action.user.email} is signed out at once and can no longer sign in. Open invitations stop working. This cannot be undone here.` : ''}
         confirmLabel="Deactivate user"
         destructive
+        returnFocusTo={listSelector}
         onCancel={close}
         onConfirm={async () => {
           if (action?.kind !== 'deactivate') return
@@ -182,6 +185,7 @@ export function UsersTable({ users, roles, markets, pending, onChanged }: UsersT
         consequence={action?.kind === 'revoke' ? `${action.user.email} loses ${action.role.name} (${marketScopeLabel(action.role.market_ids, markets.data ?? [])}) now.` : ''}
         confirmLabel="Revoke role"
         destructive
+        returnFocusTo={listSelector}
         onCancel={close}
         onConfirm={async () => {
           if (action?.kind !== 'revoke') return

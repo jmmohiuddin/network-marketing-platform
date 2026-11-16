@@ -24,7 +24,7 @@ const SHELL_TITLE: Readonly<Record<Realm, (me: Me) => string>> = {
 const NAV_ICONS: Readonly<Record<string, string>> = {
   overview: 'dashboard', periods: 'history_toggle_off', plans: 'schema', people: 'account_tree', orders: 'receipt_long',
   cases: 'rule_folder', payouts: 'payments', finance: 'account_balance', compliance: 'verified_user', imports: 'sync_alt',
-  settings: 'tune', users: 'admin_panel_settings', vendor_access: 'vpn_key', audit: 'history_edu',
+  settings: 'tune', users: 'admin_panel_settings', vendor_access: 'vpn_key', audit: 'history_edu', markets: 'public', integrations: 'hub',
 }
 
 interface SidebarItem {

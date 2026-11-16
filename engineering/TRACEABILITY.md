@@ -27,17 +27,19 @@ Generated from `spec.json`. Status column is maintained by hand as work lands: `
 
 ## Release B (81)
 
+B1 (2026-11-17, `increments/B1/HANDOFF.md`): T = integration tests green; V = browser workflows W-B1-1..5 passed in QA round 2. FR-CAS-001 has no V: the case framework is not mounted and has no production case types until B2 (D-B1-13). FR-IAM-004 V covers its settings and go-live use; case decisions are tested only.
+
 | FR | Title | Stories | ACs | Rules | Tests | Screens | APIs | Tables | Status |
 |---|---|---|---|---|---|---|---|---|---|
-| FR-IAM-004 | Separation of duties | US-07 | AC-07.1 AC-07.2 | BR-ADJ-02 BR-SEC-06 | TS-35 TS-42 | SC-02 SC-03 | API-20 API-25 | approval | - |
-| FR-IAM-006 | API keys and service accounts | US-22 | AC-22.1 AC-22.2 AC-22.3 | BR-SEC-03 | TS-13 TS-15 TS-34 TS-59 | SC-13 | API-10 | api_key audit_event | - |
+| FR-IAM-004 | Separation of duties | US-07 | AC-07.1 AC-07.2 | BR-ADJ-02 BR-SEC-06 | TS-35 TS-42 | SC-02 SC-03 | API-20 API-25 | approval | I T V |
+| FR-IAM-006 | API keys and service accounts | US-22 | AC-22.1 AC-22.2 AC-22.3 | BR-SEC-03 | TS-13 TS-15 TS-34 TS-59 | SC-13 | API-10 | api_key audit_event | I T V |
 | FR-IAM-007 | Distributor sign-in | US-12 | AC-12.1 | BR-PAY-08 | TS-17 TS-53 | SC-27 SC-37 | API-07 | user_account participant | - |
-| FR-TEN-002 | Markets, brands, currencies and calendars | US-37 | AC-37.1 | BR-PER-01 | TS-59 TS-62 | SC-29 | API-39 | market brand calendar period | - |
-| FR-TEN-003 | Versioned tenant settings | US-37 | AC-37.1 | BR-MNY-02 | TS-06 TS-59 | SC-29 | API-39 | tenant_setting_version approval | - |
-| FR-TEN-004 | Market launch checklist | US-38 | AC-38.1 AC-38.2 | BR-PAY-11 BR-REG-04 | TS-50 | SC-17 | API-39 | market document provider_config approval | - |
+| FR-TEN-002 | Markets, brands, currencies and calendars | US-37 | AC-37.1 | BR-PER-01 | TS-59 TS-62 | SC-29 | API-39 | market brand calendar period | I T V |
+| FR-TEN-003 | Versioned tenant settings | US-37 | AC-37.1 | BR-MNY-02 | TS-06 TS-59 | SC-29 | API-39 | tenant_setting_version approval | I T V |
+| FR-TEN-004 | Market launch checklist | US-38 | AC-38.1 AC-38.2 | BR-PAY-11 BR-REG-04 | TS-50 | SC-17 | API-39 | market document provider_config approval | I T V |
 | FR-CPL-007 | Platform guardrails | US-26 | AC-26.1 AC-26.2 | BR-GRD-01 BR-GRD-02 BR-GRD-03 BR-GRD-04 | TS-26 TS-27 TS-31 TS-66 | SC-04 SC-11 | API-16 | guardrail_rule guardrail_decision | - |
 | FR-CPL-008 | Guardrail overrides log | US-26 | AC-26.1 AC-26.2 | BR-GRD-05 | TS-26 TS-27 TS-66 | SC-11 | API-16 | guardrail_decision | - |
-| FR-CPL-012 | Rule basis status in configuration | US-38 | AC-38.1 AC-38.2 | BR-CPL-03 | TS-50 | SC-17 | API-39 | guardrail_rule tax_rule | - |
+| FR-CPL-012 | Rule basis status in configuration | US-38 | AC-38.1 AC-38.2 | BR-CPL-03 | TS-50 | SC-17 | API-39 | guardrail_rule tax_rule | I T V |
 | FR-PAR-001 | Participant record and effective-dated participant types | US-21 | AC-21.1 AC-21.2 | BR-PTY-01 BR-PTY-02 | TS-31 TS-48 | SC-09 | API-12 | participant participant_type participant_type_assignment | - |
 | FR-PAR-002 | Enrolment intake with market gating | US-42 | AC-42.1 AC-42.2 | BR-REG-04 | TS-45 TS-50 TS-59 | SC-09 | API-12 | participant position relationship agreement_acceptance | - |
 | FR-PAR-003 | Duplicate-account detection queue | US-43 | AC-43.1 | BR-GEN-09 | TS-59 | SC-08 | API-30 | case participant | - |
@@ -91,7 +93,7 @@ Generated from `spec.json`. Status column is maintained by hand as work lands: `
 | FR-PAY-006 | Provider eligibility record | US-38 | AC-38.1 AC-38.2 | BR-PAY-11 | TS-50 | SC-17 SC-13 | API-39 | provider_config document | - |
 | FR-PAY-007 | Minimum payout, holds and dormant balances | US-47 | AC-47.1 AC-47.2 | BR-PAY-12 | TS-17 TS-40 | SC-03 | API-25 | payout_batch case | - |
 | FR-TAX-001 | Payee tax profile | US-48 | AC-48.1 | BR-TAX-01 BR-TAX-03 | TS-18 TS-19 TS-56 | SC-22 SC-09 | API-27 | tax_profile | - |
-| FR-CAS-001 | Case framework | US-02 | AC-02.1 AC-02.2 | BR-ADJ-01 | TS-42 TS-45 | SC-06 SC-08 | API-30 | case case_event approval document | - |
+| FR-CAS-001 | Case framework | US-02 | AC-02.1 AC-02.2 | BR-ADJ-01 | TS-42 TS-45 | SC-06 SC-08 | API-30 | case case_event approval document | I T |
 | FR-CAS-002 | Manual adjustments with thresholds and second approver | US-49 | AC-49.1 AC-49.2 | BR-ADJ-01 BR-ADJ-02 BR-ADJ-03 | TS-42 TS-59 | SC-06 | API-30 | case approval | - |
 | FR-CAS-003 | Commission dispute from a statement line | US-50 | AC-50.1 | BR-ADJ-04 | TS-59 TS-68 | SC-18 SC-06 | API-30 | case result_line | - |
 | FR-DIST-001 | Distributor statement | US-04 | AC-04.1 AC-04.2 | BR-PAY-06 BR-HON-01 | TS-22 TS-53 | SC-18 SC-37 | API-28 | statement result_line tax_line | - |
@@ -103,7 +105,7 @@ Generated from `spec.json`. Status column is maintained by hand as work lands: `
 | FR-DIST-008 | Notifications | US-17 | AC-17.1 AC-17.2 | BR-PAY-08 BR-PLN-04 | TS-17 TS-59 TS-68 | SC-38 | API-28 | notification outbox_event | - |
 | FR-PRV-001 | Data-subject requests | US-30 | AC-30.1 | BR-DAT-06 | TS-28 | SC-15 SC-41 | API-31 | privacy_request case | - |
 | FR-PRV-002 | Erasure by pseudonymisation | US-30 | AC-30.1 | BR-DAT-06 | TS-28 | SC-15 | API-31 | participant privacy_request | - |
-| FR-INT-001 | Public API and webhooks | US-22 | AC-22.1 AC-22.2 AC-22.3 | BR-SEC-03 | TS-13 TS-15 TS-34 TS-59 | SC-13 | API-10 API-33 | api_key webhook_endpoint webhook_delivery | - |
+| FR-INT-001 | Public API and webhooks | US-22 | AC-22.1 AC-22.2 AC-22.3 | BR-SEC-03 | TS-13 TS-15 TS-34 TS-59 | SC-13 | API-10 API-33 | api_key webhook_endpoint webhook_delivery | I T V |
 | FR-INT-002 | Integration and sync health | US-55 | AC-55.1 | BR-ORD-05 | TS-58 | SC-13 SC-01 | API-37 | provider_config inbound_event | - |
 | FR-INT-003 | Scheduled export of the full tenant data model | US-32 | AC-32.1 | BR-DAT-12 | TS-58 | SC-13 | API-32 | export_job | - |
 | FR-RPT-001 | Role dashboards | US-56 | AC-56.1 | BR-CPL-01 | TS-31 TS-58 | SC-35 SC-46 SC-01 | API-05 API-19 | compliance_report_snapshot run | - |

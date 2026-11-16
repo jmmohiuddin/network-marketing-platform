@@ -115,7 +115,7 @@ export function SupportDecisionDialog({ session, approve, tenantRegion, onClose,
         </>
       )}
       <TextAreaField id={REASON_ID} label="Note for the log" optional value={reason} onChange={setReason} />
-      <p className={NOTE}>You will be asked for a code from your authenticator app.</p>
+      <p className={NOTE}>You may be asked for a code from your authenticator app.</p>
     </FormDialog>
   )
 }

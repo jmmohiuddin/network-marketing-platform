@@ -59,6 +59,11 @@ export interface SupportSession {
   readonly created_at: string
 }
 
+/** BUG-023: tenant-realm session views name the vendor requester; null when the API could not resolve them. */
+export interface TenantSupportSession extends SupportSession {
+  readonly requester: { readonly id: string; readonly display_name: string | null; readonly email: string } | null
+}
+
 /** GET /v1/vendor-users (iam/vendor-users.ts VendorUserView). */
 export interface VendorUser {
   readonly id: string

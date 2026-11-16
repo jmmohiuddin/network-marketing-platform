@@ -5,12 +5,13 @@
 // local ones, and any database server not on this machine.
 import { randomBytes, randomUUID } from 'node:crypto'
 import { closePool, withSystem, type Tx } from '@nmp/db'
+import { closeOwnerPool, getOwnerPool } from '@nmp/db/testing'
 import { pathToFileURL } from 'node:url'
 import { loadConfig, type Config } from './config.js'
 import { recordAudit, recordVendorAudit } from './lib/audit.js'
 import { runInTenant, runInVendor, SYSTEM_ACTOR_ID, type ActorContext } from './lib/db.js'
 import { hashPassword } from './lib/passwords.js'
-import type { BaseRoleName } from './lib/permissions.js'
+import { BASE_ROLES, isPrivileged, type BaseRoleName } from './lib/permissions.js'
 import { seal } from './lib/secret-box.js'
 import { generateTotpSecret, totpUri } from './lib/totp.js'
 
@@ -27,17 +28,23 @@ const STAFF: readonly { local: string; name: string; role: BaseRoleName }[] = [
   { local: 'admin', name: 'Tenant Admin', role: 'Tenant admin' },
   { local: 'admin2', name: 'Second Admin', role: 'Tenant admin' },
   { local: 'compliance', name: 'Compliance Officer', role: 'Compliance officer' },
+  { local: 'finance', name: 'Finance Approver', role: 'Finance approver' },
   { local: 'analyst', name: 'Commission Analyst', role: 'Commission analyst' },
 ]
+
+// The two admins are the bootstrap grants of provisioning; every other privileged grant needs a second admin's approval.
+const needsApproval = (role: BaseRoleName): boolean =>
+  role !== 'Tenant admin' && isPrivileged(BASE_ROLES.find((base) => base.name === role)!.permissions)
 
 type Print = (line: string) => void
 
 // Credentials are reachable only by their own user (0040, BUG-002): the seed writes them as that user, then acts as
 // the system again.
-async function asSelf(tx: Tx, userId: string, write: () => Promise<unknown>): Promise<void> {
+async function asSelf<T>(tx: Tx, userId: string, write: () => Promise<T>): Promise<T> {
   await tx.query(`SELECT set_config('app.user_id', $1, true)`, [userId])
-  await write()
+  const result = await write()
   await tx.query(`SELECT set_config('app.user_id', $1, true)`, [SYSTEM_ACTOR_ID])
+  return result
 }
 
 async function insertUser(tx: Tx, user: { tenantId: string | null; email: string; name: string; passwordHash: string }) {
@@ -104,20 +111,23 @@ async function grant(tx: Tx, assignmentId: string, userId: string, role: BaseRol
   })
 }
 
-// The two admins are bootstrap grants (provisioning); other privileged grants carry an approval by the
-// second admin, prepared by the first, as the API would record them.
+// Privileged grants carry an approval by the second admin, prepared by the first, as the API would record them;
+// the approval is written as its approver (0107: approver_id = app.user_id).
 async function grantStaffRoles(tx: Tx, ids: ReadonlyMap<string, string>): Promise<void> {
   for (const member of STAFF) {
     const userId = ids.get(member.local)!
     const assignmentId = randomUUID()
-    if (member.role !== 'Compliance officer') {
+    if (!needsApproval(member.role)) {
       await grant(tx, assignmentId, userId, member.role, null)
       continue
     }
-    const { rows } = await tx.query<{ id: string }>(
-      `INSERT INTO approval (tenant_id, object_type, object_id, preparer_id, approver_id, decision, reason, decided_at)
-       VALUES (app_tenant_id(), 'role_assignment', $1, $2, $3, 'approved', 'seed', now()) RETURNING id`,
-      [assignmentId, ids.get('admin'), ids.get('admin2')],
+    const approver = ids.get('admin2')!
+    const { rows } = await asSelf(tx, approver, () =>
+      tx.query<{ id: string }>(
+        `INSERT INTO approval (tenant_id, object_type, object_id, preparer_id, approver_id, decision, reason, decided_at)
+         VALUES (app_tenant_id(), 'role_assignment', $1, $2, $3, 'approved', 'seed', now()) RETURNING id`,
+        [assignmentId, ids.get('admin'), approver],
+      ),
     )
     await grant(tx, assignmentId, userId, member.role, rows[0]!.id)
   }
@@ -126,9 +136,10 @@ async function grantStaffRoles(tx: Tx, ids: ReadonlyMap<string, string>): Promis
 async function seedTenant(slug: string, legalName: string, passwordHash: string, print: Print): Promise<boolean> {
   const tenantId = await upsertTenant(slug, legalName)
   return runInTenant({ tenantId, userId: SYSTEM_ACTOR_ID }, SYSTEM, async (tx) => {
+    // D-B1-17: a market starts draft and goes live only through its launch checklist.
     await tx.query(
       `INSERT INTO market (tenant_id, code, currency, minor_unit, time_zone, languages, market_pack, state)
-       VALUES (app_tenant_id(), 'DEMO', 'GBP', 2, 'Europe/London', '{en}', 'none', 'live') ON CONFLICT DO NOTHING`,
+       VALUES (app_tenant_id(), 'DEMO', 'GBP', 2, 'Europe/London', '{en}', 'none', 'draft') ON CONFLICT DO NOTHING`,
     )
     if ((await existingUser(tx, `admin@${slug}.example`)) !== undefined) return false
     const ids = new Map<string, string>()
@@ -142,8 +153,41 @@ async function seedTenant(slug: string, legalName: string, passwordHash: string,
   })
 }
 
+const E2E_DATABASE = 'nmp_e2e'
+export const E2E_FIXTURE_PACK = 'e2e-fixture'
+
+/**
+ * PLAN B1 section 6: a labelled fixture market pack for the browser tests (no real pack data ships, DEC-14). Pack
+ * rules are platform tables only migrations or the owner write, so this goes through the owner connection, which
+ * must point at the same database as the app (MIGRATE_DATABASE_URL). Idempotent.
+ */
+export async function seedFixturePack(expectedDatabase: string): Promise<void> {
+  const owner = getOwnerPool()
+  const { rows } = await owner.query<{ name: string }>('SELECT current_database() AS name')
+  if (rows[0]?.name !== expectedDatabase) {
+    throw new Error(`seed refuses the fixture pack: the owner connection is on ${rows[0]?.name}, not ${expectedDatabase}`)
+  }
+  await owner.query(
+    `INSERT INTO guardrail_rule (id, market_pack, title, outcome, predicate, overridable, mandatory, basis, basis_status,
+       source_ref, effective_from)
+     VALUES ('e2e-enrolment-only-bonus@2026-01-01', $1, 'E2E FIXTURE — enrolment-only bonus', 'blocked',
+       '{"fixture": "enrolment_only_bonus"}', false, true, 'E2E fixture basis, not a real market rule', 'screening',
+       'E2E fixture, not a real market rule', '2026-01-01')
+     ON CONFLICT (id) DO NOTHING`,
+    [E2E_FIXTURE_PACK],
+  )
+  await owner.query(
+    `INSERT INTO tax_rule (id, market_pack, title, kind, conditions, rate, rounding, mandatory, effective_from, basis,
+       basis_status, source_ref)
+     VALUES ('e2e-withholding@2026-01-01', $1, 'E2E FIXTURE — withholding', 'withholding', '{}', NULL, 'none', true,
+       '2026-01-01', 'E2E fixture basis, not a real tax rule', 'counsel_confirmed', 'E2E fixture')
+     ON CONFLICT (id) DO NOTHING`,
+    [E2E_FIXTURE_PACK],
+  )
+}
+
 // The seed creates known staff accounts: only the local databases of PROJECT_ENGINEERING_CONTEXT may get them.
-const SEEDABLE_DATABASES: ReadonlySet<string> = new Set(['nmp_dev', 'nmp_test', 'nmp_e2e'])
+const SEEDABLE_DATABASES: ReadonlySet<string> = new Set(['nmp_dev', 'nmp_test', 'nmp_test_1', 'nmp_test_2', 'nmp_test_3', 'nmp_test_4', 'nmp_test_5', 'nmp_test_6', 'nmp_e2e'])
 // A fixed password (SEED_PASSWORD) makes every seeded account known: development and browser-test databases only.
 const FIXED_PASSWORD_DATABASES: ReadonlySet<string> = new Set(['nmp_dev', 'nmp_e2e'])
 
@@ -185,13 +229,18 @@ export async function seed(config: Config, password: string | undefined, print: 
   const { rows } = await withSystem((tx) =>
     tx.query<SeedTarget>('SELECT current_database() AS database, host(inet_server_addr()) AS "serverAddress"'),
   )
-  assertSeedable(config.env, rows[0]!, password !== undefined)
+  const target = rows[0]!
+  assertSeedable(config.env, target, password !== undefined)
   const effective = password ?? randomBytes(18).toString('base64url')
   const passwordHash = await hashPassword(effective)
   const printTotp = config.env === 'development' || password !== undefined
   let created = false
   for (const vendor of VENDORS) created = (await seedVendor(config, vendor, passwordHash, printTotp, print)) || created
   for (const tenant of TENANTS) created = (await seedTenant(tenant.slug, tenant.legalName, passwordHash, print)) || created
+  if (target.database === E2E_DATABASE) {
+    await seedFixturePack(E2E_DATABASE)
+    print(`market pack: ${E2E_FIXTURE_PACK} (fixture)`)
+  }
   if (created && password === undefined) print(`password of the accounts created now: ${effective}`)
 }
 
@@ -203,5 +252,5 @@ if (process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.a
       process.stderr.write(`seed failed: ${error instanceof Error ? error.message : String(error)}\n`)
       process.exitCode = 1
     })
-    .finally(() => closePool())
+    .finally(() => Promise.all([closePool(), closeOwnerPool()]))
 }

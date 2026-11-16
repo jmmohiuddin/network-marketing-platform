@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { durationLabel, fromLocalInput, isUuid, marketScopeLabel, remainingLabel, toLocalInput } from './format'
+import {
+  durationLabel, fromLocalInput, isUuid, marketScopeLabel, permissionLabel, remainingLabel, requestableScopes, supportApproverRoles,
+  supportApproverText, supportScopeLabel, toLocalInput, unapprovableAreas,
+} from './format'
 
 describe('admin format helpers', () => {
   it('writes durations in hours and minutes', () => {
@@ -42,5 +45,35 @@ describe('admin format helpers', () => {
   it('recognises ids', () => {
     expect(isUuid('0b9e6c1a-1f2d-4c3b-9a8e-7d6c5b4a3f21')).toBe(true)
     expect(isUuid('0b9e6c1a')).toBe(false)
+  })
+
+  it('labels the B1 permissions', () => {
+    expect(permissionLabel('settings.approve')).toBe('Approve money settings')
+    expect(permissionLabel('market.manage')).toBe('Prepare market launches')
+    expect(permissionLabel('market.signoff')).toBe('Sign off market launches')
+    expect(permissionLabel('integration.manage')).toBe('Manage API keys and webhooks')
+    expect(supportScopeLabel('market.manage')).toBe('Market launches')
+  })
+
+  it('BUG-048: never offers compensation plans as a support area', () => {
+    expect(requestableScopes(['audit.read', 'plan.activate', 'market.manage'])).toEqual(['audit.read', 'market.manage'])
+    expect(supportScopeLabel('plan.activate')).toBe('plan.activate')
+  })
+
+  it('BUG-047: names the base roles that can approve each support area', () => {
+    expect(supportApproverRoles('audit.read')).toEqual(['Tenant admin'])
+    expect(supportApproverRoles('export')).toEqual([])
+    expect(supportApproverText('audit.read')).toBe('Approved by: Tenant admin')
+    expect(supportApproverText('snapshot.create')).toMatch(/^No base role can approve this/)
+  })
+
+  it('BUG-047: lists the areas the user cannot approve over all markets', () => {
+    const admin = { permissions: ['audit.read', 'user.manage', 'vendor_access.decide'], roles: [{ name: 'Tenant admin', market_ids: null }] }
+    expect(unapprovableAreas(admin, ['audit.read', 'export'])).toEqual(['export'])
+    const scoped = {
+      permissions: ['audit.read', 'vendor_access.decide', 'export'],
+      roles: [{ name: 'Tenant admin', market_ids: null }, { name: 'Compliance officer', market_ids: ['m1'] }],
+    }
+    expect(unapprovableAreas(scoped, ['audit.read', 'export'])).toEqual(['export'])
   })
 })

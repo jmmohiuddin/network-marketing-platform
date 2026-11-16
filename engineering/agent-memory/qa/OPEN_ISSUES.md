@@ -45,3 +45,11 @@ _Agent: qa. Read before every task; update after every task. Keep concise — fa
 
 ## 2026-11-12 — Final (after reports finalised)
 - Unchanged from round 3: open LOW web defects 023, 025–029, 045–048; BUG-030 to be closed by its owner. Not exercised: auto-expiry, go-live, >50,000-row export, Impeccable Performance.
+
+## 2026-11-17 — After B1 round 1
+- Open: BUG-049 (approver stored as version author), BUG-050 (rebased version diff vs wrong base), BUG-051 (SC-17 page scroll at 390) MEDIUM; BUG-052..059 LOW. BUG-030 still not retested.
+- Not exercised: webhook secret rotation, delivery `dead` after 72 h, withdraw change/go-live, go-live rejection, calendar/brand delete+rename, key rate-limit 429, SCOPE_MISSING (needs a second scope, B2).
+
+## 2026-11-17 — After B1 round 2
+- Open: BUG-060 LOW only (B1). BUG-049..059 verified fixed. BUG-030 still not retested.
+- Not exercised: delivery `dead` after 72 h, withdraw change/go-live, go-live rejection, calendar delete, brand rename/delete, key 429, SCOPE_MISSING, server-side BUG-055 mapping.

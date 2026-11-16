@@ -214,7 +214,7 @@ export default config
 ### 6.2 Keep the functional layer (decision f)
 - Keep unchanged: `src/lib/*` (API client `useApi`, `ApiError`, messages, session/`useMe`/`useSession`, navigation, `use-resource`, `cursor-pages`, `support-session`, `csp`), `src/proxy.ts`, feature data logic (`features/*/format.ts`, `types.ts`, `mapping-model.ts`, `period.ts`, `transfer.ts`, `resource.ts`), idempotency handling, step-up retry in `ApiProvider`, and all tests.
 - Re-skin **in place**: `src/components/*.tsx` keep their names, props and accessible roles/names, and get Stitch markup and classes. Features keep calling the same components, so behaviour and tests stay valid. Extend props only where a Stitch variant needs it (for example `Table.stickyFirstColumn`).
-- Navigation stays server-driven (`me.navigation`): labels and order come from the API ("Compliance", "Data imports", "Users and roles", "Vendor access", "Audit log", "Settings"); icons come from the client map in §8.1. Items the user cannot use are absent (UI_UX §0). Stitch sidebar items without a server entry are never rendered.
+- Navigation stays server-driven (`me.navigation`): labels and order come from the API ("Compliance", "Data imports", "Users and roles", "Vendor access", "Audit log", "Settings", "Markets", "Integrations"), each shown only to holders of its permissions; icons come from the client map in §8.1. Items the user cannot use are absent (UI_UX §0). Stitch sidebar items without a server entry are never rendered.
 
 ### 6.3 Sample data (decision g)
 - Never ship Stitch figures, names, IDs, hashes, dates, tenant/brand names ("Acrobex Global", "Apex Health", "Global Direct Inc."), people ("Elena Rostova", "Elena Gomez"…), provider names, avatars or the "AuditLedger" wordmark. Test fixtures use their own neutral data.
@@ -351,6 +351,8 @@ Source: S1 (sc_01) icons; keys that S1 does not draw take the S3/S6 icon.
 | users | `admin_panel_settings` |
 | vendor_access | `vpn_key` |
 | audit | `history_edu` |
+| markets (SC-17 market launch; S3 "Market Launch") | `public` |
+| integrations (SC-13; S3 "Integrations") | `hub` |
 | vendor console sections: tenants / support sessions / vendor users / audit | `corporate_fare` / `vpn_key` / `admin_panel_settings` / `history_edu` |
 | unknown key | no icon (label only) |
 

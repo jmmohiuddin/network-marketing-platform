@@ -11,7 +11,12 @@ const TENANT_ID_TABLES = [
   'session', 'audit.audit_event', 'document', 'import_batch', 'import_row_error', 'import_mapping',
   'cpl_fact_participant', 'cpl_fact_order', 'cpl_fact_payout_line', 'compliance_report_snapshot',
   'compliance_figure', 'outbox_event', 'export_job', 'idempotency_key', 'role_grant_request', 'user_invitation',
+  'brand', 'calendar', 'period', 'setting_change_request', 'provider_config', 'market_checklist_entry',
+  'market_go_live_request', 'service_account', 'api_key', 'case_file', 'case_event', 'case_evidence',
+  'webhook_endpoint', 'webhook_delivery',
 ]
+// Platform tables (no tenant): every realm reads them, none writes them (pack-rules.test.ts).
+const PLATFORM_TABLES = ['guardrail_rule', 'tax_rule']
 // No tenant_id column: rows follow their user.
 const USER_OWNED_TABLES = ['password_credential', 'mfa_credential']
 const TENANT_TABLES = ['tenant', ...TENANT_ID_TABLES, ...USER_OWNED_TABLES]
@@ -75,7 +80,9 @@ describe('row visibility as nmp_app', () => {
            AND has_table_privilege('nmp_app', c.oid, 'SELECT')`,
       )
 
-      expect(readable.rows.map((row) => row.name).sort()).toEqual([...new Set([...TENANT_TABLES, ...VENDOR_TABLES])].sort())
+      expect(readable.rows.map((row) => row.name).sort()).toEqual(
+        [...new Set([...TENANT_TABLES, ...VENDOR_TABLES, ...PLATFORM_TABLES])].sort(),
+      )
       expect(await tablesShowing(owner, tenantARows())).toEqual(TENANT_TABLES)
       expect(await tablesShowing(owner, vendorRows())).toEqual(VENDOR_TABLES)
     } finally {
@@ -149,7 +156,7 @@ describe('tenant writes', () => {
       withTenant(b, (tx) => tx.query('UPDATE market SET tenant_id = $1 WHERE id = $2', [a.tenantId, ownMarket])),
     ).rejects.toThrow(RLS_VIOLATION)
     const { rows } = await getOwnerPool().query('SELECT state FROM market WHERE id = $1', [seedA.marketId])
-    expect(rows).toEqual([{ state: 'live' }])
+    expect(rows).toEqual([{ state: 'draft' }])
   })
 
   test('a tenant reads its own tenant row only and cannot change it', async () => {

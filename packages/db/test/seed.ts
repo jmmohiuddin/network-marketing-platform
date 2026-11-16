@@ -1,6 +1,6 @@
-import { randomBytes } from 'node:crypto'
-import { withTenant, withVendor, type TenantContext } from '../src/index.js'
-import { insertAuditEvent, insertMarket, insertOutboxEvent, insertRow, openSession } from './support.js'
+import { randomBytes, randomUUID } from 'node:crypto'
+import { withTenant, withVendor, type TenantContext, type Tx } from '../src/index.js'
+import { asUser, insertAuditEvent, insertEvidence, insertMarket, insertOutboxEvent, insertRow, openSession } from './support.js'
 
 const PERIOD = { period_from: '2026-01-01', period_to: '2026-01-31' }
 const ONE_HOUR_MS = 3_600_000
@@ -16,6 +16,12 @@ export interface TenantSeed {
   mappingId: string
   batchId: string
   snapshotId: string
+  brandId: string
+  calendarId: string
+  caseId: string
+  endpointId: string
+  outboxEventId: string
+  serviceAccountId: string
 }
 
 /**
@@ -29,10 +35,10 @@ export function seedTenantRows(ctx: TenantContext, secondUserId: string): Promis
     const roleId = await insertRow(tx, 'role', {
       tenant_id, name: 'Custom', permissions: ['import.manage'], is_base: false, mfa_required: false,
     })
-    const approvalId = await insertRow(tx, 'approval', {
+    const approvalId = await asUser(tx, secondUserId, () => insertRow(tx, 'approval', {
       tenant_id, object_type: 'role_assignment', object_id: roleId, preparer_id: ctx.userId,
       approver_id: secondUserId, decision: 'approved', decided_at: new Date(),
-    })
+    }))
     await insertRow(tx, 'role_assignment', {
       tenant_id, user_id: secondUserId, role_id: roleId, valid_from: new Date(), approval_id: approvalId,
     })
@@ -88,9 +94,62 @@ export function seedTenantRows(ctx: TenantContext, secondUserId: string): Promis
       [tenant_id, randomBytes(32)],
     )
     await insertAuditEvent(tx, tenant_id, 'TEST.SEED')
-    await insertOutboxEvent(tx, tenant_id)
-    return { marketId, roleId, approvalId, settingsVersionId, documentId, mappingId, batchId, snapshotId }
+    const outboxEventId = await insertOutboxEvent(tx, tenant_id)
+    const b1 = await seedB1Rows(tx, ctx, marketId, outboxEventId)
+    return { marketId, roleId, approvalId, settingsVersionId, documentId, mappingId, batchId, snapshotId, outboxEventId, ...b1 }
   })
+}
+
+/** One row in every B1 tenant table (PLAN B1 section 1), each document referenced once by its uploader. */
+async function seedB1Rows(tx: Tx, ctx: TenantContext, marketId: string, outboxEventId: string) {
+  const tenant_id = ctx.tenantId
+  const evidence = () => insertEvidence(tx, tenant_id, ctx.userId)
+  const brandId = await insertRow(tx, 'brand', { tenant_id, name: 'Seed brand' })
+  const calendarId = await insertRow(tx, 'calendar', {
+    tenant_id, market_id: marketId, name: 'Monthly', cadence: 'monthly', cutoff_time_zone: 'Europe/London',
+    first_period_start: '2026-01-01',
+  })
+  await insertRow(tx, 'period', {
+    tenant_id, calendar_id: calendarId, starts_at: '2026-01-01T00:00:00Z', ends_at: '2026-02-01T00:00:00Z',
+  })
+  await insertRow(tx, 'setting_change_request', {
+    tenant_id, key: 'money.rounding_mode', value: JSON.stringify('half_even'), effective_from: inOneHour(),
+    reason: 'seed', base_version: 1, state: 'pending', requested_by: ctx.userId,
+  })
+  await insertRow(tx, 'provider_config', {
+    tenant_id, market_id: marketId, kind: 'payout', provider: 'Sandbox payouts', approved_description: 'seed',
+    approval_document_id: await evidence(), approved_at: '2026-01-01', funds_holder: 'Provider', state: 'recorded',
+    created_by: ctx.userId,
+  })
+  await insertRow(tx, 'market_checklist_entry', {
+    tenant_id, market_id: marketId, item: 'licence_evidence', document_id: await evidence(), recorded_by: ctx.userId,
+  })
+  await insertRow(tx, 'market_go_live_request', {
+    tenant_id, market_id: marketId, state: 'pending', requested_by: ctx.userId, checklist: {},
+    risk_document_id: await evidence(),
+  })
+  const serviceAccountId = await insertRow(tx, 'service_account', {
+    tenant_id, name: 'BI export', purpose: 'seed', state: 'active', created_by: ctx.userId,
+  })
+  await insertRow(tx, 'api_key', {
+    tenant_id, service_account_id: serviceAccountId, name: 'seed', key_prefix: 'nmpk_abcdefg',
+    key_hash: randomBytes(32).toString('hex'), scopes: ['compliance:read'], rate_tier: 'standard', created_by: ctx.userId,
+  })
+  const caseId = await insertRow(tx, 'case_file', {
+    tenant_id, type: 'adjustment', subject_type: 'test_subject', subject_id: randomUUID(), reason_code: 'seed',
+    state: 'open', payload: {}, market_id: marketId, opened_by: ctx.userId,
+  })
+  await insertRow(tx, 'case_event', { tenant_id, case_id: caseId, actor_id: ctx.userId, kind: 'opened' })
+  await insertRow(tx, 'case_evidence', { tenant_id, case_id: caseId, document_id: await evidence(), added_by: ctx.userId })
+  const endpointId = await insertRow(tx, 'webhook_endpoint', {
+    tenant_id, url: 'https://hooks.example.test/nmp', secret_sealed: 'sealed', topics: ['audit'], state: 'active',
+    created_by: ctx.userId,
+  })
+  await insertRow(tx, 'webhook_delivery', {
+    tenant_id, endpoint_id: endpointId, outbox_event_id: outboxEventId, attempt: 1, outcome: 'scheduled',
+    next_attempt_at: new Date(),
+  })
+  return { brandId, calendarId, caseId, endpointId, serviceAccountId }
 }
 
 export interface VendorSeed {

@@ -96,6 +96,22 @@ describe('AppShell', () => {
     expect(link.querySelector('.material-symbols-outlined')?.textContent).toBe('admin_panel_settings')
   })
 
+  it('shows the B1 settings entries the API grants with their icons, the deepest matching one current', async () => {
+    navigation.pathname = '/settings/markets/m1/checklist'
+    const entries = [
+      { key: 'settings', path: '/settings', label: 'Settings' },
+      { key: 'markets', path: '/settings/markets', label: 'Markets' },
+      { key: 'integrations', path: '/settings/integrations', label: 'Integrations' },
+    ]
+    renderWithProviders(<AppShell realm="tenant"><Page /></AppShell>, fetchReturning(ok(me({ navigation: entries }))))
+    await screen.findByText('May invite users')
+    const markets = screen.getByRole('link', { name: 'Markets' })
+    const integrations = screen.getByRole('link', { name: 'Integrations' })
+    expect([markets, integrations].map((link) => link.querySelector('.material-symbols-outlined')?.textContent)).toEqual(['public', 'hub'])
+    expect(markets.getAttribute('aria-current')).toBe('page')
+    expect(screen.getByRole('link', { name: 'Settings' }).getAttribute('aria-current')).toBeNull()
+  })
+
   it('opens the navigation as an overlay from Menu and closes it with Escape', async () => {
     const user = userEvent.setup()
     renderWithProviders(<AppShell realm="tenant"><Page /></AppShell>, fetchReturning(ok(me())))

@@ -6,13 +6,14 @@ import { Banner } from '../../components/banner'
 import { Button, LinkButton } from '../../components/button'
 import { ErrorSummary, type SummaryItem } from '../../components/error-summary'
 import { FileDropZone, formatMegabytes } from '../../components/file-drop-zone'
-import { Select, TextInput } from '../../components/form-field'
+import { Select } from '../../components/form-field'
 import { PageHeader } from '../../components/page-header'
 import { useToast } from '../../components/toast'
 import { isApiError, newIdempotencyKey } from '../../lib/api'
 import { errorMessage, fieldErrors } from '../../lib/messages'
 import { MARKETS_PATH, marketName, type Market } from '../../lib/markets'
 import { useResource } from '../../lib/use-resource'
+import { MonthField } from './month-field'
 import { periodErrors } from './period'
 import { uploadForm, type UploadProgress } from './transfer'
 import { IMPORT_FILES, type Batch, type ImportFile } from './types'
@@ -141,11 +142,7 @@ export function NewImportForm() {
   }
 
   const month = (name: 'period_from' | 'period_to', label: string) => (
-    <TextInput
-      id={fieldId(name)} label={label} type="month" placeholder="2025-01" helper="Year and month, for example 2025-01."
-      value={values[name]} error={errors[name]} disabled={busy}
-      onChange={(event) => setValue(name, event.target.value)}
-    />
+    <MonthField id={fieldId(name)} label={label} value={values[name]} error={errors[name]} disabled={busy} onChange={(value) => setValue(name, value)} />
   )
 
   return (

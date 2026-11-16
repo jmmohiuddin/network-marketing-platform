@@ -19,12 +19,13 @@ function asTenant(sql: string, params: unknown[] = []) {
   return withTenant(ctx, (tx) => tx.query(sql, params))
 }
 
+// Given by the acting user, as recordApproval does.
 function insertApproval(preparerId: string, approverId: string) {
-  return asTenant(
+  return withTenant({ ...ctx, userId: approverId }, (tx) => tx.query(
     `INSERT INTO approval (tenant_id, object_type, object_id, preparer_id, approver_id, decision, decided_at)
      VALUES ($1, 'role_assignment', gen_random_uuid(), $2, $3, 'approved', now()) RETURNING id`,
     [ctx.tenantId, preparerId, approverId],
-  )
+  ))
 }
 
 describe('audit log', () => {

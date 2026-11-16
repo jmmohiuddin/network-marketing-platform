@@ -236,3 +236,116 @@ Design notes (issues in the original design or deliberate catalogue choices, not
 - A Compliance officer sees other actors as "User fa261b42" in the audit log (no `user.read`); by permission design.
 - In a support session scoped to "Compliance reports", `GET /v1/settings/compliance.late_order_day` returns 200 (other settings and users are refused). Plausibly part of the compliance read scope; for the API owner to confirm, not registered.
 - Approve/Deny on SC-14 request cards are named "Approve"/"Deny" without the request reference; fine with one card, ambiguous with several.
+
+## Increment B1 — round 1 (2026-11-17)
+
+Environment: `nmp_e2e` freshly seeded (`seed:e2e`, fixture pack `e2e-fixture`), API `:4000` with workers (tsx, NODE_ENV=development, COOKIE_SECURE=false), web `:3100` (`next start`, no source file newer than `.next/BUILD_ID`). One browser at a time: Playwright MCP Chromium (one context per user: admin, admin2, compliance, finance, analyst @acme, admin @globex, operator @vendor), closed before the harness ran its own Chromium. Browser time zone Asia/Dhaka. Both servers stopped by PID tree at the end. Evidence: `var/qa-b1/` (screens W1-…–W6-…, R390-…, audit export CSV, harness logs), API log `var/e2e-api.log` (0 responses 5xx, 0 error-level lines). Payment and payout providers were recorded as sandbox names only; the only outbound call was the webhook dispatcher's DNS lookup of `hooks.invalid.example` (reserved TLD, fails by design).
+
+### Workflows (PLAN §7)
+
+| Workflow | Result | Evidence and notes |
+|---|---|---|
+| W-B1-1 Markets, brands, calendars | pass (defects) | FR created (EUR · 2 decimals, Europe/Paris, fr, `e2e-fixture`) as Draft; empty submit lists six errors; duplicate FR → "The tenant already has market FR."; brand "Acme Nutrition"; calendar "FR monthly" from 2026-12-01, 12 ahead → drawer 12 periods Dec 1 2026 00:00 … Dec 1 2027 00:00 "in local time of Europe/Paris"; renamed "France monthly"; Extend through 2028-02-01 → "3 periods added", 15; delete FR refused "It is referenced by 1 calendar." (no version written); versions 1–5 with reasons, diff drawer (600 px) "Markets added: FR, DEMO" / "Calendars added: FR monthly", Escape returns focus to the row button. Defect: Generated through in viewer time zone (BUG-054) |
+| W-B1-2 Money settings with SoD | pass (defects) | Rounding mode Half even, effective 2026-12-01 05:00 local (= Paris midnight) → "Waiting for Finance approval", Can approve: Finance Approver (finance@acme.example) only; past date refused (raw message, BUG-055); admin's own decision via API 403 PERMISSION_DENIED; finance@acme > Approve → step-up dialog is the only `dialog[open]`, focus `step-up-code`, fresh TOTP, retried → version 7 Scheduled with approver; Active earner threshold 5000 saved now → v8 in force, v9 "Rebased v7 onto v8" Scheduled, v7 "Superseded by version 9"; "In force since … (version 8)" for the threshold and "(version 6)" for contacts (BUG-025 fixed); finance sees breach-contact diff as "The values are hidden". Defects: approver recorded as author (BUG-049), rebased versions' diff shows the wrong key (BUG-050) |
+| W-B1-3 Launch checklist and go-live | pass (defects) | Request go-live refused naming 8 items incl. Payout/Payment provider eligibility and Breach notification contacts; fake PDF refused ("Upload a PDF, PNG or JPEG file.", 415 by magic bytes); licence/tax/agreement PDFs recorded with SHA-256 equal to `shasum` of the files; payout + payment provider approvals (document, description, date ≤ today, funds holder); region and plan-variant attestations (empty note refused); breach contact added; pack rules show "E2E FIXTURE — enrolment-only bonus · Screening" and withholding "Counsel confirmed"; Request go-live → "Waiting for sign-off", Can sign off: Compliance Officer only; admin and admin2 see no sign-off control; compliance@acme Sign off without statement → "Enter your risk acceptance statement."; with statement → step-up dialog (single) → FR Live, chip Live in Markets, delete action gone; audit `MARKET.WENT_LIVE` by Compliance Officer with `approver`, `accepted_rules` [e2e-enrolment-only-bonus], outbox `market.went_live`. Defects BUG-051, 052, 053, 058, 059 |
+| W-B1-4 API keys | pass (one step not executable) | Service account "BI export"; key `compliance:read`, Standard → step-up → token shown once (48 chars, `nmpk_` prefix), Done; token not in the page afterwards; bearer from page (`credentials: omit`): 200 with the acme DEMO snapshot only, detail 200, `/v1/markets` with bearer 401 UNAUTHENTICATED, unknown token 401 API_KEY_INVALID + `WWW-Authenticate: Bearer`; IP allow-list `999.1.1.1` refused in the dialog, key limited to 203.0.113.0/24 → 403 IP_NOT_ALLOWED; rotate grace 0 → old 401, new 200, old row Expired; revoke → 401, focus to the section heading; audit SERVICE_ACCOUNT.CREATED, API_KEY.CREATED/ROTATED/REVOKED, API_KEY.READ with actor_type `service_account`. Not executable: "key without the scope → 403 SCOPE_MISSING" — the B1 catalogue has one scope and a key needs at least one (`scopes: []` → 400 VALIDATION_FAILED) |
+| W-B1-5 Webhooks | pass | `http://…` → "Enter an address that starts with https://."; `https://127.0.0.1/…` and `https://10.0.0.5/…` → "The address is not on the public internet."; `https://hooks.invalid.example/nmp` + `compliance.snapshot.ready` → secret shown once; Send test → queued; snapshot created → both events attempted by the dispatcher (about 85 s after the test, pg-boss cron), attempt 1 Failed "The host name could not be found." (DNS_FAILED), attempt 2 Scheduled; Retry now → "scheduled to run now" (next_attempt_at moved to now in the DB), attempt 2 failed, attempt 3 scheduled; endpoint Disabled → attempt 3 of both "Cancelled · The endpoint was disabled before the attempt."; ENDPOINTS FAILING 1. Defect BUG-057 (focus after Retry now) |
+| W-B1-6 MVP-A polish retest | pass | BUG-023 tenant card "Vendor Operator (operator@vendor.example)"; BUG-025 per-value version; BUG-026 month fields are text inputs (`inputMode numeric`, pattern), typed 2025-13 refused, 2025-01 accepted in Upload export and Create snapshot; BUG-027 "1 event."; BUG-028 focus to H1/H2 after Deny, Reject grant, Revoke key, End now, and to the users table region after Revoke role; BUG-029 admin sees "Approved by Compliance Officer (compliance@acme.example)", "by you" for self; BUG-045 one `dialog[open]` during step-up (settings approval, sign-off, vendor approval, deny, reject); BUG-046 "You may be asked for a code…" in breach contacts, approve/reject grant, approve/deny vendor access; BUG-047 each area names its approving role, tenant card "You cannot approve: Row exports"; BUG-048 no "Compensation plans" |
+
+### MVP-A regression
+
+| Area | Result | Notes |
+|---|---|---|
+| Sign-in / MFA | pass | five acme staff + globex admin: password then forced enrolment (manual key) or TOTP; analyst without MFA; vendor TOTP at `/signin/vendor` |
+| Import | pass | DEMO 2025-01…2025-12: 1,466 / 4,775 / 7,442 rows, 53,195,001 / 53,195,001 / 2,600,070 / 9,225,679 = CSV sums; mapping v1 by admin, approved by compliance; attached; Loaded |
+| Snapshot | pass | R1–R5 DEMO 2025: Ready, R1 2025-01 16.61 %, latest 42.06 % (= report.json) |
+| Audit | pass | export `?action=MARKET.WENT_LIVE` 1 event + download (`var/qa-b1/audit-export.csv`); chain Intact over 100 events |
+| Support session (B1 scopes) | pass | "Market launches" approvable by Tenant admin; in session the FR checklist is read-only (no write controls), writes 403 SUPPORT_SESSION_READ_ONLY, `/v1/service-accounts` 403 (integration.manage excluded), after End now 403 SUPPORT_SESSION_INACTIVE |
+| Isolation and permissions | pass | analyst: nav Compliance only, `/settings`, `/settings/markets`, `/settings/markets/:id`, `/settings/integrations` "Not found or not available to you", calendars/service accounts/webhooks/versions/checklist 403; globex admin: acme FR market and checklist 404, page Not available, own lists empty; finance: no Markets nav, approve controls only |
+
+### Per screen
+
+| Screen | Stitch Reference | Functional Testing | Visual Fidelity | Responsive Testing | Accessibility | Impeccable Review | Defects | Final Status |
+|---|---|---|---|---|---|---|---|---|
+| SC-29 Tenant settings | `sc_29_tenant_settings` | pass (W-B1-1/2) | pass with notes: canonical primary colour and table-header weight (as MVP-A); sc_29's privacy/visibility, retention, write-off and payout cards absent by plan (§5 must-not) | pass (no page overflow at 390, 768) | label-in-name (BUG-056); headings H1 → H2 → H3 in order | no detector finding (source) | BUG-049, 050, 055, 056 | pass with defects |
+| Markets, brands, calendars | none (guidelines §9) | pass (W-B1-1) | consistent with sc_28/sc_29 section and table patterns | pass (390, 768) | tabs are `role=tab` with arrow-key selection; dialogs focus first field, trap Tab, Escape returns to trigger | no finding | BUG-054 | pass with defects |
+| SC-17 Market launch checklist | `sc_17_market_launch_checklist` | pass (W-B1-3) | pass with notes; gate table clipped beside the inspector (BUG-052); harness "primary missing" = market is Live (no Request go-live by state) | fail at 390 (page scroll, BUG-051); pass at 768 | no contrast failure in main; Inspect buttons named per item | no finding | BUG-051, 052, 053, 058, 059 | pass with defects |
+| SC-13 Integrations | `sc_13_integrations_and_sync_health` | pass (W-B1-4/5) | pass with notes: connector cards, backfill, sparkline omitted by plan; page background canonical | pass (390, 768; key table scrolls in its card) | label-in-name on Retry now (BUG-056); focus after Retry now (BUG-057) | no finding | BUG-056, 057 | pass with defects |
+
+### Impeccable audit (audit only) and accessibility pass
+
+- Detector (`impeccable detect`, regex mode) on `features/markets`, `features/integrations`, `features/admin/settings`: 35 files, no finding. Rendered element rules not run: the B1 pages need a signed-in session the detector's own browser does not have.
+- Scripted pass on 7 routes (`/settings`, markets ×3 tabs, checklist, integrations ×2 tabs): no unnamed control, no unlabelled input, no duplicate id, no positive tabindex, no `img` without alt, heading order valid; contrast check of text in `main` on the checklist: no ratio below 4.5:1. Keyboard: Add market dialog focuses Country code, Tab stays in the dialog, Escape returns to Add market; Markets tabs move with ArrowRight.
+- Scores (0–4): Accessibility 3 (BUG-056, 057), Performance not scored (no trace), Theming 3 (canonical tokens throughout, light theme only by guidelines), Responsive 2 (BUG-051 page scroll at 390, BUG-052 clipped table at 1440/1280), Implementation integrity 3 (no placeholders, refused content or dead controls seen; BUG-049/050 make the version history misleading). Total 11/16 over the four scored dimensions.
+
+### Notes (not registered)
+
+- Version 1's diff lists "Markets added: FR, DEMO": DEMO existed before the first version, which has nothing to compare against.
+- The Rounding mode card shows only the value in force ("Platform rule"); the scheduled Half even from Dec 1 is visible only in the versions table.
+- "Public API keys 1" tab counter counts service accounts (0 usable keys at that moment); "ENDPOINTS FAILING 1" still counts a disabled endpoint whose last attempt failed.
+- Webhook dispatcher latency: first attempt about 85 s after Send test (cron each minute plus pg-boss jitter), within the "about a minute" copy only loosely.
+- Not exercised: secret rotation with grace, delivery give-up after 72 h (`dead`), withdraw of a change or go-live request, go-live rejection, calendar delete, brand rename/delete, rate-limit 429 on keys, cases (not mounted in B1).
+
+## Increment B1 — round 2 (2026-11-17, retest after the fixes of BUG-049..059)
+
+Environment as round 1: `nmp_e2e` re-seeded (`seed:e2e`), API `:4000` with workers (NODE_ENV=development, COOKIE_SECURE=false), web `:3100` `next start` on the build of 04:14 (no web source newer than `.next/BUILD_ID`). One Playwright MCP browser (contexts: admin, finance, compliance, analyst @acme, admin @globex), closed before the harness. Browser time zone Asia/Dhaka. Servers stopped by PID tree. API log: 0 responses 5xx, 0 error-level lines. Evidence `var/qa-b1/R2-*`. Sandbox provider names only; the only outbound call was the dispatcher's DNS lookup of `hooks.invalid.example`.
+
+### Fix verification (first step)
+
+| Defect | Result | Evidence |
+|---|---|---|
+| BUG-049 MEDIUM | verified fixed | admin requested Rounding mode Half even from Dec 1 (Paris midnight); finance approved; `GET /v1/settings/versions` v6 `created_by` Tenant Admin, `approval.approver` Finance Approver; table Author "Tenant Admin", Finance approver "Finance Approver" |
+| BUG-050 MEDIUM | verified fixed | Active earner threshold 5000 saved now (v7) → v8 "Rebased v6 onto v7" changed `[money.rounding_mode]`; drawer of v8 "Rounding mode · Before Not set · After Half even"; after go-live (v11 structure) v12 again `[money.rounding_mode]` |
+| BUG-051 MEDIUM | verified fixed | checklist at 390x844: scrollWidth 375 = clientWidth, `scrollTo(300,0)` leaves scrollX 0; same for /settings, /settings/markets, /settings/integrations; harness capture 390 px wide (was 526) |
+| BUG-052 LOW | verified fixed | 1440x900: gate table 772 px in a 772 px column, four columns (Item, Basis or detail, Evidence and record, Status) all visible; 1280x800: inspector below the full-width table (`var/qa-b1/R2-checklist-1440.png`, harness 1280 capture) |
+| BUG-053 LOW | verified fixed | Request go-live refused with 8 items; after the licence upload the refusal alert is gone, banner "FR is not live: 7 items are missing" |
+| BUG-054 LOW | verified fixed | Calendars "Generated through" "Dec 1, 2027, 00:00", after Extend "Mar 1, 2028, 00:00", same as the periods drawer |
+| BUG-055 LOW | verified fixed (client path) | Effective from 2026-11-01 00:00: inline error "Enter a date and time from now on: a change cannot take effect in the past.", `aria-invalid="true"`, `aria-describedby` = the error, no request sent. The server-refusal mapping was not exercised (the client check stops it first) |
+| BUG-056 LOW | verified fixed | names "View diff of version 8", "Retry now: webhook.test attempt 2" |
+| BUG-057 LOW | verified fixed | after Retry now: status "The delivery is scheduled to run now.", focus on H3 "Deliveries to https://hooks.invalid.example/nmp" |
+| BUG-058 LOW | verified fixed | provider rows "Recorded by Tenant Admin, Nov 17, 2026, 4:21 AM" |
+| BUG-059 LOW | verified fixed | Sign off dialog "Mandatory market-pack rules still at screening status: E2E FIXTURE — enrolment-only bonus."; after go-live subtitle "FR is live: enrolments and orders for it are accepted." |
+
+### Workflows (PLAN §7, quick repeat)
+
+| Workflow | Result | Notes |
+|---|---|---|
+| W-B1-1 Markets, brands, calendars | pass | FR (EUR, Europe/Paris, fr, `e2e-fixture`) Draft; brand Acme Nutrition; FR monthly from 2026-12-01, 12 ahead → drawer 12 periods 00:00 bounds; Extend to 2028-02-01 "3 periods added" (15); renamed "France monthly"; delete FR refused "It is referenced by 1 calendar." |
+| W-B1-2 Money settings with SoD | pass | pending card "Can approve: Finance Approver (finance@acme.example)" only; past date refused inline; finance approved; threshold "In force since Nov 17, 2026, 4:20 AM (version 7)"; scheduled change rebased and intact |
+| W-B1-3 Launch checklist and go-live | pass | refused with 8 items; licence/tax/agreement PDFs with SHA-256 equal to `shasum -a 256`; payout + payment provider approvals; region and plan-variant attestations; breach contact; request → "Waiting for sign-off", Can sign off: Compliance Officer only; compliance: no statement → "Enter your risk acceptance statement."; with statement → FR Live; audit `MARKET.WENT_LIVE` #44 by Compliance Officer; chain Intact (44) |
+| W-B1-4 API keys | pass (SCOPE_MISSING not executable, as round 1) | service account "BI export"; key shown once (48 chars) behind "I have stored the API key"; not in the page afterwards; bearer 200; rotate grace 0 → old 401, new 200; revoke → 401, focus to H2 "Service accounts and keys"; after the snapshot a new key reads 1 snapshot (DEMO) and `/v1/markets` with bearer 401 |
+| W-B1-5 Webhooks | pass | `http://` refused "Enter an address that starts with https://."; `https://127.0.0.1/…` "The address is not on the public internet."; secret shown once; Send test → attempt 1 Failed "The host name could not be found." within about a minute; Retry now; snapshot → `compliance.snapshot.ready` attempt 1 Failed, attempt 2 Scheduled; disabled → pending attempts "Cancelled · The endpoint was disabled before the attempt." New this round: Rotate secret with 60 min grace → secret shown once, "Old secret valid until" 5:25 AM |
+| W-B1-6 MVP-A polish | not repeated | verified in round 1; no polish fix in this round |
+
+### MVP-A regression (quick)
+
+| Area | Result | Notes |
+|---|---|---|
+| Sign-in / MFA | pass | admin, finance, compliance, globex admin: password then forced enrolment; analyst without MFA; step-up dialogs answered with fresh TOTP (403 STEP_UP_REQUIRED then retry) |
+| Import | pass | DEMO 2025-01…2025-12: 1,466 / 4,775 / 7,442; 53,195,001 / 53,195,001 / 2,600,070 / 9,225,679; mapping v1 by admin, approved by compliance; attached; Loaded |
+| Snapshot | pass | R1–R5 Ready; R1 2025-01 16.61 %, latest 42.06 % (= report.json) |
+| Audit | pass | filter `MARKET.WENT_LIVE` 1 event; chain Intact over 44 events |
+| Isolation and permissions | pass | analyst: checklist page Not available; service accounts, webhook endpoints, versions, checklist 403; globex admin: FR market and checklist 404, page Not available |
+
+### Per screen
+
+| Screen | Functional | Visual | Responsive | Accessibility | Impeccable | Defects | Final Status |
+|---|---|---|---|---|---|---|---|
+| SC-29 Tenant settings | pass | pass with notes (canonical tokens, as round 1) | pass (390, 768) | pass (label-in-name fixed) | no finding | — | pass |
+| Markets, brands, calendars | pass | consistent with sc_28/sc_29 patterns | pass (390, 768) | pass | no finding | — | pass |
+| SC-17 Market launch checklist | pass | pass with notes; table fits at 1440/1280 | pass (390 no page scroll; tables scroll in their own wrappers at 390/768) | pass | no finding | BUG-060 (new LOW) | pass with defects |
+| SC-13 Integrations | pass | pass with notes (canonical background, omissions by plan) | pass (390, 768) | pass (Retry now name and focus fixed) | no finding | — | pass |
+
+### Impeccable audit (audit only) and accessibility pass
+
+- Detector (`impeccable detect`, regex mode) on `features/markets`, `features/integrations`, `features/admin/settings`, `components/data-table.tsx`: 36 files, no finding (element rules not run: signed-in pages).
+- Scripted pass on 7 routes (`/settings`, markets ×3 tabs, checklist, integrations ×2 incl. deliveries): one H1 each, no unnamed control, no unlabelled input, no duplicate id, no positive tabindex, no `img` without alt, no heading skip. The label-in-name script flagged "Change", "Create key", "Rotate", "Edit", "Refresh": false positives (the icon ligature text was counted as label); each accessible name starts with the visible word ("Change rounding mode", "Create key for BI export", "Rotate key …", "Edit https://…", "Refresh deliveries to …").
+- Scores (0–4): Accessibility 4, Performance not scored (no trace), Theming 3 (canonical tokens, light theme only by guidelines), Responsive 4, Implementation integrity 3 (BUG-060 word split; no placeholders, refused content or dead controls). Total 14/16 over the four scored dimensions (round 1: 11/16).
+- Console errors: only intended 4xx (409 delete FR, 422 go-live refusal and webhook address, 401 revoked/rotated keys and bearer on /v1/markets, 403 step-up challenges and analyst probes, 404 globex probes and a wrong audit URL typed by QA). No page errors, no 5xx.
+
+### Notes (not registered)
+
+- After go-live the checklist still counts "8 of 9" complete and "Needs risk acceptance 1" for the market-pack basis: true of the rule's basis, but the accepted risk is visible only in the Go-live requests table.
+- Rebased version reasons nest on every rebase ("Rebased v10 onto v11: Rebased v8 onto v9: Rebased v6 onto v7: Align rounding…").
+- "ENDPOINTS FAILING 1" still counts the disabled endpoint (as round 1).
+- Not exercised: delivery give-up after 72 h (`dead`), withdraw of a change or go-live request, go-live rejection, calendar delete, brand rename/delete, key rate-limit 429, SCOPE_MISSING, the server-side BUG-055 mapping.

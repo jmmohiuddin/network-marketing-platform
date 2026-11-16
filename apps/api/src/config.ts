@@ -1,3 +1,4 @@
+import { isIP } from 'node:net'
 import { z } from 'zod'
 
 const AES_256_KEY_BYTES = 32
@@ -5,6 +6,42 @@ const AES_256_KEY_BYTES = 32
 const SESSION_MAX_MINUTES = 720
 
 const positiveInt = (fallback: number) => z.coerce.number().int().positive().default(fallback)
+
+// Comma-separated TCP ports, each 1..65535, at least one.
+const portList = (fallback: string) =>
+  z
+    .string()
+    .default(fallback)
+    .transform((value) => value.split(',').map((part) => Number(part.trim())))
+    .pipe(z.array(z.number().int().min(1).max(65_535)).min(1))
+
+// proxy-addr names Fastify's trustProxy accepts besides addresses and CIDRs.
+const PROXY_NAMES: ReadonlySet<string> = new Set(['loopback', 'linklocal', 'uniquelocal'])
+
+function isProxyEntry(value: string): boolean {
+  if (PROXY_NAMES.has(value)) return true
+  const [address = '', prefix, ...rest] = value.split('/')
+  const family = isIP(address)
+  if (family === 0 || rest.length > 0) return false
+  return prefix === undefined || (/^\d{1,3}$/.test(prefix) && Number(prefix) <= (family === 4 ? 32 : 128))
+}
+
+/**
+ * Unset: no proxy is trusted. Else comma-separated proxy addresses, CIDRs or names; no hop count, which would trust a
+ * forwarded address whoever sent it.
+ */
+const trustProxy = z
+  .string()
+  .trim()
+  .optional()
+  .transform((value, ctx): string[] | false => {
+    if (value === undefined || value === '') return false
+    const entries = value.split(',').map((part) => part.trim())
+    const bad = entries.filter((entry) => !isProxyEntry(entry))
+    if (bad.length === 0) return entries
+    ctx.addIssue({ code: 'custom', message: `not an address, CIDR or loopback|linklocal|uniquelocal: ${bad.join(', ')}` })
+    return z.NEVER
+  })
 
 const secretKey = z
   .string()
@@ -20,6 +57,9 @@ const EnvSchema = z.object({
   DATABASE_URL: z.string().regex(/^postgres(ql)?:\/\//, 'must be a postgres:// URL'),
   API_HOST: z.string().min(1).default('127.0.0.1'),
   API_PORT: z.coerce.number().int().min(1).max(65_535).default(4000),
+  // Proxies in front of the API (the web app's /v1 rewrite, a load balancer): request.ip, which the sign-in and
+  // API-key limiters and key IP allow-lists use, is then the client taken from X-Forwarded-For.
+  TRUST_PROXY: trustProxy,
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
   SECRET_ENCRYPTION_KEY: secretKey,
   SESSION_ABSOLUTE_MINUTES: z.coerce.number().int().positive().max(SESSION_MAX_MINUTES).default(SESSION_MAX_MINUTES),
@@ -36,6 +76,16 @@ const EnvSchema = z.object({
   MAIL_DIR: z.string().min(1).default('var/mail'),
   /** Base URL of the web app, for links in emails. */
   WEB_URL: z.url({ protocol: /^https?$/ }).default('http://127.0.0.1:3100'),
+  // D-B1-16 (PLAN B1): engineering limits of API keys, webhook delivery and evidence uploads, not product values.
+  API_KEY_RATE_STANDARD_PER_MINUTE: positiveInt(120),
+  API_KEY_RATE_HIGH_PER_MINUTE: positiveInt(1200),
+  API_KEY_MAX_GRACE_MINUTES: positiveInt(10_080),
+  WEBHOOK_TIMEOUT_MS: positiveInt(10_000),
+  WEBHOOK_ALLOWED_PORTS: portList('443'),
+  WEBHOOK_RETRY_BASE_SECONDS: positiveInt(60),
+  WEBHOOK_RETRY_MAX_SECONDS: positiveInt(21_600),
+  WEBHOOK_GIVE_UP_HOURS: positiveInt(72),
+  EVIDENCE_MAX_FILE_BYTES: positiveInt(10_485_760),
 })
 
 export interface Config {
@@ -43,6 +93,8 @@ export interface Config {
   readonly databaseUrl: string
   readonly host: string
   readonly port: number
+  /** Fastify trustProxy: false (none) or the trusted proxy addresses/CIDRs/names. */
+  readonly trustProxy: readonly string[] | false
   readonly logLevel: string
   readonly secretKey: Buffer
   readonly sessionAbsoluteMinutes: number
@@ -58,6 +110,17 @@ export interface Config {
   readonly cookieSecure: boolean
   readonly mailDir: string
   readonly webUrl: string
+  readonly apiKeyRateStandardPerMinute: number
+  readonly apiKeyRateHighPerMinute: number
+  readonly apiKeyMaxGraceMinutes: number
+  readonly webhookTimeoutMs: number
+  readonly webhookAllowedPorts: readonly number[]
+  /** First retry delay; each later one doubles, capped at webhookRetryMaxSeconds. */
+  readonly webhookRetryBaseSeconds: number
+  readonly webhookRetryMaxSeconds: number
+  /** A delivery still failing this long after its first attempt is dead. */
+  readonly webhookGiveUpHours: number
+  readonly evidenceMaxFileBytes: number
 }
 
 /** Validates the environment once at start-up and fails fast with every problem listed. */
@@ -73,6 +136,7 @@ export function loadConfig(env: NodeJS.ProcessEnv): Config {
     databaseUrl: e.DATABASE_URL,
     host: e.API_HOST,
     port: e.API_PORT,
+    trustProxy: e.TRUST_PROXY,
     logLevel: e.LOG_LEVEL,
     secretKey: Buffer.from(e.SECRET_ENCRYPTION_KEY, 'base64'),
     sessionAbsoluteMinutes: e.SESSION_ABSOLUTE_MINUTES,
@@ -88,5 +152,14 @@ export function loadConfig(env: NodeJS.ProcessEnv): Config {
     cookieSecure: e.COOKIE_SECURE,
     mailDir: e.MAIL_DIR,
     webUrl: e.WEB_URL.replace(/\/+$/, ''),
+    apiKeyRateStandardPerMinute: e.API_KEY_RATE_STANDARD_PER_MINUTE,
+    apiKeyRateHighPerMinute: e.API_KEY_RATE_HIGH_PER_MINUTE,
+    apiKeyMaxGraceMinutes: e.API_KEY_MAX_GRACE_MINUTES,
+    webhookTimeoutMs: e.WEBHOOK_TIMEOUT_MS,
+    webhookAllowedPorts: e.WEBHOOK_ALLOWED_PORTS,
+    webhookRetryBaseSeconds: e.WEBHOOK_RETRY_BASE_SECONDS,
+    webhookRetryMaxSeconds: e.WEBHOOK_RETRY_MAX_SECONDS,
+    webhookGiveUpHours: e.WEBHOOK_GIVE_UP_HOURS,
+    evidenceMaxFileBytes: e.EVIDENCE_MAX_FILE_BYTES,
   }
 }

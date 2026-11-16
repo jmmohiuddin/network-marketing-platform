@@ -8,7 +8,7 @@ import { idempotent, sendIdempotent } from '../../lib/idempotency.js'
 import { decodeCursor, pageQuery, toPage } from '../../lib/pagination.js'
 import { decideSession, endSessionAsTenant, endSessionAsVendor } from './decisions.js'
 import { requestSession } from './requests.js'
-import { getSession, listSessions, scopePermission, sessionLog, SUPPORT_SESSION_MAX_MINUTES } from './sessions.js'
+import { getSession, listSessions, scopePermission, sessionLog, SUPPORT_SESSION_MAX_MINUTES, withRequesters } from './sessions.js'
 import { vendorIdempotency } from './vendor-idempotency.js'
 
 const idParams = z.object({ id: z.uuid() })
@@ -63,13 +63,21 @@ export function registerSupportRoutes(app: FastifyInstance): void {
   app.get('/v1/support-sessions', either, async (request) => {
     const query = parse(listQuery, request.query)
     const after = decodeCursor(query.cursor, sessionCursor)
-    const rows = await inOwnRealm(request, (tx) => listSessions(tx, query.state, after, query.limit))
+    const tenantView = currentAuth(request).realm === 'tenant'
+    const rows = await inOwnRealm(request, async (tx) => {
+      const sessions = await listSessions(tx, query.state, after, query.limit)
+      return tenantView ? withRequesters(tx, sessions) : sessions
+    })
     return toPage(rows, query.limit, (row) => ({ created_at: row.created_at.toISOString(), id: row.id }))
   })
 
   app.get('/v1/support-sessions/:id', either, async (request) => {
     const { id } = parse(idParams, request.params)
-    return envelope(await inOwnRealm(request, (tx) => getSession(tx, id)))
+    const tenantView = currentAuth(request).realm === 'tenant'
+    return envelope(await inOwnRealm(request, async (tx) => {
+      const session = await getSession(tx, id)
+      return tenantView ? (await withRequesters(tx, [session]))[0]! : session
+    }))
   })
 
   app.post('/v1/support-sessions/:id/decision', decisionGuard, async (request, reply) => {

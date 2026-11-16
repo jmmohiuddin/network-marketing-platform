@@ -22,6 +22,26 @@ describe('config', () => {
     expect(loadConfig({ ...ENV, WEB_URL: 'https://app.example/' }).webUrl).toBe('https://app.example')
   })
 
+  test('applies the D-B1-16 key, webhook and evidence limits and validates the port list', () => {
+    expect(loadConfig(ENV)).toMatchObject({
+      apiKeyRateStandardPerMinute: 120, apiKeyRateHighPerMinute: 1200, apiKeyMaxGraceMinutes: 10_080,
+      webhookTimeoutMs: 10_000, webhookAllowedPorts: [443], webhookRetryBaseSeconds: 60,
+      webhookRetryMaxSeconds: 21_600, webhookGiveUpHours: 72, evidenceMaxFileBytes: 10_485_760,
+    })
+    expect(loadConfig({ ...ENV, WEBHOOK_ALLOWED_PORTS: '443, 8443' }).webhookAllowedPorts).toEqual([443, 8443])
+    for (const ports of ['', '0', '443,x', '70000']) {
+      expect(() => loadConfig({ ...ENV, WEBHOOK_ALLOWED_PORTS: ports })).toThrow(/^WEBHOOK_ALLOWED_PORTS/m)
+    }
+  })
+
+  test('TRUST_PROXY: unset trusts no proxy; takes addresses, CIDRs and proxy-addr names, never a hop count', () => {
+    expect(loadConfig(ENV).trustProxy).toBe(false)
+    expect(loadConfig({ ...ENV, TRUST_PROXY: 'loopback, 10.0.0.0/8, fd00::1' }).trustProxy).toEqual(['loopback', '10.0.0.0/8', 'fd00::1'])
+    for (const value of ['1', 'true', '10.0.0.0/33', 'proxy.example', '10.0.0.1,']) {
+      expect(() => loadConfig({ ...ENV, TRUST_PROXY: value })).toThrow(/^TRUST_PROXY: /m)
+    }
+  })
+
   test('fails closed: NODE_ENV has no default, COOKIE_SECURE takes only boolean words, a session lasts at most 12 h', () => {
     const { NODE_ENV: _omitted, ...withoutEnv } = ENV
 

@@ -1,3 +1,10 @@
+export {
+  eligibleApprovers,
+  recordApproval,
+  type ApprovalInput,
+  type ApprovalOutcome,
+  type EligibleApprover,
+} from './approvals.js'
 export { migrate, type MigrateOptions } from './migrate.js'
 export {
   closePool,

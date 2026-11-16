@@ -25,9 +25,12 @@ export interface SettingDefinition<S extends z.ZodType = z.ZodType> {
   readonly readPermissions: readonly Permission[]
   /** Security-relevant: writing needs a fresh second factor (SEC-20). */
   readonly stepUp: boolean
+  /** BR-MNY-02: a change needs a Finance approver (setting change request, FR-TEN-003); never written directly. */
+  readonly moneyAffecting: boolean
 }
 
 const COMPLIANCE_READERS: readonly Permission[] = ['settings.manage', 'compliance.read']
+const POLICY_READERS: readonly Permission[] = ['settings.manage', 'settings.approve']
 
 /**
  * Every tenant setting key. None has a default (DEC-14, E-ADR-11): an unset threshold is null and the
@@ -35,15 +38,18 @@ const COMPLIANCE_READERS: readonly Permission[] = ['settings.manage', 'complianc
  */
 export const SETTINGS = {
   /** R4: personal volume (minor units) that makes an earner active. */
-  'compliance.active_pv_minor': { schema: bigintString, readPermissions: COMPLIANCE_READERS, stepUp: false },
+  'compliance.active_pv_minor': { schema: bigintString, readPermissions: COMPLIANCE_READERS, stepUp: false, moneyAffecting: false },
   /** R4: rank name -> personal volume threshold (minor units). */
   'compliance.rank_thresholds_pv_minor': {
     schema: z.record(z.string().trim().min(1).max(64), bigintString).refine((value) => Object.keys(value).length > 0, 'needs at least one rank'),
     readPermissions: COMPLIANCE_READERS,
     stepUp: false,
+    moneyAffecting: false,
   },
   /** R4: day of month from which an order counts as late (end-of-period threshold orders). */
-  'compliance.late_order_day': { schema: z.number().int().min(1).max(31), readPermissions: COMPLIANCE_READERS, stepUp: false },
+  'compliance.late_order_day': {
+    schema: z.number().int().min(1).max(31), readPermissions: COMPLIANCE_READERS, stepUp: false, moneyAffecting: false,
+  },
   /** R2: personal-use share that flags an earner, as an exact fraction (numerator <= denominator). */
   'compliance.personal_share_flag': {
     schema: z
@@ -51,12 +57,29 @@ export const SETTINGS = {
       .refine((ratio) => BigInt(ratio.numerator) <= BigInt(ratio.denominator), 'numerator must not exceed denominator'),
     readPermissions: COMPLIANCE_READERS,
     stepUp: false,
+    moneyAffecting: false,
   },
   /** FR-PRV-004: breach-notification contacts (at least one). */
   'privacy.breach_contacts': {
     schema: z.array(breachContact).min(1).max(20),
     readPermissions: ['settings.manage'],
     stepUp: true,
+    moneyAffecting: false,
+  },
+  /** BR-MNY-02: rounding of money amounts. Unset = the platform rule half-up applies (engine, B3). */
+  'money.rounding_mode': {
+    schema: z.enum(['half_up', 'half_even']), readPermissions: POLICY_READERS, stepUp: false, moneyAffecting: true,
+  },
+  /** How a refund claws back commission already paid (B4 may add per-bonus-type overrides). */
+  'money.clawback_policy': {
+    schema: z.strictObject({ default: z.enum(['order_line', 'restatement']) }),
+    readPermissions: POLICY_READERS,
+    stepUp: false,
+    moneyAffecting: true,
+  },
+  /** BR-PLN-04: days of notice before a plan version activates. */
+  'plan.activation_notice_days': {
+    schema: z.number().int().min(0).max(365), readPermissions: POLICY_READERS, stepUp: false, moneyAffecting: false,
   },
 } as const satisfies Record<string, SettingDefinition>
 
@@ -91,7 +114,10 @@ function parseValues(settings: Record<string, unknown>): SettingValues {
   return Object.fromEntries(entries) as SettingValues
 }
 
-/** The version in force at `at` (default now), or null when the tenant has never saved a setting. */
+/**
+ * The version in force at `at` (default now): the chain row (D-B1-01) with the greatest effective_from <= at, i.e. among
+ * those the highest version. null when nothing is in force then.
+ */
 export async function getEffectiveSettings(tx: Tx, at?: Date): Promise<EffectiveSettings | null> {
   const { rows } = await tx.query<VersionRow>(
     `SELECT id, version, effective_from, settings FROM tenant_setting_version
@@ -124,10 +150,7 @@ export async function getSetting<K extends SettingKey>(tx: Tx, key: K): Promise<
   return (settings?.values[key] as SettingValue<K> | undefined) ?? null
 }
 
-/** The newest version row (it may still be scheduled for the future): the base of the next write. */
-export async function getLatestVersion(tx: Tx): Promise<VersionRow | null> {
-  const { rows } = await tx.query<VersionRow>(
-    'SELECT id, version, effective_from, settings FROM tenant_setting_version ORDER BY version DESC LIMIT 1',
-  )
-  return rows[0] ?? null
+/** Whether a caller holding `permissions` may read `key`'s values. */
+export function canReadSetting(permissions: ReadonlySet<Permission>, key: string): boolean {
+  return isSettingKey(key) && SETTINGS[key].readPermissions.some((permission) => permissions.has(permission))
 }

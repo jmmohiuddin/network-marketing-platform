@@ -41,11 +41,31 @@ export async function openSession(tx: Tx, minutes = 60, tokenHash: Buffer = rand
   return { id: rows[0]!.session_id, tokenHash, expiresAt: rows[0]!.session_expires_at }
 }
 
+/** A draft market: the runtime role creates no other (D-B1-17). */
 export function insertMarket(tx: Tx, tenantId: string, code = 'GB'): Promise<string> {
   return insertRow(tx, 'market', {
     tenant_id: tenantId, code, currency: 'GBP', minor_unit: 2, time_zone: 'Europe/London', languages: ['en'],
-    market_pack: 'gb-1', state: 'live',
+    market_pack: 'gb-1', state: 'draft',
   })
+}
+
+/** An evidence document uploaded by the transaction's acting user, referenceable once (D-B1-04). */
+export function insertEvidence(tx: Tx, tenantId: string, uploadedBy: string): Promise<string> {
+  return insertRow(tx, 'document', {
+    tenant_id: tenantId, class: 'evidence', storage_key: 'evidence', sha256: randomBytes(32), mime: 'application/pdf',
+    size_bytes: 1, uploaded_by: uploadedBy, version: 1, file_name: 'evidence.pdf',
+  })
+}
+
+/** Runs write as userId (app.user_id), then restores the transaction's acting user: an approval is the approver's. */
+export async function asUser<T>(tx: Tx, userId: string, write: () => Promise<T>): Promise<T> {
+  const { rows } = await tx.query<{ previous: string }>(
+    `SELECT current_setting('app.user_id', true) AS previous, set_config('app.user_id', $1, true)`,
+    [userId],
+  )
+  const result = await write()
+  await tx.query(`SELECT set_config('app.user_id', $1, true)`, [rows[0]!.previous])
+  return result
 }
 
 export async function insertAuditEvent(tx: Tx, tenantId: string, action: string): Promise<void> {

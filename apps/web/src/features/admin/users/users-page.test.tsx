@@ -106,6 +106,43 @@ describe('UsersPage', () => {
     expect(await screen.findByText('Commission analyst was revoked from bob@acme.example.')).toBeTruthy()
   })
 
+  it('BUG-028: after Deactivate, focus lands on the users list, not the body', async () => {
+    const user = userEvent.setup()
+    renderAs(ME, <UsersPage />, routes({ 'POST /v1/users/u2/deactivate': () => ok({ id: 'u2' }) }))
+    await user.click(await screen.findByRole('button', { name: 'Deactivate bob@acme.example' }))
+    await user.click(screen.getByRole('button', { name: 'Deactivate user' }))
+    expect(await screen.findByText('bob@acme.example was deactivated.')).toBeTruthy()
+    expect(document.activeElement).toBe(screen.getByRole('tabpanel'))
+  })
+
+  it('BUG-028: Cancel still returns focus to the button that opened the confirmation', async () => {
+    const user = userEvent.setup()
+    renderAs(ME, <UsersPage />, routes())
+    const opener = await screen.findByRole('button', { name: 'Revoke Commission analyst from bob@acme.example' })
+    await user.click(opener)
+    await user.click(screen.getByRole('button', { name: 'Cancel' }))
+    expect(document.activeElement).toBe(opener)
+  })
+
+  it('BUG-028: after Reject grant, focus lands on the approvals list once the card is gone', async () => {
+    navigation.search = 'tab=approvals'
+    const user = userEvent.setup()
+    let decided = false
+    renderAs(ME, <UsersPage />, routes({
+      'GET /v1/role-grant-requests': () => ok(decided ? [PENDING[0]] : PENDING),
+      'POST /v1/role-grant-requests/g2/decision': () => {
+        decided = true
+        return ok({ id: 'g2' })
+      },
+    }))
+    await user.click(await screen.findByRole('button', { name: 'Reject Tenant admin grant' }))
+    expect(within(screen.getByRole('dialog')).getByText('You may be asked for a code from your authenticator app.')).toBeTruthy()
+    await user.click(screen.getByRole('button', { name: 'Reject grant' }))
+    expect(await screen.findByText('The grant request was rejected.')).toBeTruthy()
+    await vi.waitFor(() => expect(screen.queryByRole('button', { name: 'Reject Tenant admin grant' })).toBeNull())
+    await vi.waitFor(() => expect(document.activeElement).toBe(screen.getByRole('tabpanel')))
+  })
+
   it('keeps the confirmation open with the reason when the last admin would be removed', async () => {
     const user = userEvent.setup()
     const refusal = 'This would leave the tenant without an administrator.'

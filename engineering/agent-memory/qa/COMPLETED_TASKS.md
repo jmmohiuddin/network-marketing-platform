@@ -36,3 +36,9 @@ _Agent: qa. Read before every task; update after every task. Keep concise — fa
 
 ## 2026-11-12 — UI reports finalised (docs only)
 - Final status sections in testing/UI_TESTING_REPORT.md and VISUAL_REGRESSION_REPORT.md (root causes + corrections filled in); round-table cells aligned with round results; inventory §2 MVP-A statuses; MASTER_PROJECT_MEMORY design status section. Web unit tests 38 files / 262 passed. No code changed.
+
+## 2026-11-17 — B1 browser QA round 1, read-only
+- Seeded nmp_e2e, ran W-B1-1..6 + MVP-A regression in one MCP browser, harness SC-29/13/17 x4, Impeccable audit + scripted a11y; 11 defects registered (BUG-049..059), 10 polish bugs marked verified; reports appended; servers stopped by PID. No code changed.
+
+## 2026-11-17 — B1 browser QA round 2 (retest), read-only
+- Re-seeded nmp_e2e, verified BUG-049..059 in the browser, repeated W-B1-1..5 + MVP-A regression, harness SC-29/13/17 x4, Impeccable detect + scripted a11y; register statuses updated, BUG-060 added; reports appended; servers stopped by PID. No code changed.

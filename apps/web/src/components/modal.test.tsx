@@ -55,6 +55,66 @@ describe('Modal', () => {
   })
 })
 
+/** A list whose row action removes the row, as Revoke or Deactivate do. */
+function RemovableRow() {
+  const [rows, setRows] = useState(['bob'])
+  const [confirming, setConfirming] = useState(false)
+  return (
+    <main>
+      <h1>Users</h1>
+      <h2 id="user-list">User list</h2>
+      {rows.map((row) => <button key={row} type="button" onClick={() => setConfirming(true)}>Deactivate {row}</button>)}
+      <ConfirmDialog
+        open={confirming} title="Deactivate user" consequence="They can no longer sign in." confirmLabel="Deactivate user" destructive
+        returnFocusTo="#user-list"
+        onCancel={() => setConfirming(false)}
+        onConfirm={async () => {
+          setConfirming(false)
+          setRows([])
+        }}
+      />
+    </main>
+  )
+}
+
+describe('BUG-028 focus after a dialog closes', () => {
+  it('focuses the list heading after a confirmed action that removes the row', async () => {
+    const user = userEvent.setup()
+    render(<RemovableRow />)
+    await user.click(screen.getByRole('button', { name: 'Deactivate bob' }))
+    await user.click(screen.getByRole('button', { name: 'Deactivate user' }))
+    expect(document.activeElement).toBe(screen.getByRole('heading', { name: 'User list' }))
+    expect(document.activeElement).not.toBe(document.body)
+  })
+
+  it('returns focus to the opener after Cancel', async () => {
+    const user = userEvent.setup()
+    render(<RemovableRow />)
+    const opener = screen.getByRole('button', { name: 'Deactivate bob' })
+    await user.click(opener)
+    await user.keyboard('{Escape}')
+    expect(document.activeElement).toBe(opener)
+  })
+
+  it('falls back to the page heading when the opener is gone and no target is given', async () => {
+    function Vanishing() {
+      const [open, setOpen] = useState(false)
+      return (
+        <main>
+          <h1>Settings</h1>
+          {!open && <button type="button" onClick={() => setOpen(true)}>Open dialog</button>}
+          <Modal open={open} onClose={() => setOpen(false)} title="Change setting"><p>Body</p></Modal>
+        </main>
+      )
+    }
+    const user = userEvent.setup()
+    render(<Vanishing />)
+    await user.click(screen.getByRole('button', { name: 'Open dialog' }))
+    await user.click(screen.getByRole('button', { name: 'Close dialog' }))
+    expect(document.activeElement).toBe(screen.getByRole('heading', { name: 'Settings' }))
+  })
+})
+
 describe('ConfirmDialog', () => {
   it('uses a solid danger button only for the destructive confirmation', () => {
     render(<ConfirmDialog open title="Deactivate user" consequence="They can no longer sign in." confirmLabel="Deactivate user" destructive onConfirm={vi.fn()} onCancel={vi.fn()} />)

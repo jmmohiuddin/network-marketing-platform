@@ -6,13 +6,14 @@ import { useApi } from '../../components/api-provider'
 import { Button } from '../../components/button'
 import { Modal } from '../../components/modal'
 import { ErrorSummary, type SummaryItem } from '../../components/error-summary'
-import { Checkbox, FieldError, LABEL_CLASS, Select, TextInput } from '../../components/form-field'
+import { Checkbox, FieldError, LABEL_CLASS, Select } from '../../components/form-field'
 import { useToast } from '../../components/toast'
 import { isApiError, newIdempotencyKey } from '../../lib/api'
 import { errorMessage, fieldErrors } from '../../lib/messages'
 import { MARKETS_PATH, marketName, type Market } from '../../lib/markets'
 import { useResource } from '../../lib/use-resource'
 import { REPORT_NAMES } from './format'
+import { MonthField } from './month-field'
 import { periodErrors } from './period'
 import { REPORT_CODES, type ReportCode, type Snapshot } from './types'
 import { NOTE } from './ui'
@@ -105,9 +106,9 @@ export function CreateSnapshotDialog({ open, onClose, initial }: CreateSnapshotD
   }
 
   const month = (field: 'period_from' | 'period_to', label: string) => (
-    <TextInput
-      id={fieldId(field)} label={label} type="month" placeholder="2025-01" helper="Year and month, for example 2025-01."
-      value={request[field]} error={errors[field]} onChange={(event) => change(field === 'period_from' ? { period_from: event.target.value } : { period_to: event.target.value })}
+    <MonthField
+      id={fieldId(field)} label={label} value={request[field]} error={errors[field]}
+      onChange={(value) => change(field === 'period_from' ? { period_from: value } : { period_to: value })}
     />
   )
   const footer = (

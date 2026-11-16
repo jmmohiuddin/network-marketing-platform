@@ -11,8 +11,11 @@ export const SUPPORT_SESSION_MAX_MINUTES = 480
 /** An undecided request is auto-denied after this many minutes (SECURITY_IAM_TENANCY note 10). */
 export const REQUEST_TTL_MINUTES = 1440
 
-/** Vendor staff never unmask participants: every other catalogue permission may be requested, read-only. */
-export const scopePermission = z.enum(PERMISSIONS).exclude(['participant.unmask'])
+/**
+ * Vendor staff never unmask participants, approve money settings, sign off market launches or mint integration
+ * credentials (tenant-own decisions, PLAN B1 3): every other catalogue permission may be requested, read-only.
+ */
+export const scopePermission = z.enum(PERMISSIONS).exclude(['participant.unmask', 'settings.approve', 'market.signoff', 'integration.manage'])
 export type ScopePermission = z.infer<typeof scopePermission>
 
 /**
@@ -107,4 +110,24 @@ export async function sessionLog(tx: Tx, id: string, beforeSeq: string | undefin
     [id, beforeSeq ?? null, limit + 1],
   )
   return rows.map(({ before_ref, after_ref, ...event }) => ({ ...event, ...decodeRefs(before_ref, after_ref) }))
+}
+
+export interface Requester {
+  id: string
+  display_name: string | null
+  email: string
+}
+
+/**
+ * BUG-023: in the tenant realm a session view names its vendor requester (vendor users are otherwise invisible to a
+ * tenant). support_session_requester answers only for sessions of the current tenant.
+ */
+export async function withRequesters<T extends { id: string }>(tx: Tx, sessions: readonly T[]): Promise<(T & { requester: Requester | null })[]> {
+  const { rows } = await tx.query<Requester & { session_id: string }>(
+    `SELECT s.id AS session_id, r.id, r.display_name, r.email
+     FROM unnest($1::uuid[]) AS s (id) CROSS JOIN LATERAL support_session_requester(s.id) AS r`,
+    [sessions.map((session) => session.id)],
+  )
+  const bySession = new Map(rows.map(({ session_id: sessionId, ...requester }) => [sessionId, requester]))
+  return sessions.map((session) => ({ ...session, requester: bySession.get(session.id) ?? null }))
 }

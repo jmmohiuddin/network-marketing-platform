@@ -46,8 +46,8 @@ const apiRoutes = () => fetchRoutes(
 
 async function fillForm(user: ReturnType<typeof userEvent.setup>) {
   await user.selectOptions(screen.getByLabelText('Market'), await screen.findByRole('option', { name: 'Germany (DE)' }))
-  fireEvent.change(screen.getByLabelText('First month'), { target: { value: '2025-01' } })
-  fireEvent.change(screen.getByLabelText('Last month'), { target: { value: '2025-03' } })
+  await user.type(screen.getByLabelText('First month'), '2025-01')
+  await user.type(screen.getByLabelText('Last month'), '2025-03')
   for (const [label, name] of [['Participants file (participants.csv)', 'participants.csv'], ['Orders file (orders.csv)', 'orders.csv'], ['Payout lines file (payout_lines.csv)', 'payout_lines.csv']]) {
     await user.upload(screen.getByLabelText(label!), new File(['a,b\n1,2\n'], name!, { type: '' }))
   }
@@ -70,6 +70,22 @@ describe('NewImportForm', () => {
     expect(summary.textContent).toContain('Choose the market.')
     expect(summary.textContent).toContain('The last month must not be before the first month.')
     expect(summary.textContent).toContain('Choose the payout lines CSV file.')
+    expect(FakeXhr.sent).toHaveLength(0)
+  })
+
+  it('BUG-026: takes the month as typed in the hinted form and refuses month 13', async () => {
+    const user = userEvent.setup()
+    renderWithProviders(<NewImportForm />, apiRoutes())
+    const first = screen.getByLabelText('First month') as HTMLInputElement
+    expect(first.type).toBe('text')
+    expect(first.inputMode).toBe('numeric')
+    expect(first.getAttribute('aria-describedby')).not.toBeNull()
+    expect(document.getElementById(first.getAttribute('aria-describedby')!)?.textContent).toBe('Year and month, for example 2025-01.')
+    await user.type(first, '2025-13')
+    await user.type(screen.getByLabelText('Last month'), '2025-01')
+    await user.click(screen.getByRole('button', { name: 'Upload and validate' }))
+    expect(screen.getByRole('alert').textContent).toContain('Enter the first month as year and month, for example 2025-01.')
+    expect(screen.getByRole('alert').textContent).not.toContain('Enter the last month')
     expect(FakeXhr.sent).toHaveLength(0)
   })
 

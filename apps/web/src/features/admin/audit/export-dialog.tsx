@@ -6,6 +6,7 @@ import { Banner } from '../../../components/banner'
 import { Button, buttonClass } from '../../../components/button'
 import { Modal } from '../../../components/modal'
 import { isApiError } from '../../../lib/api'
+import { countLabel } from '../../../lib/format'
 import { errorMessage } from '../../../lib/messages'
 import { useIdempotencyKey } from '../resource'
 import type { AuditExport } from '../types'
@@ -78,7 +79,7 @@ export function AuditExportDialog({ filters, onClose }: { readonly filters: Audi
       )}
       {outcome?.kind === 'ready' && (
         <>
-          <Banner tone="success" title="Export ready">{NUMBER.format(Number(outcome.file.row_count))} events. Each download is recorded too.</Banner>
+          <Banner tone="success" title="Export ready">{countLabel(Number(outcome.file.row_count), 'event')}. Each download is recorded too.</Banner>
           <a className={buttonClass('primary')} href={outcome.file.download} download>Download CSV</a>
         </>
       )}

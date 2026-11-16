@@ -147,6 +147,7 @@ export function VendorSessionsPage() {
         consequence={`Your access to ${ending?.tenant_slug ?? 'the tenant'} ends now. The tenant keeps the session log.`}
         confirmLabel="End session"
         destructive
+        returnFocusTo="main h1"
         onCancel={() => setEnding(null)}
         onConfirm={async () => {
           if (ending === null) return

@@ -21,3 +21,6 @@ var/
 design/stitch/batch2/
 # Regenerable screenshots (testing/visual scripts recreate them)
 testing/ui-screenshots/
+
+# knowledge-graph tool output
+graphify-out/

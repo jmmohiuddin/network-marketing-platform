@@ -79,9 +79,9 @@ export function UsersPage() {
       <div>
         <Tabs label="Users and roles" idPrefix={ID_PREFIX} tabs={tabs} selected={tab} onSelect={selectTab} />
         <TabPanel idPrefix={ID_PREFIX} tabId={tab}>
-          {tab === 'users' && <UsersTable users={users} roles={roleRows} markets={markets} pending={pending.rows} onChanged={refresh} />}
+          {tab === 'users' && <UsersTable users={users} roles={roleRows} markets={markets} pending={pending.rows} onChanged={refresh} listSelector={`#${ID_PREFIX}-panel-users`} />}
           {tab === 'roles' && <RolesTab roles={roles} onChanged={roles.reload} />}
-          {tab === 'approvals' && <ApprovalsTab requests={pending} roles={roleRows} markets={markets.data ?? []} users={users.rows} onChanged={refresh} />}
+          {tab === 'approvals' && <ApprovalsTab requests={pending} roles={roleRows} markets={markets.data ?? []} users={users.rows} onChanged={refresh} listSelector={`#${ID_PREFIX}-panel-approvals`} />}
         </TabPanel>
       </div>
       {inviting && (

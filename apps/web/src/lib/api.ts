@@ -46,7 +46,7 @@ export function newIdempotencyKey(): string {
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`
 }
 
-export type Method = 'GET' | 'POST' | 'PUT' | 'DELETE'
+export type Method = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
 
 export interface RequestOptions {
   /** Sent as JSON; a FormData body (multipart upload) is sent as is. */
@@ -79,6 +79,7 @@ export interface ApiClient {
   get<T>(path: string, options?: RequestOptions): Promise<ApiResult<T>>
   post<T>(path: string, body?: unknown, options?: RequestOptions): Promise<ApiResult<T>>
   put<T>(path: string, body?: unknown, options?: RequestOptions): Promise<ApiResult<T>>
+  patch<T>(path: string, body?: unknown, options?: RequestOptions): Promise<ApiResult<T>>
   delete<T>(path: string, options?: RequestOptions): Promise<ApiResult<T>>
 }
 
@@ -186,6 +187,7 @@ export function createApiClient(handlers: ApiHandlers, fetchImpl: typeof fetch =
     get: (path, options) => request('GET', path, options),
     post: (path, body, options) => request('POST', path, { ...options, body }),
     put: (path, body, options) => request('PUT', path, { ...options, body }),
+    patch: (path, body, options) => request('PATCH', path, { ...options, body }),
     delete: (path, options) => request('DELETE', path, options),
   }
 }

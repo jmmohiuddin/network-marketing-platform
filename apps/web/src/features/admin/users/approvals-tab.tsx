@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useApi } from '../../../components/api-provider'
 import { Button } from '../../../components/button'
 import { PaginationBar } from '../../../components/data-table'
@@ -80,7 +80,7 @@ function DecisionDialog({ request, decision, roleName, scope, onClose, onDecided
           ? `${roleName} (${scope}) takes effect as soon as you approve. You did not ask for this grant and it is not for you.`
           : `${roleName} is not granted. The admin who asked can ask again.`}
       </p>
-      <p className={NOTE}>You will be asked for a code from your authenticator app.</p>
+      <p className={NOTE}>You may be asked for a code from your authenticator app.</p>
       <TextAreaField id={REASON_ID} label="Reason" optional value={reason} onChange={setReason} />
     </FormDialog>
   )
@@ -93,6 +93,8 @@ export interface ApprovalsTabProps {
   readonly markets: readonly Market[]
   readonly users: readonly UserView[]
   readonly onChanged: () => void
+  /** Selector of the approvals list, focused once a decided card has left the list (BUG-028). */
+  readonly listSelector: string
 }
 
 interface GrantCardProps {
@@ -155,9 +157,16 @@ function GrantCard({ request, roleName, scope, users, onDecide, blocked }: Grant
 }
 
 /** SC-28 pending approvals: privileged grants waiting for a second admin (AC-36.1), one sc_28 inspector card each. */
-export function ApprovalsTab({ requests, roles, markets, users, onChanged }: ApprovalsTabProps) {
+export function ApprovalsTab({ requests, roles, markets, users, onChanged, listSelector }: ApprovalsTabProps) {
   const { me, readOnly } = useSession()
   const [deciding, setDeciding] = useState<{ request: GrantRequest; decision: Decision } | null>(null)
+  const decided = useRef(false)
+  // The decision dialog returns focus to the card's button, which the reload then removes: focus the list instead.
+  useEffect(() => {
+    if (!decided.current || requests.loading) return
+    decided.current = false
+    if (document.activeElement === null || document.activeElement === document.body) document.querySelector<HTMLElement>(listSelector)?.focus()
+  }, [requests.loading, requests.rows, listSelector])
   const roleNames = new Map(roles.map((role) => [role.id, role.name]))
   const userMap = new Map(users.map((user) => [user.id, user]))
   const roleOf = (request: GrantRequest) => roleNames.get(request.role_id) ?? 'Role'
@@ -193,6 +202,7 @@ export function ApprovalsTab({ requests, roles, markets, users, onChanged }: App
           scope={marketScopeLabel(deciding.request.market_ids, markets)}
           onClose={() => setDeciding(null)}
           onDecided={() => {
+            decided.current = true
             setDeciding(null)
             onChanged()
           }}

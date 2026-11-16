@@ -12,7 +12,9 @@ import {
 } from '../helpers/index.js'
 import { caseOf, ROUTE_CASES, type CaseRequest, type RouteCase } from './cases.js'
 import { routesOf } from './route-registry.js'
-import { ALL_ROLES, BREACH_CONTACT, canariesOf, fingerprintOf, PASSWORD, phantomOf, seedTenants, type Seeded, type Targets } from './seed.js'
+import {
+  ALL_ROLES, BREACH_CONTACT, canariesOf, fingerprintOf, PASSWORD, phantomOf, seedTenants, SUITE_MODULES, type Seeded, type Targets,
+} from './seed.js'
 
 // TS-21 / SEC-28 / NFR-SEC-01: generated from the routes buildApp() registers, so a new route fails this suite until
 // it has a case in cases.ts. Per route: no session, a tenant-B user holding every permission, a vendor user without
@@ -21,7 +23,7 @@ vi.mock('fastify', async (original) => (await import('./route-registry.js')).col
 
 const uploadDir = await mkdtemp(join(tmpdir(), 'nmp-isolation-'))
 vi.stubEnv('UPLOAD_DIR', uploadDir)
-const app = await buildTestApp({ env: { API_RATE_LIMIT_PER_MINUTE: '100000', SIGN_IN_RATE_LIMIT_PER_MINUTE: '100000' } })
+const app = await buildTestApp({ modules: SUITE_MODULES, env: { API_RATE_LIMIT_PER_MINUTE: '100000', SIGN_IN_RATE_LIMIT_PER_MINUTE: '100000' } })
 const routes = routesOf(app)
 const UNSAFE = new Set(['POST', 'PUT', 'PATCH', 'DELETE'])
 
@@ -129,7 +131,8 @@ describe('without a session', () => {
       expect(outcome(response)).toBe(refusal(request, 401, 'UNAUTHENTICATED'))
       return
     }
-    expect(response.statusCode).toBeGreaterThanOrEqual(400)
+    if (routeCase.anonymous === undefined) expect(response.statusCode).toBeGreaterThanOrEqual(400)
+    else expect(response.statusCode).toBe(routeCase.anonymous)
     expect({ status: response.statusCode, error: errorOf(response) }).toEqual(await asPhantom(undefined, routeCase))
   })
 
@@ -160,7 +163,7 @@ describe('tenant B user holding every permission (E-SEC-01: denied without revea
     const settings = await send(as, { method: 'GET', url: '/v1/settings/privacy.breach_contacts' })
     const mappings = await send(as, { method: 'GET', url: '/v1/import-mappings' })
 
-    expect(counts).toEqual({ settings: 5, mappings: 1 })
+    expect(counts).toEqual({ settings: targets.settingsVersion, mappings: 1 })
     expect([settings.headers.etag, settings.json().meta.latest_version, settings.json().data.value]).toEqual(['"0"', 0, null])
     expect([mappings.headers.etag, mappings.json().meta.latest_version, mappings.json().data]).toEqual(['"0"', 0, []])
   })
@@ -180,7 +183,8 @@ describe('tenant B user holding every permission (E-SEC-01: denied without revea
     } else if (routeCase.shape === 'own') {
       expect(response.statusCode).toBe(routeCase.own)
     } else if (routeCase.access !== 'public') {
-      expect(outcome(response)).toBe(refusal(request, 404, 'NOT_FOUND'))
+      const [status, code] = routeCase.refusedAs ?? [404, 'NOT_FOUND']
+      expect(outcome(response)).toBe(refusal(request, status, code))
     }
     if (routeCase.shape === 'object') {
       expect({ status: response.statusCode, error: errorOf(response) }).toEqual(await asPhantom(as, routeCase))
@@ -277,6 +281,9 @@ describe('vendor user inside tenant A\'s approved support session (FR-IAM-005: r
     } else if (routeCase.access === 'vendor') {
       expect(outcome(response)).toBe(refusal(request, 403, 'REALM_FORBIDDEN'))
       expect(await refusalsLogged('audit.audit_event', requestId)).toEqual(['REALM_FORBIDDEN'])
+    } else if (routeCase.inSession === 403) {
+      expect(outcome(response)).toBe(refusal(request, 403, 'PERMISSION_DENIED'))
+      expect(await refusalsLogged('audit.audit_event', requestId)).toEqual(['PERMISSION_DENIED'])
     } else {
       expect(response.statusCode).toBe(routeCase.inSession ?? 200)
       expect(await logged('audit.audit_event', requestId, 'SUPPORT_SESSION.ACCESSED')).toHaveLength(1)

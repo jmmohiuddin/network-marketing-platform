@@ -184,6 +184,7 @@ export function VendorUsersPage() {
           : ''}
         confirmLabel="Deactivate vendor user"
         destructive
+        returnFocusTo="main h1"
         onCancel={close}
         onConfirm={async () => {
           if (action?.kind !== 'deactivate') return

@@ -7,7 +7,7 @@ import type { SummaryItem } from '../../../components/error-summary'
 import { useToast } from '../../../components/toast'
 import { errorMessage } from '../../../lib/messages'
 import { requiredError } from '../../../lib/validation'
-import { durationLabel, supportScopeLabel } from '../format'
+import { durationLabel, requestableScopes, supportApproverText, supportScopeLabel } from '../format'
 import { FormDialog, TextAreaField } from '../form-dialog'
 import { useResource } from '../../../lib/use-resource'
 import type { TenantView } from '../types'
@@ -52,7 +52,7 @@ export function RequestSessionDialog({ tenant, onClose, onRequested }: RequestSe
   const toast = useToast()
   const tenants = useResource<TenantView[]>(tenant === undefined ? '/v1/tenants' : null, { limit: TENANT_PAGE_SIZE })
   const limits = useResource<SupportSessionLimits>('/v1/support-sessions/limits')
-  const scopes = limits.data?.scopes ?? []
+  const scopes = requestableScopes(limits.data?.scopes ?? [])
   const [tenantId, setTenantId] = useState(tenant?.id ?? '')
   const [reason, setReason] = useState('')
   const [scope, setScope] = useState<ReadonlySet<string>>(new Set())
@@ -110,13 +110,16 @@ export function RequestSessionDialog({ tenant, onClose, onRequested }: RequestSe
       <TextAreaField id={REASON_ID} label="Reason" helper="For example the ticket number and what you need to check." value={reason} error={errors.reason} onChange={setReason} />
       <fieldset className={FIELDSET} id={SCOPE_ID} tabIndex={-1} aria-describedby={errors.scope ? `${SCOPE_ID}-error` : undefined}>
         <legend className={LEGEND}>Areas you need to see</legend>
-        <p className={NOTE}>View only: nothing can be changed in a support session.</p>
+        <p className={NOTE}>View only: nothing can be changed in a support session. The tenant approves only areas the approving admin holds for all markets.</p>
         {errors.scope && <FieldError id={`${SCOPE_ID}-error`} message={errors.scope} />}
         {limits.loading && <p className={NOTE}>Loading the areas you may ask for…</p>}
         {limits.error !== null && <FieldError message={errorMessage(limits.error)} />}
         <div className={CHECK_GRID}>
           {scopes.map((permission) => (
-            <Checkbox key={permission} label={supportScopeLabel(permission)} checked={scope.has(permission)} onChange={(event) => toggle(permission, event.target.checked)} />
+            <Checkbox
+              key={permission} label={supportScopeLabel(permission)} helper={supportApproverText(permission)}
+              checked={scope.has(permission)} onChange={(event) => toggle(permission, event.target.checked)}
+            />
           ))}
         </div>
       </fieldset>

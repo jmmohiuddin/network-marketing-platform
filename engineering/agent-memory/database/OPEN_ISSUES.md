@@ -22,3 +22,19 @@ _Agent: database. Read before every task; update after every task. Keep concise 
 - Columns without a key stay unchecked: every `created_by`, role_assignment.market_ids / brand_ids, approval.object_id, tenant.dpa_document_id.
 - `session` relies on key declaration order for identical errors (tenant key first); `references.test.ts` pins it.
 - `engineering/PROJECT_ENGINEERING_CONTEXT.md` and `context/DATABASE.md` still show the policy without the realm term and single-column keys; not edited (outside packages/db).
+
+## From B1 review (0107)
+- RESOLVED 2026-11-17: seed.ts DEMO market draft, approvals via asSelf(admin2).
+- BE2: pin `SETTINGS` money-affecting keys against `SELECT money_setting_keys()` in ten/settings.test.ts (SETTINGS has no money keys yet). PLAN 1.3 rebase "skip S' when equal to its new predecessor" leaves the old S as chain row at its date (stale values); the deferred money guard refuses that case when a money key is involved.
+- BE3: approvals of cases must use object_type 'case'.
+
+## From B1 completion (2026-11-17)
+- nmp_dev is at migration 0031: run `MIGRATE_DATABASE_URL=postgres://127.0.0.1:5432/nmp_dev pnpm --filter @nmp/db migrate` (or reset) before using it.
+- Key callers: inTenant sets app.user_id = service account id. Any B2 key write route inserting a row with a created_by/actor FK to user_account will fail the FK; give such columns a service-account alternative first.
+- .env.example lacks the D-B1-16 keys (integrator owns it); defaults apply.
+
+## From B1 review round 2 (0108)
+- webhook_delivery -> outbox_event FK has no ON DELETE: the planned outbox purge (DATABASE.md) is blocked by delivery history; decide purge-with-event vs keep when retention lands.
+- BE3 cases: submit sets submitted_by = acting user + submitted_at; withdraw only by the opener and must set decided_at; payload/reason_code frozen after submit; case_event.actor_id must be the acting user or NULL; evidence insert on a non-open case raises 23514 (map to 409 CASE_STATE_CONFLICT).
+- BE2: provider withdraw / service-account disable must set withdrawn_by / disabled_by = acting user.
+- Evidence-vs-submit concurrency (FOR SHARE) is reasoned, not tested.
