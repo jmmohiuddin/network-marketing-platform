@@ -35,7 +35,8 @@ export function safeNext(value: string | null | undefined): string | null {
   } catch {
     return null
   }
-  if (url.origin !== ORIGIN || isAuthPage(url.pathname)) return null
+  // The parser can turn a path into '//host' ('/.//evil.com'), which a navigation reads as another origin.
+  if (url.origin !== ORIGIN || url.pathname.startsWith('//') || isAuthPage(url.pathname)) return null
   return `${url.pathname}${url.search}${url.hash}`
 }
 

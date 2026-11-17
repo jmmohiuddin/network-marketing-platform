@@ -4,6 +4,7 @@ import { join } from 'node:path'
 import { closePool } from '@nmp/db'
 import { closeOwnerPool } from '@nmp/db/testing'
 import type { FastifyInstance, InjectOptions, LightMyRequestResponse } from 'fastify'
+import type { JWTVerifyGetKey } from 'jose'
 import { afterAll } from 'vitest'
 import { buildApp } from '../../src/app.js'
 import { loadConfig, type Config } from '../../src/config.js'
@@ -22,9 +23,20 @@ export function testConfig(overrides: Record<string, string> = {}): Config {
   })
 }
 
+interface TestAppOptions {
+  readonly modules?: readonly ApiModule[]
+  readonly env?: Record<string, string>
+  /** Firebase signing keys; tests never reach Google's. */
+  readonly firebaseKeys?: JWTVerifyGetKey
+}
+
 /** buildApp with the test config. Pass modules to mount only those (core hooks are always installed). */
-export function buildTestApp(options: { modules?: readonly ApiModule[]; env?: Record<string, string> } = {}) {
-  return buildApp({ config: testConfig(options.env), ...(options.modules === undefined ? {} : { modules: options.modules }) })
+export function buildTestApp(options: TestAppOptions = {}) {
+  return buildApp({
+    config: testConfig(options.env),
+    ...(options.modules === undefined ? {} : { modules: options.modules }),
+    ...(options.firebaseKeys === undefined ? {} : { firebaseKeys: options.firebaseKeys }),
+  })
 }
 
 /** Closes the runtime and owner pools after the test file. */

@@ -32,3 +32,4 @@ export { bootstrapVendorUser, type BootstrapVendorUser } from './vendor-users.js
 export { assertSecondPerson, loggingSecondPersonRefusals, type SecondPersonStep } from './second-person.js'
 export { apiKeyOrSession } from './api-key-auth.js'
 export { API_SCOPES, type ApiScope } from './api-scopes.js'
+export { googleFirebaseKeys } from './firebase.js'

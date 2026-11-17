@@ -182,3 +182,31 @@ describe('vendor invitations (BUG-011, 0042)', () => {
     expect(await withVendor({ userId: vendorUserId }, (tx) => count(tx, 'user_invitation'))).toBe(1)
   })
 })
+
+describe('user_account.firebase_subject (0250)', () => {
+  const bind = (userId: string, subject: string) =>
+    getOwnerPool().query('UPDATE user_account SET firebase_subject = $2 WHERE id = $1', [userId, subject])
+
+  test('one subject binds one account per tenant, and one account in each of several tenants', async () => {
+    const [first, second] = [await createUser({ tenantId: tenant.id }), await createUser({ tenantId: tenant.id })]
+    const elsewhere = await createUser({ tenantId: otherCtx.tenantId })
+    await bind(first.id, 'person-1')
+
+    await expect(bind(second.id, 'person-1')).rejects.toMatchObject({ code: '23505', constraint: 'user_account_firebase_subject_key' })
+    await expect(bind(elsewhere.id, 'person-1')).resolves.toMatchObject({ rowCount: 1 })
+  })
+
+  test('vendor accounts (no tenant) share one scope; unbound accounts never collide', async () => {
+    const [first, second] = [await createUser({ tenantId: null }), await createUser({ tenantId: null })]
+    await bind(first.id, 'vendor-person')
+
+    await expect(bind(second.id, 'vendor-person')).rejects.toMatchObject({ code: '23505' })
+    expect((await getOwnerPool().query('SELECT 1 FROM user_account WHERE firebase_subject IS NULL')).rowCount).toBeGreaterThan(2)
+  })
+
+  test('a subject is 1..128 characters', async () => {
+    const user = await createUser({ tenantId: tenant.id })
+
+    for (const subject of ['', 'x'.repeat(129)]) await expect(bind(user.id, subject)).rejects.toMatchObject({ code: '23514' })
+  })
+})

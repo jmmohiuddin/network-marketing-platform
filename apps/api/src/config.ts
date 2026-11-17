@@ -43,6 +43,8 @@ const trustProxy = z
     return z.NEVER
   })
 
+const optionalText = z.string().trim().default('')
+
 const secretKey = z
   .string()
   .refine((value) => Buffer.from(value, 'base64').length === AES_256_KEY_BYTES, {
@@ -90,7 +92,20 @@ const EnvSchema = z.object({
   ORDER_FUTURE_TOLERANCE_SECONDS: positiveInt(300),
   GENEALOGY_FALLBACK_MAX_DEPTH: positiveInt(10_000),
   GENEALOGY_PAGE_MAX: positiveInt(200),
+  // Firebase Authentication (an additional sign-in method): the web app config, public by design. All four or none.
+  FIREBASE_PROJECT_ID: optionalText,
+  FIREBASE_WEB_API_KEY: optionalText,
+  FIREBASE_AUTH_DOMAIN: optionalText,
+  FIREBASE_APP_ID: optionalText,
 })
+
+/** The Firebase web app config: public values the browser SDK needs; the API checks tokens against projectId. */
+export interface FirebaseSettings {
+  readonly projectId: string
+  readonly webApiKey: string
+  readonly authDomain: string
+  readonly appId: string
+}
 
 export interface Config {
   readonly env: 'development' | 'test' | 'production'
@@ -131,6 +146,19 @@ export interface Config {
   readonly genealogyFallbackMaxDepth: number
   /** Largest page of genealogy children or downline rows. */
   readonly genealogyPageMax: number
+  /** null: Firebase sign-in is disabled. */
+  readonly firebase: FirebaseSettings | null
+}
+
+type Env = z.infer<typeof EnvSchema>
+
+// A partial Firebase config is a deployment mistake, not a way to disable it: refused at start-up.
+function firebaseSettings(e: Env): FirebaseSettings | null | string {
+  const values = [e.FIREBASE_PROJECT_ID, e.FIREBASE_WEB_API_KEY, e.FIREBASE_AUTH_DOMAIN, e.FIREBASE_APP_ID]
+  const set = values.filter((value) => value !== '').length
+  if (set === 0) return null
+  if (set < values.length) return 'FIREBASE_*: set all four of PROJECT_ID, WEB_API_KEY, AUTH_DOMAIN and APP_ID, or none'
+  return { projectId: e.FIREBASE_PROJECT_ID, webApiKey: e.FIREBASE_WEB_API_KEY, authDomain: e.FIREBASE_AUTH_DOMAIN, appId: e.FIREBASE_APP_ID }
 }
 
 /** Validates the environment once at start-up and fails fast with every problem listed. */
@@ -141,6 +169,8 @@ export function loadConfig(env: NodeJS.ProcessEnv): Config {
     throw new Error(`Invalid configuration:\n${problems.join('\n')}`)
   }
   const e = parsed.data
+  const firebase = firebaseSettings(e)
+  if (typeof firebase === 'string') throw new Error(`Invalid configuration:\n${firebase}`)
   return {
     env: e.NODE_ENV,
     databaseUrl: e.DATABASE_URL,
@@ -174,5 +204,6 @@ export function loadConfig(env: NodeJS.ProcessEnv): Config {
     orderFutureToleranceSeconds: e.ORDER_FUTURE_TOLERANCE_SECONDS,
     genealogyFallbackMaxDepth: e.GENEALOGY_FALLBACK_MAX_DEPTH,
     genealogyPageMax: e.GENEALOGY_PAGE_MAX,
+    firebase,
   }
 }

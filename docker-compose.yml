@@ -51,6 +51,11 @@ services:
       WEB_URL: https://${DOMAIN:?run deploy/bootstrap.sh}
       UPLOAD_DIR: /data/uploads
       MAIL_DIR: /data/mail
+      # Firebase sign-in: all four set enables it, all empty disables it (.env.example).
+      FIREBASE_PROJECT_ID: ${FIREBASE_PROJECT_ID:-}
+      FIREBASE_WEB_API_KEY: ${FIREBASE_WEB_API_KEY:-}
+      FIREBASE_AUTH_DOMAIN: ${FIREBASE_AUTH_DOMAIN:-}
+      FIREBASE_APP_ID: ${FIREBASE_APP_ID:-}
     volumes:
       - appdata:/data
     depends_on:
@@ -61,6 +66,9 @@ services:
     <<: *app
     working_dir: /app/apps/web
     command: ["node_modules/.bin/next", "start", "-p", "3100"]
+    environment:
+      # Firebase sign-in: the sign-in pages' CSP allows its auth iframe (same value as the API's).
+      FIREBASE_AUTH_DOMAIN: ${FIREBASE_AUTH_DOMAIN:-}
     ports:
       - "${WEB_BIND:-172.16.1.1}:${WEB_PORT:-6600}:3100"
     depends_on: [api]
