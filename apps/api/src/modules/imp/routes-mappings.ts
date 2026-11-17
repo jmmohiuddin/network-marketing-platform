@@ -1,11 +1,11 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify'
 import { z } from 'zod'
-import { currentAuth, requireAllMarkets, requirePermission, requireRealm, requireStepUp } from '../../lib/auth.js'
+import { currentAuth, requireAllMarkets, requireAnyPermission, requirePermission, requireRealm, requireStepUp } from '../../lib/auth.js'
 import { inTenant } from '../../lib/db.js'
 import { ApiError, notFound } from '../../lib/errors.js'
 import { envelope, parse } from '../../lib/http.js'
 import { decodeCursor, pageQuery, toPage } from '../../lib/pagination.js'
-import { MAPPING_READERS, requireAnyPermission } from './access.js'
+import { MAPPING_READERS } from './access.js'
 import { approveMapping, createMappingVersion, getMapping, latestMappingVersion, listMappings, mappingsSchema } from './mappings.js'
 
 const idParams = z.object({ id: z.uuid() })
@@ -14,7 +14,7 @@ const putBody = z.strictObject({ mappings: mappingsSchema, notes: z.string().tri
 const approveBody = z.strictObject({ reason: z.string().trim().min(1).max(500).optional() })
 const IF_MATCH = /^(?:W\/)?"?(\d{1,9})"?$/
 
-const READ = { preHandler: [requireRealm('tenant'), requireAnyPermission(MAPPING_READERS)] }
+const READ = { preHandler: [requireRealm('tenant'), requireAnyPermission(...MAPPING_READERS)] }
 
 function expectedVersion(request: FastifyRequest): number {
   const header = request.headers['if-match']

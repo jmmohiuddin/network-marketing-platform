@@ -386,15 +386,20 @@ describe('position status and customer servicing (G5, C1, C3)', () => {
     await activate(caseId)
   })
 
-  test('servicing: end customers only (CR001), live servicers only (CR002), the same servicer is a no-op', async () => {
+  test('servicing: end customers only (CR001), active servicers only (CR002), the same servicer is a no-op', async () => {
     const [customer, distributor] = [await enrol(customerType), await enrol(distributorType)]
-    const [servicer, terminated] = [await newPosition(), await newPosition()]
+    const [servicer, terminated, suspended] = [await newPosition(), await newPosition(), await newPosition()]
+    // A duplicate-held position (D-B2-10) and a suspended one must not collect customers while under review.
+    const pending = await createPosition(await enrol(distributorType, daysAgo(30)), 'pending', daysAgo(30))
     await rows(`SELECT gen_set_position_status($1, 'terminated', now(), 'test', NULL)`, [terminated])
+    await rows(`SELECT gen_set_position_status($1, 'suspended', now(), 'test', NULL)`, [suspended])
     const serve = (who: string, position: string | null, from: Date) =>
       value<string>(`SELECT crm_set_servicer($1, $2, 'manual', $3, NULL, NULL)`, [who, position, from])
 
     await expect(serve(distributor, servicer, daysAgo(1))).rejects.toMatchObject({ code: 'CR001' })
-    await expect(serve(customer, terminated, daysAgo(1))).rejects.toMatchObject({ code: 'CR002' })
+    for (const inactive of [terminated, suspended, pending]) {
+      await expect(serve(customer, inactive, daysAgo(1))).rejects.toMatchObject({ code: 'CR002' })
+    }
     const first = await serve(customer, servicer, daysAgo(5))
     expect(await serve(customer, servicer, daysAgo(1))).toBe(first)
     await serve(customer, null, daysAgo(1))
@@ -418,6 +423,15 @@ describe('position status and customer servicing (G5, C1, C3)', () => {
     expect(await terminate()).toBe(1)
     expect(await rows('SELECT position_id, source FROM crm_servicer_at($1, now())', [customer])).toEqual([{ position_id: sponsor, source: 'reassignment' }])
     expect(await rows('SELECT * FROM relationship WHERE child_position_id = $1 OR parent_position_id = $1 ORDER BY id', [servicer])).toEqual(before)
+
+    // A sponsor that is not active (here suspended) takes no customers: they go to the company.
+    const [suspendedSponsor, other] = [await newPosition(), await newPosition()]
+    await apply('sponsor', other, suspendedSponsor, daysAgo(20))
+    const otherCustomer = await enrol(customerType)
+    await value(`SELECT crm_set_servicer($1, $2, 'enrolment', $3, NULL, NULL)`, [otherCustomer, other, daysAgo(10)])
+    await rows(`SELECT gen_set_position_status($1, 'suspended', now(), 'test', NULL)`, [suspendedSponsor])
+    expect(await value<number>(`SELECT gen_set_position_status($1, 'terminated', now(), 'test', NULL)`, [other])).toBe(1)
+    expect(await rows('SELECT position_id, source FROM crm_servicer_at($1, now())', [otherCustomer])).toEqual([{ position_id: null, source: 'reassignment' }])
   })
 })
 

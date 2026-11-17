@@ -15,6 +15,7 @@ import { formatDateTime } from '../../lib/format'
 import { useSession } from '../../lib/session'
 import { useResource, type Query } from '../../lib/use-resource'
 import { shortId } from '../admin/format'
+import { LoadFailure } from '../admin/page-states'
 import { tableError, usePagedList } from '../admin/resource'
 import { caseTypeLabel, readableTypes, reasonLabel, STATE_BADGES, STATE_LABELS, type CaseTypeInfo } from './format'
 import { useRefLabel } from './refs'
@@ -40,6 +41,20 @@ function CaseKpis({ counts }: { readonly counts: readonly CaseCounts[] | null })
   )
 }
 
+/**
+ * Which position or participant the case is about (BUG-070), with its kind under it.
+ * shortcut: one GET per row (case rows carry only subject ids, PLAN B2 GET /v1/cases); add subject refs to the list to drop it.
+ */
+function SubjectCell({ subjectType, id }: { readonly subjectType: string; readonly id: string }) {
+  const label = useRefLabel(subjectType, id)
+  return (
+    <div className="flex flex-col">
+      <span className="font-data-mono-sm text-data-mono-sm">{label}</span>
+      <span className="font-caption text-caption text-secondary capitalize">{subjectType}</span>
+    </div>
+  )
+}
+
 function caseColumns(myId: string) {
   return [
     {
@@ -50,7 +65,7 @@ function caseColumns(myId: string) {
         </div>
       ),
     },
-    { key: 'subject', header: 'Subject', cell: (row: CaseRecord) => <span className="capitalize">{row.subject_type}</span> },
+    { key: 'subject', header: 'Subject', cell: (row: CaseRecord) => <SubjectCell subjectType={row.subject_type} id={row.subject_id} /> },
     { key: 'reason', header: 'Reason', cell: (row: CaseRecord) => reasonLabel(row.reason_code) },
     {
       key: 'opened', header: 'Opened', cell: (row: CaseRecord) => (
@@ -104,7 +119,7 @@ export function CasesPage() {
     const search = next.toString()
     router.replace(search === '' ? pathname : `${pathname}?${search}`)
   }
-  const state = (params.get('state') ?? '') as CaseState | ''
+  const state = (Object.keys(STATE_LABELS) as CaseState[]).find((value) => value === params.get('state')) ?? ''
   const mine = params.get('assigned') === 'me'
   const overdue = params.get('overdue') === 'true'
   const tabCounts = (info: CaseTypeInfo | null) => {
@@ -140,7 +155,7 @@ export function CasesPage() {
           </>
         )}
       />
-      <CaseKpis counts={kpiCounts} />
+      {counts.error === null ? <CaseKpis counts={kpiCounts} /> : <LoadFailure error={counts.error} onRetry={counts.reload} section />}
       <div>
         <Tabs label="Case types" idPrefix={ID_PREFIX} tabs={tabs} selected={tab} onSelect={(id) => update({ type: id === ALL ? null : id })} />
         <TabPanel idPrefix={ID_PREFIX} tabId={tab}>

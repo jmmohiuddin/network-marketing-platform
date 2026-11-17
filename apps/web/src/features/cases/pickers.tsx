@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, type KeyboardEvent, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
 import { Button } from '../../components/button'
 import { FieldError, INPUT_CLASS, LABEL_CLASS } from '../../components/form-field'
 import { StatusBadge } from '../../components/status-badge'
@@ -35,6 +35,21 @@ function SearchPicker<T>({ id, label, helper, error, path, query, chosen, onChoo
   const results = useResource<T[]>(submitted === null ? null : path, submitted === null ? undefined : query(submitted))
   const hasError = error !== undefined && error !== null
   const search = () => setSubmitted(text.trim() === '' ? null : text.trim())
+  // WCAG 2.4.3: Choose and Change unmount the pressed button, so focus moves to the other view's control (not on first render).
+  const moveFocus = useRef(false)
+  const changeRef = useRef<HTMLButtonElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
+  const isChosen = chosen !== null
+  useEffect(() => {
+    if (!moveFocus.current) return
+    moveFocus.current = false
+    const target = isChosen ? changeRef.current : inputRef.current
+    target?.focus()
+  }, [isChosen])
+  const choose = (row: T | null) => {
+    moveFocus.current = true
+    onChoose(row)
+  }
   const onKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     if (event.key !== 'Enter') return
     event.preventDefault() // inside the case form: search, never submit
@@ -46,10 +61,10 @@ function SearchPicker<T>({ id, label, helper, error, path, query, chosen, onChoo
         <span className={LABEL_CLASS}>{label}</span>
         <div className="flex items-center justify-between gap-space-sm p-space-sm rounded bg-surface-container-low border border-outline-variant" data-testid={`${id}-chosen`}>
           <div className="flex flex-col min-w-0">
-            <span className="font-body-md text-body-md font-semibold text-on-surface break-words">{rowName(chosen)}</span>
+            <span id={`${id}-chosen-name`} className="font-body-md text-body-md font-semibold text-on-surface break-words">{rowName(chosen)}</span>
             <span className="font-caption text-caption text-secondary">{rowDetail(chosen)}</span>
           </div>
-          <Button size="sm" aria-label={`Change ${label.toLowerCase()}`} onClick={() => onChoose(null)}>Change</Button>
+          <Button ref={changeRef} size="sm" aria-label={`Change ${label.toLowerCase()}`} aria-describedby={`${id}-chosen-name`} onClick={() => choose(null)}>Change</Button>
         </div>
       </div>
     )
@@ -59,7 +74,7 @@ function SearchPicker<T>({ id, label, helper, error, path, query, chosen, onChoo
       <label htmlFor={id} className={LABEL_CLASS}>{label}</label>
       <div className="flex gap-space-xs">
         <input
-          id={id} type="search" className={INPUT_CLASS} value={text} maxLength={QUERY_MAX} aria-describedby={`${id}-note`} aria-invalid={hasError || undefined}
+          ref={inputRef} id={id} type="search" className={INPUT_CLASS} value={text} maxLength={QUERY_MAX} aria-describedby={`${id}-note`} aria-invalid={hasError || undefined}
           onChange={(event) => setText(event.target.value)} onKeyDown={onKeyDown}
         />
         <Button icon="search" aria-label={`Search ${label.toLowerCase()}`} onClick={search}>Search</Button>
@@ -77,7 +92,7 @@ function SearchPicker<T>({ id, label, helper, error, path, query, chosen, onChoo
                   <span className="font-body-sm text-body-sm font-semibold text-on-surface break-words">{rowName(row)}</span>
                   <span className="font-caption text-caption text-secondary">{rowDetail(row)}</span>
                 </div>
-                <Button size="sm" aria-label={`Choose ${rowName(row)}`} onClick={() => onChoose(row)}>Choose</Button>
+                <Button size="sm" aria-label={`Choose ${rowName(row)}`} onClick={() => choose(row)}>Choose</Button>
               </li>
             ))}
           </ul>

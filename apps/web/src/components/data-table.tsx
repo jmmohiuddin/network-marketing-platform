@@ -56,14 +56,6 @@ const PAD: Readonly<Record<'comfortable' | 'compact', string>> = { comfortable: 
 const STACK_CELL = 'max-sm:flex max-sm:justify-between max-sm:gap-space-sm max-sm:px-0 max-sm:py-1 max-sm:text-right max-sm:before:content-[attr(data-label)] max-sm:before:font-caption max-sm:before:text-caption max-sm:before:text-secondary max-sm:before:text-left'
 const STICKY = 'md:sticky md:left-0 md:z-10 md:bg-inherit'
 
-function FullRow({ span, children }: { readonly span: number; readonly children: ReactNode }) {
-  return (
-    <tr>
-      <td colSpan={span} className="p-0">{children}</td>
-    </tr>
-  )
-}
-
 /** sc_01 l.417 footer: range text, then Previous / Next icon buttons. */
 export function PaginationBar({ label, pagination, busy = false }: { readonly label: string; readonly pagination: Pagination; readonly busy?: boolean }) {
   const pageButton = 'p-1 rounded text-secondary hover:bg-surface-container disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary'
@@ -87,7 +79,6 @@ export function PaginationBar({ label, pagination, busy = false }: { readonly la
  * row (a th) and should hold its link.
  */
 export function DataTable<T>({ caption, columns, rows, rowKey, loading = false, error = null, empty, pagination, density = 'comfortable', stackOnPhone = false, stickyFirstColumn = false, selectedKey, bare = false }: DataTableProps<T>) {
-  const span = columns.length
   const role = (name: string) => (stackOnPhone ? name : undefined)
   const cellClass = (column: DataTableColumn<T>, first: boolean) => [
     PAD[density], 'text-on-surface align-middle',
@@ -95,6 +86,20 @@ export function DataTable<T>({ caption, columns, rows, rowKey, loading = false, 
     first && stickyFirstColumn ? STICKY : '',
     stackOnPhone ? STACK_CELL : '',
   ].filter(Boolean).join(' ')
+  // Error and empty states sit under the table, outside its sideways scroll, so a wide table never clips them (BUG-072).
+  function state(): ReactNode {
+    if (loading) return null
+    if (error !== null) {
+      return (
+        <div className="p-space-lg flex flex-col items-center gap-space-sm text-center" role="alert">
+          <Icon name="error" size={24} className="text-error" />
+          <p className="font-body-sm text-body-sm text-on-surface">{error.message}</p>
+          <Button onClick={error.onRetry}>Try again</Button>
+        </div>
+      )
+    }
+    return rows.length === 0 ? <EmptyState title={empty.title} action={empty.action} plain /> : null
+  }
   function body(): ReactNode {
     if (loading) {
       return Array.from({ length: SKELETON_ROWS }, (_, row) => (
@@ -103,18 +108,7 @@ export function DataTable<T>({ caption, columns, rows, rowKey, loading = false, 
         </tr>
       ))
     }
-    if (error !== null) {
-      return (
-        <FullRow span={span}>
-          <div className="p-space-lg flex flex-col items-center gap-space-sm text-center" role="alert">
-            <Icon name="error" size={24} className="text-error" />
-            <p className="font-body-sm text-body-sm text-on-surface">{error.message}</p>
-            <Button onClick={error.onRetry}>Try again</Button>
-          </div>
-        </FullRow>
-      )
-    }
-    if (rows.length === 0) return <FullRow span={span}><EmptyState title={empty.title} action={empty.action} plain /></FullRow>
+    if (error !== null) return null
     const label = (column: DataTableColumn<T>) => (stackOnPhone ? column.header : undefined)
     return rows.map((row) => {
       const key = rowKey(row)
@@ -149,6 +143,7 @@ export function DataTable<T>({ caption, columns, rows, rowKey, loading = false, 
           <tbody role={role('rowgroup')} className={`font-body-sm text-body-sm divide-y divide-surface-container${stackOnPhone ? ' max-sm:block max-sm:divide-y-0 max-sm:space-y-space-sm' : ''}`}>{body()}</tbody>
         </table>
       </div>
+      {state()}
       {loading && <p className="sr-only" role="status">Loading rows</p>}
       {pagination !== undefined && <PaginationBar label={`Pages of ${caption}`} pagination={pagination} busy={loading} />}
     </div>

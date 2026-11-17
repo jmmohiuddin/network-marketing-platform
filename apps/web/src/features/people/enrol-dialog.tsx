@@ -8,8 +8,9 @@ import { Checkbox, RadioGroup, Select, TextInput } from '../../components/form-f
 import { useToast } from '../../components/toast'
 import type { Market } from '../../lib/markets'
 import { useResource } from '../../lib/use-resource'
-import { emailError, requiredError } from '../../lib/validation'
-import { fromLocalInput, toLocalInput } from '../admin/format'
+import { formatDateTime } from '../../lib/format'
+import { emailError } from '../../lib/validation'
+import { fromLocalInput } from '../admin/format'
 import { FormDialog } from '../admin/form-dialog'
 import { FIELDSET, LEGEND, NOTE, PAIR } from '../admin/ui'
 import { AGREEMENT_VERSIONS_PATH, type AgreementVersion, type ParticipantType } from '../admin/settings/types'
@@ -76,16 +77,22 @@ export function enrolErrors(form: EnrolForm, agreement: AgreementVersion | null)
     agreement: agreement?.acceptance_required === true && !form.accepted
       ? `Enrolment in ${agreement.market.code} needs the participant’s acceptance of ${agreement.label}.`
       : null,
-    'agreement.accepted_at': !form.accepted ? null
-      : requiredError('when the participant accepted', form.accepted_at) ?? (inFuture(form.accepted_at) ? 'Acceptance cannot be in the future.' : null),
+    'agreement.accepted_at': !form.accepted || form.accepted_at === '' ? null
+      : inFuture(form.accepted_at) ? 'Acceptance cannot be in the future.'
+        : agreement !== null && (fromLocalInput(form.accepted_at) ?? '') < agreement.published_at
+          ? `Acceptance cannot be before ${agreement.label} was published (${formatDateTime(agreement.published_at)}).` : null,
     'agreement.evidence.channel': form.accepted && channel === undefined && reference !== undefined ? EVIDENCE_ERROR : null,
     'agreement.evidence.reference': form.accepted && reference === undefined && channel !== undefined ? EVIDENCE_ERROR : null,
   }
   return Object.fromEntries(Object.entries(found).filter((entry): entry is [string, string] => entry[1] !== null))
 }
 
-/** The POST /v1/participants body of a checked form; empty optional fields are left out. */
-export function enrolBody(form: EnrolForm, agreement: AgreementVersion | null): Record<string, unknown> {
+/**
+ * The POST /v1/participants body of a checked form; empty optional fields are left out. An empty acceptance time is
+ * `openedAt` (the instant the dialog opened, to the second: a minute-precision "now" could fall before a version
+ * published that minute, and a retry with the same Idempotency-Key must send the same body).
+ */
+export function enrolBody(form: EnrolForm, agreement: AgreementVersion | null, openedAt: string): Record<string, unknown> {
   // Undefined fields drop out of the JSON body.
   const contact = { email: optional(form.email), phone: optional(form.phone), address: optional(form.address) }
   const signals = Object.fromEntries(Object.entries(form.signals).flatMap(([kind, value]) => (optional(value) === undefined ? [] : [[kind, value.trim()]])))
@@ -105,7 +112,7 @@ export function enrolBody(form: EnrolForm, agreement: AgreementVersion | null): 
     ...(optional(form.sponsor) === undefined ? {} : { sponsor: { position_ref: form.sponsor.trim() } }),
     ...(placement === undefined ? {} : { placement: form.leg === 'auto' ? { auto: true, position_ref: placement } : { position_ref: placement, ...(form.leg === '' ? {} : { leg: form.leg }) } }),
     ...(agreement !== null && form.accepted
-      ? { agreement: { version_id: agreement.id, accepted_at: fromLocalInput(form.accepted_at), ...(evidence === undefined ? {} : { evidence }) } }
+      ? { agreement: { version_id: agreement.id, accepted_at: fromLocalInput(form.accepted_at) ?? openedAt, ...(evidence === undefined ? {} : { evidence }) } }
       : {}),
     ...(Object.keys(signals).length === 0 ? {} : { signals }),
   }
@@ -126,9 +133,10 @@ export interface EnrolDialogProps {
 export function EnrolDialog({ markets, types, onClose, onEnrolled }: EnrolDialogProps) {
   const api = useApi()
   const toast = useToast()
+  const [openedAt] = useState(() => new Date().toISOString())
   const [form, setForm] = useState<EnrolForm>(() => ({
     external_ref: '', market: '', type_code: '', account_type: 'individual', display_name: '', email: '', phone: '', address: '', enrolled_at: '',
-    position_ref: '', sponsor: '', placement: '', leg: '', accepted: false, accepted_at: toLocalInput(new Date().toISOString()),
+    position_ref: '', sponsor: '', placement: '', leg: '', accepted: false, accepted_at: '',
     evidence_channel: '', evidence_reference: '', signals: {},
   }))
   const [errors, setErrors] = useState<Readonly<Record<string, string>>>({})
@@ -149,7 +157,7 @@ export function EnrolDialog({ markets, types, onClose, onEnrolled }: EnrolDialog
     setErrors(found)
     const items: SummaryItem[] = Object.entries(found).map(([path, message]) => ({ fieldId: FIELD_IDS[path], message }))
     if (items.length > 0) return { items }
-    const body = enrolBody(form, agreement)
+    const body = enrolBody(form, agreement, openedAt)
     return {
       items,
       fieldIds: FIELD_IDS,
@@ -192,8 +200,8 @@ export function EnrolDialog({ markets, types, onClose, onEnrolled }: EnrolDialog
           {text('sponsor', 'sponsor.position_ref', 'Sponsor position', { optional: true, helper: 'Empty: the position starts a sponsor tree of its own.' })}
           {text('placement', 'placement.position_ref', 'Place under position', { optional: true })}
           {legs.length > 0 && (
-            <Select id={FIELD_IDS['placement.leg']} label="Leg" value={form.leg} error={errors['placement.leg']} onChange={(event) => set('leg', event.target.value)}
-              options={[{ value: '', label: 'Any (no leg)' }, { value: 'auto', label: 'Automatic: first free leg, breadth-first' }, ...legs.map((leg) => ({ value: leg, label: `Leg ${leg}` }))]} />
+            <Select id={FIELD_IDS['placement.leg']} label="Leg" value={form.leg} helper="No leg places the position under that one without a leg." error={errors['placement.leg']} onChange={(event) => set('leg', event.target.value)}
+              options={[{ value: '', label: 'No leg' }, { value: 'auto', label: 'Automatic: first free leg, breadth-first' }, ...legs.map((leg) => ({ value: leg, label: `Leg ${leg}` }))]} />
           )}
         </div>
         {legs.length === 0 && <p className={NOTE}>Legs and automatic placement are available once a placement width is set in Settings.</p>}
@@ -206,7 +214,7 @@ export function EnrolDialog({ markets, types, onClose, onEnrolled }: EnrolDialog
             helper={agreement.acceptance_required ? `Required for enrolment in ${agreement.market.code}.` : 'Optional in this market.'} onChange={(event) => set('accepted', event.target.checked)} />
           {form.accepted && (
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-space-md">
-              {text('accepted_at', 'agreement.accepted_at', 'Accepted at', { type: 'datetime-local' })}
+              {text('accepted_at', 'agreement.accepted_at', 'Accepted at', { type: 'datetime-local', optional: true, helper: 'Your local time. Empty: now.' })}
               <TextInput id={FIELD_IDS['agreement.evidence.channel']} label="Evidence channel" optional maxLength={50} helper="For example web or paper." value={form.evidence_channel}
                 error={errors['agreement.evidence.channel']} onChange={(event) => set('evidence_channel', event.target.value)} />
               <TextInput id={FIELD_IDS['agreement.evidence.reference']} label="Evidence reference" optional maxLength={200} value={form.evidence_reference}

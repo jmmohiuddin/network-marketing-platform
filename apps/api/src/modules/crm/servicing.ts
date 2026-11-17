@@ -84,29 +84,30 @@ async function changeServicer(tx: Tx, customerId: string, body: z.infer<typeof s
   return servicingResponse.parse({ servicing: { position_id: positionId, source: 'manual', valid_from: at.toISOString() } })
 }
 
-/** Servicers of the customer, newest first; position null = the company. */
-async function servicingHistory(tx: Tx, customerId: string) {
+/** Servicers of the customer, newest first; position null = the company; owner_name null outside the caller's markets. */
+async function servicingHistory(tx: Tx, customerId: string, scope: readonly string[] | null) {
   const { rows } = await tx.query(
     `SELECT CASE WHEN p.id IS NULL THEN NULL ELSE jsonb_build_object('id', p.id, 'position_ref', p.position_ref,
-              'owner_name', (SELECT display_name FROM participant WHERE id = gen_owner_at(p.id, now()))) END AS position,
+              'owner_name', (SELECT display_name FROM participant WHERE id = gen_owner_at(p.id, now())
+                               AND ($2::uuid[] IS NULL OR market_id = ANY ($2)))) END AS position,
             s.source, s.valid_from, s.valid_to, s.case_id
      FROM customer_servicing s LEFT JOIN position p ON p.id = s.servicing_position_id
      WHERE s.customer_id = $1 ORDER BY s.valid_from DESC, s.id DESC`,
-    [customerId],
+    [customerId, scope],
   )
   return rows
 }
 
-/** The customers the position services now, by customer id (cursor = the last id). */
-async function currentCustomers(tx: Tx, positionId: string, after: string | undefined, limit: number) {
+/** The customers in the caller's markets the position services now, by customer id (cursor = the last id). */
+async function currentCustomers(tx: Tx, positionId: string, scope: readonly string[] | null, after: string | undefined, limit: number) {
   const { rows } = await tx.query<{ participant: { id: string } }>(
     `SELECT jsonb_build_object('id', c.id, 'external_ref', c.external_ref, 'display_name', c.display_name) AS participant,
             s.source, s.valid_from
      FROM customer_servicing s JOIN participant c ON c.id = s.customer_id
      WHERE s.servicing_position_id = $1 AND s.valid_from <= now() AND (s.valid_to IS NULL OR s.valid_to > now())
-       AND ($2::uuid IS NULL OR c.id > $2)
-     ORDER BY c.id LIMIT $3`,
-    [positionId, after ?? null, limit + 1],
+       AND ($2::uuid IS NULL OR c.id > $2) AND ($3::uuid[] IS NULL OR c.market_id = ANY ($3))
+     ORDER BY c.id LIMIT $4`,
+    [positionId, after ?? null, scope, limit + 1],
   )
   return toPage(rows, limit, (row) => row.participant.id)
 }
@@ -130,7 +131,7 @@ export function registerServicingRoutes(app: FastifyInstance): void {
     const scope = marketScope(currentAuth(request), READ)
     return envelope(await inTenant(request, async (tx) => {
       await marketOf(tx, 'participant', customerId, scope)
-      return servicingHistory(tx, customerId)
+      return servicingHistory(tx, customerId, scope)
     }))
   })
 
@@ -141,7 +142,7 @@ export function registerServicingRoutes(app: FastifyInstance): void {
     const scope = marketScope(currentAuth(request), READ)
     return inTenant(request, async (tx) => {
       await marketOf(tx, 'position', positionId, scope)
-      return currentCustomers(tx, positionId, after, limit)
+      return currentCustomers(tx, positionId, scope, after, limit)
     })
   })
 }

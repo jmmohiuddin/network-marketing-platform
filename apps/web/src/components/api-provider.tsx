@@ -74,13 +74,15 @@ export function ApiProvider({ children }: { readonly children: ReactNode }) {
     setResolveStepUp(null)
   }, [resolveStepUp])
   // Once the step-up dialog has closed (its own focus return ran first): the hidden dialogs come back, and focus goes
-  // to the action's control.
+  // to the action's control, or, when the action's answer already replaced it, to the restored dialog's
+  // data-autofocus element (BUG-073), so focus never stays on the page body behind an open dialog.
   useEffect(() => {
     const done = closed.current
     if (resolveStepUp !== null || done === null) return
     closed.current = null
     restore(done)
-    if (done.focus?.isConnected === true) done.focus.focus()
+    const target = done.focus?.isConnected === true ? done.focus : done.dialogs.find((dialog) => dialog.open)?.querySelector<HTMLElement>('[data-autofocus]')
+    target?.focus()
   }, [resolveStepUp])
   return (
     <ApiContext value={api}>

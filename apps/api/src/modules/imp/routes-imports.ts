@@ -1,13 +1,13 @@
 import { randomUUID } from 'node:crypto'
 import type { FastifyInstance, FastifyRequest } from 'fastify'
 import { z } from 'zod'
-import { requirePermission, requireRealm } from '../../lib/auth.js'
+import { currentAuth, requireAnyPermission, requirePermission, requireRealm, scopeOfAny } from '../../lib/auth.js'
 import { inTenant } from '../../lib/db.js'
 import { notFound } from '../../lib/errors.js'
 import { envelope, parse } from '../../lib/http.js'
 import { idempotent, sendIdempotent } from '../../lib/idempotency.js'
 import { decodeCursor, pageQuery, toPage } from '../../lib/pagination.js'
-import { MAPPING_READERS, requireAnyPermission, scopeForAny, tenantOf } from './access.js'
+import { MAPPING_READERS, tenantOf } from './access.js'
 import { BATCH_STATES, getBatch, listBatches, listFindings, type MarketScope } from './batches.js'
 import { createBatch } from './create-batch.js'
 import type { FileStore } from './file-store.js'
@@ -26,9 +26,9 @@ const findingsQuery = z.strictObject(pageQuery)
 const attachBody = z.strictObject({ mapping_id: z.uuid() })
 
 const MANAGE = { preHandler: [requireRealm('tenant'), requirePermission('import.manage')] }
-const READ_VALUES = { preHandler: [requireRealm('tenant'), requireAnyPermission(MAPPING_READERS)] }
+const READ_VALUES = { preHandler: [requireRealm('tenant'), requireAnyPermission(...MAPPING_READERS)] }
 
-const importScope = (request: FastifyRequest): MarketScope => scopeForAny(request, ['import.manage'])
+const importScope = (request: FastifyRequest): MarketScope => scopeOfAny(currentAuth(request), ['import.manage'])
 const batchId = (request: FastifyRequest): string => parse(idParams, request.params).id
 
 function registerUpload(app: FastifyInstance, deps: ImportRouteDeps): void {
@@ -84,7 +84,7 @@ function registerReads(app: FastifyInstance, deps: ImportRouteDeps): void {
       const { rows } = await tx.query<{ state: string; source_values: unknown }>(
         `SELECT state, source_values FROM import_batch
          WHERE id = $1 AND ($2::uuid[] IS NULL OR market_id = ANY($2::uuid[]))`,
-        [id, scopeForAny(request, MAPPING_READERS)],
+        [id, scopeOfAny(currentAuth(request), MAPPING_READERS)],
       )
       return rows[0]
     })

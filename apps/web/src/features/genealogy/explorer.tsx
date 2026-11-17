@@ -12,7 +12,7 @@ import { StatusBadge } from '../../components/status-badge'
 import { useCursorPages } from '../../lib/cursor-pages'
 import { errorMessage } from '../../lib/messages'
 import { useResource } from '../../lib/use-resource'
-import { fromLocalInput } from '../admin/format'
+import { fromLocalInput, isUuid } from '../admin/format'
 import { LoadFailure } from '../admin/page-states'
 import { MONO, NOTE } from '../admin/ui'
 import { positionBadge } from '../people/format'
@@ -33,16 +33,27 @@ export interface ExplorerParams {
   readonly viewer: string | null
 }
 
+/** The end of the chosen day in the user's time zone, so "as of today" includes everything effective today. */
+/** Impossible calendar dates (2026-02-31) are refused: Date would roll them into the next month. */
+function endOfLocalDay(date: string): string | null {
+  if (!AS_OF.test(date)) return null
+  const [year, month, day] = date.split('-').map(Number) as [number, number, number]
+  const local = new Date(year, month - 1, day)
+  return local.getMonth() === month - 1 && local.getDate() === day ? fromLocalInput(`${date}T23:59:59.999`) : null
+}
+
 /** The API query of the explorer's URL state, or the problem with the dates (known-at needs as-of; never the future). */
 export function treeQueryOf(params: ExplorerParams, now: number = Date.now()): { readonly query: TreeQuery; readonly problem: string | null } {
   const base = { kind: params.kind }
-  if (params.asOf !== '' && !AS_OF.test(params.asOf)) return { query: base, problem: 'Enter the as-of date as a date.' }
-  if (params.knownAt === '') return { query: params.asOf === '' ? base : { ...base, as_of: params.asOf }, problem: null }
-  if (params.asOf === '') return { query: base, problem: 'Choose an as-of date first: known-at looks back at what was recorded about that date.' }
+  if (params.asOf === '') return { query: base, problem: params.knownAt === '' ? null : 'Choose an as-of date first: known-at looks back at what was recorded about that date.' }
+  const asOf = endOfLocalDay(params.asOf)
+  if (asOf === null) return { query: base, problem: 'Enter the as-of date as a date.' }
+  const dated = { ...base, as_of: asOf }
+  if (params.knownAt === '') return { query: dated, problem: null }
   const knownAt = fromLocalInput(params.knownAt)
-  if (knownAt === null) return { query: { ...base, as_of: params.asOf }, problem: 'Enter a valid known-at date and time.' }
-  if (Date.parse(knownAt) > now) return { query: { ...base, as_of: params.asOf }, problem: 'Known-at cannot be in the future.' }
-  return { query: { ...base, as_of: params.asOf, known_at: knownAt }, problem: null }
+  if (knownAt === null) return { query: dated, problem: 'Enter a valid known-at date and time.' }
+  if (Date.parse(knownAt) > now) return { query: dated, problem: 'Known-at cannot be in the future.' }
+  return { query: { ...dated, known_at: knownAt }, problem: null }
 }
 
 /** Search by position reference prefix, external reference or name (API search, at most 20). */
@@ -176,13 +187,19 @@ function TreeView({ params, query, onFocus }: { readonly params: ExplorerParams;
  */
 export function GenealogyExplorer() {
   const [search, update] = useQueryParams()
+  // Position ids go into API paths: anything but a UUID (e.g. "../participants/x") is treated as absent.
+  const idParam = (key: string): string | null => {
+    const value = search.get(key)
+    return value !== null && isUuid(value) ? value : null
+  }
   const params: ExplorerParams = {
     kind: search.get('kind') === 'placement' ? 'placement' : 'sponsor',
-    root: search.get('root'),
+    root: idParam('root'),
     asOf: search.get('asOf') ?? '',
     knownAt: search.get('knownAt') ?? '',
-    viewer: search.get('viewer'),
+    viewer: idParam('viewer'),
   }
+  const viewing = params.viewer !== null
   const [picking, setPicking] = useState(false)
   const { query, problem } = treeQueryOf(params)
   const focus = (id: string | null) => update({ root: id })
@@ -191,24 +208,31 @@ export function GenealogyExplorer() {
       <PageHeader
         title="Genealogy"
         summary="Sponsor and placement trees as of any date, read one level at a time. Changes go through genealogy cases."
-        actions={params.viewer === null ? <Button icon="visibility" onClick={() => setPicking((value) => !value)} aria-expanded={picking}>View as distributor</Button> : undefined}
+        actions={viewing ? undefined : <Button icon="visibility" onClick={() => setPicking((value) => !value)} aria-expanded={picking}>View as distributor</Button>}
       />
       <section aria-label="Explorer settings" className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-12 gap-space-sm bg-surface-container-low p-space-sm rounded-xl">
         <div className="xl:col-span-5">
-          <PositionSearch kind={params.kind} label="Find a position" actionLabel="Focus" onPick={(node) => update({ root: node.position_id })} />
+          <PositionSearch kind={viewing ? 'sponsor' : params.kind} label="Find a position" actionLabel="Focus" onPick={(node) => update({ root: node.position_id })} />
         </div>
-        <div className="xl:col-span-3">
-          <SegmentedControl label="Tree kind" options={KINDS} value={params.kind} onChange={(kind) => update({ kind: kind === 'sponsor' ? null : kind })} />
-        </div>
-        <div className="xl:col-span-2">
-          <TextInput label="As of (valid time)" type="date" value={params.asOf} onChange={(event) => update({ asOf: event.target.value, ...(event.target.value === '' ? { knownAt: null } : {}) })} />
-        </div>
-        <div className="xl:col-span-2">
-          <TextInput label="Known at (recorded)" type="datetime-local" optional value={params.knownAt} error={problem}
-            helper="Your local time: what was recorded by then." onChange={(event) => update({ knownAt: event.target.value })} />
-        </div>
+        {viewing
+          ? <p className={`${NOTE} xl:col-span-7 self-center`}>Viewing as a distributor always shows the sponsor tree as it is now. Tree kind and dates apply again once you stop viewing.</p>
+          : (
+            <>
+              <div className="xl:col-span-3">
+                <SegmentedControl label="Tree kind" options={KINDS} value={params.kind} onChange={(kind) => update({ kind: kind === 'sponsor' ? null : kind })} />
+              </div>
+              <div className="xl:col-span-2">
+                <TextInput label="As of (valid time)" type="date" value={params.asOf} helper="The end of that day, your local time."
+                  onChange={(event) => update({ asOf: event.target.value, ...(event.target.value === '' ? { knownAt: null } : {}) })} />
+              </div>
+              <div className="xl:col-span-2">
+                <TextInput label="Known at (recorded)" type="datetime-local" optional value={params.knownAt} error={problem}
+                  helper="Your local time: what was recorded by then." onChange={(event) => update({ knownAt: event.target.value })} />
+              </div>
+            </>
+          )}
       </section>
-      {picking && params.viewer === null && (
+      {picking && !viewing && (
         <section aria-label="Choose the distributor" className="bg-surface-container-lowest p-space-md rounded-xl shadow-sm flex flex-col gap-space-sm">
           <p className={NOTE}>Shows a distributor’s own downline as the server lets them see it: named levels by the visibility policy, deeper levels as counts only.</p>
           <PositionSearch kind="sponsor" label="Distributor position" actionLabel="View as" onPick={(node) => { setPicking(false); update({ viewer: node.position_id, root: null }) }} />

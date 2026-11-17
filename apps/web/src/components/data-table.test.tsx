@@ -56,7 +56,8 @@ describe('Table', () => {
     expect(screen.getByRole('table').getAttribute('aria-busy')).toBe('true')
     expect(screen.getByRole('status').textContent).toBe('Loading rows')
     rerender(<DataTable {...base} rows={[]} />)
-    expect(screen.getByText('No imports yet.')).toBeTruthy()
+    // Outside the sideways-scrolling table, so a wide table never clips it at phone width (BUG-072).
+    expect(screen.getByRole('table').closest('.overflow-x-auto')!.contains(screen.getByText('No imports yet.'))).toBe(false)
     const onRetry = vi.fn()
     rerender(<DataTable {...base} rows={[]} error={{ message: 'This page could not be loaded.', onRetry }} />)
     await user.click(within(screen.getByRole('alert')).getByRole('button', { name: 'Try again' }))

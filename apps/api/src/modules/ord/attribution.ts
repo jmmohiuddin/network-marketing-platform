@@ -30,20 +30,36 @@ async function ownActivePosition(tx: Tx, buyerId: string, at: string): Promise<s
   return rows[0]?.position_id ?? null
 }
 
-/** The positions the hints name by kind, when they can be credited (not terminated); an unknown ref is no hint. */
-async function hintedPositions(tx: Tx, hints: NonNullable<OrderInput['attribution']>): Promise<Map<'link' | 'code', string>> {
+/**
+ * The positions the hints name by kind, when they could be credited at the crediting time: active then per their status
+ * history (every position has its first row from creation). A position pending (duplicate-held), suspended or terminated
+ * then takes no credit: its hint is dropped and reported as a conflict. An unknown ref is no hint.
+ */
+async function hintedPositions(
+  tx: Tx, hints: NonNullable<OrderInput['attribution']>, at: string,
+): Promise<{ hinted: Map<'link' | 'code', string>; dropped: boolean }> {
   const hinted = new Map<'link' | 'code', string>()
+  let dropped = false
   for (const hint of hints) {
-    const { rows } = await tx.query<{ id: string }>(`SELECT id FROM position WHERE position_ref = $1 AND status <> 'terminated'`, [hint.position_ref])
-    if (rows[0] !== undefined) hinted.set(hint.kind, rows[0].id)
+    const { rows } = await tx.query<{ id: string; status: string | null }>(
+      `SELECT p.id, (SELECT h.to_status FROM position_status_history h
+                     WHERE h.position_id = p.id AND h.effective_from <= $2
+                     ORDER BY h.effective_from DESC, h.recorded_at DESC, h.id DESC LIMIT 1) AS status
+       FROM position p WHERE p.position_ref = $1`,
+      [hint.position_ref, at],
+    )
+    // No status then: the position did not exist yet, so no hint (as an unknown ref).
+    const position = rows[0]
+    if (position?.status === 'active') hinted.set(hint.kind, position.id)
+    else if (position?.status != null) dropped = true
   }
-  return hinted
+  return { hinted, dropped }
 }
 
 /**
  * FR-CRM-001 at ingestion: a buyer who can hold positions is credited to their own earliest active position; otherwise
- * the first usable source in the precedence wins. A hint that differs from the servicer at the crediting time flags a
- * conflict (AC-CRM1-3).
+ * the first usable source in the precedence wins. A hint that differs from the servicer at the crediting time, or names
+ * a position not active then, flags a conflict (AC-CRM1-3).
  */
 export async function attribute(
   tx: Tx, buyerId: string, type: BuyerType, hints: OrderInput['attribution'], precedence: Precedence, at: string,
@@ -54,8 +70,8 @@ export async function attribute(
   }
   const servicing = await tx.query<{ position_id: string | null }>('SELECT position_id FROM crm_servicer_at($1, $2)', [buyerId, at])
   const servicer = servicing.rows[0]
-  const hinted = await hintedPositions(tx, hints ?? [])
-  const conflict = servicer !== undefined && [...hinted.values()].some((positionId) => positionId !== servicer.position_id)
+  const { hinted, dropped } = await hintedPositions(tx, hints ?? [], at)
+  const conflict = dropped || (servicer !== undefined && [...hinted.values()].some((positionId) => positionId !== servicer.position_id))
   for (const source of precedence) {
     if (source === 'servicing' && servicer?.position_id != null) return { positionId: servicer.position_id, source, conflict }
     const positionId = source === 'servicing' ? undefined : hinted.get(source)
@@ -67,8 +83,10 @@ export async function attribute(
 /** D-B2-13: the first attributed order of a customer without any servicer makes the attributed position its servicer. */
 export async function servicingFromFirstOrder(tx: Tx, customerId: string, type: BuyerType, positionId: string | null, at: string): Promise<void> {
   if (!type.counts_as_end_customer || positionId === null) return
+  // Only a position active now services customers (C1): one terminated, suspended or held since the crediting time does not.
   const { rowCount } = await tx.query(
-    `SELECT 1 FROM crm_servicer_at($1, $2) UNION ALL SELECT 1 FROM crm_servicer_at($1, 'infinity')`, [customerId, at],
+    `SELECT 1 FROM crm_servicer_at($1, $2) UNION ALL SELECT 1 FROM crm_servicer_at($1, 'infinity')
+     UNION ALL SELECT 1 FROM position WHERE id = $3 AND status <> 'active'`, [customerId, at, positionId],
   )
   if (rowCount !== 0) return
   const { rows } = await tx.query<{ id: string }>(

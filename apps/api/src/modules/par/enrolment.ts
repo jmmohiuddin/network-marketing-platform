@@ -73,7 +73,8 @@ export interface EnrolmentResult {
   position: PositionView | null
   placement: PlacementView | null
   servicing: { position_id: string } | null
-  duplicate_case_id: string | null
+  /** Every match's case, strongest first: the route shows the caller only one it may read (D-B2-10). */
+  duplicate_case_ids: string[]
 }
 
 const POSITION_FIELDS = ['position_ref', 'brand_id', 'placement'] as const
@@ -88,8 +89,11 @@ export async function enrol(
   if (!type.can_hold_positions && POSITION_FIELDS.some((field) => body[field] !== undefined)) {
     throw new ApiError(422, 'TYPE_CANNOT_HOLD_POSITIONS', 'This participant type cannot hold positions.')
   }
+  if (!type.can_hold_positions && !type.counts_as_end_customer && body.sponsor !== undefined) {
+    throw new ApiError(422, 'SPONSOR_NOT_APPLICABLE', 'This participant type neither holds positions nor is serviced: send no sponsor.')
+  }
   await assertEnrolmentAcceptance(tx, marketId, body.agreement?.version_id)
-  const sponsorId = body.sponsor === undefined ? null : await resolveSponsor(tx, body.sponsor.position_ref, at)
+  const sponsorId = body.sponsor === undefined ? null : await resolveSponsor(tx, body.sponsor.position_ref, at, scope)
   const participantId = await insertParticipant(tx, body, marketId, at)
   await tx.query(
     'INSERT INTO participant_type_assignment (tenant_id, participant_id, type_id, valid_from) VALUES (app_tenant_id(), $1, $2, $3)',
@@ -107,14 +111,14 @@ export async function enrol(
   }
   const services = type.counts_as_end_customer && sponsorId !== null
   if (services) await servicerAtEnrolment(tx, participantId, sponsorId, at)
-  const caseId = await openDuplicateCases(tx, participantId, marketId, duplicates.matches)
+  const caseIds = await openDuplicateCases(tx, participantId, marketId, duplicates.matches)
   await recordAudit(tx, {
     action: 'PARTICIPANT.ENROLLED', objectType: 'participant', objectId: participantId,
-    after: { market_id: marketId, type_id: type.id, enrolled_at: at, position_id: created?.position.id ?? null, sponsor_position_id: sponsorId, duplicate_case_id: caseId },
+    after: { market_id: marketId, type_id: type.id, enrolled_at: at, position_id: created?.position.id ?? null, sponsor_position_id: sponsorId, duplicate_case_ids: caseIds },
   })
   return {
     participant: { id: participantId, external_ref: body.external_ref, status: 'active' },
     position: created?.position ?? null, placement: created?.placement ?? null,
-    servicing: services ? { position_id: sponsorId } : null, duplicate_case_id: caseId,
+    servicing: services ? { position_id: sponsorId } : null, duplicate_case_ids: caseIds,
   }
 }

@@ -7,7 +7,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { apiError, fetchReturning } from '../test/fetch'
 import { renderWithProviders } from '../test/render'
 import { Drawer } from './drawer'
-import { FileDropZone } from './file-drop-zone'
+import { FileDropZone, formatMegabytes } from './file-drop-zone'
 import { FilterChips } from './filters-bar'
 import { SegmentedControl } from './segmented-control'
 import { StepUpModal } from './step-up-modal'
@@ -111,6 +111,13 @@ describe('FilterChips', () => {
 })
 
 describe('FileDropZone', () => {
+  it('formats sizes in MB, and in KB below 0.1 MB so a small file never reads 0 MB (BUG-078)', () => {
+    expect(formatMegabytes(40_000)).toBe('40 KB')
+    expect(formatMegabytes(1)).toBe('1 KB')
+    expect(formatMegabytes(1024 * 1024)).toBe('1 MB')
+    expect(formatMegabytes(2.5 * 1024 * 1024)).toBe('2.5 MB')
+  })
+
   it('takes a dropped file through the same type check as the picker', () => {
     const onFiles = vi.fn()
     render(<FileDropZone label="Orders file" extensions={['.csv']} onFiles={onFiles} />)

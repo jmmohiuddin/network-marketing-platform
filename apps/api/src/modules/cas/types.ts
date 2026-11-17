@@ -47,18 +47,27 @@ export interface CaseTypeDefinition<P = unknown> {
   readonly type: CaseType
   readonly subjectTypes: readonly string[]
   readonly reasonCodes: readonly string[]
+  /** Reason codes only the system opens a case with (D-B2-04): users cannot choose them. */
+  readonly systemReasonCodes?: readonly string[]
   readonly evidenceRequired: boolean
   readonly permissions: CaseTypePermissions
   readonly payload: z.ZodType<P>
+  /**
+   * SQL over the case_file row `c`: the market of another object the payload names (e.g. the matched participant of a
+   * duplicate review), or NULL. A reader then needs the read permission over that market too: the case reveals it.
+   */
+  readonly relatedMarketSql?: string
   /** The subject in the caller's tenant transaction, or null when it does not exist. */
   resolveSubject(tx: Tx, subjectType: string, subjectId: string): Promise<{ marketId: string | null } | null>
   /**
    * Type checks of a new or changed case (PLAN B2 section 2.4): runs after resolveSubject at create and after the payload
    * is validated again at PATCH; throws an ApiError and nothing is stored. `scope`: the markets the caller's create
-   * permission covers (null = all), for objects the payload names besides the subject.
+   * permission covers (null = all), for objects the payload names besides the subject. `stored`: the case as stored, at
+   * PATCH only.
    */
   validateCreate?(
     tx: Tx, subject: { readonly type: string; readonly id: string }, payload: P, scope: readonly string[] | null,
+    stored?: CaseRecord<P>,
   ): Promise<void>
   effectPreview?(tx: Tx, c: CaseRecord<P>): Promise<unknown>
   dueAt?(tx: Tx, c: CaseRecord<P>): Promise<Date | null>

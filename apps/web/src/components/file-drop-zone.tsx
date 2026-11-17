@@ -15,9 +15,12 @@ export interface FileDropZoneProps extends Omit<FieldLabelProps, 'helper'> {
   readonly onFiles: (files: readonly File[]) => void
 }
 
-const BYTES_PER_MB = 1024 * 1024
+const BYTES_PER_KB = 1024
+const BYTES_PER_MB = 1024 * BYTES_PER_KB
 
+/** "2.5 MB"; below 0.1 MB in whole kilobytes, rounded up, so a small file never reads "0 MB" (BUG-078). */
 export function formatMegabytes(bytes: number): string {
+  if (bytes < BYTES_PER_MB / 10) return `${Math.ceil(bytes / BYTES_PER_KB)} KB`
   return `${Math.round((bytes / BYTES_PER_MB) * 10) / 10} MB`
 }
 

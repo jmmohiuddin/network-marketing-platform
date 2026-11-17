@@ -20,14 +20,23 @@ export interface SettingRowProps {
   readonly show: (value: never) => ReactNode
   /** Absent when the user may not change it (read-only session, no settings.manage). */
   readonly onChange?: () => void
+  /** In a narrow side card (sc_29 4-column aside): the value stacks under the title at every width (BUG-069). */
+  readonly stacked?: boolean
 }
 
+// Full class strings per layout (Tailwind reads only whole class names from the source).
+const LAYOUT = {
+  row: { item: 'md:flex-row md:items-center', value: 'md:items-end md:max-w-xs', text: 'md:text-right' },
+  stacked: { item: '', value: 'items-start', text: '' },
+} as const
+
 /** sc_29 policy row: name and explanation on the left, the value in force and Change on the right. */
-export function SettingRow({ title, description, whenUnset, unsetLabel = 'Not set', entry, show, onChange }: SettingRowProps) {
+export function SettingRow({ title, description, whenUnset, unsetLabel = 'Not set', entry, show, onChange, stacked = false }: SettingRowProps) {
+  const layout = LAYOUT[stacked ? 'stacked' : 'row']
   const titleId = `setting-${title.replace(/\W+/g, '-').toLowerCase()}`
   const since = entry.value_since
   return (
-    <li className="p-space-md rounded bg-surface-container-low flex flex-col md:flex-row md:items-center justify-between gap-space-md" aria-labelledby={titleId}>
+    <li className={`p-space-md rounded bg-surface-container-low flex flex-col ${layout.item} justify-between gap-space-md`} aria-labelledby={titleId}>
       <div className="max-w-md flex flex-col gap-1">
         <h3 id={titleId} className="font-section-heading text-section-heading text-on-surface">{title}</h3>
         <p className={NOTE}>{description}</p>
@@ -35,15 +44,15 @@ export function SettingRow({ title, description, whenUnset, unsetLabel = 'Not se
           <p className="font-caption text-caption text-secondary">In force since {formatDateTime(since.effective_from)} (version {since.version}).</p>
         )}
       </div>
-      <div className="flex flex-col md:items-end gap-space-sm shrink-0 md:max-w-xs">
+      <div className={`flex flex-col ${layout.value} gap-space-sm shrink-0`}>
         {entry.value === null
           ? (
-            <div className="flex flex-col md:items-end gap-1">
+            <div className={`flex flex-col ${layout.value} gap-1`}>
               <StatusBadge state="draft" label={unsetLabel} />
-              <span className="font-caption text-caption text-secondary md:text-right">{whenUnset}</span>
+              <span className={`font-caption text-caption text-secondary ${layout.text}`}>{whenUnset}</span>
             </div>
           )
-          : <div className="font-data-mono-md text-data-mono-md text-on-surface font-semibold md:text-right">{show(entry.value as never)}</div>}
+          : <div className={`font-data-mono-md text-data-mono-md text-on-surface font-semibold ${layout.text}`}>{show(entry.value as never)}</div>}
         {onChange !== undefined && <Button size="sm" icon="edit" aria-label={`Change ${title.toLowerCase()}`} onClick={onChange}>Change</Button>}
       </div>
     </li>

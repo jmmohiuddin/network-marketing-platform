@@ -177,15 +177,24 @@ describe('versions', () => {
   it('lists versions with author and approver and opens the diff drawer from the URL', async () => {
     const user = userEvent.setup()
     router.params = new URLSearchParams('version=8')
+    const policy: VersionSummary = {
+      ...VERSION, id: 'v9', version: 9, changed: [{ key: 'genealogy.visibility_policy' }],
+      approval: { approver: { id: 'dpo', display_name: 'Dee Protection' }, decided_at: VERSION.created_at },
+    }
     renderAs(ADMIN, <SettingsPage />, routes([], {
+      'GET /v1/settings/versions': () => json(200, { data: [policy, VERSION], meta: {} }),
       'GET /v1/settings/versions/8': () => json(200, { data: { ...VERSION, changes: [{ key: 'money.rounding_mode', before: 'half_up', after: 'half_even' }] }, meta: {} }),
     }))
     const table = await screen.findByRole('table', { name: 'Settings versions' })
-    expect(await within(table).findByText('Scheduled')).toBeTruthy()
-    expect(within(table).getAllByText('Fay Finance').length).toBeGreaterThan(0)
+    expect((await within(table).findAllByText('Scheduled')).length).toBe(2)
+    // The approver is named with the role the change needed, not "Finance approver" for every version (BUG-074).
+    expect(within(table).getByRole('columnheader', { name: 'Approver' })).toBeTruthy()
+    expect(within(table).getByText('Fay Finance (Finance approver)')).toBeTruthy()
+    expect(within(table).getByText('Dee Protection (DPO)')).toBeTruthy()
     const drawer = await screen.findByRole('dialog', { name: 'Version 8' })
     expect(await within(drawer).findByText('Half up')).toBeTruthy()
     expect(within(drawer).getByText('Half even')).toBeTruthy()
+    expect(within(drawer).getByText(/^Fay Finance \(Finance approver\), /)).toBeTruthy()
     await user.click(within(table).getByRole('button', { name: 'View diff of version 8' }))
     expect(router.replace).toHaveBeenLastCalledWith('/settings?version=8')
     router.params = new URLSearchParams()

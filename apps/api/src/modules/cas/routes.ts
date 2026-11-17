@@ -10,7 +10,7 @@ import { idempotent, sendIdempotent, type StoredResponse } from '../../lib/idemp
 import { enqueueOutbox } from '../../lib/outbox.js'
 import { decodeCursor, pageQuery, toPage } from '../../lib/pagination.js'
 import type { Permission } from '../../lib/permissions.js'
-import { holdsFor } from './access.js'
+import { holdsFor, readsCase } from './access.js'
 import {
   caseEvents, caseEvidence, contributors, getCase, hasEvidence, insertCase, insertEvidence, listCases, markDecided,
   markSubmitted, markWithdrawn, preparerOf, recordChange, setAssignee,
@@ -60,9 +60,7 @@ export const stateConflict = (state: string): ApiError =>
 export async function readableCase(tx: Tx, registry: CaseTypeRegistry, auth: AuthContext, id: string, lock: boolean): Promise<Loaded> {
   const record = await getCase(tx, id, lock)
   const definition = record === null ? undefined : caseTypeOf(registry, record.type)
-  if (record === null || definition === undefined || !holdsFor(auth, definition.permissions.read, record.market_id)) {
-    throw notFound()
-  }
+  if (record === null || definition === undefined || !(await readsCase(tx, auth, definition, record))) throw notFound()
   return { record, definition }
 }
 
@@ -90,6 +88,16 @@ export function parsePayload(definition: CaseTypeDefinition, payload: unknown): 
   throw new ApiError(422, code, message, details)
 }
 
+/** A reason code a user may choose: none of the system-only codes; a system-opened case (`stored`) keeps its code. */
+export function assertReasonCode(definition: CaseTypeDefinition, reasonCode: string, stored?: CaseRecord): void {
+  const reasonCodes = stored?.opened_by_kind === 'system'
+    ? [stored.reason_code]
+    : definition.reasonCodes.filter((code) => definition.systemReasonCodes?.includes(code) !== true)
+  if (!reasonCodes.includes(reasonCode)) {
+    throw new ApiError(422, 'REASON_CODE_INVALID', 'Choose a reason code of this case type.', { reason_codes: reasonCodes })
+  }
+}
+
 function registerOpen(app: FastifyInstance, registry: CaseTypeRegistry): void {
   app.post('/v1/cases', { preHandler: [requireRealm('tenant')] }, async (request, reply) => {
     const auth = currentAuth(request)
@@ -102,9 +110,7 @@ function registerOpen(app: FastifyInstance, registry: CaseTypeRegistry): void {
     }
     const create = definition.permissions.create
     if (!hasPermission(auth, create)) throw permissionDenied()
-    if (!definition.reasonCodes.includes(body.reason_code)) {
-      throw new ApiError(422, 'REASON_CODE_INVALID', 'Choose a reason code of this case type.', { reason_codes: definition.reasonCodes })
-    }
+    assertReasonCode(definition, body.reason_code)
     const payload = parsePayload(definition, body.payload)
     const result = await inTenant(request, (tx) => idempotent(tx, request, async () => {
       const subject = definition.subjectTypes.includes(body.subject_type)
@@ -133,7 +139,7 @@ function registerReads(app: FastifyInstance, registry: CaseTypeRegistry): void {
     const { cursor, limit, ...filter } = parse(listQuery, request.query)
     const readable = [...registry.values()]
       .filter((definition) => hasPermission(auth, definition.permissions.read))
-      .map((definition) => ({ type: definition.type, markets: marketScope(auth, definition.permissions.read) }))
+      .map((definition) => ({ type: definition.type, markets: marketScope(auth, definition.permissions.read), related: definition.relatedMarketSql }))
     if (readable.length === 0) throw permissionDenied()
     const after = decodeCursor(cursor, z.uuid())
     const rows = await inTenant(request, (tx) => listCases(tx, filter, readable, after, limit))

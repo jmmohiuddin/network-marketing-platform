@@ -1,4 +1,6 @@
 import { randomUUID } from 'node:crypto'
+import { setTimeout as sleep } from 'node:timers/promises'
+import { getOwnerPool } from '@nmp/db/testing'
 import type { FastifyInstance } from 'fastify'
 import { afterAll, beforeAll, describe, expect, test } from 'vitest'
 import {
@@ -93,6 +95,49 @@ describe('POST /v1/order-events (API-11)', () => {
     expect(none).toEqual({ lines: [{ line_no: 2, volumes: { qv: '-100' } }], total: { qv: '-100' } })
     expect(proportional).toEqual({ lines: [{ line_no: 1, volumes: { qv: '-225', bv: '-11' } }], total: { bv: '-11', qv: '-225' } })
     expect(noFee).toEqual({ lines: [{ line_no: 1, volumes: { qv: '-300', bv: '-14' } }], total: { bv: '-14', qv: '-300' } })
+  })
+
+  test('D-B2-17: a proportional chargeback is re-credited exactly; fee rounding is half-up per line (C-B2-22)', async () => {
+    await setSettings(shop.tenantId, shop.admin.id, { 'orders.restocking_fee_volume_effect': 'proportional' })
+    const { source_order_id: ref } = await order()
+    const chargeback = eventBody(ref, { type: 'chargeback', refund_minor: '1000', fee_minor: '1000' })
+    const charged = await effect(chargeback)
+    const reversed = await effect(eventBody(ref, { type: 'chargeback_reversed', reverses_source_event_id: chargeback.source_event_id, refund_minor: '1000' }))
+    const twoLines = await order({ amount_minor: '2000', lines: [1, 2].map((lineNo) => ({ line_no: lineNo, sku: 'SKU-A', quantity: 1, amount_minor: '1000' })) })
+    const rounded = await effect(eventBody(twoLines.source_order_id, {
+      type: 'refund', lines: [{ line_no: 1, quantity: 1 }, { line_no: 2, quantity: 1 }], refund_minor: '1', fee_minor: '1',
+    }))
+    await setSettings(shop.tenantId, shop.admin.id, { 'orders.restocking_fee_volume_effect': null })
+
+    expect(charged).toEqual({ lines: [{ line_no: 1, volumes: { qv: '-150', bv: '-7' } }, { line_no: 2, volumes: { qv: '-50' } }], total: { bv: '-7', qv: '-200' } })
+    expect(reversed).toEqual({ lines: [{ line_no: 1, volumes: { qv: '150', bv: '7' } }, { line_no: 2, volumes: { qv: '50' } }], total: { bv: '7', qv: '200' } })
+    expect(rounded).toEqual({
+      lines: [{ line_no: 1, volumes: { qv: '-75', bv: '-4' } }, { line_no: 2, volumes: { qv: '-75', bv: '-4' } }], total: { bv: '-8', qv: '-150' },
+    })
+  })
+
+  test('E-ORD-01: a refund arriving while its order is being ingested waits for it and is applied, never left held', async () => {
+    const body = orderBody()
+    const refund = eventBody(String(body.source_order_id), { type: 'refund', lines: [{ line_no: 2, quantity: 1 }], refund_minor: '1000' })
+    const waiting = async (count: number) => {
+      const [row] = await ownerRows<{ n: number }>(`SELECT count(*)::int AS n FROM pg_locks WHERE locktype = 'advisory' AND NOT granted`)
+      if (row!.n < count) await sleep(20).then(() => waiting(count))
+    }
+    // Holding the tenant's audit chain lock stops the order transaction just before it commits.
+    const side = await getOwnerPool().connect()
+    await side.query('BEGIN')
+    await side.query(`SELECT pg_advisory_xact_lock(hashtextextended('audit.audit_event:' || $1, 0))`, [shop.tenantId])
+
+    const ordered = asKey(app, shop.token, '/v1/orders', body)
+    await waiting(1)
+    const refunded = post(refund)
+    await waiting(2)
+    await side.query('COMMIT')
+    side.release()
+
+    expect((await ordered).statusCode).toBe(201)
+    expect((await refunded).statusCode).toBe(201)
+    expect(await ownerRows(`SELECT state FROM inbound_event WHERE idempotency_key = $1`, [`event:shop:${refund.source_event_id}`])).toEqual([{ state: 'processed' }])
   })
 
   test('E-ORD-01 / T-B2-30: a refund before its order is held, then applied when the order arrives', async () => {

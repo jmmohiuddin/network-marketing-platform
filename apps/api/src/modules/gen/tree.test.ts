@@ -86,6 +86,17 @@ describe('GET /v1/genealogy/tree (API-14)', () => {
     await rebuildNow()
   })
 
+  test('BR-GEN-12: a position created after the build (no relationship write) makes the model stale; it is listed', async () => {
+    const lone = await holder('LONE')
+    const { data, meta } = (await get(analyst, '/v1/genealogy/tree')).json()
+    expect(meta.read_model).toMatchObject({ source: 'system_of_record', state: 'stale' })
+    expect(refs(data.children)).toEqual(['P-LONE', 'P-R'])
+    await rebuildNow()
+    const rebuilt = (await get(analyst, '/v1/genealogy/tree')).json()
+    expect(rebuilt.meta.read_model).toMatchObject({ source: 'read_model', state: 'current' })
+    expect(rebuilt.data.children.map((node: { position_id: string }) => node.position_id)).toContain(lone)
+  })
+
   test('TS-03 (view part), T-B2-17, E-GEN-05: as of a date and as known at a time, through two corrections', async () => {
     const parentOf = async (query: string) => {
       const crumbs = (await get(analyst, `/v1/genealogy/tree?root=${ids.X}&${query}`)).json().data.breadcrumbs

@@ -53,3 +53,7 @@ _Agent: qa. Read before every task; update after every task. Keep concise — fa
 ## 2026-11-17 — After B1 round 2
 - Open: BUG-060 LOW only (B1). BUG-049..059 verified fixed. BUG-030 still not retested.
 - Not exercised: delivery `dead` after 72 h, withdraw change/go-live, go-live rejection, calendar delete, brand rename/delete, key 429, SCOPE_MISSING, server-side BUG-055 mapping.
+
+## 2026-11-17 — After B2 round 1
+- Open: BUG-069 MEDIUM; BUG-070..080 LOW (B2 web). B1 BUG-060 not retested this round.
+- Not exercised: WooCommerce, connector rotate/withdraw, webhook refunds/cancel, merge/terminate duplicate outcomes, servicing/type change dialogs, later agreement acceptance, sync behind/held-24h, support session on B2 pages, placement tree + known-at, affected committed periods list.

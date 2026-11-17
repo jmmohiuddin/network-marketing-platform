@@ -42,3 +42,4 @@ _Agent: qa. Read before every task; update after every task. Keep concise — fa
 
 ## 2026-11-17 — B1 browser QA round 2 (retest), read-only
 - Re-seeded nmp_e2e, verified BUG-049..059 in the browser, repeated W-B1-1..5 + MVP-A regression, harness SC-29/13/17 x4, Impeccable detect + scripted a11y; register statuses updated, BUG-060 added; reports appended; servers stopped by PID. No code changed.
+- 2026-11-17 B2 round 1: browser QA W-B2-1..11 + MVP-A regression, harness SC-06/06-detail/07/08/09/13-connectors/29/31/32, Impeccable audit, a11y; reports appended under "Increment B2 — round 1"; BUG-069..080 registered.

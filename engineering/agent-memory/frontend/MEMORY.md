@@ -173,3 +173,44 @@ _Agent: frontend. Read before every task; update after every task. Keep concise 
 - testing/visual/screens.json (compact one-line-per-entry style; keep it): SC-06 (/cases, card `[data-testid="kpis"] > div`), SC-06-detail (/cases/[id]), SC-07 (/genealogy?root=[id], focus-node, primaryButton null), SC-08, SC-09, SC-13-connectors (?tab=connectors, connector), SC-31 (/orders?order=[id], inspector), SC-32 (diagnostic). Stitch card selectors were checked with jsdom against each code.html (first match = the intended panel). Routes with [id] need --url.
 - STITCH_DESIGN_INVENTORY rows SC-06/07/08/09/31/32 now "Implemented with deviations (B2)"; SC-13/17/29 rows extended; all B2 rows say not yet browser-verified.
 - Web 48 files / 428 tests; tsc web + root clean; next build passes (33 pages).
+
+## B2 W2 re-run against PLAN rev 16:18 (2026-11-17)
+- Existing W2 screens re-checked against PLAN §2.4/2.6/§5 and the CAS/PAR/ORD backend fixes: shapes unchanged. Changes: duplicate `reasonCodes` = ['STAFF_SUSPICION'] (SIGNAL_MATCH is a CAS systemReasonCode; label kept); `/cases/genealogy/new?position=<id>` (and `?tab=transfer&position=`) opens with that position chosen (`WithPosition` in genealogy-case-page; unreadable -> warning Banner + search). W1/integrator can now link SC-07 "Request change" and SC-09 "Start case" with `?position=`.
+- Duplicate effect_preview now has `matched_participant`; not drawn (case detail payload facts already link it).
+- Web W2: 3 files / 29 tests; tsc web clean. Not run in a browser or the visual harness.
+
+## B2 W1 re-run against PLAN rev 16:18 (2026-11-17)
+- Audit only: every §5/§2/§3 W1 item was already built; API shapes (par, crm, gen, ten change-requests, int connectors/health) re-checked against web types; BASE_ROLE_PERMISSIONS + PERMISSION_LABELS checked equal to apps/api lib/permissions.ts by a throwaway test.
+- Enrol dialog: "Accepted at" empty = dialog-open instant to the second (`enrolBody(form, agreement, openedAt)`); client refuses a time before the version's published_at (API ACCEPTED_AT_INVALID; a minute-precision "now" fell before a version published that minute).
+- SC-07 inspector "Request change" -> `/cases/genealogy/new?position=<id>` (W2 reads it now); SC-09 "Start case" prefills the position when the participant owns exactly one.
+- Web: 48 files / 430 tests; tsc clean. Not run in a browser.
+
+## B2 W2 review fixes (2026-11-17)
+- SearchPicker (cases/pickers.tsx): Choose -> focus Change (aria-describedby `<id>-chosen-name`), Change -> focus search input; a `moveFocus` ref keeps first render (prefilled ?position=) from stealing focus.
+- CaseTypeInfo.reasonCodes optional; duplicate has none (no staff-open duplicate form; CaseForm uses `?? []`). SIGNAL_MATCH/STAFF_SUSPICION labels kept.
+- /cases ?state= validated against STATE_LABELS; KPI grids (cases counts, orders summary) render LoadFailure section with Try again on error.
+- Sc08Nav keeps ?position= on change/transfer links. Set volumes helper: existing SKU needs a later minute than now.
+- SC-32 AcceptDialog shows the Amount total only when the queue is filtered to one market (shortcut comment: API sums across currencies, rows carry no market).
+- Web 48 files / 434 tests; tsc web clean. Not run in a browser.
+
+## B2 W1 review fixes (2026-11-17, round 3)
+- SC-07: `?root`/`?viewer` pass `isUuid` or are ignored (they go into /v1/positions/:id paths); /people/[id] page renders NotAvailable for a non-UUID id. Explorer tests use `uid(ref)` UUIDs.
+- SC-07 as-of = end of the chosen LOCAL day (`${date}T23:59:59.999` -> ISO instant; API accepts instants), helper says so. View-as-distributor hides tree kind/as-of/known-at (downline is sponsor tree now) and shows a note; search uses kind sponsor.
+- SC-09: step-up note for terminate AND reinstate-from-terminated; Cases tab links gated by case.duplicate.read (participant) / case.genealogy.read (positions), else a note. Enrol leg option '' labelled "No leg" + helper.
+- Web 48 files / 440 tests; tsc web clean.
+
+## B2 frontend-lead shared pass (2026-11-17)
+- Already in place, verified: SC-07 inspector and SC-09 header link to `/cases/genealogy/new?position=<id>` (tested); duplicate case has no staff reason codes (SIGNAL_MATCH not offered); nav for people/genealogy/cases/orders/late comes from API `navigationFor` by permission (iam/mfa.test.ts) and AppShell NAV_ICONS has every key.
+- Not applied: BE3 "held=null for market-scoped users" contradicts PLAN C-B2-23 (summary `held` stays a bare tenant-wide count); OrderKpis unchanged. Needs a PLAN change first.
+- Fixed: SC-09 Cases tab says "Start a case from the page header" only to users who can (write case.genealogy.create); SC-07 `?asOf=` refuses impossible calendar dates (2026-02-31) instead of rolling over.
+- Web 48 files / 440 tests; tsc web clean; next build passes. Still not run in a browser or the visual harness.
+
+## B2 browser round 1 fixes BUG-069..080 (2026-11-17)
+- SettingRow `stacked` prop: use it for any row placed in a narrow side card (viewport `md:` breakpoints overflow a 4-col card).
+- DataTable renders empty/error states under the table, outside the overflow-x scroller (no more colSpan rows).
+- ApiProvider after step-up: focus returns to the action's control, else the restored dialog's `[data-autofocus]` element (child passive effects run before the provider's restore, so a component cannot focus inside its set-aside dialog itself). UnmaskDialog dl has data-autofocus + focus effect.
+- orders/format.ts: `refusalText(code)` (order/event refusal codes in words) and `sourceText(source_system, connectorNames)`; `useConnectorNames()` in order-inspector.tsx (GET /v1/connectors, integration.manage only).
+- Late queue: market per item = filtered market, else GET /v1/orders/:id per order (shortcut until API late items carry market/currency).
+- History never shows owner-now: PositionLink `withOwner={isLive(case)}`; ended servicer rows show ref only (API owner_name = gen_owner_at(now())). `isLive` in cases/format.ts.
+- formatMegabytes: KB below 0.1 MB. Approver column "Approver" + role via approvalOf.
+- Web 48 files / 445 tests; tsc web clean; next build passes. Not re-verified in a browser.

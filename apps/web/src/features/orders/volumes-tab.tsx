@@ -71,12 +71,12 @@ function SetVolumesDialog({ markets, onClose, onSaved }: { readonly markets: rea
   }
   return (
     <FormDialog title="Set volumes" size="lg" submitLabel="Save volumes" onClose={onClose} onSubmit={submit}>
-      <p>Volumes are per unit sold, in minor units of each measure. A SKU's first row may start in the past; later rows start now or later.</p>
+      <p>Volumes are per unit sold, in minor units of each measure. A SKU's first row may start in the past; later rows start after the current minute.</p>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-space-md">
         <Select id="vol-market" label="Market" placeholder="Choose a market" value={marketId} error={errors['vol-market']} options={markets.map((market) => ({ value: market.id, label: marketName(market) }))} onChange={(event) => setMarketId(event.target.value)} />
         <TextInput id="vol-sku" label="SKU" value={sku} error={errors['vol-sku']} onChange={(event) => setSku(event.target.value)} />
         <Select id="vol-class" label="Item class" value={itemClass} options={ITEM_CLASSES.map((value) => ({ value, label: ITEM_CLASS_LABELS[value] ?? value }))} onChange={(event) => setItemClass(event.target.value)} />
-        <TextInput id="vol-valid-from" type="datetime-local" label="Valid from (your time)" value={validFrom} error={errors['vol-valid-from']} onChange={(event) => setValidFrom(event.target.value)} />
+        <TextInput id="vol-valid-from" type="datetime-local" label="Valid from (your time)" helper="A SKU that already has volumes: choose a later minute than now." value={validFrom} error={errors['vol-valid-from']} onChange={(event) => setValidFrom(event.target.value)} />
       </div>
       <fieldset className="flex flex-col gap-space-sm">
         <legend className="font-caption text-caption uppercase tracking-wider text-secondary font-medium mb-space-xs">Measures</legend>

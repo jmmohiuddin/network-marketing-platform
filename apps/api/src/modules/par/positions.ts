@@ -1,7 +1,7 @@
 import type { Tx } from '@nmp/db'
 import { recordAudit } from '../../lib/audit.js'
 import { ApiError } from '../../lib/errors.js'
-import { getSetting } from '../ten/index.js'
+import { getSetting, inScope } from '../ten/index.js'
 import type { PlacementInput, PositionBody } from './schemas.js'
 import { inSavepoint, pgCode, sqlCall, translateSqlError } from './sql-errors.js'
 
@@ -23,15 +23,19 @@ export interface PlacementView {
  * AC-PAR2-1: the sponsor position exists, is active, and its owner's type at `at` can sponsor. FOR SHARE: a concurrent
  * status change (G5 locks the position FOR UPDATE) waits for this enrolment, or this enrolment sees its result.
  */
-export async function resolveSponsor(tx: Tx, positionRef: string, at: Date): Promise<string> {
-  const { rows } = await tx.query<{ id: string; status: PositionStatus; can_sponsor: boolean | null }>(
-    `SELECT p.id, p.status, t.can_sponsor FROM position p
+export async function resolveSponsor(tx: Tx, positionRef: string, at: Date, scope: readonly string[] | null): Promise<string> {
+  const { rows } = await tx.query<{ id: string; market_id: string; status: PositionStatus; can_sponsor: boolean | null }>(
+    `SELECT p.id, p.market_id, p.status, t.can_sponsor FROM position p
      LEFT JOIN LATERAL par_type_at(gen_owner_at(p.id, $2), $2) t ON true
      WHERE p.position_ref = $1 FOR SHARE OF p`,
     [positionRef, at],
   )
   const sponsor = rows[0]
   if (sponsor === undefined) throw new ApiError(422, 'SPONSOR_NOT_FOUND', 'No position has this sponsor reference.')
+  // Cross-market sponsorship is allowed, but a market-scoped caller learns nothing about a position outside its markets.
+  if (!inScope(scope, sponsor.market_id) && (sponsor.status !== 'active' || sponsor.can_sponsor !== true)) {
+    throw new ApiError(422, 'SPONSOR_NOT_ELIGIBLE', 'This position cannot sponsor.')
+  }
   if (sponsor.status !== 'active') {
     throw new ApiError(422, 'SPONSOR_INACTIVE', 'The sponsor position is not active.', { status: sponsor.status })
   }

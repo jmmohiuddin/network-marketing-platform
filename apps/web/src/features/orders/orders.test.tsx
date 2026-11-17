@@ -5,7 +5,7 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { apiError, json, ok } from '../../test/fetch'
 import { adminMe, bodyOf, callsTo, fetchByRoute, headerOf, renderAs } from '../admin/test-support'
-import { minorToDecimal, moneyText, volumesText } from './format'
+import { minorToDecimal, moneyText, refusalText, sourceText, volumesText } from './format'
 import { LateQueuePage } from './late-queue-page'
 import { OrdersPage } from './orders-page'
 import type { LateItem, OrderDetail } from './types'
@@ -32,6 +32,17 @@ const ORDER: OrderDetail = {
 }
 
 describe('order format', () => {
+  it('names connector sources by the connector, else the provider (BUG-076), and refusals in words (BUG-075)', () => {
+    const id = 'f54bd62d-7855-4683-a2ef-8136bf79c86a'
+    expect(sourceText(`shopify:${id}`, new Map([[id, 'NL Shopify store']]))).toBe('NL Shopify store')
+    expect(sourceText(`woocommerce:${id}`, new Map())).toBe('WooCommerce connector')
+    expect(sourceText('erp', new Map())).toBe('erp')
+    expect(refusalText('ORDER_CONFLICT')).toBe('Already received with a different body (corrections arrive as order events)')
+    expect(refusalText('BUYER_TYPE_MISSING')).toBe('The buyer had no participant type at the crediting time')
+    expect(refusalText('SOMETHING_NEW')).toBe('SOMETHING_NEW')
+    expect(refusalText(undefined)).toBe('Refused')
+  })
+
   it('formats minor units exactly, without floating point', () => {
     expect(minorToDecimal('123456', 2)).toBe('1234.56')
     expect(minorToDecimal('-5', 2)).toBe('-0.05')
@@ -70,6 +81,17 @@ describe('OrdersPage (SC-31)', () => {
     expect(screen.getByRole('link', { name: 'ORD-1' }).getAttribute('href')).toBe('/orders?order=o1&purpose=customer')
     const [url] = callsTo(fetchMock, 'GET', '/v1/orders')[0]!
     expect(new URL(url, 'http://x').searchParams.get('purpose')).toBe('customer')
+  })
+
+  it('shows a KPI load failure with Try again instead of empty cards', async () => {
+    const fetchMock = fetchByRoute({
+      'GET /v1/markets': () => ok([MARKET]),
+      'GET /v1/orders/summary': () => apiError(500, 'INTERNAL', 'Something went wrong.'),
+      'GET /v1/orders': () => ok([]),
+    })
+    renderAs(ANALYST, <OrdersPage />, fetchMock)
+    expect(await screen.findByRole('button', { name: 'Try again' })).toBeTruthy()
+    expect(screen.queryByTestId('kpis')).toBeNull()
   })
 
   it('retries a held inbound event for product.manage', async () => {
@@ -156,6 +178,7 @@ describe('LateQueuePage (SC-32)', () => {
   })
 
   it('previews the selection and accepts the proposed handling with one Idempotency-Key', async () => {
+    navigation.search = 'market_id=m1' // one market: the amount total has one currency
     let decided = false
     const fetchMock = fetchByRoute({
       'GET /v1/markets': () => ok([MARKET]),
@@ -174,7 +197,7 @@ describe('LateQueuePage (SC-32)', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Accept proposed handling' }))
     const dialog = await screen.findByRole('dialog', { name: 'Accept proposed handling' })
     const preview = await within(dialog).findByTestId('late-preview')
-    expect(preview.textContent).toContain(`${(10000n).toLocaleString()} minor units`)
+    expect(preview.textContent).toContain(moneyText('10000', 'EUR', 2)) // the chosen market's currency (BUG-071)
     expect(preview.textContent).toContain('140 pv')
     expect(within(preview).getByText('P-C')).toBeTruthy()
     expect(bodyOf(callsTo(fetchMock, 'POST', '/v1/late-transactions/preview')[0]![1])).toEqual({ ids: ['l1', 'l2'] })
@@ -197,6 +220,8 @@ describe('LateQueuePage (SC-32)', () => {
           : ok({ count: 2, volumes: { pv: '140' }, amount_minor: '10000', affected_positions: [] })
       },
       'POST /v1/late-transactions/decisions': () => ok({ decided: 2 }),
+      'GET /v1/orders/o-l1': () => apiError(404, 'NOT_FOUND', 'Not found.'),
+      'GET /v1/orders/o-l2': () => apiError(404, 'NOT_FOUND', 'Not found.'),
     })
     renderAs(ANALYST, <LateQueuePage />, fetchMock)
     await userEvent.click(await screen.findByRole('checkbox', { name: 'Select all pending items on this page' }))
@@ -208,9 +233,30 @@ describe('LateQueuePage (SC-32)', () => {
     expect(await within(dialog).findByText('Wait for the preview of the effect before accepting.')).toBeTruthy()
     expect(callsTo(fetchMock, 'POST', '/v1/late-transactions/decisions')).toHaveLength(0)
     await userEvent.click(within(dialog).getByRole('button', { name: 'Try again' }))
-    expect(await within(dialog).findByTestId('late-preview')).toBeTruthy()
+    const preview = await within(dialog).findByTestId('late-preview')
+    expect(preview.textContent).toContain('Filter the queue to one market to see the total') // markets not known: no cross-currency sum
+    expect(preview.textContent).not.toContain('minor units')
     await userEvent.click(within(dialog).getByRole('button', { name: 'Accept 2 items' }))
     await vi.waitFor(() => expect(callsTo(fetchMock, 'POST', '/v1/late-transactions/decisions')).toHaveLength(1))
+  })
+
+  it('shows money in the currency of the orders’ market without a market filter when every selected item shares it', async () => {
+    const fetchMock = fetchByRoute({
+      'GET /v1/markets': () => ok([MARKET]),
+      'GET /v1/late-transactions': () => json(200, { data: [item('l1', 'ORD-1'), item('l2', 'ORD-2')], meta: { next_cursor: null, counts: { pending: 2, decided_30d: 0 } } }),
+      'GET /v1/orders/o-l1': () => ok({ ...ORDER, id: 'o-l1' }),
+      'GET /v1/orders/o-l2': () => ok({ ...ORDER, id: 'o-l2' }),
+      'POST /v1/late-transactions/preview': () => ok({ count: 2, volumes: { pv: '140' }, amount_minor: '10000', affected_positions: [] }),
+    })
+    renderAs(ANALYST, <LateQueuePage />, fetchMock)
+    const table = await screen.findByRole('table', { name: 'Late transactions' })
+    await vi.waitFor(() => expect(within(table).getAllByText(moneyText('5000', 'EUR', 2))).toHaveLength(2))
+    expect(table.textContent).not.toContain('minor units')
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Select all pending items on this page' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Accept proposed handling' }))
+    const preview = await within(await screen.findByRole('dialog', { name: 'Accept proposed handling' })).findByTestId('late-preview')
+    expect(preview.textContent).toContain(moneyText('10000', 'EUR', 2))
+    expect(callsTo(fetchMock, 'GET', '/v1/orders/o-l1')).toHaveLength(1) // each order is looked up once
   })
 
   it('says the KPI counts cover all markets in scope when a market is chosen', async () => {
@@ -229,11 +275,13 @@ describe('LateQueuePage (SC-32)', () => {
       'GET /v1/markets': () => ok([MARKET]),
       'GET /v1/late-transactions': () => json(200, { data: [item('l1', 'ORD-1')], meta: { next_cursor: null, counts: { pending: 1, decided_30d: 0 } } }),
       'POST /v1/late-transactions/decisions': () => apiError(409, 'LATE_NOT_PENDING', 'Some selected items were already decided.'),
+      'GET /v1/orders/o-l1': () => ok({ ...ORDER, id: 'o-l1' }),
     })
     renderAs(ANALYST, <LateQueuePage />, fetchMock)
     await userEvent.click(await screen.findByRole('button', { name: 'Diagnose ORD-1' }))
     const diagnostic = screen.getByTestId('diagnostic')
-    expect(diagnostic.textContent).toContain(`${(5000n).toLocaleString()} minor units`)
+    await vi.waitFor(() => expect(diagnostic.textContent).toContain(moneyText('5000', 'EUR', 2)))
+    expect(within(diagnostic).getByText('Committed')).toBeTruthy() // the period state as a badge, not the raw word
     await userEvent.click(within(diagnostic).getByRole('button', { name: 'Raise restatement instead' }))
     const dialog = await screen.findByRole('dialog', { name: 'Raise restatement instead' })
     await userEvent.type(within(dialog).getByLabelText('Reason'), 'Material change')

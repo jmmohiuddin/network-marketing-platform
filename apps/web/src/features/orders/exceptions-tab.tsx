@@ -14,14 +14,14 @@ import { formatDateTime } from '../../lib/format'
 import { errorMessage, isNotAvailable } from '../../lib/messages'
 import { useSession } from '../../lib/session'
 import { tableError, usePagedList } from '../admin/resource'
-import { HOLD_LABELS } from './format'
+import { HOLD_LABELS, refusalText } from './format'
 import type { InboundEvent } from './types'
 
 const STATES = [{ value: 'held', label: 'Held' }, { value: 'rejected', label: 'Rejected' }]
 
 function reasonOf(event: InboundEvent): string {
   if (event.hold_reason !== null) return `${HOLD_LABELS[event.hold_reason] ?? event.hold_reason}${event.hold_ref === null ? '' : `: ${event.hold_ref}`}`
-  return event.result?.error?.code ?? '—'
+  return event.result?.error === undefined ? '—' : refusalText(event.result.error.code)
 }
 
 function Queue({ state }: { readonly state: string }) {
@@ -37,7 +37,7 @@ function Queue({ state }: { readonly state: string }) {
     setProblem(null)
     try {
       const { data } = await api.post<{ state: string; result: InboundEvent['result'] }>(`/v1/inbound-events/${event.id}/retry`, {})
-      if (data.state === 'rejected') setProblem(`The retry was refused: ${data.result?.error?.code ?? 'rejected'}.`)
+      if (data.state === 'rejected') setProblem(`The retry was refused: ${refusalText(data.result?.error?.code)}.`)
       else toast({ message: data.state === 'processed' ? 'Processed: the order or event is recorded.' : 'Still held: the missing data has not arrived yet.' })
       list.reload()
     } catch (error) {

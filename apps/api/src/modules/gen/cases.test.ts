@@ -242,4 +242,18 @@ describe('transfer (T-B2-15, AC-GEN1-2)', () => {
     await expect(check(owners.D!)).rejects.toMatchObject({ statusCode: 409, code: 'OWNERSHIP_CONFLICT' })
     await expect(check('00000000-0000-4000-8000-000000000000')).rejects.toMatchObject({ statusCode: 422, code: 'PARTICIPANT_NOT_FOUND' })
   })
+
+  test('a market-scoped filer cannot name a new owner outside their markets (unknown, as a missing participant)', async () => {
+    const de = await createMarket(acmeId, 'DE')
+    const foreign = await participant(support, de, typeId, 'DE-HEIR')
+    const local = await participant(support, gb, typeId, 'GB-HEIR')
+    const supportGb = await createSignedInUser({ tenantId: acmeId, roles: ['Support agent'], marketIds: [gb] })
+    const file = (to: string) => post(supportGb, '/v1/cases', {
+      type: 'transfer', subject_type: 'position', subject_id: ids.D, reason_code: 'SALE',
+      payload: { to_participant_id: to, effective_from: today() },
+    }, true)
+    const refused = await file(foreign)
+    expect([refused.statusCode, refused.json().error.code]).toEqual([422, 'PARTICIPANT_NOT_FOUND'])
+    expect((await file(local)).statusCode).toBe(201)
+  })
 })

@@ -17,7 +17,7 @@ const SQLSTATES: Readonly<Record<string, readonly [number, string, string]>> = {
   PA002: [422, 'TYPE_NOT_ELIGIBLE', 'The type is not an active end-customer type.'],
   PA003: [409, 'DUPLICATE_HOLD', 'A duplicate review holds this position until it is decided.'],
   CR001: [422, 'NOT_A_CUSTOMER', 'The participant is not an end customer.'],
-  CR002: [422, 'SERVICER_NOT_ELIGIBLE', 'The servicing position does not exist or is terminated.'],
+  CR002: [422, 'SERVICER_NOT_ELIGIBLE', 'The servicing position does not exist or is not active.'],
   CR003: [422, 'REASSIGNMENT_RULE_NOT_CONFIGURED', 'Set customers.reassignment_rule before terminating a position that services customers.'],
 }
 

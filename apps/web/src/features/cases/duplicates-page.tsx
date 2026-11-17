@@ -71,6 +71,10 @@ function ParticipantSide({ id, heading }: { readonly id: string; readonly headin
   )
 }
 
+/** The API lets the opener or assignee change a case a user opened; a system-opened case, anyone who may prepare it. */
+const preparesCase = (record: CaseDetail, userId: string): boolean =>
+  record.opened_by === null || record.opened_by === userId || record.assigned_to === userId
+
 /** Proposed outcome (PATCH /v1/cases/:id payload) and submit, by the investigator while the case is open. */
 function OutcomeForm({ record, onChanged }: { readonly record: CaseDetail; readonly onChanged: () => void }) {
   const api = useApi()
@@ -116,7 +120,7 @@ function OutcomeForm({ record, onChanged }: { readonly record: CaseDetail; reado
 
 /** The selected review: subject and matched participant side by side, matched signal kinds only (never values). */
 function Investigation({ caseId }: { readonly caseId: string }) {
-  const { can, readOnly } = useSession()
+  const { me, can, readOnly } = useSession()
   const detail = useResource<CaseDetail>(`/v1/cases/${caseId}`)
   if (detail.error !== null) return <LoadFailure error={detail.error} onRetry={detail.reload} section />
   if (detail.data === null) return <LoadingState label="Loading the duplicate review" />
@@ -151,7 +155,7 @@ function Investigation({ caseId }: { readonly caseId: string }) {
       </section>
       <section className={CARD} aria-labelledby="determination-title">
         <h2 id="determination-title" className={LABEL}>Determination</h2>
-        {record.state === 'open' && !readOnly && can('case.duplicate.create')
+        {record.state === 'open' && !readOnly && can('case.duplicate.create') && preparesCase(record, me.user.id)
           ? <OutcomeForm record={record} onChanged={detail.reload} />
           : <p className="font-body-sm text-body-sm text-on-surface">Proposed outcome: {payload.proposed_outcome === undefined ? 'not chosen yet' : OUTCOME_LABELS[payload.proposed_outcome]}</p>}
         <LinkButton className="self-start" icon="open_in_new" href={`/cases/${record.id}`}>Open case record</LinkButton>

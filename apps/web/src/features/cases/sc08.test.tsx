@@ -70,6 +70,18 @@ describe('GenealogyCasePage (SC-08 change)', () => {
     expect(navigation.router.push).not.toHaveBeenCalled()
   })
 
+  it('opens with the position from ?position= chosen, and says so when it cannot be read', async () => {
+    navigation.search = 'position=c'
+    const view = renderAs(SUPPORT, <GenealogyCasePage />, routes())
+    expect((await screen.findByTestId('gc-position-chosen')).textContent).toContain('P-C')
+    expect((await screen.findByTestId('current-parent')).textContent).toContain('P-B')
+    view.unmount()
+    navigation.search = 'tab=transfer&position=x'
+    renderAs(SUPPORT, <GenealogyCasePage />, routes({ 'GET /v1/positions/x': () => apiError(404, 'NOT_FOUND', 'Not found.') }))
+    expect(await screen.findByText('The linked position could not be loaded')).toBeTruthy()
+    expect(screen.getByLabelText('Position to transfer')).toBeTruthy()
+  })
+
   it('files a correction from the current relationship start, uploads and attaches the evidence, then opens the case', async () => {
     const fetchMock = routes({
       'POST /v1/cases': () => ok({ id: 'case1' }, 201),
@@ -144,6 +156,24 @@ describe('GenealogyCasePage (SC-08 change)', () => {
     expect(callsTo(fetchMock, 'POST', '/v1/cases')).toHaveLength(0)
   })
 
+  it('moves focus to Change after Choose and back to the search box after Change (WCAG 2.4.3)', async () => {
+    renderAs(SUPPORT, <GenealogyCasePage />, routes())
+    await choose('Position to move', 'C', /Choose P-C/)
+    const change = screen.getByRole('button', { name: 'Change position to move' })
+    expect(document.activeElement).toBe(change)
+    expect(change.getAttribute('aria-describedby')).toBe('gc-position-chosen-name')
+    await userEvent.click(change)
+    expect(document.activeElement).toBe(screen.getByLabelText('Position to move'))
+  })
+
+  it('keeps a prefilled ?position= when switching between change and transfer', async () => {
+    navigation.search = 'position=c'
+    renderAs(SUPPORT, <GenealogyCasePage />, routes())
+    const nav = await screen.findByRole('navigation', { name: 'Genealogy and duplicate cases' })
+    expect(within(nav).getByRole('link', { name: /Sponsor and placement change/ }).getAttribute('href')).toBe('/cases/genealogy/new?position=c')
+    expect(within(nav).getByRole('link', { name: /Ownership transfer/ }).getAttribute('href')).toBe('/cases/genealogy/new?tab=transfer&position=c')
+  })
+
   it('is not available to users who cannot file genealogy cases', () => {
     renderAs(adminMe({ permissions: ['case.genealogy.read'] }), <GenealogyCasePage />, fetchByRoute({}))
     expect(screen.getByText(/Not found or not available/)).toBeTruthy()
@@ -193,5 +223,20 @@ describe('DuplicatesPage (SC-08 duplicates)', () => {
     expect(bodyOf(patch)).toEqual({ payload: { matched_participant_id: matched, matched_kinds: ['identity_ref'], proposed_outcome: 'allow' } })
     await userEvent.click(await screen.findByRole('button', { name: 'Submit for decision' }))
     await vi.waitFor(() => expect(callsTo(fetchMock, 'POST', `/v1/cases/${current.id}/submit`)).toHaveLength(1))
+  })
+
+  it('a review someone else opened shows its outcome read-only unless it is assigned to you', async () => {
+    const other = review({ opened_by: 'u-other', opened_by_kind: 'user', reason_code: 'STAFF_SUSPICION' })
+    navigation.search = `case=${other.id}`
+    const fetchMock = fetchByRoute({
+      'GET /v1/cases': () => ok([other]),
+      [`GET /v1/cases/${other.id}`]: () => ok(other),
+      [`GET /v1/participants/${subject}`]: () => participant(subject, 'D', false),
+      [`GET /v1/participants/${matched}`]: () => participant(matched, 'B', false),
+    })
+    renderAs(SUPPORT, <DuplicatesPage />, fetchMock)
+    const investigation = await screen.findByTestId('investigation')
+    expect(within(investigation).getByText('Proposed outcome: not chosen yet')).toBeTruthy()
+    expect(within(investigation).queryByRole('button', { name: 'Save proposed outcome' })).toBeNull()
   })
 })

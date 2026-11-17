@@ -43,8 +43,13 @@ export interface Acceptance {
 /** AC-PAR6-2: an acceptance of the market's current version, once per participant (409 ALREADY_ACCEPTED). */
 export async function recordAcceptance(tx: Tx, participantId: string, marketId: string, acceptance: Acceptance) {
   if ((await currentVersion(tx, marketId))?.id !== acceptance.versionId) throw notCurrent()
-  const { rows: timing } = await tx.query<{ future: boolean }>('SELECT $1::timestamptz > now() AS future', [acceptance.acceptedAt])
-  if (timing[0]!.future) throw new ApiError(422, 'ACCEPTED_AT_INVALID', 'accepted_at cannot be in the future.')
+  const { rows: timing } = await tx.query<{ invalid: boolean }>(
+    `SELECT $1::timestamptz > now() OR $1::timestamptz < (SELECT published_at FROM agreement_version WHERE id = $2) AS invalid`,
+    [acceptance.acceptedAt, acceptance.versionId],
+  )
+  if (timing[0]!.invalid) {
+    throw new ApiError(422, 'ACCEPTED_AT_INVALID', 'accepted_at must lie between the version\'s publication and now.')
+  }
   const { rows } = await tx.query<{ id: string; agreement_version_id: string; accepted_at: Date }>(
     `INSERT INTO agreement_acceptance (tenant_id, participant_id, agreement_version_id, accepted_at, evidence)
      VALUES (app_tenant_id(), $1, $2, $3, $4) ON CONFLICT (participant_id, agreement_version_id) DO NOTHING

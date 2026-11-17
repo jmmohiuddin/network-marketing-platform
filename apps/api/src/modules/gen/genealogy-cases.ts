@@ -124,6 +124,7 @@ function relationshipCaseType<P extends RelationshipPayload>(spec: Spec<P>): Gen
   return {
     type: spec.type, subjectTypes: ['position'], reasonCodes: spec.reasonCodes, evidenceRequired: true, permissions: PERMISSIONS,
     payload: spec.payload, resolveSubject: resolvePositionSubject,
+    // The proposed parent is not scoped to the filer's markets: sponsor chains cross markets (D-B2-21).
     async validateCreate(tx, subject, payload) {
       const move = await prepare(tx, subject.id, payload)
       const refusal = await dryRun(tx, async () => apply(tx, move, await scratchCase(tx, spec.type, spec.reasonCodes[0]!, subject.id)))

@@ -18,6 +18,7 @@ let supportMy: TestUser
 let analyst: TestUser
 let globexSupport: TestUser
 let tree: Record<string, string>
+let gb: string
 
 closePoolsAfterAll()
 
@@ -61,7 +62,7 @@ beforeAll(async () => {
   await resetApiDb()
   acme = await createTenant()
   const globex = await createTenant()
-  await createMarket(acme.id, 'GB')
+  gb = await createMarket(acme.id, 'GB')
   const my = await createMarket(acme.id, 'MY')
   admin = await createSignedInUser({ tenantId: acme.id, roles: ['Tenant admin'], stepUp: true })
   const compliance = await createSignedInUser({ tenantId: acme.id, roles: ['Compliance officer'], stepUp: true })
@@ -116,9 +117,11 @@ describe('PUT /v1/customers/:id/servicing (T-B2-32, AC-CRM1-1, AC-CRM1-2)', () =
   })
 
   test('the company services when position_ref is null; a key with participants:write may change it', async () => {
-    const account = await call(app, { method: 'POST', url: '/v1/service-accounts', as: admin, body: { name: 'crm', purpose: 'CRM' }, idempotencyKey: true })
+    // The minter holds what the key does (servicing.manage, participant.manage) for all markets (PLAN B2 2.8).
+    const integrator = await createSignedInUser({ tenantId: acme.id, roles: ['Tenant admin', 'Support agent'], stepUp: true })
+    const account = await call(app, { method: 'POST', url: '/v1/service-accounts', as: integrator, body: { name: 'crm', purpose: 'CRM' }, idempotencyKey: true })
     const key = await call(app, {
-      method: 'POST', url: `/v1/service-accounts/${account.json().data.id}/keys`, as: admin,
+      method: 'POST', url: `/v1/service-accounts/${account.json().data.id}/keys`, as: integrator,
       body: { name: 'crm', scopes: ['participants:write'], rate_tier: 'standard' }, idempotencyKey: true,
     })
     const byKey = await app.inject({
@@ -139,6 +142,25 @@ describe('PUT /v1/customers/:id/servicing (T-B2-32, AC-CRM1-1, AC-CRM1-2)', () =
     expect((await call(app, { method: 'GET', url: `/v1/participants/${tree.customer}/servicing`, as: globexSupport })).statusCode).toBe(404)
     expect((await call(app, { method: 'GET', url: `/v1/positions/${tree.p2}/customers`, as: supportMy })).statusCode).toBe(404)
     expect((await call(app, { method: 'GET', url: `/v1/positions/${tree.p2}/customers?cursor=bad`, as: support })).statusCode).toBe(400)
+  })
+})
+
+describe('market scope of the servicing reads (D-B2-21)', () => {
+  test('a GB reader sees neither customers nor servicing owners in another market', async () => {
+    const analystGb = await createSignedInUser({ tenantId: acme.id, roles: ['Commission analyst'], marketIds: [gb] })
+    const gbPosition = (await enrol(support, { type_code: 'DIST', position_ref: 'GBS' })).position!.id
+    const myPosition = (await enrol(support, { type_code: 'DIST', market: 'MY', position_ref: 'MYP', display_name: 'Secret MY Owner' })).position!.id
+    const myCustomer = (await enrol(support, { type_code: 'CUST', market: 'MY', display_name: 'Secret MY Person', sponsor: { position_ref: 'GBS' } })).participant.id
+    const gbCustomer = (await enrol(support, { type_code: 'CUST', sponsor: { position_ref: 'MYP' } })).participant.id
+    const list = (as: TestUser) => call(app, { method: 'GET', url: `/v1/positions/${gbPosition}/customers`, as })
+    const history = (as: TestUser) => call(app, { method: 'GET', url: `/v1/participants/${gbCustomer}/servicing`, as })
+
+    const ids = (response: Awaited<ReturnType<typeof list>>) => response.json().data.map((row: { participant: { id: string } }) => row.participant.id)
+    expect(ids(await list(analyst))).toContain(myCustomer)
+    expect(ids(await list(analystGb))).not.toContain(myCustomer)
+    expect((await list(analystGb)).body).not.toContain('Secret MY Person')
+    expect((await history(analyst)).json().data[0].position).toMatchObject({ id: myPosition, owner_name: 'Secret MY Owner' })
+    expect((await history(analystGb)).json().data[0].position).toMatchObject({ id: myPosition, owner_name: null })
   })
 })
 

@@ -2,14 +2,16 @@
 
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
+import { Banner } from '../../components/banner'
 import { FOCUS_RING } from '../../components/button'
 import { Icon } from '../../components/icon'
 import { RadioGroup, Select, TextInput } from '../../components/form-field'
 import { PageHeader } from '../../components/page-header'
 import { SegmentedControl } from '../../components/segmented-control'
-import { NotAvailable } from '../../components/states'
+import { LoadingState, NotAvailable } from '../../components/states'
 import { formatDateTime } from '../../lib/format'
+import { errorMessage } from '../../lib/messages'
 import { useSession } from '../../lib/session'
 import { useResource } from '../../lib/use-resource'
 import { fromLocalInput } from '../admin/format'
@@ -31,10 +33,12 @@ const typeOf = (type: string): CaseTypeInfo => caseTypeInfo(type)!
 /** sc_08 tab strip across its two routes: links, since each tab is its own page. */
 export function Sc08Nav({ current }: { readonly current: Sc08Tab }) {
   const { can } = useSession()
+  const position = useSearchParams().get('position') // a prefilled position (SC-07, SC-09) survives switching forms
+  const keep = position === null ? '' : `position=${encodeURIComponent(position)}`
   const tabs = [
     ...(can('case.genealogy.create') ? [
-      { id: 'change', href: '/cases/genealogy/new', icon: 'account_tree', label: 'Sponsor and placement change' },
-      { id: 'transfer', href: '/cases/genealogy/new?tab=transfer', icon: 'swap_horiz', label: 'Ownership transfer' },
+      { id: 'change', href: `/cases/genealogy/new${keep === '' ? '' : `?${keep}`}`, icon: 'account_tree', label: 'Sponsor and placement change' },
+      { id: 'transfer', href: `/cases/genealogy/new?tab=transfer${keep === '' ? '' : `&${keep}`}`, icon: 'swap_horiz', label: 'Ownership transfer' },
     ] : []),
     ...(can('case.duplicate.read') ? [{ id: 'duplicates', href: '/cases/duplicates', icon: 'group_remove', label: 'Duplicate investigation' }] : []),
   ]
@@ -61,10 +65,10 @@ export function Sc08Nav({ current }: { readonly current: Sc08Tab }) {
 const RELATIONSHIP_FIELDS = { proposed_parent_position_id: 'gc-parent', leg: 'gc-leg', effective_from: 'gc-date', valid_from: 'gc-date', 'payload.leg': 'gc-leg', 'payload.effective_from': 'gc-date', 'payload.valid_from': 'gc-date' }
 
 /** Sponsor and placement change or correction (genealogy_change / genealogy_correction, PLAN B2 2.4). */
-function RelationshipForm() {
+function RelationshipForm({ initial }: { readonly initial: TreeNode | null }) {
   const [mode, setMode] = useState<'change' | 'correction'>('change')
   const [kind, setKind] = useState<TreeKind>('sponsor')
-  const [position, setPosition] = useState<TreeNode | null>(null)
+  const [position, setPosition] = useState<TreeNode | null>(initial)
   const [parent, setParent] = useState<TreeNode | null>(null)
   const [leg, setLeg] = useState('')
   const [effectiveFrom, setEffectiveFrom] = useState(utcToday)
@@ -143,8 +147,8 @@ function RelationshipForm() {
 const TRANSFER_FIELDS = { to_participant_id: 'tr-owner', effective_from: 'tr-date', 'payload.to_participant_id': 'tr-owner', 'payload.effective_from': 'tr-date' }
 
 /** Ownership transfer (transfer, PLAN B2 2.4): the position keeps its place, its owner changes. */
-function TransferForm() {
-  const [position, setPosition] = useState<TreeNode | null>(null)
+function TransferForm({ initial }: { readonly initial: TreeNode | null }) {
+  const [position, setPosition] = useState<TreeNode | null>(initial)
   const [owner, setOwner] = useState<ParticipantRow | null>(null)
   const [effectiveFrom, setEffectiveFrom] = useState(utcToday)
   const [errors, setErrors] = useState<Readonly<Record<string, string | null>>>({})
@@ -169,6 +173,25 @@ function TransferForm() {
   )
 }
 
+/** A position as the search pickers show it. */
+const nodeOf = (position: PositionDetail): TreeNode => ({
+  position_id: position.id, position_ref: position.position_ref, owner: position.owner, status: position.status, market_code: position.market.code, leg: null,
+})
+
+/** ?position=<id> (SC-07 "Request change", SC-09): the form opens with that position chosen; unreadable -> say so, search instead. */
+function WithPosition({ id, children }: { readonly id: string | null; readonly children: (initial: TreeNode | null) => ReactNode }) {
+  const preset = useResource<PositionDetail>(id === null ? null : positionPath(id))
+  if (id === null) return children(null)
+  if (preset.data !== null) return children(nodeOf(preset.data))
+  if (preset.error === null) return <LoadingState label="Loading the position" />
+  return (
+    <>
+      <Banner tone="warning" title="The linked position could not be loaded">{errorMessage(preset.error)} Search for the position instead.</Banner>
+      {children(null)}
+    </>
+  )
+}
+
 /** SC-08 /cases/genealogy/new: file a sponsor/placement change or correction, or an ownership transfer. */
 export function GenealogyCasePage() {
   const { can, readOnly } = useSession()
@@ -185,7 +208,7 @@ export function GenealogyCasePage() {
       <div>
         <Sc08Nav current={tab} />
         <section className={`${SECTION} rounded-t-none border-t-0`} aria-label={tab === 'transfer' ? 'Ownership transfer' : 'Sponsor and placement change'} data-testid="card">
-          {tab === 'transfer' ? <TransferForm /> : <RelationshipForm />}
+          <WithPosition key={tab} id={params.get('position')}>{(initial) => (tab === 'transfer' ? <TransferForm initial={initial} /> : <RelationshipForm initial={initial} />)}</WithPosition>
         </section>
       </div>
     </>

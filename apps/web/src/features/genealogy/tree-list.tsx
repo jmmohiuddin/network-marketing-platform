@@ -70,7 +70,7 @@ function ChildRow({ node, query, onFocus }: { readonly node: TreeNode; readonly 
           {node.children_count > 0
             ? (
               <button type="button" className={`w-6 h-6 shrink-0 rounded bg-surface-container-lowest hover:bg-primary hover:text-on-primary text-secondary flex items-center justify-center transition-colors shadow-sm ${FOCUS_RING}`}
-                aria-expanded={open} aria-label={`${open ? 'Hide' : 'Show'} the ${node.children_count} positions under ${node.position_ref}`} title={`${open ? 'Hide' : 'Show'} positions under ${node.position_ref}`}
+                aria-expanded={open} aria-label={`${open ? 'Hide' : 'Show'} the ${countLabel(node.children_count, 'position')} under ${node.position_ref}`} title={`${open ? 'Hide' : 'Show'} positions under ${node.position_ref}`}
                 onClick={() => setOpen((value) => !value)}>
                 <Icon name={open ? 'arrow_drop_down' : 'arrow_right'} size={16} />
               </button>

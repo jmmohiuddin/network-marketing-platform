@@ -59,9 +59,9 @@ export interface FixturePosition {
   readonly positionRef: string
 }
 
-/** A participant of the type with an active position from `at`, written through G1 as `userId`. */
+/** A participant of the type with a position (active, or pending as held by a duplicate review) from `at`, through G1 as `userId`. */
 export async function participantWithPosition(
-  tenantId: string, userId: string, marketId: string, typeId: string, at = '2020-01-01T00:00:00Z',
+  tenantId: string, userId: string, marketId: string, typeId: string, at = '2020-01-01T00:00:00Z', status: 'active' | 'pending' = 'active',
 ): Promise<FixturePosition> {
   const ref = `P${randomUUID().slice(0, 8)}`
   return withTenant({ tenantId, userId }, async (tx) => {
@@ -71,7 +71,7 @@ export async function participantWithPosition(
     )
     const participantId = rows[0]!.id
     await tx.query('INSERT INTO participant_type_assignment (tenant_id, participant_id, type_id, valid_from) VALUES (app_tenant_id(), $1, $2, $3)', [participantId, typeId, at])
-    const position = await tx.query<{ id: string }>(`SELECT gen_create_position($1, $2, NULL, $3, 'active', $4) AS id`, [participantId, marketId, ref, at])
+    const position = await tx.query<{ id: string }>(`SELECT gen_create_position($1, $2, NULL, $3, $5, $4) AS id`, [participantId, marketId, ref, at, status])
     return { participantId, positionId: position.rows[0]!.id, positionRef: ref }
   })
 }

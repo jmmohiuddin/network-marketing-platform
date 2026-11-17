@@ -2,6 +2,7 @@ import type { Tx } from '@nmp/db'
 import { z } from 'zod'
 import { recordAudit } from '../../lib/audit.js'
 import { ApiError } from '../../lib/errors.js'
+import { inScope } from '../ten/index.js'
 import { PERMISSIONS, resolvePositionSubject, type GenCaseType } from './case-support.js'
 import { notBeforeToday, toInstant } from './dates.js'
 import { dryRun, withSqlErrors } from './errors.js'
@@ -42,8 +43,10 @@ export const transferType: GenCaseType<TransferPayload> = {
   permissions: PERMISSIONS,
   payload: transferPayload,
   resolveSubject: resolvePositionSubject,
-  async validateCreate(tx, subject, payload) {
-    if ((await participantRef(tx, payload.to_participant_id)) === null) {
+  // The new owner must be in the filer's create markets, like PAR's duplicate target: out of scope reads as unknown.
+  async validateCreate(tx, subject, payload, scope) {
+    const { rows } = await tx.query<{ market_id: string }>('SELECT market_id FROM par_display(ARRAY[$1::uuid])', [payload.to_participant_id])
+    if (rows[0] === undefined || !inScope(scope, rows[0].market_id)) {
       throw new ApiError(422, 'PARTICIPANT_NOT_FOUND', 'The new owner is not a participant of this tenant.')
     }
     const at = await transferAt(tx, payload)

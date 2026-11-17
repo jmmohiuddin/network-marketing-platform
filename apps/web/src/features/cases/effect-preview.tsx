@@ -3,7 +3,7 @@
 import { Icon } from '../../components/icon'
 import { StatusBadge } from '../../components/status-badge'
 import { formatDateTime } from '../../lib/format'
-import { OUTCOME_LABELS, structuralText } from './format'
+import { isLive, OUTCOME_LABELS, structuralText } from './format'
 import { PositionLink } from './refs'
 import type { CaseRecord, DuplicatePreview, RelationshipPreview, TransferPreview } from './types'
 
@@ -37,12 +37,12 @@ function CheckLine({ ok, children }: { readonly ok: boolean; readonly children: 
   )
 }
 
-function RelationshipEffect({ preview }: { readonly preview: RelationshipPreview }) {
+function RelationshipEffect({ preview, live }: { readonly preview: RelationshipPreview; readonly live: boolean }) {
   const current = preview.current_parent === null ? 'No parent (a root)' : `${preview.current_parent.position_ref}${preview.current_parent.leg === null ? '' : ` · leg ${preview.current_parent.leg}`}`
   const periods = preview.affected_committed_periods
   return (
     <div className="flex flex-col gap-space-sm">
-      <PathVector fromLabel="Current parent" from={current} toLabel="Proposed parent" to={preview.proposed_parent?.position_ref ?? '—'} />
+      <PathVector fromLabel={live ? 'Current parent' : 'Parent when submitted'} from={current} toLabel="Proposed parent" to={preview.proposed_parent?.position_ref ?? '—'} />
       <CheckLine ok={preview.structural_check.ok}>{preview.structural_check.ok ? 'Structural check passed: no cycle, no overlap, the leg is free.' : structuralText(preview.structural_check.code)}</CheckLine>
       {periods.length === 0 ? (
         <CheckLine ok>No committed period affected.</CheckLine>
@@ -65,10 +65,10 @@ function RelationshipEffect({ preview }: { readonly preview: RelationshipPreview
   )
 }
 
-function TransferEffect({ preview }: { readonly preview: TransferPreview }) {
+function TransferEffect({ preview, live }: { readonly preview: TransferPreview; readonly live: boolean }) {
   return (
     <div className="flex flex-col gap-space-sm">
-      <PathVector fromLabel="Current owner" from={preview.from_owner?.external_ref ?? 'No owner'} toLabel="New owner" to={preview.to_owner?.external_ref ?? '—'} />
+      <PathVector fromLabel={live ? 'Current owner' : 'Owner when submitted'} from={preview.from_owner?.external_ref ?? 'No owner'} toLabel="New owner" to={preview.to_owner?.external_ref ?? '—'} />
       <CheckLine ok={preview.to_type_can_hold_positions}>
         {preview.to_type_can_hold_positions ? "The new owner's type can hold positions." : "The new owner's type cannot hold positions: approval will be refused."}
       </CheckLine>
@@ -76,7 +76,7 @@ function TransferEffect({ preview }: { readonly preview: TransferPreview }) {
   )
 }
 
-function DuplicateEffect({ preview }: { readonly preview: DuplicatePreview }) {
+function DuplicateEffect({ preview, live }: { readonly preview: DuplicatePreview; readonly live: boolean }) {
   return (
     <div className="flex flex-col gap-space-sm">
       <p className="font-body-sm text-body-sm text-on-surface"><span className="font-semibold">Proposed outcome:</span> {OUTCOME_LABELS[preview.outcome]}</p>
@@ -84,7 +84,7 @@ function DuplicateEffect({ preview }: { readonly preview: DuplicatePreview }) {
         <ul className="flex flex-col gap-1" aria-label="Positions of the subject">
           {preview.positions.map((position) => (
             <li key={position.id} className="flex items-center justify-between gap-space-sm">
-              <PositionLink id={position.id} />
+              <PositionLink id={position.id} withOwner={live} />
               <StatusBadge state={position.status} />
             </li>
           ))}
@@ -98,15 +98,17 @@ function DuplicateEffect({ preview }: { readonly preview: DuplicatePreview }) {
 /** The effect preview stored at submit (PLAN B2 2.4), drawn per case type; before submit it says when it appears. */
 export function EffectPreview({ record }: { readonly record: CaseRecord }) {
   const preview = record.effect_preview
+  // The preview is stored at submit: once the case is decided, "current" would no longer be true (BUG-080).
+  const live = isLive(record)
   let body
   if (preview === null) {
     body = <p className="font-body-sm text-body-sm text-secondary">The effect preview is calculated when the case is submitted for a decision.</p>
   } else if (record.type === 'transfer') {
-    body = <TransferEffect preview={preview as TransferPreview} />
+    body = <TransferEffect preview={preview as TransferPreview} live={live} />
   } else if (record.type === 'duplicate') {
-    body = <DuplicateEffect preview={preview as DuplicatePreview} />
+    body = <DuplicateEffect preview={preview as DuplicatePreview} live={live} />
   } else {
-    body = <RelationshipEffect preview={preview as RelationshipPreview} />
+    body = <RelationshipEffect preview={preview as RelationshipPreview} live={live} />
   }
   return (
     <section className="bg-surface-container-lowest rounded shadow-sm p-space-md flex flex-col gap-space-sm" aria-labelledby="effect-title">

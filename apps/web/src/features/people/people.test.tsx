@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import '../../test/dom'
-import { screen, within } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { apiError, ok } from '../../test/fetch'
@@ -11,6 +11,7 @@ import { ParticipantRecord, currentType } from './participant-record'
 import { PeopleList } from './people-list'
 import { statusChoices } from './record-dialogs'
 import type { ParticipantDetail, ParticipantRow } from './types'
+import ParticipantPage from '../../app/(staff)/people/[id]/page'
 
 const navigation = vi.hoisted(() => ({ search: '', pathname: '/people', router: { replace: vi.fn(), push: vi.fn() } }))
 vi.mock('next/navigation', () => ({
@@ -108,7 +109,9 @@ describe('PeopleList', () => {
     await user.selectOptions(within(dialog).getByLabelText('Market'), 'NL')
     await user.selectOptions(within(dialog).getByLabelText('Participant type'), 'DIST')
     await user.type(within(dialog).getByLabelText(/Place under position/), 'B1')
-    await user.selectOptions(await within(dialog).findByLabelText('Leg'), 'auto')
+    const leg = await within(dialog).findByLabelText('Leg')
+    expect(within(leg).getAllByRole('option').map((option) => option.textContent).slice(0, 2)).toEqual(['No leg', 'Automatic: first free leg, breadth-first'])
+    await user.selectOptions(leg, 'auto')
     await user.type(within(dialog).getByLabelText(/Identity reference/), 'ID-123')
     await within(dialog).findByLabelText('The participant accepted NL v1')
     await user.click(within(dialog).getByRole('button', { name: 'Enrol participant' }))
@@ -129,12 +132,13 @@ describe('PeopleList', () => {
 })
 
 describe('enrolBody', () => {
+  const PUBLISHED = { ...AGREEMENT, published_at: '2025-06-01T00:00:00.000Z' }
   const form: EnrolForm = {
     external_ref: 'A-1', market: 'NL', type_code: 'DIST', account_type: 'joint', display_name: ' Ann ', email: 'a@x.example', phone: '', address: '',
     enrolled_at: '', position_ref: '', sponsor: 'S1', placement: 'P1', leg: '2', accepted: false, accepted_at: '', evidence_channel: 'web', evidence_reference: '', signals: { device_id: ' ' },
   }
   it('leaves empty optional parts out and sends a chosen leg', () => {
-    expect(JSON.parse(JSON.stringify(enrolBody(form, null)))).toEqual({
+    expect(JSON.parse(JSON.stringify(enrolBody(form, null, AT)))).toEqual({
       external_ref: 'A-1', market: 'NL', type_code: 'DIST', account_type: 'joint', display_name: 'Ann', contact: { email: 'a@x.example' },
       sponsor: { position_ref: 'S1' }, placement: { position_ref: 'P1', leg: '2' },
     })
@@ -142,12 +146,19 @@ describe('enrolBody', () => {
 
   it('refuses half the agreement evidence and a future acceptance instead of dropping them', () => {
     const accepted = { ...form, accepted: true, accepted_at: '2026-01-01T10:00' }
-    expect(enrolErrors(accepted, AGREEMENT)).toEqual({ 'agreement.evidence.reference': 'Enter both the evidence channel and reference, or neither.' })
-    expect(enrolErrors({ ...accepted, evidence_channel: '', evidence_reference: 'R-1' }, AGREEMENT))
+    expect(enrolErrors(accepted, PUBLISHED)).toEqual({ 'agreement.evidence.reference': 'Enter both the evidence channel and reference, or neither.' })
+    expect(enrolErrors({ ...accepted, evidence_channel: '', evidence_reference: 'R-1' }, PUBLISHED))
       .toEqual({ 'agreement.evidence.channel': 'Enter both the evidence channel and reference, or neither.' })
-    expect(enrolErrors({ ...accepted, evidence_reference: 'R-1', accepted_at: '2999-01-01T10:00' }, AGREEMENT))
+    expect(enrolErrors({ ...accepted, evidence_reference: 'R-1', accepted_at: '2999-01-01T10:00' }, PUBLISHED))
       .toEqual({ 'agreement.accepted_at': 'Acceptance cannot be in the future.' })
-    expect(enrolErrors({ ...accepted, evidence_reference: 'R-1' }, AGREEMENT)).toEqual({})
+    expect(enrolErrors({ ...accepted, evidence_reference: 'R-1' }, PUBLISHED)).toEqual({})
+  })
+
+  it('sends the dialog-open instant for an empty acceptance time and refuses one before the publication', () => {
+    const accepted = { ...form, accepted: true, evidence_channel: '' }
+    expect(enrolErrors(accepted, PUBLISHED)).toEqual({})
+    expect(enrolBody(accepted, PUBLISHED, '2026-11-17T10:30:42.123Z').agreement).toEqual({ version_id: 'av1', accepted_at: '2026-11-17T10:30:42.123Z' })
+    expect(enrolErrors({ ...accepted, accepted_at: '2000-01-01T00:00' }, PUBLISHED)['agreement.accepted_at']).toMatch(/^Acceptance cannot be before NL v1 was published/)
   })
 })
 
@@ -162,23 +173,41 @@ describe('ParticipantRecord (SC-09)', () => {
     expect(screen.getByText('Duplicate review')).toBeTruthy()
     expect(screen.getByText('b•••@e•••.com')).toBeTruthy()
     expect(screen.queryByRole('button', { name: 'Show contact' })).toBeNull()
-    expect(screen.getByRole('link', { name: 'Start case' }).getAttribute('href')).toBe('/cases/genealogy/new')
+    expect(screen.getByRole('link', { name: 'Start case' }).getAttribute('href')).toBe('/cases/genealogy/new?position=pos1')
     expect(screen.getByRole('link', { name: 'Open in genealogy' }).getAttribute('href')).toBe('/genealogy?root=pos1')
     expect(screen.queryByText(/Tax|Banking|Ledger|earning|rank/i)).toBeNull()
   })
 
   it('shows contact only through the step-up dialog, with the chosen fields', async () => {
     const user = userEvent.setup()
-    const fetchMock = recordRoutes(detail(), { 'POST /v1/participants/p1/unmask': () => ok({ contact: { email: 'bea@example.com' } }) })
+    let attempts = 0
+    const fetchMock = recordRoutes(detail(), {
+      'POST /v1/participants/p1/unmask': () => (++attempts === 1 ? apiError(403, 'STEP_UP_REQUIRED') : ok({ contact: { email: 'bea@example.com' } })),
+      'POST /v1/auth/sessions/current/step-up': () => ok({ assurance: 'aal2' }),
+    })
     renderAs(FINANCE, <ParticipantRecord participantId="p1" />, fetchMock)
     await user.click(await screen.findByRole('button', { name: 'Show contact' }))
     const dialog = screen.getByRole('dialog', { name: 'Show contact details' })
     await user.click(within(dialog).getByLabelText('Phone'))
     await user.click(within(dialog).getByRole('button', { name: 'Show contact' }))
+    await user.type(await screen.findByLabelText('Verification code'), '123456')
+    await user.click(screen.getByRole('button', { name: 'Confirm and continue' }))
     expect(await within(dialog).findByText('bea@example.com')).toBeTruthy()
+    // Focus lands on the revealed values inside the open dialog, not on the page body (BUG-073).
+    await vi.waitFor(() => expect(document.activeElement).toBe(within(dialog).getByLabelText('Contact details shown')))
     expect(bodyOf(callsTo(fetchMock, 'POST', '/v1/participants/p1/unmask')[0]![1])).toEqual({ fields: ['email'] })
     await user.click(within(dialog).getByRole('button', { name: 'Hide and close' }))
     expect(screen.queryByText('bea@example.com')).toBeNull()
+  })
+
+  it('moves focus to the shown contact when no step-up is asked (the Show contact button is gone)', async () => {
+    const user = userEvent.setup()
+    renderAs(FINANCE, <ParticipantRecord participantId="p1" />, recordRoutes(detail(), { 'POST /v1/participants/p1/unmask': () => ok({ contact: { email: 'bea@example.com' } }) }))
+    await user.click(await screen.findByRole('button', { name: 'Show contact' }))
+    const dialog = screen.getByRole('dialog', { name: 'Show contact details' })
+    await user.click(within(dialog).getByRole('button', { name: 'Show contact' }))
+    expect(await within(dialog).findByText('bea@example.com')).toBeTruthy()
+    expect(document.activeElement).toBe(within(dialog).getByLabelText('Contact details shown'))
   })
 
   it('a support agent changes status but cannot terminate', async () => {
@@ -199,6 +228,7 @@ describe('ParticipantRecord (SC-09)', () => {
     expect(within(screen.getByLabelText('New status')).getAllByRole('option').map((option) => option.textContent)).toEqual(['Terminated'])
     await user.selectOptions(screen.getByLabelText('New status'), 'terminated')
     expect(screen.getByText('Termination reassigns customers')).toBeTruthy()
+    expect(screen.getByText('You may be asked for a code from your authenticator app.')).toBeTruthy()
     await user.type(screen.getByLabelText('Reason'), 'Breach of policy')
     await user.click(screen.getByRole('button', { name: 'Terminate position' }))
     expect(await screen.findByText('Position B1 is now terminated. 2 customers were reassigned.')).toBeTruthy()
@@ -211,11 +241,17 @@ describe('ParticipantRecord (SC-09)', () => {
     navigation.search = 'tab=servicing'
     const user = userEvent.setup()
     const fetchMock = recordRoutes(detail({ positions: [] }), {
-      'GET /v1/participants/p1/servicing': () => ok([{ position: { id: 'pos1', position_ref: 'C1', owner_name: 'Cy' }, source: 'enrolment', valid_from: AT, valid_to: null, case_id: null }]),
+      'GET /v1/participants/p1/servicing': () => ok([
+        { position: { id: 'pos1', position_ref: 'C1', owner_name: 'Cy' }, source: 'enrolment', valid_from: AT, valid_to: null, case_id: null },
+        { position: { id: 'pos2', position_ref: 'C2', owner_name: 'Eva Now' }, source: 'enrolment', valid_from: '2026-01-01T00:00:00.000Z', valid_to: AT, case_id: null },
+      ]),
       'PUT /v1/customers/p1/servicing': () => ok({ servicing: { position_id: null, source: 'manual', valid_from: AT } }),
     })
     renderAs(SUPPORT, <ParticipantRecord participantId="p1" />, fetchMock)
-    expect(await screen.findByText('At enrolment')).toBeTruthy()
+    expect((await screen.findAllByText('At enrolment')).length).toBe(2)
+    // The ended row names its position by reference only: its owner now may not have owned it then (BUG-080).
+    expect(screen.getByText(/· Cy/)).toBeTruthy()
+    expect(screen.queryByText(/Eva Now/)).toBeNull()
     await user.click(screen.getByRole('button', { name: 'Change servicer' }))
     await user.click(screen.getByLabelText('The company services this customer'))
     await user.type(screen.getByLabelText('Reason'), 'Customer asked')
@@ -224,11 +260,34 @@ describe('ParticipantRecord (SC-09)', () => {
     expect(bodyOf(callsTo(fetchMock, 'PUT', '/v1/customers/p1/servicing')[0]![1])).toEqual({ position_ref: null, reason: 'Customer asked' })
   })
 
-  it('links cases by participant and by position', async () => {
+  it('links cases by participant and by position for a user who can read both case types', async () => {
     navigation.search = 'tab=cases'
-    renderAs(SUPPORT, <ParticipantRecord participantId="p1" />, recordRoutes(detail()))
+    renderAs(adminMe({ permissions: ['participant.read', 'case.duplicate.read', 'case.genealogy.read'] }), <ParticipantRecord participantId="p1" />, recordRoutes(detail()))
     expect((await screen.findByRole('link', { name: 'Cases about B-1' })).getAttribute('href')).toBe('/cases?subject_type=participant&subject_id=p1')
     expect(screen.getByRole('link', { name: 'Cases about position B1' }).getAttribute('href')).toBe('/cases?subject_type=position&subject_id=pos1')
+    expect(screen.queryByText(/Start a case from the page header/)).toBeNull()
+  })
+
+  it('offers no case link to a user who cannot read cases', async () => {
+    navigation.search = 'tab=cases'
+    renderAs(FINANCE, <ParticipantRecord participantId="p1" />, recordRoutes(detail()))
+    expect(await screen.findByText(/Cases are handled by support and compliance/)).toBeTruthy()
+    expect(screen.queryByRole('link', { name: /Cases about/ })).toBeNull()
+  })
+
+  it('warns of step-up when reinstating a terminated position, without the termination banner', async () => {
+    navigation.search = 'tab=positions'
+    const user = userEvent.setup()
+    renderAs(COMPLIANCE, <ParticipantRecord participantId="p1" />, recordRoutes(detail({ positions: [{ ...detail().positions[0]!, status: 'terminated' }] })))
+    await user.click(await screen.findByRole('button', { name: 'Change status of B1' }))
+    expect(within(screen.getByLabelText('New status')).getAllByRole('option').map((option) => option.textContent)).toEqual(['Active'])
+    expect(screen.getByText('You may be asked for a code from your authenticator app.')).toBeTruthy()
+    expect(screen.queryByText('Termination reassigns customers')).toBeNull()
+  })
+
+  it('never sends a route id that is not a UUID to the API', async () => {
+    render(await ParticipantPage({ params: Promise.resolve({ id: '../users' }) }))
+    expect(screen.getByText('Not found or not available to you')).toBeTruthy()
   })
 
   it('says "not available" for a participant outside the user’s markets', async () => {

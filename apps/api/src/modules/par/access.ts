@@ -3,6 +3,7 @@ import type { FastifyInstance, FastifyRequest, RouteShorthandOptions } from 'fas
 import { currentAuth, marketScope, requirePermission, requireRealm } from '../../lib/auth.js'
 import { notFound } from '../../lib/errors.js'
 import type { Permission } from '../../lib/permissions.js'
+import { canReadCase, caseTypesOf } from '../cas/index.js'
 import { apiKeyOrSession } from '../iam/index.js'
 import { inScope } from '../ten/index.js'
 
@@ -25,6 +26,19 @@ export function callerTenant(request: FastifyRequest): string {
 /** Markets the caller may act in through the permission: null = all; a key acts on every market of its tenant. */
 export function callerScope(request: FastifyRequest, permission: Permission): readonly string[] | null {
   return request.apiKey !== undefined ? null : marketScope(currentAuth(request), permission)
+}
+
+/**
+ * D-B2-10: of a match's cases (strongest first), the first the caller may read, else null. Matching is tenant-wide and
+ * a case names the matched participant, so the answer is never an oracle beyond the caller's own case scope; a key
+ * reads no case.
+ */
+export async function readableDuplicateCase(tx: Tx, request: FastifyRequest, caseIds: readonly string[]): Promise<string | null> {
+  if (request.apiKey !== undefined) return null
+  const auth = currentAuth(request)
+  const registry = caseTypesOf(request.server)
+  for (const caseId of caseIds) if (await canReadCase(tx, auth, caseId, registry)) return caseId
+  return null
 }
 
 export interface ParticipantRef {

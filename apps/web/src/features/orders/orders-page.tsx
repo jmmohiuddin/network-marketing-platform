@@ -16,10 +16,11 @@ import { formatDateTime } from '../../lib/format'
 import { marketName, MARKETS_PATH, type Market } from '../../lib/markets'
 import { useSession } from '../../lib/session'
 import { useResource, type Query } from '../../lib/use-resource'
+import { LoadFailure } from '../admin/page-states'
 import { tableError, usePagedList } from '../admin/resource'
 import { ExceptionsTab } from './exceptions-tab'
-import { ATTRIBUTION_LABELS, moneyText, PURPOSE_LABELS, volumesText } from './format'
-import { OrderInspector, useMinorUnits } from './order-inspector'
+import { ATTRIBUTION_LABELS, moneyText, PURPOSE_LABELS, sourceText, volumesText } from './format'
+import { OrderInspector, useConnectorNames, useMinorUnits } from './order-inspector'
 import type { OrderListRow, OrderSummary } from './types'
 import { VolumesTab } from './volumes-tab'
 
@@ -59,6 +60,7 @@ function OrderKpis({ query }: { readonly query: Query }) {
   const summary = useResource<OrderSummary>('/v1/orders/summary', { market_id: query?.market_id, from: query?.from, to: query?.to })
   const count = (value: number | undefined) => (value === undefined ? null : value.toLocaleString())
   const data = summary.data ?? undefined
+  if (summary.error !== null) return <LoadFailure error={summary.error} onRetry={summary.reload} section />
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-space-md" data-testid="kpis">
       <KpiCard label="Orders" icon="shopping_bag" value={count(data?.orders)} footer={{ label: 'Purpose missing', value: count(data?.purpose_missing) ?? '—' }} />
@@ -72,6 +74,7 @@ function OrderKpis({ query }: { readonly query: Query }) {
 function OrdersTable({ query, selected, hrefOf }: { readonly query: Query; readonly selected: string | null; readonly hrefOf: (id: string) => string }) {
   const list = usePagedList<OrderListRow>('/v1/orders', query)
   const minorUnits = useMinorUnits()
+  const connectorNames = useConnectorNames()
   return (
     <DataTable
       caption="Orders"
@@ -82,7 +85,7 @@ function OrdersTable({ query, selected, hrefOf }: { readonly query: Query; reado
           key: 'order', header: 'Order', cell: (row) => (
             <div className="flex flex-col">
               <Link className="font-data-mono-sm text-data-mono-sm font-bold text-primary hover:underline break-all" href={hrefOf(row.id)} scroll={false}>{row.source_order_id}</Link>
-              <span className="font-caption text-caption text-secondary break-all">{row.source_system} · {row.market.code}</span>
+              <span className="font-caption text-caption text-secondary break-all">{sourceText(row.source_system, connectorNames)} · {row.market.code}</span>
             </div>
           ),
         },

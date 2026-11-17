@@ -81,3 +81,11 @@ _Agent: qa. Read before every task; update after every task. Keep concise — fa
 ## 2026-11-17 — B1 browser round 2 (retest of BUG-049..059, quick W-B1-1..5 + regression, harness SC-29/13/17, Impeccable + a11y)
 - BUG-049..059 all verified fixed (055 client path only). W-B1-1..5 pass (new: webhook secret rotation with grace). Regression import 1466/4775/7442 + sums, snapshot R1 16.61 %/42.06 %, audit chain intact 44, isolation analyst/globex pass. No 5xx; console only intended 4xx.
 - New: BUG-060 LOW (gate inspector `break-all` splits "mandatory"). Score 14/16. Evidence var/qa-b1/R2-*.
+
+## 2026-11-17 — B2 browser round 1 (W-B2-1..11, MVP-A regression, harness 9 screens, Impeccable + a11y)
+- W-B2-1..10 pass (all with LOW/MEDIUM defects noted in the report); regression import 1466/4775/7442 + sums, R1 2025-01 16.61 %, audit chain intact 134, globex isolation 404. SCOPE_MISSING now exercised (403). No 5xx; no PII in API log, audit or outbox.
+- New: BUG-069 MEDIUM (SC-29 masking card overflow at 1440/1280), BUG-070..080 LOW. Impeccable 12/16 (perf not scored). Evidence var/qa-b2/R1-*.
+
+## 2026-11-17 — B2 browser round 2 (retest of BUG-069..080, quick W-B2-1..11, regression, harness 9 screens, Impeccable + a11y)
+- BUG-069..074, 077, 078, 080 verified fixed; 075/076 fixed where scoped, residuals BUG-081/082; 079 count verified, scheduled-only banner state not re-created. Regression import 1466/4775/7442 + sums, R1 16.61 %, audit chain intact 154. No 5xx; console only intended 4xx/expired-session 401.
+- New: BUG-081, 082, 083 LOW. Impeccable 14/16. Evidence var/qa-b2/R2-*.

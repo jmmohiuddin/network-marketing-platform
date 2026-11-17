@@ -72,12 +72,12 @@ describe('GET /v1/api-keys/options', () => {
 
     expect(response.json().data).toEqual({
       scopes: [
-        { scope: 'compliance:read', description: 'Read compliance snapshots', personal_data: false, permission: 'compliance.read' },
+        { scope: 'compliance:read', description: 'Read compliance snapshots', personal_data: false, permissions: ['compliance.read'] },
         {
           scope: 'participants:write', description: 'Enrol participants and record types, positions, agreements, signals and servicing',
-          personal_data: true, permission: 'integration.manage',
+          personal_data: true, permissions: ['integration.manage', 'participant.manage', 'servicing.manage'],
         },
-        { scope: 'orders:write', description: 'Send orders and order events', personal_data: false, permission: 'integration.manage' },
+        { scope: 'orders:write', description: 'Send orders and order events', personal_data: false, permissions: ['integration.manage'] },
       ],
       rate_tiers: [{ tier: 'standard', requests_per_minute: 120 }, { tier: 'high', requests_per_minute: 1200 }],
       max_grace_minutes: 10_080,
@@ -212,17 +212,24 @@ describe('keys are tenant-wide: minting and rotating need all-markets scope', ()
     expect(me.json().data.navigation.map((entry: { key: string }) => entry.key)).not.toContain('integrations')
   })
 
-  test('PLAN B2 2.8 scope pin: orders:write and participants:write keys need integration.manage for all markets', async () => {
+  test('PLAN B2 2.8 scope pin: orders:write needs integration.manage, participants:write also participant.manage and servicing.manage, for all markets', async () => {
     const accountId = await serviceAccount()
     const scoped = await createSignedInUser({ tenantId: acme.id, roles: ['Tenant admin'], marketIds: [await createMarket(acme.id, 'NL')], stepUp: true })
-    const body = keyBody({ scopes: ['orders:write', 'participants:write'] })
+    const integrator = await createSignedInUser({ tenantId: acme.id, roles: ['Tenant admin', 'Support agent'], stepUp: true })
+    const mint = (as: TestUser, scopes: string[]) =>
+      call(app, { method: 'POST', url: `/v1/service-accounts/${accountId}/keys`, as, body: keyBody({ scopes }), idempotencyKey: true })
 
-    const refused = await call(app, { method: 'POST', url: `/v1/service-accounts/${accountId}/keys`, as: scoped, body, idempotencyKey: true })
-    const minted = await call(app, { method: 'POST', url: `/v1/service-accounts/${accountId}/keys`, as: admin, body, idempotencyKey: true })
+    const refused = await mint(scoped, ['orders:write'])
+    const ordersOnly = await mint(admin, ['orders:write'])
+    // A Tenant admin holds neither participant.manage nor servicing.manage: a key must not do what its minter cannot.
+    const escalation = await mint(admin, ['participants:write'])
+    const minted = await mint(integrator, ['orders:write', 'participants:write'])
 
-    expect(API_SCOPES.filter((entry) => entry.scope !== 'compliance:read').map(({ scope, permission }) => [scope, permission]))
-      .toEqual([['participants:write', 'integration.manage'], ['orders:write', 'integration.manage']])
+    expect(API_SCOPES.filter((entry) => entry.scope !== 'compliance:read').map(({ scope, permissions }) => [scope, permissions]))
+      .toEqual([['participants:write', ['integration.manage', 'participant.manage', 'servicing.manage']], ['orders:write', ['integration.manage']]])
     expect(refused.json().error).toMatchObject({ code: 'SCOPE_NOT_HELD', details: { permission: 'integration.manage' } })
+    expect(ordersOnly.statusCode).toBe(201)
+    expect(escalation.json().error).toMatchObject({ code: 'SCOPE_NOT_HELD', details: { permission: 'participant.manage' } })
     expect(minted.statusCode).toBe(201)
     expect(minted.json().data.key.scopes).toEqual(['orders:write', 'participants:write'])
   })

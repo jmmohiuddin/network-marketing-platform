@@ -134,3 +134,22 @@ describe('system-opened cases (D-B2-04)', () => {
     expect(JSON.parse(audit!.after_ref).after).toMatchObject({ opened_by_kind: 'system' })
   })
 })
+
+// After the counts: the system case below stays open.
+describe('PATCH /v1/cases/:id preparers', () => {
+  test('a user-opened case is changed only by its opener or assignee; a system-opened one by any preparer', async () => {
+    const id = (await openFixtureCase(app, admin, gb)).json().data.id as string
+    const system = await withTenant({ tenantId: acme.id, userId: admin.id }, (tx) => openSystemCase(tx, {
+      type: 'duplicate', subjectType: FIXTURE_SUBJECT, subjectId: gb, reasonCode: FIXTURE_REASONS[0], payload: { note: 'match' }, marketId: gb,
+    }))
+
+    const bySomeoneElse = await patch(admin2, id, { payload: { amount_minor: '5' } })
+    await post(admin, `/v1/cases/${id}/assign`, { user_id: admin2.id })
+    const byAssignee = await patch(admin2, id, { payload: { amount_minor: '6' } })
+    const systemCase = await patch(admin2, system.id, { payload: { note: 'reviewed' } })
+
+    expect(bySomeoneElse.json().error.code).toBe('PERMISSION_DENIED')
+    expect(byAssignee.statusCode).toBe(200)
+    expect(systemCase.statusCode).toBe(200)
+  })
+})

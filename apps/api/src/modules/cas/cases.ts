@@ -64,20 +64,23 @@ export interface CaseFilter {
   readonly overdue?: boolean | undefined
 }
 
-/** A readable type and the markets its read permission covers (null = all). */
+/** A readable type, the markets its read permission covers (null = all) and the type's relatedMarketSql. */
 export interface ReadableType {
   readonly type: string
   readonly markets: readonly string[] | null
+  readonly related?: string | undefined
 }
 
 /** The SQL condition "a readable type within its market scope"; its values are appended to params. */
 function readableScope(readable: readonly ReadableType[], params: unknown[]): string {
-  return readable.map(({ type, markets }) => {
+  return readable.map(({ type, markets, related }) => {
     params.push(type)
     const typeParam = `$${params.length}`
     if (markets === null) return `c.type = ${typeParam}`
     params.push(markets)
-    return `(c.type = ${typeParam} AND (c.market_id IS NULL OR c.market_id = ANY ($${params.length}::uuid[])))`
+    // A NULL market (none, or no related object) is in every holder's scope.
+    const inScope = (market: string) => `coalesce(${market} = ANY ($${params.length}::uuid[]), true)`
+    return `(c.type = ${typeParam} AND ${inScope('c.market_id')}${related === undefined ? '' : ` AND ${inScope(related)}`})`
   }).join(' OR ')
 }
 

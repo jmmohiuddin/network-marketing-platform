@@ -29,6 +29,8 @@ Generated from `spec.json`. Status column is maintained by hand as work lands: `
 
 B1 (2026-11-17, `increments/B1/HANDOFF.md`): T = integration tests green; V = browser workflows W-B1-1..5 passed in QA round 2. FR-CAS-001 has no V: the case framework is not mounted and has no production case types until B2 (D-B1-13). FR-IAM-004 V covers its settings and go-live use; case decisions are tested only.
 
+B2 (2026-11-17, `increments/B2/HANDOFF.md`): T = module and isolation tests green in the records full run (nmp_test_4, 148 files, 2739 tests); V = browser workflows W-B2-1..10 passed in QA rounds 1–2. Limits of V: FR-GEN-003 known-at was checked by tests only (as-of in the browser); FR-GEN-006 V is the staff "View as distributor" preview (portal callers API-34/SC-20 are B5); FR-ORD-002 V is Shopify push only (WooCommerce tested only; pull side deferred, PLAN §8); FR-GEN-009 has no browser surface (TS-02 structure assertion and TS-64 are tests). Deferred parts per FR: PLAN §8.
+
 | FR | Title | Stories | ACs | Rules | Tests | Screens | APIs | Tables | Status |
 |---|---|---|---|---|---|---|---|---|---|
 | FR-IAM-004 | Separation of duties | US-07 | AC-07.1 AC-07.2 | BR-ADJ-02 BR-SEC-06 | TS-35 TS-42 | SC-02 SC-03 | API-20 API-25 | approval | I T V |
@@ -40,27 +42,27 @@ B1 (2026-11-17, `increments/B1/HANDOFF.md`): T = integration tests green; V = br
 | FR-CPL-007 | Platform guardrails | US-26 | AC-26.1 AC-26.2 | BR-GRD-01 BR-GRD-02 BR-GRD-03 BR-GRD-04 | TS-26 TS-27 TS-31 TS-66 | SC-04 SC-11 | API-16 | guardrail_rule guardrail_decision | - |
 | FR-CPL-008 | Guardrail overrides log | US-26 | AC-26.1 AC-26.2 | BR-GRD-05 | TS-26 TS-27 TS-66 | SC-11 | API-16 | guardrail_decision | - |
 | FR-CPL-012 | Rule basis status in configuration | US-38 | AC-38.1 AC-38.2 | BR-CPL-03 | TS-50 | SC-17 | API-39 | guardrail_rule tax_rule | I T V |
-| FR-PAR-001 | Participant record and effective-dated participant types | US-21 | AC-21.1 AC-21.2 | BR-PTY-01 BR-PTY-02 | TS-31 TS-48 | SC-09 | API-12 | participant participant_type participant_type_assignment | - |
-| FR-PAR-002 | Enrolment intake with market gating | US-42 | AC-42.1 AC-42.2 | BR-REG-04 | TS-45 TS-50 TS-59 | SC-09 | API-12 | participant position relationship agreement_acceptance | - |
-| FR-PAR-003 | Duplicate-account detection queue | US-43 | AC-43.1 | BR-GEN-09 | TS-59 | SC-08 | API-30 | case participant | - |
-| FR-PAR-005 | Participant and position status lifecycle | US-23 | AC-23.1 | BR-GEN-07 BR-GEN-11 | TS-02 TS-49 TS-64 | SC-09 | API-12 | participant position | - |
-| FR-PAR-006 | Agreement versions and acceptance records | US-42 | AC-42.1 AC-42.2 | BR-REG-05 | TS-45 TS-46 TS-59 | SC-09 | API-12 | document agreement_acceptance | - |
-| FR-GEN-001 | Positions separate from participants | US-04 | AC-04.1 AC-04.2 | BR-GEN-01 | TS-22 TS-53 | SC-09 SC-07 | API-12 | position position_ownership | - |
-| FR-GEN-002 | Effective-dated sponsor and placement relationships | US-01 | AC-01.1 AC-01.2 | BR-GEN-02 BR-GEN-03 BR-GEN-04 | TS-03 TS-61 | SC-07 | API-14 API-15 | relationship | - |
-| FR-GEN-003 | Tree as of a date and as known at a time | US-01 | AC-01.1 AC-01.2 | BR-GEN-02 | TS-03 TS-61 | SC-07 | API-14 | relationship path_node | - |
-| FR-GEN-004 | Genealogy change and correction cases | US-02 US-03 | AC-02.1 AC-02.2 AC-03.1 AC-03.2 | BR-GEN-03 BR-GEN-04 BR-GEN-05 | TS-03 TS-45 TS-59 TS-61 | SC-08 | API-15 | case relationship | - |
-| FR-GEN-005 | Serialised placement for binary and matrix plans | US-42 | AC-42.1 AC-42.2 | BR-GEN-06 | TS-45 TS-59 | SC-07 | API-12 | relationship | - |
-| FR-GEN-006 | Downline visibility policy enforced on the server | US-05 | AC-05.1 AC-05.2 | BR-DAT-03 BR-SEC-03 | TS-20 TS-34 | SC-20 | API-13 API-34 | path_node tenant_setting_version | - |
-| FR-GEN-007 | Search-first genealogy explorer | US-05 | AC-05.1 AC-05.2 | BR-DAT-03 | TS-20 | SC-07 SC-20 | API-13 API-14 | path_node | - |
-| FR-GEN-008 | Path read model and rebuild | US-05 | AC-05.1 AC-05.2 | BR-GEN-12 | TS-20 TS-64 | SC-07 | API-13 | path_node | - |
-| FR-GEN-009 | Structure is never changed to implement a pay rule | US-44 | AC-44.1 AC-44.2 | BR-GEN-07 BR-GEN-08 | TS-01 TS-02 TS-64 | SC-04 | API-16 | plan_rule relationship | - |
-| FR-ORD-001 | Order ingestion API with idempotency | US-22 | AC-22.1 AC-22.2 AC-22.3 | BR-ATT-02 BR-ORD-04 BR-ORD-01 BR-VOL-01 | TS-13 TS-15 TS-47 TS-48 TS-59 | SC-31 SC-13 | API-10 | order order_line inbound_event product_volume_map | - |
-| FR-ORD-002 | Shopify and WooCommerce connectors | US-22 | AC-22.1 AC-22.2 AC-22.3 | BR-ORD-04 | TS-13 TS-15 TS-59 | SC-13 | API-10 API-37 | provider_config inbound_event | - |
-| FR-ORD-003 | Purpose tag and fixed order facts | US-21 | AC-21.1 AC-21.2 | BR-PTY-03 BR-ATT-02 | TS-31 TS-48 TS-65 | SC-31 | API-10 | order order_line | - |
-| FR-ORD-004 | Returns, refunds, chargebacks and exchanges | US-45 | AC-45.1 AC-45.2 | BR-RET-01 BR-RET-02 BR-RET-03 BR-REV-06 BR-VOL-03 | TS-47 TS-65 | SC-31 | API-11 | order_event late_transaction | - |
-| FR-ORD-005 | Late-transaction queue | US-08 | AC-08.1 | BR-PER-04 | TS-13 | SC-32 | API-10 API-11 | late_transaction | - |
-| FR-CRM-001 | Customer servicing relationship and attribution | US-23 | AC-23.1 | BR-ATT-01 BR-ATT-02 BR-ATT-04 | TS-48 TS-49 TS-65 | SC-09 SC-21 | API-35 | customer_servicing order | - |
-| FR-CRM-002 | Customer reassignment on termination | US-23 | AC-23.1 | BR-ATT-03 | TS-49 | SC-09 | API-35 | customer_servicing | - |
+| FR-PAR-001 | Participant record and effective-dated participant types | US-21 | AC-21.1 AC-21.2 | BR-PTY-01 BR-PTY-02 | TS-31 TS-48 | SC-09 | API-12 | participant participant_type participant_type_assignment | I T V |
+| FR-PAR-002 | Enrolment intake with market gating | US-42 | AC-42.1 AC-42.2 | BR-REG-04 | TS-45 TS-50 TS-59 | SC-09 | API-12 | participant position relationship agreement_acceptance | I T V |
+| FR-PAR-003 | Duplicate-account detection queue | US-43 | AC-43.1 | BR-GEN-09 | TS-59 | SC-08 | API-30 | case participant | I T V |
+| FR-PAR-005 | Participant and position status lifecycle | US-23 | AC-23.1 | BR-GEN-07 BR-GEN-11 | TS-02 TS-49 TS-64 | SC-09 | API-12 | participant position | I T V |
+| FR-PAR-006 | Agreement versions and acceptance records | US-42 | AC-42.1 AC-42.2 | BR-REG-05 | TS-45 TS-46 TS-59 | SC-09 | API-12 | document agreement_acceptance | I T V |
+| FR-GEN-001 | Positions separate from participants | US-04 | AC-04.1 AC-04.2 | BR-GEN-01 | TS-22 TS-53 | SC-09 SC-07 | API-12 | position position_ownership | I T V |
+| FR-GEN-002 | Effective-dated sponsor and placement relationships | US-01 | AC-01.1 AC-01.2 | BR-GEN-02 BR-GEN-03 BR-GEN-04 | TS-03 TS-61 | SC-07 | API-14 API-15 | relationship | I T V |
+| FR-GEN-003 | Tree as of a date and as known at a time | US-01 | AC-01.1 AC-01.2 | BR-GEN-02 | TS-03 TS-61 | SC-07 | API-14 | relationship path_node | I T V |
+| FR-GEN-004 | Genealogy change and correction cases | US-02 US-03 | AC-02.1 AC-02.2 AC-03.1 AC-03.2 | BR-GEN-03 BR-GEN-04 BR-GEN-05 | TS-03 TS-45 TS-59 TS-61 | SC-08 | API-15 | case relationship | I T V |
+| FR-GEN-005 | Serialised placement for binary and matrix plans | US-42 | AC-42.1 AC-42.2 | BR-GEN-06 | TS-45 TS-59 | SC-07 | API-12 | relationship | I T V |
+| FR-GEN-006 | Downline visibility policy enforced on the server | US-05 | AC-05.1 AC-05.2 | BR-DAT-03 BR-SEC-03 | TS-20 TS-34 | SC-20 | API-13 API-34 | path_node tenant_setting_version | I T V |
+| FR-GEN-007 | Search-first genealogy explorer | US-05 | AC-05.1 AC-05.2 | BR-DAT-03 | TS-20 | SC-07 SC-20 | API-13 API-14 | path_node | I T V |
+| FR-GEN-008 | Path read model and rebuild | US-05 | AC-05.1 AC-05.2 | BR-GEN-12 | TS-20 TS-64 | SC-07 | API-13 | path_node | I T V |
+| FR-GEN-009 | Structure is never changed to implement a pay rule | US-44 | AC-44.1 AC-44.2 | BR-GEN-07 BR-GEN-08 | TS-01 TS-02 TS-64 | SC-04 | API-16 | plan_rule relationship | I T |
+| FR-ORD-001 | Order ingestion API with idempotency | US-22 | AC-22.1 AC-22.2 AC-22.3 | BR-ATT-02 BR-ORD-04 BR-ORD-01 BR-VOL-01 | TS-13 TS-15 TS-47 TS-48 TS-59 | SC-31 SC-13 | API-10 | order order_line inbound_event product_volume_map | I T V |
+| FR-ORD-002 | Shopify and WooCommerce connectors | US-22 | AC-22.1 AC-22.2 AC-22.3 | BR-ORD-04 | TS-13 TS-15 TS-59 | SC-13 | API-10 API-37 | provider_config inbound_event | I T V |
+| FR-ORD-003 | Purpose tag and fixed order facts | US-21 | AC-21.1 AC-21.2 | BR-PTY-03 BR-ATT-02 | TS-31 TS-48 TS-65 | SC-31 | API-10 | order order_line | I T V |
+| FR-ORD-004 | Returns, refunds, chargebacks and exchanges | US-45 | AC-45.1 AC-45.2 | BR-RET-01 BR-RET-02 BR-RET-03 BR-REV-06 BR-VOL-03 | TS-47 TS-65 | SC-31 | API-11 | order_event late_transaction | I T V |
+| FR-ORD-005 | Late-transaction queue | US-08 | AC-08.1 | BR-PER-04 | TS-13 | SC-32 | API-10 API-11 | late_transaction | I T V |
+| FR-CRM-001 | Customer servicing relationship and attribution | US-23 | AC-23.1 | BR-ATT-01 BR-ATT-02 BR-ATT-04 | TS-48 TS-49 TS-65 | SC-09 SC-21 | API-35 | customer_servicing order | I T V |
+| FR-CRM-002 | Customer reassignment on termination | US-23 | AC-23.1 | BR-ATT-03 | TS-49 | SC-09 | API-35 | customer_servicing | I T V |
 | FR-PLN-001 | Plan versions | US-27 | AC-27.1 AC-27.2 | BR-CMP-01 BR-PLN-01 | TS-01 TS-24 TS-46 | SC-04 | API-16 | plan plan_version plan_rule | - |
 | FR-PLN-002 | Declarative primitive library | US-44 | AC-44.1 AC-44.2 | BR-RNK-05 BR-RNK-06 BR-RNK-09 BR-PER-01 | TS-01 TS-02 TS-62 TS-63 | SC-04 | API-16 | plan_rule | - |
 | FR-PLN-003 | Controlled extension point | US-44 | AC-44.1 AC-44.2 | BR-PLN-05 | TS-01 TS-02 TS-67 | SC-04 | API-16 | plan_rule | - |
@@ -106,7 +108,7 @@ B1 (2026-11-17, `increments/B1/HANDOFF.md`): T = integration tests green; V = br
 | FR-PRV-001 | Data-subject requests | US-30 | AC-30.1 | BR-DAT-06 | TS-28 | SC-15 SC-41 | API-31 | privacy_request case | - |
 | FR-PRV-002 | Erasure by pseudonymisation | US-30 | AC-30.1 | BR-DAT-06 | TS-28 | SC-15 | API-31 | participant privacy_request | - |
 | FR-INT-001 | Public API and webhooks | US-22 | AC-22.1 AC-22.2 AC-22.3 | BR-SEC-03 | TS-13 TS-15 TS-34 TS-59 | SC-13 | API-10 API-33 | api_key webhook_endpoint webhook_delivery | I T V |
-| FR-INT-002 | Integration and sync health | US-55 | AC-55.1 | BR-ORD-05 | TS-58 | SC-13 SC-01 | API-37 | provider_config inbound_event | - |
+| FR-INT-002 | Integration and sync health | US-55 | AC-55.1 | BR-ORD-05 | TS-58 | SC-13 SC-01 | API-37 | provider_config inbound_event | I T V |
 | FR-INT-003 | Scheduled export of the full tenant data model | US-32 | AC-32.1 | BR-DAT-12 | TS-58 | SC-13 | API-32 | export_job | - |
 | FR-RPT-001 | Role dashboards | US-56 | AC-56.1 | BR-CPL-01 | TS-31 TS-58 | SC-35 SC-46 SC-01 | API-05 API-19 | compliance_report_snapshot run | - |
 | FR-RPT-002 | Operational lists with saved views | US-56 | AC-56.1 | BR-SEC-03 | TS-34 TS-58 | SC-31 SC-33 SC-36 | API-23 | user_account | - |

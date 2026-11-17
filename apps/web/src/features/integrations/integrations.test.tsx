@@ -145,6 +145,7 @@ describe('IntegrationsPage: public API keys', () => {
     await user.click(within(dialog).getByRole('button', { name: 'Create key' }))
     const shown = await screen.findByRole('dialog', { name: 'API key created' })
     expect(within(shown).getByText(/This is the only time it is shown/)).toBeTruthy()
+    expect(within(shown).getByText(/Its scopes: compliance:read\./)).toBeTruthy() // no "reads" for a write scope (BUG-077)
     // Copy has focus, so a stray Enter copies; the selectable text is the token exactly, with no spaces inserted.
     expect(document.activeElement).toBe(within(shown).getByRole('button', { name: 'Copy API key' }))
     expect(within(shown).getByTestId('one-time-secret').querySelector('code')?.textContent).toBe(TOKEN)
@@ -506,7 +507,7 @@ describe('IntegrationsPage: storefront connectors and sync health (PLAN B2 5)', 
     expect(screen.getByText('Sync thresholds are not set')).toBeTruthy()
     const row = screen.getByText('erp').closest('tr')!
     expect(within(row).getByText('Order API')).toBeTruthy()
-    expect(within(row).getByText(/ORDER_CONFLICT/)).toBeTruthy()
+    expect(within(row).getByText(/^Already received with a different body/)).toBeTruthy() // words, not the API code (BUG-075)
     expect(screen.queryByRole('button', { name: /Add|Create/ })).toBeNull()
   })
 

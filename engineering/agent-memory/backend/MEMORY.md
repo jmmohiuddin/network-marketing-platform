@@ -198,3 +198,40 @@ _Agent: backend. Read before every task; update after every task. Keep concise â
 ## After B2 integration (2026-11-17)
 - `requireAnyPermission(...perms)`, `scopeOfAny(auth, perms)` live in lib/auth.ts (not ten). `caseTypes` exported from modules/index.ts.
 - Isolation suite: new route = case in test/isolation/cases.ts (Access incl. 'key' for API-key-only routes; `refusedAs`; `unsignedAnswer` for signed webhooks) + probe in test/authz/role-matrix.test.ts (API_KEY_REQUIRED counts as denied). Phantom comparison normalises echoed target values, so details listing sent ids are fine. Seed targets incl. participant/position/positionRef/childPosition/customer/order/heldEvent/lateTransaction/connector/duplicateCase; tenant A's people market is GB (live).
+
+## B2 GEN review fixes round 2 (2026-11-17)
+- STATE_SQL `crossed` also true when a position has created_at > built_at (gen_create_position does not mark stale); read-path stale mark is unaudited by design (derived cache flag, comment in read-model.ts).
+- transferType.validateCreate uses `scope` (inScope from ten) on par_display(...).market_id; change/correction parent unscoped (D-B2-21 comment).
+- nodes.ts: owner is valid-time only (shortcut comment). Correction-date EXISTS needs no `valid_from > now()` narrowing: it is only consulted when $3 > now().
+
+## B2 review fixes round 2 (par, crm, cas) (2026-11-17)
+- CRM reads market-scoped (D-B2-21): GET /v1/positions/:id/customers lists only customers in the caller's participant.read markets; GET /v1/participants/:id/servicing gives owner_name null when the owner is out of scope.
+- CAS: `CaseTypeDefinition.systemReasonCodes` (users cannot choose them; duplicate: SIGNAL_MATCH); a system-opened case keeps its reason code at PATCH (`assertReasonCode` in cas/routes.ts, details.reason_codes = what the caller may use). `validateCreate(..., stored?)` receives the stored case at PATCH.
+- Duplicate type: system case PATCH may change only proposed_outcome (else 422 SYSTEM_MATCH_FIXED); an unchanged matched id is not re-checked for scope (a GB investigator works a cross-market match). effect_preview adds `matched_participant {participant_id, external_ref}`. onDecision runs on approve AND reject: hold released when an allow was approved since the case opened and no other review is open; an allow deferred meanwhile audits PARTICIPANT.HOLD_RELEASE_DEFERRED {case_id, open_case_ids}.
+- openDuplicateCases dedups the pair in either direction (no reversed review). duplicate_hold = open review AND (hold_activation OR a pending position).
+- New 422s: SPONSOR_NOT_APPLICABLE (sponsor on a type neither holding positions nor end customer), ACCEPTED_AT_INVALID also before the version's published_at.
+- SQL gotcha: one parameter used as uuid and text -> cast every occurrence `$n::uuid` (`$n::uuid::text`), else 500 inconsistent types.
+
+## B2 review fixes (ord/pay/int, 2026-11-17)
+- Ingest locking: every event attempt takes its ORDER's natural-key advisory lock (`lockKey(source, order:<sys>:<id>)`) in `attempt()` BEFORE the savepoint (a rolled-back savepoint would release it); releaseAwaiting uses `FOR UPDATE SKIP LOCKED`; retryHeld takes the row's key lock before its row lock. Lock order: event key -> event row -> order key; order key -> order row.
+- Order dedup hash leaves out paid_at AND fulfilled_at; `creditingTimeChanged` checks them apart (processed: credited_at in {paid_at, fulfilled_at}; held: field of current setting). C-B2-21 amended.
+- Connector events (source `connector:`) clip lines to remaining, 0-lines dropped (C-B2-24); API-11 keeps 422 RETURN_EXCEEDS_PURCHASED.
+- chargeback_reversed volume_effect = negation of the stored chargeback volume_effect. Fee rounding stays per line (C-B2-22).
+- buyerIdOf audits PARTICIPANT.ENROLLED {participant_id,type_id,market_id,enrolled_at,source:'order'} when `created_at = now()`; ORDER.INGESTED after has buyer_id. Audit rows: column `after_ref` (JSON with `.after`).
+- Hints resolve at credited_at via position_status_history; first-order servicing skipped when the position is terminated now (crm_set_servicer refuses CR002).
+- /v1/provider-configs routes and facade exclude kind 'commerce' (connectors only via /v1/connectors).
+- orders/summary `held` stays tenant-wide count (C-B2-23, not changed).
+
+## B2 backend-lead integration check (2026-11-17)
+- Verified after all review rounds: modules/index.ts mounts every module + createCasModule({types: caseTypes}); openapi has PAR/CRM paths; isolation seed publishes an agreement version; every route has an isolation case + role-matrix probe (both enforced by tests); cross-tenant sponsor/placement/servicer refs asserted in isolation.test.ts (~l.271). Full suite 148 files / 2718 tests green on nmp_test_3; typecheck green.
+- imp/access.ts no longer copies requireAnyPermission/scopeForAny: imp uses lib/auth `requireAnyPermission(...MAPPING_READERS)` and `scopeOfAny(currentAuth(request), perms)`.
+- ten/change-requests listChangeRequests builds views sequentially (no Promise.all on one tx client).
+- Port 4000 is held by the QA e2e stack (var/e2e-api.pid, pnpm start + next start -p 3100): never stop it; smoke-test a fresh API with API_PORT=4001 (env var beats --env-file).
+
+## B2 review round 3 (security, 2026-11-17)
+- CaseTypeDefinition.relatedMarketSql (SQL over `c`): a case naming an object in another market is read (GET/list/counts/PATCH/AUD evidence via `readsCase`/`readableScope`) only with the read permission over both markets. Duplicate uses it for matched_participant_id.
+- duplicate_case_id (enrolment, /signals) = first match case the caller can read (`readableDuplicateCase`); keys always get null. `openDuplicateCases` returns all ids, strongest first; ENROLLED audit has `duplicate_case_ids`.
+- API_SCOPES entries carry `permissions[]`; participants:write needs integration.manage + participant.manage + servicing.manage for all markets. Tests mint those keys with an `integrator` ('Tenant admin' + 'Support agent').
+- Attribution hints count only for positions `active` at credited_at; a non-active (pending/suspended/terminated) existing hint sets attribution_conflict. First-order servicing only for positions active now.
+- PATCH /v1/cases/:id: user-opened cases only by opener or assignee (403); system-opened by any create-holder. Web duplicates page hides the outcome form likewise.
+- resolveSponsor(tx, ref, at, scope): out-of-scope unusable sponsor -> SPONSOR_NOT_ELIGIBLE, no details. PARTICIPANT_EXISTS stays (tenant-wide unique external_ref makes existence inherent).

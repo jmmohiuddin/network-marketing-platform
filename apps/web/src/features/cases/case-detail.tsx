@@ -21,7 +21,7 @@ import { formatMegabytes } from '../../components/file-drop-zone'
 import { AddEvidence, AssignDialog, ReasonDialog, type CaseDialog } from './case-actions'
 import { EffectPreview } from './effect-preview'
 import {
-  caseTypeInfo, contributorsOf, EVENT_LABELS, inSentence, instantText, KIND_LABELS, openerText, OUTCOME_LABELS, personName, reasonLabel,
+  caseTypeInfo, contributorsOf, EVENT_LABELS, inSentence, instantText, isLive, KIND_LABELS, openerText, OUTCOME_LABELS, personName, reasonLabel,
   SIGNAL_LABELS, STATE_BADGES, STATE_LABELS, type CaseTypeInfo,
 } from './format'
 import { DocumentLink } from '../markets/gate-inspector'
@@ -66,7 +66,7 @@ function PayloadFacts({ record }: { readonly record: CaseDetail }) {
   return (
     <>
       <Fact label="Tree">{KIND_LABELS[payload.kind]}</Fact>
-      <Fact label="Proposed parent"><PositionLink id={payload.proposed_parent_position_id} /></Fact>
+      <Fact label="Proposed parent"><PositionLink id={payload.proposed_parent_position_id} withOwner={isLive(record)} /></Fact>
       {payload.leg !== undefined && <Fact label="Leg">{payload.leg}</Fact>}
       {from !== undefined && <Fact label={payload.valid_from === undefined ? 'Effective from' : 'Correct from'}>{instantText(from, formatDateTime)}</Fact>}
     </>
@@ -167,7 +167,7 @@ function CaseView({ record, info, reload }: { readonly record: CaseDetail; reado
   const [submitting, setSubmitting] = useState(false)
   const myId = me.user.id
   const preparing = record.state === 'open'
-  const live = preparing || record.state === 'submitted'
+  const live = isLive(record)
   const canCreate = !readOnly && can(info.create)
   const canDecide = !readOnly && can(info.decide)
   const involved = contributorsOf(record).has(myId)
@@ -209,7 +209,7 @@ function CaseView({ record, info, reload }: { readonly record: CaseDetail; reado
           <section className={`${CARD} border-l-4 border-l-primary`} aria-labelledby="proposal-title" data-testid="card">
             <h2 id="proposal-title" className={LABEL}>Subject and proposal</h2>
             <dl className="grid grid-cols-1 sm:grid-cols-2 gap-space-sm">
-              <Fact label={`Subject (${record.subject_type})`}><SubjectLink subjectType={record.subject_type} id={record.subject_id} /></Fact>
+              <Fact label={`Subject (${record.subject_type})`}><SubjectLink subjectType={record.subject_type} id={record.subject_id} withOwner={live} /></Fact>
               <Fact label="Reason">{reasonLabel(record.reason_code)}</Fact>
               <PayloadFacts record={record} />
               <Fact label="Assigned to">{record.assigned_to === null ? 'Nobody' : personName(record.assigned_to, myId, record.eligible_approvers)}</Fact>

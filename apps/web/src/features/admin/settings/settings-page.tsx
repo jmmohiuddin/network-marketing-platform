@@ -224,6 +224,7 @@ function PolicySettings({ children }: { readonly children: ReactNode }) {
                     entry={visibility}
                     show={(value: unknown) => valueText('genealogy.visibility_policy', value)}
                     onChange={versionOf('genealogy.visibility_policy')}
+                    stacked
                   />
                 </ul>
               </section>

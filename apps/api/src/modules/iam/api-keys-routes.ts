@@ -50,9 +50,11 @@ function assertKnownScopes(scopes: readonly string[]): void {
   }
 }
 
-/** A key reads every market: whoever mints or rotates it holds each scope's session permission for all markets. */
+/** A key acts on every market: whoever mints or rotates it holds each scope's session permissions for all markets. */
 function assertScopesHeld(auth: AuthContext, scopes: readonly string[]): void {
-  for (const entry of API_SCOPES) if (scopes.includes(entry.scope)) assertAllMarkets(auth, entry.permission)
+  for (const entry of API_SCOPES) {
+    if (scopes.includes(entry.scope)) for (const permission of entry.permissions) assertAllMarkets(auth, permission)
+  }
 }
 
 /** D-B1-06: the stored (replayable) response never holds the token; only the first response carries it. */

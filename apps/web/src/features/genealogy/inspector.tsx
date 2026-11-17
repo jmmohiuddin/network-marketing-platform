@@ -18,7 +18,7 @@ const PANEL_LABEL = 'font-caption text-caption text-secondary uppercase font-sem
 
 /**
  * sc_07 position inspector (right column): owner and the link to their record, status, current parents, ownership and
- * status history; "Request change" opens a genealogy change case (SC-08). As the position is now, not at the as-of date.
+ * status history; "Request change" opens a genealogy change case for this position (SC-08). As the position is now, not at the as-of date.
  */
 export function PositionInspector({ positionId, onFocus }: { readonly positionId: string; readonly onFocus: (id: string) => void }) {
   const { can, readOnly } = useSession()
@@ -97,7 +97,7 @@ export function PositionInspector({ positionId, onFocus }: { readonly positionId
             </ul>
           </div>
           {can('case.genealogy.create') && !readOnly && (
-            <LinkButton icon="rule" href="/cases/genealogy/new">Request change</LinkButton>
+            <LinkButton icon="rule" href={`/cases/genealogy/new?position=${view.id}`}>Request change</LinkButton>
           )}
         </>
       )}

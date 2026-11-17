@@ -172,6 +172,23 @@ describe('POST /v1/connectors/:id/webhooks (T-B2-26 signatures, T-B2-27 mapping)
     expect(ignored.json().data).toEqual({ accepted: true, ignored: true })
   })
 
+  test('C-B2-24: a refund delivered after the cancellation that reversed its lines is recorded money-only, not refused', async () => {
+    const payload = shopifyOrder()
+    await deliver(shopify, 'shopify', 'orders/paid', payload, SECRET)
+    const cancelled = await deliver(shopify, 'shopify', 'orders/cancelled', { ...payload, financial_status: 'refunded', cancelled_at: '2026-11-11T09:00:00+00:00' }, SECRET)
+    const refund = await deliver(shopify, 'shopify', 'refunds/create', { ...fixture('shopify-refund'), id: (nextId += 1), order_id: payload.id }, SECRET)
+
+    expect([cancelled.statusCode, refund.statusCode]).toEqual([200, 200])
+    expect(await ownerRows(
+      `SELECT e.type, e.refund_minor, e.lines, e.volume_effect FROM order_event e JOIN sales_order o ON o.id = e.order_id
+       WHERE o.source_order_id = $1 ORDER BY e.occurred_at`, [String(payload.id)],
+    )).toEqual([
+      { type: 'cancelled', refund_minor: '0', lines: [{ line_no: 1, quantity: 2 }, { line_no: 2, quantity: 1 }], volume_effect: expect.objectContaining({ total: { qv: '-400' } }) },
+      { type: 'return', refund_minor: '925', lines: [], volume_effect: {} },
+    ])
+    expect((await inboundOf(shopify)).at(-1)!.state).toBe('processed')
+  })
+
   test('WooCommerce: processing orders by signature; guests refused; a refunded order returns every remaining line', async () => {
     const payload = { ...fixture('woocommerce-order'), id: (nextId += 1) }
     const created = await deliver(woo, 'woocommerce', 'order.created', payload, WOO_SECRET)

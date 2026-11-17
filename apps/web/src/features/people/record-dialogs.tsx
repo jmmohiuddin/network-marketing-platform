@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useApi } from '../../components/api-provider'
 import { Banner } from '../../components/banner'
 import { Button } from '../../components/button'
@@ -12,7 +12,7 @@ import { useResource } from '../../lib/use-resource'
 import { requiredError } from '../../lib/validation'
 import { fromLocalInput } from '../admin/format'
 import { FormDialog, TextAreaField } from '../admin/form-dialog'
-import { FIELDSET, LEGEND, MONO } from '../admin/ui'
+import { FIELDSET, LEGEND, MONO, NOTE } from '../admin/ui'
 import { PARTICIPANT_TYPES_PATH, type ParticipantType } from '../admin/settings/types'
 import type { Contact, ContactField, OwnedPosition, PositionStatus } from './types'
 
@@ -40,6 +40,13 @@ export function UnmaskDialog({ participantId, available, onClose }: { readonly p
   const [shown, setShown] = useState<Contact | null>(null)
   const [problem, setProblem] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const shownList = useRef<HTMLDListElement>(null)
+  // The Show contact button that had focus is gone once the values show: focus moves to the revealed values, inside
+  // the dialog, never to the page body (BUG-073). data-autofocus does the same when the answer comes while the dialog is
+  // still set aside for a step-up code (ApiProvider).
+  useEffect(() => {
+    if (shown !== null) shownList.current?.focus()
+  }, [shown])
   async function reveal() {
     if (chosen.size === 0) {
       setProblem('Choose at least one field to show.')
@@ -76,7 +83,7 @@ export function UnmaskDialog({ participantId, available, onClose }: { readonly p
           </>
         )
         : (
-          <dl className="flex flex-col gap-space-sm" aria-label="Contact details shown">
+          <dl ref={shownList} tabIndex={-1} data-autofocus className="flex flex-col gap-space-sm focus:outline-none" aria-label="Contact details shown">
             {(Object.keys(shown) as ContactField[]).map((field) => (
               <div key={field} className="flex flex-col gap-1">
                 <dt className="font-caption text-caption text-on-surface-variant font-medium">{CONTACT_LABELS[field]}</dt>
@@ -151,9 +158,10 @@ export function StatusDialog({ position, choices, onClose, onDone }: { readonly 
       <TextAreaField id={ids.reason} label="Reason" helper="Kept in the position's status history and the audit log." value={reason} error={errors.reason} onChange={setReason} />
       {terminating && (
         <Banner tone="warning" title="Termination reassigns customers">
-          The customers this position services move by your reassignment rule. The position stays in the tree. You may be asked for a code from your authenticator app.
+          The customers this position services move by your reassignment rule. The position stays in the tree.
         </Banner>
       )}
+      {(terminating || position.status === 'terminated') && <p className={NOTE}>You may be asked for a code from your authenticator app.</p>}
     </FormDialog>
   )
 }

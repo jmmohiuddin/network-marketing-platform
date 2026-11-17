@@ -25,15 +25,51 @@ import { useCursorPages } from '../../lib/cursor-pages'
 import { tableError } from '../admin/resource'
 import { integer } from '../data/format'
 import { PositionLink } from '../cases/refs'
-import { HANDLING_LABELS, LATE_STATE_LABELS, volumesText } from './format'
-import type { LateItem, LatePreview, LateState } from './types'
+import { HANDLING_LABELS, LATE_STATE_LABELS, moneyText, volumesText } from './format'
+import type { LateItem, LatePreview, LateState, OrderRow } from './types'
 
 const STATES = (Object.keys(LATE_STATE_LABELS) as LateState[]).map((value) => ({ value, label: LATE_STATE_LABELS[value] }))
 const MONO = 'font-data-mono-sm text-data-mono-sm'
 const REASON_ID = 'late-reason'
 
-/** shortcut: late items carry no currency (PLAN B2 2.6), so amounts show as exact minor units; add the currency to the API to show money. */
-const amountText = (minor: string) => `${integer(minor)} minor units`
+/** The currency of an item's order (an order's currency is its market's, CURRENCY_MISMATCH). */
+type ItemMarket = (item: LateItem) => Market | undefined
+
+/** Money in the market's currency (BUG-071); exact minor units while the market is not known. */
+const amountText = (minor: string, market: Market | undefined) =>
+  market === undefined ? `${integer(minor)} minor units` : moneyText(minor, market.currency, market.minor_unit)
+
+/**
+ * The market of each item: the filtered market, else the market of the item's order.
+ * shortcut: one GET /v1/orders/:id per order on the page while no market is chosen, since late items carry no market
+ * (PLAN B2 GET /v1/late-transactions); add the market to the item's order there to drop these lookups.
+ */
+function useItemMarket(rows: readonly LateItem[], markets: readonly Market[], marketId: string): ItemMarket {
+  const api = useApi()
+  const [orderMarkets, setOrderMarkets] = useState<ReadonlyMap<string, string | null>>(new Map())
+  const chosen = markets.find((market) => market.id === marketId)
+  const missing = chosen === undefined ? [...new Set(rows.map((row) => row.order.id))].filter((id) => !orderMarkets.has(id)).join(',') : ''
+  useEffect(() => {
+    if (missing === '') return
+    let current = true
+    // A failed lookup records null (the amount stays in minor units) so it is not asked again on every render.
+    void Promise.all(missing.split(',').map((id) => api.get<OrderRow>(`/v1/orders/${id}`).then(({ data }) => [id, data.market.id] as const, () => [id, null] as const)))
+      .then((found) => {
+        if (current) setOrderMarkets((known) => new Map([...known, ...found]))
+      })
+    return () => {
+      current = false
+    }
+  }, [api, missing])
+  return (item) => chosen ?? markets.find((market) => market.id === orderMarkets.get(item.order.id))
+}
+
+/** The one market of a selection, else undefined (several currencies, or one not known yet). */
+function selectionMarket(items: readonly LateItem[], marketOf: ItemMarket): Market | undefined {
+  const found = items.map(marketOf)
+  const first = found[0]
+  return first !== undefined && found.every((market) => market?.currency === first.currency) ? first : undefined
+}
 
 const periodText = (period: LateItem['original_period']) => `${formatDateTime(period.starts_at)} – ${formatDateTime(period.ends_at)}`
 
@@ -51,7 +87,7 @@ function Facts({ items }: { readonly items: readonly (readonly [string, ReactNod
 }
 
 /** Accept the proposed handling of the selection: POST preview first (count, totals, positions), then decide with one key. */
-function AcceptDialog({ ids: chosen, onClose, onDone }: { readonly ids: readonly string[]; readonly onClose: () => void; readonly onDone: () => void }) {
+function AcceptDialog({ ids: chosen, market, onClose, onDone }: { readonly ids: readonly string[]; readonly market: Market | undefined; readonly onClose: () => void; readonly onDone: () => void }) {
   const api = useApi()
   const toast = useToast()
   const [ids] = useState(chosen) // the selection as it was when the dialog opened
@@ -99,7 +135,8 @@ function AcceptDialog({ ids: chosen, onClose, onDone }: { readonly ids: readonly
         <div className="p-space-sm rounded bg-surface-container-low flex flex-col gap-space-sm" data-testid="late-preview">
           <Facts items={[
             ['Items', data.count],
-            ['Amount', amountText(data.amount_minor)],
+            // The preview sums amount_minor whatever the currency, so the total shows only for a one-currency selection.
+            ['Amount', market === undefined ? 'Filter the queue to one market to see the total' : amountText(data.amount_minor, market)],
             ['Volume', volumesText(data.volumes)],
             ['Positions affected', data.affected_positions.length],
           ]} />
@@ -144,7 +181,7 @@ function RestatementDialog({ item, onClose, onDone }: { readonly item: LateItem;
 }
 
 /** sc_32 queue item diagnostic. */
-function Diagnostic({ item, onRestate }: { readonly item: LateItem | null; readonly onRestate: (() => void) | null }) {
+function Diagnostic({ item, market, onRestate }: { readonly item: LateItem | null; readonly market: Market | undefined; readonly onRestate: (() => void) | null }) {
   return (
     <section className="bg-surface-container-lowest rounded shadow-sm overflow-hidden" aria-labelledby="diagnostic-title" data-testid="diagnostic">
       <div className="p-space-md bg-surface-container flex flex-wrap items-center justify-between gap-space-xs">
@@ -158,7 +195,7 @@ function Diagnostic({ item, onRestate }: { readonly item: LateItem | null; reado
               <span className="font-caption text-caption text-secondary uppercase font-semibold">Original period</span>
               <Facts items={[
                 ['Period', periodText(item.original_period)],
-                ['Period state', item.original_period.state],
+                ['Period state', <StatusBadge state={item.original_period.state} />],
                 ['Origin', item.origin_type === 'order' ? 'The order' : 'An order event'],
                 ['Queued', formatDateTime(item.created_at)],
               ]} />
@@ -166,7 +203,7 @@ function Diagnostic({ item, onRestate }: { readonly item: LateItem | null; reado
             <div className="flex flex-col gap-space-xs p-space-sm rounded bg-surface-container-low">
               <span className="font-caption text-caption text-secondary uppercase font-semibold">Effect estimate</span>
               <Facts items={[
-                ['Amount', amountText(item.effect_estimate.amount_minor)],
+                ['Amount', amountText(item.effect_estimate.amount_minor, market)],
                 ['Volume', volumesText(item.effect_estimate.volumes)],
                 ['Attributed to', item.effect_estimate.attributed_position_id === null ? 'Not attributed' : <PositionLink id={item.effect_estimate.attributed_position_id} />],
               ]} />
@@ -189,7 +226,7 @@ function Diagnostic({ item, onRestate }: { readonly item: LateItem | null; reado
 }
 
 /** One state and market of the queue; mount it with them as key so paging restarts. meta.counts feeds the KPI cards. */
-function Queue({ state, marketId }: { readonly state: LateState; readonly marketId: string }) {
+function Queue({ state, marketId, markets }: { readonly state: LateState; readonly marketId: string; readonly markets: readonly Market[] }) {
   const { readOnly } = useSession()
   const pages = useCursorPages()
   const resource = useResource<LateItem[]>('/v1/late-transactions', { state, market_id: marketId === '' ? undefined : marketId, cursor: pages.cursor })
@@ -198,11 +235,13 @@ function Queue({ state, marketId }: { readonly state: LateState; readonly market
     rows: resource.data ?? [], loading: resource.loading, error: resource.error, reload: resource.reload,
     pagination: { hasPrevious: pages.hasPrevious, hasNext: nextCursor !== null, onPrevious: pages.previous, onNext: () => nextCursor !== null && pages.next(nextCursor) },
   }
+  const marketOf = useItemMarket(list.rows, markets, marketId)
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set())
   const [focus, setFocus] = useState<string | null>(null)
   const [dialog, setDialog] = useState<'accept' | 'restate' | null>(null)
   const pending = list.rows.filter((row) => row.state === 'pending')
-  const chosen = pending.filter((row) => selected.has(row.id)).map((row) => row.id)
+  const chosenRows = pending.filter((row) => selected.has(row.id))
+  const chosen = chosenRows.map((row) => row.id)
   const focused = list.rows.find((row) => row.id === focus) ?? null
   const counts = resource.meta.counts as { pending?: number; decided_30d?: number } | undefined
   const toggle = (id: string, on: boolean) => setSelected((current) => new Set([...current].filter((value) => value !== id).concat(on ? [id] : [])))
@@ -253,7 +292,7 @@ function Queue({ state, marketId }: { readonly state: LateState; readonly market
                 ),
               },
               { key: 'period', header: 'Original period', cell: (row) => <div className="flex flex-col"><span className={MONO}>{periodText(row.original_period)}</span><StatusBadge state={row.original_period.state} /></div> },
-              { key: 'effect', header: 'Effect estimate', align: 'end', cell: (row) => <div className="flex flex-col items-end"><span className={`${MONO} font-semibold`}>{amountText(row.effect_estimate.amount_minor)}</span><span className="font-caption text-caption text-secondary">{volumesText(row.effect_estimate.volumes)}</span></div> },
+              { key: 'effect', header: 'Effect estimate', align: 'end', cell: (row) => <div className="flex flex-col items-end"><span className={`${MONO} font-semibold`}>{amountText(row.effect_estimate.amount_minor, marketOf(row))}</span><span className="font-caption text-caption text-secondary">{volumesText(row.effect_estimate.volumes)}</span></div> },
               { key: 'handling', header: 'Handling', cell: (row) => HANDLING_LABELS[row.handling] },
               { key: 'state', header: 'State', cell: (row) => <StatusBadge state={row.state === 'pending' ? 'held' : 'closed'} label={LATE_STATE_LABELS[row.state]} /> },
               { key: 'diagnose', header: 'Diagnose', cell: (row) => <Button size="sm" icon="manage_search" aria-pressed={row.id === focus} aria-label={`Diagnose ${row.order.source_order_id}`} onClick={() => setFocus(row.id)}>Diagnose</Button> },
@@ -268,10 +307,10 @@ function Queue({ state, marketId }: { readonly state: LateState; readonly market
           />
         </div>
         <div className="lg:col-span-4 min-w-0">
-          <Diagnostic item={focused} onRestate={canDecide && focused?.state === 'pending' ? () => setDialog('restate') : null} />
+          <Diagnostic item={focused} market={focused === null ? undefined : marketOf(focused)} onRestate={canDecide && focused?.state === 'pending' ? () => setDialog('restate') : null} />
         </div>
       </div>
-      {dialog === 'accept' && <AcceptDialog ids={chosen} onClose={() => setDialog(null)} onDone={decided} />}
+      {dialog === 'accept' && <AcceptDialog ids={chosen} market={selectionMarket(chosenRows, marketOf)} onClose={() => setDialog(null)} onDone={decided} />}
       {dialog === 'restate' && focused !== null && <RestatementDialog item={focused} onClose={() => setDialog(null)} onDone={decided} />}
     </>
   )
@@ -300,7 +339,7 @@ export function LateQueuePage() {
         <Select label="State" value={state} options={STATES} onChange={(event) => update('state', event.target.value)} />
         <Select label="Market" value={marketId} options={[{ value: '', label: 'All markets' }, ...(markets.data ?? []).map((market) => ({ value: market.id, label: marketName(market) }))]} onChange={(event) => update('market_id', event.target.value)} />
       </div>
-      <Queue key={`${state}|${marketId}`} state={state} marketId={marketId} />
+      <Queue key={`${state}|${marketId}`} state={state} marketId={marketId} markets={markets.data ?? []} />
     </>
   )
 }

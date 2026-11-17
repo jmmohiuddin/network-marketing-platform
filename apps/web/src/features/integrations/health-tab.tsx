@@ -7,6 +7,7 @@ import { StatusBadge } from '../../components/status-badge'
 import { formatDateTime } from '../../lib/format'
 import { useResource } from '../../lib/use-resource'
 import { durationLabel } from '../admin/format'
+import { refusalText } from '../orders/format'
 import { LoadFailure } from '../admin/page-states'
 import { MONO, NOTE } from '../admin/ui'
 import { lagLabel, PROVIDER_NAMES, syncBadge } from './format'
@@ -34,7 +35,7 @@ const COLUMNS: readonly DataTableColumn<SyncSource>[] = [
   {
     key: 'error', header: 'Last refusal', cell: (source) => source.last_error === null
       ? '—'
-      : <span className={MONO}>{source.last_error.code ?? 'Refused'}{source.last_error.at === null ? '' : ` · ${formatDateTime(source.last_error.at)}`}</span>,
+      : <span>{refusalText(source.last_error.code ?? undefined)}{source.last_error.at === null ? '' : ` · ${formatDateTime(source.last_error.at)}`}</span>,
   },
 ]
 

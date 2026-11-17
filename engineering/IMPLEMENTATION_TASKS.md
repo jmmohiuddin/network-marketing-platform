@@ -41,11 +41,34 @@ MVP-B tasks are written per increment when it starts. Done = code + tests green 
 | T-B1-08 | web | W2: SC-13 API keys + webhooks; MVP-A polish BUG-023, 025–029, 045–048 | frontend | T-B1-06 | PLAN §5 §B | P1 | Completed |
 | T-B1-09 | qa | Browser rounds 1–2 (W-B1-1..6, 4 viewports, visual harness, Impeccable); BUG-049..059 found, fixed, verified | qa | T-B1-07/08 | PLAN §7 | P1 | Completed |
 | T-B1-10 | security | Adversarial review: SEC-B1-1 HIGH key market-scope escalation, SEC-B1-2 MEDIUM tenant-wide approvers, SEC-B1-3 MEDIUM trustProxy, SEC-B1-4 LOW ip_allow limiter | security | T-B1-06 | SEC review | P0 | Completed |
-| T-B1-11 | security | Confirm the SEC-B1-1..4 fixes now in the tree (0109, api-keys scope check, TRUST_PROXY, per-address limiter) and register them in BUG_REGISTER | security | T-B1-10 | HANDOFF §4 | P0 | Open |
-| T-B1-12 | db | Apply 0109 to nmp_dev, nmp_e2e, nmp_test | orchestrator | T-B1-11 | HANDOFF OI-4 | P1 | Open |
-| T-B1-13 | web | BUG-060 SC-17 inspector `break-all` splits "mandatory" | frontend | - | BUG_REGISTER | P3 | Open |
-| T-B1-14 | qa | role-matrix `beforeAll` hook timeout under full-suite load (OI-6) | qa | - | records full run | P2 | Open |
-| T-B1-15 | infra | Add `TRUST_PROXY` to `.env.example` | integrator | T-B1-11 | HANDOFF SEC-B1-3 | P2 | Open |
-| T-B1-16 | records | Copy D-B1-01..19 into ARCHITECTURE_DECISION_LOG | orchestrator | - | PLAN §0 | P2 | Open |
-| T-B1-17 | db/CAS | Evidence-vs-submit concurrency test; key-caller `created_by` FK model before key write routes | database | - | HANDOFF OI-2 OI-3 | P2 | Open (B2) |
+| T-B1-11 | security | Confirm the SEC-B1-1..4 fixes now in the tree (0109, api-keys scope check, TRUST_PROXY, per-address limiter) and register them in BUG_REGISTER | security | T-B1-10 | HANDOFF §4 | P0 | Completed (BUG-061..064 registered Fixed) |
+| T-B1-12 | db | Apply 0109 to nmp_dev, nmp_e2e, nmp_test | orchestrator | T-B1-11 | HANDOFF OI-4 | P1 | Completed for nmp_dev/nmp_e2e (now at 0207); nmp_test still at 0109, see T-B2-16 |
+| T-B1-13 | web | BUG-060 SC-17 inspector `break-all` splits "mandatory" | frontend | - | BUG_REGISTER | P3 | Completed (code; browser re-check open) |
+| T-B1-14 | qa | role-matrix `beforeAll` hook timeout under full-suite load (OI-6) | qa | - | records full run | P2 | Completed (B2 integrator: SEED_TIMEOUT_MS 120 s; B2 full run 148/148 files) |
+| T-B1-15 | infra | Add `TRUST_PROXY` to `.env.example` | integrator | T-B1-11 | HANDOFF SEC-B1-3 | P2 | Completed (B2 integrator) |
+| T-B1-16 | records | Copy D-B1-01..19 into ARCHITECTURE_DECISION_LOG | orchestrator | - | PLAN §0 | P2 | Completed (E-ADR-37) |
+| T-B1-17 | db/CAS | Evidence-vs-submit concurrency test; key-caller `created_by` FK model before key write routes | database | - | HANDOFF OI-2 OI-3 | P2 | Completed (B2: OI-2 actor pair without FK, D-B2-03; OI-3 case-evidence-race.test.ts) |
 | T-B1-18 | db | Outbox purge vs `webhook_delivery` FK (ON DELETE decision) | database | - | HANDOFF OI-1 | P3 | Open (V1/ops) |
+
+## Increment B2 — participants, bitemporal genealogy, orders, attribution, first case types (2026-11-17, contract `increments/B2/PLAN.md`, state `increments/B2/HANDOFF.md`)
+
+| ID | Module | Description | Agent | Depends | Source | Pri | Status |
+|---|---|---|---|---|---|---|---|
+| T-B2-00 | plan | PLAN.md: D-B2-01..21, §R for 22 FRs, schema/API/permission/SQL contracts, screens, seed, W-B2-1..11, deferrals, §C | architect | - | spec.json | P0 | Completed |
+| T-B2-01 | db | Migrations 0200–0206 (19 tables, B1 table changes, read functions, write contracts G1–G5/C1/C3/P2), 18 permissions, key scopes, config D-B2-19, settings registry + approverPermission, seed (support, DPO, e2e NL market), b2-guards + OI-3 race tests | database | T-B2-00 | PLAN §1 §3 §4.2 §6 | P0 | Completed |
+| T-B2-02 | db | Review fixes 0207: G5 back-dated status (GN006), C3 back-dated termination, system-time columns, inbound payload held-only, late_transaction insert guard, chargeback reversal binding, order_line actor pair, volume CHECKs, C1 advisory lock, relationship writes mark path_model stale | database | T-B2-01 | DB review | P0 | Completed |
+| T-B2-03 | PAR/CRM/CAS/TEN/AUD | BE1: participant types (SoD), participants (masked contact, unmask), enrolment, duplicates (HMAC digests, system cases), agreements, servicing, CAS PATCH/counts/system cases, approverPermission | backend | T-B2-01 | FR-PAR-001/002/003/006 FR-CRM-001/002 | P0 | Completed |
+| T-B2-04 | GEN | BE2: positions/status, tree as-of/known-at, change/correction/transfer case types, visibility policy (viewer), path read model + rebuild job | backend | T-B2-01 | FR-GEN-001..009 FR-PAR-005 | P0 | Completed |
+| T-B2-05 | ORD/INT/IAM/PAY | BE3: order/event ingestion (keys, idempotent natural key, held queue), volumes, attribution, late queue, Shopify/WooCommerce inbound webhooks (HMAC), sync health, navigation, CSRF exemptions | backend | T-B2-01 | FR-ORD-001..005 FR-INT-002 | P0 | Completed |
+| T-B2-06 | api | Integration: mount modules + createCasModule(caseTypes), OpenAPI PAR/CRM paths, isolation seed/cases + role-matrix rows for every B2 route, `.env.example` D-B2-19 + TRUST_PROXY | integrator | T-B2-03..05 | PLAN §P | P0 | Completed |
+| T-B2-07 | web | W1: People, SC-09, SC-07, SC-13 connectors + health, SC-29 B2 part, SC-17 touch, permission labels | frontend | T-B2-06 | PLAN §5 | P1 | Completed |
+| T-B2-08 | web | W2: SC-06, SC-08, SC-31, SC-32 | frontend | T-B2-06 | PLAN §5 | P1 | Completed |
+| T-B2-09 | qa | Browser rounds 1–2 (W-B2-1..11, 4 viewports, harness 9 screens, Impeccable 12→14/16); BUG-069..080 found, fixed, verified; BUG-081..083 found | qa | T-B2-07/08 | PLAN §7 | P1 | Completed |
+| T-B2-10 | security | Adversarial reviews (BE3 and full); round 3 fixes in tree (api-scopes permissions[], active-only attribution + 0208, case PATCH opener/assignee, readable duplicate case, relatedMarketSql) | security/backend | T-B2-06 | SEC review | P0 | Completed (fixes unconfirmed, see T-B2-11) |
+| T-B2-11 | security | Confirm SEC-B2-1..5 fixes against their repros and register them in BUG_REGISTER (R1 identity oracle and R5 existence codes only partly closed) | security | T-B2-10 | HANDOFF §4 | P0 | Open |
+| T-B2-12 | web | BUG-081 connector refusal codes in words, BUG-082 exception-queue Source as connector name, BUG-083 approval after effective time passed | frontend | - | BUG_REGISTER | P3 | Open |
+| T-B2-13 | architect | Sign off GEN deviations (reinstatement needs participant.terminate + step-up; correction may start at a future row's start, E-GEN-04) and unscoped proposed parent (D-B2-21); copy into PLAN §2.4/§2.5 | architect | - | backend OPEN_ISSUES | P2 | Open |
+| T-B2-14 | db | 0209+: path_model.valid_until and position-insert stale mark (drop read-path scans in gen/read-model.ts), case decision guard excludes 'updated' actors, par_create_customer created flag, drop G2's redundant path_model upsert | database | T-B2-13 | DB/backend OPEN_ISSUES | P2 | Open |
+| T-B2-15 | api | Map crm_set_servicer 23514 (new row at/before current) for the manual servicing route; decide unknown connector id 404 vs 401; IP_NOT_ALLOWED before any limiter | backend | - | DB/backend OPEN_ISSUES | P2 | Open |
+| T-B2-16 | db | Migrate nmp_dev and nmp_e2e to 0208 (then seed:e2e) and nmp_test to 0208 | orchestrator | - | HANDOFF OI | P1 | Open |
+| T-B2-17 | qa | Not exercised in the browser: WooCommerce, connector rotate/withdraw, webhook refunds/cancel, merge/terminate duplicate outcomes, servicing/type change dialogs, later agreement acceptance, sync behind/held 24 h, support session on B2 pages, placement tree + known-at, BUG-060 re-check | qa | T-B2-12 | QA OPEN_ISSUES | P2 | Open |

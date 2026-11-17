@@ -80,6 +80,9 @@ describe('SC-29 B2 policy cards', () => {
     expect(within(screen.getByRole('heading', { name: 'Placement width' }).closest('li')!).getByText('Auto placement and legs unavailable.')).toBeTruthy()
     const visibility = screen.getByTestId('visibility-policy')
     expect(within(visibility).getByText('Platform safe default in force')).toBeTruthy()
+    // In the narrow side card the value stacks under the title at every width, never beside it (BUG-069).
+    expect(within(visibility).getByRole('heading', { name: 'Downline depth masking' }).closest('li')!.className).not.toContain('md:flex-row')
+    expect(crediting.className).toContain('md:flex-row')
     // Must-not-implement items of SC-29 (PLAN B2 5).
     expect(screen.queryByText(/Prospect Data Ownership|retention|Revert|rollback/i)).toBeNull()
   })

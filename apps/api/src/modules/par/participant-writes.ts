@@ -7,7 +7,7 @@ import { ApiError } from '../../lib/errors.js'
 import { envelope, parse } from '../../lib/http.js'
 import { idempotent, sendIdempotent, type StoredResponse } from '../../lib/idempotency.js'
 import { assertMarketLive, getSetting } from '../ten/index.js'
-import { callerScope, callerTenant, participantInScope, participantsWrite, type ParticipantRef } from './access.js'
+import { callerScope, callerTenant, participantInScope, participantsWrite, readableDuplicateCase, type ParticipantRef } from './access.js'
 import { recordAcceptance } from './agreements.js'
 import { activeType, enrol } from './enrolment.js'
 import { createPosition, resolveSponsor } from './positions.js'
@@ -84,20 +84,20 @@ async function heldByReview(tx: Tx, participantId: string): Promise<boolean> {
   return rowCount !== 0
 }
 
-async function addPosition(tx: Tx, participant: ParticipantRef, body: z.infer<typeof positionBody>) {
+async function addPosition(tx: Tx, participant: ParticipantRef, body: z.infer<typeof positionBody>, scope: readonly string[] | null) {
   await assertMarketLive(tx, participant.market_id)
   const { rows } = await tx.query<{ now: Date }>('SELECT now()')
   const at = rows[0]!.now
-  const sponsorId = body.sponsor === undefined ? null : await resolveSponsor(tx, body.sponsor.position_ref, at)
+  const sponsorId = body.sponsor === undefined ? null : await resolveSponsor(tx, body.sponsor.position_ref, at, scope)
   const status = (await heldByReview(tx, participant.id)) ? 'pending' : 'active'
   return positionResponse.parse(await createPosition(tx, { participantId: participant.id, marketId: participant.market_id, at, status, input: body, sponsorId }))
 }
 
-async function addParticipantSignals(tx: Tx, participant: ParticipantRef, digests: SignalDigests) {
+async function addParticipantSignals(tx: Tx, request: FastifyRequest, participant: ParticipantRef, digests: SignalDigests) {
   const added = await addSignals(tx, participant.id, digests)
   const { matches } = await findDuplicates(tx, participant.id)
-  const caseId = await openDuplicateCases(tx, participant.id, participant.market_id, matches)
-  return signalsResponse.parse({ added: added.length, duplicate_case_id: caseId })
+  const caseIds = await openDuplicateCases(tx, participant.id, participant.market_id, matches)
+  return signalsResponse.parse({ added: added.length, duplicate_case_id: await readableDuplicateCase(tx, request, caseIds) })
 }
 
 type ParticipantAction = (tx: Tx, participant: ParticipantRef) => Promise<StoredResponse>
@@ -126,9 +126,11 @@ export function registerParticipantWriteRoutes(app: FastifyInstance): void {
     // D-B2-10: the request hash of the Idempotency-Key covers the digests, never the raw signals.
     const signals = body.signals === undefined ? undefined : digestSignals(request.server.config.secretKey, callerTenant(request), body.signals)
     request.body = { ...body, signals }
-    const result = await inTenant(request, (tx) => idempotent(tx, request, async () => ({
-      statusCode: 201, body: envelope(enrolmentResponse.parse(await enrol(tx, body, scope, signals))),
-    })))
+    const result = await inTenant(request, (tx) => idempotent(tx, request, async () => {
+      const { duplicate_case_ids: caseIds, ...enrolled } = await enrol(tx, body, scope, signals)
+      const duplicateCaseId = await readableDuplicateCase(tx, request, caseIds)
+      return { statusCode: 201, body: envelope(enrolmentResponse.parse({ ...enrolled, duplicate_case_id: duplicateCaseId })) }
+    }))
     return sendIdempotent(reply, result)
   })
 
@@ -140,7 +142,7 @@ export function registerParticipantWriteRoutes(app: FastifyInstance): void {
 
   app.post('/v1/participants/:id/positions', write, async (request, reply) => {
     const body = parse(positionBody, request.body)
-    const result = await onParticipant(request, async (tx, participant) => ({ statusCode: 201, body: envelope(await addPosition(tx, participant, body)) }))
+    const result = await onParticipant(request, async (tx, participant) => ({ statusCode: 201, body: envelope(await addPosition(tx, participant, body, callerScope(request, MANAGE))) }))
     return sendIdempotent(reply, result)
   })
 
@@ -160,7 +162,7 @@ export function registerParticipantWriteRoutes(app: FastifyInstance): void {
     const digests = digestSignals(request.server.config.secretKey, callerTenant(request), parse(signalsBody, request.body))
     request.body = digests
     const result = await onParticipant(request, async (tx, participant) => ({
-      statusCode: 200, body: envelope(await addParticipantSignals(tx, participant, digests)),
+      statusCode: 200, body: envelope(await addParticipantSignals(tx, request, participant, digests)),
     }))
     return sendIdempotent(reply, result)
   })

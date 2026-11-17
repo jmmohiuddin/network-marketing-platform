@@ -349,3 +349,146 @@ Environment as round 1: `nmp_e2e` re-seeded (`seed:e2e`), API `:4000` with worke
 - Rebased version reasons nest on every rebase ("Rebased v10 onto v11: Rebased v8 onto v9: Rebased v6 onto v7: Align rounding…").
 - "ENDPOINTS FAILING 1" still counts the disabled endpoint (as round 1).
 - Not exercised: delivery give-up after 72 h (`dead`), withdraw of a change or go-live request, go-live rejection, calendar delete, brand rename/delete, key rate-limit 429, SCOPE_MISSING, the server-side BUG-055 mapping.
+
+## Increment B2 — round 1 (2026-11-17)
+
+Environment: `nmp_e2e` freshly seeded (`seed:e2e`: STAFF incl. support@ and dpo@, acme market NL live with monthly periods, Jan–Aug 2026 committed), API `:4000` with workers (tsx, NODE_ENV=development, COOKIE_SECURE=false), web `:3100` (`next start` on the build of 16:45, no source file newer than `.next/BUILD_ID`). Servers left running from an earlier attempt (started 07:50, before that build) were stopped by PID tree first. One browser at a time: Playwright MCP Chromium with one context per user (admin, compliance, dpo, finance, support, analyst @acme; admin @globex), closed before the harness ran its own Chromium. Browser time zone Asia/Dhaka. Both servers stopped by PID tree at the end. Evidence `var/qa-b2/` (R1-*.png, harness logs `R1-visual-*.log`, `api.log`, `web.log`). API log: 0 responses 5xx, 0 error-level lines, no participant name, e-mail, identity reference or webhook secret; audit rows and outbox payloads scanned in the DB for the same values: 0 hits. No commerce or payment provider was called: orders came from the page with an `orders:write` key and a FIXTURE Shopify payload signed in the page with `crypto.subtle` to the local connector URL.
+
+### Workflows (PLAN §7)
+
+| Workflow | Result | Evidence and notes |
+|---|---|---|
+| W-B2-1 Types and policies | pass (defect) | admin proposed DIST (earn, sponsor, hold positions) and RETAIL (end customer) → "Waiting for Compliance approval", "Can approve: Compliance Officer (compliance@acme.example)", no approve control for admin; admin's decision by API 403 PERMISSION_DENIED (admin lacks `participant_type.approve`, so the SoD message is not reachable for the proposer); compliance approved both → Active. admin set crediting event paid, purpose required, precedence link → servicing, new buyers RETAIL, reassignment sponsor / 0 days, duplicate matching identity_ref + payment_fingerprint, 1 match, hold, placement width 2, sync health 60 / 240 (versions 1–8, values typed by the workflow; every unset card stated its consequence before). Visibility named_depth 1: effective date required ("Enter the date and time the change takes effect."), sent from 17:30 → "Waiting for DPO approval … CAN APPROVE Data Protection Officer (dpo@acme.example)"; finance sees no request and its decision by API 403; dpo approved → version 9 Scheduled. Defect BUG-074 |
+| W-B2-2 Agreement | pass | compliance published "NL v1" for NL with `distributor-agreement.pdf`, acceptance required → Current, 0/0; SC-17 NL "Participant agreement versions · Version NL v1 · Complete" (`R1-W2-sc17-nl.png`) |
+| W-B2-3 Enrolment and record | pass (defect) | support enrolled A (DIST, no sponsor), B (sponsor P-A, placement P-A auto), C (sponsor/placement P-B auto), K (RETAIL, sponsor P-C → serviced by P-C "At enrolment"), E (DIST); NL without acceptance refused in the form ("Enrolment in NL needs the participant's acceptance of NL v1.") and by API 422 AGREEMENT_ACCEPTANCE_REQUIRED; D with B's identity reference → created, chip "Duplicate review", position P-D Pending. SC-09 for B: positions, types history, servicing, agreements (NL v1), cases links, contact masked (b•••@e•••.test). finance > Show contact (> 10 min after MFA) → step-up dialog → bram@example.test shown; audit #75 PARTICIPANT.UNMASKED `after {participant_id, fields:["email"]}`, no values. Defect BUG-073 (focus) |
+| W-B2-4 Explorer and visibility | pass (defect) | analyst: stale banner "The tree changed and is being rebuilt … (about a minute)" right after enrolment, read model v2 current about a minute later; search NL-A → Focus; P-B expanded → P-C ("1 direct · 1 position in subtree"); as of 2026-11-16 → "No owner at this date", no children; View as P-A → B and D named "1 level below", level 2 "1 position" only, contact masked; P-E (outside A's downline) by URL → "Not found or not available to you", API 404. Defect BUG-079 |
+| W-B2-5 Change and correction cases | pass | support: "A under C" refused at open "Refused: this change would create a cycle …" (409); "C under A" from 2026-11-17 with PDF evidence → submitted, preview "Current parent P-B → P-A", "Structural check passed", "No committed period affected"; support has no decision bar, API 403; compliance approved with step-up → explorer stale banner, then v3 current with C under A. Correction of B's sponsor to P-E "When the current parent started (4:53 PM)" → preview structural check + "No committed period affected" + "Payout impact is calculated once runs exist (B3)"; compliance rejected (empty reason refused "Enter the reason."). Affected committed periods list not reachable in the browser (PLAN: covered by TS-03/T-B2-18) |
+| W-B2-6 Duplicate and transfer | pass (defect) | support opened D's review on /cases/duplicates: subject NL-D vs matched NL-B side by side, "Identity reference" highlighted, hash note; proposed Allow (submit hidden until saved), submitted; compliance approved → P-D Active, chip gone. Transfer P-C → NL-E (Sale, evidence) → preview "The new owner's type can hold positions", approved → NL-C owned until 5:04 PM, NL-E owns P-C from 5:04 PM. Defect BUG-080 |
+| W-B2-7 Orders by API key | pass (defects) | admin: service account + key `orders:write` (step-up) and a second key `compliance:read`; volumes SKU-1 1,000 pv, SKU-2 2,500 pv from 2026-01-01 (local). Bearer from the page with `credentials: omit`: O-1001 for NL-K with link P-C → 201, RETAIL, purpose customer, attribution P-C "Referral link", 4,500 pv; same key + body → same response; new key, same body → 200 `replayed: true`; changed body → 409 ORDER_CONFLICT and a Rejected row in the Exception queue; same Idempotency-Key with another body → 422 IDEMPOTENCY_KEY_REUSED; SKU-9 → 202 held UNKNOWN_SKU, listed Held; SKU-9 row from 2026-01-01 → Retry → "Processed", order O-1002 attributed by servicing; personal purpose for an end customer → 422 PURPOSE_INVALID; O-0820 (new buyer NL-N2, paid 2026-08-20, committed August) → late, listed on SC-31 (Late chip) and /periods/late; order for K in August → 422 BUYER_TYPE_MISSING (K had no type then, as PLAN says); return of line 2 → only line 2 reversed (-2,500 pv); equal-value exchange → "Volume effect: none"; `compliance:read` key → 403 SCOPE_MISSING (B1 "not executable" item now covered). Defects BUG-075, 076, 077 |
+| W-B2-8 Late queue | pass (defects) | analyst: KPI pending 2; Diagnose O-0722 → original period, effect, "Raise restatement instead" → decided Restatement; select O-0820 → preview "Items 1, Volume 1,000 pv, Positions affected 0" → Accept 1 item → Decided; KPI decided 2. Defects BUG-071, BUG-072 |
+| W-B2-9 Termination and reassignment | pass | support's status dialog offers Suspended only; compliance terminated P-C ("Termination reassigns customers" warning) → Terminated; K's servicer P-A "Reassigned on termination" from 5:07 PM; O-1001/O-1002 keep P-C; a new K order → P-A by servicing |
+| W-B2-10 Connector and health | pass | admin added Shopify connector "NL Shopify store" for NL (secret write-only) → "Receiving", webhook URL copied (clipboard = the shown URL, status "The webhook URL was copied."); page-context POST without `X-Requested-With`: wrong signature → 401 SIGNATURE_INVALID; signed FIXTURE `orders/paid` (tag `nmp:NL-K`, `nmp_ref` P-B) → 200, order 820000002 for NL-K, link P-B, 12.50 EUR + tax 2.63 (an earlier payload of mine without `created_at` was stored Rejected PAYLOAD_INVALID, as designed). Sync health: thresholds note "Behind after 1 h … failing after 4 h", connector Healthy (after one Failing state caused by the refused payload), Order API source Healthy |
+| W-B2-11 Regression | pass | see below; 4 viewports for every B2 screen in the harness section of VISUAL_REGRESSION_REPORT |
+
+### MVP-A regression (quick)
+
+| Area | Result | Notes |
+|---|---|---|
+| Sign-in / MFA | pass | six acme staff + globex admin: forced enrolment (manual key) and TOTP; support and analyst without MFA; step-up dialogs seen for unmask, settings approval and case decisions after 10 min |
+| Import | pass | DEMO 2025-01…2025-12: 1,466 / 4,775 / 7,442 rows; 53,195,001 / 53,195,001 / 2,600,070 / 9,225,679 = CSV sums; mapping v1 by admin, approved by compliance at /compliance/mappings; attached; Loaded |
+| Snapshot | pass | R1 DEMO 2025-01: Ready, end-customer share 16.61 % of 1,517,950 (= report.json) |
+| Audit | pass | chain Intact over 134 events; PARTICIPANT.UNMASKED filter; actor names shown to admin (compliance sees "User <id>": no `user.read`, as before) |
+| Isolation | pass | globex admin: acme participant, case, order, position 404; `/people/<acme id>` "Not found or not available to you"; participant list empty |
+
+### Per screen
+
+| Screen | Stitch Reference | Functional Testing | Visual Fidelity | Responsive Testing | Accessibility | Impeccable Review | Defects | Final Status |
+|---|---|---|---|---|---|---|---|---|
+| People list | none (guidelines §9) | pass (W-B2-3) | consistent with sc_28 table + sc_29 cards | pass (390, 768) | Enrol dialog: focus in, Tab trapped, Escape returns to trigger | no finding | – | pass |
+| SC-09 Participant record | `sc_09_participant_deep_fact_record` | pass (W-B2-3/6/9) | pass with notes: tax, banking, earnings stat cards, ledger statement omitted by plan | pass (390, 768) | tabs `role=tab`; unmask focus (BUG-073) | no finding | BUG-073, 080 | pass with defects |
+| SC-07 Genealogy explorer | `sc_07_genealogy_explorer_staff_as_of` | pass (W-B2-4/5) | pass with notes (graph view, volume bars, ranks omitted by plan) | pass (390, 768) | expand buttons `aria-expanded`, Enter works, visible focus outline | no finding | BUG-079 | pass with defects |
+| SC-08 Genealogy and duplicate cases | `sc_08_genealogy_change_and_duplicate_cases` | pass (W-B2-5/6) | pass with notes (dual sign-off, payout impact, upline money omitted by plan) | pass (390, 768) | segment controls are `role=radio`; errors in `role=alert` | no finding | – | pass |
+| SC-06 Cases | `sc_06_cases_exceptions` | pass (W-B2-5/6) | pass with notes (manual adjustment, payee dispute tabs omitted by plan) | pass (390, 768) | decision dialogs reason required, step-up single dialog | side-tab `border-l-4` on the proposal card = sc_06 anatomy (note) | BUG-070, 078 | pass with defects |
+| SC-31 Orders and returns | `sc_31_ingested_orders_returns_explorer` | pass (W-B2-7/9/10) | pass with notes (export, reconcile, manual batch, payout lines omitted by plan); columns wrap at 1440 beside the inspector as in sc_31 | pass (table scrolls in its card at 390) | tabs, filters labelled | no finding | BUG-075, 076 | pass with defects |
+| SC-32 Late-transaction queue | `sc_32_late_transaction_queue` | pass (W-B2-8) | pass with notes | pass at 768; empty state clipped at 390 (BUG-072) | row checkboxes named "Select order …" | no finding | BUG-071, 072 | pass with defects |
+| SC-13 Integrations (connectors, health) | `sc_13_integrations_and_sync_health` | pass (W-B2-7/10) | pass with notes (telemetry, backfill, provider cards omitted by plan) | pass (390, 768) | copy button announces via `role=status` | no finding | BUG-075, 077 | pass with defects |
+| SC-29 Tenant settings (B2 part) | `sc_29_tenant_settings` | pass (W-B2-1/2) | fail at 1440/1280: masking card overflow (BUG-069) | page scrolls sideways at 1440 and 1280; pass at 768, 390 | no unnamed control | no finding | BUG-069, 074 | pass with defects |
+| SC-17 (touch) | existing | pass (agreement item complete) | as B1 | as B1 | as B1 | – | – | pass |
+
+### Impeccable audit (audit only) and accessibility pass
+
+- Detector (`impeccable detect`, regex mode, run from `apps/web`) on `features/{cases,genealogy,orders,people,integrations}` and the B2 routes under `app/(staff)`: 1 finding, side-tab `border-l-4` on the case proposal card (`features/cases/case-detail.tsx:209`), which is the sc_06 card anatomy → design note. Source read: one hard-coded colour `text-[#7A4900]` in `features/cases/effect-preview.tsx:51,53` (theming note). Rendered element rules not run (pages need a session the detector's browser does not have).
+- Scripted pass on 18 B2 routes at 1440 (all four roles): no unlabelled input, no unnamed button/link/tab, no duplicate id, no image without alt, headings without skips, every tab has `aria-selected`, every table has `th`. Contrast of text in `main` on 8 routes: no ratio below 4.5:1 (3:1 large). Touch targets at 390: only labelled 16 px checkboxes and the inline breadcrumb link (both exceptions). No page overflow at 390 or 768 on any of the 18 routes; overflow at 1440/1280 on `/settings` (BUG-069).
+- Keyboard: Enrol dialog focus into the dialog, Tab trapped over 40 presses, Escape returns to "Enrol participant"; explorer expand with Enter sets `aria-expanded=true` and keeps a 2 px focus outline.
+- Scores (0–4): Accessibility 3 (BUG-073), Performance not scored (no trace), Theming 3 (canonical tokens; one hard-coded colour), Responsive 3 (BUG-069, BUG-072), Implementation integrity 3 (no placeholders, refused content or dead controls; raw codes and unformatted money, BUG-071/075). Total 12/16 over the four scored dimensions.
+
+### Notes (not registered)
+
+- The proposer of a participant type cannot reach the SoD refusal: Tenant admin lacks `participant_type.approve`, so its decision is 403 PERMISSION_DENIED; the page names the eligible approver instead (PLAN W-B2-1 wording "refused naming compliance@acme" is met by the page, not by an API message).
+- The masking card keeps "Platform safe default in force" while an approved version is scheduled; the scheduled version is visible only in the versions table (same pattern as Rounding mode in B1).
+- Visibility-policy hint says "choose the next period start or later", but any instant after now in an open period is accepted.
+- Fixture: committed periods end at August (Sep 2026 is open because the seed compares Amsterdam period ends with the DB session's month start), so the September order O-0915 was not late; August/July orders were.
+- In viewer mode the page asks `/v1/positions/:id/downline` twice (without and with `kind=sponsor`).
+- Late queue periods are shown in the viewer time zone ("Jul 1, 2026, 4:00 AM – Aug 1, 2026, 4:00 AM" for an Amsterdam month), the same pattern as calendars in B1.
+- Not exercised: WooCommerce connector, rotate/withdraw connector, refunds/cancellations by webhook, merge and terminate duplicate outcomes, servicing change dialog, type change dialog, agreement acceptance after enrolment, held-over-24 h and "behind" sync states, support-session read-only view of B2 pages, placement-tree kind and known-at in the explorer, affected committed periods list (needs a committed period after enrolment).
+
+## Increment B2 — round 2 (2026-11-17, retest after the fixes of BUG-069..080)
+
+Environment: `nmp_e2e` was reseeded (`seed:e2e`). The API ran on `:4000` with workers (tsx, NODE_ENV=development, COOKIE_SECURE=false; log `var/qa-b2/R2-api.log`), and the web on `:3100` (`next start` on the build of 17:36, with no source file newer than `.next/BUILD_ID`). Both servers were stopped by PID tree at the end. One browser at a time: Playwright MCP Chromium with one context per user (admin, compliance, dpo, finance, support, analyst @acme), in browser time zone Asia/Dhaka. It was closed before the harness ran its own Chromium. Most data setup for the quick repeat went through the API in each user's own session (fetch from the page). The checks behind each fix went through the page UI.
+
+Test-data note: when the browser was closed, the TOTP seeds of admin@ and compliance@ were lost before their sessions were saved for the harness. So their `mfa_credential` rows were deleted in `nmp_e2e` and `mfa_enrolled` set to false, and they re-enrolled at the next sign-in. Rollback: `seed:e2e`.
+
+API log: 0 responses with a 5xx status, 0 error-level lines, and no participant e-mail, identity reference or webhook secret. No commerce or payment provider was called. Orders came from the page with an `orders:write` key, and FIXTURE Shopify payloads were signed in the page with `crypto.subtle` and posted to the local connector URL.
+
+### Fix verification (first step)
+
+| Bug | Result | Evidence |
+|---|---|---|
+| BUG-069 | verified fixed | admin `/settings`: `scrollWidth - clientWidth` = 0 at 1440, 1280, 768 and 390. The masking row is stacked (title, then chip, consequence and Change under it), and no child sticks out of the 320–374 px card. Harness captures are 1440 and 1280 px wide (`R2-sc29-masking-card-1280.png`, `R2-sc29-1280.png`) |
+| BUG-070 | verified fixed | compliance `/cases`: the Subject cell reads "P-C / Position" and "NL-D · Dirk Delta / Participant" (`R2-sc06-cases.png`) |
+| BUG-071 | verified fixed | analyst `/periods/late`: effects "25.00 EUR / 2,500 pv"; diagnostic "Period state · Committed" badge. Bulk preview for O-0820 + O-0821 (NL): "Items 2, Amount 35.00 EUR, Volume 3,500 pv, Positions affected 0" (`R2-W8-01-late.png`, `R2-W8-02-preview.png`) |
+| BUG-072 | verified fixed | 390x844 with 0 pending: "No late transactions are waiting" renders under the scrolling table at 88–287 px inside a 24–351 px container, with no clipping (`R2-390-late.png`) |
+| BUG-073 | verified fixed | finance > NL-B > Show contact, 10.4 min after MFA. The step-up dialog appeared, and after the code `document.activeElement` = the revealed `<dl tabindex=-1>` inside the open dialog ("Email address bram@example.test"). Tab moves to "Hide and close", and Escape returns focus to "Show contact" (`R2-W3-unmask.png`) |
+| BUG-074 | verified fixed | the versions table column is "APPROVER"; version 9 shows "Data Protection Officer (DPO)"; diff drawer "Approver: Data Protection Officer (DPO)", and money rows "Not needed" (`R2-sc29-versions-diff.png`) |
+| BUG-075 | verified fixed for the listed codes; residual → BUG-081 | Exception queue: "Already received with a different body (corrections arrive as order events)" and "The storefront sent a body that is not an order or refund". Sync health last refusal in words for both sources. Still raw: "BUYER_MISSING", a connector mapping code that is not in `REFUSAL_LABELS` (`R2-sc31-rejected.png`) |
+| BUG-076 | verified fixed (orders table, inspector); residual → BUG-082 | order 820000005 reads "NL Shopify store · NL" in the table and the inspector, and 390 shows no uuid (`R2-390-orders.png`). The exception queue Source column still reads `connector:<uuid>` |
+| BUG-077 | verified fixed | key dialog: "Send it as Authorization: Bearer <key>. Its scopes: orders:write." |
+| BUG-078 | verified fixed | a 162-byte PDF is listed as "1 KB" on the genealogy change and transfer cases |
+| BUG-079 | verified fixed (count); banner partly | the explorer top level reads "Show the 1 position under P-E" and "Show the 3 positions under P-A". View as P-A with the approved policy in force: "This is your tenant's approved policy." The scheduled-but-not-in-force state was not re-created this round, because the policy took effect before the explorer step. The source has the new text "No tenant policy is in force yet" (downline-view.tsx:70, explorer.test.tsx) |
+| BUG-080 | verified fixed | after the change (C under A), the transfer P-C → NL-E and the termination of P-C, the K servicing tab reads "P-A · Anna Alpha, Reassigned on termination, 9:26 PM – now" and "P-C, At enrolment, 8:36 PM – 9:26 PM" (no current owner on the ended row). The approved change case shows subject "P-C" and "PARENT WHEN SUBMITTED P-B → P-A". The transfer case shows "OWNER WHEN SUBMITTED NL-C → NL-E" (`R2-W9-servicing.png`, `R2-W6-transfer-case.png`) |
+
+### Workflows (PLAN §7, quick repeat)
+
+| Workflow | Result | Notes |
+|---|---|---|
+| W-B2-1 Types and policies | pass (new LOW) | admin proposed DIST/RETAIL, and compliance approved both (API). Eight settings were saved by API with `If-Match` (versions 1–8). Masking depth 1 was requested in the UI ("Waiting for DPO approval … CAN APPROVE Data Protection Officer"). The first request's effective time (4 min ahead) passed before dpo decided, and approve answered "There is a problem — effective_from cannot be in the past." (BUG-083). Withdrawn, re-requested 12 min ahead, approved by dpo in the UI → version 9 Scheduled, then in force |
+| W-B2-2 Agreement | pass (API) | compliance uploaded the agreement PDF (`class=agreement`) and published "NL v1" with acceptance required |
+| W-B2-3 Enrolment and record | pass | support enrolled A, B (P-A, auto), C (P-B, auto), K (RETAIL, P-C), E and F. Without acceptance → 422 AGREEMENT_ACCEPTANCE_REQUIRED. D with B's identity reference → position pending + duplicate case. Unmask with step-up (BUG-073 above) |
+| W-B2-4 Explorer and visibility | pass | stale banner after enrolment, then "Read model version 3 is current". Focus P-E "1 direct · 1 position in subtree". View as P-A: B, C and D named "1 level below", "No position beyond the named levels", contact masked |
+| W-B2-5 Change case | pass | UI: "A under C" refused at open ("Refused: this change would create a cycle …", 409). "C under A" with PDF evidence opened, then submitted. Preview: current parent P-B → P-A, structural check passed, no committed period affected. Support sees no decision control. Compliance approved in the UI |
+| W-B2-6 Duplicate and transfer | pass (API) | support PATCHed outcome allow and submitted; compliance approved. Transfer case P-C → NL-E (SALE, evidence) submitted and approved (UI checked under BUG-080) |
+| W-B2-7 Orders by API key | pass | key created in the UI (service account "Order feed"). Volumes SKU-1/SKU-2 from 2026-01-01. O-1001 for K with link P-C → 201, attribution "Referral link" P-C. Changed body → 409 ORDER_CONFLICT + Rejected row. SKU-9 → 202 held UNKNOWN_SKU (Held list, Retry offered). O-0820, O-0821 (NL-N2, August) and O-0722 (NL-N3, July) → late, chip "Late" |
+| W-B2-8 Late queue | pass | Diagnose O-0722 → "Raise restatement instead" (reason required) → decided. O-0820 + O-0821 accepted ("2 late items decided with the proposed handling."). KPI: pending 0, decided 3 |
+| W-B2-9 Termination and reassignment | pass (API) | support terminate → 403 PERMISSION_DENIED. Compliance terminated P-C → 1 customer reassigned, and K serviced by P-A from 9:26 PM. O-1001 keeps P-C |
+| W-B2-10 Connector and health | pass (defects) | connector "NL Shopify store" created (API). Wrong signature → 401. A signed payload without a customer → 200 and Rejected BUYER_MISSING (shown raw, BUG-081). A payload without `financial_status: paid` → 200 and silently ignored (no paid time, as the mapping documents). A signed payload with `customer.tags nmp:NL-K`, `nmp_ref` P-B and paid → order 820000005, NL-K, link P-B, 12.50 EUR, flag "Conflict" (servicer P-A). Sync health: connector Failing (two refusals, no accepted event at that time), Order API Healthy, refusals in words |
+| W-B2-11 Regression | pass | see below; harness section in VISUAL_REGRESSION_REPORT |
+
+### MVP-A regression (quick)
+
+| Area | Result | Notes |
+|---|---|---|
+| Sign-in / MFA | pass | six acme staff with forced enrolment (manual key) and TOTP; support and analyst without MFA. Step-up dialogs were seen for unmask. Idle sessions expired during long waits, and users signed in again |
+| Import | pass | DEMO 2025-01…2025-12: 1,466 / 4,775 / 7,442 rows; 53,195,001 / 53,195,001 / 2,600,070 / 9,225,679 = CSV sums. Mapping v1 by admin, approved by compliance at /compliance/mappings. Load needed a breach contact first ("Record at least one breach-notification contact before the first data load.") → Loaded |
+| Snapshot | pass | R1 DEMO 2025-01: Ready, end-customer buyers 252,178 of 1,517,950 = 16.61 % (= report.json) |
+| Audit | pass | compliance verified the chain: Intact over 154 events |
+
+### Per screen
+
+| Screen | Functional | Visual | Responsive | Accessibility | Defects | Final status |
+|---|---|---|---|---|---|---|
+| People list | pass | as round 1 | 390 no overflow | Enrol dialog: focus in, 40 Tabs stayed in the dialog, Escape returns to "Enrol participant" | – | pass |
+| SC-09 Participant record | pass | as round 1 | 390 no overflow | unmask focus fixed | – | pass |
+| SC-07 Genealogy explorer | pass | faithful | 390 no overflow | expand controls named in the singular for one child | – | pass |
+| SC-08 Genealogy cases | pass | as round 1 | 390 no overflow | errors in `role=alert` | – | pass |
+| SC-06 Cases | pass | as round 1 | 390 no overflow | no finding | – | pass |
+| SC-31 Orders and returns | pass | as round 1 | 390 no overflow | no finding | BUG-081, BUG-082 | pass with defects |
+| SC-32 Late-transaction queue | pass | as round 1 | 390 empty state fixed | no finding | – | pass |
+| SC-13 Integrations (connectors, health) | pass | as round 1 | 390 no overflow | no finding | BUG-081 (sync health would show the same raw codes) | pass with defects |
+| SC-29 Tenant settings (B2 part) | pass | pass (BUG-069 fixed) | no overflow at 1440/1280/768/390 | no finding | BUG-083 | pass with defects |
+
+### Impeccable audit (audit only) and accessibility pass
+
+- Detector (`impeccable detect`, regex mode, from `apps/web`) on `src/features/{cases,genealogy,orders,people,integrations}`: 47 files, 1 finding, the same as round 1. It is the side-tab `border-l-4` at `features/cases/case-detail.tsx:209` (sc_06 card anatomy, design note). Source read: `text-[#7A4900]` in `features/cases/effect-preview.tsx:51,53` (theming note, unchanged). Rendered element rules not run (pages need a session).
+- Scripted pass on 17 B2 routes at 1440 for all four roles: no unlabelled input, no unnamed button/link/tab/radio, no duplicate id, no image without alt, no heading skip, every tab has `aria-selected`, every table has `th`. Horizontal page overflow was 0 on all 17 routes at both 1440 and 390.
+- Keyboard: Enrol dialog trapped focus and Escape returned it to the trigger; unmask focus as under BUG-073.
+- Scores (0–4): Accessibility 4 (BUG-073 fixed, no findings). Performance not scored (no trace). Theming 3 (one hard-coded colour). Responsive 4 (BUG-069/072 fixed). Implementation integrity 3 (raw connector codes and connector uuid in the exception queue, BUG-081/082; raw field name in an approval error, BUG-083). Total 14/16 over the four scored dimensions (round 1: 12/16).
+
+### Console and requests
+
+Console errors were only the intended 4xx responses from probes and refusals, plus 401s on pages left after idle-session expiry: 428 (settings PUT without `If-Match`, my first attempt), 422 (late approval, no-acceptance enrolment, load without breach contact), 409 (cycle case, ORDER_CONFLICT), 403 (support terminate, unmask before step-up), 401 (wrong webhook signature, expired sessions). No `pageerror`, no 5xx.
+
+### Notes (not registered)
+
+- A Shopify `orders/paid` payload without `financial_status` paid is answered 200 and silently ignored, with no inbound row and no sync-health trace. This is by design (PLAN: "ignored" when the crediting time is missing), but a merchant has no way to see it.
+- The exception queue "Natural key" column also carries the connector uuid (`order:shopify:<uuid>:<id>`). That is a technical key, so it is noted, not registered.
+- Not exercised this round: WooCommerce, connector rotate/withdraw, webhook refunds, merge/terminate duplicate outcomes, servicing and type change dialogs, the support-session view of B2 pages, and the explorer banner while only a scheduled policy exists.

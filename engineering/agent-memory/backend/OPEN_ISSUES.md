@@ -92,7 +92,9 @@ _Agent: backend. Read before every task; update after every task. Keep concise �
 
 ## From B2 GEN review fixes (2026-11-17)
 - DB agent: add `path_model.valid_until` (next valid_from/valid_to > now() at build) + list it in gen_stale_models, then drop the per-read relationship scan in gen/read-model.ts STATE_SQL (shortcut comment there).
-- GEN case types ignore the new CAS validateCreate `scope` arg: a market-scoped creator can name a proposed parent (genealogy_change/correction) or to_participant (transfer) in another market. Decide whether to refuse out-of-scope objects (MARKET scope check on the payload's objects).
+- GEN scope (fixed 2026-11-17 for transfer: to_participant outside the filer's create markets = 422 PARTICIPANT_NOT_FOUND). genealogy_change/correction leave proposed_parent unscoped under D-B2-21 (sponsor chains cross markets): architect to confirm.
+- Architect sign-off needed (GEN deviations from PLAN): (a) §2.5 reinstating a terminated position needs participant.terminate + step-up (PLAN gives participant.manage for all but `terminated`; positions.test asserts Support 403); (b) §2.4 correction valid_from may also equal the start of a non-superseded future row (E-GEN-04 cancel a pending change) — copy into PLAN §2.4.
+- DB agent (optional): AFTER INSERT on position upserting path_model stale for both kinds, then drop the position.created_at scan in gen/read-model.ts STATE_SQL.
 - Decision recorded: reinstating a terminated position is the reversal of a termination -> participant.terminate + step-up (FR-PAR-005). Role matrix: Support agent can no longer change a terminated position.
 
 ## From B2 API integrator (2026-11-17)
@@ -100,3 +102,7 @@ _Agent: backend. Read before every task; update after every task. Keep concise �
 - int/test-support.ts still repeats ord/test-support.ts fixtures (boundaries.test forbids cross-module test-support imports); moving them into apps/api/test/helpers not done.
 - Open from packages, not integrator scope: DB 0208+ (case decision guard vs 'updated' contributors; position insert marks path_model stale; path_model.valid_until), GEN validateCreate ignores market scope (decision), PLAN §2.4/§2.5 deviations need sign-off, resolveSponsor concurrency test, ten/change-requests Promise.all on one client.
 - Resolved by the integrator: module mounting, openapi PAR/CRM paths, agreement_versions seed, B2 isolation cases + role-matrix rows, ord/ten requireAnyPermission/scopeOfAny copies, TRUST_PROXY + D-B2-19 in .env.example, role-matrix hook timeout (OI-6).
+
+## From B2 backend-lead check (2026-11-17)
+- Resolved: imp/access requireAnyPermission/scopeForAny copies removed; ten/change-requests Promise.all on one client.
+- Still open (not backend-lead scope): web format.ts lists SIGNAL_MATCH as a user reason code (frontend); DuplicatePreview could show matched_participant (frontend); DB 0208+ items (position insert marks path_model stale, path_model.valid_until, par_create_customer created flag, case decision guard vs 'updated' actors); PLAN §2.4/§2.5 GEN deviations need architect sign-off; int/test-support repeats ord fixtures; unknown connector id answers 404 vs 401 (decision).

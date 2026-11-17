@@ -64,48 +64,84 @@ async function merge(tx: Tx, c: DuplicateCase, positions: OwnedPosition[]): Prom
   })
 }
 
-/** Another duplicate review of the subject still open or submitted (a subject matching two participants has two). */
-async function otherReviewOpen(tx: Tx, c: DuplicateCase): Promise<boolean> {
-  const { rowCount } = await tx.query(
-    `SELECT 1 FROM case_file WHERE type = 'duplicate' AND state IN ('open', 'submitted') AND subject_type = 'participant'
-       AND subject_id = $1 AND id <> $2`,
+/** Other duplicate reviews of the subject still open or submitted (a subject matching two participants has two). */
+async function otherOpenReviews(tx: Tx, c: DuplicateCase): Promise<string[]> {
+  const { rows } = await tx.query<{ id: string }>(
+    `SELECT id FROM case_file WHERE type = 'duplicate' AND state IN ('open', 'submitted') AND subject_type = 'participant'
+       AND subject_id = $1 AND id <> $2 ORDER BY id`,
     [c.subject_id, c.id],
+  )
+  return rows.map((row) => row.id)
+}
+
+/** An allow approved for the subject while this review was open (this one included: onDecision runs after the decision). */
+async function allowApproved(tx: Tx, c: DuplicateCase): Promise<boolean> {
+  const { rowCount } = await tx.query(
+    `SELECT 1 FROM case_file WHERE type = 'duplicate' AND state = 'approved' AND subject_type = 'participant'
+       AND subject_id = $1 AND payload ->> 'proposed_outcome' = 'allow' AND decided_at >= $2`,
+    [c.subject_id, c.created_at],
   )
   return rowCount !== 0
 }
 
 /**
- * D-B2-10 outcomes on approval; a SQL refusal (e.g. 409 OWNERSHIP_CONFLICT) rolls the decision back (AC-PAR3-2). allow
- * releases the hold once no other review of the subject is open: until then the hold (G5) stays, and the last allow
- * activates.
+ * D-B2-10 outcomes; a SQL refusal (e.g. 409 OWNERSHIP_CONFLICT) rolls the decision back (AC-PAR3-2). The hold (G5) is
+ * released once an allow stands and no other review of the subject is open: an allow approved meanwhile is recorded as
+ * deferred, and the last review decided (approved with allow, or rejected) releases it.
  */
-async function execute(tx: Tx, c: DuplicateCase): Promise<void> {
+async function execute(tx: Tx, c: DuplicateCase, decision: 'approved' | 'rejected'): Promise<void> {
   const positions = await ownedPositions(tx, c.subject_id)
-  if (c.payload.proposed_outcome === 'merge') return merge(tx, c, positions)
-  const release = c.payload.proposed_outcome === 'allow' && !(await otherReviewOpen(tx, c))
-  for (const position of positions) {
-    if (release && position.status === 'pending') {
-      await setStatus(tx, c, position, 'active', 'Duplicate review: allowed')
-    }
-    if (c.payload.proposed_outcome === 'terminate' && position.status !== 'terminated') {
+  const outcome = decision === 'approved' ? c.payload.proposed_outcome : undefined
+  if (outcome === 'merge') return merge(tx, c, positions)
+  if (outcome === 'terminate') {
+    for (const position of positions.filter((p) => p.status !== 'terminated')) {
       await setStatus(tx, c, position, 'terminated', 'Duplicate review: terminated')
     }
+    return
+  }
+  if (!(await allowApproved(tx, c))) return
+  const open = await otherOpenReviews(tx, c)
+  if (open.length > 0) {
+    if (outcome === 'allow') {
+      await recordAudit(tx, {
+        action: 'PARTICIPANT.HOLD_RELEASE_DEFERRED', objectType: 'participant', objectId: c.subject_id,
+        after: { case_id: c.id, open_case_ids: open },
+      })
+    }
+    return
+  }
+  for (const position of positions.filter((p) => p.status === 'pending')) {
+    await setStatus(tx, c, position, 'active', 'Duplicate review: allowed')
   }
 }
+
+const sameKinds = (a: readonly string[], b: readonly string[]): boolean => [...a].sort().join() === [...b].sort().join()
 
 export const DUPLICATE_CASE_TYPE: CaseTypeDefinition<DuplicatePayload> = {
   type: 'duplicate',
   subjectTypes: ['participant'],
   reasonCodes: ['SIGNAL_MATCH', 'STAFF_SUSPICION'],
+  systemReasonCodes: ['SIGNAL_MATCH'],
   evidenceRequired: false,
   permissions: { read: 'case.duplicate.read', create: 'case.duplicate.create', decide: 'case.duplicate.approve' },
   payload,
+  // Matching is tenant-wide: a review naming a participant of another market is read only by holders over both markets,
+  // so a market-scoped caller cannot learn who holds an identity signal elsewhere.
+  relatedMarketSql: `(SELECT p.market_id FROM participant p WHERE p.id = (c.payload ->> 'matched_participant_id')::uuid)`,
   async resolveSubject(tx, _subjectType, subjectId) {
     const { rows } = await tx.query<{ market_id: string }>('SELECT market_id FROM participant WHERE id = $1', [subjectId])
     return rows[0] === undefined ? null : { marketId: rows[0].market_id }
   },
-  // The matched participant is the merge target: another active participant in the caller's markets.
-  async validateCreate(tx, subject, value, scope) {
+  // The matched participant is the merge target: another active participant in the caller's markets. A system case keeps
+  // the match the system recorded; an unchanged id was checked when it was set (merge re-checks it is active).
+  async validateCreate(tx, subject, value, scope, stored) {
+    if (stored?.opened_by_kind === 'system') {
+      if (value.matched_participant_id !== stored.payload.matched_participant_id || !sameKinds(value.matched_kinds, stored.payload.matched_kinds)) {
+        throw new ApiError(422, 'SYSTEM_MATCH_FIXED', 'The system recorded this match: only the proposed outcome can change.')
+      }
+      return
+    }
+    if (value.matched_participant_id === stored?.payload.matched_participant_id) return
     const { rows } = await tx.query<{ market_id: string }>(
       `SELECT market_id FROM participant WHERE id = $1 AND id <> $2 AND status = 'active'`, [value.matched_participant_id, subject.id],
     )
@@ -119,13 +155,15 @@ export const DUPLICATE_CASE_TYPE: CaseTypeDefinition<DuplicatePayload> = {
       throw new ApiError(422, 'OUTCOME_REQUIRED', 'Propose an outcome (merge, allow or terminate) before submitting.')
     }
     const positions = await ownedPositions(tx, c.subject_id)
+    const { rows } = await tx.query<{ participant_id: string; external_ref: string }>(
+      'SELECT id AS participant_id, external_ref FROM participant WHERE id = $1', [c.payload.matched_participant_id],
+    )
     return {
       outcome: c.payload.proposed_outcome,
+      matched_participant: rows[0] ?? null,
       positions: positions.map((p) => ({ id: p.position_id, position_ref: p.position_ref, status: p.status })),
       hold_active: positions.some((p) => p.status === 'pending'),
     }
   },
-  async onDecision(tx, c, decision) {
-    if (decision === 'approved') await execute(tx, c)
-  },
+  onDecision: execute,
 }

@@ -40,21 +40,41 @@ const without = (input: object, key: string) => Object.fromEntries(Object.entrie
 
 /**
  * The hash of the facts a re-delivery must repeat (AC-22.2: only a change to the order itself is a conflict). Left out:
- * an order's non-crediting time (a paid order is later fulfilled) and a connector event's time, which is the store's
- * last save of the order (WooCommerce date_modified_gmt changes on every save of a refunded or cancelled order).
+ * an order's paid and fulfilled times (checked apart by creditingTimeChanged, so the hash never depends on a setting
+ * version) and a connector event's time, which is the store's last save of the order (WooCommerce date_modified_gmt
+ * changes on every save of a refunded or cancelled order).
  */
-async function factsHash(tx: Tx, submission: Submission): Promise<Buffer> {
+function factsHash(submission: Submission): Buffer {
   if (submission.kind === 'event') {
     return payloadHash(submission.source.startsWith('connector:') ? without(submission.input, 'occurred_at') : submission.input)
   }
-  const crediting = await getSetting(tx, 'orders.crediting_event')
-  if (crediting === null) return payloadHash(submission.input)
-  return payloadHash(without(submission.input, crediting === 'paid' ? 'fulfilled_at' : 'paid_at'))
+  return payloadHash(without(without(submission.input, 'paid_at'), 'fulfilled_at'))
 }
+
+const instant = (value: string | undefined) => (value === undefined ? null : Date.parse(value))
+
+/**
+ * A re-delivered order must repeat the time it is credited at: a processed order's credited_at must be its paid or its
+ * fulfilled time (whichever the setting named at first receipt); a held one keeps the time the current setting names.
+ */
+async function creditingTimeChanged(tx: Tx, submission: Submission, existing: { state: string; payload: unknown; result: Record<string, string> }): Promise<boolean> {
+  if (submission.kind !== 'order') return false
+  const { paid_at: paidAt, fulfilled_at: fulfilledAt } = submission.input
+  if (existing.state === 'processed') {
+    const { rows } = await tx.query<{ credited_at: Date }>('SELECT credited_at FROM sales_order WHERE id = $1', [existing.result.order_id])
+    return ![instant(paidAt), instant(fulfilledAt)].includes(rows[0]!.credited_at.getTime())
+  }
+  const crediting = await getSetting(tx, 'orders.crediting_event')
+  if (crediting === null) return false
+  const field = crediting === 'paid' ? 'paid_at' : 'fulfilled_at'
+  return instant((existing.payload as OrderInput)[field]) !== instant(submission.input[field])
+}
+
+const orderKey = (input: { source_system: string; source_order_id: string }) => `order:${input.source_system}:${input.source_order_id}`
 
 export function naturalKey(submission: Submission): string {
   return submission.kind === 'order'
-    ? `order:${submission.input.source_system}:${submission.input.source_order_id}`
+    ? orderKey(submission.input)
     : `event:${submission.input.source_system}:${submission.input.source_event_id}`
 }
 
@@ -74,11 +94,23 @@ const heldBody = (id: string, outcome: Outcome & { state: 'held' }) =>
 function process(tx: Tx, submission: Submission, refs: AttemptRefs, ctx: IngestContext): Promise<Outcome> {
   return submission.kind === 'order'
     ? processOrder(tx, submission.input, refs, ctx.toleranceSeconds)
-    : processEvent(tx, submission.input, refs, ctx.toleranceSeconds)
+    : processEvent(tx, submission.input, refs, ctx.toleranceSeconds, submission.source.startsWith('connector:'))
 }
 
-/** Runs one attempt inside a savepoint; a refusal or a hold rolls everything back and is returned as a value. */
+/** Serialises every write of one natural key within its source (transaction-scoped advisory lock). */
+async function lockKey(tx: Tx, source: string, key: string): Promise<void> {
+  await tx.query(`SELECT pg_advisory_xact_lock(hashtextextended('inbound:' || app_tenant_id() || ':' || $1 || ':' || $2, 0))`, [source, key])
+}
+
+/**
+ * Runs one attempt inside a savepoint; a refusal or a hold rolls everything back and is returned as a value. An event
+ * first takes its order's key lock (E-ORD-01), outside the savepoint so a hold keeps it until commit: an order being
+ * ingested meanwhile is then seen committed, or finds this event's held row when it releases awaiting events.
+ */
 async function attempt(tx: Tx, submission: Submission, refs: AttemptRefs, ctx: IngestContext, before?: () => Promise<void>): Promise<Outcome | Refusal> {
+  if (submission.kind === 'event') {
+    await lockKey(tx, submission.source, orderKey(submission.input))
+  }
   await tx.query('SAVEPOINT ingest_attempt')
   try {
     if (before !== undefined) await before()
@@ -172,13 +204,16 @@ export async function reattempt(tx: Tx, row: HeldRow, ctx: IngestContext): Promi
 
 const HELD_COLUMNS = 'id, source, idempotency_key, payload, payload_hash, attempts'
 
-/** E-ORD-01: events held ORDER_NOT_FOUND for an order that just arrived are processed now, oldest first. */
+/**
+ * E-ORD-01: events held ORDER_NOT_FOUND for an order that just arrived are processed now, oldest first. A row locked by a
+ * retry or re-delivery is skipped: that transaction waits for this order's key lock (attempt) and then finds the order.
+ */
 async function releaseAwaiting(tx: Tx, submission: Submission, ctx: IngestContext): Promise<void> {
   if (submission.kind !== 'order') return
   const { rows } = await tx.query<HeldRow>(
     `SELECT ${HELD_COLUMNS} FROM inbound_event
      WHERE state = 'held' AND hold_reason = 'ORDER_NOT_FOUND' AND source = $1 AND hold_ref = $2
-     ORDER BY received_at, id FOR UPDATE`,
+     ORDER BY received_at, id FOR UPDATE SKIP LOCKED`,
     [submission.source, submission.input.source_order_id],
   )
   for (const row of rows) await reattempt(tx, row, ctx)
@@ -197,8 +232,8 @@ async function replay(tx: Tx, kind: Submission['kind'], result: Record<string, s
  */
 export async function receive(tx: Tx, submission: Submission, ctx: IngestContext): Promise<StoredResponse> {
   const key = naturalKey(submission)
-  const hash = await factsHash(tx, submission)
-  await tx.query(`SELECT pg_advisory_xact_lock(hashtextextended('inbound:' || app_tenant_id() || ':' || $1 || ':' || $2, 0))`, [submission.source, key])
+  const hash = factsHash(submission)
+  await lockKey(tx, submission.source, key)
   const { rows } = await tx.query<HeldRow & { state: string; result: Record<string, string> }>(
     `SELECT ${HELD_COLUMNS}, state, result FROM inbound_event
      WHERE source = $1 AND idempotency_key = $2 AND state IN ('held', 'processed') FOR UPDATE`,
@@ -206,7 +241,7 @@ export async function receive(tx: Tx, submission: Submission, ctx: IngestContext
   )
   const existing = rows[0]
   if (existing === undefined) return attemptNew(tx, submission, hash, ctx)
-  if (!existing.payload_hash.equals(hash)) {
+  if (!existing.payload_hash.equals(hash) || await creditingTimeChanged(tx, submission, existing)) {
     const code = submission.kind === 'order' ? 'ORDER_CONFLICT' : 'EVENT_CONFLICT'
     const refusal = new Refusal(409, code, `This ${submission.kind} was already received with a different body; send corrections as order events.`, {
       inbound_event_id: existing.id,
@@ -219,6 +254,10 @@ export async function receive(tx: Tx, submission: Submission, ctx: IngestContext
 
 /** POST /v1/inbound-events/:id/retry: a held row is processed again; anything else is 409 NOT_HELD. */
 export async function retryHeld(tx: Tx, id: string, ctx: IngestContext): Promise<{ state: string; result: unknown } | null> {
+  // Key lock before row lock, as receive() takes them (source and key never change).
+  const { rows: keys } = await tx.query<{ source: string; idempotency_key: string }>('SELECT source, idempotency_key FROM inbound_event WHERE id = $1', [id])
+  if (keys[0] === undefined) return null
+  await lockKey(tx, keys[0].source, keys[0].idempotency_key)
   const { rows } = await tx.query<HeldRow & { state: string }>(`SELECT ${HELD_COLUMNS}, state FROM inbound_event WHERE id = $1 FOR UPDATE`, [id])
   const row = rows[0]
   if (row === undefined) return null

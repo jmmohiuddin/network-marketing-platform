@@ -143,7 +143,7 @@ export function ApiKeysTab({ accounts, onChanged }: { readonly accounts: PagedLi
             toast({ message: `Key ${action.issued.key.key_prefix} is ready.` })
           }}
         >
-          <p>Send it as <code className={MONO}>Authorization: Bearer &lt;key&gt;</code>. It reads with the scopes {action.issued.key.scopes.join(', ')}.</p>
+          <p>Send it as <code className={MONO}>Authorization: Bearer &lt;key&gt;</code>. Its scopes: {action.issued.key.scopes.join(', ')}.</p>
         </OneTimeSecretDialog>
       )}
     </section>

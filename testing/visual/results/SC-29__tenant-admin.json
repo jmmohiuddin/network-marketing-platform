@@ -1,5 +1,5 @@
 {
-  "when": "2026-11-16T22:33:16.487Z",
+  "when": "2026-11-17T15:43:36.397Z",
   "screenId": "SC-29",
   "stitch": "sc_29_tenant_settings",
   "module": "settings",
@@ -15,10 +15,10 @@
       "screenshot": "testing/ui-screenshots/app/settings/tenant-settings/tenant-admin/1440x900.png",
       "reference": "testing/ui-screenshots/reference/sc_29_tenant_settings/1440x900.png",
       "diffImage": "testing/ui-screenshots/app/settings/tenant-settings/tenant-admin/1440x900.diff.png",
-      "mismatchPercent": 4.6,
-      "diffPixels": 180767,
+      "mismatchPercent": 3.43,
+      "diffPixels": 218051,
       "referenceSize": "1440x1818",
-      "actualSize": "1440x2731",
+      "actualSize": "1440x4412",
       "landmarks": [
         {
           "landmark": "header",
@@ -65,7 +65,7 @@
         {
           "landmark": "page",
           "stitchText": "Tenant Settings & Governed Policies verified Active Settings",
-          "appText": "SettingsVersion 11 in force since Nov 17, 2026, 4:22 AM. Eac",
+          "appText": "SettingsVersion 10 in force since Nov 17, 2026, 9:34 PM. Eac",
           "status": "match",
           "severity": "none",
           "props": [
@@ -233,7 +233,7 @@
         {
           "landmark": "tableHeader",
           "stitchText": "Version Ref",
-          "appText": "Version",
+          "appText": "Type",
           "status": "mismatch",
           "severity": "medium",
           "props": [
@@ -315,10 +315,10 @@
       "screenshot": "testing/ui-screenshots/app/settings/tenant-settings/tenant-admin/1280x800.png",
       "reference": "testing/ui-screenshots/reference/sc_29_tenant_settings/1280x800.png",
       "diffImage": "testing/ui-screenshots/app/settings/tenant-settings/tenant-admin/1280x800.diff.png",
-      "mismatchPercent": 4.75,
-      "diffPixels": 177921,
+      "mismatchPercent": 3.77,
+      "diffPixels": 215102,
       "referenceSize": "1280x1992",
-      "actualSize": "1280x2929",
+      "actualSize": "1280x4462",
       "landmarks": [
         {
           "landmark": "header",
@@ -365,7 +365,7 @@
         {
           "landmark": "page",
           "stitchText": "Tenant Settings & Governed Policies verified Active Settings",
-          "appText": "SettingsVersion 11 in force since Nov 17, 2026, 4:22 AM. Eac",
+          "appText": "SettingsVersion 10 in force since Nov 17, 2026, 9:34 PM. Eac",
           "status": "match",
           "severity": "none",
           "props": [
@@ -533,7 +533,7 @@
         {
           "landmark": "tableHeader",
           "stitchText": "Version Ref",
-          "appText": "Version",
+          "appText": "Type",
           "status": "mismatch",
           "severity": "medium",
           "props": [
@@ -615,15 +615,15 @@
       "screenshot": "testing/ui-screenshots/app/settings/tenant-settings/tenant-admin/768x1024.png",
       "reference": "testing/ui-screenshots/reference/sc_29_tenant_settings/768x1024.png",
       "diffImage": "testing/ui-screenshots/app/settings/tenant-settings/tenant-admin/768x1024.diff.png",
-      "mismatchPercent": 4.67,
-      "diffPixels": 170561,
+      "mismatchPercent": 3.92,
+      "diffPixels": 209069,
       "referenceSize": "982x3723",
-      "actualSize": "768x3287",
+      "actualSize": "768x5431",
       "landmarks": [
         {
           "landmark": "page",
           "stitchText": "Tenant Settings & Governed Policies verified Active Settings",
-          "appText": "SettingsVersion 11 in force since Nov 17, 2026, 4:22 AM. Eac",
+          "appText": "SettingsVersion 10 in force since Nov 17, 2026, 9:34 PM. Eac",
           "status": "match",
           "severity": "none",
           "props": [
@@ -791,7 +791,7 @@
         {
           "landmark": "tableHeader",
           "stitchText": "Version Ref",
-          "appText": "Version",
+          "appText": "Type",
           "status": "mismatch",
           "severity": "medium",
           "props": [
@@ -873,15 +873,15 @@
       "screenshot": "testing/ui-screenshots/app/settings/tenant-settings/tenant-admin/390x844.png",
       "reference": "testing/ui-screenshots/reference/sc_29_tenant_settings/390x844.png",
       "diffImage": "testing/ui-screenshots/app/settings/tenant-settings/tenant-admin/390x844.diff.png",
-      "mismatchPercent": 1.93,
-      "diffPixels": 162761,
+      "mismatchPercent": 2.43,
+      "diffPixels": 204686,
       "referenceSize": "982x8578",
-      "actualSize": "390x4305",
+      "actualSize": "390x7625",
       "landmarks": [
         {
           "landmark": "page",
           "stitchText": "Tenant Settings & Governed Policies verified Active Settings",
-          "appText": "SettingsVersion 11 in force since Nov 17, 2026, 4:22 AM. Eac",
+          "appText": "SettingsVersion 10 in force since Nov 17, 2026, 9:34 PM. Eac",
           "status": "match",
           "severity": "none",
           "props": [
@@ -1049,7 +1049,7 @@
         {
           "landmark": "tableHeader",
           "stitchText": "Version Ref",
-          "appText": "Version",
+          "appText": "Type",
           "status": "mismatch",
           "severity": "medium",
           "props": [

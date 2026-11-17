@@ -9,9 +9,11 @@ import { StatusBadge } from '../../components/status-badge'
 import { LoadingState } from '../../components/states'
 import { formatDateTime } from '../../lib/format'
 import { MARKETS_PATH, type Market } from '../../lib/markets'
+import { useSession } from '../../lib/session'
 import { useResource } from '../../lib/use-resource'
 import { LoadFailure } from '../admin/page-states'
-import { ITEM_CLASS_LABELS, ATTRIBUTION_LABELS, EVENT_LABELS, HANDLING_LABELS, LATE_STATE_LABELS, moneyText, PURPOSE_LABELS, volumesText } from './format'
+import { CONNECTORS_PATH, type Connector } from '../integrations/types'
+import { ITEM_CLASS_LABELS, ATTRIBUTION_LABELS, EVENT_LABELS, HANDLING_LABELS, LATE_STATE_LABELS, moneyText, PURPOSE_LABELS, sourceText, volumesText } from './format'
 import type { OrderDetail } from './types'
 
 const BLOCK = 'bg-surface-container-low p-space-sm rounded-lg flex flex-col gap-2'
@@ -22,6 +24,13 @@ const MONO = 'font-data-mono-sm text-data-mono-sm'
 export function useMinorUnits(): ReadonlyMap<string, number> {
   const markets = useResource<Market[]>(MARKETS_PATH)
   return new Map((markets.data ?? []).map((market) => [market.id, market.minor_unit]))
+}
+
+/** Connector names by id for order sources; only integration.manage may read connectors, others see the provider. */
+export function useConnectorNames(): ReadonlyMap<string, string> {
+  const { can } = useSession()
+  const connectors = useResource<Connector[]>(can('integration.manage') ? CONNECTORS_PATH : null)
+  return new Map((connectors.data ?? []).map((connector) => [connector.id, connector.name]))
 }
 
 function Row({ label, children }: { readonly label: string; readonly children: ReactNode }) {
@@ -141,6 +150,7 @@ function Inspector({ order, minorUnit }: { readonly order: OrderDetail; readonly
 export function OrderInspector({ orderId }: { readonly orderId: string }) {
   const order = useResource<OrderDetail>(`/v1/orders/${orderId}`)
   const minorUnits = useMinorUnits()
+  const connectorNames = useConnectorNames()
   return (
     <section className="bg-surface-container-lowest rounded-lg shadow-sm flex flex-col gap-space-md p-space-md" aria-labelledby="inspector-title" data-testid="inspector">
       <div className="flex items-center justify-between gap-space-sm">
@@ -148,7 +158,7 @@ export function OrderInspector({ orderId }: { readonly orderId: string }) {
           <Icon name="manage_search" size={20} className="text-primary" />
           <div className="min-w-0">
             <h2 id="inspector-title" className="font-section-heading text-section-heading text-on-surface font-bold">Order inspector</h2>
-            {order.data !== null && <div className={`${MONO} text-primary font-bold break-all`}>{order.data.source_order_id} · {order.data.source_system}</div>}
+            {order.data !== null && <div className={`${MONO} text-primary font-bold break-all`}>{order.data.source_order_id} · {sourceText(order.data.source_system, connectorNames)}</div>}
           </div>
         </div>
         <StatusBadge state="committed" label="Fixed fact" />

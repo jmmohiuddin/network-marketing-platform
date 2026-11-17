@@ -91,14 +91,17 @@ export async function findDuplicates(tx: Tx, participantId: string): Promise<Dup
 
 /**
  * One system-opened duplicate case per matched participant not already under an open or submitted review with this
- * participant (FR-PAR-003); returns the strongest match's case (opened now or already under review), or null.
+ * participant, in either direction (FR-PAR-003); returns each match's case (opened now or already under review),
+ * strongest first.
  */
-export async function openDuplicateCases(tx: Tx, participantId: string, marketId: string, matches: DuplicateMatch[]): Promise<string | null> {
+export async function openDuplicateCases(tx: Tx, participantId: string, marketId: string, matches: DuplicateMatch[]): Promise<string[]> {
   const caseIds: string[] = []
   for (const match of matches) {
     const { rows } = await tx.query<{ id: string }>(
-      `SELECT id FROM case_file WHERE type = 'duplicate' AND state IN ('open', 'submitted') AND subject_id = $1
-         AND payload ->> 'matched_participant_id' = $2::text`,
+      `SELECT id FROM case_file WHERE type = 'duplicate' AND state IN ('open', 'submitted') AND subject_type = 'participant'
+         AND ((subject_id = $1::uuid AND payload ->> 'matched_participant_id' = $2::uuid::text)
+           OR (subject_id = $2::uuid AND payload ->> 'matched_participant_id' = $1::uuid::text))
+       ORDER BY created_at, id LIMIT 1`,
       [participantId, match.participant_id],
     )
     const existing = rows[0]?.id
@@ -107,5 +110,5 @@ export async function openDuplicateCases(tx: Tx, participantId: string, marketId
       payload: { matched_participant_id: match.participant_id, matched_kinds: match.kinds }, marketId,
     })).id)
   }
-  return caseIds[0] ?? null
+  return caseIds
 }

@@ -119,4 +119,20 @@ describe('GET /v1/provider-configs and withdraw', () => {
     expect((await call(app, { method: 'GET', url: '/v1/provider-configs', as: reader })).statusCode).toBe(403)
     expect(await auditActions(acme.id)).toContain('PROVIDER.ELIGIBILITY_WITHDRAWN')
   })
+
+  test('commerce connector rows are neither listed nor withdrawable here (only through /v1/connectors)', async () => {
+    const connectorId = randomUUID()
+    await ownerRows(
+      `INSERT INTO provider_config (id, tenant_id, market_id, kind, provider, name, webhook_secret_sealed, state, created_by)
+       VALUES ($1, $2, $3, 'commerce', 'shopify', 'IN store', 'sealed', 'recorded', $4)`,
+      [connectorId, acme.id, in_, admin.id],
+    )
+
+    const listed = await call(app, { method: 'GET', url: '/v1/provider-configs', as: scopedAdmin })
+    const withdrawn = await withdraw(scopedAdmin, connectorId)
+
+    expect(listed.json().data.map((row: { id: string }) => row.id)).not.toContain(connectorId)
+    expect(withdrawn.statusCode).toBe(404)
+    expect(await ownerRows('SELECT state FROM provider_config WHERE id = $1', [connectorId])).toEqual([{ state: 'recorded' }])
+  })
 })

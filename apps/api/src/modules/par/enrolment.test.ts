@@ -22,6 +22,8 @@ let support: TestUser
 let supportMy: TestUser
 let analyst: TestUser
 let globexAdmin: TestUser
+let integrator: TestUser
+let globexIntegrator: TestUser
 let root: string
 
 closePoolsAfterAll()
@@ -41,11 +43,15 @@ beforeAll(async () => {
   supportMy = await createSignedInUser({ tenantId: acme.id, roles: ['Support agent'], marketIds: [my] })
   analyst = await createSignedInUser({ tenantId: acme.id, roles: ['Commission analyst'] })
   globexAdmin = await createSignedInUser({ tenantId: globex.id, roles: ['Tenant admin'], stepUp: true })
+  // Mints participants:write keys: holds the session permissions such a key exercises, for all markets (PLAN B2 2.8).
+  integrator = await createSignedInUser({ tenantId: acme.id, roles: ['Tenant admin', 'Support agent'], stepUp: true })
+  globexIntegrator = await createSignedInUser({ tenantId: globex.id, roles: ['Tenant admin', 'Support agent'], stepUp: true })
   const globexCompliance = await createSignedInUser({ tenantId: globex.id, roles: ['Compliance officer'], stepUp: true })
   app = await buildTestApp({ modules: [iamModule, parModule] })
   await activeType(app, admin, compliance, 'DIST', DISTRIBUTOR)
   await activeType(app, admin, compliance, 'CUST', CUSTOMER)
   await activeType(app, admin, compliance, 'HOLDER', { ...DISTRIBUTOR, can_sponsor: false })
+  await activeType(app, admin, compliance, 'LEAD', { ...CUSTOMER, counts_as_end_customer: false })
   await activeType(app, globexAdmin, globexCompliance, 'DIST', DISTRIBUTOR)
   await setSettings(acme.id, admin.id, { 'genealogy.placement_width': 2 })
   root = (await enrolled(app, support, enrolment('DIST', { position_ref: 'ROOT' }))).position!.id
@@ -112,15 +118,21 @@ describe('refusals store nothing (T-B2-05, AC-PAR1-4, AC-PAR2-1)', () => {
       enrolment('DIST', { sponsor: { position_ref: 'UNKNOWN' } }), enrolment('DIST', { sponsor: { position_ref: 'SUSP' } }),
       enrolment('DIST', { sponsor: { position_ref: 'NOSPON' } }), enrolment('DIST', { enrolled_at: new Date(Date.now() + 3_600_000).toISOString() }),
       { ...existing }, enrolment('DIST', { position_ref: 'ROOT' }), enrolment('CUST', { position_ref: 'X1' }),
+      enrolment('LEAD', { sponsor: { position_ref: 'NOSPON' } }),
     ]
     const codes = []
     for (const body of refusals) codes.push((await enrolRequest(app, body, { as: support })).json().error.code)
 
     expect(codes).toEqual([
       'MARKET_UNKNOWN', 'MARKET_NOT_LIVE', 'TYPE_NOT_ACTIVE', 'SPONSOR_NOT_FOUND', 'SPONSOR_INACTIVE', 'SPONSOR_NOT_ELIGIBLE',
-      'ENROLLED_AT_INVALID', 'PARTICIPANT_EXISTS', 'POSITION_REF_TAKEN', 'TYPE_CANNOT_HOLD_POSITIONS',
+      'ENROLLED_AT_INVALID', 'PARTICIPANT_EXISTS', 'POSITION_REF_TAKEN', 'TYPE_CANNOT_HOLD_POSITIONS', 'SPONSOR_NOT_APPLICABLE',
     ])
     expect(after - before).toBe(3)
+    // A caller scoped to MY learns neither the status nor the type of a GB sponsor position (both GB here).
+    const scoped = []
+    for (const ref of ['SUSP', 'NOSPON']) scoped.push((await enrolRequest(app, enrolment('DIST', { sponsor: { position_ref: ref } }, 'MY'), { as: supportMy })).json().error)
+    expect(scoped).toEqual([expect.objectContaining({ code: 'SPONSOR_NOT_ELIGIBLE' }), expect.objectContaining({ code: 'SPONSOR_NOT_ELIGIBLE' })])
+    expect(scoped.map((error) => error.details)).toEqual([null, null])
     expect(await counts()).toBe(after)
   })
 
@@ -195,7 +207,7 @@ describe('concurrent placement (T-B2-06, AC-42.1, TS-45 slot part)', () => {
 
 describe('API keys and permissions (T-B2-07, AC-PAR2-2, OI-2)', () => {
   test('a key with participants:write enrols as its service account: actor pair and audit, no user reference', async () => {
-    const token = await apiKey(app, admin, ['participants:write'])
+    const token = await apiKey(app, integrator, ['participants:write'])
     const response = await enrolRequest(app, enrolment('DIST', { sponsor: { position_ref: 'ROOT' } }), { token })
     const id = response.json().data.participant.id as string
 
@@ -223,7 +235,7 @@ describe('API keys and permissions (T-B2-07, AC-PAR2-2, OI-2)', () => {
   })
 
   test('another tenant\'s positions are unknown: its key enrols in its own tenant only', async () => {
-    const token = await apiKey(app, globexAdmin, ['participants:write'])
+    const token = await apiKey(app, globexIntegrator, ['participants:write'])
     const sponsor = await enrolRequest(app, enrolment('DIST', { sponsor: { position_ref: 'ROOT' } }), { token })
     const own = await enrolRequest(app, enrolment('DIST'), { token })
 

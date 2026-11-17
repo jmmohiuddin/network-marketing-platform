@@ -2,10 +2,10 @@ import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import { currentAuth, hasPermission, marketScope, requireRealm } from '../../lib/auth.js'
 import { inTenant } from '../../lib/db.js'
-import { ApiError, permissionDenied } from '../../lib/errors.js'
+import { permissionDenied } from '../../lib/errors.js'
 import { envelope, parse } from '../../lib/http.js'
 import { countCases, recordChange, updateCase } from './cases.js'
-import { assertHolds, caseId, parsePayload, readableCase, stateConflict } from './routes.js'
+import { assertHolds, assertReasonCode, caseId, parsePayload, readableCase, stateConflict } from './routes.js'
 import type { CaseTypeRegistry } from './types.js'
 
 const patchBody = z
@@ -15,7 +15,8 @@ const countsQuery = z.strictObject({ type: z.string().min(1).max(50).optional() 
 
 /** PATCH /v1/cases/:id and GET /v1/cases/counts (PLAN B2 section 2.4). */
 export function registerCaseUpdates(app: FastifyInstance, registry: CaseTypeRegistry): void {
-  // The preparer completes an open case (e.g. the proposed outcome of a duplicate review) before submitting it.
+  // The preparer completes an open case (e.g. the proposed outcome of a duplicate review) before submitting it: its
+  // opener or assignee; a case the system opened has no opener, so any holder of the type's create permission.
   app.patch('/v1/cases/:id', { preHandler: [requireRealm('tenant')] }, async (request) => {
     const id = caseId(request)
     const auth = currentAuth(request)
@@ -23,13 +24,13 @@ export function registerCaseUpdates(app: FastifyInstance, registry: CaseTypeRegi
     return envelope(await inTenant(request, async (tx) => {
       const { record, definition } = await readableCase(tx, registry, auth, id, true)
       assertHolds(auth, definition.permissions.create, record)
+      if (record.opened_by !== null && auth.userId !== record.opened_by && auth.userId !== record.assigned_to) throw permissionDenied()
       if (record.state !== 'open') throw stateConflict(record.state)
       const reasonCode = body.reason_code ?? record.reason_code
-      if (!definition.reasonCodes.includes(reasonCode)) {
-        throw new ApiError(422, 'REASON_CODE_INVALID', 'Choose a reason code of this case type.', { reason_codes: definition.reasonCodes })
-      }
+      assertReasonCode(definition, reasonCode, record)
       const payload = parsePayload(definition, body.payload ?? record.payload)
-      await definition.validateCreate?.(tx, { type: record.subject_type, id: record.subject_id }, payload, marketScope(auth, definition.permissions.create))
+      const scope = marketScope(auth, definition.permissions.create)
+      await definition.validateCreate?.(tx, { type: record.subject_type, id: record.subject_id }, payload, scope, record)
       const updated = await updateCase(tx, record.id, reasonCode, payload)
       const fields = Object.keys(body)
       await recordChange(tx, record.id, 'updated', { fields }, {
@@ -44,7 +45,7 @@ export function registerCaseUpdates(app: FastifyInstance, registry: CaseTypeRegi
     const { type } = parse(countsQuery, request.query)
     const readable = [...registry.values()]
       .filter((definition) => hasPermission(auth, definition.permissions.read) && (type === undefined || definition.type === type))
-      .map((definition) => ({ type: definition.type, markets: marketScope(auth, definition.permissions.read) }))
+      .map((definition) => ({ type: definition.type, markets: marketScope(auth, definition.permissions.read), related: definition.relatedMarketSql }))
     if (readable.length === 0) throw permissionDenied()
     return envelope(await inTenant(request, (tx) => countCases(tx, readable)))
   })

@@ -69,8 +69,9 @@ export function CaseForm({ idPrefix, info, prepare, fieldIds, submitLabel, child
   const [opened, setOpened] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const ids = { reason: `${idPrefix}-reason`, note: `${idPrefix}-note`, evidence: `${idPrefix}-evidence` }
-  const reasonOptions = info.reasonCodes.map((code) => ({ value: code, label: reasonLabel(code) }))
-  const chosenReason = info.reasonCodes.includes(reason) ? reason : ''
+  const reasonCodes = info.reasonCodes ?? []
+  const reasonOptions = reasonCodes.map((code) => ({ value: code, label: reasonLabel(code) }))
+  const chosenReason = reasonCodes.includes(reason) ? reason : ''
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()

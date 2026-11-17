@@ -32,6 +32,8 @@ const D = 'coalesce($3::timestamptz, now())'
 const T = 'coalesce($4::timestamptz, now())'
 
 // Status, owner and leg as of D (known at T); counts from the read model when one is given, else from relationship.
+// shortcut: owner is valid-time only (position_ownership is not bitemporal), known_at applies to structure and status;
+// add recorded/superseded columns to position_ownership if as-known owner views are needed.
 const NODES_SQL = `
   SELECT p.id AS position_id, p.position_ref, m.code AS market_code,
     (SELECT h.to_status FROM position_status_history h

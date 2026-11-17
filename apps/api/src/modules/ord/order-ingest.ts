@@ -46,12 +46,23 @@ async function assertNotIngested(tx: Tx, input: OrderInput): Promise<void> {
   if (rowCount !== 0) throw new Refusal(409, 'ORDER_CONFLICT', 'This order was already ingested with a different body.')
 }
 
+/** The buyer's id; a buyer this order creates (P2) is audited PARTICIPANT.ENROLLED here, its TS caller (PLAN 4.2). */
 async function buyerIdOf(tx: Tx, buyer: Buyer, input: OrderInput, marketId: string, at: string): Promise<string> {
   if (buyer.id !== null) return buyer.id
   const { rows } = await tx.query<{ id: string }>(
     'SELECT par_create_customer($1, $2, $3, $4) AS id', [input.buyer.external_ref, marketId, buyer.type.type_id, at],
   )
-  return rows[0]!.id
+  const id = rows[0]!.id
+  // created_at defaults to now(), this transaction's start: a buyer a concurrent order created first is not ours to audit.
+  // shortcut: two transactions starting in the same microsecond would both audit it, upgrade with a created flag from P2.
+  const created = await tx.query('SELECT 1 FROM participant WHERE id = $1 AND created_at = now()', [id])
+  if (created.rowCount !== 0) {
+    await recordAudit(tx, {
+      action: 'PARTICIPANT.ENROLLED', objectType: 'participant', objectId: id,
+      after: { participant_id: id, type_id: buyer.type.type_id, market_id: marketId, enrolled_at: at, source: 'order' },
+    })
+  }
+  return id
 }
 
 interface OrderFacts {
@@ -117,7 +128,7 @@ export async function processOrder(tx: Tx, input: OrderInput, refs: AttemptRefs,
   await recordAudit(tx, {
     action: 'ORDER.INGESTED', objectType: 'sales_order', objectId: refs.targetId,
     after: {
-      inbound_event_id: refs.inboundId, market_id: facts.marketId, source_system: input.source_system,
+      inbound_event_id: refs.inboundId, market_id: facts.marketId, source_system: input.source_system, buyer_id: facts.buyerId,
       attributed_position_id: facts.attribution.positionId, attribution_source: facts.attribution.source,
       late_transaction_ids: late.map((item) => item.id),
     },

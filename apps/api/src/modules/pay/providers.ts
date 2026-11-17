@@ -4,6 +4,8 @@ import { ApiError, notFound } from '../../lib/errors.js'
 
 // D-B1-12: B1 records a payment or payout provider's eligibility for a market (approval, evidence, date, funds
 // holder; BR-PAY-11). No credentials and no adapter calls: those arrive in B4 with sandbox adapters only.
+// Commerce connectors share provider_config (D-B2-14) but are reachable only through /v1/connectors (its guard and audit).
+const PROVIDER_KINDS = "kind IN ('payout', 'payment')"
 
 export type ProviderKind = 'payout' | 'payment'
 
@@ -60,7 +62,7 @@ export async function recordedProviders(tx: Tx, marketId: string): Promise<Recor
   const { rows } = await tx.query<RecordedProvider>(
     `SELECT id, kind, provider, to_char(approved_at, 'YYYY-MM-DD') AS "approvedAt", funds_holder AS "fundsHolder",
             created_by AS "createdBy"
-     FROM provider_config WHERE market_id = $1 AND state = 'recorded' AND kind IN ('payout', 'payment')
+     FROM provider_config WHERE market_id = $1 AND state = 'recorded' AND ${PROVIDER_KINDS}
      ORDER BY kind, provider, id`,
     [marketId],
   )
@@ -77,7 +79,7 @@ export interface ProviderFilter {
 export async function listProviders(tx: Tx, scope: readonly string[] | null, filter: ProviderFilter): Promise<ProviderView[]> {
   const { rows } = await tx.query<ProviderRow>(
     `${PROVIDER_SELECT}
-     WHERE ($1::uuid[] IS NULL OR p.market_id = ANY ($1)) AND ($2::uuid IS NULL OR p.market_id = $2)
+     WHERE p.${PROVIDER_KINDS} AND ($1::uuid[] IS NULL OR p.market_id = ANY ($1)) AND ($2::uuid IS NULL OR p.market_id = $2)
        AND ($3::text IS NULL OR p.kind = $3) AND ($4::text IS NULL OR p.state = $4)
      ORDER BY p.created_at DESC, p.id DESC`,
     [scope, filter.market_id ?? null, filter.kind ?? null, filter.state ?? null],
@@ -149,7 +151,7 @@ export async function recordProvider(tx: Tx, scope: readonly string[] | null, in
 
 /** Withdraws a recorded provider approval of a market in scope; 409 PROVIDER_NOT_RECORDED once withdrawn. */
 export async function withdrawProvider(tx: Tx, id: string, scope: readonly string[] | null, reason: string): Promise<ProviderView> {
-  const { rows: found } = await tx.query<{ market_id: string | null }>('SELECT market_id FROM provider_config WHERE id = $1', [id])
+  const { rows: found } = await tx.query<{ market_id: string | null }>(`SELECT market_id FROM provider_config WHERE id = $1 AND ${PROVIDER_KINDS}`, [id])
   if (found[0] === undefined || (scope !== null && (found[0].market_id === null || !scope.includes(found[0].market_id)))) throw notFound()
   if (found[0].market_id !== null) await lockMarketForProviders(tx, found[0].market_id) // market first, as go-live does
   const { rows } = await tx.query<{ market_id: string | null; state: string }>('SELECT market_id, state FROM provider_config WHERE id = $1 FOR UPDATE', [id])

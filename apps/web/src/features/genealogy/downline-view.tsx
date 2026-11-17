@@ -67,7 +67,7 @@ export function DownlineView({ viewerId, targetId, onFocus, onStop }: DownlineVi
   return (
     <section aria-labelledby="downline-title" className="flex flex-col gap-space-md" data-testid="downline-view">
       <Banner tone="info" title={`Viewing as ${viewerRef}`} action={<Button icon="close" onClick={onStop}>Stop viewing as distributor</Button>}>
-        {view === null ? 'What this distributor may see of their downline, as the sponsor tree is now.' : `${policySentence(view.policy)} ${view.policy.default ? 'No tenant policy is approved yet: the platform safe default applies.' : 'This is your tenant’s approved policy.'}`}
+        {view === null ? 'What this distributor may see of their downline, as the sponsor tree is now.' : `${policySentence(view.policy)} ${view.policy.default ? 'No tenant policy is in force yet: the platform safe default applies.' : 'This is your tenant’s approved policy.'}`}
       </Banner>
       <h2 id="downline-title" className="font-section-heading text-section-heading text-on-surface">What {viewerRef} sees</h2>
       {downline.error !== null && (isNotAvailable(downline.error)

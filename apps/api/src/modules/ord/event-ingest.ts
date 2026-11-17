@@ -55,28 +55,45 @@ async function orderLines(tx: Tx, orderId: string): Promise<OrderLine[]> {
   return rows
 }
 
-async function reversedChargeback(tx: Tx, input: EventInput, orderId: string): Promise<{ id: string; lines: EventLine[] }> {
-  const { rows } = await tx.query<{ id: string; lines: EventLine[]; reversed: boolean }>(
-    `SELECT c.id, c.lines, EXISTS (SELECT 1 FROM order_event r WHERE r.reverses_event_id = c.id) AS reversed
+interface ReversedChargeback {
+  readonly id: string
+  readonly lines: EventLine[]
+  readonly volume_effect: VolumeEffect
+}
+
+async function reversedChargeback(tx: Tx, input: EventInput, orderId: string): Promise<ReversedChargeback> {
+  const { rows } = await tx.query<ReversedChargeback & { reversed: boolean }>(
+    `SELECT c.id, c.lines, c.volume_effect, EXISTS (SELECT 1 FROM order_event r WHERE r.reverses_event_id = c.id) AS reversed
      FROM order_event c WHERE c.source_system = $1 AND c.source_event_id = $2 AND c.order_id = $3 AND c.type = 'chargeback'`,
     [input.source_system, input.reverses_source_event_id, orderId],
   )
   const chargeback = rows[0]
   if (chargeback === undefined) throw new Refusal(422, 'EVENT_NOT_FOUND', 'The chargeback this event reverses was not received for the order.')
   if (chargeback.reversed) throw new Refusal(422, 'CHARGEBACK_ALREADY_REVERSED', 'The chargeback this event reverses was already reversed.')
-  return { id: chargeback.id, lines: chargeback.lines }
+  return { id: chargeback.id, lines: chargeback.lines, volume_effect: chargeback.volume_effect }
 }
 
-/** The event's lines by order line number; omitted lines = every remaining quantity for chargebacks and cancellations. */
-function resolveLines(input: EventInput, lines: readonly OrderLine[]): EventLine[] {
+/** A chargeback reversal re-credits exactly what its chargeback reversed (a restocking fee may have scaled that). */
+function negated(effect: VolumeEffect): VolumeEffect {
+  return {
+    ...(effect.lines === undefined ? {} : { lines: effect.lines.map((line) => ({ line_no: line.line_no, volumes: times(line.volumes, -1) })) }),
+    ...(effect.total === undefined ? {} : { total: times(effect.total, -1) }),
+  }
+}
+
+/**
+ * The event's lines by order line number; omitted lines = every remaining quantity for chargebacks and cancellations.
+ * A store's lines are clipped to what remains (C-B2-24): its refund may arrive after a cancellation that already reversed them.
+ */
+function resolveLines(input: EventInput, lines: readonly OrderLine[], fromStore: boolean): EventLine[] {
   const remaining = () => lines.filter((line) => line.remaining > 0).map((line) => ({ line_no: line.line_no, quantity: line.remaining }))
   if (input.lines === 'remaining') return remaining()
   if (input.lines === undefined) return input.type === 'chargeback' || input.type === 'cancelled' ? remaining() : []
   return input.lines.map((given) => {
     const line = lines.find((candidate) => ('line_no' in given ? candidate.line_no === given.line_no : candidate.source_line_id === given.source_line_id))
     if (line === undefined) throw new Refusal(422, 'LINE_UNKNOWN', 'The event names a line the order does not have.', { line: given })
-    return { line_no: line.line_no, quantity: given.quantity }
-  })
+    return { line_no: line.line_no, quantity: fromStore ? Math.min(given.quantity, line.remaining) : given.quantity }
+  }).filter((line) => line.quantity > 0)
 }
 
 /** Volume direction: returns reverse (-1), a chargeback reversal re-credits (+1), an equal-value exchange has none (0). */
@@ -129,16 +146,16 @@ function assertEventShape(input: EventInput, toleranceSeconds: number): void {
   assertNotFuture([input.occurred_at], toleranceSeconds)
 }
 
-/** FR-ORD-004: one order event; an event for an order not yet received is held ORDER_NOT_FOUND. */
-export async function processEvent(tx: Tx, input: EventInput, refs: AttemptRefs, toleranceSeconds: number): Promise<Outcome> {
+/** FR-ORD-004: one order event; an event for an order not yet received is held ORDER_NOT_FOUND. fromStore: a connector sent it. */
+export async function processEvent(tx: Tx, input: EventInput, refs: AttemptRefs, toleranceSeconds: number, fromStore: boolean): Promise<Outcome> {
   assertEventShape(input, toleranceSeconds)
   const order = await lockOrder(tx, input)
   if (order === null) return { state: 'held', reason: 'ORDER_NOT_FOUND', ref: input.source_order_id }
   const lines = await orderLines(tx, order.id)
   const reversed = input.type === 'chargeback_reversed' ? await reversedChargeback(tx, input, order.id) : null
-  const eventLines = reversed?.lines ?? resolveLines(input, lines)
+  const eventLines = reversed?.lines ?? resolveLines(input, lines, fromStore)
   assertWithinPurchased(input, eventLines, lines)
-  const effect = await volumeEffect(tx, input, eventLines, lines)
+  const effect = reversed === null ? await volumeEffect(tx, input, eventLines, lines) : negated(reversed.volume_effect)
   await tx.query(
     `INSERT INTO order_event (id, tenant_id, order_id, source_system, source_event_id, type, occurred_at, lines, refund_minor,
        fee_minor, equal_value, volume_effect, period_id, reverses_event_id, inbound_event_id)

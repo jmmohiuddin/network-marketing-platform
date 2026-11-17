@@ -12,7 +12,7 @@ import { formatDateTime } from '../format'
 import { LoadFailure } from '../page-states'
 import { tableError, usePagedList } from '../resource'
 import { NOTE, SectionTitle } from '../ui'
-import { keyLabel, valueText } from './labels'
+import { approvalOf, keyLabel, valueText } from './labels'
 import type { StructureEntry, StructurePart, VersionChange, VersionDetail, VersionSummary } from './types'
 
 export const VERSIONS_PATH = '/v1/settings/versions'
@@ -27,13 +27,19 @@ export function versionState(row: VersionSummary, inForce: number | null, now: n
 
 const nameOf = (person: { readonly display_name: string | null }) => person.display_name ?? 'Another user'
 
+/** "Dana Doe (DPO)": the approver and the role the changed keys needed (BUG-074: not every approver is Finance). */
+function approverText(approver: { readonly display_name: string | null }, keys: readonly { readonly key: string }[]): string {
+  const role = keys.map((change) => approvalOf(change.key)).find((approval) => approval !== null)?.role
+  return role === undefined ? nameOf(approver) : `${nameOf(approver)} (${role})`
+}
+
 function columns(inForce: number | null, now: number, onInspect: (version: number) => void): DataTableColumn<VersionSummary>[] {
   return [
     { key: 'version', header: 'Version', cell: (row) => <span className="font-data-mono-md text-data-mono-md text-on-surface font-semibold">{row.version}</span> },
     { key: 'effective', header: 'Effective from', cell: (row) => <span className="font-data-mono-sm text-data-mono-sm text-on-surface">{formatDateTime(row.effective_from)}</span> },
     { key: 'state', header: 'Status', cell: (row) => <StatusBadge {...versionState(row, inForce, now)} /> },
     { key: 'author', header: 'Author', cell: (row) => nameOf(row.created_by) },
-    { key: 'approver', header: 'Finance approver', cell: (row) => (row.approval === null ? <span className="text-secondary">Not needed</span> : nameOf(row.approval.approver)) },
+    { key: 'approver', header: 'Approver', cell: (row) => (row.approval === null ? <span className="text-secondary">Not needed</span> : approverText(row.approval.approver, row.changed)) },
     {
       key: 'reason',
       header: 'Reason and changes',
@@ -107,8 +113,8 @@ function DiffBody({ detail }: { readonly detail: VersionDetail }) {
         <dl className="grid grid-cols-2 gap-2 font-body-sm text-body-sm">
           <div><dt className="text-secondary text-caption">Author</dt><dd className="font-medium text-on-surface">{nameOf(detail.created_by)}</dd></div>
           <div>
-            <dt className="text-secondary text-caption">Finance approver</dt>
-            <dd className="font-medium text-tertiary">{detail.approval === null ? 'Not needed' : `${nameOf(detail.approval.approver)}, ${formatDateTime(detail.approval.decided_at)}`}</dd>
+            <dt className="text-secondary text-caption">Approver</dt>
+            <dd className="font-medium text-tertiary">{detail.approval === null ? 'Not needed' : `${approverText(detail.approval.approver, detail.changes)}, ${formatDateTime(detail.approval.decided_at)}`}</dd>
           </div>
           <div><dt className="text-secondary text-caption">Effective from</dt><dd className="font-medium text-on-surface">{formatDateTime(detail.effective_from)}</dd></div>
         </dl>

@@ -127,7 +127,8 @@ const SERVICER_COLUMNS: readonly DataTableColumn<ServicingEntry>[] = [
   {
     key: 'servicer', header: 'Servicer', cell: (entry) => entry.position === null
       ? 'The company'
-      : <span><span className={MONO}>{entry.position.position_ref}</span>{entry.position.owner_name === null ? '' : ` · ${entry.position.owner_name}`}</span>,
+      // owner_name is the owner now: on an ended row it may not be who owned the position then (BUG-080).
+      : <span><span className={MONO}>{entry.position.position_ref}</span>{entry.position.owner_name === null || entry.valid_to !== null ? '' : ` · ${entry.position.owner_name}`}</span>,
   },
   { key: 'source', header: 'Source', cell: (entry) => servicingSource(entry.source) },
   { key: 'range', header: 'Valid', cell: (entry) => <span className={MONO}>{rangeText(entry.valid_from, entry.valid_to, formatDateTime)}</span> },
@@ -165,17 +166,25 @@ function Agreements({ detail }: { readonly detail: ParticipantDetail }) {
   )
 }
 
+/** Links to the case list, only for the case types the user can read (the list is "not available" otherwise). */
 function Cases({ detail }: { readonly detail: ParticipantDetail }) {
+  const { can, readOnly } = useSession()
   const caseLink = (type: 'participant' | 'position', id: string) => `/cases?subject_type=${type}&subject_id=${id}`
+  const duplicates = can('case.duplicate.read')
+  const genealogy = can('case.genealogy.read')
   return (
     <RecordCard id="cases-title" icon="gavel" title="Cases">
-      <p className={NOTE}>Duplicate reviews are about the participant; genealogy changes, corrections and transfers are about a position. Start a case from the page header.</p>
-      <ul className="flex flex-col gap-space-xs">
-        <li><Link className="text-primary hover:underline" href={caseLink('participant', detail.id)}>Cases about {detail.external_ref}</Link></li>
-        {detail.positions.map((position) => (
-          <li key={`${position.id}|${position.owned_from}`}><Link className="text-primary hover:underline" href={caseLink('position', position.id)}>Cases about position {position.position_ref}</Link></li>
-        ))}
-      </ul>
+      <p className={NOTE}>Duplicate reviews are about the participant; genealogy changes, corrections and transfers are about a position.{!readOnly && can('case.genealogy.create') && ' Start a case from the page header.'}</p>
+      {duplicates || genealogy
+        ? (
+          <ul className="flex flex-col gap-space-xs">
+            {duplicates && <li><Link className="text-primary hover:underline" href={caseLink('participant', detail.id)}>Cases about {detail.external_ref}</Link></li>}
+            {genealogy && detail.positions.map((position) => (
+              <li key={`${position.id}|${position.owned_from}`}><Link className="text-primary hover:underline" href={caseLink('position', position.id)}>Cases about position {position.position_ref}</Link></li>
+            ))}
+          </ul>
+        )
+        : <p className={NOTE}>Cases are handled by support and compliance; your role cannot open them.</p>}
     </RecordCard>
   )
 }
@@ -195,7 +204,8 @@ export function ParticipantRecord({ participantId }: { readonly participantId: s
   const write = (permission: string) => !readOnly && can(permission)
   const available = CONTACT_FIELDS.filter((field) => detail.contact_masked?.[field] !== undefined)
   const type = currentType(detail)
-  const firstPosition = detail.positions.find((position) => position.owned_to === null)
+  const owned = detail.positions.filter((position) => position.owned_to === null)
+  const firstPosition = owned[0]
   const choicesOf = (position: OwnedPosition) => statusChoices(position.status,
     { canManage: write('participant.manage'), canTerminate: write('participant.terminate'), duplicateHold: detail.duplicate_hold })
   const close = () => setDialog(null)
@@ -215,7 +225,7 @@ export function ParticipantRecord({ participantId }: { readonly participantId: s
         summary={`${detail.market.code} · ${type === null ? 'No type in force' : `${type.name} (${type.code})`} · enrolled ${formatDateTime(detail.enrolled_at)}`}
         actions={<>
           {can('genealogy.read') && firstPosition !== undefined && <LinkButton icon="account_tree" href={`/genealogy?root=${firstPosition.id}`}>Open in genealogy</LinkButton>}
-          {write('case.genealogy.create') && <LinkButton variant="primary" icon="rule" data-testid="primary-action" href="/cases/genealogy/new">Start case</LinkButton>}
+          {write('case.genealogy.create') && <LinkButton variant="primary" icon="rule" data-testid="primary-action" href={owned.length === 1 ? `/cases/genealogy/new?position=${owned[0]!.id}` : '/cases/genealogy/new'}>Start case</LinkButton>}
         </>}
       />
       <div>

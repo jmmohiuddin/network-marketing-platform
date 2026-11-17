@@ -86,9 +86,11 @@ describe('CasesPage (SC-06)', () => {
         { type: 'transfer', open: 0, submitted: 2, overdue: 0, decided_30d: 1 },
       ]),
       'GET /v1/cases': () => ok([record()]),
+      ...refs,
     })
     renderAs(reader, <CasesPage />, fetchMock)
     expect((await screen.findByRole('link', { name: 'Genealogy change' })).getAttribute('href')).toBe(`/cases/${record().id}`)
+    expect(await screen.findByText('P-C')).toBeTruthy() // which position, not only "Position" (BUG-070)
     const kpis = screen.getByTestId('kpis')
     expect(kpis.textContent).toContain('Open3') // 2 + 1 + 0
     expect(kpis.textContent).toContain('Waiting for decision3') // 1 + 0 + 2
@@ -109,6 +111,19 @@ describe('CasesPage (SC-06)', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Remove filter: Subject: P-C' }))
     expect(navigation.router.replace).toHaveBeenCalledWith('/cases?type=genealogy_change&state=submitted')
     expect((screen.getByTestId('primary-action')).getAttribute('href')).toBe('/cases/genealogy/new')
+  })
+
+  it('ignores an unknown ?state= and shows a KPI load failure with Try again', async () => {
+    navigation.search = 'state=foo'
+    const fetchMock = fetchByRoute({ 'GET /v1/cases/counts': () => apiError(500, 'INTERNAL', 'Something went wrong.'), 'GET /v1/cases': () => ok([]) })
+    renderAs(SUPPORT, <CasesPage />, fetchMock)
+    expect(await screen.findByText('No cases match these filters')).toBeTruthy()
+    const [url] = callsTo(fetchMock, 'GET', '/v1/cases')[0]!
+    expect(new URL(url, 'http://x').searchParams.has('state')).toBe(false)
+    expect(screen.queryByText(/State:/)).toBeNull()
+    expect((screen.getByLabelText('State') as HTMLSelectElement).value).toBe('')
+    expect(await screen.findByRole('button', { name: 'Try again' })).toBeTruthy()
+    expect(screen.queryByTestId('kpis')).toBeNull()
   })
 
   it('is not available without a case read permission', () => {
@@ -173,6 +188,21 @@ describe('CaseDetailPage (SC-06)', () => {
     expect(within(bar).getAllByText(/someone else must decide it/).length).toBeGreaterThan(0)
     expect(within(bar).queryByRole('button', { name: 'Approve' })).toBeNull()
     expect(within(bar).getByText(/No one can approve this yet/)).toBeTruthy()
+  })
+
+  it('names a decided case’s positions without their owner now and its preview as at submission (BUG-080)', async () => {
+    const approved = record({
+      state: 'approved', submitted_by: SUPPORT.user.id, submitted_at: CREATED, decided_at: CREATED,
+      effect_preview: {
+        current_parent: { position_id: 'b', position_ref: 'P-B', leg: null }, proposed_parent: { position_id: PARENT, position_ref: 'P-A' },
+        structural_check: { ok: true }, affected_committed_periods: [],
+      },
+    })
+    renderAs(OFFICER, <CaseDetailPage caseId={approved.id} />, fetchByRoute({ [`GET /v1/cases/${approved.id}`]: () => ok(approved), ...refs }))
+    expect(await screen.findByText('Parent when submitted')).toBeTruthy()
+    expect(screen.queryByText('Current parent')).toBeNull()
+    expect(await screen.findByRole('link', { name: 'P-C' })).toBeTruthy()
+    expect(screen.queryByText(/Owner P-C/)).toBeNull()
   })
 
   it('approves with a reason and names the eligible approvers when the server refuses on SoD', async () => {

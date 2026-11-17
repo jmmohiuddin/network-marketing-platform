@@ -6,6 +6,7 @@ import { assertStepUp, currentAuth, marketScope, requirePermission, requireRealm
 import { inTenant } from '../../lib/db.js'
 import { envelope, parse } from '../../lib/http.js'
 import { decodeCursor, pageQuery, toPage } from '../../lib/pagination.js'
+import { getSetting } from '../ten/index.js'
 import { participantInScope } from './access.js'
 import { CONTACT_FIELDS, maskContact, type Contact } from './contact.js'
 import { typeCode } from './schemas.js'
@@ -52,6 +53,7 @@ async function listParticipants(tx: Tx, scope: readonly string[] | null, query: 
   return { ...page, data: page.data.map(({ created_at: _created, ...row }) => row) }
 }
 
+// duplicate_hold: a review is open and holds new positions (hold_activation) or a position is still pending (SC-09).
 async function participantDetail(tx: Tx, id: string) {
   const { rows } = await tx.query<{ contact: Contact | null } & Record<string, unknown>>(
     `SELECT p.id, p.external_ref, p.account_type, jsonb_build_object('id', m.id, 'code', m.code) AS market, p.display_name,
@@ -72,10 +74,11 @@ async function participantDetail(tx: Tx, id: string) {
                       FROM gen_positions_of(p.id, NULL) o JOIN position ps ON ps.id = o.position_id
                       JOIN market pm ON pm.id = o.market_id), '[]') AS positions,
             EXISTS (SELECT 1 FROM case_file c WHERE c.type = 'duplicate' AND c.state IN ('open', 'submitted')
-                      AND c.subject_type = 'participant' AND c.subject_id = p.id) AS duplicate_hold
+                      AND c.subject_type = 'participant' AND c.subject_id = p.id)
+              AND ($2 OR EXISTS (SELECT 1 FROM gen_positions_of(p.id, now()) o WHERE o.status = 'pending')) AS duplicate_hold
      FROM participant p JOIN market m ON m.id = p.market_id LEFT JOIN participant x ON x.id = p.merged_into_id
      WHERE p.id = $1`,
-    [id],
+    [id, (await getSetting(tx, 'participants.duplicate_matching'))?.hold_activation === true],
   )
   const { contact, ...row } = rows[0]!
   return { ...row, contact_masked: maskContact(contact) }

@@ -13,7 +13,8 @@ export interface CaseTypeInfo {
   readonly decide: string
   /** The base role that decides it, for "no one can approve this yet". */
   readonly deciderRole: string
-  readonly reasonCodes: readonly string[]
+  /** Reason codes a user may choose in CaseForm; absent for a type no screen files (duplicate: opened by the system). */
+  readonly reasonCodes?: readonly string[]
 }
 
 const GENEALOGY = { read: 'case.genealogy.read', create: 'case.genealogy.create', decide: 'case.genealogy.approve', deciderRole: 'Compliance officer' }
@@ -25,7 +26,7 @@ export const CASE_TYPES: readonly CaseTypeInfo[] = [
   { type: 'transfer', label: 'Ownership transfer', plural: 'Transfers', ...GENEALOGY, reasonCodes: ['SUCCESSION', 'SALE', 'DIVORCE', 'CORPORATE_RESTRUCTURE'] },
   {
     type: 'duplicate', label: 'Duplicate review', plural: 'Duplicates', read: 'case.duplicate.read', create: 'case.duplicate.create',
-    decide: 'case.duplicate.approve', deciderRole: 'Compliance officer', reasonCodes: ['SIGNAL_MATCH', 'STAFF_SUSPICION'],
+    decide: 'case.duplicate.approve', deciderRole: 'Compliance officer',
   },
 ]
 
@@ -51,6 +52,9 @@ export function reasonLabel(code: string): string {
 export const STATE_LABELS: Readonly<Record<CaseState, string>> = {
   open: 'Open', submitted: 'Waiting for decision', approved: 'Approved', rejected: 'Rejected', withdrawn: 'Withdrawn',
 }
+
+/** Open or waiting for a decision; a decided or withdrawn case is history. */
+export const isLive = (c: Pick<CaseRecord, 'state'>): boolean => c.state === 'open' || c.state === 'submitted'
 
 /** StatusBadge state words (their tone) for a case state. */
 export const STATE_BADGES: Readonly<Record<CaseState, string>> = {

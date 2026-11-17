@@ -25,10 +25,13 @@ function participantText(participant: Pick<ParticipantDetail, 'external_ref' | '
   return participant.display_name === null ? participant.external_ref : `${participant.external_ref} · ${participant.display_name}`
 }
 
-/** A position by id: its reference, linked to the genealogy explorer (SC-07), and its owner. */
-export function PositionLink({ id }: { readonly id: string }) {
+/**
+ * A position by id: its reference, linked to the genealogy explorer (SC-07), and its owner now. withOwner false for
+ * history (a decided case): the owner now may not be the owner then (BUG-080), so the reference alone names it.
+ */
+export function PositionLink({ id, withOwner = true }: { readonly id: string; readonly withOwner?: boolean }) {
   const position = useResource<PositionDetail>(positionPath(id))
-  const owner = position.data?.owner
+  const owner = withOwner ? position.data?.owner : null
   return (
     <span className="inline-flex flex-wrap items-baseline gap-x-1.5">
       <Link className={`${MONO} ${LINK}`} href={`/genealogy?root=${id}`}>{position.data?.position_ref ?? shortId(id)}</Link>
@@ -43,8 +46,8 @@ export function ParticipantLink({ id }: { readonly id: string }) {
   return <Link className={LINK} href={`/people/${id}`}>{participant.data === null ? shortId(id) : participantText(participant.data)}</Link>
 }
 
-export function SubjectLink({ subjectType, id }: { readonly subjectType: string; readonly id: string }) {
-  if (subjectType === 'position') return <PositionLink id={id} />
+export function SubjectLink({ subjectType, id, withOwner }: { readonly subjectType: string; readonly id: string; readonly withOwner?: boolean }) {
+  if (subjectType === 'position') return <PositionLink id={id} withOwner={withOwner} />
   if (subjectType === 'participant') return <ParticipantLink id={id} />
   return <span className={MONO}>{shortId(id)}</span>
 }

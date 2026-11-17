@@ -115,6 +115,33 @@ describe('POST /v1/orders (API-10)', () => {
     expect(fulfilled.json().data.replayed).toBe(true)
   })
 
+  test('a buyer the order creates is audited PARTICIPANT.ENROLLED once; ORDER.INGESTED names the buyer', async () => {
+    const buyer = { external_ref: `buyer-${randomUUID()}` }
+    const first = (await postOrder(orderBody({ buyer }))).json().data.order
+    await postOrder(orderBody({ buyer }))
+
+    const audited = await ownerRows<{ action: string; after_ref: string }>(`SELECT action, after_ref FROM audit.audit_event WHERE object_id = $1`, [first.buyer.id])
+    expect(audited.map((row) => [row.action, JSON.parse(row.after_ref).after])).toEqual([['PARTICIPANT.ENROLLED',
+      { participant_id: first.buyer.id, type_id: shop.retailType, market_id: shop.marketId, enrolled_at: first.credited_at, source: 'order' },
+    ]])
+    const [ingested] = await ownerRows<{ after_ref: string }>(`SELECT after_ref FROM audit.audit_event WHERE action = 'ORDER.INGESTED' AND object_id = $1`, [first.id])
+    expect(JSON.parse(ingested!.after_ref).after.buyer_id).toBe(first.buyer.id)
+  })
+
+  test('a redelivery still matches after orders.crediting_event changes; a changed crediting time is a conflict', async () => {
+    const body = orderBody()
+    const original = await postOrder(body)
+    await setSettings(acme.id, shop.admin.id, { 'orders.crediting_event': 'fulfilled' })
+    const afterSwitch = await postOrder(body, shop.token, randomUUID())
+    await setSettings(acme.id, shop.admin.id, { 'orders.crediting_event': 'paid' })
+    const moved = await postOrder({ ...body, paid_at: new Date(Date.now() - 120_000).toISOString() }, shop.token, randomUUID())
+
+    expect(original.statusCode).toBe(201)
+    expect(afterSwitch.statusCode).toBe(200)
+    expect(afterSwitch.json().data.replayed).toBe(true)
+    expect(moved.json().error.code).toBe('ORDER_CONFLICT')
+  })
+
   test('AC-ORD1-1: the same natural key with another body is 409 ORDER_CONFLICT, persisted as a rejected inbound event', async () => {
     const body = orderBody()
     const original = await postOrder(body)
@@ -291,6 +318,40 @@ describe('T-B2-33 attribution precedence and FR-ORD-003 purpose', () => {
     const servicingFirst = await attributed(orderBody({ buyer, attribution: { kind: 'link', position_ref: p2.positionRef } }))
     await setSettings(acme.id, shop.admin.id, { 'orders.attribution_precedence': ['link', 'code', 'servicing'] })
     expect(servicingFirst).toMatchObject({ position: p1.positionRef, source: 'servicing', conflict: true })
+  })
+
+  test('a hint counts only for a position that existed and was not terminated at the crediting time', async () => {
+    const at = '2025-06-01T00:00:00Z'
+    const later = await participantWithPosition(acme.id, shop.admin.id, shop.marketId, shop.distributorType, '2026-01-01T00:00:00Z')
+    const gone = await participantWithPosition(acme.id, shop.admin.id, shop.marketId, shop.distributorType)
+    await withTenant({ tenantId: acme.id, userId: shop.admin.id }, (tx) =>
+      tx.query(`SELECT gen_set_position_status($1, 'terminated', '2026-01-02T00:00:00Z', 'fixture', NULL)`, [gone.positionId]))
+
+    const beforeCreation = await attributed(orderBody({ ordered_at: at, paid_at: at, attribution: { kind: 'link', position_ref: later.positionRef } }))
+    const terminatedSince = await attributed(orderBody({ ordered_at: at, paid_at: at, attribution: { kind: 'link', position_ref: gone.positionRef } }))
+
+    expect(beforeCreation).toMatchObject({ position: null, source: null, conflict: false })
+    expect(terminatedSince).toMatchObject({ position: gone.positionRef, source: 'link' })
+    expect(await ownerRows('SELECT 1 FROM customer_servicing WHERE customer_id = $1', [terminatedSince.order.buyer.id])).toEqual([])
+  })
+
+  test('a pending (duplicate-held) or suspended position takes no credit and services no one: the hint is dropped as a conflict', async () => {
+    const before = '2025-06-01T00:00:00Z'
+    const held = await participantWithPosition(acme.id, shop.admin.id, shop.marketId, shop.distributorType, undefined, 'pending')
+    const suspended = await participantWithPosition(acme.id, shop.admin.id, shop.marketId, shop.distributorType)
+    await withTenant({ tenantId: acme.id, userId: shop.admin.id }, (tx) =>
+      tx.query(`SELECT gen_set_position_status($1, 'suspended', '2026-01-02T00:00:00Z', 'fixture', NULL)`, [suspended.positionId]))
+
+    const toHeld = await attributed(orderBody({ attribution: { kind: 'link', position_ref: held.positionRef } }))
+    const toSuspended = await attributed(orderBody({ attribution: { kind: 'code', position_ref: suspended.positionRef } }))
+    const whileActive = await attributed(orderBody({ ordered_at: before, paid_at: before, attribution: { kind: 'link', position_ref: suspended.positionRef } }))
+
+    expect(toHeld).toMatchObject({ position: null, source: null, conflict: true })
+    expect(toSuspended).toMatchObject({ position: null, source: null, conflict: true })
+    // Active at the crediting time, so credited; suspended now, so it does not become the customer's servicer.
+    expect(whileActive).toMatchObject({ position: suspended.positionRef, source: 'link', conflict: false })
+    const buyers = [toHeld, toSuspended, whileActive].map((result) => result.order.buyer.id as string)
+    expect(await ownerRows('SELECT 1 FROM customer_servicing WHERE customer_id = ANY ($1::uuid[])', [buyers])).toEqual([])
   })
 
   test('a distributor buying is credited to their own position; purpose given, unspecified, or flagged when required (TS-65)', async () => {

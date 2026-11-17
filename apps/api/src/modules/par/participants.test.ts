@@ -14,6 +14,7 @@ let acme: TestTenant
 let gb: string
 let my: string
 let admin: TestUser
+let integrator: TestUser
 let compliance: TestUser
 let complianceMy: TestUser
 let support: TestUser
@@ -34,6 +35,8 @@ beforeAll(async () => {
   gb = await createMarket(acme.id, 'GB')
   my = await createMarket(acme.id, 'MY')
   admin = await createSignedInUser({ tenantId: acme.id, roles: ['Tenant admin'], stepUp: true })
+  // Mints participants:write keys: holds the session permissions such a key exercises, for all markets (PLAN B2 2.8).
+  integrator = await createSignedInUser({ tenantId: acme.id, roles: ['Tenant admin', 'Support agent'], stepUp: true })
   compliance = await createSignedInUser({ tenantId: acme.id, roles: ['Compliance officer'], stepUp: true })
   complianceMy = await createSignedInUser({ tenantId: acme.id, roles: ['Compliance officer'], marketIds: [my], stepUp: true })
   support = await createSignedInUser({ tenantId: acme.id, roles: ['Support agent'] })
@@ -148,7 +151,7 @@ describe('POST /v1/participants/:id/type (T-B2-02, TS-48 history part, AC-PAR1-2
 describe('POST /v1/participants/:id/positions (T-B2-04 multi-position)', () => {
   test('a second position under a sponsor, by session and by key; a type that cannot hold positions is refused', async () => {
     const owner = (await enrolled(app, support, enrolment('DIST'))).participant.id
-    const token = await apiKey(app, admin, ['participants:write'])
+    const token = await apiKey(app, integrator, ['participants:write'])
 
     const bySession = await post(support, `/v1/participants/${owner}/positions`, { sponsor: { position_ref: sponsorRef } })
     const byKey = await keyCall(app, token, 'POST', `/v1/participants/${owner}/positions`, { position_ref: 'SECOND-KEY' })
@@ -198,6 +201,7 @@ describe('agreement versions and acceptances (T-B2-13, AC-PAR6-1, AC-PAR6-2)', (
     const accepted = await accept(current)
     const twice = await accept(current)
     const future = await post(support, `/v1/participants/${jane}/agreement-acceptances`, { agreement_version_id: current, accepted_at: '2999-01-01T00:00:00Z' })
+    const beforePublication = await post(support, `/v1/participants/${jane}/agreement-acceptances`, { agreement_version_id: current, accepted_at: '2001-01-01T00:00:00Z' })
     const list = await get(support, `/v1/agreement-versions?market_id=${gb}`)
     const participants = (await ownerRows<{ n: number }>(`SELECT count(*)::int AS n FROM participant WHERE market_id = $1 AND status = 'active'`, [gb]))[0]!.n
 
@@ -206,6 +210,7 @@ describe('agreement versions and acceptances (T-B2-13, AC-PAR6-1, AC-PAR6-2)', (
     expect(accepted.json().data).toMatchObject({ agreement_version_id: current })
     expect(twice.json().error.code).toBe('ALREADY_ACCEPTED')
     expect(future.json().error.code).toBe('ACCEPTED_AT_INVALID')
+    expect(beforePublication.json().error.code).toBe('ACCEPTED_AT_INVALID')
     const row = list.json().data.find((v: { id: string }) => v.id === current)
     expect(row).toMatchObject({ current: true, acceptances: { accepted: 1, not_accepted: participants - 1 } })
     expect(list.json().data.find((v: { id: string }) => v.id === old)).toMatchObject({ current: false, acceptances: { accepted: 0 } })

@@ -99,7 +99,9 @@ export async function listChangeRequests(
      ORDER BY r.requested_at DESC, r.id DESC LIMIT $4`,
     [query.state, after?.[0] ?? null, after?.[1] ?? null, query.limit + 1, query.keys],
   )
-  const views = await Promise.all(rows.map((row) => toView(tx, row)))
+  // One transaction client runs one query at a time: build the views in sequence.
+  const views: ChangeRequestView[] = []
+  for (const row of rows) views.push(await toView(tx, row))
   return toPage(views, query.limit, (view) => [view.requested_at.toISOString(), view.id])
 }
 
