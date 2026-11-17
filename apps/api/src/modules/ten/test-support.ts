@@ -60,3 +60,4 @@ export async function publishedAgreement(tenantId: string, marketId: string, use
   )
   return row!.id
 }
+

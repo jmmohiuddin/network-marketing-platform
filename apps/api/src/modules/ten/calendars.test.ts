@@ -4,6 +4,7 @@ import {
   auditActions, buildTestApp, call, closePoolsAfterAll, createMarket, createSignedInUser, createTenant, ownerRows, resetApiDb,
   type TestTenant, type TestUser,
 } from '../../../test/helpers/index.js'
+import { calendarDeleteRefusal } from './calendars.js'
 import { tenModule } from './index.js'
 import { setPeriodState } from './test-support.js'
 
@@ -156,5 +157,30 @@ describe('PATCH and DELETE /v1/calendars/:id (AC-TEN2-5)', () => {
     expect(await ownerRows('SELECT 1 FROM period WHERE calendar_id = $1', [open])).toEqual([])
     expect(await auditActions(acme.id)).toContain('CALENDAR.DELETED')
     expect((await call(app, { method: 'DELETE', url: `/v1/calendars/${committed}`, as: reader, body: { reason: 'x' } })).statusCode).toBe(403)
+  })
+
+  test('D-B3-20: a calendar a plan uses is 409 CALENDAR_IN_PLAN; it and its periods stay', async () => {
+    const calendar = (await create(admin, {
+      market_id: fr, name: 'FR plan', cadence: 'monthly', cutoff_time_zone: 'Europe/Paris', first_period_start: `${YEAR}-01-01`, periods_ahead: 2,
+    })).json().data.calendar.id as string
+    const [plan] = await ownerRows<{ id: string }>(`INSERT INTO plan (tenant_id, name, created_by) VALUES ($1, 'FR core', $2) RETURNING id`, [acme.id, admin.id])
+    await ownerRows('INSERT INTO plan_market (tenant_id, plan_id, market_id) VALUES ($1, $2, $3)', [acme.id, plan!.id, fr])
+    await ownerRows('INSERT INTO plan_calendar (tenant_id, plan_id, calendar_id) VALUES ($1, $2, $3)', [acme.id, plan!.id, calendar])
+
+    const before = await periods(calendar)
+
+    const refused = await call(app, { method: 'DELETE', url: `/v1/calendars/${calendar}`, as: admin, body: { reason: 'drop' } })
+
+    expect([refused.statusCode, refused.json().error.code]).toEqual([409, 'CALENDAR_IN_PLAN'])
+    expect(before.length).toBeGreaterThan(0)
+    expect(await periods(calendar)).toEqual(before)
+  })
+
+  test('a foreign key from an order, run or simulation to a period is 409 CALENDAR_HAS_ACTIVITY, not CALENDAR_IN_PLAN', () => {
+    const fk = (constraint: string) => calendarDeleteRefusal(Object.assign(new Error('fk'), { code: '23503', constraint }))
+
+    expect(fk('plan_calendar_tenant_id_calendar_id_fkey')).toMatchObject({ statusCode: 409, code: 'CALENDAR_IN_PLAN' })
+    expect(fk('sales_order_tenant_id_period_id_fkey')).toMatchObject({ statusCode: 409, code: 'CALENDAR_HAS_ACTIVITY' })
+    expect(calendarDeleteRefusal(Object.assign(new Error('x'), { code: '23505' }))).toBeNull()
   })
 })

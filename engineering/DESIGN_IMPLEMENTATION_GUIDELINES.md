@@ -355,6 +355,7 @@ Source: S1 (sc_01) icons; keys that S1 does not draw take the S3/S6 icon.
 | audit | `history_edu` |
 | markets (SC-17 market launch; S3 "Market Launch") | `public` |
 | integrations (SC-13; S3 "Integrations") | `hub` |
+| guardrails (SC-11, under compliance; not drawn by S4, B3 integrator choice) | `policy` |
 | vendor console sections: tenants / support sessions / vendor users / audit | `corporate_fare` / `vpn_key` / `admin_panel_settings` / `history_edu` |
 | unknown key | no icon (label only) |
 

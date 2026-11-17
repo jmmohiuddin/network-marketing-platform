@@ -1,0 +1,926 @@
+{
+  "when": "2026-11-17T22:02:34.302Z",
+  "screenId": "SC-04",
+  "stitch": "sc_04_plan_versions_simulation",
+  "module": "plans",
+  "screen": "plan-version",
+  "route": "/plans/[id]/versions/[v]",
+  "role": "plan-administrator",
+  "url": "http://127.0.0.1:3100/plans/e42ba34e-058f-414f-841f-bfc53d996bb4/versions/1",
+  "self": false,
+  "patched": [],
+  "viewports": [
+    {
+      "viewport": "1440x900",
+      "screenshot": "testing/ui-screenshots/app/plans/plan-version/plan-administrator/1440x900.png",
+      "reference": "testing/ui-screenshots/reference/sc_04_plan_versions_simulation/1440x900.png",
+      "diffImage": "testing/ui-screenshots/app/plans/plan-version/plan-administrator/1440x900.diff.png",
+      "mismatchPercent": 6.21,
+      "diffPixels": 159803,
+      "referenceSize": "1440x1583",
+      "actualSize": "1440x1787",
+      "landmarks": [
+        {
+          "landmark": "header",
+          "stitchText": "AuditLedgerAcrobex Global(TEN-842)arrow_drop_downUS - United",
+          "appText": "menuMenuAcme Direct LtdPAPlan AdministratorPlan administrato",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "height",
+              "stitch": "48px",
+              "app": "48px",
+              "match": true
+            },
+            {
+              "prop": "background",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "sidebar",
+          "stitchText": "dashboardOverviewhistory_toggle_offPeriods & RunsschemaCompe",
+          "appText": "verified_userCompliancehistory_toggle_offPeriods and runssch",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "width",
+              "stitch": "208px",
+              "app": "208px",
+              "match": true
+            },
+            {
+              "prop": "background",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "page",
+          "stitchText": "Plan Versions — Global Compensation Plan Brand: Apex Health ",
+          "appText": "Planschevron_rightDE corechevron_rightVersion 1Version 1DE c",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "background",
+              "stitch": "rgb(248, 249, 255)",
+              "app": "rgb(248, 249, 255)",
+              "match": true
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "16px",
+              "app": "16px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "title",
+          "stitchText": "Plan Versions — Global Compensation Plan",
+          "appText": "DE core",
+          "status": "mismatch",
+          "severity": "medium",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "24px",
+              "app": "24px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "700",
+              "app": "600",
+              "match": false
+            },
+            {
+              "prop": "line-height",
+              "stitch": "32px",
+              "app": "32px",
+              "match": true
+            },
+            {
+              "prop": "letter-spacing",
+              "stitch": "-0.6px",
+              "app": "-0.36px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(0, 56, 131)",
+              "app": "rgb(13, 28, 46)",
+              "match": false
+            }
+          ]
+        },
+        {
+          "landmark": "sectionHeading",
+          "stitchText": "Volume Measures & Ingestion",
+          "appText": "Personal volume",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "16px",
+              "app": "16px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            },
+            {
+              "prop": "line-height",
+              "stitch": "24px",
+              "app": "24px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "primaryButton",
+          "stitchText": "play_arrow Run Historical Simulation",
+          "appText": "play_arrowRun simulation",
+          "status": "mismatch",
+          "severity": "high",
+          "props": [
+            {
+              "prop": "background-color",
+              "stitch": "rgb(30, 79, 163)",
+              "app": "rgb(0, 56, 131)",
+              "match": false
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            },
+            {
+              "prop": "border-radius",
+              "stitch": "2px",
+              "app": "2px",
+              "match": true
+            },
+            {
+              "prop": "height",
+              "stitch": "32px",
+              "app": "32px",
+              "match": true
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "13px",
+              "app": "13px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "500",
+              "app": "600",
+              "match": false
+            }
+          ]
+        },
+        {
+          "landmark": "card",
+          "stitchText": "Plan Versions — Global Compensation Plan Brand: Apex Health ",
+          "appText": "Effective from:Aug 1, 2026, 12:00 AM GMT+2Crediting event:Wh",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "border-radius",
+              "stitch": "4px",
+              "app": "4px",
+              "match": true
+            },
+            {
+              "prop": "box-shadow",
+              "stitch": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+              "app": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+              "match": true
+            },
+            {
+              "prop": "background-color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "viewport": "1280x800",
+      "screenshot": "testing/ui-screenshots/app/plans/plan-version/plan-administrator/1280x800.png",
+      "reference": "testing/ui-screenshots/reference/sc_04_plan_versions_simulation/1280x800.png",
+      "diffImage": "testing/ui-screenshots/app/plans/plan-version/plan-administrator/1280x800.diff.png",
+      "mismatchPercent": 6.15,
+      "diffPixels": 141982,
+      "referenceSize": "1280x1759",
+      "actualSize": "1280x1803",
+      "landmarks": [
+        {
+          "landmark": "header",
+          "stitchText": "AuditLedgerAcrobex Global(TEN-842)arrow_drop_downUS - United",
+          "appText": "menuMenuAcme Direct LtdPAPlan AdministratorPlan administrato",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "height",
+              "stitch": "48px",
+              "app": "48px",
+              "match": true
+            },
+            {
+              "prop": "background",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "sidebar",
+          "stitchText": "dashboardOverviewhistory_toggle_offPeriods & RunsschemaCompe",
+          "appText": "verified_userCompliancehistory_toggle_offPeriods and runssch",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "width",
+              "stitch": "208px",
+              "app": "208px",
+              "match": true
+            },
+            {
+              "prop": "background",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "page",
+          "stitchText": "Plan Versions — Global Compensation Plan Brand: Apex Health ",
+          "appText": "Planschevron_rightDE corechevron_rightVersion 1Version 1DE c",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "background",
+              "stitch": "rgb(248, 249, 255)",
+              "app": "rgb(248, 249, 255)",
+              "match": true
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "16px",
+              "app": "16px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "title",
+          "stitchText": "Plan Versions — Global Compensation Plan",
+          "appText": "DE core",
+          "status": "mismatch",
+          "severity": "medium",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "24px",
+              "app": "24px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "700",
+              "app": "600",
+              "match": false
+            },
+            {
+              "prop": "line-height",
+              "stitch": "32px",
+              "app": "32px",
+              "match": true
+            },
+            {
+              "prop": "letter-spacing",
+              "stitch": "-0.6px",
+              "app": "-0.36px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(0, 56, 131)",
+              "app": "rgb(13, 28, 46)",
+              "match": false
+            }
+          ]
+        },
+        {
+          "landmark": "sectionHeading",
+          "stitchText": "Volume Measures & Ingestion",
+          "appText": "Personal volume",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "16px",
+              "app": "16px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            },
+            {
+              "prop": "line-height",
+              "stitch": "24px",
+              "app": "24px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "primaryButton",
+          "stitchText": "play_arrow Run Historical Simulation",
+          "appText": "play_arrowRun simulation",
+          "status": "mismatch",
+          "severity": "high",
+          "props": [
+            {
+              "prop": "background-color",
+              "stitch": "rgb(30, 79, 163)",
+              "app": "rgb(0, 56, 131)",
+              "match": false
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            },
+            {
+              "prop": "border-radius",
+              "stitch": "2px",
+              "app": "2px",
+              "match": true
+            },
+            {
+              "prop": "height",
+              "stitch": "32px",
+              "app": "32px",
+              "match": true
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "13px",
+              "app": "13px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "500",
+              "app": "600",
+              "match": false
+            }
+          ]
+        },
+        {
+          "landmark": "card",
+          "stitchText": "Plan Versions — Global Compensation Plan Brand: Apex Health ",
+          "appText": "Effective from:Aug 1, 2026, 12:00 AM GMT+2Crediting event:Wh",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "border-radius",
+              "stitch": "4px",
+              "app": "4px",
+              "match": true
+            },
+            {
+              "prop": "box-shadow",
+              "stitch": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+              "app": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+              "match": true
+            },
+            {
+              "prop": "background-color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "viewport": "768x1024",
+      "screenshot": "testing/ui-screenshots/app/plans/plan-version/plan-administrator/768x1024.png",
+      "reference": "testing/ui-screenshots/reference/sc_04_plan_versions_simulation/768x1024.png",
+      "diffImage": "testing/ui-screenshots/app/plans/plan-version/plan-administrator/768x1024.diff.png",
+      "mismatchPercent": 6.72,
+      "diffPixels": 152196,
+      "referenceSize": "768x2951",
+      "actualSize": "768x2003",
+      "landmarks": [
+        {
+          "landmark": "page",
+          "stitchText": "Plan Versions — Global Compensation Plan Brand: Apex Health ",
+          "appText": "Planschevron_rightDE corechevron_rightVersion 1Version 1DE c",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "background",
+              "stitch": "rgb(248, 249, 255)",
+              "app": "rgb(248, 249, 255)",
+              "match": true
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "16px",
+              "app": "16px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "title",
+          "stitchText": "Plan Versions — Global Compensation Plan",
+          "appText": "DE core",
+          "status": "mismatch",
+          "severity": "medium",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "24px",
+              "app": "24px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "700",
+              "app": "600",
+              "match": false
+            },
+            {
+              "prop": "line-height",
+              "stitch": "32px",
+              "app": "32px",
+              "match": true
+            },
+            {
+              "prop": "letter-spacing",
+              "stitch": "-0.6px",
+              "app": "-0.36px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(0, 56, 131)",
+              "app": "rgb(13, 28, 46)",
+              "match": false
+            }
+          ]
+        },
+        {
+          "landmark": "sectionHeading",
+          "stitchText": "Volume Measures & Ingestion",
+          "appText": "Personal volume",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "16px",
+              "app": "16px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            },
+            {
+              "prop": "line-height",
+              "stitch": "24px",
+              "app": "24px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "primaryButton",
+          "stitchText": "play_arrow Run Historical Simulation",
+          "appText": "play_arrowRun simulation",
+          "status": "mismatch",
+          "severity": "high",
+          "props": [
+            {
+              "prop": "background-color",
+              "stitch": "rgb(30, 79, 163)",
+              "app": "rgb(0, 56, 131)",
+              "match": false
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            },
+            {
+              "prop": "border-radius",
+              "stitch": "2px",
+              "app": "2px",
+              "match": true
+            },
+            {
+              "prop": "height",
+              "stitch": "32px",
+              "app": "32px",
+              "match": true
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "13px",
+              "app": "13px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "500",
+              "app": "600",
+              "match": false
+            }
+          ]
+        },
+        {
+          "landmark": "card",
+          "stitchText": "Plan Versions — Global Compensation Plan Brand: Apex Health ",
+          "appText": "Effective from:Aug 1, 2026, 12:00 AM GMT+2Crediting event:Wh",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "border-radius",
+              "stitch": "4px",
+              "app": "4px",
+              "match": true
+            },
+            {
+              "prop": "box-shadow",
+              "stitch": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+              "app": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+              "match": true
+            },
+            {
+              "prop": "background-color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "viewport": "390x844",
+      "screenshot": "testing/ui-screenshots/app/plans/plan-version/plan-administrator/390x844.png",
+      "reference": "testing/ui-screenshots/reference/sc_04_plan_versions_simulation/390x844.png",
+      "diffImage": "testing/ui-screenshots/app/plans/plan-version/plan-administrator/390x844.diff.png",
+      "mismatchPercent": 4.36,
+      "diffPixels": 146055,
+      "referenceSize": "489x6853",
+      "actualSize": "390x2781",
+      "landmarks": [
+        {
+          "landmark": "page",
+          "stitchText": "Plan Versions — Global Compensation Plan Brand: Apex Health ",
+          "appText": "Planschevron_rightDE corechevron_rightVersion 1Version 1DE c",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "background",
+              "stitch": "rgb(248, 249, 255)",
+              "app": "rgb(248, 249, 255)",
+              "match": true
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "16px",
+              "app": "16px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "title",
+          "stitchText": "Plan Versions — Global Compensation Plan",
+          "appText": "DE core",
+          "status": "mismatch",
+          "severity": "medium",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "24px",
+              "app": "20px",
+              "match": false
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "700",
+              "app": "600",
+              "match": false
+            },
+            {
+              "prop": "line-height",
+              "stitch": "32px",
+              "app": "28px",
+              "match": false
+            },
+            {
+              "prop": "letter-spacing",
+              "stitch": "-0.6px",
+              "app": "-0.5px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(0, 56, 131)",
+              "app": "rgb(13, 28, 46)",
+              "match": false
+            }
+          ]
+        },
+        {
+          "landmark": "sectionHeading",
+          "stitchText": "Volume Measures & Ingestion",
+          "appText": "Personal volume",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "16px",
+              "app": "16px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            },
+            {
+              "prop": "line-height",
+              "stitch": "24px",
+              "app": "24px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "primaryButton",
+          "stitchText": "play_arrow Run Historical Simulation",
+          "appText": "play_arrowRun simulation",
+          "status": "mismatch",
+          "severity": "high",
+          "props": [
+            {
+              "prop": "background-color",
+              "stitch": "rgb(30, 79, 163)",
+              "app": "rgb(0, 56, 131)",
+              "match": false
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            },
+            {
+              "prop": "border-radius",
+              "stitch": "2px",
+              "app": "2px",
+              "match": true
+            },
+            {
+              "prop": "height",
+              "stitch": "32px",
+              "app": "32px",
+              "match": true
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "13px",
+              "app": "13px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "500",
+              "app": "600",
+              "match": false
+            }
+          ]
+        },
+        {
+          "landmark": "card",
+          "stitchText": "Plan Versions — Global Compensation Plan Brand: Apex Health ",
+          "appText": "Effective from:Aug 1, 2026, 12:00 AM GMT+2Crediting event:Wh",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "border-radius",
+              "stitch": "4px",
+              "app": "4px",
+              "match": true
+            },
+            {
+              "prop": "box-shadow",
+              "stitch": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+              "app": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+              "match": true
+            },
+            {
+              "prop": "background-color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

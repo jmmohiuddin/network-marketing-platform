@@ -33,3 +33,9 @@ _Agent: database. Read before every task; update after every task. Keep concise 
 - System duplicate case decision: approval preparer must be the submitter (checked only for opened_by NULL; B1 user cases unchanged).
 - market_references splits provider_config into providers (non-commerce) and connectors (commerce).
 - order_event_quantity_guard locks the order row (FOR UPDATE) and also refuses unknown lines / non-positive quantities (23514).
+
+## B3 schema
+- run_snapshot hash checked by a BEFORE INSERT trigger, not a CHECK, so a tampered row (owner) is still detectable by replay (AC-COMP8-1).
+- Extra uniques beyond PLAN: one acknowledgement per evaluation, one late origin per (run, late item, position, rule), one calculated run per period (deferred EXCLUDE).
+- Acknowledgements/overrides must repeat their evaluation's rule, version, outcome and content hash (guardrail queries need no join to find the content).
+- guardrail_outstanding reasons: acknowledgement_required, override_required, not_overridable.

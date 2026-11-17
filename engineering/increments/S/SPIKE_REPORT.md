@@ -94,3 +94,16 @@ Measured: 16 GB RAM, 10 cores (4 performance, 6 efficiency), swap 7.15 of 8 GB u
 - The spike processes are light: the heaviest Node process peaked at 1.66 GB (engine at 2M); ledger and genealogy stayed under 700 MB. The limits are swap and disk (PostgreSQL wrote 1.5–1.6 GB per large bench).
 - Keep heavy jobs (benchmarks, test suites, builds) at 2 at once, the existing `scripts/heavy.sh` limit. Two heavy jobs ran together without failure.
 - Agents that only read and edit code are much lighter: 4 Claude processes measured 1.24 GB together. About 4–6 agents at once is the practical ceiling; free disk first.
+
+## 6. B3 measurements (2026-11-18, copied by the B3 records step from the package results; B3 PLAN §S)
+
+Laptop in swap; upper bounds. Product engine 0.2.0, not the spike prototype.
+
+**S-1 engine** (`packages/engine/results/s1-bench.json`, `scripts/heavy.sh node --max-old-space-size=4096 --import tsx packages/engine/test/run/bench.ts <shape> <n>`, G-E2E-01 plan + `measure.derived` capped_pv):
+- 50k positions, every shape (random, binary, wide 50,000 direct children, deep 5,000-level leg): first run 1.1–1.5 s, peak RSS 0.8–1.1 GB; shuffled input gives the same result hash.
+- 150k binary: 3.2 s, 2.4 GB (~16 KB per position).
+- **500k and 2M: out of memory at 4 GB for every shape.** The spike's 2M / 1.66 GB was the typed-array prototype. E-ADR-34 (engine in TypeScript) and E-ADR-35 (calc worker 4 GB) must be re-evaluated before tenants above ~200k positions (TK-B3-12).
+
+**S-2 write path** (`apps/api/test/bench/write-path.results.json`, one transaction, triggers on, as nmp_app): 100k lines + 100k state rows 128 s (under swap contention); 600k lines + 100k state rows 149 s (lines 142 s, state 4.7 s, flip 1.6 s; result_line 1.56 GB). Within NFR-PERF-04's 5 min → one transaction for write + flip (C-B3-17).
+
+**S-2 end to end** (`apps/api/test/bench/end-to-end.results.json`, TS-10 plan, binary tree, one order per position): 2k 0.9 s, 10k 15.3 s, 20k 40.7 s, dominated by the snapshot store (codec O(n²) on array indexes). The integrator fixed the codec afterwards (`packages/engine/src/json.ts`); **100k end to end not measured, re-run pending** (TK-B3-13).

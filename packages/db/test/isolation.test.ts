@@ -19,6 +19,10 @@ const TENANT_ID_TABLES = [
   'agreement_acceptance', 'position', 'position_status_history', 'position_ownership', 'relationship', 'path_model',
   'path_node', 'customer_servicing', 'product_volume_map', 'inbound_event', 'sales_order', 'order_line', 'order_event',
   'late_transaction',
+  // PLAN B3 section 1
+  'plan', 'plan_market', 'plan_calendar', 'plan_version', 'plan_rule', 'plan_transition', 'golden_dataset',
+  'guardrail_decision', 'run_snapshot', 'run', 'result_line', 'qualification_state', 'simulation', 'sim_result_line',
+  'adjustment_origin', 'restatement',
 ]
 // Platform tables (no tenant): every realm reads them, none writes them (pack-rules.test.ts).
 const PLATFORM_TABLES = ['guardrail_rule', 'tax_rule']

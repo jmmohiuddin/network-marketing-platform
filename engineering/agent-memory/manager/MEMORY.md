@@ -10,3 +10,10 @@
 - Updated TRACEABILITY (22 FRs I T V, GEN-009 I T; B2 note on V limits), DEVELOPMENT_PROGRESS (8 B2 rows), IMPLEMENTATION_TASKS (T-B2-00..17; closed T-B1-11..17), STITCH_DESIGN_INVENTORY (9 rows verified with harness %), RELEASE_NOTES, MASTER_PROJECT_MEMORY, ADL E-ADR-39 (PLAN §0 says records copies D-B2), wrote increments/B2/HANDOFF.md.
 - Full run nmp_test_4 reset to 0208: 148 files, 2739 tests, all green; typecheck clean (log var/b2-records-vitest.log). Per-module counts: awk over `✓ <file> (N tests)` lines.
 - Truncated agent summaries: read the agents' memory files (backend MEMORY "B2 review round 3" showed the security fixes; 0208 existed but no DB report mentioned it). Security findings recorded as SEC-B2-1..5 "fix in tree, unconfirmed" (security registers them).
+
+## B3 records step (2026-11-18)
+- Updated TRACEABILITY (19 B3 FRs I T V, PLN-002/COMP-004 partial per PLAN §8; FR-CAS-001 + all 18 Release A rows I T V per PLAN §B), DEVELOPMENT_PROGRESS (7 B3 rows), IMPLEMENTATION_TASKS (TK-B3-00..18: PLAN uses T-B3-nn for TEST ids; closed T-B2-11..15), STITCH_DESIGN_INVENTORY (8 B3 rows verified with harness %, SC-06/07/09 touches), RELEASE_NOTES, MASTER_PROJECT_MEMORY, BUG_REGISTER (SEC-B2-1..5 registered, BUG-081..083 fixed in code, OPEN-ENG-01 partly resolved), SPIKE_REPORT §6 (S-1/S-2 numbers), wrote increments/B3/HANDOFF.md.
+- Full run nmp_test_4 reset to 0306: 173 files, 3303 tests, all green; typecheck clean (logs var/b3-records-*.log). Module counts: awk over `✓ <file> (N tests)`.
+- PLAN §B/§S assign extra records-phase duties (bug registration, Release A rows, SPIKE_REPORT §6): read PLAN for "records phase" before starting.
+- Truncated agent summaries: backend MEMORY sections "State after B3 BE1/BE2", "backend-lead integration", "security review fixes"; frontend MEMORY B3 sections; QA reports in testing/. Security fixes recorded as SEC-B3-1..8 "fix in tree, not re-reviewed" in HANDOFF only (security registers).
+- nmp_test carries a foreign row 0250_firebase_identity.sql (applied 2026-11-18 00:12, file not in repo): flagged, not touched.

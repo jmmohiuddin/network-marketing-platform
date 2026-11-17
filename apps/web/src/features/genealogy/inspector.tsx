@@ -10,7 +10,7 @@ import { useSession } from '../../lib/session'
 import { useResource } from '../../lib/use-resource'
 import { LoadFailure } from '../admin/page-states'
 import { MONO, NOTE } from '../admin/ui'
-import { positionBadge, rangeText } from '../people/format'
+import { parentOrigin, positionBadge, rangeText } from '../people/format'
 import type { PositionView } from './types'
 
 const PANEL = 'bg-surface-container-low p-space-sm rounded-xl flex flex-col gap-1.5'
@@ -61,15 +61,18 @@ export function PositionInspector({ positionId, onFocus }: { readonly positionId
             {(['sponsor', 'placement'] as const).map((kind) => {
               const parent = view.parents[kind]
               return (
-                <div key={kind} className="flex flex-wrap items-center justify-between gap-space-xs">
-                  <span className="font-body-sm text-body-sm text-on-surface">{kind === 'sponsor' ? 'Sponsor' : 'Placement'}</span>
-                  {parent === null
-                    ? <span className="font-body-sm text-body-sm text-secondary">None (top of the tree)</span>
-                    : (
-                      <Button size="sm" variant="tertiary" aria-label={`Focus ${kind} ${parent.position_ref}`} onClick={() => onFocus(parent.position_id)}>
-                        {parent.position_ref}{'leg' in parent && parent.leg !== null ? ` · leg ${parent.leg}` : ''}
-                      </Button>
-                    )}
+                <div key={kind} className="flex flex-col">
+                  <div className="flex flex-wrap items-center justify-between gap-space-xs">
+                    <span className="font-body-sm text-body-sm text-on-surface">{kind === 'sponsor' ? 'Sponsor' : 'Placement'}</span>
+                    {parent === null
+                      ? <span className="font-body-sm text-body-sm text-secondary">None (top of the tree)</span>
+                      : (
+                        <Button size="sm" variant="tertiary" aria-label={`Focus ${kind} ${parent.position_ref}`} onClick={() => onFocus(parent.position_id)}>
+                          {parent.position_ref}{'leg' in parent && parent.leg !== null ? ` · leg ${parent.leg}` : ''}
+                        </Button>
+                      )}
+                  </div>
+                  {parent !== null && <span className={`${MONO} text-secondary`}>{parentOrigin(parent)}, since {formatDateTime(parent.valid_from)}</span>}
                 </div>
               )
             })}

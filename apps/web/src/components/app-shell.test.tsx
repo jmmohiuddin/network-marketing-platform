@@ -129,6 +129,23 @@ describe('AppShell', () => {
     expect(links.map((link) => link.getAttribute('aria-current'))).toEqual([null, null, 'page', null, null])
   })
 
+  it('shows the B3 entries the API grants with their icons; guardrails and late transactions are not under their parents', async () => {
+    navigation.pathname = '/compliance/guardrails'
+    const entries = [
+      { key: 'compliance', path: '/compliance', label: 'Compliance' },
+      { key: 'late', path: '/periods/late', label: 'Late transactions' },
+      { key: 'periods', path: '/periods', label: 'Periods and runs' },
+      { key: 'plans', path: '/plans', label: 'Plans' },
+      { key: 'guardrails', path: '/compliance/guardrails', label: 'Guardrails' },
+    ]
+    renderWithProviders(<AppShell realm="tenant"><Page /></AppShell>, fetchReturning(ok(me({ navigation: entries }))))
+    await screen.findByText('May invite users')
+    const links = entries.map((entry) => screen.getByRole('link', { name: entry.label }))
+    expect(links.map((link) => link.querySelector('.material-symbols-outlined')?.textContent))
+      .toEqual(['verified_user', 'history_toggle_off', 'history_toggle_off', 'schema', 'policy'])
+    expect(links.map((link) => link.getAttribute('aria-current'))).toEqual([null, null, null, null, 'page'])
+  })
+
   it('opens the navigation as an overlay from Menu and closes it with Escape', async () => {
     const user = userEvent.setup()
     renderWithProviders(<AppShell realm="tenant"><Page /></AppShell>, fetchReturning(ok(me())))

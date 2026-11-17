@@ -15,6 +15,7 @@
 //   ranks in one tree (positions evaluated bottom-up in it); other references must name an earlier ladder.
 // - Counter: prior + 1 when incrementIf holds, else 0. Carry: min(prev + new, cap) when keepIf holds, else 0.
 import { EngineError } from '../errors.js'
+import { conditionOf } from '../expression.js'
 import { assertInt64, mulRate, parseDecimal, RAW_SCALE, toRaw } from '../money.js'
 import { holdsRank, type Done, type PassFn, type RunContext } from '../pipeline.js'
 import { compareId, rollUp, type Tree } from '../tree.js'
@@ -35,7 +36,7 @@ interface Scope {
 /** The ladder being evaluated: its plan position and, when it counts its own ranks in legs, that tree's subtree maxima. */
 interface Current { readonly pos: number; readonly own: { readonly tree: TreeKind; readonly subMax: Int16Array } | null }
 
-const MAX_RANKS = 32767 // Int16Array rank indexes
+export const MAX_RANKS = 32767 // Int16Array rank indexes
 
 const invalid = (message: string, details: Record<string, string> = {}): EngineError => new EngineError('INVALID_INPUT', message, details)
 
@@ -199,6 +200,10 @@ function compile(s: Scope, req: Requirement, current: Current): Check {
           return { valueMinor: met ? 1n : 0n, met }
         },
       }
+    }
+    case 'expression': {
+      const holds = conditionOf(req.expr, { ctx: s.ctx, rule: s.ctx.input.plan.ladders[current.pos]!.key, measure: (key) => measureValues(s, key), prior: s.done.transition.prior })
+      return { atLeastMinor: 1n, at: (k) => (holds(k) ? { valueMinor: 1n, met: true } : { valueMinor: 0n, met: false }) }
     }
     case 'rank': {
       earlierLadder(s, req.rank.ladder, current)

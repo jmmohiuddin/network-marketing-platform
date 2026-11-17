@@ -45,7 +45,7 @@ export function unsetThresholdsTitle(thresholds: readonly SettingEntry[]): strin
 const SETTINGS_READERS = ['settings.manage', 'settings.approve', 'privacy.manage'] as const
 
 /** PLAN B2 5 SC-29: the B2 keys of the "Participants, orders and integrations" card, each with what holds while unset. */
-const B2_ROWS: readonly { readonly key: PolicyKey; readonly title: string; readonly description: string; readonly whenUnset: string }[] = [
+const B2_ROWS: readonly { readonly key: PolicyKey; readonly title: string; readonly description: string; readonly whenUnset: string; readonly retired?: true }[] = [
   { key: 'orders.crediting_event', title: 'Crediting event', description: 'Whether an order counts when it is paid or when it is fulfilled.', whenUnset: 'Orders are refused until set.' },
   { key: 'orders.attribution_precedence', title: 'Attribution precedence', description: 'Which hint names the distributor credited with an order: a link, a code or the customer’s servicer.', whenUnset: 'Orders are refused until set.' },
   { key: 'orders.purpose_required', title: 'Order purpose required', description: 'Whether each order must say if it is for resale or personal use; orders without one are flagged.', whenUnset: 'Orders without a purpose are not flagged.' },
@@ -53,9 +53,12 @@ const B2_ROWS: readonly { readonly key: PolicyKey; readonly title: string; reado
   { key: 'orders.restocking_fee_volume_effect', title: 'Restocking-fee volume effect', description: 'Whether a restocking fee reduces the volume a return takes back.', whenUnset: 'Events with a restocking fee are refused until set.' },
   { key: 'customers.reassignment_rule', title: 'Customer reassignment rule', description: 'Where the customers of a terminated position go, and after how many days.', whenUnset: 'Positions that service customers cannot be terminated until set.' },
   { key: 'participants.duplicate_matching', title: 'Duplicate matching', description: 'Which hashed signals two participants must share to open a duplicate case at enrolment.', whenUnset: 'No duplicate matching.' },
-  { key: 'genealogy.placement_width', title: 'Placement width', description: 'Placement legs per position, for automatic placement and chosen legs.', whenUnset: 'Auto placement and legs unavailable.' },
+  // D-B3-06: the width moved to the plan version; the setting is read only as the fallback for markets without one.
+  { key: 'genealogy.placement_width', title: 'Placement width', description: 'Retired: set on the plan version. A value kept here applies only to markets without a plan version.', whenUnset: 'Retired: set on the plan version.', retired: true },
   { key: 'integrations.sync_health', title: 'Sync health thresholds', description: 'How long a storefront or API source may go without an accepted event before it is behind, then failing.', whenUnset: 'Sources are only marked failing; behind is not measured.' },
 ]
+/** Keys the API refuses to write (SETTING_RETIRED): shown, never offered for a new version. */
+const RETIRED_KEYS: readonly string[] = B2_ROWS.filter((row) => row.retired === true).map((row) => row.key)
 
 /**
  * SC-29 Tenant settings: the settings readers (settings.manage, settings.approve, privacy.manage) see the policy
@@ -110,7 +113,7 @@ function PolicySettings({ children }: { readonly children: ReactNode }) {
     setRound((value) => value + 1)
   }
   const entry = (key: string): SettingEntry | undefined => view?.values[key]
-  const policyKeys = POLICY_KEYS.filter((key) => entry(key) !== undefined)
+  const policyKeys = POLICY_KEYS.filter((key) => entry(key) !== undefined && !RETIRED_KEYS.includes(key))
   const latestVersion = typeof settings.meta.latest_version === 'number' ? settings.meta.latest_version : 0
   const dialog = { latestVersion, onClose: () => setEditing(null), onSaved: refresh }
   const changeOf = (key: SettingKey) => (writable ? () => setEditing({ kind: 'setting', key }) : undefined)
@@ -295,7 +298,7 @@ function PolicySettings({ children }: { readonly children: ReactNode }) {
           <ul className="flex flex-col gap-space-md">
             {b2Rows.map((row) => (
               <SettingRow key={row.key} title={row.title} description={row.description} whenUnset={row.whenUnset} entry={row.entry}
-                show={(value: unknown) => valueText(row.key, value)} onChange={versionOf(row.key)} />
+                show={(value: unknown) => valueText(row.key, value)} onChange={row.retired ? undefined : versionOf(row.key)} />
             ))}
           </ul>
         </section>

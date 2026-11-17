@@ -66,6 +66,8 @@ const SETTING_READERS: Readonly<Record<SettingKey, Needs>> = {
   'integrations.sync_health': any('settings.manage', 'integration.read'),
   'genealogy.visibility_policy': any('settings.manage', 'privacy.manage', 'genealogy.read'),
   'genealogy.placement_width': any('settings.manage', 'genealogy.read'),
+  // PLAN B3 section 1.5.
+  'runs.exception_thresholds': any('settings.manage', 'run.review'),
 }
 const SETTING_KEYS = Object.keys(SETTING_READERS) as SettingKey[]
 const MAPPING_READERS = any('import.manage', 'mapping.edit', 'mapping.approve')
@@ -78,8 +80,8 @@ const MARKET_MANAGE = all('market.manage')
 const INTEGRATION = all('integration.manage')
 // Evidence uploaders: launch preparers and signers, and the create permission of a registered case type; agreement
 // publishers upload agreement documents (PLAN B2 2.2).
-const UPLOADERS = any('market.manage', 'market.signoff', 'case.genealogy.create', 'case.duplicate.create', 'agreement.publish')
-const CASE_READERS = any('case.genealogy.read', 'case.duplicate.read')
+const UPLOADERS = any('market.manage', 'market.signoff', 'case.genealogy.create', 'case.duplicate.create', 'restatement.request', 'agreement.publish')
+const CASE_READERS = any('case.genealogy.read', 'case.duplicate.read', 'case.restatement.read')
 const PARTICIPANT_READ = all('participant.read')
 const PARTICIPANT_MANAGE = all('participant.manage')
 const GENEALOGY_READ = all('genealogy.read')
@@ -89,6 +91,10 @@ const TODAY = new Date().toISOString()
 // A case id that exists nowhere has no type, so no permission can be checked: 404 for every role.
 const caseProbe = (path: string, body?: unknown) => probe(everyone, 'POST', `/v1/cases/${NOWHERE}/${path}`, body)
 const ROWS = `/v1/compliance/snapshots/${NOWHERE}/figures/R1.2025-01.customer_share_pct/rows`
+const PLAN_READ = all('plan.read')
+const PLAN_EDIT = all('plan.edit')
+const VERSION = `/v1/plans/${NOWHERE}/versions/1`
+const RUN = `/v1/runs/${NOWHERE}`
 
 const PROBES: Readonly<Record<string, readonly Probe[]>> = {
   'POST /v1/auth/sessions': [probe(everyone, 'POST', '/v1/auth/sessions', {})],
@@ -219,6 +225,9 @@ const PROBES: Readonly<Record<string, readonly Probe[]>> = {
       type: 'duplicate', subject_type: 'participant', subject_id: NOWHERE, reason_code: 'STAFF_SUSPICION',
       payload: { matched_participant_id: NOWHERE, matched_kinds: [] },
     }),
+    probe(all('restatement.request'), 'POST', '/v1/cases', {
+      type: 'restatement', subject_type: 'period', subject_id: NOWHERE, reason_code: 'INPUT_CORRECTION', payload: { note: 'probe' },
+    }),
   ],
   'GET /v1/cases': [read(CASE_READERS, '/v1/cases')],
   'GET /v1/cases/:id': [read(everyone, `/v1/cases/${NOWHERE}`)],
@@ -280,6 +289,53 @@ const PROBES: Readonly<Record<string, readonly Probe[]>> = {
   'POST /v1/connectors/:id/withdraw': [probe(INTEGRATION, 'POST', `/v1/connectors/${NOWHERE}/withdraw`, {})],
   'POST /v1/connectors/:id/webhooks': [probe(everyone, 'POST', `/v1/connectors/${NOWHERE}/webhooks`, {})],
   'GET /v1/integrations/health': [read(any('integration.read', 'integration.manage'), '/v1/integrations/health')],
+  // PLN (PLAN B3 2.1): draft writes without If-Match answer 428 once past the permission check.
+  'GET /v1/plans': [read(PLAN_READ, '/v1/plans')],
+  'POST /v1/plans': [probe(PLAN_EDIT, 'POST', '/v1/plans', {})],
+  'GET /v1/plans/:id': [read(PLAN_READ, `/v1/plans/${NOWHERE}`)],
+  'POST /v1/plans/:id/versions': [probe(PLAN_EDIT, 'POST', `/v1/plans/${NOWHERE}/versions`)],
+  'GET /v1/plans/:id/versions/:v': [read(PLAN_READ, VERSION)],
+  'PATCH /v1/plans/:id/versions/:v': [probe(PLAN_EDIT, 'PATCH', VERSION, {})],
+  'GET /v1/plans/:id/versions/:v/diff': [read(PLAN_READ, `${VERSION}/diff?against=1`)],
+  'PUT /v1/plans/:id/versions/:v/rules/:ruleKey': [probe(PLAN_EDIT, 'PUT', `${VERSION}/rules/pv`, {})],
+  'DELETE /v1/plans/:id/versions/:v/rules/:ruleKey': [probe(PLAN_EDIT, 'DELETE', `${VERSION}/rules/pv`)],
+  'PUT /v1/plans/:id/versions/:v/transitions/:stateItem': [probe(PLAN_EDIT, 'PUT', `${VERSION}/transitions/title.main`, {})],
+  'DELETE /v1/plans/:id/versions/:v/transitions/:stateItem': [probe(PLAN_EDIT, 'DELETE', `${VERSION}/transitions/title.main`)],
+  'POST /v1/plans/:id/versions/:v/submit': [probe(PLAN_EDIT, 'POST', `${VERSION}/submit`)],
+  'POST /v1/plans/:id/versions/:v/decision': [probe(all('plan.approve'), 'POST', `${VERSION}/decision`, {})],
+  'POST /v1/plans/:id/versions/:v/schedule': [probe(all('plan.activate'), 'POST', `${VERSION}/schedule`, {})],
+  'POST /v1/plans/:id/versions/:v/guardrails/evaluate': [probe(PLAN_EDIT, 'POST', `${VERSION}/guardrails/evaluate`)],
+  'POST /v1/plans/:id/versions/:v/guardrail-decisions/:decisionId/acknowledge': [
+    probe(PLAN_EDIT, 'POST', `${VERSION}/guardrail-decisions/${NOWHERE}/acknowledge`),
+  ],
+  'GET /v1/plans/:id/versions/:v/golden-datasets': [read(PLAN_READ, `${VERSION}/golden-datasets`)],
+  'GET /v1/plans/:id/versions/:v/golden-datasets/:goldenId': [read(PLAN_READ, `${VERSION}/golden-datasets/${NOWHERE}`)],
+  'POST /v1/plans/:id/versions/:v/golden-datasets': [probe(PLAN_EDIT, 'POST', `${VERSION}/golden-datasets`, {})],
+  'DELETE /v1/plans/:id/versions/:v/golden-datasets/:goldenId': [probe(PLAN_EDIT, 'DELETE', `${VERSION}/golden-datasets/${NOWHERE}`)],
+  'POST /v1/plans/:id/versions/:v/golden-datasets/run': [probe(all('plan.simulate'), 'POST', `${VERSION}/golden-datasets/run`)],
+  // CPL guardrail decisions (PLAN B3 2.2)
+  'GET /v1/guardrail-decisions': [read(all('guardrail.read'), '/v1/guardrail-decisions')],
+  'GET /v1/guardrail-decisions/:id': [read(all('guardrail.read'), `/v1/guardrail-decisions/${NOWHERE}`)],
+  'POST /v1/guardrail-decisions/:id/override': [probe(all('override.approve'), 'POST', `/v1/guardrail-decisions/${NOWHERE}/override`, {})],
+  // COMP (PLAN B3 2.3, 2.5)
+  'GET /v1/periods': [read(all('period.read'), '/v1/periods')],
+  'GET /v1/periods/:id': [read(all('period.read'), `/v1/periods/${NOWHERE}`)],
+  'POST /v1/periods/:id/runs': [probe(all('run.execute'), 'POST', `/v1/periods/${NOWHERE}/runs`)],
+  'GET /v1/runs/:id': [read(any('period.read', 'run.review'), RUN)],
+  'GET /v1/runs/:id/review': [read(all('run.review'), `${RUN}/review`)],
+  'GET /v1/runs/:id/transitions': [read(all('run.review'), `${RUN}/transitions`)],
+  'GET /v1/runs/:id/lines': [read(all('run.review'), `${RUN}/lines`)],
+  'POST /v1/runs/:id/request-commit': [probe(all('run.execute'), 'POST', `${RUN}/request-commit`)],
+  'POST /v1/runs/:id/commit': [probe(all('run.commit'), 'POST', `${RUN}/commit`, {})],
+  'POST /v1/runs/:id/replay': [probe(all('run.execute'), 'POST', `${RUN}/replay`)],
+  'GET /v1/result-lines/:id/trace': [read(all('trace.read'), `/v1/result-lines/${NOWHERE}/trace`)],
+  'GET /v1/positions/:id/qualification': [read(PARTICIPANT_READ, `/v1/positions/${NOWHERE}/qualification`)],
+  'POST /v1/simulations': [probe(all('plan.simulate'), 'POST', '/v1/simulations', {})],
+  'GET /v1/simulations': [read(any('plan.simulate', 'plan.read'), '/v1/simulations')],
+  'GET /v1/simulations/:id': [read(any('plan.simulate', 'plan.read'), `/v1/simulations/${NOWHERE}`)],
+  'GET /v1/simulations/:id/payees': [read(all('plan.simulate'), `/v1/simulations/${NOWHERE}/payees`)],
+  'GET /v1/restatements/:id': [read(all('case.restatement.read'), `/v1/restatements/${NOWHERE}`)],
+  'GET /v1/restatements/:id/lines': [read(all('case.restatement.read'), `/v1/restatements/${NOWHERE}/lines`)],
 }
 
 /** Fastify's HEAD routes run their GET handler: they take the GET probes with method HEAD. */

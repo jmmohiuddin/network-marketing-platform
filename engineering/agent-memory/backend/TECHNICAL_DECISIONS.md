@@ -86,3 +86,13 @@ _Agent: backend. Read before every task; update after every task. Keep concise �
 - **ACCESSED after the answer** (onSend, own tenant tx, before bytes leave; WeakSet guards the error-handler resend). Chosen over writing in the handler's tx because a 404/400 query would then leave no trace (rolled back). Status recorded so a failed query is visible as such.
 - **Population count in @nmp/compliance** (where the population text is written), not in cpl/compute.ts; METHOD_VERSION unchanged (formulas unchanged; drill-down compares value/numerator/denominator only).
 - **Vendor users in iam** (identity), iam -> support (vendorIdempotency) import; vendor invitations reuse user_invitation (tenant_id NULL) rather than a new table; USER.* action names reused in the vendor log. Isolation case flag `echoesRefusedRequests` for the vendor log (it repeats ids vendors sent in refused requests).
+
+## B3 BE2 runs (2026-11-18)
+- **Worker transactions**: the tenant job's own tx only reads the tenant id; tx A, progress, tx B and failure each run in their own runInTenant (shortcut comment: the job tx stays idle; lib/jobs could offer a tx-free tenant job). Engine runs between tx A and tx B (outside any lock).
+- **Late items consumed without origins** (all lines rounded to 0, exchange, restatement policy) are recorded in run_snapshot.row_counts.late_item_ids so commit consumes exactly what tx A saw (a retried job cannot recompute that list).
+- **Review exceptions read current state** (sync now, runs.exception_thresholds in force now), so the same function gates commit; origin_skipped ids are stored in run.outputs at tx B.
+- **jsonb outputs/traces/state** use a linear bigint JSON (`jsonText`): jsonb normalises key order, so the canonical codec is only used for the snapshot content (contract) — and lines_hash uses jsonText over an ordered array.
+- **Trace explanation** only on ?expand=true (from the replayed full line): §1.5 forbids arithmetic on stored traces, and explain() checks sums.
+- **Restatement openness** = case state under the `restatement:<period>` advisory lock (validateCreate, also at PATCH excluding the stored case); diff = sandbox − (committed regular lines + consumed origins of P) per (position, rule); origins carry the case reason code.
+- **Simulation failures** are stored (savepoint) as failed with {code, message}; a draft whose compiled changed since the request fails PLAN_CHANGED. Sandbox failure -> 422 SANDBOX_FAILED (submit rolls back).
+- **Commit invariants**: 23514 from the commit statements -> 500 INVARIANT_FAILED; the deferred run_origins_consumed check fires at COMMIT (plain 500).

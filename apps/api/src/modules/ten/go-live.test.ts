@@ -2,8 +2,7 @@ import { withTenant } from '@nmp/db'
 import type { FastifyInstance } from 'fastify'
 import { afterAll, beforeAll, describe, expect, test } from 'vitest'
 import {
-  auditActions, buildTestApp, call, closePoolsAfterAll, createMarket, createSignedInUser, createTenant, ownerRows, resetApiDb,
-  type TestTenant, type TestUser,
+  activePlanVersion, auditActions, buildTestApp, call, closePoolsAfterAll, createMarket, createSignedInUser, createTenant, ownerRows, resetApiDb, type TestTenant, type TestUser,
 } from '../../../test/helpers/index.js'
 import { payModule } from '../pay/index.js'
 import { assertMarketLive, tenModule } from './index.js'
@@ -83,7 +82,12 @@ async function recordBreachContacts(): Promise<void> {
 }
 
 describe('checklist and go-live request (AC-38.1, AC-53.1, T-B1-09)', () => {
-  test('a new draft market: every item but the pack rules is missing; the request names every missing item', async () => {
+  test('a new draft market: every item but the pack rules is missing (a draft plan version does not count, T-B3-35)', async () => {
+    await ownerRows(
+      `WITH plan_row AS (INSERT INTO plan (tenant_id, name, created_by) VALUES ($1, 'FR draft', $3) RETURNING id),
+            covered AS (INSERT INTO plan_market (tenant_id, plan_id, market_id) SELECT $1, id, $2 FROM plan_row)
+       INSERT INTO plan_version (tenant_id, plan_id, version, engine_version, created_by) SELECT $1, id, 1, 'fixture', $3 FROM plan_row`,
+      [acme.id, market, admin.id])
     const view = await checklist()
     const refused = await requestGoLive()
 
@@ -111,16 +115,16 @@ describe('checklist and go-live request (AC-38.1, AC-53.1, T-B1-09)', () => {
   test('entries: provider and automatic items are not recordable; evidence needs a document, attestation a note', async () => {
     const results = await Promise.all([
       entry(admin, 'payout_provider', { note: 'x' }), entry(admin, 'breach_contacts', { note: 'x' }),
-      entry(admin, 'agreement_versions', { document_id: await evidenceDocument(acme.id, admin.id) }),
+      entry(admin, 'agreement_versions', { document_id: await evidenceDocument(acme.id, admin.id) }), entry(admin, 'plan_variant', { note: 'x' }),
       entry(admin, 'licence_evidence', { note: 'x' }), entry(admin, 'data_region', { document_id: await evidenceDocument(acme.id, admin.id) }),
       entry(admin, 'licence_evidence', { document_id: await evidenceDocument(acme.id, adminSigner.id) }),
       entry(admin, 'no_such_item', { note: 'x' }),
     ])
 
     expect(results.map((r) => r.statusCode === 404 ? 'NOT_FOUND' : r.json().error.code)).toEqual([
-      'ITEM_NOT_RECORDABLE', 'ITEM_NOT_RECORDABLE', 'ITEM_NOT_RECORDABLE', 'EVIDENCE_REQUIRED', 'NOTE_REQUIRED', 'DOCUMENT_NOT_FOUND', 'NOT_FOUND',
+      'ITEM_NOT_RECORDABLE', 'ITEM_NOT_RECORDABLE', 'ITEM_NOT_RECORDABLE', 'ITEM_NOT_RECORDABLE', 'EVIDENCE_REQUIRED', 'NOTE_REQUIRED', 'DOCUMENT_NOT_FOUND', 'NOT_FOUND',
     ])
-    expect((await entry(compliance, 'plan_variant', { note: 'x' })).statusCode).toBe(403)
+    expect((await entry(compliance, 'data_region', { note: 'x' })).statusCode).toBe(403)
   })
 
   test('a complete checklist (screening rules aside) opens one pending request; entries and a second request wait (AC-TEN4-1)', async () => {
@@ -128,7 +132,7 @@ describe('checklist and go-live request (AC-38.1, AC-53.1, T-B1-09)', () => {
     await entry(admin, 'tax_configuration', { document_id: await evidenceDocument(acme.id, admin.id) })
     const agreement = await publishedAgreement(acme.id, market, admin.id)
     await entry(admin, 'data_region', { note: 'EU region confirmed' })
-    await entry(admin, 'plan_variant', { note: 'FR plan variant A' })
+    const planVersion = await activePlanVersion(acme.id, market, { submitterId: admin.id, approverId: compliance.id, creditingEvent: 'paid' })
     await recordProvider('payout')
     paymentProvider = (await recordProvider('payment')).json().data.id
     await recordBreachContacts()
@@ -136,7 +140,7 @@ describe('checklist and go-live request (AC-38.1, AC-53.1, T-B1-09)', () => {
     const view = await checklist(compliance)
     const created = await requestGoLive()
     requestId = created.json().data.id
-    const blockedEntry = await entry(admin, 'plan_variant', { note: 'variant B' })
+    const blockedEntry = await entry(admin, 'data_region', { note: 'region B' })
     const second = await requestGoLive()
 
     expect(licence.json().data).toMatchObject({ item: 'licence_evidence', status: 'complete', entry: { document: { file_name: 'licence.pdf', mime: 'application/pdf', size_bytes: 1024 }, recorded_by: { id: adminSigner.id } } })
@@ -144,6 +148,10 @@ describe('checklist and go-live request (AC-38.1, AC-53.1, T-B1-09)', () => {
     // T-B2-14: the agreement item is automatic, complete with the market's published version.
     expect(view.json().data.items.find((i: Item) => i.item === 'agreement_versions')).toMatchObject({
       kind: 'automatic', status: 'complete', entry: null, detail: { version: { id: agreement, label: 'v1' } },
+    })
+    // T-B3-35: the plan item is automatic, complete with the active version of a plan covering the market.
+    expect(view.json().data.items.find((i: Item) => i.item === 'plan_variant')).toMatchObject({
+      kind: 'automatic', status: 'complete', entry: null, detail: { version: { version_id: planVersion, version: 1, state: 'active' } },
     })
     expect(created.statusCode).toBe(201)
     expect(created.json().data).toMatchObject({ market_id: market, state: 'pending', requested_by: { id: admin.id } })
@@ -233,7 +241,7 @@ describe('sign-off (AC-TEN4-2/3, AC-CPL12-1, TS-42 go-live part, TS-50)', () => 
     expect(version!.settings.structure.markets.find((m) => m.id === market)!.state).toBe('live')
     expect(history.json().data[0]).toMatchObject({ id: requestId, state: 'approved' })
     await expect(withTenant({ tenantId: acme.id, userId: admin.id }, (tx) => assertMarketLive(tx, market))).resolves.toBeUndefined()
-    expect((await entry(admin, 'plan_variant', { note: 'late' })).json().error.code).toBe('MARKET_NOT_DRAFT')
+    expect((await entry(admin, 'data_region', { note: 'late' })).json().error.code).toBe('MARKET_NOT_DRAFT')
     expect((await decide(compliance, requestId, { decision: 'approve' })).json().error.code).toBe('GO_LIVE_NOT_PENDING')
   })
 })
@@ -247,7 +255,8 @@ describe('withdraw and reject', () => {
     const be = created.json().data.id as string
     for (const item of ['licence_evidence', 'tax_configuration']) await entry(admin, item, { document_id: await evidenceDocument(acme.id, admin.id) }, be)
     await publishedAgreement(acme.id, be, admin.id)
-    for (const item of ['data_region', 'plan_variant']) await entry(admin, item, { note: 'confirmed' }, be)
+    await entry(admin, 'data_region', { note: 'confirmed' }, be)
+    await activePlanVersion(acme.id, be, { submitterId: admin.id, approverId: compliance.id, creditingEvent: 'paid' })
     await recordProvider('payout', be)
     await recordProvider('payment', be)
 
@@ -274,7 +283,8 @@ describe('SoD over the request snapshot (AC-TEN4-2, BR-SEC-06)', () => {
     const nl = created.json().data.id as string
     for (const item of ['licence_evidence', 'tax_configuration']) await entry(admin, item, { document_id: await evidenceDocument(acme.id, admin.id) }, nl)
     await publishedAgreement(acme.id, nl, admin.id)
-    for (const item of ['data_region', 'plan_variant']) await entry(admin, item, { note: 'confirmed' }, nl)
+    await entry(admin, 'data_region', { note: 'confirmed' }, nl)
+    await activePlanVersion(acme.id, nl, { submitterId: admin.id, approverId: compliance.id, creditingEvent: 'paid' })
     const signerProvider = (await recordProvider('payout', nl, adminSigner, 'Signer payout')).json().data.id as string
     await recordProvider('payout', nl)
     await recordProvider('payment', nl)

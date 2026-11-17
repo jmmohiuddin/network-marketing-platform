@@ -75,8 +75,9 @@ async function buildVersion(tx: Tx, kind: Kind, version: string): Promise<number
 
 /**
  * One (tenant, kind) rebuild in the tenant's transaction (D-B2-07): version + 1 is built, the model switches to it and
- * the versions before the previous one go. The stale mark clears only if path_model was not written since it was read (its row version, xmin):
- * every relationship write upserts that row, so a write during the build keeps the model stale for the next run.
+ * the versions before the previous one go; valid_until = the next start or end of a row of the kind (OI-3). The stale
+ * mark clears only if path_model was not written since it was read (its row version, xmin): every relationship or
+ * position write marks that row, so a write during the build keeps the model stale for the next run.
  */
 export async function rebuildModel(tx: Tx, kind: Kind): Promise<RebuildOutcome> {
   const { rows: locked } = await tx.query<{ locked: boolean }>(
@@ -85,7 +86,7 @@ export async function rebuildModel(tx: Tx, kind: Kind): Promise<RebuildOutcome> 
   )
   if (locked[0]?.locked !== true) return { kind, result: 'skipped' }
   const { rows } = await tx.query<{ version: string; row_version: string }>(
-    'SELECT version::text AS version, xmin::text AS row_version FROM path_model WHERE kind = $1 AND stale_since IS NOT NULL',
+    'SELECT version::text AS version, xmin::text AS row_version FROM path_model WHERE kind = $1 AND (stale_since IS NOT NULL OR valid_until <= now())',
     [kind],
   )
   const model = rows[0]
@@ -93,7 +94,7 @@ export async function rebuildModel(tx: Tx, kind: Kind): Promise<RebuildOutcome> 
   const version = (BigInt(model.version) + 1n).toString()
   const nodes = await buildVersion(tx, kind, version)
   const { rows: switched } = await tx.query<{ still_stale: boolean }>(
-    `UPDATE path_model SET version = $2, built_at = now(),
+    `UPDATE path_model SET version = $2, built_at = now(), valid_until = gen_path_valid_until($1),
        stale_since = CASE WHEN xmin::text = $3 THEN NULL ELSE stale_since END
      WHERE kind = $1 RETURNING stale_since IS NOT NULL AS still_stale`,
     [kind, version, model.row_version],

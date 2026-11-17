@@ -150,7 +150,7 @@ describe('participant types and assignments (D-B2-09, AC-PAR1-1, AC-PAR1-2)', ()
 
   test('par_create_customer: an active end-customer type only (PA002); an existing ref returns its id', async () => {
     const ref = `buyer-${randomUUID()}`
-    const create = (typeId: string) => value<string>('SELECT par_create_customer($1, $2, $3, now())', [ref, marketId, typeId])
+    const create = (typeId: string) => value<string>('SELECT id FROM par_create_customer($1, $2, $3, now())', [ref, marketId, typeId])
 
     await expect(create(distributorType)).rejects.toMatchObject({ code: 'PA002' })
     const id = await create(customerType)

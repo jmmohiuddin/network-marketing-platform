@@ -57,7 +57,6 @@ const listRoutes = (extra: Record<string, (query: URLSearchParams) => Response> 
   'GET /v1/markets': () => ok([MARKET]),
   'GET /v1/participant-types': () => ok([DIST]),
   'GET /v1/agreement-versions': () => ok([AGREEMENT]),
-  'GET /v1/settings/genealogy.placement_width': () => ok({ key: 'genealogy.placement_width', value: 2 }),
   ...extra,
 })
 
@@ -65,6 +64,7 @@ const recordRoutes = (data: ParticipantDetail, extra: Record<string, (query: URL
   'GET /v1/participants/p1': () => ok(data),
   'GET /v1/participants/p1/servicing': () => ok([]),
   'GET /v1/positions/pos1/customers': () => ok([]),
+  'GET /v1/positions/pos1': () => ok({ parents: { sponsor: { position_id: 'pos0', position_ref: 'A1', valid_from: AT, event_type: 'rule', rule_id: 'v1:reparent' }, placement: null } }),
   ...extra,
 })
 
@@ -110,7 +110,10 @@ describe('PeopleList', () => {
     await user.selectOptions(within(dialog).getByLabelText('Participant type'), 'DIST')
     await user.type(within(dialog).getByLabelText(/Place under position/), 'B1')
     const leg = await within(dialog).findByLabelText('Leg')
-    expect(within(leg).getAllByRole('option').map((option) => option.textContent).slice(0, 2)).toEqual(['No leg', 'Automatic: first free leg, breadth-first'])
+    // BUG-087: legs and automatic placement are offered without the retired placement-width setting (D-B3-06).
+    expect(within(leg).getAllByRole('option').map((option) => option.textContent).slice(0, 3)).toEqual(['No leg', 'Automatic: first free leg, breadth-first', 'Leg 1'])
+    expect(callsTo(fetchMock, 'GET', '/v1/settings/genealogy.placement_width')).toHaveLength(0)
+    expect(within(dialog).queryByText(/placement width is set in Settings/)).toBeNull()
     await user.selectOptions(leg, 'auto')
     await user.type(within(dialog).getByLabelText(/Identity reference/), 'ID-123')
     await within(dialog).findByLabelText('The participant accepted NL v1')
@@ -175,6 +178,7 @@ describe('ParticipantRecord (SC-09)', () => {
     expect(screen.queryByRole('button', { name: 'Show contact' })).toBeNull()
     expect(screen.getByRole('link', { name: 'Start case' }).getAttribute('href')).toBe('/cases/genealogy/new?position=pos1')
     expect(screen.getByRole('link', { name: 'Open in genealogy' }).getAttribute('href')).toBe('/genealogy?root=pos1')
+    expect(screen.getByRole('link', { name: 'Qualification history' }).getAttribute('href')).toBe('/people/p1/qualification') // SC-43
     expect(screen.queryByText(/Tax|Banking|Ledger|earning|rank/i)).toBeNull()
   })
 
@@ -214,6 +218,8 @@ describe('ParticipantRecord (SC-09)', () => {
     navigation.search = 'tab=positions'
     const user = userEvent.setup()
     renderAs(SUPPORT, <ParticipantRecord participantId="p1" />, recordRoutes(detail()))
+    // BUG-088: the sponsor now names the plan rule that re-parented the position.
+    expect(await screen.findByText(/^By plan rule “reparent”, since /)).toBeTruthy()
     await user.click(await screen.findByRole('button', { name: 'Change status of B1' }))
     const options = within(screen.getByLabelText('New status')).getAllByRole('option').map((option) => option.textContent)
     expect(options).toEqual(['Suspended'])

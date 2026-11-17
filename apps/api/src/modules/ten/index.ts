@@ -27,5 +27,7 @@ export {
 } from './settings.js'
 export { assertMarketLive, getMarket, marketName, type MarketState, type MarketView } from './markets.js'
 export { CHECKLIST_ITEMS, type ChecklistItem } from './checklist.js'
+export { placementWidthFor, structuralRules, type StructuralRule, type StructuralRuleKind } from './plan-structure.js'
 export { inScope } from './scope.js'
+export { recordStructureChange } from './structure.js'
 export { approveOrRefuse, decideWithSod } from './sod.js'

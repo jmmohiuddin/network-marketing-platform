@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { recordAudit } from '../../lib/audit.js'
 import { ApiError } from '../../lib/errors.js'
 import type { CaseRecord, CaseType } from '../cas/index.js'
-import { getSetting } from '../ten/index.js'
+import { placementWidthFor, structuralRules } from '../ten/index.js'
 import { PERMISSIONS, positionRef, resolvePositionSubject, type GenCaseType } from './case-support.js'
 import { instant, notBeforeToday, toInstant } from './dates.js'
 import { dryRun, withSqlErrors } from './errors.js'
@@ -24,7 +24,7 @@ export type ChangePayload = z.infer<typeof changePayload>
 export type CorrectionPayload = z.infer<typeof correctionPayload>
 type RelationshipPayload = ChangePayload | CorrectionPayload
 
-const IMPACT_NOTE = 'Payout impact is calculated once runs exist (B3).'
+const IMPACT_NOTE = 'Payout impact is not estimated on the correction: once it is approved, request a restatement of each affected committed period to preview the difference per payee.'
 
 /** One relationship write through G2 (PLAN B2 4.2). */
 interface Move {
@@ -53,12 +53,34 @@ const apply = (tx: Tx, move: Move, caseId: string) =>
     move.kind, move.child, move.parent, move.leg, move.at, move.eventType, caseId,
   ])
 
-/** D-B2-20: legs need the placement width setting and stay within it. */
-async function assertLeg(tx: Tx, leg: string | null): Promise<void> {
-  if (leg === null) return
-  const width = await getSetting(tx, 'genealogy.placement_width')
-  if (width === null) throw new ApiError(422, 'PLACEMENT_NOT_CONFIGURED', 'Set the placement width before choosing legs.')
-  if (Number(leg) > width) throw new ApiError(422, 'LEG_OUT_OF_RANGE', `Choose a leg from 1 to ${width}.`, { width })
+/** D-B2-20 / D-B3-06: legs need a placement width for the child's market and stay within it. */
+async function assertLeg(tx: Tx, move: Move): Promise<void> {
+  if (move.leg === null) return
+  const { rows } = await tx.query<{ market_id: string }>('SELECT market_id FROM position WHERE id = $1', [move.child])
+  const width = await placementWidthFor(tx, rows[0]!.market_id)
+  if (width === null) throw new ApiError(422, 'PLACEMENT_NOT_CONFIGURED', 'Set the placement width on the market\'s plan version before choosing legs.')
+  if (Number(move.leg) > width) throw new ApiError(422, 'LEG_OUT_OF_RANGE', `Choose a leg from 1 to ${width}.`, { width })
+}
+
+/**
+ * D-B3-07 / BR-GEN-05: a change of a tree with a change window in force (for the child's market, now) applies within N
+ * days of the position's enrolment (its first ownership); corrections are not windowed.
+ */
+async function assertChangeWindow(tx: Tx, move: Move): Promise<void> {
+  if (move.eventType !== 'change') return
+  const { rows } = await tx.query<{ market_id: string; days_after: number }>(
+    `SELECT p.market_id, extract(epoch FROM $2::timestamptz - min(o.valid_from))::float8 / 86400 AS days_after
+     FROM position p JOIN position_ownership o ON o.position_id = p.id WHERE p.id = $1 GROUP BY p.market_id`,
+    [move.child, move.at],
+  )
+  const { market_id: marketId, days_after: daysAfter } = rows[0]!
+  const rules = await structuralRules(tx, marketId, new Date(), 'genealogy.change_window')
+  const outside = rules.find((rule) => rule.params.tree === move.kind && daysAfter > rule.params.withinDaysOfEnrolment)
+  if (outside !== undefined) {
+    throw new ApiError(422, 'OUTSIDE_CHANGE_WINDOW', `A ${move.kind} change applies within ${outside.params.withinDaysOfEnrolment} days of enrolment.`, {
+      rule_id: outside.rule_id, window_days: outside.params.withinDaysOfEnrolment,
+    })
+  }
 }
 
 /** A correction is dated now or earlier, or exactly at the start of a pending change it cancels (E-GEN-04). */
@@ -117,7 +139,7 @@ interface Spec<P extends RelationshipPayload> {
 function relationshipCaseType<P extends RelationshipPayload>(spec: Spec<P>): GenCaseType<P> {
   const prepare = async (tx: Tx, child: string, payload: P): Promise<Move> => {
     const move = await moveOf(tx, child, payload)
-    await assertLeg(tx, move.leg)
+    await assertLeg(tx, move)
     await assertCorrectionDate(tx, move)
     return move
   }
@@ -127,6 +149,7 @@ function relationshipCaseType<P extends RelationshipPayload>(spec: Spec<P>): Gen
     // The proposed parent is not scoped to the filer's markets: sponsor chains cross markets (D-B2-21).
     async validateCreate(tx, subject, payload) {
       const move = await prepare(tx, subject.id, payload)
+      await assertChangeWindow(tx, move)
       const refusal = await dryRun(tx, async () => apply(tx, move, await scratchCase(tx, spec.type, spec.reasonCodes[0]!, subject.id)))
       if (refusal !== null) throw refusal
     },
@@ -144,8 +167,11 @@ function relationshipCaseType<P extends RelationshipPayload>(spec: Spec<P>): Gen
     },
     async onDecision(tx, c, decision) {
       if (decision !== 'approved') return
-      // The leg width and the correction date are checked again: settings and pending rows may have changed since submit.
-      await applyApproved(tx, c, await prepare(tx, c.subject_id, c.payload), spec.audit)
+      // The leg width, the correction date and the change window are checked again at the instant the move applies:
+      // settings, plan rules and pending rows may have changed since submit.
+      const move = await prepare(tx, c.subject_id, c.payload)
+      await assertChangeWindow(tx, move)
+      await applyApproved(tx, c, move, spec.audit)
     },
   }
 }

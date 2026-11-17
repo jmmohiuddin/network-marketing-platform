@@ -2,9 +2,10 @@
 
 import { Icon } from '../../components/icon'
 import { StatusBadge } from '../../components/status-badge'
-import { formatDateTime } from '../../lib/format'
+import { periodText } from '../periods/format'
 import { isLive, OUTCOME_LABELS, structuralText } from './format'
 import { PositionLink } from './refs'
+import { RestatementEffect, type RestatementPreview } from './restatement-effect'
 import type { CaseRecord, DuplicatePreview, RelationshipPreview, TransferPreview } from './types'
 
 const LABEL = 'font-caption text-caption uppercase text-secondary font-semibold'
@@ -54,7 +55,7 @@ function RelationshipEffect({ preview, live }: { readonly preview: RelationshipP
             <p className="font-caption text-caption text-on-surface-variant">Committed periods are never edited; the difference is handled in an open period.</p>
             <ul className="flex flex-col gap-0.5">
               {periods.map((period) => (
-                <li key={period.period_id} className={`${MONO} text-on-surface`}>{formatDateTime(period.starts_at)} – {formatDateTime(period.ends_at)} · {period.state}</li>
+                <li key={period.period_id} className={`${MONO} text-on-surface`}>{periodText(period, undefined)} · {period.state}</li>
               ))}
             </ul>
           </div>
@@ -105,6 +106,8 @@ export function EffectPreview({ record }: { readonly record: CaseRecord }) {
     body = <p className="font-body-sm text-body-sm text-secondary">The effect preview is calculated when the case is submitted for a decision.</p>
   } else if (record.type === 'transfer') {
     body = <TransferEffect preview={preview as TransferPreview} live={live} />
+  } else if (record.type === 'restatement') {
+    body = <RestatementEffect record={record} preview={preview as RestatementPreview} />
   } else if (record.type === 'duplicate') {
     body = <DuplicateEffect preview={preview as DuplicatePreview} live={live} />
   } else {

@@ -7,6 +7,10 @@ import { BASE_ROLES, type BaseRoleName } from '../../src/lib/permissions.js'
 import { hashPassword } from '../../src/lib/passwords.js'
 import type { ApiModule } from '../../src/lib/module.js'
 import { uploadDocument } from '../../src/modules/aud/test-support.js'
+import { simulationJob } from '../../src/modules/comp/simulations.js'
+import {
+  activePlan, calculate, commit, createWorld, evidenceDocument, inside, lateItem, member, order, orderEvent, ts10Plan, type World,
+} from '../../src/modules/comp/test-support.js'
 import { computeSnapshotJob } from '../../src/modules/cpl/index.js'
 import { PROTOTYPE_SETTINGS } from '../../src/modules/cpl/test-fixtures.js'
 import { rebuildNow } from '../../src/modules/gen/test-support.js'
@@ -14,9 +18,10 @@ import { approvedMappingId, TINY_MAPPING, tinyFiles, upload } from '../../src/mo
 import { defaultModules } from '../../src/modules/index.js'
 import { apiKey, asKey, committedPeriod } from '../../src/modules/ord/test-support.js'
 import { activeType, CUSTOMER, DISTRIBUTOR, enrolled } from '../../src/modules/par/test-support.js'
+import { GOLDEN_EXPECTED, GOLDEN_INPUT, packRules, personal, putRule, revisionOf } from '../../src/modules/pln/test-support.js'
 import { supportScopePermission } from '../../src/modules/support/index.js'
 import {
-  baseRoleId, call, createMarket, createSignedInUser, createTenant, ownerRows, runQueuedJobs, type CallOptions, type TestTenant,
+  activePlanVersion, baseRoleId, call, createMarket, createSignedInUser, createTenant, ownerRows, runQueuedJobs, type CallOptions, type TestTenant,
   type TestUser,
 } from '../helpers/index.js'
 
@@ -36,6 +41,13 @@ export const PACK = 'isolation-pack'
 export const RECORDABLE_ITEM = 'licence_evidence'
 /** Tenant A's live market of participants and orders (enrolment names markets by ISO code). */
 export const PEOPLE_MARKET_CODE = 'GB'
+/** Tenant A's run market (PLAN B3 6): a live market with an active plan, committed runs and a restatement case. */
+export const COMP_MARKET_CODE = 'NL'
+/** The authoring draft of tenant A's plan (version 1 is active). */
+export const DRAFT_VERSION = 2
+/** A rule and a transition of the draft. */
+export const RULE_KEY = 'pv'
+export const STATE_ITEM = 'title.main'
 const DISTRIBUTOR_TYPE = 'DIST'
 const CUSTOMER_TYPE = 'CUST'
 /** B2 settings without an approver (PLAN B2 2.1), values chosen by the suite. */
@@ -45,7 +57,6 @@ const B2_SETTINGS = {
   'orders.crediting_event': 'paid',
   'orders.attribution_precedence': ['link', 'code', 'servicing'],
   'orders.new_buyer_type': CUSTOMER_TYPE,
-  'genealogy.placement_width': 2,
 }
 
 /** Tenant A's objects, by the names the route cases use. */
@@ -103,6 +114,22 @@ export interface Targets {
   readonly heldEvent: string
   readonly lateTransaction: string
   readonly connector: string
+  /** B3: the NL plan (version 1 active, version DRAFT_VERSION a draft with a rule, a transition and a golden dataset). */
+  readonly plan: string
+  readonly activeVersion: string
+  readonly golden: string
+  /** The draft's guardrail evaluation (starter kit volume, warned). */
+  readonly guardrailDecision: string
+  readonly compMarket: string
+  readonly compCalendar: string
+  /** The first committed period, its run, a result line and its payee position (with qualification state). */
+  readonly period: string
+  readonly run: string
+  readonly resultLine: string
+  readonly payee: string
+  readonly simulation: string
+  /** The restatement of the committed period (its case is submitted). */
+  readonly restatement: string
   /** Tenant B's slug: tenant A's credentials are tried against it. */
   readonly otherSlug: string
 }
@@ -132,7 +159,7 @@ async function send(app: FastifyInstance, status: number, what: string, options:
 
 async function saveSettings(app: FastifyInstance, owner: TestUser): Promise<void> {
   const values = { ...PROTOTYPE_SETTINGS, 'privacy.breach_contacts': [BREACH_CONTACT], ...B2_SETTINGS }
-  let version = 0
+  let version = await latestSettingsVersion(owner.tenantId!)
   for (const [key, value] of Object.entries(values)) {
     const headers = { 'if-match': `"${version}"` }
     await send(app, 200, `PUT ${key}`, { method: 'PUT', url: `/v1/settings/${key}`, as: owner, body: { value, reason: 'isolation seed' }, headers })
@@ -235,10 +262,10 @@ async function agreementVersion(app: FastifyInstance, owner: TestUser, market: s
 }
 
 /**
- * A complete checklist (evidence, attestations, both providers; the agreement item is automatic, D-B2-15) and a pending
- * go-live request for the draft market.
+ * A complete checklist (evidence, attestations, both providers; the agreement and plan items are automatic, D-B2-15,
+ * PLAN B3 2.6) and a pending go-live request for the draft market.
  */
-async function seedLaunch(app: FastifyInstance, owner: TestUser, market: string) {
+async function seedLaunch(app: FastifyInstance, owner: TestUser, market: string, w: World) {
   const entry = (item: string, body: Record<string, unknown>) => send(app, 201, `entry ${item}`, {
     method: 'POST', url: `/v1/markets/${market}/checklist/${item}/entries`, as: owner, body, idempotencyKey: true,
   })
@@ -246,7 +273,8 @@ async function seedLaunch(app: FastifyInstance, owner: TestUser, market: string)
   await entry(RECORDABLE_ITEM, { document_id: evidence })
   await entry('tax_configuration', { document_id: await document(app, owner) })
   await agreementVersion(app, owner, market, true)
-  for (const item of ['data_region', 'plan_variant']) await entry(item, { note: 'Confirmed for the isolation suite' })
+  await coverMarket(w, market)
+  await entry('data_region', { note: 'Confirmed for the isolation suite' })
   const provider = async (kind: 'payout' | 'payment') => send(app, 201, `provider ${kind}`, {
     method: 'POST', url: '/v1/provider-configs', as: owner, idempotencyKey: true,
     body: {
@@ -306,9 +334,10 @@ async function seedCase(app: FastifyInstance, owner: TestUser, child: string, pa
  * PLAN B2 6: active types, a root distributor with an agreement acceptance, a sponsored and placed distributor whose
  * signal matches (a system duplicate case), an end customer serviced by the root, another root, and the path models.
  */
-async function seedPeopleAndGenealogy(app: FastifyInstance, a: TestTenant, owner: TestUser) {
+async function seedPeopleAndGenealogy(app: FastifyInstance, a: TestTenant, owner: TestUser, w: World) {
   const approver = await createSignedInUser({ tenantId: a.id, roles: ['Compliance officer'], stepUp: true })
   const peopleMarket = await createMarket(a.id, PEOPLE_MARKET_CODE)
+  await coverMarket(w, peopleMarket, 2)
   const participantType = await activeType(app, owner, approver, DISTRIBUTOR_TYPE, DISTRIBUTOR)
   await activeType(app, owner, approver, CUSTOMER_TYPE, CUSTOMER)
   const agreement = await agreementVersion(app, owner, peopleMarket, false)
@@ -376,6 +405,82 @@ async function seedOrders(app: FastifyInstance, a: TestTenant, owner: TestUser, 
   }
 }
 
+/** A plan covering the market, active since 2000 (D-B3-05 crediting on payment, D-B3-06 placement width), owner pool. */
+const coverMarket = (w: World, marketId: string, placementWidth?: number) => activePlanVersion(w.tenantId, marketId, {
+  submitterId: w.analyst.id, approverId: w.compliance.id, creditingEvent: 'paid', ...(placementWidth === undefined ? {} : { placementWidth }),
+})
+
+/**
+ * Before any settings write: the run market with guardrail pack rules, a calendar with two ended periods, the run
+ * personas and a settings version from 2020 (runs read the settings in force at the period end).
+ */
+async function compWorld(tenantId: string): Promise<World> {
+  const pack = `isolation-${randomUUID().slice(0, 8)}`
+  await packRules(pack)
+  return createWorld({ tenantId, past: 2, market: { code: COMP_MARKET_CODE, pack } })
+}
+
+/** A restatement case of the committed period, opened, evidenced and submitted (its sandbox makes the restatement). */
+async function seedRestatement(app: FastifyInstance, w: World, periodId: string): Promise<string> {
+  const as = w.compliance
+  const opened = await send(app, 201, 'restatement case', {
+    method: 'POST', url: '/v1/cases', as, idempotencyKey: true,
+    body: { type: 'restatement', subject_type: 'period', subject_id: periodId, reason_code: 'INPUT_CORRECTION', payload: { note: 'isolation seed' } },
+  })
+  await send(app, 201, 'restatement evidence', {
+    method: 'POST', url: `/v1/cases/${opened.data.id}/evidence`, as, idempotencyKey: true, body: { document_id: await evidenceDocument(as) },
+  })
+  const submitted = await send(app, 200, 'restatement submit', { method: 'POST', url: `/v1/cases/${opened.data.id}/submit`, as, body: {} })
+  return submitted.data.effect_preview.restatement_id as string
+}
+
+/** The authoring draft of the plan: a rule (its starter-kit guardrail decision), a transition and a golden dataset. */
+async function seedAuthoring(app: FastifyInstance, owner: TestUser, planId: string, calendarId: string) {
+  const draft = await send(app, 201, 'plan version', { method: 'POST', url: `/v1/plans/${planId}/versions`, as: owner, body: {}, idempotencyKey: true })
+  if (draft.data.version !== DRAFT_VERSION) throw new Error(`seed: the draft is version ${draft.data.version}`)
+  const rule = expectStatus(await putRule(app, owner, planId, RULE_KEY, { kind: 'volume.personal', params: personal(RULE_KEY, []) }, DRAFT_VERSION), 200, 'rule')
+  const [decision] = rule.json().data.guardrails.new_decisions as { id: string }[]
+  const url = `/v1/plans/${planId}/versions/${DRAFT_VERSION}`
+  await send(app, 200, 'transition', {
+    method: 'PUT', url: `${url}/transitions/${STATE_ITEM}`, as: owner, body: { rule: 'carry' },
+    headers: { 'if-match': `"${await revisionOf(app, owner, planId, DRAFT_VERSION)}"` },
+  })
+  const golden = await send(app, 201, 'golden dataset', {
+    method: 'POST', url: `${url}/golden-datasets`, as: owner, idempotencyKey: true,
+    body: { name: 'Canary golden', calendar_id: calendarId, covers: [], input: GOLDEN_INPUT, expected: GOLDEN_EXPECTED },
+  })
+  if (decision === undefined) throw new Error('seed: the rule raised no guardrail decision')
+  return { golden: golden.data.id as string, guardrailDecision: decision.id }
+}
+
+/**
+ * PLAN B3 6: an active plan on the run market, two committed runs (the second pays an adjustment origin for a refund of
+ * the first period), a simulation with lines, a submitted restatement case and the plan's authoring draft.
+ */
+async function seedCompensation(app: FastifyInstance, w: World, owner: TestUser) {
+  const first = w.periods[0]!
+  const second = w.periods[1]!
+  const sponsor = await member(w, 'NL-SPONSOR')
+  const payee = await member(w, 'NL-PAYEE', sponsor)
+  const plan = await activePlan(w, ts10Plan(), first.starts_at)
+  await order(w, payee, inside(first), 30_000)
+  const refunded = await order(w, payee, inside(first, 2), 50_000)
+  const run = await calculate(app, w, first.id)
+  await commit(app, w, run)
+  await lateItem(w, { eventId: await orderEvent(w, refunded, inside(second)) }, first.id)
+  await commit(app, w, await calculate(app, w, second.id))
+  const simulation = await send(app, 202, 'simulation', {
+    method: 'POST', url: '/v1/simulations', as: owner, body: { plan_version_id: plan.versionId, period_id: first.id }, idempotencyKey: true,
+  })
+  await runQueuedJobs(simulationJob)
+  const [line] = await ownerRows<{ id: string }>('SELECT id FROM result_line WHERE run_id = $1 ORDER BY id LIMIT 1', [run])
+  return {
+    plan: plan.planId, activeVersion: plan.versionId, ...(await seedAuthoring(app, owner, plan.planId, w.calendarId)),
+    compMarket: w.marketId, compCalendar: w.calendarId, period: first.id, run, resultLine: line!.id, payee: payee.positionId,
+    simulation: simulation.data.id as string, restatement: await seedRestatement(app, w, first.id),
+  }
+}
+
 async function latestSettingsVersion(tenantId: string): Promise<number> {
   const [row] = await ownerRows<{ version: number }>('SELECT max(version) AS version FROM tenant_setting_version WHERE tenant_id = $1', [tenantId])
   return row!.version
@@ -390,6 +495,7 @@ export async function seedTenants(app: FastifyInstance): Promise<Seeded> {
   const consultant = await createSignedInUser({ tenantId: a.id, roles: ['Implementation consultant'] })
   const vendor = await createSignedInUser({ tenantId: null })
   await ownerRows(`UPDATE user_account SET work_region = 'eu' WHERE id = $1`, [vendor.id])
+  const world = await compWorld(a.id)
   await saveSettings(app, owner)
   const people = await seedPeople(app, owner)
   const imports = await seedImports(app, owner, consultant)
@@ -400,14 +506,15 @@ export async function seedTenants(app: FastifyInstance): Promise<Seeded> {
   const supportSession = await seedSupportSession(app, a.id, owner, vendor)
   const structure = await seedStructure(app, owner)
   const changeRequest = await seedChangeRequest(app, owner)
-  const launch = await seedLaunch(app, owner, structure.draftMarket)
+  const launch = await seedLaunch(app, owner, structure.draftMarket, world)
   const integrations = await seedIntegrations(app, owner)
-  const genealogy = await seedPeopleAndGenealogy(app, a, owner)
+  const genealogy = await seedPeopleAndGenealogy(app, a, owner, world)
   const orders = await seedOrders(app, a, owner, genealogy.peopleMarket)
+  const compensation = await seedCompensation(app, world, owner)
   const freeDocument = await document(app, owner)
   const targets: Targets = {
     tenant: a.id, email: owner.email, ...people, ...imports, ...snapshot, export: exported.data.id as string, supportSession,
-    market: MARKET_CODE, ...structure, changeRequest, ...launch, ...integrations, ...genealogy, ...orders, freeDocument,
+    market: MARKET_CODE, ...structure, changeRequest, ...launch, ...integrations, ...genealogy, ...orders, ...compensation, freeDocument,
     settingsVersion: await latestSettingsVersion(a.id), otherSlug: b.slug,
   }
   return { a, b, owner, consultant, vendor, targets }
@@ -424,7 +531,8 @@ export function phantomOf(targets: Targets): Targets {
     serviceAccountName: `Phantom ${id()}`, apiKey: id(), webhookEndpoint: id(), webhookDelivery: id(), document: id(), freeDocument: id(),
     case: id(), participantType: id(), peopleMarket: id(), peopleMarketCode: 'XQ', participant: id(), position: id(),
     positionRef: `phantom-${id()}`, childPosition: id(), customer: id(), agreementVersion: id(), duplicateCase: id(), order: id(),
-    heldEvent: id(), lateTransaction: id(), connector: id(),
+    heldEvent: id(), lateTransaction: id(), connector: id(), plan: id(), activeVersion: id(), golden: id(), guardrailDecision: id(),
+    compMarket: id(), compCalendar: id(), period: id(), run: id(), resultLine: id(), payee: id(), simulation: id(), restatement: id(),
   }
 }
 

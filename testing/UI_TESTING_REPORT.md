@@ -492,3 +492,202 @@ Console errors were only the intended 4xx responses from probes and refusals, pl
 - A Shopify `orders/paid` payload without `financial_status` paid is answered 200 and silently ignored, with no inbound row and no sync-health trace. This is by design (PLAN: "ignored" when the crediting time is missing), but a merchant has no way to see it.
 - The exception queue "Natural key" column also carries the connector uuid (`order:shopify:<uuid>:<id>`). That is a technical key, so it is noted, not registered.
 - Not exercised this round: WooCommerce, connector rotate/withdraw, webhook refunds, merge/terminate duplicate outcomes, servicing and type change dialogs, the support-session view of B2 pages, and the explorer banner while only a scheduled policy exists.
+
+## Increment B3 — round 1 (2026-11-18)
+
+Environment: `nmp_e2e` freshly seeded (`seed:e2e`: STAFF incl. planadmin@, e2e-fixture pack with the enrolment-only (blocked) and starter-kit (warned, overridable) rules, acme market DE with DE-A ← DE-B ← DE-C, DE-K serviced by DE-C, SKU FX-1 = 100.00 pv, calendar "DE monthly" Aug 2026 – Feb 2027, all open), API `:4000` with workers (tsx, NODE_ENV=development, COOKIE_SECURE=false), web `:3100` (`next start`, build 2026-11-18 02:29, no source newer than `.next/BUILD_ID`). Playwright MCP, one browser, one context per user (TZ Asia/Dhaka). M-3/M-2/M-1 = Aug/Sep/Oct 2026.
+
+Preconditions set by QA: W-B2-1 settings via `PUT /v1/settings/*` as admin@acme (`orders.crediting_event paid`, `orders.attribution_precedence [link, servicing]`, `orders.new_buyer_type FXRETAIL`, `integrations.sync_health 60/240`). **Test-data workaround:** settings saved now are in force only from now, so every simulation and run of M-3..M-1 failed `SETTINGS_VERSION_MISSING` ("No tenant settings are in force at the end of the period", shown on the failed simulation page). QA moved `effective_from` of acme settings versions 1–4 to 2026-01-01 directly in `nmp_e2e` (owner, triggers off for that one transaction) to continue; registered as BUG-085.
+
+### Workflows (PLAN §7)
+
+| Workflow | Result | Evidence and notes |
+|---|---|---|
+| W-B3-1 Plan authoring and guardrails | pass (defects) | planadmin created "DE core" (DE, DE monthly) → v1 draft; crediting `When paid`, placement width 2 saved (gate "Crediting event chosen" met); rules pv, gv, ladder main (R1: pv ≥ 100.00), unilevel (0.08/0.05, eligible main ≥ R1, order_line), reparent, enrolled saved with plain-language lines; the pv save raised warning "e2e-starter-kit-volume@2026-01-01: E2E FIXTURE — starter kit" (TS-26); bonus `signup` refused in the drawer "A guardrail of this market blocks the rule … e2e-enrolment-only-bonus@2026-01-01 … Basis status: Screening" (TS-27, `R1-W1-01-signup-refused.png`); planadmin acknowledged; compliance on SC-11 inspected the evaluation, approved the override with justification + PDF evidence → "Overridden by Compliance Officer … Justification … Evidence document", KPI Overridden 1 (TS-66, `R1-W1-02-sc11-override.png`). Plain language prints minor units ("pv ≥ 10000 minor units", BUG-090) |
+| W-B3-2 Extension, simulation, golden, approval, activation | pass (with BUG-085 workaround) | capped_pv (`min(pv, 50000)`) shown with "Extension" chip; Submit refused "Each extension rule needs a golden dataset that covers it. capped_pv has no golden case."; simulation on Aug first **failed** (BUG-085), after the workaround Completed 0.00 EUR "equals the sum of its lines"; Save as golden case "DE M-3 empty period" covering capped_pv; Submit → In review (golden 1/1 pass); planadmin has no Approve/Reject; compliance approved (reason) → Approved, no Schedule control; finance scheduled Aug 1 (Europe/Berlin options, "takes effect at once") with justification → Active. Header then shows "Aug 1, 2026, 4:00 AM" in the viewer zone (BUG-091) |
+| W-B3-3 Orders and the sync gate | pass | admin created service account + `orders:write` key; orders paid 2026-08-10 for DE-A/B/C (1 × FX-1) → 201, 100.00 pv each, attribution "buyer"; DE-K 2 × FX-1 → 201, purpose customer, credited to P-3 by servicing, 200.00 pv (a `purpose: personal` body is refused 422 PURPOSE_INVALID); re-post of DE-O-A1 with another amount → 409 ORDER_CONFLICT; analyst `/periods`: Order sync **Failing**, Readiness "1 blocker: Order sync failing for e2e-de — last successful sync …", Calculate refused "Order sync of this market is behind or failing." (AC-06.2, 422); a new DE-B order paid 2026-09-10 → sync Healthy, "Nothing blocks a calculation" |
+| W-B3-4 Run, review, commit | **fail** (BUG-084) | analyst calculated Aug → Calculated, gross **73.00 EUR** (expected 47.00): Lines B **40.00** (expected 24.00), A **33.00** (expected 23.00). Trace for B's line → "Expand by replay" reconciles and shows the cause: "level 1, position P-3: pv 500.00 x 0.08 = 40.00; orders 1fa6c4c1 32.00, d1a5a74c 8.00" — DE-K's 2-unit order counts 400.00 pv instead of 200.00 (`R1-W4-02-trace.png`). Review KPIs, variance, movers, exceptions (large-line not configured, 2 × no withholding, guardrail warned — all information), What changed, Adjustments all render; Request commit → "Waiting for: Finance Approver (finance@acme.example)", analyst has no Commit; finance's modal (totals strip, SoD notice, 0 blocking) → Committed; SC-43 for DE-C: Aug paid-as/title main R1, pv/capped_pv/gv 50,000 (= 500.00, BUG-084 + BUG-090), Compare periods works |
+| W-B3-5 Replay | pass | analyst replayed Aug → "Replay of Aug 1, 2026 – Aug 31, 2026: Match" with inputs/result/lines hashes and engine version (`R1-W5-01-replay.png`) |
+| W-B3-6 Late refund and adjustment | pass (defects) | refund of DE-O-K1 (2 units, 40.00) → late item listed (original period Aug, committed, −40.00 EUR / "−20,000 pv"); analyst ran Sep → Adjustments: clawback B **−16.00**, A **−10.00** "for Aug 1, 2026, 4:00 AM – Sep 1, 2026, 4:00 AM" (PLAN values; they recover only half of what BUG-084 paid on that order); finance committed Sep with the item never decided → item Consumed (diagnostic "Reason: Adjusted by run cd5cb4ea-…"). The row and diagnostic show **no "Adjusted in run <link>"** (BUG-086) |
+| W-B3-7 Correction and restatement | pass (amounts per BUG-084) | support opened a back-dated correction P-3 under P-1 "When the current parent started" with PDF → preview "Committed periods affected: 2" (Aug, Sep); compliance approved with the **StepUp dialog** (`R1-W7-00-stepup.png`); replay Aug still Match (TS-03); compliance "Request restatement" on SC-01 (GENEALOGY_CORRECTION, note, PDF) → case → submit → preview "Difference to pay −31.00 EUR", A committed 33.00 / adjusted −10.00 / restated 16.00 / −7.00, B 40.00 / −16.00 / 0.00 / −24.00 (with correct volumes the PLAN's B −8.00, A +3.00 follow); compliance has no decision; finance approved; Oct run → lines origin "Restatement" −24.00 / −7.00, exception "Qualification state of the restated period is not corrected (money only)"; finance committed with StepUp dialog; case "Applied in run bdb28bca"; replay Aug → Match (TS-51) |
+| W-B3-8 Structural plan rules | pass (defects) | support enrolled DE-E sponsored by P-2: the dialog has **no leg / automatic option** and says "Legs and automatic placement are available once a placement width is set in Settings" (BUG-087); a second enrolment placed under P-2 got leg NULL; the same request by API with `placement {auto: true}` → leg "1" (width 2 from the plan version). Compliance terminated P-2 → P-4, P-5, P-6 sponsor P-1 from the termination instant, `event_type rule`, `rule_id <version>:reparent` (DB and `GET /v1/positions/:id`). SC-07 inspector and SC-09 show only "Sponsor P-1" — the rule event is not displayed (BUG-088) |
+| W-B3-9 Regression | partial | see below; 4 viewports of every B3 screen in VISUAL_REGRESSION_REPORT; not executed: W-B2-7/8 key paths beyond the B3 use, WooCommerce webhook, duplicate merge/terminate outcomes, BUG-081/082/083 re-checks, B1 markets |
+
+### MVP-A and B-series regression (quick)
+
+| Area | Result | Notes |
+|---|---|---|
+| Sign-in / MFA | pass | planadmin, compliance, finance, admin, globex planadmin: forced enrolment + TOTP; analyst and support without MFA; StepUp dialog seen on case decision, commit, breach-contact change |
+| Import | pass | DEMO 2025-01…12: 1,466 / 4,775 / 7,442; 53,195,001 / 53,195,001 / 2,600,070 / 9,225,679 = CSV sums; mapping v1 admin → approved by compliance; load first refused "Record at least one breach-notification contact before the first data load", contact added on SC-29 (step-up) → Loaded |
+| Snapshot | pass | R1 DEMO 2025-01 Ready: 16.61 % of 1,517,950 (= report.json) |
+| Audit | pass | chain Intact over 127 events; B3 actions present (PLAN_*, GUARDRAIL.*, SIMULATION.*, GOLDEN_DATASET.*, RUN.* incl. REPLAYED, RESTATEMENT.*, GENEALOGY.REPARENTED, CASE.*) |
+| Isolation | pass | globex planadmin: acme plan, version, run, period, simulation, case → 404; plan page "Not found or not available to you"; analyst POST /v1/plans → 403 |
+| SC-29 touch | pass | placement width card "Retired: set on the plan version. A value kept here applies only to markets without a plan version." |
+
+### Per screen
+
+| Screen | Stitch Reference | Functional Testing | Visual Fidelity | Responsive Testing | Accessibility | Impeccable Review | Defects | Final Status |
+|---|---|---|---|---|---|---|---|---|
+| SC-01 Periods and runs | `sc_01_periods_runs_analyst_home` | pass (W-B3-3..7) | pass with notes; table cramped at 1440/1280 | pass (390, 768) | no automated finding | raw blocker codes | BUG-089, 092 | pass with defects |
+| SC-02 Run review + commit | `sc_02_run_review`, `…_step_up_commit_modal` | fail (wrong amounts, BUG-084) | pass with notes (trace drawer per PLAN) | pass (390, 768) | trace drawer returns focus to its row button | – | BUG-084, 091, 092, 093 | fail |
+| SC-04 Plans / plan version | `sc_28` pattern, `sc_04_plan_versions_simulation` | pass (W-B3-1/2) | pass with notes (canonical tokens) | pass (390, 768) | tabs `role=tab` with arrow keys; dialogs trap Tab, Escape returns focus | minor units in plain language | BUG-090, 091 | pass with defects |
+| SC-05 Caps and pools | `sc_05_cap_and_pool_configuration` | pass (cap saved, preview: bound, 2 payees, 38.00 EUR removed) | pass with notes | pass (390, 768) | radios and checkboxes labelled | – | – | pass |
+| SC-42 Simulation and golden | `sc_42_simulation_results_golden_datasets` | pass (W-B3-2, cap preview) | pass with notes | pass (390, 768) | no automated finding | raw `acknowledgement_required` | BUG-092 | pass with defects |
+| SC-11 Guardrails | `sc_11_guardrails_policy_overrides_log` | pass (W-B3-1) | pass with notes | pass (390, 768) | drawer form labelled, evidence upload named | – | – | pass |
+| SC-43 Qualification | `sc_43_rank_and_qualification_detail_staff` | pass (W-B3-4) | pass with notes | pass (390, 768) | selects labelled | raw minor units | BUG-090 | pass with defects |
+| SC-06 Restatement case | `sc_06_cases_exceptions` | pass (W-B3-7) | as B2 | pass (390, 768) | no automated finding | stale "(B3)" copy on the correction case | BUG-091, 093 | pass with defects |
+| SC-32 Late queue (touch) | `sc_32_late_transaction_queue` | fail on the B3 touch ("Adjusted in run" missing) | as B2 | pass (390, 768) | no automated finding | raw minor units | BUG-086, 090, 091 | pass with defects |
+| SC-07/SC-09 (touch) | existing | rule event not shown | as B2 | as B2 | as B2 | – | BUG-088 | pass with defects |
+| Enrol dialog (touch) | existing | automatic placement unreachable | as B2 | as B2 | as B2 | stale copy | BUG-087 | pass with defects |
+
+### Impeccable audit (audit only) and accessibility pass
+
+- Detector (`impeccable detect`, regex mode, from `apps/web`) on `features/{plans,periods,qualification,guardrails}` (35 files): no finding. Source read: no hard-coded colour, no `animate-ping`, no `alert(`, no `console.log`; largest file 312 lines. The rendered (parsed-page) rules did not run: the pages need a session.
+- Scripted pass on 13 B3 routes at 1440 (analyst, planadmin, compliance): no unnamed button/link/tab, no unlabelled input, no duplicate id, one `h1`, no heading skip, every tab has `aria-selected`, every tablist and table named, label-in-name holds for `aria-label` controls. Same routes at 390 and 768: no horizontal page scroll.
+- Keyboard: Run simulation dialog and Add rule drawer take focus, Tab stays inside over 25 presses, Escape closes and returns focus to the trigger; plan tabs move with ArrowRight; focus ring 2 px solid; the trace drawer returns focus to "Trace line … (unilevel)".
+- Scores (0–4): Accessibility 3 (no automated finding; contrast not measured this round), Performance not scored, Theming 4 (tokens only in B3 sources), Responsive 3 (BUG-089), Implementation integrity 2 (raw codes/minor units, stale copy, enrol dialog on a retired setting, missing consumed link). Total 12/16 over the four scored dimensions.
+
+### Console and network
+
+- No page error, no console error other than the browser's "Failed to load resource" for intended 4xx: 422 signup rule (guardrail block), 422 submit (golden missing), 422 PURPOSE_INVALID, 409 ORDER_CONFLICT, 422 calculation refused (sync), 403 STEP_UP_REQUIRED before the StepUp dialog (case decision, commit, settings), 422 load (no breach contact), 404/403 isolation probes, one 404 probe of a non-existent `/relationships` endpoint by QA. API log: no 5xx, no level-50 entry.
+
+### Notes (not registered)
+
+- Simulations of a committed period use the committed snapshot: the v2 cap preview on Aug shows "before the cap 73.00" although the correction moved P-3 since; consistent with D-B3-08, noted for the reader.
+- Pages name other users "another user" for compliance/finance ("Submitted by another user", "Activated by another user") while planadmin sees "you"; same `user.read` pattern as MVP-A.
+- SC-11 Status column is "—" for override and acknowledgement rows (only evaluations carry a status).
+- The late-item diagnostic says "State Decided" for a consumed item (the decision record), next to the Consumed chip in the row.
+- Commit at 2:44 and the restatement approval at 2:50 did not ask finance for a code (within the 10-minute step-up window after finance's MFA); StepUp was seen for finance on the Oct commit.
+- Not exercised: plan Reject, eligible approvers on an SoD refusal, Compare with a second version, golden JSON upload, pools form, cap Up/Down, Export lines CSV and payee-impact CSV, a blocking exception acknowledgement (none occurred), transitions declaration, support-session read-only view of B3 pages, positions-per-participant limit, change windows.
+- Evidence: `var/qa-b3/R1-*.png`, harness logs `var/qa-b3/R1-visual-*.log`, server logs `var/qa-b3/{api,web}.log`.
+
+## Increment B3 — round 2 (2026-11-18, retest after the fixes of BUG-084..093)
+
+Environment: `nmp_e2e` freshly seeded (`seed:e2e`, no manual DB change this round), API `:4000` with workers (tsx, NODE_ENV=development, COOKIE_SECURE=false), web `:3100` (`next start`, build 2026-11-18 03:28, no source newer than `.next/BUILD_ID`). Playwright MCP, one browser, one context per user (TZ Asia/Dhaka). M-3/M-2/M-1 = Aug/Sep/Oct 2026. Quick repeat: set-up steps by API in each user's own session, UI for the fix checks and the main user paths. Servers stopped by PID afterwards.
+
+### Fix verification (first step)
+
+| Bug | Result | Evidence |
+|---|---|---|
+| BUG-084 CRITICAL quantity² volumes | **verified fixed** | DE-K 2 × FX-1 stored `{"pv":"20000"}`; Aug calculated in the UI → gross **47.00 EUR**, Lines B **24.00**, A **23.00**; trace "Expand by replay": "level 1, position P-3: pv 300.00 x 0.08 = 24.00; orders … 8.00, … 16.00"; Sep clawback B −16.00 / A −10.00 = the full amount paid on K's order; restatement preview B −8.00, A +3.00 (PLAN values); v2 simulation baseline 47.00. `var/qa-b3/r2/R2-W4-01-trace.png`, `R2-W6-01-adjustments.png` |
+| BUG-085 MEDIUM settings version missing | **verified fixed** | fresh seed: acme settings version 1 effective Aug 1, 2026 00:00 Europe/Berlin; simulation of v1 on Aug from the SC-04 dialog → Completed 0.00 EUR without any DB change; all runs Aug/Sep/Oct calculated. `R2-W2-01-simulation-aug.png` |
+| BUG-086 MEDIUM consumed_by fields | **verified fixed** | `GET /v1/late-transactions?state=consumed` returns `consumed_by_run_id` and `consumed_by_period_id`; `/periods/late?state=consumed` row: "Consumed · Adjusted in run 6be68487" linking to the Sep run review. `R2-W6-02-late-consumed.png` |
+| BUG-087 MEDIUM enrol dialog legs | **verified fixed** | support Enrol dialog offers Leg (No leg, Automatic: first free leg, breadth-first, Leg 1–20) with the plan-width hint; DE-E sponsor P-2, place under P-2, Automatic → placement P-4 → P-2 leg "1" |
+| BUG-088 MEDIUM rule re-parent not shown | **verified fixed** | after compliance terminated P-2: SC-07 inspector "Sponsor P-1 · By plan rule “reparent”, since Nov 18, 2026, 3:38 AM"; SC-09 Positions "Sponsor now P-1 By plan rule “reparent” …". `R2-W8-01-sc07.png`, `R2-W8-02-sc09.png` |
+| BUG-089 MEDIUM SC-01 table cramped | **partly fixed → BUG-094** | period/cut-off/latest-run cells one line, blockers are short chips, "already committed" no longer a blocker; but the table (1024 px) sits in a 781 px (1440) / 665 px (1280) scrolling box, so Late pending, Blockers and every row action are hidden until the table is scrolled sideways; committed rows ~110 px, chips clipped. `testing/ui-screenshots/app/periods/periods-runs/commission-analyst/1440x900.png`, `R2-W3-01-sync-failing.png` |
+| BUG-090 LOW raw minor units | **web part verified fixed; engine part still open** | SC-43 PV/GV/CAPPED_PV 300.00, ENROLLED 0; late queue "-200.00 pv". Still raw (engine renderRule, noted open in the register): "Ladder R1: pv ≥ 10000 minor units", "Count of personally enrolled positions with pv ≥ 0 minor units" |
+| BUG-091 LOW zone-less instants | **mostly verified fixed; residual → BUG-095** | SC-04 "Effective from Aug 1, 2026, 12:00 AM GMT+2"; SC-01 cut-offs "GMT+2/GMT+1"; simulation picker "Aug 1, 2026 – Aug 31, 2026"; review "Previous (Aug 1, 2026 – Aug 31, 2026)"; adjustments "for Aug 1, 2026 – Aug 31, 2026"; restatement subject "Aug 1, 2026 – Aug 31, 2026". Late queue Original period still "Aug 1, 2026, 4:00 AM GMT+6 – Sep 1, 2026, 4:00 AM GMT+6" (viewer-zone instants) |
+| BUG-092 LOW raw codes | **partly verified fixed; residual → BUG-096** | SC-01 diagnostics chips in words ("Order sync behind", "Before cut-off"); review exception "No large-line threshold is set, so result lines are not checked for size." Still raw: SC-42 "Open guardrail decisions: e2e-starter-kit-volume@2026-01-01: acknowledgement_required" (v2 simulation, BUG-096); trace "sponsor tree known at 1794951277098349" (engine text, noted open in the register) |
+| BUG-093 LOW stale copy | **API part verified fixed; web part still open** | correction preview "Payout impact is not estimated on the correction: once it is approved, request a restatement of each affected committed period …". Run review What changed on the first run of v1 still "No state transition: this run is not the first under a new plan version" (register: web part open) |
+
+### Workflows (PLAN §7, quick repeat)
+
+| Workflow | Result | Evidence and notes |
+|---|---|---|
+| W-B3-1 Plan authoring and guardrails | pass | planadmin: plan DE core (DE, DE monthly), v1 crediting paid, width 2; rules pv (→ warned `e2e-starter-kit-volume`), gv, main, unilevel 0.08/0.05, reparent, enrolled saved, validation ok; `signup` → 422 GUARDRAIL_BLOCKED with rule id, title, explanation, basis status screening; planadmin acknowledged; compliance override with justification → 201 |
+| W-B3-2 Extension, simulation, golden, approval, activation | pass | capped_pv saved; submit → 422 EXTENSION_NOT_COVERED "Each extension rule needs a golden dataset that covers it."; simulation on Aug in the UI Completed (BUG-085 fixed); golden "DE M-3 empty period" from the simulation; submit → in_review; compliance approve → approved; compliance schedule → 403; finance schedule Aug 1 Berlin → active |
+| W-B3-3 Orders and the sync gate | pass | service account + `orders:write` key; DE-A/B/C 1 × FX-1, DE-K 2 × FX-1 paid 2026-08-10 → 201; re-post DE-O-A1 other amount → 409 ORDER_CONFLICT; analyst SC-01: Order sync Failing, Readiness "1 blocker: Order sync failing for e2e-de …", Calculate → 422 SYNC_BEHIND; DE-B order paid Sep 10 → Healthy, "Nothing blocks a calculation" |
+| W-B3-4 Run, review, commit | pass | analyst Calculate (UI) → Calculated 47.00 EUR; review KPIs, variance, Exceptions 3 (information), What changed, Lines B 24.00 / A 23.00, trace + Expand by replay reconciles; Request commit → "Waiting for: Finance Approver"; analyst has no Commit; finance modal (totals, SoD notice, 0 blocking) → Committed; SC-43 DE-C Aug paid-as/title main R1, PV/GV 300.00 (`R2-W4-02-sc43.png`) |
+| W-B3-5 Replay | pass | SC-01 row Replay → "Replay of Aug 1, 2026 – Aug 31, 2026: Match" with hashes (`R2-W5-01-replay.png`) |
+| W-B3-6 Late refund and adjustment | pass | refund of DE-O-K1 (2 units, 40.00) → late queue pending (−40.00 EUR / −200.00 pv); Sep run Adjustments: clawback A −10.00, B −16.00 "for Aug 1, 2026 – Aug 31, 2026"; finance committed Sep (−26.00) → item Consumed with run link (BUG-086 fixed) |
+| W-B3-7 Correction and restatement | pass | support correction P-3 under P-1 valid from Aug 1 → preview lists Aug, Sep, new impact note; compliance approved; replay Aug Match; compliance "Request restatement" dialog on SC-01 (note, Genealogy correction, PDF) → case → Submit for decision → preview −5.00 EUR: B 24.00 / −16.00 / 0.00 / **−8.00**, A 23.00 / −10.00 / 16.00 / **+3.00** (`R2-W7-01-restatement-preview.png`); compliance has no Approve; finance approved; Oct run lines origin restatement +3.00 / −8.00; finance committed; case "Applied in run 271e8aac"; replay Aug → match |
+| W-B3-8 Structural plan rules | pass | DE-E enrolled in the UI with Automatic placement → leg 1 (BUG-087 fixed); compliance terminated P-2 → P-4 sponsor P-1, `event_type rule`, `rule_id <v1>:reparent`, shown on SC-07 and SC-09 (BUG-088 fixed) |
+| W-B3-9 Regression | partial | see below; 4 viewports of the nine B3 screens in VISUAL_REGRESSION_REPORT. Not executed this round: W-B2-3/7/8 key paths beyond their use in W-B3-3/7/8, WooCommerce webhook, duplicate merge/terminate outcomes, BUG-081/082/083 re-checks, B1 markets, support-session read-only view |
+
+### MVP-A regression (quick)
+
+| Area | Result | Notes |
+|---|---|---|
+| Sign-in / MFA | pass | admin, planadmin, compliance, finance, globex planadmin: forced enrolment + TOTP; analyst, support without MFA; StepUp dialog seen for admin on the breach-contact change (> 10 min after MFA) |
+| Import | pass | DEMO 2025-01…12 in the UI: 1,466 / 4,775 / 7,442; 53,195,001 / 53,195,001 / 2,600,070 / 9,225,679 = CSV sums; mapping v1 by admin, approved by compliance; load refused "Record at least one breach-notification contact before the first data load"; contact added on SC-29 (step-up) → Loaded |
+| Snapshot | pass | R1 DEMO 2025-01 Ready: 252,178 of 1,517,950 = 16.61 % |
+| Audit | pass | `/settings/audit` Verify → "The audit chain is intact"; B3 events present (RUN.*, RUN.REPLAYED, RESTATEMENT.*, SIMULATION.*, GENEALOGY.REPARENTED, POSITION.STATUS_CHANGED, CASE.*) |
+| Isolation | pass | globex planadmin: acme plan, run, period, simulation, restatement case → 404; analyst POST /v1/plans → 403 |
+
+### Per screen
+
+| Screen | Stitch Reference | Functional Testing | Visual Fidelity | Responsive Testing | Accessibility | Impeccable Review | Defects | Final Status |
+|---|---|---|---|---|---|---|---|---|
+| SC-01 Periods and runs | `sc_01_periods_runs_analyst_home` | pass (W-B3-3..7) | fail at 1440/1280 (table clipped) | pass (768, 390: table scrolls in its box) | no automated finding; restatement dialog traps Tab, Escape returns focus | – | BUG-094 | pass with defects |
+| SC-02 Run review + commit | `sc_02_run_review`, `…_step_up_commit_modal` | pass (amounts correct) | pass with notes | pass | no automated finding | stale What-changed copy | BUG-093 (web part) | pass with defects |
+| SC-04 Plans / plan version | `sc_28` pattern, `sc_04_plan_versions_simulation` | pass | pass with notes | pass | no automated finding | minor units in plain language (engine) | BUG-090 (engine part) | pass with defects |
+| SC-05 Caps and pools | `sc_05_cap_and_pool_configuration` | page renders (v2 draft); cap form not re-exercised | pass with notes | pass | no automated finding | – | – | pass |
+| SC-42 Simulation and golden | `sc_42_simulation_results_golden_datasets` | pass | pass with notes | pass | no automated finding | raw outcome code | BUG-096 | pass with defects |
+| SC-11 Guardrails | `sc_11_guardrails_policy_overrides_log` | pass (override by API, page renders it) | pass with notes | pass | no automated finding | – | – | pass |
+| SC-43 Qualification | `sc_43_rank_and_qualification_detail_staff` | pass | pass with notes | pass | no automated finding | – | – | pass |
+| SC-06 Restatement case | `sc_06_cases_exceptions` | pass | as B2 | pass | no automated finding | – | – | pass |
+| SC-32 Late queue (touch) | `sc_32_late_transaction_queue` | pass (consumed link) | pass with notes | pass | no automated finding | viewer-zone period | BUG-095 | pass with defects |
+| SC-07/SC-09 (touch) | existing | pass (rule origin shown) | as B2 | pass | no automated finding | – | – | pass |
+| Enrol dialog (touch) | existing | pass (Automatic leg) | as B2 | as B2 | fields labelled | – | – | pass |
+
+### Impeccable audit (audit only) and accessibility pass
+
+- `impeccable detect` (regex mode) on `apps/web/src/features/{plans,periods,qualification,guardrails}` (35 files): no finding; no hard-coded colour, `animate-ping`, `alert(` or `console.log`; largest file 312 lines. Parsed-page rules (contrast, tiny text) did not run (pages need a session). The context loader asked for a target app and found no PRODUCT.md/DESIGN.md; audit used the Stitch references as design truth.
+- Scripted pass on 13 B3 routes at 1440 (analyst, planadmin, compliance): no unnamed button/link/tab, no unlabelled field, no duplicate id, one `h1`, no heading skip, every tab has `aria-selected`, every table named; no page scroll at 1440/768/390.
+- Keyboard: SC-01 Request restatement dialog opened with Enter, Tab stayed inside for 20 presses, Escape returned focus to the row button.
+- Scores (0–4): Accessibility 3 (contrast not measured), Performance not scored, Theming 4, Responsive 2 (BUG-094 hides row actions at desktop widths), Implementation integrity 3 (remaining raw codes/units, stale copy). Total 12/16.
+
+### Console and network
+
+- No page error. Console errors only the browser's "Failed to load resource" for intended 4xx: 422 signup (guardrail block), 422 submit (extension not covered), 403 compliance schedule, 409 ORDER_CONFLICT, 422 SYNC_BEHIND, 422 import load (no breach contact), 403 STEP_UP_REQUIRED before the StepUp dialog, 404/403 isolation probes, and one QA 400 (status change without `effective_from`). API log: no 5xx, no level-50 entry.
+
+### Notes (not registered)
+
+- SC-01 calls a failing sync "Order sync behind" in the blocker chip while the KPI card says "Failing".
+- SC-42 warnings list "no withholding instruction for this payee …" twice without naming the payees (the run review says "2 × …").
+- Enrol dialog has two fields labelled "Address (optional)" (contact address and duplicate-check signal).
+- The SC-01 primary action "Calculate Aug …" stays enabled while the sync blocker is listed; the click is refused 422 with the reason (as round 1).
+- Evidence: `var/qa-b3/r2/R2-*.png`, harness logs `var/qa-b3/r2/R2-visual-*.log`, server logs `var/qa-b3/r2/{api,web}.log`.
+
+## Increment B3 — round 3 (2026-11-18, retest after the fix of BUG-094)
+
+Environment: `nmp_e2e` in its round-2 end state (no reseed: DE core v1 active, v2 draft, DE Aug/Sep/Oct 2026 committed, restatement applied in Oct), API `:4000` with workers, web `:3100` (`next start`, build 2026-11-18 03:54, no source newer than `.next/BUILD_ID`; the BUG-094 change is confined to `features/periods/{periods-page,period-panels}.tsx` and the new `components/row-menu.tsx`). Playwright MCP, one browser, one context per user from the round-2 storage states (sessions still valid), TZ Asia/Dhaka. Servers stopped by PID afterwards.
+
+### Fix verification (first step)
+
+| Bug | Result | Evidence |
+|---|---|---|
+| BUG-094 MEDIUM SC-01 table clipped at desktop | **verified fixed** | Run diagnostics now sit below the table below 1920 px. 1440x900: table 1169 px in a 1169 px box; 1280x800: 1009 / 1009; no sideways scroll, all 6 row controls (Open review + More actions × 3 committed rows) inside the box; "Period · cut-off" one column; committed rows 53–57 px (1440), future rows with two chips 65 px; no clipped chip. 390: stacked cards, no page scroll. `var/qa-b3/r3/R3-BUG094-sc01-{1440x900,1280x800,768x1024,390x844}.png`. Residuals: BUG-097 (Gross amount and currency on two lines), BUG-098 (768: table still scrolls sideways, chips break per word) |
+
+### Workflows (quick repeat on the round-2 data)
+
+| Workflow | Result | Evidence and notes |
+|---|---|---|
+| W-B3-4 Open review (SC-01 row) | pass | "Open review of Oct 1, 2026 – Oct 31, 2026" → run review, Committed, gross -5.00 EUR |
+| W-B3-5 Replay (row menu) | pass | More actions for Aug → Replay → trigger shows busy spinner (`aria-busy`) → "Replay of Aug 1, 2026 – Aug 31, 2026: Match" with inputs/result/lines hashes in ~2 s; focus back on the trigger. `R3-W5-00-row-menu.png`, `R3-W5-01-replay.png` |
+| W-B3-7 Request restatement (row menu) | pass (dialog only) | More actions for Sep → Request restatement → dialog "Request restatement · Sep 1, 2026 – Sep 30, 2026" with note, five reasons, evidence; Escape closes and returns focus to the row trigger. Not submitted this round (submitted end to end in round 2). Compliance sees the same menus. `R3-W7-00-restatement-dialog.png` |
+| Row Calculate / Re-run | not executed | no DE period is calculable in this state (Nov before cut-off; NL has no plan version: "No plan version" chip, no button); covered by periods.test.tsx only |
+| W-B3-1..3, 6, 8 | not re-executed | code unchanged since round 2 (pass there); their screens re-loaded at 1440 without console error, 4xx/5xx or page scroll: SC-02, SC-43, SC-32, SC-04 list/version, SC-05, SC-42, SC-11, SC-01 (compliance) |
+
+### MVP-A regression (quick)
+
+| Area | Result | Notes |
+|---|---|---|
+| Sign-in | pass | analyst fresh sign-in through the form → app; wrong password → "The email or password is not correct." (401) |
+| Import | pass (read) | `/imports`: DEMO 2025-01…12 Loaded, 1,466 / 4,775 / 7,442, 53,195,001, 0 errors, mapping v1. No new upload this round |
+| Snapshot | pass (read) | R1 DEMO 2025-01 Ready: 252,178 of 1,517,950 = 16.61 % |
+| Audit | pass | compliance `/settings/audit` Verify → "The audit chain is intact"; this round's RUN.REPLAYED events at the top. `R3-REG-audit.png` |
+
+### Per screen
+
+| Screen | Stitch Reference | Functional Testing | Visual Fidelity | Responsive Testing | Accessibility | Impeccable Review | Defects | Final Status |
+|---|---|---|---|---|---|---|---|---|
+| SC-01 Periods and runs | `sc_01_periods_runs_analyst_home` | pass (open review, replay, restatement dialog via row menu) | pass with notes (diagnostics below the table is a deliberate deviation; the Stitch reference itself clips its table at 1440) | pass at 1440/1280/390; 768 table scrolls in its box | no automated finding; menu button pattern correct | – | BUG-097, BUG-098 | pass with defects |
+| SC-02, SC-04 (list, version), SC-05, SC-42, SC-11, SC-43, SC-32 | as round 2 | loads, unchanged code | harness identical to round 2 | as round 2 | as round 2 | – | open as round 2 (BUG-090 engine, 093 web, 095, 096) | as round 2 |
+
+### Impeccable audit (audit only) and accessibility pass
+
+- `impeccable context` (no PRODUCT.md/DESIGN.md; incumbent code and the Stitch references are the authority) and `impeccable detect` (regex) on `apps/web/src/features/periods` + `components/row-menu.tsx` (12 files): no finding. Parsed-page rules did not run (pages need a session).
+- Scripted SC-01 at 1440 and 768: no unnamed button/link/tab/menuitem, no duplicate id, one `h1`, no heading skip, table captioned "Periods of DE monthly".
+- Row menu (keyboard): trigger reached by Tab with a 2 px focus outline, `aria-haspopup=menu`, `aria-expanded` toggles, accessible name names the period; Enter and Space open it with focus on the first item; ArrowDown/ArrowUp/Home/End move; Escape closes and refocuses the trigger; Tab and an outside click close it; items' names name the period ("Replay Aug 1, 2026 – Aug 31, 2026"). Trigger is 28×28 px (meets the 24 px WCAG 2.2 AA minimum; below a 44 px touch target at 390).
+- Scores (0–4): Accessibility 3 (contrast not measured), Performance not scored, Theming 4, Responsive 3 (desktop fixed; 768 residual BUG-098), Implementation integrity 3 (remaining raw codes/units, stale copy). Total 13/16.
+
+### Console and network
+
+- No console error, page error or failed request on any B3 route this round except the intended 401 of the wrong-password sign-in. API log: no 5xx, no level-50 entry (two 401s and one 404 are QA probes).
+
+### Notes (not registered)
+
+- On a test driver, a click that first scrolls the trigger into view closes the menu again (it closes on any scroll); not reproducible by a user scrolling then clicking.
+- 390: blocker chips are right-aligned when one and left-aligned when two; open rows show an "Actions" label with no value.
+- Evidence: `var/qa-b3/r3/R3-*.png`, harness logs `var/qa-b3/r3/R3-visual-*.log`, server logs `var/qa-b3/r3/{api,web}.log`.

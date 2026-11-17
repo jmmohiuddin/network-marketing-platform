@@ -96,7 +96,7 @@ function OrdersTable({ query, selected, hrefOf }: { readonly query: Query; reado
           key: 'amount', header: 'Amount and volume', align: 'end', cell: (row) => (
             <div className="flex flex-col items-end">
               <span className="font-data-mono-sm text-data-mono-sm font-bold">{moneyText(row.amount_minor, row.currency, minorUnits.get(row.market.id))}</span>
-              <span className="font-data-mono-sm text-[11px] text-tertiary font-semibold">{volumesText(row.volumes)}</span>
+              <span className="font-data-mono-sm text-[11px] text-tertiary font-semibold">{volumesText(row.volumes, minorUnits.get(row.market.id))}</span>
             </div>
           ),
         },

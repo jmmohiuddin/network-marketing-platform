@@ -3,8 +3,9 @@
 import { documentBody } from '../../src/modules/aud/test-support.js'
 import { multipartBody, TINY_MAPPING, tinyFiles } from '../../src/modules/imp/test-support.js'
 import { PROTOTYPE_SETTINGS } from '../../src/modules/cpl/test-fixtures.js'
+import { GOLDEN_EXPECTED, GOLDEN_INPUT, personal } from '../../src/modules/pln/test-support.js'
 import type { CallOptions } from '../helpers/index.js'
-import { DRAFT_MARKET_CODE, PACK, PASSWORD, RECORDABLE_ITEM, SUPPORT_SCOPE, type Targets } from './seed.js'
+import { DRAFT_MARKET_CODE, DRAFT_VERSION, PACK, PASSWORD, RECORDABLE_ITEM, RULE_KEY, STATE_ITEM, SUPPORT_SCOPE, type Targets } from './seed.js'
 
 /**
  * Who the route is for. public: no session (sign-in, invitation); self: the caller's own session or account;
@@ -90,6 +91,11 @@ const order = (t: Targets) => ({
 const keyOnly = (request: (t: Targets) => CaseRequest): RouteCase =>
   ({ access: 'key', shape: 'object', refusedAs: [403, 'API_KEY_REQUIRED'], request })
 const PAST = '2026-01-01T00:00:00Z'
+
+/** Draft writes need If-Match (428 without it), so the case sends one: tenant B then meets the unknown plan. */
+const draftWrite = (method: CaseRequest['method'], url: string, body?: unknown): CaseRequest =>
+  ({ ...json(method, url, body), headers: { 'if-match': '"1"' } })
+const draft = (t: Targets) => `/v1/plans/${t.plan}/versions/${DRAFT_VERSION}`
 
 const rows = (t: Targets) => `/v1/compliance/snapshots/${t.snapshot}/figures/${encodeURIComponent(t.figure)}/rows`
 
@@ -343,6 +349,63 @@ export const ROUTE_CASES: Readonly<Record<string, RouteCase>> = {
     ...object('public', (t) => json('POST', `/v1/connectors/${t.connector}/webhooks`, { id: 1 })), unsignedAnswer: [401, 'SIGNATURE_INVALID'],
   },
   'GET /v1/integrations/health': collection('tenant', () => get('/v1/integrations/health')),
+  // PLN B3 (PLAN B3 2.1): tenant A's markets and calendars name nothing in tenant B.
+  'GET /v1/plans': collection('tenant', () => get('/v1/plans?limit=200')),
+  'POST /v1/plans': named(422, 'MARKET_UNKNOWN', (t) =>
+    json('POST', '/v1/plans', { name: 'Isolation plan', market_ids: [t.compMarket], calendar_ids: [t.compCalendar] }, true)),
+  'GET /v1/plans/:id': object('tenant', (t) => get(`/v1/plans/${t.plan}`)),
+  'POST /v1/plans/:id/versions': object('tenant', (t) => json('POST', `/v1/plans/${t.plan}/versions`, {}, true)),
+  'GET /v1/plans/:id/versions/:v': object('tenant', (t) => get(draft(t))),
+  'PATCH /v1/plans/:id/versions/:v': object('tenant', (t) => draftWrite('PATCH', draft(t), { justification: 'isolation' })),
+  'GET /v1/plans/:id/versions/:v/diff': object('tenant', (t) => get(`${draft(t)}/diff?against=1`)),
+  'PUT /v1/plans/:id/versions/:v/rules/:ruleKey': object('tenant', (t) =>
+    draftWrite('PUT', `${draft(t)}/rules/${RULE_KEY}`, { kind: 'volume.personal', params: personal(RULE_KEY) })),
+  'DELETE /v1/plans/:id/versions/:v/rules/:ruleKey': object('tenant', (t) => draftWrite('DELETE', `${draft(t)}/rules/${RULE_KEY}`)),
+  'PUT /v1/plans/:id/versions/:v/transitions/:stateItem': object('tenant', (t) =>
+    draftWrite('PUT', `${draft(t)}/transitions/${STATE_ITEM}`, { rule: 'carry' })),
+  'DELETE /v1/plans/:id/versions/:v/transitions/:stateItem': object('tenant', (t) => draftWrite('DELETE', `${draft(t)}/transitions/${STATE_ITEM}`)),
+  'POST /v1/plans/:id/versions/:v/submit': object('tenant', (t) => json('POST', `${draft(t)}/submit`, {}, true)),
+  'POST /v1/plans/:id/versions/:v/decision': object('tenant', (t) =>
+    json('POST', `${draft(t)}/decision`, { decision: 'approve', reason: 'isolation' }, true)),
+  'POST /v1/plans/:id/versions/:v/schedule': object('tenant', (t) =>
+    json('POST', `${draft(t)}/schedule`, { effective_from: '2099-01-01T00:00:00Z', justification: 'isolation' }, true)),
+  'POST /v1/plans/:id/versions/:v/guardrails/evaluate': object('tenant', (t) => json('POST', `${draft(t)}/guardrails/evaluate`, {}, true)),
+  'POST /v1/plans/:id/versions/:v/guardrail-decisions/:decisionId/acknowledge': object('tenant', (t) =>
+    json('POST', `${draft(t)}/guardrail-decisions/${t.guardrailDecision}/acknowledge`, {}, true)),
+  'GET /v1/plans/:id/versions/:v/golden-datasets': object('tenant', (t) => get(`${draft(t)}/golden-datasets`)),
+  'GET /v1/plans/:id/versions/:v/golden-datasets/:goldenId': object('tenant', (t) => get(`${draft(t)}/golden-datasets/${t.golden}`)),
+  'POST /v1/plans/:id/versions/:v/golden-datasets': object('tenant', (t) => json('POST', `${draft(t)}/golden-datasets`, {
+    name: 'Isolation golden', calendar_id: t.compCalendar, covers: [], input: GOLDEN_INPUT, expected: GOLDEN_EXPECTED,
+  }, true)),
+  'DELETE /v1/plans/:id/versions/:v/golden-datasets/:goldenId': object('tenant', (t) => json('DELETE', `${draft(t)}/golden-datasets/${t.golden}`)),
+  'POST /v1/plans/:id/versions/:v/golden-datasets/run': object('tenant', (t) => json('POST', `${draft(t)}/golden-datasets/run`, {}, true)),
+  // CPL B3 (PLAN B3 2.2)
+  'GET /v1/guardrail-decisions': collection('tenant', () => get('/v1/guardrail-decisions?limit=200')),
+  'GET /v1/guardrail-decisions/:id': object('tenant', (t) => get(`/v1/guardrail-decisions/${t.guardrailDecision}`)),
+  'POST /v1/guardrail-decisions/:id/override': object('tenant', (t) => json('POST', `/v1/guardrail-decisions/${t.guardrailDecision}/override`, {
+    justification: 'Isolation suite override justification',
+  }, true)),
+  // COMP B3 (PLAN B3 2.3, 2.5)
+  'GET /v1/periods': collection('tenant', () => get('/v1/periods?limit=200')),
+  'GET /v1/periods/:id': object('tenant', (t) => get(`/v1/periods/${t.period}`)),
+  'POST /v1/periods/:id/runs': object('tenant', (t) => ({ ...json('POST', `/v1/periods/${t.period}/runs`), headers: { 'run-request-id': 'isolation' } })),
+  'GET /v1/runs/:id': object('tenant', (t) => get(`/v1/runs/${t.run}`)),
+  'GET /v1/runs/:id/review': object('tenant', (t) => get(`/v1/runs/${t.run}/review`)),
+  'GET /v1/runs/:id/transitions': object('tenant', (t) => get(`/v1/runs/${t.run}/transitions`)),
+  'GET /v1/runs/:id/lines': object('tenant', (t) => get(`/v1/runs/${t.run}/lines`)),
+  'POST /v1/runs/:id/request-commit': object('tenant', (t) => json('POST', `/v1/runs/${t.run}/request-commit`, {}, true)),
+  'POST /v1/runs/:id/commit': object('tenant', (t) => json('POST', `/v1/runs/${t.run}/commit`, { acknowledged_exceptions: [] }, true)),
+  'POST /v1/runs/:id/replay': object('tenant', (t) => json('POST', `/v1/runs/${t.run}/replay`)),
+  'GET /v1/result-lines/:id/trace': object('tenant', (t) => get(`/v1/result-lines/${t.resultLine}/trace`)),
+  'GET /v1/positions/:id/qualification': object('tenant', (t) => get(`/v1/positions/${t.payee}/qualification`)),
+  // An A plan version or period in the body is answered as an unknown one (404).
+  'POST /v1/simulations': object('tenant', (t) => json('POST', '/v1/simulations', { plan_version_id: t.activeVersion, period_id: t.period }, true)),
+  'GET /v1/simulations': collection('tenant', () => get('/v1/simulations?limit=200')),
+  'GET /v1/simulations/:id': object('tenant', (t) => get(`/v1/simulations/${t.simulation}`)),
+  // plan.simulate is excluded from support sessions (PLAN B3 2.7).
+  'GET /v1/simulations/:id/payees': { ...object('tenant', (t) => get(`/v1/simulations/${t.simulation}/payees`)), inSession: 403 },
+  'GET /v1/restatements/:id': object('tenant', (t) => get(`/v1/restatements/${t.restatement}`)),
+  'GET /v1/restatements/:id/lines': object('tenant', (t) => get(`/v1/restatements/${t.restatement}/lines`)),
 }
 
 /** The case of a route; Fastify's HEAD routes run their GET handler, so they take the GET case with method HEAD. */

@@ -79,6 +79,8 @@ describe('GET /v1/support-sessions/limits', () => {
       'participant.unmask', 'settings.approve', 'market.signoff', 'integration.manage', 'participant.terminate',
       'participant_type.approve', 'agreement.publish', 'case.genealogy.approve', 'case.duplicate.approve', 'privacy.manage',
       'participant.manage', 'case.genealogy.create', 'case.duplicate.create', 'servicing.manage', 'product.manage', 'late.manage',
+      'plan.edit', 'plan.approve', 'plan.activate', 'plan.simulate', 'run.execute', 'run.commit', 'restatement.request',
+      'restatement.approve', 'override.approve',
     ]
     expect(limits.json().data).toEqual({ max_minutes: 480, scopes: PERMISSIONS.filter((permission) => !excluded.includes(permission)) })
     expect(scopes).toContain('market.manage')

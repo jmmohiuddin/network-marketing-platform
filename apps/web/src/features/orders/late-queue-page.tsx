@@ -25,6 +25,9 @@ import { useCursorPages } from '../../lib/cursor-pages'
 import { tableError } from '../admin/resource'
 import { integer } from '../data/format'
 import { PositionLink } from '../cases/refs'
+import { RestatementDialog as RestatementCaseDialog, type RestatementPeriod } from '../cases/restatement-dialog'
+import { shortId } from '../admin/format'
+import { periodText, reviewPath } from '../periods/format'
 import { HANDLING_LABELS, LATE_STATE_LABELS, moneyText, volumesText } from './format'
 import type { LateItem, LatePreview, LateState, OrderRow } from './types'
 
@@ -71,7 +74,6 @@ function selectionMarket(items: readonly LateItem[], marketOf: ItemMarket): Mark
   return first !== undefined && found.every((market) => market?.currency === first.currency) ? first : undefined
 }
 
-const periodText = (period: LateItem['original_period']) => `${formatDateTime(period.starts_at)} – ${formatDateTime(period.ends_at)}`
 
 function Facts({ items }: { readonly items: readonly (readonly [string, ReactNode])[] }) {
   return (
@@ -137,7 +139,7 @@ function AcceptDialog({ ids: chosen, market, onClose, onDone }: { readonly ids: 
             ['Items', data.count],
             // The preview sums amount_minor whatever the currency, so the total shows only for a one-currency selection.
             ['Amount', market === undefined ? 'Filter the queue to one market to see the total' : amountText(data.amount_minor, market)],
-            ['Volume', volumesText(data.volumes)],
+            ['Volume', volumesText(data.volumes, market?.minor_unit)],
             ['Positions affected', data.affected_positions.length],
           ]} />
           {data.affected_positions.length > 0 && (
@@ -174,14 +176,33 @@ function RestatementDialog({ item, onClose, onDone }: { readonly item: LateItem;
   }
   return (
     <FormDialog title="Raise restatement instead" submitLabel="Raise restatement" submitVariant="destructive-solid" onClose={onClose} onSubmit={submit}>
-      <p>The item is decided for restatement of {periodText(item.original_period)} instead of an adjustment in an open period.</p>
+      <p>The item is decided for restatement of {periodText(item.original_period, undefined)} instead of an adjustment in an open period.</p>
       <TextAreaField id={REASON_ID} label="Reason" value={reason} error={error} onChange={setReason} />
     </FormDialog>
   )
 }
 
-/** sc_32 queue item diagnostic. */
-function Diagnostic({ item, market, onRestate }: { readonly item: LateItem | null; readonly market: Market | undefined; readonly onRestate: (() => void) | null }) {
+/** "Adjusted in run <link>" for a consumed item (W-B3-6). */
+function ConsumedBy({ item }: { readonly item: LateItem }) {
+  // presence, not null: GET /v1/late-transactions omits both fields until the consuming run is known
+  if (item.state !== 'consumed' || !item.consumed_by_run_id || !item.consumed_by_period_id) return null
+  return (
+    <span className="font-caption text-caption text-secondary">
+      Adjusted in run <Link className={`${MONO} text-primary hover:underline`} href={reviewPath(item.consumed_by_period_id, item.consumed_by_run_id)}>{shortId(item.consumed_by_run_id)}</Link>
+    </span>
+  )
+}
+
+interface DiagnosticProps {
+  readonly item: LateItem | null
+  readonly market: Market | undefined
+  /** Pending item: decide it for restatement instead of an adjustment. */
+  readonly onRestate: (() => void) | null
+  /** An item handled by restatement: open the restatement case of its original period. */
+  readonly onRaiseCase: (() => void) | null
+}
+
+function Diagnostic({ item, market, onRestate, onRaiseCase }: DiagnosticProps) {
   return (
     <section className="bg-surface-container-lowest rounded shadow-sm overflow-hidden" aria-labelledby="diagnostic-title" data-testid="diagnostic">
       <div className="p-space-md bg-surface-container flex flex-wrap items-center justify-between gap-space-xs">
@@ -194,7 +215,7 @@ function Diagnostic({ item, market, onRestate }: { readonly item: LateItem | nul
             <div className="flex flex-col gap-space-xs p-space-sm rounded bg-surface-container-low">
               <span className="font-caption text-caption text-secondary uppercase font-semibold">Original period</span>
               <Facts items={[
-                ['Period', periodText(item.original_period)],
+                ['Period', periodText(item.original_period, undefined)],
                 ['Period state', <StatusBadge state={item.original_period.state} />],
                 ['Origin', item.origin_type === 'order' ? 'The order' : 'An order event'],
                 ['Queued', formatDateTime(item.created_at)],
@@ -204,20 +225,21 @@ function Diagnostic({ item, market, onRestate }: { readonly item: LateItem | nul
               <span className="font-caption text-caption text-secondary uppercase font-semibold">Effect estimate</span>
               <Facts items={[
                 ['Amount', amountText(item.effect_estimate.amount_minor, market)],
-                ['Volume', volumesText(item.effect_estimate.volumes)],
+                ['Volume', volumesText(item.effect_estimate.volumes, market?.minor_unit)],
                 ['Attributed to', item.effect_estimate.attributed_position_id === null ? 'Not attributed' : <PositionLink id={item.effect_estimate.attributed_position_id} />],
               ]} />
             </div>
             <div className="flex flex-col gap-space-xs">
               <Facts items={[
                 ['Handling', HANDLING_LABELS[item.handling]],
-                ['State', LATE_STATE_LABELS[item.state]],
+                ['State', item.state === 'consumed' ? <ConsumedBy item={item} /> : LATE_STATE_LABELS[item.state]],
                 ...(item.decided_at === null ? [] : [['Decided', formatDateTime(item.decided_at)] as const]),
                 ...(item.decision_reason === null ? [] : [['Reason', item.decision_reason] as const]),
               ]} />
               <Link className="font-caption text-caption text-primary hover:underline" href={`/orders/${item.order.id}`}>Open the order</Link>
             </div>
             {onRestate !== null && <Button icon="restart_alt" className="justify-center" onClick={onRestate}>Raise restatement instead</Button>}
+            {onRaiseCase !== null && <Button icon="history_edu" className="justify-center" onClick={onRaiseCase}>Raise restatement</Button>}
           </>
         )}
       </div>
@@ -227,7 +249,7 @@ function Diagnostic({ item, market, onRestate }: { readonly item: LateItem | nul
 
 /** One state and market of the queue; mount it with them as key so paging restarts. meta.counts feeds the KPI cards. */
 function Queue({ state, marketId, markets }: { readonly state: LateState; readonly marketId: string; readonly markets: readonly Market[] }) {
-  const { readOnly } = useSession()
+  const { can, readOnly } = useSession()
   const pages = useCursorPages()
   const resource = useResource<LateItem[]>('/v1/late-transactions', { state, market_id: marketId === '' ? undefined : marketId, cursor: pages.cursor })
   const nextCursor = typeof resource.meta.next_cursor === 'string' ? resource.meta.next_cursor : null
@@ -239,6 +261,9 @@ function Queue({ state, marketId, markets }: { readonly state: LateState; readon
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set())
   const [focus, setFocus] = useState<string | null>(null)
   const [dialog, setDialog] = useState<'accept' | 'restate' | null>(null)
+  // The period is kept, not the item: once decided the item may leave the filtered page.
+  const [casePeriod, setCasePeriod] = useState<RestatementPeriod | null>(null)
+  const raiseCase = (item: LateItem) => setCasePeriod({ id: item.original_period.id, label: periodText(item.original_period, undefined) })
   const pending = list.rows.filter((row) => row.state === 'pending')
   const chosenRows = pending.filter((row) => selected.has(row.id))
   const chosen = chosenRows.map((row) => row.id)
@@ -251,6 +276,7 @@ function Queue({ state, marketId, markets }: { readonly state: LateState; readon
     list.reload()
   }
   const canDecide = !readOnly
+  const canRequest = !readOnly && can('restatement.request')
   // shortcut: meta.counts ignores the market filter (API lateCounts), so the cards say so; pass market_id there to filter them.
   const countScope = marketId === '' ? '' : ' (all markets in your scope)'
   return (
@@ -291,10 +317,10 @@ function Queue({ state, marketId, markets }: { readonly state: LateState; readon
                   </div>
                 ),
               },
-              { key: 'period', header: 'Original period', cell: (row) => <div className="flex flex-col"><span className={MONO}>{periodText(row.original_period)}</span><StatusBadge state={row.original_period.state} /></div> },
-              { key: 'effect', header: 'Effect estimate', align: 'end', cell: (row) => <div className="flex flex-col items-end"><span className={`${MONO} font-semibold`}>{amountText(row.effect_estimate.amount_minor, marketOf(row))}</span><span className="font-caption text-caption text-secondary">{volumesText(row.effect_estimate.volumes)}</span></div> },
+              { key: 'period', header: 'Original period', cell: (row) => <div className="flex flex-col"><span className={MONO}>{periodText(row.original_period, undefined)}</span><StatusBadge state={row.original_period.state} /></div> },
+              { key: 'effect', header: 'Effect estimate', align: 'end', cell: (row) => <div className="flex flex-col items-end"><span className={`${MONO} font-semibold`}>{amountText(row.effect_estimate.amount_minor, marketOf(row))}</span><span className="font-caption text-caption text-secondary">{volumesText(row.effect_estimate.volumes, marketOf(row)?.minor_unit)}</span></div> },
               { key: 'handling', header: 'Handling', cell: (row) => HANDLING_LABELS[row.handling] },
-              { key: 'state', header: 'State', cell: (row) => <StatusBadge state={row.state === 'pending' ? 'held' : 'closed'} label={LATE_STATE_LABELS[row.state]} /> },
+              { key: 'state', header: 'State', cell: (row) => <span className="flex flex-col items-start gap-0.5"><StatusBadge state={row.state === 'pending' ? 'held' : 'closed'} label={LATE_STATE_LABELS[row.state]} /><ConsumedBy item={row} /></span> },
               { key: 'diagnose', header: 'Diagnose', cell: (row) => <Button size="sm" icon="manage_search" aria-pressed={row.id === focus} aria-label={`Diagnose ${row.order.source_order_id}`} onClick={() => setFocus(row.id)}>Diagnose</Button> },
             ]}
             rows={list.rows}
@@ -307,11 +333,17 @@ function Queue({ state, marketId, markets }: { readonly state: LateState; readon
           />
         </div>
         <div className="lg:col-span-4 min-w-0">
-          <Diagnostic item={focused} market={focused === null ? undefined : marketOf(focused)} onRestate={canDecide && focused?.state === 'pending' ? () => setDialog('restate') : null} />
+          <Diagnostic item={focused} market={focused === null ? undefined : marketOf(focused)} onRestate={canDecide && focused?.state === 'pending' ? () => setDialog('restate') : null}
+            onRaiseCase={canRequest && focused?.handling === 'restatement' && focused.state !== 'pending' ? () => raiseCase(focused) : null} />
         </div>
       </div>
       {dialog === 'accept' && <AcceptDialog ids={chosen} market={selectionMarket(chosenRows, marketOf)} onClose={() => setDialog(null)} onDone={decided} />}
-      {dialog === 'restate' && focused !== null && <RestatementDialog item={focused} onClose={() => setDialog(null)} onDone={decided} />}
+      {dialog === 'restate' && focused !== null && <RestatementDialog item={focused} onClose={() => setDialog(null)} onDone={() => {
+        decided()
+        // The item now waits for a restatement of its period: offer to open that case straight away.
+        if (canRequest) raiseCase(focused)
+      }} />}
+      {casePeriod !== null && <RestatementCaseDialog period={casePeriod} onClose={() => setCasePeriod(null)} />}
     </>
   )
 }

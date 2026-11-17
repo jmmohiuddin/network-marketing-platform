@@ -76,6 +76,25 @@ export type MeasureRule =
       readonly measure: string
       readonly atLeastMinor: bigint
     }
+  | { readonly kind: 'measure.derived'; readonly key: string; readonly expr: Expr } // tier 2 (E-ADR-41), rounded half-up once
+
+// ---------- Tier-2 expressions (E-ADR-41, E-ADR-42; checked and evaluated by expression.ts) ----------
+
+export type ExprOp = 'add' | 'sub' | 'mul' | 'div' | 'min' | 'max' | 'if' | 'gte' | 'gt' | 'lte' | 'lt' | 'eq' | 'and' | 'or' | 'not'
+export type AggregateKind = 'sum' | 'max' | 'min' | 'count'
+/**
+ * Typed JSON AST. Numbers are exact rationals in the measures' minor units: `const` is a non-negative Decimal in those
+ * units, `measure` this period's value, `state` the PRIOR period's balance (`carry.<key>` amount or `counter.<key>`
+ * value, after transitions), `agg` folds `of` over the position's direct children in `tree` (count: children whose
+ * value reaches atLeastMinor; null = every child). `fact` compares a profile fact (bool).
+ */
+export type Expr =
+  | { readonly const: Decimal }
+  | { readonly measure: string }
+  | { readonly state: string }
+  | { readonly fact: string; readonly equals: string }
+  | { readonly op: ExprOp; readonly args: readonly Expr[] }
+  | { readonly agg: AggregateKind; readonly of: string; readonly tree: TreeKind; readonly atLeastMinor: bigint | null }
 
 // ---------- Qualification (pass 3; BR-RNK-05..09) ----------
 
@@ -92,6 +111,7 @@ export type Requirement =
   | { readonly kind: 'legs'; readonly tree: TreeKind; readonly count: number; readonly rank: RankRef } // qualified legs
   | { readonly kind: 'profile'; readonly fact: string; readonly equals: string } // participant profile fact
   | { readonly kind: 'rank'; readonly rank: RankRef } // rank held in another ladder
+  | { readonly kind: 'expression'; readonly expr: Expr } // tier 2 (E-ADR-41): met when the boolean expression holds
 
 export interface RankDef {
   readonly key: string

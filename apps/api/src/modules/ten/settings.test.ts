@@ -84,6 +84,15 @@ describe('PUT /v1/settings/:key', () => {
     expect(await auditActions(acme.id)).toContain('SETTINGS.VERSION_CREATED')
   })
 
+  test('D-B3-06: a retired key (genealogy.placement_width) is refused 422 SETTING_RETIRED and writes nothing', async () => {
+    const start = await latestVersion(admin)
+
+    const refused = await write(admin, 'genealogy.placement_width', 2, `"${start}"`)
+
+    expect([refused.statusCode, refused.json().error.code]).toEqual([422, 'SETTING_RETIRED'])
+    expect(await latestVersion(admin)).toBe(start)
+  })
+
   test('If-Match is required', async () => {
     const response = await write(admin, 'compliance.late_order_day', 20, null)
 
@@ -234,7 +243,7 @@ describe('GET /v1/settings and value_since (BUG-025, T-B1-07)', () => {
       'compliance.active_pv_minor', 'compliance.late_order_day', 'compliance.personal_share_flag',
       'compliance.rank_thresholds_pv_minor', 'money.clawback_policy', 'money.rounding_mode', 'orders.attribution_precedence',
       'orders.crediting_event', 'orders.new_buyer_type', 'orders.purpose_required', 'orders.restocking_fee_volume_effect',
-      'plan.activation_notice_days',
+      'plan.activation_notice_days', 'runs.exception_thresholds',
     ])
     expect(refused.statusCode).toBe(403)
     expect(structure.statusCode).toBe(404)

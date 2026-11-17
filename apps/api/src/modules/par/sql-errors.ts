@@ -38,6 +38,19 @@ export async function sqlCall<T>(run: () => Promise<T>): Promise<T> {
   }
 }
 
+/**
+ * A crm_set_servicer call (C1): besides its SQLSTATEs, C1 refuses a row starting at or before the customer's current one
+ * (a pending servicing change) with 23514, answered 409 (OI-4).
+ */
+export async function servicerCall<T>(run: () => Promise<T>): Promise<T> {
+  try {
+    return await sqlCall(run)
+  } catch (error) {
+    if (pgCode(error) !== '23514') throw error
+    throw new ApiError(409, 'SERVICING_CHANGE_PENDING', 'A servicing change of this customer is pending; try again once it is decided.')
+  }
+}
+
 /** Runs fn in a savepoint: on failure the transaction continues from before fn and the error is rethrown. */
 export async function inSavepoint<T>(tx: Tx, fn: () => Promise<T>): Promise<T> {
   await tx.query('SAVEPOINT par_attempt')

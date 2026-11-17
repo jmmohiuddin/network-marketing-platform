@@ -25,5 +25,6 @@ export const parModule: ApiModule = {
 export const parCaseTypes: readonly CaseTypeDefinition[] = [DUPLICATE_CASE_TYPE as CaseTypeDefinition]
 
 export { callerScope, participantsWrite } from './access.js'
+export { assertPositionsLimit } from './positions.js'
 export { publicParticipantSchemas } from './schemas.js'
 export { sqlCall } from './sql-errors.js'

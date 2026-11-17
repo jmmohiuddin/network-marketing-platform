@@ -167,7 +167,20 @@ export async function renameCalendar(tx: Tx, id: string, scope: readonly string[
   return calendarView(tx, id)
 }
 
-/** D-B1-11: a calendar whose periods are all open is deleted with them; otherwise 409 PERIOD_COMMITTED. */
+// The foreign keys from a plan to a calendar (D-B3-20); any other one is an order, run or simulation on one of its periods.
+const PLAN_CALENDAR_KEYS = new Set([
+  'plan_calendar_tenant_id_calendar_id_fkey', 'plan_rule_tenant_id_calendar_id_fkey', 'golden_dataset_tenant_id_calendar_id_fkey',
+])
+
+/** The 409 for a calendar or period another row still refers to (23503), or null for any other error. */
+export function calendarDeleteRefusal(error: unknown): ApiError | null {
+  if (pgCode(error) !== '23503') return null
+  return PLAN_CALENDAR_KEYS.has((error as { constraint?: string }).constraint ?? '')
+    ? new ApiError(409, 'CALENDAR_IN_PLAN', 'A plan uses this calendar: it cannot be deleted.')
+    : new ApiError(409, 'CALENDAR_HAS_ACTIVITY', 'Orders, runs or simulations refer to this calendar\'s periods: it cannot be deleted.')
+}
+
+/** D-B1-11: a calendar whose periods are all open is deleted with them; otherwise 409 PERIOD_COMMITTED (CALENDAR_IN_PLAN when a plan uses it, CALENDAR_HAS_ACTIVITY when anything refers to a period). */
 export async function deleteCalendar(tx: Tx, id: string, scope: readonly string[] | null, reason: string): Promise<void> {
   const calendar = await lockCalendar(tx, id, scope)
   const { rows } = await tx.query<{ closed: number }>(
@@ -177,10 +190,16 @@ export async function deleteCalendar(tx: Tx, id: string, scope: readonly string[
   if (rows[0]!.closed > 0) {
     throw new ApiError(409, 'PERIOD_COMMITTED', 'The calendar has periods past open and cannot be deleted.', { periods_not_open: rows[0]!.closed })
   }
-  const deleted = await tx.query('DELETE FROM period WHERE calendar_id = $1', [id])
-  await tx.query('DELETE FROM calendar WHERE id = $1', [id])
+  // D-B3-20: a plan's calendar (plan_calendar, its rules or golden datasets) keeps it and its periods (foreign keys).
+  let periods: number
+  try {
+    periods = (await tx.query('DELETE FROM period WHERE calendar_id = $1', [id])).rowCount ?? 0
+    await tx.query('DELETE FROM calendar WHERE id = $1', [id])
+  } catch (error) {
+    throw calendarDeleteRefusal(error) ?? error
+  }
   await recordAudit(tx, {
-    action: 'CALENDAR.DELETED', objectType: 'calendar', objectId: id, before: { name: calendar.name, market_id: calendar.market_id, periods: deleted.rowCount }, reason,
+    action: 'CALENDAR.DELETED', objectType: 'calendar', objectId: id, before: { name: calendar.name, market_id: calendar.market_id, periods }, reason,
   })
   await recordStructureChange(tx, reason)
 }

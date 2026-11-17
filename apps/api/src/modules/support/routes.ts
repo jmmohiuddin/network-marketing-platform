@@ -16,7 +16,7 @@ const minutes = z.number().int().min(1).max(SUPPORT_SESSION_MAX_MINUTES)
 const requestBody = z.strictObject({
   tenant: z.uuid(),
   reason: z.string().trim().min(1).max(500),
-  scope: z.strictObject({ permissions: z.array(scopePermission).min(1).max(20) }),
+  scope: z.strictObject({ permissions: z.array(scopePermission).min(1).max(scopePermission.options.length) }),
   minutes,
 })
 const decisionBody = z

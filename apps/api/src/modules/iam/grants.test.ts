@@ -33,6 +33,9 @@ const grant = (as: TestUser, userId: string, body: Record<string, unknown>) =>
   call(app, { method: 'POST', url: `/v1/users/${userId}/role-assignments`, as, body, idempotencyKey: true })
 const decide = (as: TestUser, requestId: string, decision: 'approved' | 'rejected', reason?: string) =>
   call(app, { method: 'POST', url: `/v1/role-grant-requests/${requestId}/decision`, as, body: { decision, reason }, idempotencyKey: true })
+// Custom roles within the Tenant admin's own permissions (base roles now carry B3 permissions the admin does not hold).
+const customRoleId = async (name: string, permissions: string[]): Promise<string> =>
+  (await call(app, { method: 'POST', url: '/v1/roles', as: admin, body: { name, permissions }, idempotencyKey: true })).json().data.id as string
 const permissionsOf = async (as: TestUser) => (await call(app, { method: 'GET', url: '/v1/me', as })).json().data.permissions as string[]
 
 describe('GET /v1/roles and POST /v1/roles', () => {
@@ -78,7 +81,7 @@ describe('POST /v1/users/:id/role-assignments', () => {
   test('an ordinary role is granted at once and is effective on the next request', async () => {
     const user = await createSignedInUser({ tenantId: acme.id })
 
-    const response = await grant(admin, user.id, { role_id: await baseRoleId('Executive read-only') })
+    const response = await grant(admin, user.id, { role_id: await customRoleId('Reader', ['compliance.read']) })
 
     expect(response.statusCode).toBe(201)
     expect(response.json().data.assignment).toMatchObject({ user_id: user.id, approval_id: null })
@@ -90,7 +93,7 @@ describe('POST /v1/users/:id/role-assignments', () => {
     const user = await createSignedInUser({ tenantId: acme.id })
     const own = await createMarket(acme.id, 'GB')
     const foreign = await createMarket(globexAdmin.tenantId!, 'FR')
-    const roleId = await baseRoleId('Executive read-only') // within the admin's own permissions: granted at once
+    const roleId = await customRoleId('Scoped reader', ['compliance.read']) // within the admin's own permissions: granted at once
 
     const scoped = await grant(admin, user.id, { role_id: roleId, market_ids: [own] })
     const refused = await grant(admin, user.id, { role_id: roleId, market_ids: [foreign] })
@@ -104,7 +107,7 @@ describe('POST /v1/users/:id/role-assignments', () => {
     const fr = await createMarket(acme.id, 'FX')
     const scopedAdmin = await createSignedInUser({ tenantId: acme.id, roles: ['Tenant admin'], marketIds: [gb] })
     const user = await createSignedInUser({ tenantId: acme.id })
-    const roleId = await baseRoleId('Implementation consultant')
+    const roleId = await customRoleId('Importer', ['import.manage', 'mapping.edit'])
 
     const allMarkets = await grant(scopedAdmin, user.id, { role_id: roleId })
     const otherMarket = await grant(scopedAdmin, user.id, { role_id: roleId, market_ids: [fr] })
@@ -120,7 +123,7 @@ describe('POST /v1/users/:id/role-assignments', () => {
     const adminEnds = new Date(Date.now() + 86_400_000)
     const timeBoxed = await createSignedInUser({ tenantId: acme.id, roles: ['Tenant admin'], validTo: adminEnds })
     const user = await createSignedInUser({ tenantId: acme.id })
-    const roleId = await baseRoleId('Implementation consultant')
+    const roleId = await customRoleId('Time-boxed importer', ['import.manage', 'mapping.edit'])
     const until = (offsetMs: number) => ({ role_id: roleId, valid_to: new Date(adminEnds.getTime() + offsetMs).toISOString() })
 
     const openEnded = await grant(timeBoxed, user.id, { role_id: roleId })

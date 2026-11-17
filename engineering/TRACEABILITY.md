@@ -4,32 +4,36 @@ Generated from `spec.json`. Status column is maintained by hand as work lands: `
 
 ## Release A (18)
 
+Release A rows set in the B3 records step (2026-11-18, PLAN §B) from evidence: integration suites of `apps/api/src/modules/{iam,ten,imp,cpl,aud,support,ops,prv}` green in the B3 records full run, and `testing/UI_TESTING_REPORT.md` final status (MVP-A rounds 1–3, all 11 screens pass). Not exercised in the browser: support-session auto-expiry (FR-IAM-005), an export above 50,000 rows (FR-AUD-002).
+
 | FR | Title | Stories | ACs | Rules | Tests | Screens | APIs | Tables | Status |
 |---|---|---|---|---|---|---|---|---|---|
-| FR-IAM-001 | Tenant-scoped authentication and sessions | US-35 | AC-35.1 AC-35.2 | BR-SEC-04 | TS-21 TS-35 | SC-27 | API-07 | user_account audit_event | - |
-| FR-IAM-002 | Multi-factor authentication for privileged roles | US-35 | AC-35.1 AC-35.2 | BR-SEC-02 | TS-35 | SC-27 | API-07 | user_account approval | - |
-| FR-IAM-003 | Roles, permissions and attribute scopes | US-36 | AC-36.1 AC-36.2 | BR-SEC-05 | TS-36 | SC-28 | API-40 | role role_assignment approval audit_event | - |
-| FR-IAM-005 | Vendor support sessions | US-29 | AC-29.1 AC-29.2 AC-29.3 | BR-SEC-01 | TS-21 TS-37 | SC-14 SC-39 | API-08 | support_session audit_event | - |
-| FR-TEN-001 | Tenant provisioning and data region | US-31 | AC-31.1 | BR-DAT-09 | TS-57 | SC-39 | API-39 | tenant tenant_setting_version | - |
-| FR-IMP-001 | Export upload and schema validation | US-39 | AC-39.1 AC-39.2 AC-39.3 | BR-IMP-01 BR-IMP-02 | TS-32 TS-33 | SC-24 | API-01 API-02 | import_batch import_row_error | - |
-| FR-IMP-002 | Value mapping with versions | US-40 | AC-40.1 | BR-IMP-03 BR-PTY-01 | TS-31 TS-33 | SC-25 | API-03 | import_mapping | - |
-| FR-IMP-003 | Import batch lifecycle and data-quality report | US-39 | AC-39.1 AC-39.2 AC-39.3 | BR-IMP-04 | TS-32 TS-33 | SC-24 | API-01 API-02 | import_batch cpl_fact_participant cpl_fact_order cpl_fact_payout_line | - |
-| FR-CPL-001 | Retail-customer share report (R1) | US-24 | AC-24.1 AC-24.2 | BR-GRD-04 BR-CPL-01 | TS-31 TS-59 | SC-10 SC-46 | API-04 API-05 | compliance_report_snapshot compliance_figure | - |
-| FR-CPL-002 | Personal-use share of rewarded volume (R2) | US-24 | AC-24.1 AC-24.2 | BR-GRD-03 BR-CAP-02 | TS-09 TS-26 TS-31 TS-59 | SC-10 | API-04 API-05 | compliance_report_snapshot compliance_figure | - |
-| FR-CPL-003 | Payout source mix (R3) | US-24 | AC-24.1 AC-24.2 | BR-GRD-04 | TS-31 TS-59 | SC-10 | API-04 API-05 | compliance_report_snapshot compliance_figure | - |
-| FR-CPL-004 | Qualification-by-purchase and period-end threshold orders (R4) | US-24 | AC-24.1 AC-24.2 | BR-GRD-03 | TS-26 TS-31 TS-59 | SC-10 | API-04 API-05 | compliance_report_snapshot compliance_figure | - |
-| FR-CPL-005 | Earnings distribution over all participants (R5) | US-25 | AC-25.1 AC-25.2 | BR-GRD-04 BR-HON-01 | TS-31 TS-53 TS-59 | SC-10 | API-04 API-05 | compliance_report_snapshot compliance_figure | - |
-| FR-CPL-006 | Report snapshots, method versions and drill-down | US-41 | AC-41.1 | BR-CPL-01 | TS-31 TS-34 | SC-10 SC-26 | API-04 API-05 API-06 | compliance_report_snapshot compliance_figure | - |
-| FR-PRV-004 | Breach-notification contacts and runbook data | US-53 | AC-53.1 | BR-DAT-07 | TS-50 | SC-29 | API-39 | tenant_setting_version | - |
-| FR-AUD-001 | Immutable audit log | US-54 | AC-54.1 AC-54.2 | BR-SEC-07 | TS-34 TS-56 | SC-30 | API-09 | audit_event outbox_event | - |
-| FR-AUD-002 | Export limits and logging | US-54 | AC-54.1 AC-54.2 | BR-SEC-03 | TS-34 TS-56 | SC-30 SC-26 | API-06 | export_job audit_event | - |
-| FR-OPS-001 | Vendor operations console | US-57 | AC-57.1 | BR-SEC-01 | TS-37 | SC-39 | API-08 | tenant support_session | - |
+| FR-IAM-001 | Tenant-scoped authentication and sessions | US-35 | AC-35.1 AC-35.2 | BR-SEC-04 | TS-21 TS-35 | SC-27 | API-07 | user_account audit_event | I T V |
+| FR-IAM-002 | Multi-factor authentication for privileged roles | US-35 | AC-35.1 AC-35.2 | BR-SEC-02 | TS-35 | SC-27 | API-07 | user_account approval | I T V |
+| FR-IAM-003 | Roles, permissions and attribute scopes | US-36 | AC-36.1 AC-36.2 | BR-SEC-05 | TS-36 | SC-28 | API-40 | role role_assignment approval audit_event | I T V |
+| FR-IAM-005 | Vendor support sessions | US-29 | AC-29.1 AC-29.2 AC-29.3 | BR-SEC-01 | TS-21 TS-37 | SC-14 SC-39 | API-08 | support_session audit_event | I T V |
+| FR-TEN-001 | Tenant provisioning and data region | US-31 | AC-31.1 | BR-DAT-09 | TS-57 | SC-39 | API-39 | tenant tenant_setting_version | I T V |
+| FR-IMP-001 | Export upload and schema validation | US-39 | AC-39.1 AC-39.2 AC-39.3 | BR-IMP-01 BR-IMP-02 | TS-32 TS-33 | SC-24 | API-01 API-02 | import_batch import_row_error | I T V |
+| FR-IMP-002 | Value mapping with versions | US-40 | AC-40.1 | BR-IMP-03 BR-PTY-01 | TS-31 TS-33 | SC-25 | API-03 | import_mapping | I T V |
+| FR-IMP-003 | Import batch lifecycle and data-quality report | US-39 | AC-39.1 AC-39.2 AC-39.3 | BR-IMP-04 | TS-32 TS-33 | SC-24 | API-01 API-02 | import_batch cpl_fact_participant cpl_fact_order cpl_fact_payout_line | I T V |
+| FR-CPL-001 | Retail-customer share report (R1) | US-24 | AC-24.1 AC-24.2 | BR-GRD-04 BR-CPL-01 | TS-31 TS-59 | SC-10 SC-46 | API-04 API-05 | compliance_report_snapshot compliance_figure | I T V |
+| FR-CPL-002 | Personal-use share of rewarded volume (R2) | US-24 | AC-24.1 AC-24.2 | BR-GRD-03 BR-CAP-02 | TS-09 TS-26 TS-31 TS-59 | SC-10 | API-04 API-05 | compliance_report_snapshot compliance_figure | I T V |
+| FR-CPL-003 | Payout source mix (R3) | US-24 | AC-24.1 AC-24.2 | BR-GRD-04 | TS-31 TS-59 | SC-10 | API-04 API-05 | compliance_report_snapshot compliance_figure | I T V |
+| FR-CPL-004 | Qualification-by-purchase and period-end threshold orders (R4) | US-24 | AC-24.1 AC-24.2 | BR-GRD-03 | TS-26 TS-31 TS-59 | SC-10 | API-04 API-05 | compliance_report_snapshot compliance_figure | I T V |
+| FR-CPL-005 | Earnings distribution over all participants (R5) | US-25 | AC-25.1 AC-25.2 | BR-GRD-04 BR-HON-01 | TS-31 TS-53 TS-59 | SC-10 | API-04 API-05 | compliance_report_snapshot compliance_figure | I T V |
+| FR-CPL-006 | Report snapshots, method versions and drill-down | US-41 | AC-41.1 | BR-CPL-01 | TS-31 TS-34 | SC-10 SC-26 | API-04 API-05 API-06 | compliance_report_snapshot compliance_figure | I T V |
+| FR-PRV-004 | Breach-notification contacts and runbook data | US-53 | AC-53.1 | BR-DAT-07 | TS-50 | SC-29 | API-39 | tenant_setting_version | I T V |
+| FR-AUD-001 | Immutable audit log | US-54 | AC-54.1 AC-54.2 | BR-SEC-07 | TS-34 TS-56 | SC-30 | API-09 | audit_event outbox_event | I T V |
+| FR-AUD-002 | Export limits and logging | US-54 | AC-54.1 AC-54.2 | BR-SEC-03 | TS-34 TS-56 | SC-30 SC-26 | API-06 | export_job audit_event | I T V |
+| FR-OPS-001 | Vendor operations console | US-57 | AC-57.1 | BR-SEC-01 | TS-37 | SC-39 | API-08 | tenant support_session | I T V |
 
 ## Release B (81)
 
 B1 (2026-11-17, `increments/B1/HANDOFF.md`): T = integration tests green; V = browser workflows W-B1-1..5 passed in QA round 2. FR-CAS-001 has no V: the case framework is not mounted and has no production case types until B2 (D-B1-13). FR-IAM-004 V covers its settings and go-live use; case decisions are tested only.
 
 B2 (2026-11-17, `increments/B2/HANDOFF.md`): T = module and isolation tests green in the records full run (nmp_test_4, 148 files, 2739 tests); V = browser workflows W-B2-1..10 passed in QA rounds 1–2. Limits of V: FR-GEN-003 known-at was checked by tests only (as-of in the browser); FR-GEN-006 V is the staff "View as distributor" preview (portal callers API-34/SC-20 are B5); FR-ORD-002 V is Shopify push only (WooCommerce tested only; pull side deferred, PLAN §8); FR-GEN-009 has no browser surface (TS-02 structure assertion and TS-64 are tests). Deferred parts per FR: PLAN §8.
+
+B3 (2026-11-18, `increments/B3/HANDOFF.md`): T = module, isolation and role-matrix tests green in the records full run (nmp_test_4 at 0306, 173 files, 3303 tests); V = browser workflows W-B3-1..8 passed in QA round 2 after the round-1 fixes (round 3 re-checked SC-01; W-B3-9 regression partial). Limits of V: FR-PLN-004 pools form and cap reordering not exercised in the browser; FR-COMP-006 commits without a ledger posting (B4, PLAN §8); FR-COMP-010 covers late transactions and restatements (manual adjustment cases are FR-CAS-002, B4); FR-COMP-012 V = run amounts equal the PLAN §7 worked values. FR-PLN-002 and FR-COMP-004 are partial by PLAN §8. FR-CAS-001 now I T V (mounted, exercised through the B2 case types and B3 restatements; PLAN §B OI-8). Engine scale not met: S-1 runs out of memory at 500k and 2M positions with a 4 GB heap (HANDOFF §4).
 
 | FR | Title | Stories | ACs | Rules | Tests | Screens | APIs | Tables | Status |
 |---|---|---|---|---|---|---|---|---|---|
@@ -39,8 +43,8 @@ B2 (2026-11-17, `increments/B2/HANDOFF.md`): T = module and isolation tests gree
 | FR-TEN-002 | Markets, brands, currencies and calendars | US-37 | AC-37.1 | BR-PER-01 | TS-59 TS-62 | SC-29 | API-39 | market brand calendar period | I T V |
 | FR-TEN-003 | Versioned tenant settings | US-37 | AC-37.1 | BR-MNY-02 | TS-06 TS-59 | SC-29 | API-39 | tenant_setting_version approval | I T V |
 | FR-TEN-004 | Market launch checklist | US-38 | AC-38.1 AC-38.2 | BR-PAY-11 BR-REG-04 | TS-50 | SC-17 | API-39 | market document provider_config approval | I T V |
-| FR-CPL-007 | Platform guardrails | US-26 | AC-26.1 AC-26.2 | BR-GRD-01 BR-GRD-02 BR-GRD-03 BR-GRD-04 | TS-26 TS-27 TS-31 TS-66 | SC-04 SC-11 | API-16 | guardrail_rule guardrail_decision | - |
-| FR-CPL-008 | Guardrail overrides log | US-26 | AC-26.1 AC-26.2 | BR-GRD-05 | TS-26 TS-27 TS-66 | SC-11 | API-16 | guardrail_decision | - |
+| FR-CPL-007 | Platform guardrails | US-26 | AC-26.1 AC-26.2 | BR-GRD-01 BR-GRD-02 BR-GRD-03 BR-GRD-04 | TS-26 TS-27 TS-31 TS-66 | SC-04 SC-11 | API-16 | guardrail_rule guardrail_decision | I T V |
+| FR-CPL-008 | Guardrail overrides log | US-26 | AC-26.1 AC-26.2 | BR-GRD-05 | TS-26 TS-27 TS-66 | SC-11 | API-16 | guardrail_decision | I T V |
 | FR-CPL-012 | Rule basis status in configuration | US-38 | AC-38.1 AC-38.2 | BR-CPL-03 | TS-50 | SC-17 | API-39 | guardrail_rule tax_rule | I T V |
 | FR-PAR-001 | Participant record and effective-dated participant types | US-21 | AC-21.1 AC-21.2 | BR-PTY-01 BR-PTY-02 | TS-31 TS-48 | SC-09 | API-12 | participant participant_type participant_type_assignment | I T V |
 | FR-PAR-002 | Enrolment intake with market gating | US-42 | AC-42.1 AC-42.2 | BR-REG-04 | TS-45 TS-50 TS-59 | SC-09 | API-12 | participant position relationship agreement_acceptance | I T V |
@@ -63,25 +67,25 @@ B2 (2026-11-17, `increments/B2/HANDOFF.md`): T = module and isolation tests gree
 | FR-ORD-005 | Late-transaction queue | US-08 | AC-08.1 | BR-PER-04 | TS-13 | SC-32 | API-10 API-11 | late_transaction | I T V |
 | FR-CRM-001 | Customer servicing relationship and attribution | US-23 | AC-23.1 | BR-ATT-01 BR-ATT-02 BR-ATT-04 | TS-48 TS-49 TS-65 | SC-09 SC-21 | API-35 | customer_servicing order | I T V |
 | FR-CRM-002 | Customer reassignment on termination | US-23 | AC-23.1 | BR-ATT-03 | TS-49 | SC-09 | API-35 | customer_servicing | I T V |
-| FR-PLN-001 | Plan versions | US-27 | AC-27.1 AC-27.2 | BR-CMP-01 BR-PLN-01 | TS-01 TS-24 TS-46 | SC-04 | API-16 | plan plan_version plan_rule | - |
-| FR-PLN-002 | Declarative primitive library | US-44 | AC-44.1 AC-44.2 | BR-RNK-05 BR-RNK-06 BR-RNK-09 BR-PER-01 | TS-01 TS-02 TS-62 TS-63 | SC-04 | API-16 | plan_rule | - |
-| FR-PLN-003 | Controlled extension point | US-44 | AC-44.1 AC-44.2 | BR-PLN-05 | TS-01 TS-02 TS-67 | SC-04 | API-16 | plan_rule | - |
-| FR-PLN-004 | Caps and pools configuration | US-11 | AC-11.1 AC-11.2 | BR-CAP-01 BR-CAP-02 BR-CAP-03 BR-MNY-03 | TS-06 TS-07 TS-08 TS-09 TS-12 | SC-05 | API-16 API-17 | plan_rule simulation | - |
-| FR-PLN-005 | Simulation and version comparison | US-10 | AC-10.1 AC-10.2 AC-10.3 | BR-PLN-02 | TS-46 TS-59 | SC-04 SC-42 | API-17 | simulation result_line | - |
-| FR-PLN-006 | Golden datasets | US-10 | AC-10.1 AC-10.2 AC-10.3 | BR-PLN-06 | TS-43 TS-44 TS-46 TS-59 TS-60 | SC-42 | API-17 | golden_dataset | - |
+| FR-PLN-001 | Plan versions | US-27 | AC-27.1 AC-27.2 | BR-CMP-01 BR-PLN-01 | TS-01 TS-24 TS-46 | SC-04 | API-16 | plan plan_version plan_rule | I T V |
+| FR-PLN-002 | Declarative primitive library | US-44 | AC-44.1 AC-44.2 | BR-RNK-05 BR-RNK-06 BR-RNK-09 BR-PER-01 | TS-01 TS-02 TS-62 TS-63 | SC-04 | API-16 | plan_rule | I T V (partial: rules scoped by market only, no profile facts; PLAN §8) |
+| FR-PLN-003 | Controlled extension point | US-44 | AC-44.1 AC-44.2 | BR-PLN-05 | TS-01 TS-02 TS-67 | SC-04 | API-16 | plan_rule | I T V |
+| FR-PLN-004 | Caps and pools configuration | US-11 | AC-11.1 AC-11.2 | BR-CAP-01 BR-CAP-02 BR-CAP-03 BR-MNY-03 | TS-06 TS-07 TS-08 TS-09 TS-12 | SC-05 | API-16 API-17 | plan_rule simulation | I T V |
+| FR-PLN-005 | Simulation and version comparison | US-10 | AC-10.1 AC-10.2 AC-10.3 | BR-PLN-02 | TS-46 TS-59 | SC-04 SC-42 | API-17 | simulation result_line | I T V |
+| FR-PLN-006 | Golden datasets | US-10 | AC-10.1 AC-10.2 AC-10.3 | BR-PLN-06 | TS-43 TS-44 TS-46 TS-59 TS-60 | SC-42 | API-17 | golden_dataset | I T V |
 | FR-PLN-007 | Plan-change governance | US-27 | AC-27.1 AC-27.2 | BR-PLN-02 BR-PLN-03 BR-PLN-04 | TS-24 TS-46 TS-68 | SC-44 | API-16 | plan_version approval document | - |
 | FR-PLN-008 | Transition rules between versions | US-27 | AC-27.1 AC-27.2 | BR-PLN-01 BR-RNK-07 | TS-24 TS-25 TS-46 | SC-44 | API-16 | plan_transition qualification_state | - |
-| FR-COMP-001 | Calendars and period lifecycle | US-06 | AC-06.1 AC-06.2 AC-06.3 | BR-PER-01 BR-PER-02 BR-PER-03 BR-PER-04 | TS-03 TS-13 TS-14 TS-58 TS-59 TS-60 TS-62 | SC-01 | API-18 | calendar period | - |
-| FR-COMP-002 | Run execution with snapshot, lock and idempotency | US-06 | AC-06.1 AC-06.2 AC-06.3 | BR-PER-06 BR-CMP-01 | TS-01 TS-14 TS-29 TS-58 TS-59 | SC-01 | API-18 | run run_snapshot result_line | - |
-| FR-COMP-003 | Multi-pass calculation order | US-14 | AC-14.1 AC-14.2 AC-14.3 | BR-CAP-02 BR-MNY-02 BR-TAX-02 | TS-06 TS-09 TS-38 TS-39 | SC-02 | API-18 | result_line | - |
-| FR-COMP-004 | Qualification state across periods | US-46 | AC-46.1 AC-46.2 | BR-RNK-05 BR-RNK-06 BR-RNK-07 BR-RNK-08 BR-RNK-09 | TS-04 TS-05 TS-25 TS-59 TS-63 | SC-43 SC-19 | API-19 | qualification_state | - |
-| FR-COMP-005 | Run review | US-06 | AC-06.1 AC-06.2 AC-06.3 | BR-PER-03 | TS-03 TS-14 TS-58 TS-59 TS-60 | SC-02 | API-19 | run result_line | - |
-| FR-COMP-006 | Commit with second-person approval | US-07 | AC-07.1 AC-07.2 | BR-PER-03 BR-ADJ-02 | TS-03 TS-35 TS-42 TS-60 | SC-02 | API-20 | run period journal_entry posting approval outbox_event | - |
-| FR-COMP-007 | Per-line provenance and trace | US-13 | AC-13.1 | BR-PAY-06 | TS-53 TS-59 | SC-02 SC-06 | API-21 | result_line run_snapshot | - |
-| FR-COMP-008 | Replay of committed periods | US-01 | AC-01.1 AC-01.2 | BR-PER-03 | TS-03 TS-60 | SC-01 | API-18 | run run_snapshot | - |
-| FR-COMP-009 | Restatement of a committed period | US-09 | AC-09.1 | BR-PER-05 | TS-51 | SC-06 | API-22 | restatement result_line case | - |
-| FR-COMP-010 | Adjustment lines from late transactions and cases | US-08 | AC-08.1 | BR-PER-04 BR-ADJ-01 | TS-13 TS-42 | SC-02 | API-19 | result_line late_transaction | - |
-| FR-COMP-012 | Money arithmetic | US-14 | AC-14.1 AC-14.2 AC-14.3 | BR-MNY-01 BR-MNY-02 BR-MNY-03 BR-MNY-04 BR-MNY-05 | TS-06 TS-07 TS-23 TS-38 TS-39 TS-67 | SC-02 | API-18 | result_line posting | - |
+| FR-COMP-001 | Calendars and period lifecycle | US-06 | AC-06.1 AC-06.2 AC-06.3 | BR-PER-01 BR-PER-02 BR-PER-03 BR-PER-04 | TS-03 TS-13 TS-14 TS-58 TS-59 TS-60 TS-62 | SC-01 | API-18 | calendar period | I T V |
+| FR-COMP-002 | Run execution with snapshot, lock and idempotency | US-06 | AC-06.1 AC-06.2 AC-06.3 | BR-PER-06 BR-CMP-01 | TS-01 TS-14 TS-29 TS-58 TS-59 | SC-01 | API-18 | run run_snapshot result_line | I T V |
+| FR-COMP-003 | Multi-pass calculation order | US-14 | AC-14.1 AC-14.2 AC-14.3 | BR-CAP-02 BR-MNY-02 BR-TAX-02 | TS-06 TS-09 TS-38 TS-39 | SC-02 | API-18 | result_line | I T V |
+| FR-COMP-004 | Qualification state across periods | US-46 | AC-46.1 AC-46.2 | BR-RNK-05 BR-RNK-06 BR-RNK-07 BR-RNK-08 BR-RNK-09 | TS-04 TS-05 TS-25 TS-59 TS-63 | SC-43 SC-19 | API-19 | qualification_state | I T V (partial: restatements correct money, not qualification state; PLAN §8) |
+| FR-COMP-005 | Run review | US-06 | AC-06.1 AC-06.2 AC-06.3 | BR-PER-03 | TS-03 TS-14 TS-58 TS-59 TS-60 | SC-02 | API-19 | run result_line | I T V |
+| FR-COMP-006 | Commit with second-person approval | US-07 | AC-07.1 AC-07.2 | BR-PER-03 BR-ADJ-02 | TS-03 TS-35 TS-42 TS-60 | SC-02 | API-20 | run period journal_entry posting approval outbox_event | I T V |
+| FR-COMP-007 | Per-line provenance and trace | US-13 | AC-13.1 | BR-PAY-06 | TS-53 TS-59 | SC-02 SC-06 | API-21 | result_line run_snapshot | I T V |
+| FR-COMP-008 | Replay of committed periods | US-01 | AC-01.1 AC-01.2 | BR-PER-03 | TS-03 TS-60 | SC-01 | API-18 | run run_snapshot | I T V |
+| FR-COMP-009 | Restatement of a committed period | US-09 | AC-09.1 | BR-PER-05 | TS-51 | SC-06 | API-22 | restatement result_line case | I T V |
+| FR-COMP-010 | Adjustment lines from late transactions and cases | US-08 | AC-08.1 | BR-PER-04 BR-ADJ-01 | TS-13 TS-42 | SC-02 | API-19 | result_line late_transaction | I T V |
+| FR-COMP-012 | Money arithmetic | US-14 | AC-14.1 AC-14.2 AC-14.3 | BR-MNY-01 BR-MNY-02 BR-MNY-03 BR-MNY-04 BR-MNY-05 | TS-06 TS-07 TS-23 TS-38 TS-39 TS-67 | SC-02 | API-18 | result_line posting | I T V |
 | FR-FIN-001 | Double-entry obligations ledger | US-14 | AC-14.1 AC-14.2 AC-14.3 | BR-LED-01 BR-LED-02 BR-MNY-04 | TS-06 TS-38 TS-39 TS-40 | SC-33 | API-23 | ledger_account journal_entry posting | - |
 | FR-FIN-002 | Derived payee balances | US-14 | AC-14.1 AC-14.2 AC-14.3 | BR-LED-02 | TS-06 TS-38 TS-39 TS-40 | SC-33 SC-18 | API-23 API-28 | posting ledger_account | - |
 | FR-FIN-003 | Clawback policy and receivables | US-20 | AC-20.1 AC-20.2 AC-20.3 | BR-REV-07 BR-REV-09 BR-REV-02 | TS-10 TS-11 | SC-06 SC-33 | API-22 API-23 | posting result_line | - |
@@ -95,7 +99,7 @@ B2 (2026-11-17, `increments/B2/HANDOFF.md`): T = module and isolation tests gree
 | FR-PAY-006 | Provider eligibility record | US-38 | AC-38.1 AC-38.2 | BR-PAY-11 | TS-50 | SC-17 SC-13 | API-39 | provider_config document | - |
 | FR-PAY-007 | Minimum payout, holds and dormant balances | US-47 | AC-47.1 AC-47.2 | BR-PAY-12 | TS-17 TS-40 | SC-03 | API-25 | payout_batch case | - |
 | FR-TAX-001 | Payee tax profile | US-48 | AC-48.1 | BR-TAX-01 BR-TAX-03 | TS-18 TS-19 TS-56 | SC-22 SC-09 | API-27 | tax_profile | - |
-| FR-CAS-001 | Case framework | US-02 | AC-02.1 AC-02.2 | BR-ADJ-01 | TS-42 TS-45 | SC-06 SC-08 | API-30 | case case_event approval document | I T |
+| FR-CAS-001 | Case framework | US-02 | AC-02.1 AC-02.2 | BR-ADJ-01 | TS-42 TS-45 | SC-06 SC-08 | API-30 | case case_event approval document | I T V |
 | FR-CAS-002 | Manual adjustments with thresholds and second approver | US-49 | AC-49.1 AC-49.2 | BR-ADJ-01 BR-ADJ-02 BR-ADJ-03 | TS-42 TS-59 | SC-06 | API-30 | case approval | - |
 | FR-CAS-003 | Commission dispute from a statement line | US-50 | AC-50.1 | BR-ADJ-04 | TS-59 TS-68 | SC-18 SC-06 | API-30 | case result_line | - |
 | FR-DIST-001 | Distributor statement | US-04 | AC-04.1 AC-04.2 | BR-PAY-06 BR-HON-01 | TS-22 TS-53 | SC-18 SC-37 | API-28 | statement result_line tax_line | - |

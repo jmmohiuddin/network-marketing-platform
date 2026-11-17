@@ -1,0 +1,133 @@
+{
+ "id": "S-1",
+ "package": "BE1",
+ "date": "2026-11-18",
+ "command": "scripts/heavy.sh node --max-old-space-size=4096 --import tsx packages/engine/test/run/bench.ts <shape> <positions>",
+ "plan": "G-E2E-01 plus measure.derived capped_pv = min(pv, 50000)",
+ "engineVersion": "0.2.0",
+ "deterministic": "run2 = same input with positions, relationships and orders shuffled; resultHash equal in every completed run",
+ "results": [
+  {
+   "shape": "binary",
+   "positions": 50000,
+   "seed": 20261113,
+   "orders": 66667,
+   "generateMs": 61,
+   "run1Ms": 1312,
+   "run2Ms": 2525,
+   "rssMb": {
+    "afterGenerate": 142,
+    "afterRun1": 612,
+    "end": 526,
+    "peak": 930
+   },
+   "run1": {
+    "resultHash": "fe01b09d5e5031527ce2fcbab36f3715f31c1ce82a1c75c43636698cd40342fc",
+    "lines": 88088,
+    "payees": 47227,
+    "grossMinor": "639859134",
+    "breakageMinor": "2641780934",
+    "capBound": true
+   },
+   "deterministic": true
+  },
+  {
+   "shape": "wide",
+   "positions": 50000,
+   "seed": 20261113,
+   "orders": 66667,
+   "generateMs": 61,
+   "run1Ms": 1531,
+   "run2Ms": 1041,
+   "rssMb": {
+    "afterGenerate": 147,
+    "afterRun1": 500,
+    "end": 773,
+    "peak": 801
+   },
+   "run1": {
+    "resultHash": "5080ab4af32e1109260b33f152bbc8e8bd54039fd4a145d4191e38ed1a1d2b43",
+    "lines": 60633,
+    "payees": 44433,
+    "grossMinor": "488782205",
+    "breakageMinor": "0",
+    "capBound": false
+   },
+   "deterministic": true
+  },
+  {
+   "shape": "deep",
+   "positions": 50000,
+   "seed": 20261113,
+   "orders": 66667,
+   "generateMs": 35,
+   "run1Ms": 1121,
+   "run2Ms": 1091,
+   "rssMb": {
+    "afterGenerate": 147,
+    "afterRun1": 632,
+    "end": 1008,
+    "peak": 1109
+   },
+   "run1": {
+    "resultHash": "1d279e681811b52c228d40e7da36a13e1b1c6623be64bc6f1def48116f2f23c6",
+    "lines": 86816,
+    "payees": 46467,
+    "grossMinor": "639860762",
+    "breakageMinor": "531050814016",
+    "capBound": true
+   },
+   "deterministic": true
+  },
+  {
+   "shape": "binary",
+   "positions": 500000,
+   "failed": true
+  },
+  {
+   "shape": "wide",
+   "positions": 500000,
+   "failed": true
+  },
+  {
+   "shape": "deep",
+   "positions": 500000,
+   "failed": true
+  },
+  {
+   "shape": "binary",
+   "positions": 2000000,
+   "failed": true
+  },
+  {
+   "shape": "wide",
+   "positions": 2000000,
+   "failed": true
+  },
+  {
+   "shape": "deep",
+   "positions": 2000000,
+   "failed": true
+  },
+  {
+   "shape": "binary",
+   "positions": 150000,
+   "run1Ms": 3244,
+   "run2Ms": 4336,
+   "rssMb": {
+    "afterGenerate": 265,
+    "afterRun1": 1632,
+    "end": 1423,
+    "peak": 2425
+   },
+   "deterministic": true,
+   "note": "scaling probe, run separately"
+  }
+ ],
+ "findings": [
+  "50k: 1.1-1.5 s, peak RSS 0.8-1.1 GB for every shape",
+  "150k binary: 3.2 s, peak RSS 2.4 GB (about 16 KB per position, input + output + shuffled copy)",
+  "500k and 2M: JavaScript heap out of memory at the 4096 MB heap cap for all three shapes (no time measured)",
+  "the spike engine's 2M / 1.66 GB was a typed-array prototype; the production engine keeps per-line trace objects and JS input objects"
+ ]
+}

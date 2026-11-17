@@ -57,3 +57,20 @@ _Agent: database. Read before every task; update after every task. Keep concise 
 
 ## State after B2 review round 3 (0208, 2026-11-17)
 - 0208_b2_active_servicers: crm_set_servicer refuses any non-active position (CR002, was: terminated only); crm_reassign_customers hands customers to the sponsor only while it is active, else company (NULL). b2-guards pins pending/suspended CR002 and the suspended-sponsor reassignment. Next free B2 number: 0209.
+
+## State after B3 schema (0300-0304, 2026-11-17)
+- Approval object types the guards require: plan_version (compliance approval and activation approval: approver ∉ {submitter, compliance approver}), run (approver ∉ {prepared_by, commit_requested_by}), guardrail_decision (override: object = evaluation id, approver = decided_by, preparer = evaluation's decided_by).
+- Runtime-role inserts: plan_version draft by created_by = acting user; run queued by prepared_by = acting user; simulation queued by requested_by with content_hash = digest(version.compiled); period open only; restatement only for a restatement case whose subject is its period. submitted_by / review_opened_by / commit_requested_by are the acting user and set once.
+- run: results (totals, hashes, outputs) only on running -> calculated, Σ result_line.amount_minor must equal totals.gross_minor (string); one calculated run per period is a DEFERRED exclusion (flip and discard in either order, same tx). result_line / qualification_state / sim_result_line rows only while their run/simulation is running (statement-level AFTER triggers, nmp_app only).
+- plan rules/transitions/goldens: writes only while the version is draft (42501), version row taken FOR SHARE; calendar must be one of the plan's (23514).
+- plpgsql: `IF CASE ... END THEN` does not parse; wrap the CASE in parentheses.
+- engine static test forbids Object.keys/entries in src: json.ts sorts keys with a key-list replacer instead.
+- A new position marks both path models stale (statement trigger): tests watching one kind filter rebuild outcomes by kind.
+- Next free B3 number: 0305.
+
+## State after B3 review fixes (0305, 2026-11-17)
+- 0305_b3_review_fixes: rows_of_running_run/simulation take FOR SHARE on the parent (a concurrent flip waits or the insert is refused, 23514). adjustment_origin INSERT (nmp_app): unconsumed; restatement origin needs its case `approved`, restatement calculated|approved, original_period = restatement.period (FOR SHARE on restatement); late origin needs late.original_period_id match and run queued|running (FOR SHARE on run). Consumption also needs a result_line of the consuming run citing the origin.
+- result_line with origin_id must equal the origin (type, payee, rule, source, amount, original period), unconsumed; late: same run; restatement: restatement `approved`, run's period later in the same calendar. Deferred constraint trigger `run_origins_consumed`: a run turned committed must have consumed every origin its lines carry by COMMIT (API commit must consume origins in the same tx; an origin carried by two runs fails the second commit: API needs a staleness gate for that).
+- restatement: calculated->approved|applied need case `approved`, ->rejected case `rejected`; calculated->applied only with no origins; approved->applied needs ≥1 origin consumed by applied_in_run_id and none consumed elsewhere/unconsumed. COMP must insert origins after markDecided (CAS already flips the case before onDecision).
+- run: started_at only on queued->running, finished_at on ->calculated|failed, error on ->failed, progress only while queued/running. plan_version: based_on same plan (INSERT), activated_at on ->active, retired_at on ->retired.
+- `race(ctx, first, second)` two-connection helper now lives in test/support.ts. Next free B3 number: 0306.

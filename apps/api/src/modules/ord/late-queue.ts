@@ -26,7 +26,8 @@ export async function listLate(
     `SELECT x.id, x.origin_type, coalesce(x.order_id, x.order_event_id) AS origin_id,
             jsonb_build_object('id', o.id, 'source_order_id', o.source_order_id) AS "order",
             jsonb_build_object('id', p.id, 'starts_at', p.starts_at, 'ends_at', p.ends_at, 'state', p.state) AS original_period,
-            x.effect_estimate, x.handling, x.state, x.decided_by, x.decided_at, x.decision_reason, x.created_at
+            x.effect_estimate, x.handling, x.state, x.decided_by, x.decided_at, x.decision_reason, x.created_at,
+            x.consumed_by_run_id, (SELECT r.period_id FROM run r WHERE r.id = x.consumed_by_run_id) AS consumed_by_period_id
      ${ITEM_FROM}
      WHERE ${IN_SCOPE} AND ($2::text IS NULL OR x.state = $2) AND ($3::uuid IS NULL OR o.market_id = $3)
        AND ($4::timestamptz IS NULL OR (date_trunc('milliseconds', x.created_at), x.id) < ($4, $5::uuid))

@@ -46,3 +46,10 @@ _Agent: database. Read before every task; update after every task. Keep concise 
 - money_setting_keys() kept (ten/change-requests.test.ts pins it) next to approval_setting_keys(); drop once BE1 removes moneyAffecting.
 - Touched outside the DB file list to keep suites green: modules/support/sessions.ts (+test), iam/api-keys.test.ts, iam/grants.test.ts, iam/mfa.test.ts, ten/settings.test.ts, ten/change-requests.test.ts, test/authz/role-matrix.test.ts SETTING_READERS, lib/formats.test.ts.
 - nmp_dev / nmp_e2e / nmp_test are not migrated to 0206 (only nmp_test_2 was reset).
+
+## From B3 schema (2026-11-17)
+- Touched outside the DB file list to keep suites green: ord/order-ingest.ts (SELECT id FROM par_create_customer), support/sessions.ts (+test: PLAN 2.7 exclusions), support/routes.ts (scope max = scopePermission.options.length; 23 scope permissions now), iam/grants.test.ts (custom roles: base roles now hold permissions Tenant admin lacks), iam/mfa.test.ts, ten/settings.test.ts, gen/rebuild.test.ts (sponsor-only filters), test/authz/role-matrix.test.ts SETTING_READERS.
+- gen/rebuild.ts must set path_model.valid_until = gen_path_valid_until(kind) and also rebuild models listed for valid_until with stale_since NULL (its stale read filters stale_since IS NOT NULL) — BE3.
+- aud/documents.ts: document_references now returns 'guardrail_decision' (market NULL); readers default to MARKET_READERS — map to guardrail.read (integrator).
+- Not enforced in SQL: rule-author SoD on plan approval, eligible approvers across all plan markets, run commit staleness gates (API), restatement origin consumption by a run of P's calendar is checked, but not that the run is the first after approval.
+- nmp_dev / nmp_e2e / nmp_test not migrated to 0304 (only nmp_test_2 was reset).

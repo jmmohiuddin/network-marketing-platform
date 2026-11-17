@@ -1,0 +1,1132 @@
+{
+  "when": "2026-11-17T22:02:21.741Z",
+  "screenId": "SC-04-list",
+  "stitch": "sc_28_users_and_roles",
+  "module": "plans",
+  "screen": "plans",
+  "route": "/plans",
+  "role": "plan-administrator",
+  "url": "http://127.0.0.1:3100/plans",
+  "self": false,
+  "patched": [
+    "sc_28_users_and_roles"
+  ],
+  "viewports": [
+    {
+      "viewport": "1440x900",
+      "screenshot": "testing/ui-screenshots/app/plans/plans/plan-administrator/1440x900.png",
+      "reference": "testing/ui-screenshots/reference/sc_28_users_and_roles/1440x900.png",
+      "diffImage": "testing/ui-screenshots/app/plans/plans/plan-administrator/1440x900.diff.png",
+      "mismatchPercent": 5.47,
+      "diffPixels": 90938,
+      "referenceSize": "1440x1154",
+      "actualSize": "1440x900",
+      "landmarks": [
+        {
+          "landmark": "header",
+          "stitchText": "AuditLedgerAcrobex Global(TEN-842)arrow_drop_downUS - United",
+          "appText": "menuMenuAcme Direct LtdPAPlan AdministratorPlan administrato",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "height",
+              "stitch": "48px",
+              "app": "48px",
+              "match": true
+            },
+            {
+              "prop": "background",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "sidebar",
+          "stitchText": "dashboardOverviewhistory_toggle_offPeriods & RunsschemaCompe",
+          "appText": "verified_userCompliancehistory_toggle_offPeriods and runssch",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "width",
+              "stitch": "208px",
+              "app": "208px",
+              "match": true
+            },
+            {
+              "prop": "background",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "page",
+          "stitchText": "Users & Access Control Matrix SOX-404 / DUAL-ADMIN ENFORCED ",
+          "appText": "PlansCompensation plans by market, with the version in force",
+          "status": "mismatch",
+          "severity": "high",
+          "props": [
+            {
+              "prop": "background",
+              "stitch": "rgb(248, 250, 252)",
+              "app": "rgb(248, 249, 255)",
+              "match": false
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "16px",
+              "app": "16px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "title",
+          "stitchText": "Users & Access Control Matrix",
+          "appText": "Plans",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "24px",
+              "app": "24px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            },
+            {
+              "prop": "line-height",
+              "stitch": "32px",
+              "app": "32px",
+              "match": true
+            },
+            {
+              "prop": "letter-spacing",
+              "stitch": "-0.6px",
+              "app": "-0.36px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "sectionHeading",
+          "stitchText": "Privileged Grant Pending",
+          "appText": "Plans",
+          "status": "mismatch",
+          "severity": "medium",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "16px",
+              "app": "20px",
+              "match": false
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            },
+            {
+              "prop": "line-height",
+              "stitch": "20px",
+              "app": "28px",
+              "match": false
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "primaryButton",
+          "stitchText": "person_add Invite Staff User",
+          "appText": "addNew plan",
+          "status": "mismatch",
+          "severity": "high",
+          "props": [
+            {
+              "prop": "background-color",
+              "stitch": "rgb(30, 79, 163)",
+              "app": "rgb(0, 56, 131)",
+              "match": false
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            },
+            {
+              "prop": "border-radius",
+              "stitch": "2px",
+              "app": "2px",
+              "match": true
+            },
+            {
+              "prop": "height",
+              "stitch": "32px",
+              "app": "32px",
+              "match": true
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "13px",
+              "app": "13px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "tableHeader",
+          "stitchText": "Staff Member",
+          "appText": "Plan",
+          "status": "mismatch",
+          "severity": "medium",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "12px",
+              "app": "11px",
+              "match": false
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(86, 94, 116)",
+              "app": "rgb(86, 94, 116)",
+              "match": true
+            },
+            {
+              "prop": "text-transform",
+              "stitch": "uppercase",
+              "app": "uppercase",
+              "match": true
+            },
+            {
+              "prop": "letter-spacing",
+              "stitch": "0.6px",
+              "app": "0.55px",
+              "match": true
+            },
+            {
+              "prop": "background",
+              "stitch": "rgb(230, 238, 255)",
+              "app": "rgb(239, 244, 255)",
+              "match": false
+            }
+          ]
+        },
+        {
+          "landmark": "card",
+          "stitchText": "security_update_good BR-SEC-05 DUAL-ADMINISTRATOR AUTHORIZAT",
+          "appText": "PlansOpen a plan to edit its draft, simulate it or follow it",
+          "status": "mismatch",
+          "severity": "medium",
+          "props": [
+            {
+              "prop": "border-radius",
+              "stitch": "2px",
+              "app": "4px",
+              "match": false
+            },
+            {
+              "prop": "box-shadow",
+              "stitch": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+              "app": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+              "match": true
+            },
+            {
+              "prop": "background-color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "viewport": "1280x800",
+      "screenshot": "testing/ui-screenshots/app/plans/plans/plan-administrator/1280x800.png",
+      "reference": "testing/ui-screenshots/reference/sc_28_users_and_roles/1280x800.png",
+      "diffImage": "testing/ui-screenshots/app/plans/plans/plan-administrator/1280x800.diff.png",
+      "mismatchPercent": 5.43,
+      "diffPixels": 91376,
+      "referenceSize": "1280x1314",
+      "actualSize": "1280x800",
+      "landmarks": [
+        {
+          "landmark": "header",
+          "stitchText": "AuditLedgerAcrobex Global(TEN-842)arrow_drop_downUS - United",
+          "appText": "menuMenuAcme Direct LtdPAPlan AdministratorPlan administrato",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "height",
+              "stitch": "48px",
+              "app": "48px",
+              "match": true
+            },
+            {
+              "prop": "background",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "sidebar",
+          "stitchText": "dashboardOverviewhistory_toggle_offPeriods & RunsschemaCompe",
+          "appText": "verified_userCompliancehistory_toggle_offPeriods and runssch",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "width",
+              "stitch": "208px",
+              "app": "208px",
+              "match": true
+            },
+            {
+              "prop": "background",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "page",
+          "stitchText": "Users & Access Control Matrix SOX-404 / DUAL-ADMIN ENFORCED ",
+          "appText": "PlansCompensation plans by market, with the version in force",
+          "status": "mismatch",
+          "severity": "high",
+          "props": [
+            {
+              "prop": "background",
+              "stitch": "rgb(248, 250, 252)",
+              "app": "rgb(248, 249, 255)",
+              "match": false
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "16px",
+              "app": "16px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "title",
+          "stitchText": "Users & Access Control Matrix",
+          "appText": "Plans",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "24px",
+              "app": "24px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            },
+            {
+              "prop": "line-height",
+              "stitch": "32px",
+              "app": "32px",
+              "match": true
+            },
+            {
+              "prop": "letter-spacing",
+              "stitch": "-0.6px",
+              "app": "-0.36px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "sectionHeading",
+          "stitchText": "Privileged Grant Pending",
+          "appText": "Plans",
+          "status": "mismatch",
+          "severity": "medium",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "16px",
+              "app": "20px",
+              "match": false
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            },
+            {
+              "prop": "line-height",
+              "stitch": "20px",
+              "app": "28px",
+              "match": false
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "primaryButton",
+          "stitchText": "person_add Invite Staff User",
+          "appText": "addNew plan",
+          "status": "mismatch",
+          "severity": "high",
+          "props": [
+            {
+              "prop": "background-color",
+              "stitch": "rgb(30, 79, 163)",
+              "app": "rgb(0, 56, 131)",
+              "match": false
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            },
+            {
+              "prop": "border-radius",
+              "stitch": "2px",
+              "app": "2px",
+              "match": true
+            },
+            {
+              "prop": "height",
+              "stitch": "32px",
+              "app": "32px",
+              "match": true
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "13px",
+              "app": "13px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "tableHeader",
+          "stitchText": "Staff Member",
+          "appText": "Plan",
+          "status": "mismatch",
+          "severity": "medium",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "12px",
+              "app": "11px",
+              "match": false
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(86, 94, 116)",
+              "app": "rgb(86, 94, 116)",
+              "match": true
+            },
+            {
+              "prop": "text-transform",
+              "stitch": "uppercase",
+              "app": "uppercase",
+              "match": true
+            },
+            {
+              "prop": "letter-spacing",
+              "stitch": "0.6px",
+              "app": "0.55px",
+              "match": true
+            },
+            {
+              "prop": "background",
+              "stitch": "rgb(230, 238, 255)",
+              "app": "rgb(239, 244, 255)",
+              "match": false
+            }
+          ]
+        },
+        {
+          "landmark": "card",
+          "stitchText": "security_update_good BR-SEC-05 DUAL-ADMINISTRATOR AUTHORIZAT",
+          "appText": "PlansOpen a plan to edit its draft, simulate it or follow it",
+          "status": "mismatch",
+          "severity": "medium",
+          "props": [
+            {
+              "prop": "border-radius",
+              "stitch": "2px",
+              "app": "4px",
+              "match": false
+            },
+            {
+              "prop": "box-shadow",
+              "stitch": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+              "app": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+              "match": true
+            },
+            {
+              "prop": "background-color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "viewport": "768x1024",
+      "screenshot": "testing/ui-screenshots/app/plans/plans/plan-administrator/768x1024.png",
+      "reference": "testing/ui-screenshots/reference/sc_28_users_and_roles/768x1024.png",
+      "diffImage": "testing/ui-screenshots/app/plans/plans/plan-administrator/768x1024.diff.png",
+      "mismatchPercent": 5.68,
+      "diffPixels": 85068,
+      "referenceSize": "768x1949",
+      "actualSize": "768x1024",
+      "landmarks": [
+        {
+          "landmark": "page",
+          "stitchText": "Users & Access Control Matrix SOX-404 / DUAL-ADMIN ENFORCED ",
+          "appText": "PlansCompensation plans by market, with the version in force",
+          "status": "mismatch",
+          "severity": "high",
+          "props": [
+            {
+              "prop": "background",
+              "stitch": "rgb(248, 250, 252)",
+              "app": "rgb(248, 249, 255)",
+              "match": false
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "16px",
+              "app": "16px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "title",
+          "stitchText": "Users & Access Control Matrix",
+          "appText": "Plans",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "24px",
+              "app": "24px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            },
+            {
+              "prop": "line-height",
+              "stitch": "32px",
+              "app": "32px",
+              "match": true
+            },
+            {
+              "prop": "letter-spacing",
+              "stitch": "-0.6px",
+              "app": "-0.36px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "sectionHeading",
+          "stitchText": "Privileged Grant Pending",
+          "appText": "Plans",
+          "status": "mismatch",
+          "severity": "medium",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "16px",
+              "app": "20px",
+              "match": false
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            },
+            {
+              "prop": "line-height",
+              "stitch": "20px",
+              "app": "28px",
+              "match": false
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "primaryButton",
+          "stitchText": "person_add Invite Staff User",
+          "appText": "addNew plan",
+          "status": "mismatch",
+          "severity": "high",
+          "props": [
+            {
+              "prop": "background-color",
+              "stitch": "rgb(30, 79, 163)",
+              "app": "rgb(0, 56, 131)",
+              "match": false
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            },
+            {
+              "prop": "border-radius",
+              "stitch": "2px",
+              "app": "2px",
+              "match": true
+            },
+            {
+              "prop": "height",
+              "stitch": "32px",
+              "app": "32px",
+              "match": true
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "13px",
+              "app": "13px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "tableHeader",
+          "stitchText": "Staff Member",
+          "appText": "Plan",
+          "status": "mismatch",
+          "severity": "medium",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "12px",
+              "app": "11px",
+              "match": false
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(86, 94, 116)",
+              "app": "rgb(86, 94, 116)",
+              "match": true
+            },
+            {
+              "prop": "text-transform",
+              "stitch": "uppercase",
+              "app": "uppercase",
+              "match": true
+            },
+            {
+              "prop": "letter-spacing",
+              "stitch": "0.6px",
+              "app": "0.55px",
+              "match": true
+            },
+            {
+              "prop": "background",
+              "stitch": "rgb(230, 238, 255)",
+              "app": "rgb(239, 244, 255)",
+              "match": false
+            }
+          ]
+        },
+        {
+          "landmark": "card",
+          "stitchText": "security_update_good BR-SEC-05 DUAL-ADMINISTRATOR AUTHORIZAT",
+          "appText": "PlansOpen a plan to edit its draft, simulate it or follow it",
+          "status": "mismatch",
+          "severity": "medium",
+          "props": [
+            {
+              "prop": "border-radius",
+              "stitch": "2px",
+              "app": "4px",
+              "match": false
+            },
+            {
+              "prop": "box-shadow",
+              "stitch": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+              "app": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+              "match": true
+            },
+            {
+              "prop": "background-color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "viewport": "390x844",
+      "screenshot": "testing/ui-screenshots/app/plans/plans/plan-administrator/390x844.png",
+      "reference": "testing/ui-screenshots/reference/sc_28_users_and_roles/390x844.png",
+      "diffImage": "testing/ui-screenshots/app/plans/plans/plan-administrator/390x844.diff.png",
+      "mismatchPercent": 2.51,
+      "diffPixels": 56318,
+      "referenceSize": "537x4179",
+      "actualSize": "390x844",
+      "landmarks": [
+        {
+          "landmark": "page",
+          "stitchText": "Users & Access Control Matrix SOX-404 / DUAL-ADMIN ENFORCED ",
+          "appText": "PlansCompensation plans by market, with the version in force",
+          "status": "mismatch",
+          "severity": "high",
+          "props": [
+            {
+              "prop": "background",
+              "stitch": "rgb(248, 250, 252)",
+              "app": "rgb(248, 249, 255)",
+              "match": false
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "16px",
+              "app": "16px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "title",
+          "stitchText": "Users & Access Control Matrix",
+          "appText": "Plans",
+          "status": "mismatch",
+          "severity": "medium",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "24px",
+              "app": "20px",
+              "match": false
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            },
+            {
+              "prop": "line-height",
+              "stitch": "32px",
+              "app": "28px",
+              "match": false
+            },
+            {
+              "prop": "letter-spacing",
+              "stitch": "-0.6px",
+              "app": "-0.5px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "sectionHeading",
+          "stitchText": "Privileged Grant Pending",
+          "appText": "Plans",
+          "status": "mismatch",
+          "severity": "medium",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "16px",
+              "app": "20px",
+              "match": false
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            },
+            {
+              "prop": "line-height",
+              "stitch": "20px",
+              "app": "28px",
+              "match": false
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "primaryButton",
+          "stitchText": "person_add Invite Staff User",
+          "appText": "addNew plan",
+          "status": "mismatch",
+          "severity": "high",
+          "props": [
+            {
+              "prop": "background-color",
+              "stitch": "rgb(30, 79, 163)",
+              "app": "rgb(0, 56, 131)",
+              "match": false
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            },
+            {
+              "prop": "border-radius",
+              "stitch": "2px",
+              "app": "2px",
+              "match": true
+            },
+            {
+              "prop": "height",
+              "stitch": "32px",
+              "app": "32px",
+              "match": true
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "13px",
+              "app": "13px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "tableHeader",
+          "stitchText": "Staff Member",
+          "appText": "Plan",
+          "status": "mismatch",
+          "severity": "medium",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "12px",
+              "app": "11px",
+              "match": false
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(86, 94, 116)",
+              "app": "rgb(86, 94, 116)",
+              "match": true
+            },
+            {
+              "prop": "text-transform",
+              "stitch": "uppercase",
+              "app": "uppercase",
+              "match": true
+            },
+            {
+              "prop": "letter-spacing",
+              "stitch": "0.6px",
+              "app": "0.55px",
+              "match": true
+            },
+            {
+              "prop": "background",
+              "stitch": "rgb(230, 238, 255)",
+              "app": "rgb(239, 244, 255)",
+              "match": false
+            }
+          ]
+        },
+        {
+          "landmark": "card",
+          "stitchText": "security_update_good BR-SEC-05 DUAL-ADMINISTRATOR AUTHORIZAT",
+          "appText": "PlansOpen a plan to edit its draft, simulate it or follow it",
+          "status": "mismatch",
+          "severity": "medium",
+          "props": [
+            {
+              "prop": "border-radius",
+              "stitch": "2px",
+              "app": "4px",
+              "match": false
+            },
+            {
+              "prop": "box-shadow",
+              "stitch": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+              "app": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+              "match": true
+            },
+            {
+              "prop": "background-color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

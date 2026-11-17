@@ -116,6 +116,20 @@ describe('PUT /v1/customers/:id/servicing (T-B2-32, AC-CRM1-1, AC-CRM1-2)', () =
     expect(results.map((r) => r.json().error.code)).toEqual(['SERVICER_UNCHANGED', 'NOT_A_CUSTOMER', 'SERVICER_NOT_ELIGIBLE', 'SERVICER_NOT_ELIGIBLE', 'VALID_FROM_INVALID'])
   })
 
+  test('OI-4: a pending future servicer row makes an earlier change 422 VALID_FROM_INVALID (C1 23514), never a 500', async () => {
+    const later = (await enrol(support, { type_code: 'DIST', position_ref: 'OI4-LATER' })).position!.id
+    await enrol(support, { type_code: 'DIST', position_ref: 'OI4-SOONER' })
+    const customer = (await enrol(support, { type_code: 'CUST', sponsor: { position_ref: 'OI4-LATER' } })).participant.id
+    const inDays = (days: number) => new Date(Date.now() + days * 86_400_000).toISOString()
+    const pending = await put(support, customer, { position_ref: null, valid_from: inDays(2), reason: 'company from next week' })
+    const earlier = await put(support, customer, { position_ref: 'OI4-SOONER', valid_from: inDays(1), reason: 'sooner' })
+
+    expect(pending.statusCode).toBe(200)
+    expect([earlier.statusCode, earlier.json().error.code]).toEqual([422, 'VALID_FROM_INVALID'])
+    expect(await servicer(customer)).toEqual({ position: null, source: 'manual' })
+    expect(later).toBeDefined()
+  })
+
   test('the company services when position_ref is null; a key with participants:write may change it', async () => {
     // The minter holds what the key does (servicing.manage, participant.manage) for all markets (PLAN B2 2.8).
     const integrator = await createSignedInUser({ tenantId: acme.id, roles: ['Tenant admin', 'Support agent'], stepUp: true })

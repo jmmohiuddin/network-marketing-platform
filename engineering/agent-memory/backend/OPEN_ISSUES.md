@@ -106,3 +106,27 @@ _Agent: backend. Read before every task; update after every task. Keep concise �
 ## From B2 backend-lead check (2026-11-17)
 - Resolved: imp/access requireAnyPermission/scopeForAny copies removed; ten/change-requests Promise.all on one client.
 - Still open (not backend-lead scope): web format.ts lists SIGNAL_MATCH as a user reason code (frontend); DuplicatePreview could show matched_participant (frontend); DB 0208+ items (position insert marks path_model stale, path_model.valid_until, par_create_customer created flag, case decision guard vs 'updated' actors); PLAN §2.4/§2.5 GEN deviations need architect sign-off; int/test-support repeats ord fixtures; unknown connector id answers 404 vs 401 (decision).
+
+## From B3 BE3 b2-carryover (2026-11-18)
+- Integrator: test/isolation/seed.ts must stop PUT genealogy.placement_width (now 422 SETTING_RETIRED) and stop recording a plan_variant entry (automatic now, ITEM_NOT_RECORDABLE): insert a plan covering the market with an active version (width 2) through the owner pool instead. isolation + role-matrix suites fail in seed until then.
+- Web (W2): enrol dialog and genealogy case page read GET /v1/settings/genealogy.placement_width; the width now comes from the plan version (no API exposes placement_width_for yet); evidence-forms.tsx still offers a plan_variant note.
+- Reparent shortcut: placement children keep their leg (a taken leg refuses the termination 409 GEN_SLOT_TAKEN); a root's children stay under it. Confirm with architect if a plan uses placement re-parenting.
+- PLN (BE1) must validate structural rule params with the shapes in ten/plan-structure.ts (else GEN/PAR readers 500 on a bad stored rule).
+
+## B3 BE1 (2026-11-18)
+- Integrator: mount plnModule in modules/index.ts; isolation cases + role-matrix probes for every PLN route and the 3 /v1/guardrail-decisions routes; int/topics.ts WEBHOOK_TOPICS needs plan.version.activated (BE2).
+- S-1: engine OOM at 500k/2M with a 4 GB heap (~16 KB per position) -> E-ADR-34/35 re-evaluation in the records phase (traces and JS input objects dominate).
+- Deviations: SoD refusal list keeps the existing {user_id, display_name, email} shape; override justification length -> 422 VALIDATION_FAILED (shape errors stay 400); expression consts are minor units; renderRule shows minor units raw (no currency digits known).
+
+## From B3 BE2 runs (2026-11-18)
+- HIGH (BE1, packages/engine/src/json.ts): stringifyEngineJson is O(n²) — the replacer adds array indexes to the key list. Fix: in the first pass add the key only when the holder is not an array (`function (key, item) { if (!Array.isArray(this)) keys.add(key) ... }`). Blocks snapshot store at 100k positions (S-2 e2e not measured at 100k).
+- Integrator: mount compModule; createCasModule types += compCaseTypes; isolation cases + role-matrix probes for the 17 COMP routes; isolation seed rows of §6 (run, snapshot, lines, state, origin, simulation, restatement).
+- Not covered by COMP tests: CSV 50,000-row refusal (needs 50k lines), TS-03 affected_committed_periods flag (GEN), order_line tax (no column: amount_ex_tax = amount, shortcut), amount-only refunds and renewal_failed carry no volume reversal (shortcut).
+
+## From B3 BE2 review fixes (2026-11-18)
+- Simulation on a committed period still uses settingsVersionAt(now) instead of the baseline run's settings_version_id (D-B3-15 deviation): fixing it needs comp_simulation_source (0302) to return the baseline run's version too, i.e. a new migration; deferred to avoid a 03xx number clash during the parallel review round.
+- marketSync: an index on sales_order (tenant_id, market_id, source_system) would make the API-source probe O(sources); per-period preflight (plan_version_for_period x2 + previousPeriod) in GET /v1/periods is still per row. int syncHealth's DISTINCT over inbound_event scans the tenant's events.
+- Restatement items arriving after a restatement was submitted are never consumed (DB guard allows consumption of adjust items only); they stay origin_skipped until another restatement covers them.
+- Sandbox holds the market periods lock exclusively during the synchronous sandbox calculation: late detection and commits of that market wait for it.
+- PLAN §0.1 says "positions of the market"; snapshot keeps all positions (D-B2-21), state rows per market only: architect to record as deviation.
+

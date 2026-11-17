@@ -14,7 +14,8 @@ import { useResource } from '../../lib/use-resource'
 import { LoadFailure, useTabParam } from '../admin/page-states'
 import { tableError, usePagedList } from '../admin/resource'
 import { MONO, NOTE, ROW_ACTIONS } from '../admin/ui'
-import { ACCOUNT_TYPES, participantBadge, participantName, positionBadge, rangeText, servicingSource } from './format'
+import type { PositionView } from '../genealogy/types'
+import { ACCOUNT_TYPES, parentOrigin, participantBadge, participantName, positionBadge, rangeText, servicingSource } from './format'
 import { ServicerDialog, StatusDialog, statusChoices, TypeDialog, UnmaskDialog } from './record-dialogs'
 import { PARTICIPANTS_PATH, type ContactField, type OwnedPosition, type ParticipantDetail, type ServicedCustomer, type ServicingEntry } from './types'
 import { Facts, RecordCard } from './ui'
@@ -63,6 +64,22 @@ function Overview({ detail, onUnmask }: { readonly detail: ParticipantDetail; re
   )
 }
 
+/** The position's sponsor now and how it came to be (W-B3-8: a re-parent names the plan rule). */
+function SponsorNow({ positionId }: { readonly positionId: string }) {
+  // shortcut: one GET /v1/positions/:id per row (a participant holds few positions); add parents to GET /v1/participants/:id if records grow.
+  const position = useResource<PositionView>(`/v1/positions/${positionId}`)
+  if (position.error !== null) return <span className={NOTE}>Could not be read</span>
+  if (position.data === null) return <span className={NOTE}>Loading…</span>
+  const sponsor = position.data.parents.sponsor
+  if (sponsor === null) return <span className={NOTE}>None (top of the tree)</span>
+  return (
+    <span className="flex flex-col">
+      <span className={MONO}>{sponsor.position_ref}</span>
+      <span className={NOTE}>{parentOrigin(sponsor)}, since {formatDateTime(sponsor.valid_from)}</span>
+    </span>
+  )
+}
+
 function Positions({ detail, choicesOf, onStatus }: { readonly detail: ParticipantDetail; readonly choicesOf: (position: OwnedPosition) => readonly string[]; readonly onStatus?: (position: OwnedPosition) => void }) {
   const { can } = useSession()
   const columns: readonly DataTableColumn<OwnedPosition>[] = [
@@ -75,6 +92,7 @@ function Positions({ detail, choicesOf, onStatus }: { readonly detail: Participa
     { key: 'status', header: 'Status', cell: (position) => <StatusBadge {...positionBadge(position.status)} /> },
     { key: 'since', header: 'Status since', cell: (position) => <span className={`${MONO} whitespace-nowrap`}>{formatDateTime(position.status_from)}</span> },
     { key: 'owned', header: 'Owned', cell: (position) => <span className={MONO}>{rangeText(position.owned_from, position.owned_to, formatDateTime)}</span> },
+    ...(can('genealogy.read') ? [{ key: 'sponsor', header: 'Sponsor now', cell: (position: OwnedPosition) => <SponsorNow positionId={position.id} /> }] : []),
     {
       key: 'actions', header: 'Actions', align: 'end', cell: (position) => onStatus === undefined || position.owned_to !== null || choicesOf(position).length === 0
         ? null
@@ -225,6 +243,7 @@ export function ParticipantRecord({ participantId }: { readonly participantId: s
         summary={`${detail.market.code} · ${type === null ? 'No type in force' : `${type.name} (${type.code})`} · enrolled ${formatDateTime(detail.enrolled_at)}`}
         actions={<>
           {can('genealogy.read') && firstPosition !== undefined && <LinkButton icon="account_tree" href={`/genealogy?root=${firstPosition.id}`}>Open in genealogy</LinkButton>}
+          {detail.positions.length > 0 && <LinkButton icon="military_tech" href={`/people/${detail.id}/qualification`}>Qualification history</LinkButton>}
           {write('case.genealogy.create') && <LinkButton variant="primary" icon="rule" data-testid="primary-action" href={owned.length === 1 ? `/cases/genealogy/new?position=${owned[0]!.id}` : '/cases/genealogy/new'}>Start case</LinkButton>}
         </>}
       />

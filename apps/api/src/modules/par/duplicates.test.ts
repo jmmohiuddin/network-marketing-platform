@@ -3,8 +3,7 @@ import { withTenant } from '@nmp/db'
 import type { FastifyInstance } from 'fastify'
 import { afterAll, beforeAll, describe, expect, test } from 'vitest'
 import {
-  buildTestApp, call, closePoolsAfterAll, createMarket, createSignedInUser, createTenant, ownerRows, resetApiDb,
-  type TestTenant, type TestUser,
+  activePlanVersion, buildTestApp, call, closePoolsAfterAll, createMarket, createSignedInUser, createTenant, ownerRows, resetApiDb, type TestTenant, type TestUser,
 } from '../../../test/helpers/index.js'
 import { createCasModule } from '../cas/index.js'
 import { iamModule } from '../iam/index.js'
@@ -156,6 +155,25 @@ describe('outcomes (T-B2-09, AC-PAR3-2)', () => {
 
     expect(refused.json().error.code).toBe('OWNERSHIP_CONFLICT')
     expect((await get(compliance, `/v1/cases/${s.caseId}`)).json().data.state).toBe('submitted')
+  })
+
+  test('D-B3-07: a merge that would pass the target\'s positions limit in a market is refused; the case stays submitted', async () => {
+    const lu = await createMarket(acme.id, 'LU')
+    await activePlanVersion(acme.id, lu, {
+      submitterId: admin.id, approverId: compliance.id, creditingEvent: 'paid',
+      rules: [{ rule_key: 'limit', kind: 'genealogy.positions_limit', params: { max: 1 } }],
+    })
+    const target = (await enrolled(app, support, enrolment('DIST', { signals: { identity_ref: 'ID-LU-LIMIT' } }, 'LU'))).participant.id
+    const caseId = (await enrolled(app, support, enrolment('DIST', { signals: { identity_ref: 'ID-LU-LIMIT' } }, 'LU'))).duplicate_case_id!
+    const { payload } = (await get(investigator, `/v1/cases/${caseId}`)).json().data
+    await patch(investigator, caseId, { payload: { ...payload, proposed_outcome: 'merge' } })
+    expect((await post(investigator, `/v1/cases/${caseId}/submit`, {})).statusCode).toBe(200)
+
+    const refused = await decide(compliance, caseId)
+
+    expect(payload.matched_participant_id).toBe(target)
+    expect([refused.statusCode, refused.json().error.code]).toEqual([422, 'POSITION_LIMIT_REACHED'])
+    expect((await get(compliance, `/v1/cases/${caseId}`)).json().data.state).toBe('submitted')
   })
 })
 

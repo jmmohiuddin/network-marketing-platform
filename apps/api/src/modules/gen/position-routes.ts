@@ -72,8 +72,8 @@ function registerStatusChange(app: FastifyInstance): void {
         if (!inScope(auth, guarded ? 'participant.terminate' : 'participant.manage', market)) throw permissionDenied()
         if (guarded) assertStepUp(request)
         const change = { status: body.status, effectiveFrom: toInstant(body.effective_from), reason: body.reason }
-        const reassigned = await changeStatus(tx, id, change)
-        return { statusCode: 200, body: envelope({ position: await positionDetail(tx, id), reassigned_customers: reassigned }) }
+        const { reassigned, reparented } = await changeStatus(tx, id, change)
+        return { statusCode: 200, body: envelope({ position: await positionDetail(tx, id), reassigned_customers: reassigned, reparented }) }
       })
     })
     return sendIdempotent(reply, result)

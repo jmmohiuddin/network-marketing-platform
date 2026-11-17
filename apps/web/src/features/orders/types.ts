@@ -132,6 +132,9 @@ export interface LateItem {
   readonly decided_at: string | null
   readonly decision_reason: string | null
   readonly created_at: string
+  /** The run whose commit consumed the item (an adjustment line), and that run's period, for the SC-02 link (PLAN B3 §2.6). */
+  readonly consumed_by_run_id?: string | null
+  readonly consumed_by_period_id?: string | null
 }
 
 /** POST /v1/late-transactions/preview. */

@@ -51,6 +51,9 @@ function PayloadFacts({ record }: { readonly record: CaseDetail }) {
       </>
     )
   }
+  if (record.type === 'restatement') {
+    return <Fact label="Note">{(record.payload as { readonly note: string }).note}</Fact>
+  }
   if (record.type === 'duplicate') {
     const payload = record.payload as DuplicatePayload
     return (

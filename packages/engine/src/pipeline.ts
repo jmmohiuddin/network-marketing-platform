@@ -10,7 +10,7 @@ import type {
   QualificationStateRow, RankRef, RawLine, ResultLine, RunInput, RunOptions, TaxLine, TransitionChange, TreeKind,
 } from './types.js'
 
-export const ENGINE_VERSION = '0.1.0'
+export const ENGINE_VERSION = '0.2.0'
 /** Compact-trace bound (technical limit, not a plan parameter): sources kept per line unless fullTraceFor. */
 export const TRACE_SOURCE_LIMIT = 16
 

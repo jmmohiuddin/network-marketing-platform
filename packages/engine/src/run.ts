@@ -21,7 +21,7 @@ import { percentByLevel } from './primitives/unilevel.js'
 import { lineVolumePass, pointsFactor, positionVolumePass } from './primitives/volume.js'
 import { buildTree, compareId, evaluationInstant, positionOrder } from './tree.js'
 import type {
-  AdjustmentOrigin, BonusKind, ControlTotals, EngineWarning, LadderRank, MeasureValue, Order, OrderEvent, OrderLine, OriginType, Participant, ParticipantType,
+  AdjustmentOrigin, BonusKind, Expr, ExprOp, ControlTotals, EngineWarning, LadderRank, MeasureValue, Order, OrderEvent, OrderLine, OriginType, Participant, ParticipantType,
   PayeeSettlement, PeriodSummary, Position, PositionSummary, QualificationStateRow, RawLine, Receivable, Relationship, ResultLine, RunInput,
   RunOptions, RunOutput, SourceKind, TaxLine, TraceStep, WithholdingInstruction,
 } from './types.js'
@@ -362,26 +362,28 @@ const totalsPass: PassFn<'totals'> = (ctx, done) => {
 
 /** Every property name of RunInput, so the canonical form never depends on an input object's key order. */
 const INPUT_FIELDS = [
-  'adjustments', 'allocation', 'amountMinor', 'atLeastMinor', 'atUs', 'banked', 'base', 'baseMeasure', 'bonuses', 'buyerEnrolledWithinUs', 'buyerParticipantId',
+  'adjustments', 'agg', 'allocation', 'amountMinor', 'args', 'atLeastMinor', 'atUs', 'banked', 'base', 'baseMeasure', 'bonuses', 'buyerEnrolledWithinUs', 'buyerParticipantId',
   'buyerTypeCode', 'byRank', 'calendar', 'calendars', 'canEarn', 'canHoldPositions', 'canSponsor', 'capMinor', 'caps', 'carries', 'carry',
-  'categories', 'category', 'childPositionId', 'code', 'compression', 'constraints', 'contentHash', 'count', 'counters', 'countsAsEndCustomer',
+  'categories', 'category', 'childPositionId', 'code', 'compression', 'const', 'constraints', 'contentHash', 'count', 'counters', 'countsAsEndCustomer',
   'creditPositionId', 'creditedAtUs', 'currency', 'customerRollUp', 'den', 'effectiveFromUs', 'eligibleIf', 'endsAtUs', 'enrolledAtUs',
-  'equals', 'eventId', 'excludeItemClasses', 'expiresAfterPeriods', 'fact', 'facts', 'factor', 'first', 'firstMultiplier', 'from',
+  'equals', 'eventId', 'excludeItemClasses', 'expiresAfterPeriods', 'expr', 'fact', 'facts', 'factor', 'first', 'firstMultiplier', 'from',
   'gracePeriods', 'graceUsed', 'history', 'incrementIf', 'includeSelf', 'itemClass', 'items', 'keepIf', 'key', 'kind', 'knownAtUs',
   'ladder', 'ladders', 'leader', 'leg', 'level', 'levels', 'lineId', 'lines', 'maintenance', 'map', 'market', 'marketId', 'maxMinor',
   'maxPerLegShare', 'maxShare', 'measure', 'measures', 'method', 'minPerCustomerMinor', 'minorDigits', 'n', 'name', 'num', 'of',
-  'oneTimeFlags', 'onceKey', 'orderBy', 'orderEvents', 'orderId', 'orders', 'originId', 'originType', 'originalPeriodId',
+  'oneTimeFlags', 'onceKey', 'op', 'orderBy', 'orderEvents', 'orderId', 'orders', 'originId', 'originType', 'originalPeriodId',
   'ownerParticipantId', 'paidAs', 'parentPositionId', 'participantId', 'participantTypes', 'participants', 'parts', 'payeePositionId',
   'perOrderCapMinor', 'perUnitMinor', 'period', 'periodId', 'periods', 'periodsHeld', 'plan', 'planVersionId', 'pointsToCurrency',
   'positionId', 'positions', 'priorState', 'productId', 'purpose', 'quantity', 'rank', 'ranks', 'rate', 'rates', 'reason', 'reasonCode',
   'receivables', 'recordedAtUs', 'reduce', 'refundMinor', 'relationships', 'requires', 'residue', 'restockingFeeAffectsVolume',
   'restockingFeeMinor', 'reversalPolicy', 'roundingMode', 'rounding', 'rule', 'ruleId', 'ruleKey', 'scope', 'second', 'secondShareAbove',
-  'settings', 'settingsVersionId', 'share', 'shares', 'snapshot', 'snapshotId', 'source', 'sourceKind', 'startsAtUs', 'stateItem',
+  'settings', 'settingsVersionId', 'share', 'shares', 'snapshot', 'snapshotId', 'source', 'sourceKind', 'startsAtUs', 'state', 'stateItem',
   'status', 'statusFromUs', 'supersededAtUs', 'taxMinor', 'tiers', 'titles', 'to', 'transitions', 'tree', 'type', 'typeCode', 'unit',
   'validFromUs', 'validToUs', 'value', 'valueMinor', 'version', 'volumes', 'window', 'withholding',
 ] as const satisfies readonly DeepKeys<RunInput>[]
 type DeepKeys<T> = T extends bigint | string | number | boolean | null ? never
   : T extends readonly (infer E)[] ? DeepKeys<E>
+  // An operator node's args are expressions again: their keys come from the other Expr members (no infinite type).
+  : T extends { readonly op: ExprOp; readonly args: readonly Expr[] } ? 'op' | 'args'
   : { [K in keyof T & string]: K | DeepKeys<T[K]> }[keyof T & string]
 // Compile-time: a RunInput property missing from INPUT_FIELDS fails here (it would silently leave the hash).
 const exhaustive: [Exclude<DeepKeys<RunInput>, (typeof INPUT_FIELDS)[number]>] extends [never] ? true : never = true

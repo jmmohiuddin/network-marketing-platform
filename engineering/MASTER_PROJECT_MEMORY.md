@@ -2,10 +2,16 @@
 
 Consolidated facts every session needs. Newest first. Keep under 150 lines.
 
-## State (2026-11-12; B1 and B2 done 2026-11-17, see below)
+## State (2026-11-12; B1 and B2 done 2026-11-17, B3 2026-11-18, see below)
 - Greenfield. Git initialised; docs on `main`; work on `feat/mvp-a-foundation`.
 - Docs digested into `engineering/context/` (verified). Use those.
 - Founder confirmed 2026-11-12: build MVP-B after MVP-A, ahead of the docs evidence gate (E-ADR-07). Sandboxes only; no real payouts; tax and plan values are configuration.
+
+## Increment B3 (2026-11-18) — plans, runs, commit, replay, restatement, adjustments, guardrails. State + next steps: `increments/B3/HANDOFF.md`
+- **Built:** FR-PLN-001, 003..006, FR-COMP-001..003, 005..010, 012, FR-CPL-007/008 (I T V); FR-PLN-002 and FR-COMP-004 I T V partial (PLAN §8). FR-CAS-001 and all 18 Release A rows now I T V. Migrations 0300–0306 (next 0307). Engine 0.2.0 (JSON-AST expressions, validatePlan/compilePlan/renderRule, half_even); modules pln, comp (new), cpl guardrails; B2 carry-over in gen/par/ord/ten. Web: SC-01, SC-02 + commit dialog, SC-04 list/version, SC-05, SC-11, SC-42, SC-43, touches on SC-06/07/09/32 and the enrol dialog.
+- **Contracts:** D-B3-01..23 (PLAN §0, E-ADR-40..46). Rules stored in engine shape, compiled per calendar into `plan_version.compiled` (COMP never imports new engine code); snapshots = gzip of canonical engine JSON + sha256 (`stringifyEngineJson`/`parseEngineJson`, bigint as strings, keys *Minor/*Us); instants as µs text from SQL. Commit = second person + step-up + acknowledged exceptions, NO ledger posting (B4); staleness → 409 RUN_SUPERSEDED. Late items → per-run adjustment origins via full-trace replay; restatement = CAS case type with a synchronous sandbox; origins consumed only by a committed run carrying them (0305, else 23514 at COMMIT). `order_line.volumes` are line totals (divide by quantity before the engine). Placement width and crediting event from the plan version with retired-setting fallback. Approval object types plan_version / run / guardrail_decision. 14 permissions (privileged plan.approve, run.commit, restatement.approve, override.approve); role Plan administrator.
+- **Tests (records run, nmp_test_4 at 0306):** 173 files, 3303 passed, 0 failed/skipped; typecheck api + web clean. Browser round 2: W-B3-1..8 pass; round 3: BUG-094 fixed; Impeccable 12→13/16.
+- **Open:** S-1 engine out of memory at 500k/2M positions (4 GB heap, ~16 KB/position; 150k = 2.4 GB) — blocks large tenants, E-ADR-34/35 to re-evaluate; S-2 100k end-to-end not re-run after the codec fix; restatement origin already consumed → 500 (needs 409 gate); security fixes (HIGH clawback share, MEDIUM override SoD + 6 LOW) in tree, not re-reviewed; LOW BUG-090/092 (engine text), 093, 095..098; nmp_dev/e2e at 0305, nmp_test without B3 migrations and with a foreign 0250_firebase_identity row; architect: placement re-parenting with legs, opaque enrolment_only_pay acknowledgement.
 
 ## Increment B2 (2026-11-17) — participants, genealogy, orders, first case types. State + next steps: `increments/B2/HANDOFF.md`
 - **Built:** FR-PAR-001/002/003/005/006, FR-GEN-001..009, FR-ORD-001..005, FR-CRM-001/002, FR-INT-002 (I T V; GEN-009 I T). CAS mounted with genealogy_change, genealogy_correction, transfer, duplicate. Migrations 0200–0208 (next 0209). Modules par, gen, crm, ord (new), int connectors/health. Web: `/people`, SC-09, SC-07, SC-08, SC-06, SC-31, SC-32, SC-13 B2 tabs, SC-29 B2 part, SC-17 agreement item.

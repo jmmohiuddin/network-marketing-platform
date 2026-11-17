@@ -14,7 +14,8 @@ import { formatDateTime } from '../../lib/format'
 import { errorMessage, isNotAvailable } from '../../lib/messages'
 import { useSession } from '../../lib/session'
 import { tableError, usePagedList } from '../admin/resource'
-import { HOLD_LABELS, refusalText } from './format'
+import { HOLD_LABELS, refusalText, sourceText } from './format'
+import { useConnectorNames } from './order-inspector'
 import type { InboundEvent } from './types'
 
 const STATES = [{ value: 'held', label: 'Held' }, { value: 'rejected', label: 'Rejected' }]
@@ -29,6 +30,7 @@ function Queue({ state }: { readonly state: string }) {
   const toast = useToast()
   const { can, readOnly } = useSession()
   const list = usePagedList<InboundEvent>('/v1/inbound-events', { state })
+  const connectorNames = useConnectorNames()
   const [busy, setBusy] = useState<string | null>(null)
   const [problem, setProblem] = useState<string | null>(null)
   const canRetry = !readOnly && can('product.manage')
@@ -55,7 +57,7 @@ function Queue({ state }: { readonly state: string }) {
         caption="Inbound exception queue"
         columns={[
           { key: 'received', header: 'Received', cell: (row) => formatDateTime(row.received_at) },
-          { key: 'source', header: 'Source', cell: (row) => <span className="font-data-mono-sm text-data-mono-sm break-all">{row.source}</span> },
+          { key: 'source', header: 'Source', cell: (row) => <span className="font-data-mono-sm text-data-mono-sm break-all">{sourceText(row.source, connectorNames)}</span> },
           { key: 'key', header: 'Natural key', cell: (row) => <span className="font-data-mono-sm text-data-mono-sm break-all">{row.idempotency_key}</span> },
           { key: 'reason', header: 'Reason', cell: reasonOf },
           { key: 'attempts', header: 'Attempts', align: 'end', cell: (row) => row.attempts },

@@ -4,7 +4,7 @@ import { recordAudit } from '../../lib/audit.js'
 import { ApiError } from '../../lib/errors.js'
 import type { CaseRecord, CaseTypeDefinition } from '../cas/index.js'
 import { inScope } from '../ten/index.js'
-import type { PositionStatus } from './positions.js'
+import { assertPositionsLimit, type PositionStatus } from './positions.js'
 import { SIGNAL_KINDS } from './schemas.js'
 import { sqlCall } from './sql-errors.js'
 
@@ -22,12 +22,13 @@ interface OwnedPosition {
   position_id: string
   position_ref: string
   status: PositionStatus
+  market_id: string
 }
 
 /** The positions the subject owns now. */
 async function ownedPositions(tx: Tx, participantId: string): Promise<OwnedPosition[]> {
   const { rows } = await tx.query<OwnedPosition>(
-    'SELECT position_id, position_ref, status FROM gen_positions_of($1, now()) ORDER BY position_id', [participantId],
+    'SELECT position_id, position_ref, status, market_id FROM gen_positions_of($1, now()) ORDER BY position_id', [participantId],
   )
   return rows
 }
@@ -50,6 +51,10 @@ async function merge(tx: Tx, c: DuplicateCase, positions: OwnedPosition[]): Prom
   const target = c.payload.matched_participant_id
   const { rowCount } = await tx.query(`SELECT 1 FROM participant WHERE id = $1 AND status = 'active' FOR SHARE`, [target])
   if (rowCount !== 1) throw new ApiError(409, 'MATCHED_PARTICIPANT_INVALID', 'The matched participant is no longer active.')
+  const live = positions.filter((p) => p.status !== 'terminated')
+  for (const market of new Set(live.map((p) => p.market_id))) {
+    await assertPositionsLimit(tx, target, market, live.filter((p) => p.market_id === market).length)
+  }
   for (const position of positions) {
     await sqlCall(() => tx.query('SELECT gen_transfer_ownership($1, $2, now(), $3)', [position.position_id, target, c.id]))
     await recordAudit(tx, {

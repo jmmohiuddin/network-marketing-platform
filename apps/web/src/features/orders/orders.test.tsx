@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { apiError, json, ok } from '../../test/fetch'
 import { adminMe, bodyOf, callsTo, fetchByRoute, headerOf, renderAs } from '../admin/test-support'
 import { minorToDecimal, moneyText, refusalText, sourceText, volumesText } from './format'
+import { periodText } from '../periods/format'
 import { LateQueuePage } from './late-queue-page'
 import { OrdersPage } from './orders-page'
 import type { LateItem, OrderDetail } from './types'
@@ -43,6 +44,13 @@ describe('order format', () => {
     expect(refusalText(undefined)).toBe('Refused')
   })
 
+  it('names an inbound event source "connector:<id>" by the connector (BUG-082)', () => {
+    const id = 'dbad9f1f-0bf9-4807-a8ae-f4dfcf590a5d'
+    expect(sourceText(`connector:${id}`, new Map([[id, 'NL Shopify store']]))).toBe('NL Shopify store')
+    expect(sourceText(`connector:${id}`, new Map())).toBe('Storefront connector')
+    expect(sourceText('api:e2e-de', new Map())).toBe('api:e2e-de')
+  })
+
   it('formats minor units exactly, without floating point', () => {
     expect(minorToDecimal('123456', 2)).toBe('1234.56')
     expect(minorToDecimal('-5', 2)).toBe('-0.05')
@@ -50,8 +58,10 @@ describe('order format', () => {
     expect(minorToDecimal('42', 0)).toBe('42')
     expect(moneyText('123456', 'EUR', 2)).toBe(`${(1234).toLocaleString()}.56 EUR`)
     expect(moneyText('7', 'EUR', undefined)).toBe('7 EUR minor units')
-    expect(volumesText({ pv: '140', cv: '-20' })).toBe('-20 cv · 140 pv')
-    expect(volumesText({})).toBe('—')
+    expect(volumesText({ pv: '140', cv: '-20' }, undefined)).toBe('-20 cv · 140 pv')
+    // BUG-090: volumes share the market's minor unit (a percentage of a volume is money).
+    expect(volumesText({ pv: '30000', cv: '-2000' }, 2)).toBe('-20.00 cv · 300.00 pv')
+    expect(volumesText({}, 2)).toBe('—')
   })
 })
 
@@ -76,7 +86,7 @@ describe('OrdersPage (SC-31)', () => {
     const inspector = await screen.findByTestId('inspector')
     expect(await within(inspector).findByText('RETAIL')).toBeTruthy()
     expect(within(inspector).getByText(/different position than the buyer's servicer/)).toBeTruthy()
-    expect(within(inspector).getByText('Volume effect: -70 pv')).toBeTruthy()
+    expect(await within(inspector).findByText('Volume effect: -0.70 pv')).toBeTruthy() // BUG-090
     expect(within(inspector).getByRole('link', { name: 'Open in genealogy' }).getAttribute('href')).toBe('/genealogy?root=pos-c')
     expect(screen.getByRole('link', { name: 'ORD-1' }).getAttribute('href')).toBe('/orders?order=o1&purpose=customer')
     const [url] = callsTo(fetchMock, 'GET', '/v1/orders')[0]!
@@ -107,6 +117,22 @@ describe('OrdersPage (SC-31)', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Retry order:shop:ORD-9' }))
     expect(await screen.findByText('Processed: the order or event is recorded.')).toBeTruthy()
     expect(callsTo(fetchMock, 'POST', '/v1/inbound-events/i9/retry')).toHaveLength(1)
+  })
+
+  it('shows a rejected connector event by connector name and refusal in words (BUG-081, BUG-082)', async () => {
+    navigation.search = 'tab=exceptions'
+    const id = 'dbad9f1f-0bf9-4807-a8ae-f4dfcf590a5d'
+    const rejected = { id: 'i8', source: `connector:${id}`, idempotency_key: 'order:c:820000002', received_at: CREDITED, state: 'rejected', hold_reason: null, hold_ref: null, attempts: 1, result: { error: { code: 'BUYER_MISSING' } } }
+    const fetchMock = fetchByRoute({
+      'GET /v1/markets': () => ok([MARKET]),
+      'GET /v1/connectors': () => ok([{ id, name: 'NL Shopify store' }]),
+      'GET /v1/inbound-events': (query) => ok(query.get('state') === 'rejected' ? [rejected] : []),
+    })
+    renderAs(adminMe({ permissions: ['order.read', 'integration.manage'] }), <OrdersPage />, fetchMock)
+    await userEvent.selectOptions(await screen.findByLabelText('Show'), 'rejected')
+    expect(await screen.findByText('NL Shopify store')).toBeTruthy()
+    expect(screen.getByText('A guest checkout has no buyer to credit')).toBeTruthy()
+    expect(screen.queryByText(`connector:${id}`)).toBeNull()
   })
 
   it('sets product volumes with exact strings and an Idempotency-Key', async () => {
@@ -144,7 +170,7 @@ describe('OrdersPage (SC-31)', () => {
     const dialog = await screen.findByRole('dialog', { name: 'Set volumes' })
     await userEvent.type(within(dialog).getByLabelText('Per unit 1'), '-5')
     await userEvent.click(within(dialog).getByRole('button', { name: 'Save volumes' }))
-    expect(await within(dialog).findAllByText('Enter whole minor units, for example 140.')).toHaveLength(2)
+    expect(await within(dialog).findAllByText('Enter whole minor units: 14000 is 140.00 in a market with two decimals.')).toHaveLength(2)
     expect(callsTo(fetchMock, 'POST', '/v1/product-volumes')).toHaveLength(0)
   })
 
@@ -170,7 +196,7 @@ describe('LateQueuePage (SC-32)', () => {
     id, origin_type: 'order', origin_id: `o-${id}`, order: { id: `o-${id}`, source_order_id: ref },
     original_period: { id: 'per1', starts_at: '2026-09-01T00:00:00.000Z', ends_at: '2026-10-01T00:00:00.000Z', state: 'committed' },
     effect_estimate: { volumes: { pv: '70' }, amount_minor: '5000', attributed_position_id: null }, handling: 'adjust', state: 'pending',
-    decided_at: null, decision_reason: null, created_at: CREDITED,
+    decided_at: null, decision_reason: null, created_at: CREDITED, // no consumed_by_* fields: the shape GET /v1/late-transactions sends today
   })
 
   beforeEach(() => {
@@ -198,7 +224,7 @@ describe('LateQueuePage (SC-32)', () => {
     const dialog = await screen.findByRole('dialog', { name: 'Accept proposed handling' })
     const preview = await within(dialog).findByTestId('late-preview')
     expect(preview.textContent).toContain(moneyText('10000', 'EUR', 2)) // the chosen market's currency (BUG-071)
-    expect(preview.textContent).toContain('140 pv')
+    expect(preview.textContent).toContain('1.40 pv') // BUG-090: the market's decimals
     expect(within(preview).getByText('P-C')).toBeTruthy()
     expect(bodyOf(callsTo(fetchMock, 'POST', '/v1/late-transactions/preview')[0]![1])).toEqual({ ids: ['l1', 'l2'] })
     await userEvent.type(within(dialog).getByLabelText('Reason'), 'Adjust in November')
@@ -288,6 +314,51 @@ describe('LateQueuePage (SC-32)', () => {
     await userEvent.click(within(dialog).getByRole('button', { name: 'Raise restatement' }))
     expect(await within(dialog).findByText('Some selected items were already decided.')).toBeTruthy()
     expect(bodyOf(callsTo(fetchMock, 'POST', '/v1/late-transactions/decisions')[0]![1])).toEqual({ ids: ['l1'], handling: 'restatement', reason: 'Material change' })
+  })
+
+  it('renders pending and consumed rows without consumed_by fields and links no run', async () => {
+    const consumed = { ...item('l3', 'ORD-3'), state: 'consumed' as const, decided_at: CREDITED }
+    const fetchMock = fetchByRoute({
+      'GET /v1/markets': () => ok([MARKET]),
+      'GET /v1/late-transactions': () => json(200, { data: [item('l1', 'ORD-1'), consumed], meta: { next_cursor: null, counts: { pending: 1, decided_30d: 1 } } }),
+    })
+    renderAs(ANALYST, <LateQueuePage />, fetchMock)
+    expect(await screen.findByRole('button', { name: 'Diagnose ORD-3' })).toBeTruthy()
+    expect(screen.queryByText(/Adjusted in run/)).toBeNull()
+    expect(screen.queryAllByRole('link').some((link) => (link.getAttribute('href') ?? '').includes('undefined'))).toBe(false)
+  })
+
+  it('lists consumed items with the run that adjusted them (W-B3-6)', async () => {
+    navigation.search = 'state=consumed'
+    const consumed = { ...item('l3', 'ORD-3'), state: 'consumed' as const, decided_at: CREDITED, consumed_by_run_id: 'run-9', consumed_by_period_id: 'per2' }
+    const fetchMock = fetchByRoute({
+      'GET /v1/markets': () => ok([MARKET]),
+      'GET /v1/late-transactions': (query) => json(200, { data: query.get('state') === 'consumed' ? [consumed] : [], meta: { next_cursor: null, counts: { pending: 0, decided_30d: 1 } } }),
+      'GET /v1/orders/o-l3': () => ok({ ...ORDER, id: 'o-l3' }),
+    })
+    renderAs(ANALYST, <LateQueuePage />, fetchMock)
+    expect((screen.getByLabelText('State') as HTMLSelectElement).selectedOptions[0]!.textContent).toBe('Consumed')
+    const link = await screen.findByRole('link', { name: 'run-9' })
+    expect(link.getAttribute('href')).toBe('/periods/per2/runs/run-9/review')
+  })
+
+  it('opens the restatement case dialog for the original period after deciding an item for restatement', async () => {
+    const fetchMock = fetchByRoute({
+      'GET /v1/markets': () => ok([MARKET]),
+      'GET /v1/late-transactions': () => json(200, { data: [item('l1', 'ORD-1')], meta: { next_cursor: null, counts: { pending: 1, decided_30d: 0 } } }),
+      'POST /v1/late-transactions/decisions': () => ok({ decided: 1 }),
+      'GET /v1/orders/o-l1': () => ok({ ...ORDER, id: 'o-l1' }),
+      'GET /v1/documents/limits': () => ok({ max_file_bytes: 1048576, types: ['application/pdf'] }),
+    })
+    renderAs(adminMe({ permissions: ['order.read', 'late.manage', 'restatement.request'] }), <LateQueuePage />, fetchMock)
+    await userEvent.click(await screen.findByRole('button', { name: 'Diagnose ORD-1' }))
+    await userEvent.click(within(screen.getByTestId('diagnostic')).getByRole('button', { name: 'Raise restatement instead' }))
+    const decision = await screen.findByRole('dialog', { name: 'Raise restatement instead' })
+    await userEvent.type(within(decision).getByLabelText('Reason'), 'Material change')
+    await userEvent.click(within(decision).getByRole('button', { name: 'Raise restatement' }))
+    const caseDialog = await screen.findByRole('dialog', { name: 'Request restatement' })
+    expect(caseDialog.textContent).toContain(periodText(item('l1', 'ORD-1').original_period, undefined))
+    expect(within(caseDialog).getByLabelText('Reason')).toBeTruthy()
   })
 
   it('is not available without late.manage', () => {

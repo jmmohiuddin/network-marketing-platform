@@ -1,5 +1,6 @@
-import { randomBytes, randomUUID } from 'node:crypto'
+import { createHash, randomBytes, randomUUID } from 'node:crypto'
 import { withTenant, withVendor, type TenantContext, type Tx } from '../src/index.js'
+import { getOwnerPool } from '../src/testing.js'
 import { asUser, insertAuditEvent, insertEvidence, insertMarket, insertOutboxEvent, insertRow, openSession } from './support.js'
 
 const PERIOD = { period_from: '2026-01-01', period_to: '2026-01-31' }
@@ -25,14 +26,27 @@ export interface TenantSeed {
   typeId: string
   participantId: string
   positionId: string
+  planVersionId: string
+  runId: string
 }
+
+/** A platform guardrail rule for the seeded evaluation; pack rules are written by migrations or the owner only. */
+export const SEED_GUARDRAIL_RULE = 'seed-starter-kit@2026-01-01'
 
 /**
  * Writes one row into every tenant-scoped table as nmp_app in the tenant's own context, so a denial
  * assertion always has a row it could have seen. secondUserId is another user of the same tenant.
  */
-export function seedTenantRows(ctx: TenantContext, secondUserId: string): Promise<TenantSeed> {
+export async function seedTenantRows(ctx: TenantContext, secondUserId: string): Promise<TenantSeed> {
   const tenant_id = ctx.tenantId
+  await getOwnerPool().query(
+    `INSERT INTO guardrail_rule (id, market_pack, title, outcome, predicate, overridable, mandatory, basis, basis_status,
+       source_ref, effective_from)
+     VALUES ($1, 'seed', 'Seed rule', 'warned', '{"check": "starter_kit_volume"}', true, true, 'seed', 'screening', 'seed',
+       '2026-01-01')
+     ON CONFLICT (id) DO NOTHING`,
+    [SEED_GUARDRAIL_RULE],
+  )
   return withTenant(ctx, async (tx) => {
     const marketId = await insertMarket(tx, tenant_id)
     const roleId = await insertRow(tx, 'role', {
@@ -100,7 +114,11 @@ export function seedTenantRows(ctx: TenantContext, secondUserId: string): Promis
     const outboxEventId = await insertOutboxEvent(tx, tenant_id)
     const b1 = await seedB1Rows(tx, ctx, marketId, outboxEventId)
     const b2 = await seedB2Rows(tx, ctx, secondUserId, marketId, b1.brandId)
-    return { marketId, roleId, approvalId, settingsVersionId, documentId, mappingId, batchId, snapshotId, outboxEventId, ...b1, ...b2 }
+    const b3 = await seedB3Rows(tx, ctx, { marketId, calendarId: b1.calendarId, settingsVersionId, ...b2 })
+    return {
+      marketId, roleId, approvalId, settingsVersionId, documentId, mappingId, batchId, snapshotId, outboxEventId, ...b1, ...b2,
+      ...b3,
+    }
   })
 }
 
@@ -181,7 +199,7 @@ async function seedB2Rows(tx: Tx, ctx: TenantContext, secondUserId: string, mark
     )
   })
   const one = async <T>(sql: string, params: unknown[]): Promise<T> => Object.values((await tx.query(sql, params)).rows[0]!)[0] as T
-  const customer = (ref: string) => one<string>('SELECT par_create_customer($1, $2, $3, $4)', [ref, marketId, typeId, since])
+  const customer = (ref: string) => one<string>('SELECT id FROM par_create_customer($1, $2, $3, $4)', [ref, marketId, typeId, since])
   const participantId = await customer('seed-distributor')
   const customerId = await customer('seed-customer')
   const position = (owner: string) =>
@@ -238,6 +256,85 @@ async function seedB2Rows(tx: Tx, ctx: TenantContext, secondUserId: string, mark
     tenant_id, order_id: orderId, original_period_id: rows[0]!.id, handling: 'adjust', state: 'pending',
   })
   return { typeId, participantId, positionId }
+}
+
+/**
+ * One row in every B3 tenant table (PLAN B3 section 1): a plan on the market and calendar with a draft version, a rule,
+ * a transition, a golden dataset and a guardrail evaluation; a calculated run with its snapshot, a line, a state row and
+ * a late origin; a completed simulation with a line; a restatement case with its restatement.
+ */
+async function seedB3Rows(
+  tx: Tx, ctx: TenantContext,
+  ids: { marketId: string; calendarId: string; settingsVersionId: string; positionId: string; participantId: string },
+) {
+  const tenant_id = ctx.tenantId
+  const one = async (sql: string, params: unknown[]): Promise<string> => Object.values((await tx.query(sql, params)).rows[0]!)[0] as string
+  const planId = await insertRow(tx, 'plan', { tenant_id, name: 'Seed plan', created_by: ctx.userId })
+  await tx.query('INSERT INTO plan_market (tenant_id, plan_id, market_id) VALUES ($1, $2, $3)', [tenant_id, planId, ids.marketId])
+  await tx.query('INSERT INTO plan_calendar (tenant_id, plan_id, calendar_id) VALUES ($1, $2, $3)', [tenant_id, planId, ids.calendarId])
+  const planVersionId = await insertRow(tx, 'plan_version', {
+    tenant_id, plan_id: planId, version: 1, engine_version: 'seed', compiled: {}, created_by: ctx.userId,
+  })
+  await insertRow(tx, 'plan_rule', {
+    tenant_id, plan_version_id: planVersionId, rule_key: 'pv', kind: 'volume.personal', pass: '1', params: { unit: 'currency' },
+    created_by: ctx.userId, updated_by: ctx.userId,
+  })
+  await insertRow(tx, 'plan_transition', { tenant_id, to_version_id: planVersionId, state_item: 'carry.*', rule: 'carry', created_by: ctx.userId })
+  await insertRow(tx, 'guardrail_decision', {
+    tenant_id, rule_id: SEED_GUARDRAIL_RULE, plan_version_id: planVersionId, kind: 'evaluation', outcome: 'warned',
+    content_sha256: randomBytes(32), detail: { rule_keys: ['pv'] },
+  })
+  await insertRow(tx, 'golden_dataset', {
+    tenant_id, plan_version_id: planVersionId, calendar_id: ids.calendarId, name: 'seed', input: {}, expected: { lines: [], total_minor: '0' },
+    created_by: ctx.userId,
+  })
+  const periodId = await one('SELECT id FROM period WHERE calendar_id = $1 LIMIT 1', [ids.calendarId])
+  const content = randomBytes(16)
+  const snapshotId = await insertRow(tx, 'run_snapshot', {
+    tenant_id, period_id: periodId, known_at: new Date(), content, content_sha256: createHash('sha256').update(content).digest(),
+    row_counts: {}, order_ids: [], order_event_ids: [],
+  })
+  const runId = await insertRow(tx, 'run', {
+    tenant_id, period_id: periodId, run_request_id: 'seed', plan_version_id: planVersionId, settings_version_id: ids.settingsVersionId,
+    engine_version: 'seed', prepared_by: ctx.userId,
+  })
+  await tx.query(`UPDATE run SET state = 'running', snapshot_id = $2, started_at = now() WHERE id = $1`, [runId, snapshotId])
+  const payee = { tenant_id, payee_position_id: ids.positionId, payee_participant_id: ids.participantId, rule_key: 'pv' }
+  const line = { ...payee, bonus_type: 'pay.flat', source_kind: 'other', pass: 4, amount_minor: 100, currency: 'GBP', trace: {} }
+  await insertRow(tx, 'result_line', { ...line, run_id: runId })
+  await tx.query(
+    `INSERT INTO qualification_state (tenant_id, run_id, position_id, paid_as_rank, highest_titles, grace_used, counters, carry,
+       one_time_flags, banked, measures) VALUES ($1, $2, $3, '[]', '[]', '[]', '[]', '[]', '{}', '[]', '[]')`,
+    [tenant_id, runId, ids.positionId],
+  )
+  await insertRow(tx, 'adjustment_origin', {
+    tenant_id, origin_type: 'late_transaction', late_transaction_id: await one('SELECT id FROM late_transaction LIMIT 1', []),
+    run_id: runId, payee_position_id: ids.positionId, rule_key: 'pv', source_kind: 'other', amount_minor: -50,
+    original_period_id: periodId,
+  })
+  await tx.query(
+    `UPDATE run SET state = 'calculated', totals = '{"gross_minor": "100"}', inputs_hash = 'seed', lines_hash = 'seed',
+       outputs = '{}', finished_at = now() WHERE id = $1`,
+    [runId],
+  )
+  const simulationId = await insertRow(tx, 'simulation', {
+    tenant_id, plan_version_id: planVersionId, period_id: periodId, kind: 'simulation', requested_by: ctx.userId,
+    content_hash: await one(`SELECT digest(compiled::text, 'sha256') FROM plan_version WHERE id = $1`, [planVersionId]),
+  })
+  await tx.query(`UPDATE simulation SET state = 'running', snapshot_id = $2 WHERE id = $1`, [simulationId, snapshotId])
+  await insertRow(tx, 'sim_result_line', { ...line, simulation_id: simulationId })
+  await tx.query(
+    `UPDATE simulation SET state = 'completed', totals = '{}', comparison = '{}', finished_at = now() WHERE id = $1`,
+    [simulationId],
+  )
+  const caseId = await insertRow(tx, 'case_file', {
+    tenant_id, type: 'restatement', subject_type: 'period', subject_id: periodId, reason_code: 'INPUT_CORRECTION', state: 'open',
+    payload: {}, market_id: ids.marketId, opened_by: ctx.userId,
+  })
+  await insertRow(tx, 'restatement', {
+    tenant_id, period_id: periodId, case_id: caseId, simulation_id: simulationId, state: 'calculated', diff: {},
+  })
+  return { planVersionId, runId }
 }
 
 export interface VendorSeed {

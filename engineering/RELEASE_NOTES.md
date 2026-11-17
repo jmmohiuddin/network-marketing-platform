@@ -2,6 +2,46 @@
 
 ## Unreleased
 
+### Increment B3 — plans, runs, commit, replay, restatement, adjustments, guardrails (2026-11-18)
+Sandbox only: a commit records the run and its approval but posts nothing to a ledger and pays nobody (payouts and the ledger are B4); no provider is called and no money moves.
+
+**Plans**
+- Plans per market and calendar (Plans, SC-04) with versions: draft, in review, approved, scheduled, active, retired. Rules come from a declarative library (volumes, group volume, ladders, percentage bonuses, caps, pools, clawback policy, structural rules) and are shown in plain language. A version records its crediting event and placement width.
+- Controlled extension point: derived measures and requirements written as expressions (min, max, arithmetic, comparisons, sums over direct children). Each extension rule needs a golden dataset that covers it before the version can be submitted.
+- Caps and pools (SC-05) in precedence order with a preview on a past period.
+- Simulations on any ended period (SC-42): payee impact, by bonus, distribution, cap effects, comparison with the version in force; a simulation can be frozen as a golden dataset. Simulations are staff-only and change nothing.
+- Approval by a second person (the author and the rule editors cannot approve), activation scheduled by Finance with a step-up and an effective time (a past time takes effect at once).
+
+**Guardrails**
+- Plan rules are checked against the market pack's guardrails when saved: a block refuses the save with the rule, the explanation and its basis status; a warning must be acknowledged or overridden.
+- Overrides (SC-11) need a justification, evidence and an approver with the override permission who did not write the matched rules; every decision is kept in the overrides log.
+
+**Periods and runs**
+- Periods and runs (SC-01) per calendar: state, cut-off in the calendar's zone, blockers (order sync behind or failing, no plan version, late items pending), Calculate and Re-run, replay, restatement requests.
+- A run reads a stored snapshot of genealogy, orders and settings; the same inputs always give the same lines and hashes. Replay of a committed period answers Match or shows the difference.
+- Run review (SC-02): totals, variance against the previous period, top movers, exceptions, every line with its trace (orders, rates, rounding) and a full replay of one line, what changed in qualification, adjustments.
+- Commit needs a second person with the commit permission and a step-up, and an acknowledgement of each blocking exception; a run whose inputs changed since calculation is refused and must be re-run.
+- Qualification history per position (SC-43): paid-as and title ranks, measures, carry, by period.
+
+**Corrections**
+- Late refunds and chargebacks of committed periods become clawback lines in the next run, linked to the original period; the late queue shows the run that consumed each item.
+- Restatement of a committed period is a case: the preview shows the difference per payee and bonus, a Finance approver decides, and the difference is paid or recovered in the next run. The committed run itself never changes.
+
+**Genealogy and orders**
+- Placement width and crediting event now come from the plan version (the old settings remain as a fallback; the placement width setting is retired). Plan rules can re-parent the children of a terminated position, limit positions per participant and allow sponsor changes only within a window after enrolment.
+
+**Access**
+- 14 new permissions (privileged: approve plans, commit runs, approve restatements, approve overrides). New seed role Plan administrator.
+
+**Fixes**
+- B3 defects BUG-084..089, 091, 094 (BUG-084: volumes of multi-unit order lines were multiplied by the quantity twice in runs and simulations). B2 BUG-081, 082, 083 fixed in code.
+
+**Known issues**
+- The engine handles 150,000 positions on a 4 GB worker; 500,000 and 2,000,000 positions run out of memory. Larger tenants need the memory work listed in the B3 handoff.
+- LOW display defects: plan plain language and line traces print raw minor units and microsecond instants (BUG-090, BUG-092); stale "What changed" sentence (BUG-093); late-queue period in the viewer's zone (BUG-095); raw guardrail outcome code on simulations (BUG-096); period table amount wrap and tablet width (BUG-097, BUG-098).
+- Restatements correct money only; qualification state of the restated period is not recomputed.
+- Security review fixes (late clawback share, override separation of duties and five LOW items) are in the code and await the security re-check.
+
 ### Increment B2 — participants, genealogy, orders, first case types (2026-11-17)
 Sandbox only: storefront connectors only receive signed webhooks; nothing calls a real store, provider or bank, and no money moves.
 

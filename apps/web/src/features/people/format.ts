@@ -1,5 +1,22 @@
 // Display helpers of the People screens (participant list, SC-09) and the genealogy explorer (SC-07).
+import type { ParentRef } from '../genealogy/types'
 import type { PositionStatus } from './types'
+
+/**
+ * Placement legs offered in forms. D-B3-06: the width lives on the market's plan version (2..20), which enrolers and
+ * case openers cannot read (plan.read), so every leg up to the largest width is offered and the API refuses one beyond it.
+ */
+export const LEG_OPTIONS: readonly { readonly value: string; readonly label: string }[] = Array.from({ length: 20 }, (_, index) => ({ value: String(index + 1), label: `Leg ${index + 1}` }))
+
+const PARENT_ORIGINS: Readonly<Record<Exclude<ParentRef['event_type'], 'rule'>, string>> = {
+  enrolment: 'At enrolment', change: 'By a change case', correction: 'By a correction case', migration: 'By migration',
+}
+
+/** How a current parent came to be (W-B3-8): a re-parent by the plan names the plan rule ("<plan version id>:<rule key>"). */
+export function parentOrigin(parent: Pick<ParentRef, 'event_type' | 'rule_id'>): string {
+  if (parent.event_type === 'rule') return parent.rule_id === null ? 'By a plan rule' : `By plan rule “${parent.rule_id.slice(parent.rule_id.lastIndexOf(':') + 1)}”`
+  return PARENT_ORIGINS[parent.event_type]
+}
 
 /** StatusBadge state (for its tone) and the label shown. */
 export interface Badge {

@@ -65,7 +65,13 @@ describe('GenealogyExplorer (SC-07)', () => {
       'GET /v1/genealogy/tree': (query) => (query.get('root') === uid('A')
         ? tree({ focus: node('A', { children_count: 1, subtree_count: 2 }), breadcrumbs: [node('ROOT')], breadcrumbs_truncated: false, children: [node('B', { children_count: 1, leg: '1' })] })
         : tree({ focus: node('B'), breadcrumbs: [], breadcrumbs_truncated: false, children: [node('C')] })),
-      [`GET /v1/positions/${uid('A')}`]: () => ok(POSITION),
+      [`GET /v1/positions/${uid('A')}`]: () => ok({
+        ...POSITION,
+        parents: {
+          sponsor: { position_id: uid('ROOT'), position_ref: 'ROOT', valid_from: '2026-11-10T00:00:00.000000Z', event_type: 'rule', rule_id: '11111111-1111-4111-8111-111111111111:reparent' },
+          placement: { position_id: uid('ROOT'), position_ref: 'ROOT', valid_from: '2026-11-01T00:00:00.000000Z', event_type: 'enrolment', rule_id: null, leg: '1' },
+        },
+      }),
     })
     renderAs(SUPPORT, <GenealogyExplorer />, fetchMock)
     expect(within(await screen.findByTestId('focus-node')).getByRole('heading', { name: 'Owner A' })).toBeTruthy()
@@ -77,6 +83,9 @@ describe('GenealogyExplorer (SC-07)', () => {
     const inspector = await screen.findByRole('complementary', { name: 'Position A' })
     expect(within(inspector).getByRole('link', { name: 'Open participant record' }).getAttribute('href')).toBe('/people/p-A')
     expect(within(inspector).getByRole('link', { name: 'Request change' }).getAttribute('href')).toBe(`/cases/genealogy/new?position=${uid('A')}`)
+    // BUG-088: a re-parent by the plan names the rule; the placement says how it was made.
+    expect(within(inspector).getByText(/^By plan rule “reparent”, since /)).toBeTruthy()
+    expect(within(inspector).getByText(/^At enrolment, since /)).toBeTruthy()
   })
 
   it('reads a past date from the system of record and passes known-at as an instant', async () => {

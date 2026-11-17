@@ -8,7 +8,7 @@ import { envelope, parse } from '../../lib/http.js'
 import { sendIdempotent } from '../../lib/idempotency.js'
 import { pageQuery } from '../../lib/pagination.js'
 import { changeRequestView, decideChangeRequest, listChangeRequests, withdrawChangeRequest } from './change-requests.js'
-import { canReadSetting, getEffectiveSettings, isSettingKey, SETTINGS, type SettingKey } from './settings.js'
+import { canReadSetting, getEffectiveSettings, isSettingKey, SETTINGS, type SettingDefinition, type SettingKey } from './settings.js'
 import { createChangeRequest, putSetting } from './settings-write.js'
 import { valueSince } from './timeline.js'
 import { decideWithSod } from './sod.js'
@@ -100,7 +100,10 @@ export function registerSettingsRoutes(app: FastifyInstance): void {
   const manageAll = [requireRealm('tenant'), requirePermission('settings.manage'), requireAllMarkets('settings.manage')]
   app.put('/v1/settings/:key', { preHandler: manageAll }, async (request, reply) => {
     const key = settingKey(request)
-    const definition = SETTINGS[key]
+    const definition: SettingDefinition = SETTINGS[key]
+    if (definition.retired === true) {
+      throw new ApiError(422, 'SETTING_RETIRED', 'This setting is retired: set it on the plan version instead.', { key })
+    }
     if (definition.stepUp) assertStepUp(request)
     const version = expectedVersion(request)
     const body = parse(putBody, request.body)

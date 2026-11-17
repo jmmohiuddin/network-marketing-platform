@@ -15,6 +15,7 @@ import { fromLocalInput } from '../admin/format'
 import { FormDialog, TextAreaField } from '../admin/form-dialog'
 import { tableError, usePagedList } from '../admin/resource'
 import { ITEM_CLASS_LABELS, ITEM_CLASSES, MEASURE, MINOR, volumesText } from './format'
+import { useMinorUnits } from './order-inspector'
 import type { VolumeRow } from './types'
 
 const MAX_MEASURES = 20
@@ -48,7 +49,7 @@ function SetVolumesDialog({ markets, onClose, onSaved }: { readonly markets: rea
       'vol-reason': requiredError('the reason', reason),
       ...Object.fromEntries(measures.flatMap((row, index) => [
         [`vol-measure-${row.id}`, !MEASURE.test(names[index]!) ? 'Use lower-case letters, digits and _ (start with a letter).' : names.indexOf(names[index]!) !== index ? 'Each measure once.' : null],
-        [`vol-value-${row.id}`, MINOR.test(row.value.trim()) ? null : 'Enter whole minor units, for example 140.'],
+        [`vol-value-${row.id}`, MINOR.test(row.value.trim()) ? null : 'Enter whole minor units: 14000 is 140.00 in a market with two decimals.'],
       ])),
     }
     setErrors(found)
@@ -71,7 +72,7 @@ function SetVolumesDialog({ markets, onClose, onSaved }: { readonly markets: rea
   }
   return (
     <FormDialog title="Set volumes" size="lg" submitLabel="Save volumes" onClose={onClose} onSubmit={submit}>
-      <p>Volumes are per unit sold, in minor units of each measure. A SKU's first row may start in the past; later rows start after the current minute.</p>
+      <p>Volumes are per unit sold, in whole minor units on the market’s currency scale (they show with its decimals). A SKU's first row may start in the past; later rows start after the current minute.</p>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-space-md">
         <Select id="vol-market" label="Market" placeholder="Choose a market" value={marketId} error={errors['vol-market']} options={markets.map((market) => ({ value: market.id, label: marketName(market) }))} onChange={(event) => setMarketId(event.target.value)} />
         <TextInput id="vol-sku" label="SKU" value={sku} error={errors['vol-sku']} onChange={(event) => setSku(event.target.value)} />
@@ -97,6 +98,7 @@ function SetVolumesDialog({ markets, onClose, onSaved }: { readonly markets: rea
 }
 
 function VolumeTable({ marketId, sku }: { readonly marketId: string; readonly sku: string }) {
+  const minorUnits = useMinorUnits()
   const list = usePagedList<VolumeRow>('/v1/product-volumes', { market_id: marketId === '' ? undefined : marketId, sku: sku === '' ? undefined : sku })
   return (
     <DataTable
@@ -105,7 +107,7 @@ function VolumeTable({ marketId, sku }: { readonly marketId: string; readonly sk
         { key: 'sku', header: 'SKU', cell: (row) => <span className="font-data-mono-sm text-data-mono-sm break-all">{row.sku}</span> },
         { key: 'market', header: 'Market', cell: (row) => row.market.code },
         { key: 'class', header: 'Class', cell: (row) => ITEM_CLASS_LABELS[row.item_class] ?? row.item_class },
-        { key: 'volumes', header: 'Per unit', cell: (row) => <span className="font-data-mono-sm text-data-mono-sm">{volumesText(row.volumes)}</span> },
+        { key: 'volumes', header: 'Per unit', cell: (row) => <span className="font-data-mono-sm text-data-mono-sm">{volumesText(row.volumes, minorUnits.get(row.market.id))}</span> },
         { key: 'from', header: 'Valid from', cell: (row) => formatDateTime(row.valid_from) },
         { key: 'to', header: 'Valid to', cell: (row) => (row.valid_to === null ? 'In force' : formatDateTime(row.valid_to)) },
         { key: 'by', header: 'Set by', cell: (row) => <div className="flex flex-col"><span>{row.created_by.display_name ?? 'Another user'}</span><span className="font-caption text-caption text-secondary break-words">{row.reason}</span></div> },

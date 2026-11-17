@@ -33,10 +33,13 @@ export interface ReadModel {
   readonly version: string | number | null
 }
 
-interface ParentRef {
+export interface ParentRef {
   readonly position_id: string
   readonly position_ref: string
   readonly valid_from: string
+  /** How the relationship row was made (W-B3-8); a 'rule' row names its plan rule as "<plan version id>:<rule key>". */
+  readonly event_type: 'enrolment' | 'change' | 'correction' | 'rule' | 'migration'
+  readonly rule_id: string | null
 }
 
 /** GET /v1/positions/:id. */

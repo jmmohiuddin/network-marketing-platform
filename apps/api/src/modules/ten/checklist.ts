@@ -27,7 +27,8 @@ export const CHECKLIST_ITEMS = [
   // D-B2-15: complete when the market has a published agreement version (PAR).
   { item: 'agreement_versions', title: 'Participant agreement versions', kind: 'automatic', category: 'regulatory' },
   { item: 'data_region', title: 'Data region', kind: 'attestation', category: 'data' },
-  { item: 'plan_variant', title: 'Plan variant', kind: 'attestation', category: 'plan' },
+  // D-B3 (PLAN B3 section R): complete when a scheduled or active version of a plan covers the market (PLN).
+  { item: 'plan_variant', title: 'Plan variant', kind: 'automatic', category: 'plan' },
   { item: 'breach_contacts', title: 'Breach notification contacts', kind: 'automatic', category: 'data' },
   { item: 'pack_rules', title: 'Market-pack rules basis', kind: 'automatic', category: 'regulatory' },
 ] as const satisfies readonly ItemDefinition[]
@@ -47,6 +48,7 @@ const MISSING_REASONS: Readonly<Record<Exclude<ItemKind, 'automatic'>, string>> 
 const AUTOMATIC_MISSING: Readonly<Record<string, string>> = {
   breach_contacts: 'No breach notification contact is in force.',
   agreement_versions: 'No participant agreement version is published for this market.',
+  plan_variant: 'No scheduled or active plan version covers this market.',
 }
 
 export interface PackRule {
@@ -156,9 +158,33 @@ async function currentAgreement(tx: Tx, marketId: string): Promise<AgreementVers
   return rows[0] ?? null
 }
 
+interface PlanVariantRef {
+  readonly plan_id: string
+  readonly plan_name: string
+  readonly version_id: string
+  readonly version: number
+  readonly state: 'scheduled' | 'active'
+}
+
+/** The plan version that runs (or will run) the market: an active one first, else the latest scheduled. */
+async function planVariant(tx: Tx, marketId: string): Promise<PlanVariantRef | null> {
+  const { rows } = await tx.query<PlanVariantRef>(
+    `SELECT p.id AS plan_id, p.name AS plan_name, v.id AS version_id, v.version, v.state
+     FROM plan_market m
+     JOIN plan p ON p.tenant_id = m.tenant_id AND p.id = m.plan_id
+     JOIN plan_version v ON v.tenant_id = m.tenant_id AND v.plan_id = m.plan_id
+     WHERE m.market_id = $1 AND v.state IN ('scheduled', 'active')
+     ORDER BY v.state = 'active' DESC, v.effective_from DESC, v.id
+     LIMIT 1`,
+    [marketId],
+  )
+  return rows[0] ?? null
+}
+
 interface Facts {
   readonly entries: Map<string, EntryView>
   readonly agreement: AgreementVersionRef | null
+  readonly plan: PlanVariantRef | null
   readonly providers: RecordedProvider[]
   readonly region: string
   readonly contacts: number
@@ -174,6 +200,7 @@ function statusOf(definition: ItemDefinition, facts: Facts, providers: RecordedP
     case 'automatic':
       if (definition.item === 'breach_contacts') return facts.contacts > 0 ? 'complete' : 'missing'
       if (definition.item === 'agreement_versions') return facts.agreement !== null ? 'complete' : 'missing'
+      if (definition.item === 'plan_variant') return facts.plan !== null ? 'complete' : 'missing'
       return facts.rules.some((rule) => rule.mandatory && rule.basis_status === 'screening') ? 'needs_risk_acceptance' : 'complete'
   }
 }
@@ -186,6 +213,7 @@ function detailOf(definition: ItemDefinition, facts: Facts, providers: RecordedP
     case 'data_region': return { region: facts.region }
     case 'breach_contacts': return { contacts: facts.contacts }
     case 'agreement_versions': return { version: facts.agreement }
+    case 'plan_variant': return { version: facts.plan }
     case 'pack_rules': return { rules: facts.rules }
     case 'tax_configuration': return { rules: facts.rules.filter((rule) => rule.kind === 'tax') }
     default: return null
@@ -198,6 +226,7 @@ export async function evaluateChecklist(tx: Tx, market: MarketView): Promise<Eva
   const facts: Facts = {
     entries: await currentEntries(tx, market.id),
     agreement: await currentAgreement(tx, market.id),
+    plan: await planVariant(tx, market.id),
     providers: await recordedProviders(tx, market.id),
     region: rows[0]!.region,
     contacts: (await getSetting(tx, 'privacy.breach_contacts'))?.length ?? 0,
@@ -208,7 +237,7 @@ export async function evaluateChecklist(tx: Tx, market: MarketView): Promise<Eva
   const contributors = new Set<string>()
   for (const definition of CHECKLIST_ITEMS as readonly ItemDefinition[]) {
     const providers = facts.providers.filter((provider) => provider.kind === definition.providerKind)
-    // B1 entries of an item that is automatic now (agreement_versions) are history: not counted.
+    // B1/B2 entries of an item that is automatic now (agreement_versions, plan_variant) are history: not counted.
     const entry = definition.kind === 'automatic' ? null : facts.entries.get(definition.item) ?? null
     const status = statusOf(definition, facts, providers)
     if (entry !== null) contributors.add(entry.recorded_by.id)

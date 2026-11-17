@@ -21,7 +21,8 @@ import type { DocumentLimits } from '../markets/types'
 import { isStructuralCode, reasonLabel, structuralText, type CaseTypeInfo } from './format'
 import type { CaseRecord } from './types'
 
-const NOTE_MAX = 2000
+/** The API's limit on a case note (and on a restatement's payload note). */
+export const NOTE_MAX = 2000
 
 /** What a case form sends besides reason, note and evidence; items = its own field errors. */
 export interface CaseProposal {
@@ -38,6 +39,8 @@ interface CaseFormProps {
   /** Body paths of payload fields -> field ids, for VALIDATION_FAILED issues. */
   readonly fieldIds: Readonly<Record<string, string>>
   readonly submitLabel: string
+  /** false: the type's payload carries its own required note (restatement), so the optional statement is not asked. */
+  readonly statement?: boolean
   readonly children: ReactNode
 }
 
@@ -52,7 +55,7 @@ function explained(error: unknown): unknown {
  * (POST /v1/documents, class evidence), attach it, then open the case page to submit it. A case opened before a failed
  * evidence step is kept: the retry only attaches the evidence.
  */
-export function CaseForm({ idPrefix, info, prepare, fieldIds, submitLabel, children }: CaseFormProps) {
+export function CaseForm({ idPrefix, info, prepare, fieldIds, submitLabel, statement = true, children }: CaseFormProps) {
   const api = useApi()
   const router = useRouter()
   const toast = useToast()
@@ -122,7 +125,7 @@ export function CaseForm({ idPrefix, info, prepare, fieldIds, submitLabel, child
       <fieldset className="flex flex-col gap-space-md min-w-0" disabled={opened !== null}>
         {children}
         <Select id={ids.reason} label="Reason" placeholder="Choose a reason" value={chosenReason} options={reasonOptions} error={errors[ids.reason]} onChange={(event) => setReason(event.target.value)} />
-        <TextAreaField id={ids.note} label="Statement" optional helper="Why the change is needed; kept with the case." maxLength={NOTE_MAX} value={note} onChange={setNote} />
+        {statement && <TextAreaField id={ids.note} label="Statement" optional helper="Why the change is needed; kept with the case." maxLength={NOTE_MAX} value={note} onChange={setNote} />}
       </fieldset>
       {limits.error !== null ? <LoadFailure error={limits.error} onRetry={limits.reload} section />
         : limits.data === null ? <LoadingState label="Loading the evidence file rules" />

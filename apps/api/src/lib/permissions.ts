@@ -1,10 +1,10 @@
 // Permission catalogue and base roles (E-ADR-09). One typed source: migration 0007 seeded the release A base roles
-// (RELEASE_A_BASE_ROLES_SEED, frozen), migrations 0106 (B1) and 0206 (B2) bring the roles each increment changed to
+// (RELEASE_A_BASE_ROLES_SEED, frozen), migrations 0106 (B1), 0206 (B2) and 0304 (B3) bring the roles each increment changed to
 // BASE_ROLES (renderBaseRoleUpdate), and permissions.test.ts pins the files, the catalogue and the TS-36 role matrix.
 
 /**
  * Every role permission in release A (SECURITY_IAM_TENANCY 4.3, API 7) plus participant.unmask and plan.activate, and
- * the B1 and B2 additions (PLAN B1 section 3, PLAN B2 section 3).
+ * the B1, B2 and B3 additions (PLAN B1, B2 and B3 section 3).
  */
 export const PERMISSIONS = [
   'import.manage',
@@ -41,6 +41,20 @@ export const PERMISSIONS = [
   'late.manage',
   'integration.read',
   'privacy.manage',
+  'plan.read',
+  'plan.edit',
+  'plan.approve',
+  'plan.simulate',
+  'period.read',
+  'run.execute',
+  'run.review',
+  'run.commit',
+  'trace.read',
+  'restatement.request',
+  'restatement.approve',
+  'case.restatement.read',
+  'guardrail.read',
+  'override.approve',
 ] as const
 
 export type Permission = (typeof PERMISSIONS)[number]
@@ -67,6 +81,10 @@ export const PRIVILEGED_PERMISSIONS: readonly Permission[] = [
   'case.genealogy.approve',
   'case.duplicate.approve',
   'privacy.manage',
+  'plan.approve',
+  'run.commit',
+  'restatement.approve',
+  'override.approve',
 ]
 
 // SEC-03: privileged roles and anyone who can unmask sensitive fields use MFA.
@@ -108,14 +126,22 @@ export const BASE_ROLES: readonly BaseRole[] = [
     name: 'Commission analyst',
     permissions: [
       'compliance.read', 'participant.read', 'genealogy.read', 'case.genealogy.read', 'order.read', 'late.manage',
-      'integration.read',
+      'integration.read', 'plan.read', 'period.read', 'run.execute', 'run.review', 'trace.read', 'restatement.request',
+      'case.restatement.read',
     ],
     mfaRequired: false,
   },
-  { name: 'Plan administrator', permissions: ['compliance.read'], mfaRequired: false },
+  {
+    name: 'Plan administrator',
+    permissions: ['compliance.read', 'plan.read', 'plan.edit', 'plan.simulate', 'period.read', 'guardrail.read'],
+    mfaRequired: false,
+  },
   {
     name: 'Finance approver',
-    permissions: ['compliance.read', 'participant.unmask', 'plan.activate', 'settings.approve', 'participant.read', 'order.read'],
+    permissions: [
+      'compliance.read', 'participant.unmask', 'plan.activate', 'settings.approve', 'participant.read', 'order.read',
+      'plan.read', 'period.read', 'run.review', 'run.commit', 'trace.read', 'restatement.approve', 'case.restatement.read',
+    ],
     mfaRequired: true,
   },
   { name: 'Payout officer', permissions: ['participant.unmask', 'participant.read'], mfaRequired: true },
@@ -125,6 +151,8 @@ export const BASE_ROLES: readonly BaseRole[] = [
       'mapping.approve', 'compliance.read', 'snapshot.create', 'export', 'audit.read', 'market.signoff',
       'participant.read', 'participant.terminate', 'participant_type.approve', 'agreement.publish', 'genealogy.read',
       'case.genealogy.read', 'case.genealogy.approve', 'case.duplicate.read', 'case.duplicate.approve', 'order.read',
+      'plan.read', 'plan.approve', 'period.read', 'run.review', 'trace.read', 'restatement.request', 'case.restatement.read',
+      'guardrail.read', 'override.approve',
     ],
     mfaRequired: true,
   },
@@ -132,7 +160,8 @@ export const BASE_ROLES: readonly BaseRole[] = [
     name: 'Support agent',
     permissions: [
       'participant.read', 'participant.manage', 'genealogy.read', 'case.genealogy.read', 'case.genealogy.create',
-      'case.duplicate.read', 'case.duplicate.create', 'servicing.manage', 'order.read',
+      'case.duplicate.read', 'case.duplicate.create', 'servicing.manage', 'order.read', 'period.read', 'run.review',
+      'trace.read',
     ],
     mfaRequired: false,
   },
@@ -141,8 +170,12 @@ export const BASE_ROLES: readonly BaseRole[] = [
     permissions: ['compliance.read', 'audit.read', 'participant.unmask', 'participant.read', 'privacy.manage'],
     mfaRequired: true,
   },
-  { name: 'Implementation consultant', permissions: ['import.manage', 'mapping.edit'], mfaRequired: false },
-  { name: 'Executive read-only', permissions: ['compliance.read'], mfaRequired: false },
+  {
+    name: 'Implementation consultant',
+    permissions: ['import.manage', 'mapping.edit', 'plan.read', 'plan.edit', 'plan.simulate', 'period.read'],
+    mfaRequired: false,
+  },
+  { name: 'Executive read-only', permissions: ['compliance.read', 'plan.read', 'period.read'], mfaRequired: false },
   { name: 'Integration', permissions: [], mfaRequired: false },
 ]
 
@@ -169,9 +202,10 @@ export const RELEASE_A_BASE_ROLES_SEED = `INSERT INTO role (tenant_id, name, per
   (NULL, 'Integration', '{}'::text[], true, false);
 `
 
-/** The base roles whose permissions B2 changed (PLAN B2 section 3); migration 0206 updates exactly these. */
-export const B2_UPDATED_BASE_ROLES: readonly BaseRoleName[] = [
-  'Tenant admin', 'Commission analyst', 'Finance approver', 'Payout officer', 'Compliance officer', 'Support agent', 'DPO',
+/** The base roles whose permissions B3 changed (PLAN B3 section 3); migration 0304 updates exactly these. */
+export const B3_UPDATED_BASE_ROLES: readonly BaseRoleName[] = [
+  'Commission analyst', 'Plan administrator', 'Finance approver', 'Compliance officer', 'Support agent',
+  'Implementation consultant', 'Executive read-only',
 ]
 
 /** The SQL that brings the named base roles to their BASE_ROLES permissions. */

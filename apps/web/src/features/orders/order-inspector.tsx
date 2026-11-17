@@ -80,7 +80,7 @@ function Inspector({ order, minorUnit }: { readonly order: OrderDetail; readonly
               </div>
               <div className="text-right">
                 <span className={`${MONO} font-bold text-on-surface`}>{money(line.amount_minor)}</span>
-                <div className={`${MONO} text-[11px] text-tertiary font-bold`}>{volumesText(line.volumes)}</div>
+                <div className={`${MONO} text-[11px] text-tertiary font-bold`}>{volumesText(line.volumes, minorUnit)}</div>
               </div>
             </li>
           ))}
@@ -88,7 +88,7 @@ function Inspector({ order, minorUnit }: { readonly order: OrderDetail; readonly
         <div className="bg-surface-container-high p-2 rounded flex flex-wrap items-center justify-between gap-space-xs">
           <span className="font-caption text-caption font-semibold uppercase text-secondary">Total</span>
           <span className={`${MONO} font-bold text-on-surface`}>{money(order.amount_minor)} · tax {money(order.tax_minor)}</span>
-          <span className={`${MONO} font-bold text-tertiary`}>{volumesText(order.volumes)}</span>
+          <span className={`${MONO} font-bold text-tertiary`}>{volumesText(order.volumes, minorUnit)}</span>
         </div>
       </div>
 
@@ -107,7 +107,7 @@ function Inspector({ order, minorUnit }: { readonly order: OrderDetail; readonly
                   Refund {money(event.refund_minor)} · fee {money(event.fee_minor)}
                   {event.lines !== null && ` · lines ${event.lines.map((line) => `${line.line_no}×${line.quantity}`).join(', ')}`}
                 </span>
-                <span className={`${MONO} text-[11px] text-tertiary`}>Volume effect: {event.volume_effect.total === undefined ? 'none' : volumesText(event.volume_effect.total)}</span>
+                <span className={`${MONO} text-[11px] text-tertiary`}>Volume effect: {event.volume_effect.total === undefined ? 'none' : volumesText(event.volume_effect.total, minorUnit)}</span>
               </li>
             ))}
           </ol>

@@ -4,10 +4,11 @@
 // settings.roundingMode. Iteration: orders by order id, lines by line id, events by (atUs, eventId),
 // positions by index; input object keys are never iterated.
 import { EngineError } from '../errors.js'
+import { derivedValues } from '../expression.js'
 import { assertInt64, largestRemainder, parseDecimal, RATE_SCALE, roundRaw, toRaw } from '../money.js'
 import type { CreditedLine, PassFn, PositionVolumes, RunContext } from '../pipeline.js'
 import { compareId, rollUp, type Tree } from '../tree.js'
-import type { ItemRules, LineSource, MeasureRule, Order, OrderEvent, OrderLine, OrderPurpose, PlanVersion, PointsFactor, RunSettings } from '../types.js'
+import type { ItemRules, LineSource, MeasureRule, Order, OrderEvent, OrderLine, OrderPurpose, PlanVersion, PointsFactor, QualificationStateRow, RunSettings } from '../types.js'
 
 type PersonalMeasure = Extract<MeasureRule, { readonly kind: 'volume.personal' }>
 /** Exact fraction of a line's quantity reversed by this period's events (num / den, 0 <= value <= 1). */
@@ -189,17 +190,18 @@ function creditRows(order: Order, lineId: string, customer: boolean, credit: num
 export const positionVolumePass: PassFn<'volumes'> = (ctx, done) => {
   const { measureKeys, lines } = done.lineVolumes
   const purposes = [...new Set(ctx.input.plan.constraints.flatMap((c) => (c.kind === 'limit.max_share_from_purpose' ? [c.purpose] : [])))]
-  const byPurpose = new Map(purposes.map((p: OrderPurpose) => [p, measuresOver(ctx, measureKeys, lines.filter((l) => l.purpose === p))]))
-  return { ...measuresOver(ctx, measureKeys, lines), byPurpose }
+  const prior = done.transition.prior
+  const byPurpose = new Map(purposes.map((p: OrderPurpose) => [p, measuresOver(ctx, measureKeys, lines.filter((l) => l.purpose === p), prior)]))
+  return { ...measuresOver(ctx, measureKeys, lines, prior), byPurpose }
 }
 
 /** Every plan measure (plan order) and the personal market totals over the given credited lines. */
-function measuresOver(ctx: RunContext, measureKeys: readonly string[], lines: readonly CreditedLine[]): Omit<PositionVolumes, 'byPurpose'> {
+function measuresOver(ctx: RunContext, measureKeys: readonly string[], lines: readonly CreditedLine[], prior: readonly (QualificationStateRow | null)[]): Omit<PositionVolumes, 'byPurpose'> {
   const { perPosition, market } = personalSums(lines, measureKeys.length, ctx.positions.length)
   const byMeasure = new Map<string, BigInt64Array>()
   for (const m of ctx.input.plan.measures) {
     if (byMeasure.has(m.key)) throw invalid('duplicate measure key', { measure: m.key })
-    byMeasure.set(m.key, measureValues(m, ctx, { measureKeys, lines, perPosition, byMeasure }))
+    byMeasure.set(m.key, measureValues(m, ctx, { measureKeys, lines, perPosition, byMeasure, prior }))
   }
   return { byMeasure, marketTotal: new Map(measureKeys.map((key, i) => [key, assertInt64(market[i]!, `market total ${key}`)])) }
 }
@@ -209,6 +211,7 @@ interface Pass2State {
   readonly lines: readonly CreditedLine[]
   readonly perPosition: readonly BigInt64Array[] // by personal measure index
   readonly byMeasure: ReadonlyMap<string, BigInt64Array> // measures already computed (plan order)
+  readonly prior: readonly (QualificationStateRow | null)[] // prior state after transitions (expression state leaves)
 }
 
 function personalSums(lines: readonly CreditedLine[], measureCount: number, n: number): { perPosition: BigInt64Array[]; market: bigint[] } {
@@ -238,6 +241,8 @@ function measureValues(m: MeasureRule, ctx: RunContext, s: Pass2State): BigInt64
       return countCustomers(s, m.measure, m.minPerCustomerMinor, ctx.positions.length)
     case 'count.enrolled':
       return overChildren(ctx.trees.sponsor, earlier(s, m.measure, m.key), false, (v) => (v >= m.atLeastMinor ? 1n : 0n))
+    case 'measure.derived':
+      return derivedValues(m.expr, { ctx, rule: m.key, measure: (key) => earlier(s, key, m.key), prior: s.prior })
   }
 }
 

@@ -3303,3 +3303,1212 @@ Style differences:
 | 390x844 | tableHeader | mismatch | medium | font-weight | `700` | `600` |
 | 390x844 | tableHeader | mismatch | medium | background | `rgb(230, 238, 255)` | `rgb(239, 244, 255)` |
 
+## Increment B3 — round 1 (2026-11-18)
+
+Harness runs below dated 2026-11-17T21:07–21:09Z (UTC): `--url` on `next start` :3100 (build of 2026-11-18 02:29 +06, no source newer than `.next/BUILD_ID`), cookie from each user's saved storage state; `nmp_e2e` after the W-B3-1..8 workflows (plan DE core v1 active, v2 draft with cap `total_cap`, DE periods Aug/Sep/Oct 2026 committed, restatement applied). Results `testing/visual/results/<SC>__<role>.json`, captures `testing/ui-screenshots/app/{periods,people,plans,compliance}/…`. Harness logs `var/qa-b3/R1-visual-*.log`.
+
+| Screen | 1440x900 | 1280x800 | 768x1024 | 390x844 | Harness findings | Judgement |
+|---|---|---|---|---|---|---|
+| SC-01 Periods and runs | 5.91 % | 5.75 % | 6.25 % | 3.86 % | high: primary "missing"; medium: title 20 px at 390 | primary missing = state (the newest unfinished period, Nov 2026, has not reached its cut-off, so neither Calculate nor Open review applies). Shell, timeline, KPI cards, calendar tabs, diagnostics panel follow sc_01. **Real difference:** the period table is cramped at 1440/1280 — period and cut-off cells wrap to five lines, the Blockers column is ~80 px and wraps per word, future rows repeat two blocker sentences, rows reach 170 px (BUG-089) |
+| SC-02 Run review | 5.00 % | 4.53 % | 4.10 % | 3.12 % | high: primary "missing"; medium: title 24 vs 16 px, table header 11 px, card radius 8 vs 4 px | captured on the committed Aug run, so no approval bar / commit button (state). Trace is a drawer, not sc_02's right column (PLAN §5 trace drawer); "Mandatory sign-off checklist", hardware key, Reject, "& Post" omitted by plan. Title size = the shared PageHeader (canonical) |
+| SC-43 Qualification | 5.88 % | 5.45 % | 6.13 % | 3.81 % | high: primary height 32 vs 34 px, weight 600 vs 400; medium: table header 11 px | canonical button and table-header tokens. Metric cards, period matrix and Compare periods follow sc_43; leg bars, Export CSV, dispute row omitted by plan. Measures print raw minor units ("50,000" for 500.00 pv, BUG-090) |
+| SC-32 Late queue (touch) | 5.05 % | 5.06 % | 4.24 % | 2.14 % | high: primary "missing" (bulk accept needs a selection); medium: table header | state + canonical tokens; consumed item lacks "Adjusted in run" (BUG-086) |
+| SC-04 Plans list (sc_28 pattern) | 5.47 % | 5.43 % | 5.68 % | 2.51 % | high: page background `#F8F9FF` vs `#F8FAFC`, primary `#003883` vs `#1E4FA3`; medium: section heading 20 vs 16 px, table header, card radius | canonical tokens, as every sc_28-pattern screen since MVP-A (note) |
+| SC-04 Plan version | 6.22 % | 6.16 % | 6.72 % | 4.38 % | high: primary colour/weight; medium: title weight 600 vs 700 and colour ink vs primary | canonical tokens. Header facts strip, KPI cards, tab bar, pass-grouped rules with plain-language lines, sticky governance bar with gate checklist follow sc_04. "Projected Payout Total" renamed "Simulated payout total", Market Filings tab, compliance memo, audit dossier omitted by plan |
+| SC-05 Caps and pools | 6.01 % | 6.39 % | 5.28 % | 1.31 % | high: page font 16 vs 14 px, primary font 13 vs 16 px | canonical body size / button size. KPI strip, precedence list with Up/Down, cap form (scope, base, method radio, residue line), pools, preview table follow sc_05; Export Cap Model, Reset Default Invariants omitted by plan |
+| SC-42 Simulation | 5.80 % | 5.80 % | 3.88 % | 1.73 % | high: primary height 32 vs 40 px, weight; medium: table header, card radius | canonical tokens. "Staff only" banner, KPI cards, tabs (payee impact, by bonus, distribution buckets, cap effects, golden) follow sc_42. Warning list prints the raw outcome code `acknowledgement_required` (BUG-092) |
+| SC-11 Guardrails | 8.86 % | 8.35 % | 7.23 % | 3.02 % | medium: table header 11 px and colour, card radius 8 vs 2 px | canonical tokens (exit 0, no high). KPI cards, filters, decision table, inspector drawer with override form follow sc_11; "Evaluate Active Comp Plans", rule designer, manual, statutory cite, export omitted by plan |
+
+Shell landmarks (header, sidebar) matched sc_01 at 1440 and 1280 on all nine runs. No page scrolls sideways at any of the four widths (also checked in the browser on 13 B3 routes at 390 and 768: `scrollWidth = clientWidth`, no element past the viewport outside a scrolling container). Real differences this round: BUG-089 (MEDIUM, SC-01 table at desktop widths) and the content defects BUG-086, BUG-090, BUG-092 visible in the captures; everything else is canonical-token drift already recorded since MVP-A, state-dependent landmarks, or content removed by PLAN §5 must-not lists.
+
+### 2026-11-17T21:07:36.695Z · SC-01 periods-runs — role commission-analyst
+
+- Page: `http://127.0.0.1:3100/periods` · Stitch: `sc_01_periods_runs_analyst_home`
+- Pixel mismatch is informational (sample data differs from API data); style fidelity is the check.
+
+| Viewport | Screenshot | Diff image | Pixel mismatch | App / reference size | Landmarks matched | Worst severity |
+|---|---|---|---|---|---|---|
+| 1440x900 | `testing/ui-screenshots/app/periods/periods-runs/commission-analyst/1440x900.png` | `testing/ui-screenshots/app/periods/periods-runs/commission-analyst/1440x900.diff.png` | 5.91% | 1440x1683 / 1440x1383 | 7/8 | high |
+| 1280x800 | `testing/ui-screenshots/app/periods/periods-runs/commission-analyst/1280x800.png` | `testing/ui-screenshots/app/periods/periods-runs/commission-analyst/1280x800.diff.png` | 5.75% | 1280x1861 / 1280x1571 | 7/8 | high |
+| 768x1024 | `testing/ui-screenshots/app/periods/periods-runs/commission-analyst/768x1024.png` | `testing/ui-screenshots/app/periods/periods-runs/commission-analyst/768x1024.diff.png` | 6.25% | 768x2254 / 768x2572 | 5/6 | high |
+| 390x844 | `testing/ui-screenshots/app/periods/periods-runs/commission-analyst/390x844.png` | `testing/ui-screenshots/app/periods/periods-runs/commission-analyst/390x844.diff.png` | 3.86% | 390x3394 / 541x5229 | 4/6 | high |
+
+Style differences:
+
+| Viewport | Landmark | Status | Severity | Property | Stitch | App |
+|---|---|---|---|---|---|---|
+| 1440x900 | primaryButton | missing-in-app | high | background-color | `rgb(0, 56, 131)` | — |
+| 1440x900 | primaryButton | missing-in-app | high | color | `rgb(255, 255, 255)` | — |
+| 1440x900 | primaryButton | missing-in-app | high | border-radius | `2px` | — |
+| 1440x900 | primaryButton | missing-in-app | high | height | `32px` | — |
+| 1440x900 | primaryButton | missing-in-app | high | font-family | `Inter` | — |
+| 1440x900 | primaryButton | missing-in-app | high | font-size | `13px` | — |
+| 1440x900 | primaryButton | missing-in-app | high | font-weight | `600` | — |
+| 1280x800 | primaryButton | missing-in-app | high | background-color | `rgb(0, 56, 131)` | — |
+| 1280x800 | primaryButton | missing-in-app | high | color | `rgb(255, 255, 255)` | — |
+| 1280x800 | primaryButton | missing-in-app | high | border-radius | `2px` | — |
+| 1280x800 | primaryButton | missing-in-app | high | height | `32px` | — |
+| 1280x800 | primaryButton | missing-in-app | high | font-family | `Inter` | — |
+| 1280x800 | primaryButton | missing-in-app | high | font-size | `13px` | — |
+| 1280x800 | primaryButton | missing-in-app | high | font-weight | `600` | — |
+| 768x1024 | primaryButton | missing-in-app | high | background-color | `rgb(0, 56, 131)` | — |
+| 768x1024 | primaryButton | missing-in-app | high | color | `rgb(255, 255, 255)` | — |
+| 768x1024 | primaryButton | missing-in-app | high | border-radius | `2px` | — |
+| 768x1024 | primaryButton | missing-in-app | high | height | `32px` | — |
+| 768x1024 | primaryButton | missing-in-app | high | font-family | `Inter` | — |
+| 768x1024 | primaryButton | missing-in-app | high | font-size | `13px` | — |
+| 768x1024 | primaryButton | missing-in-app | high | font-weight | `600` | — |
+| 390x844 | title | mismatch | medium | font-size | `24px` | `20px` |
+| 390x844 | title | mismatch | medium | line-height | `32px` | `28px` |
+| 390x844 | primaryButton | missing-in-app | high | background-color | `rgb(0, 56, 131)` | — |
+| 390x844 | primaryButton | missing-in-app | high | color | `rgb(255, 255, 255)` | — |
+| 390x844 | primaryButton | missing-in-app | high | border-radius | `2px` | — |
+| 390x844 | primaryButton | missing-in-app | high | height | `32px` | — |
+| 390x844 | primaryButton | missing-in-app | high | font-family | `Inter` | — |
+| 390x844 | primaryButton | missing-in-app | high | font-size | `13px` | — |
+| 390x844 | primaryButton | missing-in-app | high | font-weight | `600` | — |
+
+### 2026-11-17T21:07:48.670Z · SC-02 run-review — role commission-analyst
+
+- Page: `http://127.0.0.1:3100/periods/377df309-346c-4ca8-b15f-f7bb1ab31671/runs/5ef06f6e-d03e-4009-89a9-beb27cab202c/review` · Stitch: `sc_02_run_review`
+- Pixel mismatch is informational (sample data differs from API data); style fidelity is the check.
+
+| Viewport | Screenshot | Diff image | Pixel mismatch | App / reference size | Landmarks matched | Worst severity |
+|---|---|---|---|---|---|---|
+| 1440x900 | `testing/ui-screenshots/app/periods/run-review/commission-analyst/1440x900.png` | `testing/ui-screenshots/app/periods/run-review/commission-analyst/1440x900.diff.png` | 5% | 1440x900 / 1440x1866 | 4/8 | high |
+| 1280x800 | `testing/ui-screenshots/app/periods/run-review/commission-analyst/1280x800.png` | `testing/ui-screenshots/app/periods/run-review/commission-analyst/1280x800.diff.png` | 4.53% | 1280x800 / 1280x1982 | 4/8 | high |
+| 768x1024 | `testing/ui-screenshots/app/periods/run-review/commission-analyst/768x1024.png` | `testing/ui-screenshots/app/periods/run-review/commission-analyst/768x1024.diff.png` | 4.1% | 768x1024 / 768x3009 | 2/6 | high |
+| 390x844 | `testing/ui-screenshots/app/periods/run-review/commission-analyst/390x844.png` | `testing/ui-screenshots/app/periods/run-review/commission-analyst/390x844.diff.png` | 3.12% | 390x1216 / 484x6037 | 2/6 | high |
+
+Style differences:
+
+| Viewport | Landmark | Status | Severity | Property | Stitch | App |
+|---|---|---|---|---|---|---|
+| 1440x900 | title | mismatch | medium | font-size | `16px` | `24px` |
+| 1440x900 | title | mismatch | medium | font-weight | `700` | `600` |
+| 1440x900 | title | mismatch | medium | line-height | `24px` | `32px` |
+| 1440x900 | primaryButton | missing-in-app | high | background-color | `rgb(0, 56, 131)` | — |
+| 1440x900 | primaryButton | missing-in-app | high | color | `rgb(255, 255, 255)` | — |
+| 1440x900 | primaryButton | missing-in-app | high | border-radius | `2px` | — |
+| 1440x900 | primaryButton | missing-in-app | high | height | `36px` | — |
+| 1440x900 | primaryButton | missing-in-app | high | font-family | `Inter` | — |
+| 1440x900 | primaryButton | missing-in-app | high | font-size | `13px` | — |
+| 1440x900 | primaryButton | missing-in-app | high | font-weight | `700` | — |
+| 1440x900 | tableHeader | mismatch | medium | font-size | `12px` | `11px` |
+| 1440x900 | tableHeader | mismatch | medium | background | `rgb(230, 238, 255)` | `rgb(239, 244, 255)` |
+| 1440x900 | card | mismatch | medium | border-radius | `4px` | `8px` |
+| 1280x800 | title | mismatch | medium | font-size | `16px` | `24px` |
+| 1280x800 | title | mismatch | medium | font-weight | `700` | `600` |
+| 1280x800 | title | mismatch | medium | line-height | `24px` | `32px` |
+| 1280x800 | primaryButton | missing-in-app | high | background-color | `rgb(0, 56, 131)` | — |
+| 1280x800 | primaryButton | missing-in-app | high | color | `rgb(255, 255, 255)` | — |
+| 1280x800 | primaryButton | missing-in-app | high | border-radius | `2px` | — |
+| 1280x800 | primaryButton | missing-in-app | high | height | `36px` | — |
+| 1280x800 | primaryButton | missing-in-app | high | font-family | `Inter` | — |
+| 1280x800 | primaryButton | missing-in-app | high | font-size | `13px` | — |
+| 1280x800 | primaryButton | missing-in-app | high | font-weight | `700` | — |
+| 1280x800 | tableHeader | mismatch | medium | font-size | `12px` | `11px` |
+| 1280x800 | tableHeader | mismatch | medium | background | `rgb(230, 238, 255)` | `rgb(239, 244, 255)` |
+| 1280x800 | card | mismatch | medium | border-radius | `4px` | `8px` |
+| 768x1024 | title | mismatch | medium | font-size | `16px` | `24px` |
+| 768x1024 | title | mismatch | medium | font-weight | `700` | `600` |
+| 768x1024 | title | mismatch | medium | line-height | `24px` | `32px` |
+| 768x1024 | primaryButton | missing-in-app | high | background-color | `rgb(0, 56, 131)` | — |
+| 768x1024 | primaryButton | missing-in-app | high | color | `rgb(255, 255, 255)` | — |
+| 768x1024 | primaryButton | missing-in-app | high | border-radius | `2px` | — |
+| 768x1024 | primaryButton | missing-in-app | high | height | `36px` | — |
+| 768x1024 | primaryButton | missing-in-app | high | font-family | `Inter` | — |
+| 768x1024 | primaryButton | missing-in-app | high | font-size | `13px` | — |
+| 768x1024 | primaryButton | missing-in-app | high | font-weight | `700` | — |
+| 768x1024 | tableHeader | mismatch | medium | font-size | `12px` | `11px` |
+| 768x1024 | tableHeader | mismatch | medium | background | `rgb(230, 238, 255)` | `rgb(239, 244, 255)` |
+| 768x1024 | card | mismatch | medium | border-radius | `4px` | `8px` |
+| 390x844 | title | mismatch | medium | font-size | `16px` | `20px` |
+| 390x844 | title | mismatch | medium | font-weight | `700` | `600` |
+| 390x844 | title | mismatch | medium | line-height | `24px` | `28px` |
+| 390x844 | primaryButton | missing-in-app | high | background-color | `rgb(0, 56, 131)` | — |
+| 390x844 | primaryButton | missing-in-app | high | color | `rgb(255, 255, 255)` | — |
+| 390x844 | primaryButton | missing-in-app | high | border-radius | `2px` | — |
+| 390x844 | primaryButton | missing-in-app | high | height | `36px` | — |
+| 390x844 | primaryButton | missing-in-app | high | font-family | `Inter` | — |
+| 390x844 | primaryButton | missing-in-app | high | font-size | `13px` | — |
+| 390x844 | primaryButton | missing-in-app | high | font-weight | `700` | — |
+| 390x844 | tableHeader | mismatch | medium | font-size | `12px` | `11px` |
+| 390x844 | tableHeader | mismatch | medium | background | `rgb(230, 238, 255)` | `rgb(239, 244, 255)` |
+| 390x844 | card | mismatch | medium | border-radius | `4px` | `8px` |
+
+### 2026-11-17T21:08:01.373Z · SC-43 qualification — role commission-analyst
+
+- Page: `http://127.0.0.1:3100/people/6b412f84-a2f5-4fdb-ba42-ebfb0a08e4ad/qualification` · Stitch: `sc_43_rank_and_qualification_detail_staff`
+- Pixel mismatch is informational (sample data differs from API data); style fidelity is the check.
+
+| Viewport | Screenshot | Diff image | Pixel mismatch | App / reference size | Landmarks matched | Worst severity |
+|---|---|---|---|---|---|---|
+| 1440x900 | `testing/ui-screenshots/app/people/qualification/commission-analyst/1440x900.png` | `testing/ui-screenshots/app/people/qualification/commission-analyst/1440x900.diff.png` | 5.88% | 1440x1372 / 1440x1526 | 6/8 | high |
+| 1280x800 | `testing/ui-screenshots/app/people/qualification/commission-analyst/1280x800.png` | `testing/ui-screenshots/app/people/qualification/commission-analyst/1280x800.diff.png` | 5.45% | 1280x1426 / 1280x1737 | 6/8 | high |
+| 768x1024 | `testing/ui-screenshots/app/people/qualification/commission-analyst/768x1024.png` | `testing/ui-screenshots/app/people/qualification/commission-analyst/768x1024.diff.png` | 6.13% | 768x1690 / 768x2637 | 4/6 | high |
+| 390x844 | `testing/ui-screenshots/app/people/qualification/commission-analyst/390x844.png` | `testing/ui-screenshots/app/people/qualification/commission-analyst/390x844.diff.png` | 3.81% | 390x2268 / 434x5659 | 3/6 | high |
+
+Style differences:
+
+| Viewport | Landmark | Status | Severity | Property | Stitch | App |
+|---|---|---|---|---|---|---|
+| 1440x900 | primaryButton | mismatch | high | height | `34px` | `32px` |
+| 1440x900 | primaryButton | mismatch | high | font-weight | `400` | `600` |
+| 1440x900 | tableHeader | mismatch | medium | font-size | `12px` | `11px` |
+| 1280x800 | primaryButton | mismatch | high | height | `34px` | `32px` |
+| 1280x800 | primaryButton | mismatch | high | font-weight | `400` | `600` |
+| 1280x800 | tableHeader | mismatch | medium | font-size | `12px` | `11px` |
+| 768x1024 | primaryButton | mismatch | high | height | `34px` | `32px` |
+| 768x1024 | primaryButton | mismatch | high | font-weight | `400` | `600` |
+| 768x1024 | tableHeader | mismatch | medium | font-size | `12px` | `11px` |
+| 390x844 | title | mismatch | medium | font-size | `24px` | `20px` |
+| 390x844 | title | mismatch | medium | line-height | `32px` | `28px` |
+| 390x844 | primaryButton | mismatch | high | height | `88px` | `32px` |
+| 390x844 | primaryButton | mismatch | high | font-weight | `400` | `600` |
+| 390x844 | tableHeader | mismatch | medium | font-size | `12px` | `11px` |
+
+### 2026-11-17T21:08:13.161Z · SC-32 late-transactions — role commission-analyst
+
+- Page: `http://127.0.0.1:3100/periods/late?state=consumed` · Stitch: `sc_32_late_transaction_queue`
+- Pixel mismatch is informational (sample data differs from API data); style fidelity is the check.
+
+| Viewport | Screenshot | Diff image | Pixel mismatch | App / reference size | Landmarks matched | Worst severity |
+|---|---|---|---|---|---|---|
+| 1440x900 | `testing/ui-screenshots/app/orders/late-transactions/commission-analyst/1440x900.png` | `testing/ui-screenshots/app/orders/late-transactions/commission-analyst/1440x900.diff.png` | 5.05% | 1440x900 / 1440x1434 | 6/8 | high |
+| 1280x800 | `testing/ui-screenshots/app/orders/late-transactions/commission-analyst/1280x800.png` | `testing/ui-screenshots/app/orders/late-transactions/commission-analyst/1280x800.diff.png` | 5.06% | 1280x800 / 1280x1714 | 6/8 | high |
+| 768x1024 | `testing/ui-screenshots/app/orders/late-transactions/commission-analyst/768x1024.png` | `testing/ui-screenshots/app/orders/late-transactions/commission-analyst/768x1024.diff.png` | 4.24% | 768x1024 / 768x2678 | 4/6 | high |
+| 390x844 | `testing/ui-screenshots/app/orders/late-transactions/commission-analyst/390x844.png` | `testing/ui-screenshots/app/orders/late-transactions/commission-analyst/390x844.diff.png` | 2.14% | 390x923 / 538x5664 | 3/6 | high |
+
+Style differences:
+
+| Viewport | Landmark | Status | Severity | Property | Stitch | App |
+|---|---|---|---|---|---|---|
+| 1440x900 | primaryButton | missing-in-app | high | background-color | `rgb(0, 56, 131)` | — |
+| 1440x900 | primaryButton | missing-in-app | high | color | `rgb(255, 255, 255)` | — |
+| 1440x900 | primaryButton | missing-in-app | high | border-radius | `2px` | — |
+| 1440x900 | primaryButton | missing-in-app | high | height | `32px` | — |
+| 1440x900 | primaryButton | missing-in-app | high | font-family | `Inter` | — |
+| 1440x900 | primaryButton | missing-in-app | high | font-size | `13px` | — |
+| 1440x900 | primaryButton | missing-in-app | high | font-weight | `600` | — |
+| 1440x900 | tableHeader | mismatch | medium | font-size | `12px` | `11px` |
+| 1440x900 | tableHeader | mismatch | medium | font-weight | `700` | `600` |
+| 1440x900 | tableHeader | mismatch | medium | color | `rgb(67, 71, 82)` | `rgb(86, 94, 116)` |
+| 1440x900 | tableHeader | mismatch | medium | background | `rgb(230, 238, 255)` | `rgb(239, 244, 255)` |
+| 1280x800 | primaryButton | missing-in-app | high | background-color | `rgb(0, 56, 131)` | — |
+| 1280x800 | primaryButton | missing-in-app | high | color | `rgb(255, 255, 255)` | — |
+| 1280x800 | primaryButton | missing-in-app | high | border-radius | `2px` | — |
+| 1280x800 | primaryButton | missing-in-app | high | height | `32px` | — |
+| 1280x800 | primaryButton | missing-in-app | high | font-family | `Inter` | — |
+| 1280x800 | primaryButton | missing-in-app | high | font-size | `13px` | — |
+| 1280x800 | primaryButton | missing-in-app | high | font-weight | `600` | — |
+| 1280x800 | tableHeader | mismatch | medium | font-size | `12px` | `11px` |
+| 1280x800 | tableHeader | mismatch | medium | font-weight | `700` | `600` |
+| 1280x800 | tableHeader | mismatch | medium | color | `rgb(67, 71, 82)` | `rgb(86, 94, 116)` |
+| 1280x800 | tableHeader | mismatch | medium | background | `rgb(230, 238, 255)` | `rgb(239, 244, 255)` |
+| 768x1024 | primaryButton | missing-in-app | high | background-color | `rgb(0, 56, 131)` | — |
+| 768x1024 | primaryButton | missing-in-app | high | color | `rgb(255, 255, 255)` | — |
+| 768x1024 | primaryButton | missing-in-app | high | border-radius | `2px` | — |
+| 768x1024 | primaryButton | missing-in-app | high | height | `32px` | — |
+| 768x1024 | primaryButton | missing-in-app | high | font-family | `Inter` | — |
+| 768x1024 | primaryButton | missing-in-app | high | font-size | `13px` | — |
+| 768x1024 | primaryButton | missing-in-app | high | font-weight | `600` | — |
+| 768x1024 | tableHeader | mismatch | medium | font-size | `12px` | `11px` |
+| 768x1024 | tableHeader | mismatch | medium | font-weight | `700` | `600` |
+| 768x1024 | tableHeader | mismatch | medium | color | `rgb(67, 71, 82)` | `rgb(86, 94, 116)` |
+| 768x1024 | tableHeader | mismatch | medium | background | `rgb(230, 238, 255)` | `rgb(239, 244, 255)` |
+| 390x844 | title | mismatch | medium | font-size | `24px` | `20px` |
+| 390x844 | title | mismatch | medium | line-height | `32px` | `28px` |
+| 390x844 | primaryButton | missing-in-app | high | background-color | `rgb(0, 56, 131)` | — |
+| 390x844 | primaryButton | missing-in-app | high | color | `rgb(255, 255, 255)` | — |
+| 390x844 | primaryButton | missing-in-app | high | border-radius | `2px` | — |
+| 390x844 | primaryButton | missing-in-app | high | height | `32px` | — |
+| 390x844 | primaryButton | missing-in-app | high | font-family | `Inter` | — |
+| 390x844 | primaryButton | missing-in-app | high | font-size | `13px` | — |
+| 390x844 | primaryButton | missing-in-app | high | font-weight | `600` | — |
+| 390x844 | tableHeader | mismatch | medium | font-size | `12px` | `11px` |
+| 390x844 | tableHeader | mismatch | medium | font-weight | `700` | `600` |
+| 390x844 | tableHeader | mismatch | medium | color | `rgb(67, 71, 82)` | `rgb(86, 94, 116)` |
+| 390x844 | tableHeader | mismatch | medium | background | `rgb(230, 238, 255)` | `rgb(239, 244, 255)` |
+
+### 2026-11-17T21:08:25.010Z · SC-04-list plans — role plan-administrator
+
+- Page: `http://127.0.0.1:3100/plans` · Stitch: `sc_28_users_and_roles` · config brace patched: sc_28_users_and_roles
+- Pixel mismatch is informational (sample data differs from API data); style fidelity is the check.
+
+| Viewport | Screenshot | Diff image | Pixel mismatch | App / reference size | Landmarks matched | Worst severity |
+|---|---|---|---|---|---|---|
+| 1440x900 | `testing/ui-screenshots/app/plans/plans/plan-administrator/1440x900.png` | `testing/ui-screenshots/app/plans/plans/plan-administrator/1440x900.diff.png` | 5.47% | 1440x900 / 1440x1154 | 3/8 | high |
+| 1280x800 | `testing/ui-screenshots/app/plans/plans/plan-administrator/1280x800.png` | `testing/ui-screenshots/app/plans/plans/plan-administrator/1280x800.diff.png` | 5.43% | 1280x800 / 1280x1314 | 3/8 | high |
+| 768x1024 | `testing/ui-screenshots/app/plans/plans/plan-administrator/768x1024.png` | `testing/ui-screenshots/app/plans/plans/plan-administrator/768x1024.diff.png` | 5.68% | 768x1024 / 768x1949 | 1/6 | high |
+| 390x844 | `testing/ui-screenshots/app/plans/plans/plan-administrator/390x844.png` | `testing/ui-screenshots/app/plans/plans/plan-administrator/390x844.diff.png` | 2.51% | 390x844 / 537x4179 | 0/6 | high |
+
+Style differences:
+
+| Viewport | Landmark | Status | Severity | Property | Stitch | App |
+|---|---|---|---|---|---|---|
+| 1440x900 | page | mismatch | high | background | `rgb(248, 250, 252)` | `rgb(248, 249, 255)` |
+| 1440x900 | sectionHeading | mismatch | medium | font-size | `16px` | `20px` |
+| 1440x900 | sectionHeading | mismatch | medium | line-height | `20px` | `28px` |
+| 1440x900 | primaryButton | mismatch | high | background-color | `rgb(30, 79, 163)` | `rgb(0, 56, 131)` |
+| 1440x900 | tableHeader | mismatch | medium | font-size | `12px` | `11px` |
+| 1440x900 | tableHeader | mismatch | medium | background | `rgb(230, 238, 255)` | `rgb(239, 244, 255)` |
+| 1440x900 | card | mismatch | medium | border-radius | `2px` | `4px` |
+| 1280x800 | page | mismatch | high | background | `rgb(248, 250, 252)` | `rgb(248, 249, 255)` |
+| 1280x800 | sectionHeading | mismatch | medium | font-size | `16px` | `20px` |
+| 1280x800 | sectionHeading | mismatch | medium | line-height | `20px` | `28px` |
+| 1280x800 | primaryButton | mismatch | high | background-color | `rgb(30, 79, 163)` | `rgb(0, 56, 131)` |
+| 1280x800 | tableHeader | mismatch | medium | font-size | `12px` | `11px` |
+| 1280x800 | tableHeader | mismatch | medium | background | `rgb(230, 238, 255)` | `rgb(239, 244, 255)` |
+| 1280x800 | card | mismatch | medium | border-radius | `2px` | `4px` |
+| 768x1024 | page | mismatch | high | background | `rgb(248, 250, 252)` | `rgb(248, 249, 255)` |
+| 768x1024 | sectionHeading | mismatch | medium | font-size | `16px` | `20px` |
+| 768x1024 | sectionHeading | mismatch | medium | line-height | `20px` | `28px` |
+| 768x1024 | primaryButton | mismatch | high | background-color | `rgb(30, 79, 163)` | `rgb(0, 56, 131)` |
+| 768x1024 | tableHeader | mismatch | medium | font-size | `12px` | `11px` |
+| 768x1024 | tableHeader | mismatch | medium | background | `rgb(230, 238, 255)` | `rgb(239, 244, 255)` |
+| 768x1024 | card | mismatch | medium | border-radius | `2px` | `4px` |
+| 390x844 | page | mismatch | high | background | `rgb(248, 250, 252)` | `rgb(248, 249, 255)` |
+| 390x844 | title | mismatch | medium | font-size | `24px` | `20px` |
+| 390x844 | title | mismatch | medium | line-height | `32px` | `28px` |
+| 390x844 | sectionHeading | mismatch | medium | font-size | `16px` | `20px` |
+| 390x844 | sectionHeading | mismatch | medium | line-height | `20px` | `28px` |
+| 390x844 | primaryButton | mismatch | high | background-color | `rgb(30, 79, 163)` | `rgb(0, 56, 131)` |
+| 390x844 | tableHeader | mismatch | medium | font-size | `12px` | `11px` |
+| 390x844 | tableHeader | mismatch | medium | background | `rgb(230, 238, 255)` | `rgb(239, 244, 255)` |
+| 390x844 | card | mismatch | medium | border-radius | `2px` | `4px` |
+
+### 2026-11-17T21:08:37.722Z · SC-04 plan-version — role plan-administrator
+
+- Page: `http://127.0.0.1:3100/plans/ccb1200a-047d-4229-aba7-7ef570e5cb4e/versions/1` · Stitch: `sc_04_plan_versions_simulation`
+- Pixel mismatch is informational (sample data differs from API data); style fidelity is the check.
+
+| Viewport | Screenshot | Diff image | Pixel mismatch | App / reference size | Landmarks matched | Worst severity |
+|---|---|---|---|---|---|---|
+| 1440x900 | `testing/ui-screenshots/app/plans/plan-version/plan-administrator/1440x900.png` | `testing/ui-screenshots/app/plans/plan-version/plan-administrator/1440x900.diff.png` | 6.22% | 1440x1787 / 1440x1583 | 5/7 | high |
+| 1280x800 | `testing/ui-screenshots/app/plans/plan-version/plan-administrator/1280x800.png` | `testing/ui-screenshots/app/plans/plan-version/plan-administrator/1280x800.diff.png` | 6.16% | 1280x1803 / 1280x1759 | 5/7 | high |
+| 768x1024 | `testing/ui-screenshots/app/plans/plan-version/plan-administrator/768x1024.png` | `testing/ui-screenshots/app/plans/plan-version/plan-administrator/768x1024.diff.png` | 6.72% | 768x2003 / 768x2951 | 3/5 | high |
+| 390x844 | `testing/ui-screenshots/app/plans/plan-version/plan-administrator/390x844.png` | `testing/ui-screenshots/app/plans/plan-version/plan-administrator/390x844.diff.png` | 4.38% | 390x2765 / 489x6853 | 3/5 | high |
+
+Style differences:
+
+| Viewport | Landmark | Status | Severity | Property | Stitch | App |
+|---|---|---|---|---|---|---|
+| 1440x900 | title | mismatch | medium | font-weight | `700` | `600` |
+| 1440x900 | title | mismatch | medium | color | `rgb(0, 56, 131)` | `rgb(13, 28, 46)` |
+| 1440x900 | primaryButton | mismatch | high | background-color | `rgb(30, 79, 163)` | `rgb(0, 56, 131)` |
+| 1440x900 | primaryButton | mismatch | high | font-weight | `500` | `600` |
+| 1280x800 | title | mismatch | medium | font-weight | `700` | `600` |
+| 1280x800 | title | mismatch | medium | color | `rgb(0, 56, 131)` | `rgb(13, 28, 46)` |
+| 1280x800 | primaryButton | mismatch | high | background-color | `rgb(30, 79, 163)` | `rgb(0, 56, 131)` |
+| 1280x800 | primaryButton | mismatch | high | font-weight | `500` | `600` |
+| 768x1024 | title | mismatch | medium | font-weight | `700` | `600` |
+| 768x1024 | title | mismatch | medium | color | `rgb(0, 56, 131)` | `rgb(13, 28, 46)` |
+| 768x1024 | primaryButton | mismatch | high | background-color | `rgb(30, 79, 163)` | `rgb(0, 56, 131)` |
+| 768x1024 | primaryButton | mismatch | high | font-weight | `500` | `600` |
+| 390x844 | title | mismatch | medium | font-size | `24px` | `20px` |
+| 390x844 | title | mismatch | medium | font-weight | `700` | `600` |
+| 390x844 | title | mismatch | medium | line-height | `32px` | `28px` |
+| 390x844 | title | mismatch | medium | color | `rgb(0, 56, 131)` | `rgb(13, 28, 46)` |
+| 390x844 | primaryButton | mismatch | high | background-color | `rgb(30, 79, 163)` | `rgb(0, 56, 131)` |
+| 390x844 | primaryButton | mismatch | high | font-weight | `500` | `600` |
+
+### 2026-11-17T21:08:50.062Z · SC-05 caps-and-pools — role plan-administrator
+
+- Page: `http://127.0.0.1:3100/plans/ccb1200a-047d-4229-aba7-7ef570e5cb4e/versions/2/caps?preview=5c6715e8-c392-43ae-a6b1-8ed0e0c86c17` · Stitch: `sc_05_cap_and_pool_configuration`
+- Pixel mismatch is informational (sample data differs from API data); style fidelity is the check.
+
+| Viewport | Screenshot | Diff image | Pixel mismatch | App / reference size | Landmarks matched | Worst severity |
+|---|---|---|---|---|---|---|
+| 1440x900 | `testing/ui-screenshots/app/plans/caps-and-pools/plan-administrator/1440x900.png` | `testing/ui-screenshots/app/plans/caps-and-pools/plan-administrator/1440x900.diff.png` | 6.01% | 1440x900 / 1440x1941 | 5/7 | high |
+| 1280x800 | `testing/ui-screenshots/app/plans/caps-and-pools/plan-administrator/1280x800.png` | `testing/ui-screenshots/app/plans/caps-and-pools/plan-administrator/1280x800.diff.png` | 6.39% | 1280x800 / 1280x2055 | 5/7 | high |
+| 768x1024 | `testing/ui-screenshots/app/plans/caps-and-pools/plan-administrator/768x1024.png` | `testing/ui-screenshots/app/plans/caps-and-pools/plan-administrator/768x1024.diff.png` | 5.28% | 768x1049 / 768x4021 | 3/5 | high |
+| 390x844 | `testing/ui-screenshots/app/plans/caps-and-pools/plan-administrator/390x844.png` | `testing/ui-screenshots/app/plans/caps-and-pools/plan-administrator/390x844.diff.png` | 1.31% | 390x1477 / 599x10872 | 2/5 | high |
+
+Style differences:
+
+| Viewport | Landmark | Status | Severity | Property | Stitch | App |
+|---|---|---|---|---|---|---|
+| 1440x900 | page | mismatch | high | font-size | `14px` | `16px` |
+| 1440x900 | primaryButton | mismatch | high | font-size | `16px` | `13px` |
+| 1280x800 | page | mismatch | high | font-size | `14px` | `16px` |
+| 1280x800 | primaryButton | mismatch | high | font-size | `16px` | `13px` |
+| 768x1024 | page | mismatch | high | font-size | `14px` | `16px` |
+| 768x1024 | primaryButton | mismatch | high | font-size | `16px` | `13px` |
+| 390x844 | page | mismatch | high | font-size | `14px` | `16px` |
+| 390x844 | title | mismatch | medium | font-size | `24px` | `20px` |
+| 390x844 | title | mismatch | medium | line-height | `32px` | `28px` |
+| 390x844 | primaryButton | mismatch | high | font-size | `16px` | `13px` |
+
+### 2026-11-17T21:09:02.497Z · SC-42 simulation — role plan-administrator
+
+- Page: `http://127.0.0.1:3100/plans/ccb1200a-047d-4229-aba7-7ef570e5cb4e/versions/2/simulations/5c6715e8-c392-43ae-a6b1-8ed0e0c86c17` · Stitch: `sc_42_simulation_results_golden_datasets`
+- Pixel mismatch is informational (sample data differs from API data); style fidelity is the check.
+
+| Viewport | Screenshot | Diff image | Pixel mismatch | App / reference size | Landmarks matched | Worst severity |
+|---|---|---|---|---|---|---|
+| 1440x900 | `testing/ui-screenshots/app/plans/simulation/plan-administrator/1440x900.png` | `testing/ui-screenshots/app/plans/simulation/plan-administrator/1440x900.diff.png` | 5.8% | 1440x966 / 1440x1762 | 5/8 | high |
+| 1280x800 | `testing/ui-screenshots/app/plans/simulation/plan-administrator/1280x800.png` | `testing/ui-screenshots/app/plans/simulation/plan-administrator/1280x800.diff.png` | 5.8% | 1280x966 / 1280x1920 | 5/8 | high |
+| 768x1024 | `testing/ui-screenshots/app/plans/simulation/plan-administrator/768x1024.png` | `testing/ui-screenshots/app/plans/simulation/plan-administrator/768x1024.diff.png` | 3.88% | 768x1110 / 996x3406 | 3/6 | high |
+| 390x844 | `testing/ui-screenshots/app/plans/simulation/plan-administrator/390x844.png` | `testing/ui-screenshots/app/plans/simulation/plan-administrator/390x844.diff.png` | 1.73% | 390x1607 / 694x7915 | 2/6 | high |
+
+Style differences:
+
+| Viewport | Landmark | Status | Severity | Property | Stitch | App |
+|---|---|---|---|---|---|---|
+| 1440x900 | primaryButton | mismatch | high | height | `40px` | `32px` |
+| 1440x900 | primaryButton | mismatch | high | font-weight | `500` | `600` |
+| 1440x900 | tableHeader | mismatch | medium | font-size | `12px` | `11px` |
+| 1440x900 | card | mismatch | medium | border-radius | `4px` | `8px` |
+| 1280x800 | primaryButton | mismatch | high | height | `40px` | `32px` |
+| 1280x800 | primaryButton | mismatch | high | font-weight | `500` | `600` |
+| 1280x800 | tableHeader | mismatch | medium | font-size | `12px` | `11px` |
+| 1280x800 | card | mismatch | medium | border-radius | `4px` | `8px` |
+| 768x1024 | primaryButton | mismatch | high | height | `40px` | `32px` |
+| 768x1024 | primaryButton | mismatch | high | font-weight | `500` | `600` |
+| 768x1024 | tableHeader | mismatch | medium | font-size | `12px` | `11px` |
+| 768x1024 | card | mismatch | medium | border-radius | `4px` | `8px` |
+| 390x844 | title | mismatch | medium | font-size | `32px` | `26px` |
+| 390x844 | title | mismatch | medium | line-height | `40px` | `32px` |
+| 390x844 | primaryButton | mismatch | high | height | `40px` | `32px` |
+| 390x844 | primaryButton | mismatch | high | font-weight | `500` | `600` |
+| 390x844 | tableHeader | mismatch | medium | font-size | `12px` | `11px` |
+| 390x844 | card | mismatch | medium | border-radius | `4px` | `8px` |
+
+### 2026-11-17T21:09:14.154Z · SC-11 guardrails — role compliance-officer
+
+- Page: `http://127.0.0.1:3100/compliance/guardrails` · Stitch: `sc_11_guardrails_policy_overrides_log`
+- Pixel mismatch is informational (sample data differs from API data); style fidelity is the check.
+
+| Viewport | Screenshot | Diff image | Pixel mismatch | App / reference size | Landmarks matched | Worst severity |
+|---|---|---|---|---|---|---|
+| 1440x900 | `testing/ui-screenshots/app/compliance/guardrails/compliance-officer/1440x900.png` | `testing/ui-screenshots/app/compliance/guardrails/compliance-officer/1440x900.diff.png` | 8.86% | 1440x900 / 1440x1415 | 4/6 | medium |
+| 1280x800 | `testing/ui-screenshots/app/compliance/guardrails/compliance-officer/1280x800.png` | `testing/ui-screenshots/app/compliance/guardrails/compliance-officer/1280x800.diff.png` | 8.35% | 1280x929 / 1280x1616 | 4/6 | medium |
+| 768x1024 | `testing/ui-screenshots/app/compliance/guardrails/compliance-officer/768x1024.png` | `testing/ui-screenshots/app/compliance/guardrails/compliance-officer/768x1024.diff.png` | 7.23% | 768x1263 / 768x2692 | 2/4 | medium |
+| 390x844 | `testing/ui-screenshots/app/compliance/guardrails/compliance-officer/390x844.png` | `testing/ui-screenshots/app/compliance/guardrails/compliance-officer/390x844.diff.png` | 3.02% | 390x1635 / 551x6173 | 1/4 | medium |
+
+Style differences:
+
+| Viewport | Landmark | Status | Severity | Property | Stitch | App |
+|---|---|---|---|---|---|---|
+| 1440x900 | tableHeader | mismatch | medium | font-size | `12px` | `11px` |
+| 1440x900 | tableHeader | mismatch | medium | color | `rgb(67, 71, 82)` | `rgb(86, 94, 116)` |
+| 1440x900 | card | mismatch | medium | border-radius | `2px` | `8px` |
+| 1280x800 | tableHeader | mismatch | medium | font-size | `12px` | `11px` |
+| 1280x800 | tableHeader | mismatch | medium | color | `rgb(67, 71, 82)` | `rgb(86, 94, 116)` |
+| 1280x800 | card | mismatch | medium | border-radius | `2px` | `8px` |
+| 768x1024 | tableHeader | mismatch | medium | font-size | `12px` | `11px` |
+| 768x1024 | tableHeader | mismatch | medium | color | `rgb(67, 71, 82)` | `rgb(86, 94, 116)` |
+| 768x1024 | card | mismatch | medium | border-radius | `2px` | `8px` |
+| 390x844 | title | mismatch | medium | font-size | `24px` | `20px` |
+| 390x844 | title | mismatch | medium | line-height | `32px` | `28px` |
+| 390x844 | tableHeader | mismatch | medium | font-size | `12px` | `11px` |
+| 390x844 | tableHeader | mismatch | medium | color | `rgb(67, 71, 82)` | `rgb(86, 94, 116)` |
+| 390x844 | card | mismatch | medium | border-radius | `2px` | `8px` |
+
+## Increment B3 — round 2 (2026-11-18, retest after the fixes of BUG-084..093)
+
+Harness runs below dated 2026-11-17T21:44–21:47Z (UTC): `--url` on `next start` :3100 (build of 2026-11-18 03:28 +06, no source newer than `.next/BUILD_ID`), cookie from each user's storage state saved in this round; `nmp_e2e` freshly seeded, then W-B3-1..8 run again (DE core v1 active, v2 draft, DE Aug/Sep/Oct 2026 committed, restatement applied in Oct). Results `testing/visual/results/<SC>__<role>.json`, captures `testing/ui-screenshots/app/{periods,people,plans,compliance}/…`, logs `var/qa-b3/r2/R2-visual-*.log`.
+
+| Screen | 1440x900 | 1280x800 | 768x1024 | 390x844 | Harness findings | Judgement |
+|---|---|---|---|---|---|---|
+| SC-01 Periods and runs | 6.63 % | 6.41 % | 5.90 % | 3.86 % | high: primary "missing"; medium: title 20 px at 390 | primary missing = state (newest unfinished period Nov 2026 before cut-off). **BUG-089 partly fixed:** period/cut-off cells are one line now and blockers are short chips, but the table is 1024 px wide inside a 781 px (1440) / 665 px (1280) scrolling box: Late pending, Blockers and the row actions (Calculate, Re-run, Open review, Replay, Request restatement) are cut off and reachable only by scrolling the table sideways; committed rows are still ~110 px tall and the blocker chips are clipped ("Previo", "Order"). Registered as **BUG-094** (MEDIUM). 768/390: table scrolls inside its box, no page scroll |
+| SC-02 Run review | 5.00 % | 4.53 % | 4.10 % | 3.12 % | high: primary "missing"; medium: title, table header, card radius | as round 1 (captured on the committed Aug run: no approval bar = state; canonical tokens). Amounts now correct (BUG-084 fixed) |
+| SC-43 Qualification | 5.93 % | 5.50 % | 6.17 % | 3.84 % | high: primary height/weight; medium: table header | canonical tokens; measures on the market scale (PV/GV/CAPPED_PV 300.00, ENROLLED 0 — BUG-090 SC-43 part fixed) |
+| SC-32 Late queue (touch) | 5.07 % | 5.08 % | 4.26 % | 2.15 % | high: primary "missing"; medium: table header | state + canonical tokens; consumed row shows "Adjusted in run 6be68487" link (BUG-086 fixed); effect "-200.00 pv". Original period is printed as viewer-zone instants "Aug 1, 2026, 4:00 AM GMT+6 – Sep 1, 2026, 4:00 AM GMT+6" (BUG-095) |
+| SC-04 Plans list (sc_28 pattern) | 5.47 % | 5.43 % | 5.68 % | 2.51 % | high: page background, primary colour; medium: section heading, table header, card | canonical tokens (note, unchanged since MVP-A) |
+| SC-04 Plan version | 6.21 % | 6.15 % | 6.72 % | 4.36 % | high: primary colour/weight; medium: title weight/colour | canonical tokens; header "Effective from Aug 1, 2026, 12:00 AM GMT+2" names the zone (BUG-091 fixed here) |
+| SC-05 Caps and pools | 5.89 % | 6.29 % | 5.19 % | 1.26 % | high: page font 16 vs 14 px, primary font 13 vs 16 px | canonical body/button size (as round 1) |
+| SC-42 Simulation | 5.79 % | 5.79 % | 3.87 % | 1.73 % | high: primary height/weight; medium: table header, card radius | canonical tokens; the "Open guardrail decisions" warning still prints `e2e-starter-kit-volume@2026-01-01: acknowledgement_required` (BUG-096) |
+| SC-11 Guardrails | 8.86 % | 8.37 % | 7.22 % | 3.02 % | medium: table header, card radius | canonical tokens (exit 0) |
+
+Shell landmarks matched sc_01 at 1440 and 1280 on all nine runs. No page scrolls sideways at 1440, 768 or 390 on 13 B3 routes checked in the browser (`scrollWidth ≤ innerWidth`). Real differences this round: BUG-094 (MEDIUM, SC-01 table clipped at desktop widths, residual of BUG-089); content defects BUG-095, BUG-096 (LOW). Everything else is the canonical-token drift recorded since MVP-A or state-dependent landmarks.
+
+### 2026-11-17T21:44:15.558Z · SC-01 periods-runs — role commission-analyst
+
+- Page: `http://127.0.0.1:3100/periods?calendar=a73e2419-522f-4c5d-85ec-96b360fca159` · Stitch: `sc_01_periods_runs_analyst_home`
+- Pixel mismatch is informational (sample data differs from API data); style fidelity is the check.
+
+| Viewport | Screenshot | Diff image | Pixel mismatch | App / reference size | Landmarks matched | Worst severity |
+|---|---|---|---|---|---|---|
+| 1440x900 | `testing/ui-screenshots/app/periods/periods-runs/commission-analyst/1440x900.png` | `testing/ui-screenshots/app/periods/periods-runs/commission-analyst/1440x900.diff.png` | 6.63% | 1440x1309 / 1440x1383 | 7/8 | high |
+| 1280x800 | `testing/ui-screenshots/app/periods/periods-runs/commission-analyst/1280x800.png` | `testing/ui-screenshots/app/periods/periods-runs/commission-analyst/1280x800.diff.png` | 6.41% | 1280x1325 / 1280x1571 | 7/8 | high |
+| 768x1024 | `testing/ui-screenshots/app/periods/periods-runs/commission-analyst/768x1024.png` | `testing/ui-screenshots/app/periods/periods-runs/commission-analyst/768x1024.diff.png` | 5.9% | 768x1718 / 768x2572 | 5/6 | high |
+| 390x844 | `testing/ui-screenshots/app/periods/periods-runs/commission-analyst/390x844.png` | `testing/ui-screenshots/app/periods/periods-runs/commission-analyst/390x844.diff.png` | 3.86% | 390x3386 / 541x5229 | 4/6 | high |
+
+Style differences:
+
+| Viewport | Landmark | Status | Severity | Property | Stitch | App |
+|---|---|---|---|---|---|---|
+| 1440x900 | primaryButton | missing-in-app | high | background-color | `rgb(0, 56, 131)` | — |
+| 1440x900 | primaryButton | missing-in-app | high | color | `rgb(255, 255, 255)` | — |
+| 1440x900 | primaryButton | missing-in-app | high | border-radius | `2px` | — |
+| 1440x900 | primaryButton | missing-in-app | high | height | `32px` | — |
+| 1440x900 | primaryButton | missing-in-app | high | font-family | `Inter` | — |
+| 1440x900 | primaryButton | missing-in-app | high | font-size | `13px` | — |
+| 1440x900 | primaryButton | missing-in-app | high | font-weight | `600` | — |
+| 1280x800 | primaryButton | missing-in-app | high | background-color | `rgb(0, 56, 131)` | — |
+| 1280x800 | primaryButton | missing-in-app | high | color | `rgb(255, 255, 255)` | — |
+| 1280x800 | primaryButton | missing-in-app | high | border-radius | `2px` | — |
+| 1280x800 | primaryButton | missing-in-app | high | height | `32px` | — |
+| 1280x800 | primaryButton | missing-in-app | high | font-family | `Inter` | — |
+| 1280x800 | primaryButton | missing-in-app | high | font-size | `13px` | — |
+| 1280x800 | primaryButton | missing-in-app | high | font-weight | `600` | — |
+| 768x1024 | primaryButton | missing-in-app | high | background-color | `rgb(0, 56, 131)` | — |
+| 768x1024 | primaryButton | missing-in-app | high | color | `rgb(255, 255, 255)` | — |
+| 768x1024 | primaryButton | missing-in-app | high | border-radius | `2px` | — |
+| 768x1024 | primaryButton | missing-in-app | high | height | `32px` | — |
+| 768x1024 | primaryButton | missing-in-app | high | font-family | `Inter` | — |
+| 768x1024 | primaryButton | missing-in-app | high | font-size | `13px` | — |
+| 768x1024 | primaryButton | missing-in-app | high | font-weight | `600` | — |
+| 390x844 | title | mismatch | medium | font-size | `24px` | `20px` |
+| 390x844 | title | mismatch | medium | line-height | `32px` | `28px` |
+| 390x844 | primaryButton | missing-in-app | high | background-color | `rgb(0, 56, 131)` | — |
+| 390x844 | primaryButton | missing-in-app | high | color | `rgb(255, 255, 255)` | — |
+| 390x844 | primaryButton | missing-in-app | high | border-radius | `2px` | — |
+| 390x844 | primaryButton | missing-in-app | high | height | `32px` | — |
+| 390x844 | primaryButton | missing-in-app | high | font-family | `Inter` | — |
+| 390x844 | primaryButton | missing-in-app | high | font-size | `13px` | — |
+| 390x844 | primaryButton | missing-in-app | high | font-weight | `600` | — |
+
+### 2026-11-17T21:44:28.658Z · SC-02 run-review — role commission-analyst
+
+- Page: `http://127.0.0.1:3100/periods/3f726fac-9e7d-4788-b439-f59cfa89a239/runs/b4f98f59-22b0-4195-a023-2e32dcd23b85/review` · Stitch: `sc_02_run_review`
+- Pixel mismatch is informational (sample data differs from API data); style fidelity is the check.
+
+| Viewport | Screenshot | Diff image | Pixel mismatch | App / reference size | Landmarks matched | Worst severity |
+|---|---|---|---|---|---|---|
+| 1440x900 | `testing/ui-screenshots/app/periods/run-review/commission-analyst/1440x900.png` | `testing/ui-screenshots/app/periods/run-review/commission-analyst/1440x900.diff.png` | 5% | 1440x900 / 1440x1866 | 4/8 | high |
+| 1280x800 | `testing/ui-screenshots/app/periods/run-review/commission-analyst/1280x800.png` | `testing/ui-screenshots/app/periods/run-review/commission-analyst/1280x800.diff.png` | 4.53% | 1280x800 / 1280x1982 | 4/8 | high |
+| 768x1024 | `testing/ui-screenshots/app/periods/run-review/commission-analyst/768x1024.png` | `testing/ui-screenshots/app/periods/run-review/commission-analyst/768x1024.diff.png` | 4.1% | 768x1024 / 768x3009 | 2/6 | high |
+| 390x844 | `testing/ui-screenshots/app/periods/run-review/commission-analyst/390x844.png` | `testing/ui-screenshots/app/periods/run-review/commission-analyst/390x844.diff.png` | 3.12% | 390x1216 / 484x6037 | 2/6 | high |
+
+Style differences:
+
+| Viewport | Landmark | Status | Severity | Property | Stitch | App |
+|---|---|---|---|---|---|---|
+| 1440x900 | title | mismatch | medium | font-size | `16px` | `24px` |
+| 1440x900 | title | mismatch | medium | font-weight | `700` | `600` |
+| 1440x900 | title | mismatch | medium | line-height | `24px` | `32px` |
+| 1440x900 | primaryButton | missing-in-app | high | background-color | `rgb(0, 56, 131)` | — |
+| 1440x900 | primaryButton | missing-in-app | high | color | `rgb(255, 255, 255)` | — |
+| 1440x900 | primaryButton | missing-in-app | high | border-radius | `2px` | — |
+| 1440x900 | primaryButton | missing-in-app | high | height | `36px` | — |
+| 1440x900 | primaryButton | missing-in-app | high | font-family | `Inter` | — |
+| 1440x900 | primaryButton | missing-in-app | high | font-size | `13px` | — |
+| 1440x900 | primaryButton | missing-in-app | high | font-weight | `700` | — |
+| 1440x900 | tableHeader | mismatch | medium | font-size | `12px` | `11px` |
+| 1440x900 | tableHeader | mismatch | medium | background | `rgb(230, 238, 255)` | `rgb(239, 244, 255)` |
+| 1440x900 | card | mismatch | medium | border-radius | `4px` | `8px` |
+| 1280x800 | title | mismatch | medium | font-size | `16px` | `24px` |
+| 1280x800 | title | mismatch | medium | font-weight | `700` | `600` |
+| 1280x800 | title | mismatch | medium | line-height | `24px` | `32px` |
+| 1280x800 | primaryButton | missing-in-app | high | background-color | `rgb(0, 56, 131)` | — |
+| 1280x800 | primaryButton | missing-in-app | high | color | `rgb(255, 255, 255)` | — |
+| 1280x800 | primaryButton | missing-in-app | high | border-radius | `2px` | — |
+| 1280x800 | primaryButton | missing-in-app | high | height | `36px` | — |
+| 1280x800 | primaryButton | missing-in-app | high | font-family | `Inter` | — |
+| 1280x800 | primaryButton | missing-in-app | high | font-size | `13px` | — |
+| 1280x800 | primaryButton | missing-in-app | high | font-weight | `700` | — |
+| 1280x800 | tableHeader | mismatch | medium | font-size | `12px` | `11px` |
+| 1280x800 | tableHeader | mismatch | medium | background | `rgb(230, 238, 255)` | `rgb(239, 244, 255)` |
+| 1280x800 | card | mismatch | medium | border-radius | `4px` | `8px` |
+| 768x1024 | title | mismatch | medium | font-size | `16px` | `24px` |
+| 768x1024 | title | mismatch | medium | font-weight | `700` | `600` |
+| 768x1024 | title | mismatch | medium | line-height | `24px` | `32px` |
+| 768x1024 | primaryButton | missing-in-app | high | background-color | `rgb(0, 56, 131)` | — |
+| 768x1024 | primaryButton | missing-in-app | high | color | `rgb(255, 255, 255)` | — |
+| 768x1024 | primaryButton | missing-in-app | high | border-radius | `2px` | — |
+| 768x1024 | primaryButton | missing-in-app | high | height | `36px` | — |
+| 768x1024 | primaryButton | missing-in-app | high | font-family | `Inter` | — |
+| 768x1024 | primaryButton | missing-in-app | high | font-size | `13px` | — |
+| 768x1024 | primaryButton | missing-in-app | high | font-weight | `700` | — |
+| 768x1024 | tableHeader | mismatch | medium | font-size | `12px` | `11px` |
+| 768x1024 | tableHeader | mismatch | medium | background | `rgb(230, 238, 255)` | `rgb(239, 244, 255)` |
+| 768x1024 | card | mismatch | medium | border-radius | `4px` | `8px` |
+| 390x844 | title | mismatch | medium | font-size | `16px` | `20px` |
+| 390x844 | title | mismatch | medium | font-weight | `700` | `600` |
+| 390x844 | title | mismatch | medium | line-height | `24px` | `28px` |
+| 390x844 | primaryButton | missing-in-app | high | background-color | `rgb(0, 56, 131)` | — |
+| 390x844 | primaryButton | missing-in-app | high | color | `rgb(255, 255, 255)` | — |
+| 390x844 | primaryButton | missing-in-app | high | border-radius | `2px` | — |
+| 390x844 | primaryButton | missing-in-app | high | height | `36px` | — |
+| 390x844 | primaryButton | missing-in-app | high | font-family | `Inter` | — |
+| 390x844 | primaryButton | missing-in-app | high | font-size | `13px` | — |
+| 390x844 | primaryButton | missing-in-app | high | font-weight | `700` | — |
+| 390x844 | tableHeader | mismatch | medium | font-size | `12px` | `11px` |
+| 390x844 | tableHeader | mismatch | medium | background | `rgb(230, 238, 255)` | `rgb(239, 244, 255)` |
+| 390x844 | card | mismatch | medium | border-radius | `4px` | `8px` |
+
+### 2026-11-17T21:44:41.853Z · SC-43 qualification — role commission-analyst
+
+- Page: `http://127.0.0.1:3100/people/bf560ebe-e987-4c3e-990d-a416cda147a7/qualification` · Stitch: `sc_43_rank_and_qualification_detail_staff`
+- Pixel mismatch is informational (sample data differs from API data); style fidelity is the check.
+
+| Viewport | Screenshot | Diff image | Pixel mismatch | App / reference size | Landmarks matched | Worst severity |
+|---|---|---|---|---|---|---|
+| 1440x900 | `testing/ui-screenshots/app/people/qualification/commission-analyst/1440x900.png` | `testing/ui-screenshots/app/people/qualification/commission-analyst/1440x900.diff.png` | 5.93% | 1440x1372 / 1440x1526 | 6/8 | high |
+| 1280x800 | `testing/ui-screenshots/app/people/qualification/commission-analyst/1280x800.png` | `testing/ui-screenshots/app/people/qualification/commission-analyst/1280x800.diff.png` | 5.5% | 1280x1426 / 1280x1737 | 6/8 | high |
+| 768x1024 | `testing/ui-screenshots/app/people/qualification/commission-analyst/768x1024.png` | `testing/ui-screenshots/app/people/qualification/commission-analyst/768x1024.diff.png` | 6.17% | 768x1690 / 768x2637 | 4/6 | high |
+| 390x844 | `testing/ui-screenshots/app/people/qualification/commission-analyst/390x844.png` | `testing/ui-screenshots/app/people/qualification/commission-analyst/390x844.diff.png` | 3.84% | 390x2268 / 434x5659 | 3/6 | high |
+
+Style differences:
+
+| Viewport | Landmark | Status | Severity | Property | Stitch | App |
+|---|---|---|---|---|---|---|
+| 1440x900 | primaryButton | mismatch | high | height | `34px` | `32px` |
+| 1440x900 | primaryButton | mismatch | high | font-weight | `400` | `600` |
+| 1440x900 | tableHeader | mismatch | medium | font-size | `12px` | `11px` |
+| 1280x800 | primaryButton | mismatch | high | height | `34px` | `32px` |
+| 1280x800 | primaryButton | mismatch | high | font-weight | `400` | `600` |
+| 1280x800 | tableHeader | mismatch | medium | font-size | `12px` | `11px` |
+| 768x1024 | primaryButton | mismatch | high | height | `34px` | `32px` |
+| 768x1024 | primaryButton | mismatch | high | font-weight | `400` | `600` |
+| 768x1024 | tableHeader | mismatch | medium | font-size | `12px` | `11px` |
+| 390x844 | title | mismatch | medium | font-size | `24px` | `20px` |
+| 390x844 | title | mismatch | medium | line-height | `32px` | `28px` |
+| 390x844 | primaryButton | mismatch | high | height | `88px` | `32px` |
+| 390x844 | primaryButton | mismatch | high | font-weight | `400` | `600` |
+| 390x844 | tableHeader | mismatch | medium | font-size | `12px` | `11px` |
+
+### 2026-11-17T21:44:54.771Z · SC-32 late-transactions — role commission-analyst
+
+- Page: `http://127.0.0.1:3100/periods/late?state=consumed` · Stitch: `sc_32_late_transaction_queue`
+- Pixel mismatch is informational (sample data differs from API data); style fidelity is the check.
+
+| Viewport | Screenshot | Diff image | Pixel mismatch | App / reference size | Landmarks matched | Worst severity |
+|---|---|---|---|---|---|---|
+| 1440x900 | `testing/ui-screenshots/app/orders/late-transactions/commission-analyst/1440x900.png` | `testing/ui-screenshots/app/orders/late-transactions/commission-analyst/1440x900.diff.png` | 5.07% | 1440x900 / 1440x1434 | 6/8 | high |
+| 1280x800 | `testing/ui-screenshots/app/orders/late-transactions/commission-analyst/1280x800.png` | `testing/ui-screenshots/app/orders/late-transactions/commission-analyst/1280x800.diff.png` | 5.08% | 1280x800 / 1280x1714 | 6/8 | high |
+| 768x1024 | `testing/ui-screenshots/app/orders/late-transactions/commission-analyst/768x1024.png` | `testing/ui-screenshots/app/orders/late-transactions/commission-analyst/768x1024.diff.png` | 4.26% | 768x1024 / 768x2678 | 4/6 | high |
+| 390x844 | `testing/ui-screenshots/app/orders/late-transactions/commission-analyst/390x844.png` | `testing/ui-screenshots/app/orders/late-transactions/commission-analyst/390x844.diff.png` | 2.15% | 390x955 / 538x5664 | 3/6 | high |
+
+Style differences:
+
+| Viewport | Landmark | Status | Severity | Property | Stitch | App |
+|---|---|---|---|---|---|---|
+| 1440x900 | primaryButton | missing-in-app | high | background-color | `rgb(0, 56, 131)` | — |
+| 1440x900 | primaryButton | missing-in-app | high | color | `rgb(255, 255, 255)` | — |
+| 1440x900 | primaryButton | missing-in-app | high | border-radius | `2px` | — |
+| 1440x900 | primaryButton | missing-in-app | high | height | `32px` | — |
+| 1440x900 | primaryButton | missing-in-app | high | font-family | `Inter` | — |
+| 1440x900 | primaryButton | missing-in-app | high | font-size | `13px` | — |
+| 1440x900 | primaryButton | missing-in-app | high | font-weight | `600` | — |
+| 1440x900 | tableHeader | mismatch | medium | font-size | `12px` | `11px` |
+| 1440x900 | tableHeader | mismatch | medium | font-weight | `700` | `600` |
+| 1440x900 | tableHeader | mismatch | medium | color | `rgb(67, 71, 82)` | `rgb(86, 94, 116)` |
+| 1440x900 | tableHeader | mismatch | medium | background | `rgb(230, 238, 255)` | `rgb(239, 244, 255)` |
+| 1280x800 | primaryButton | missing-in-app | high | background-color | `rgb(0, 56, 131)` | — |
+| 1280x800 | primaryButton | missing-in-app | high | color | `rgb(255, 255, 255)` | — |
+| 1280x800 | primaryButton | missing-in-app | high | border-radius | `2px` | — |
+| 1280x800 | primaryButton | missing-in-app | high | height | `32px` | — |
+| 1280x800 | primaryButton | missing-in-app | high | font-family | `Inter` | — |
+| 1280x800 | primaryButton | missing-in-app | high | font-size | `13px` | — |
+| 1280x800 | primaryButton | missing-in-app | high | font-weight | `600` | — |
+| 1280x800 | tableHeader | mismatch | medium | font-size | `12px` | `11px` |
+| 1280x800 | tableHeader | mismatch | medium | font-weight | `700` | `600` |
+| 1280x800 | tableHeader | mismatch | medium | color | `rgb(67, 71, 82)` | `rgb(86, 94, 116)` |
+| 1280x800 | tableHeader | mismatch | medium | background | `rgb(230, 238, 255)` | `rgb(239, 244, 255)` |
+| 768x1024 | primaryButton | missing-in-app | high | background-color | `rgb(0, 56, 131)` | — |
+| 768x1024 | primaryButton | missing-in-app | high | color | `rgb(255, 255, 255)` | — |
+| 768x1024 | primaryButton | missing-in-app | high | border-radius | `2px` | — |
+| 768x1024 | primaryButton | missing-in-app | high | height | `32px` | — |
+| 768x1024 | primaryButton | missing-in-app | high | font-family | `Inter` | — |
+| 768x1024 | primaryButton | missing-in-app | high | font-size | `13px` | — |
+| 768x1024 | primaryButton | missing-in-app | high | font-weight | `600` | — |
+| 768x1024 | tableHeader | mismatch | medium | font-size | `12px` | `11px` |
+| 768x1024 | tableHeader | mismatch | medium | font-weight | `700` | `600` |
+| 768x1024 | tableHeader | mismatch | medium | color | `rgb(67, 71, 82)` | `rgb(86, 94, 116)` |
+| 768x1024 | tableHeader | mismatch | medium | background | `rgb(230, 238, 255)` | `rgb(239, 244, 255)` |
+| 390x844 | title | mismatch | medium | font-size | `24px` | `20px` |
+| 390x844 | title | mismatch | medium | line-height | `32px` | `28px` |
+| 390x844 | primaryButton | missing-in-app | high | background-color | `rgb(0, 56, 131)` | — |
+| 390x844 | primaryButton | missing-in-app | high | color | `rgb(255, 255, 255)` | — |
+| 390x844 | primaryButton | missing-in-app | high | border-radius | `2px` | — |
+| 390x844 | primaryButton | missing-in-app | high | height | `32px` | — |
+| 390x844 | primaryButton | missing-in-app | high | font-family | `Inter` | — |
+| 390x844 | primaryButton | missing-in-app | high | font-size | `13px` | — |
+| 390x844 | primaryButton | missing-in-app | high | font-weight | `600` | — |
+| 390x844 | tableHeader | mismatch | medium | font-size | `12px` | `11px` |
+| 390x844 | tableHeader | mismatch | medium | font-weight | `700` | `600` |
+| 390x844 | tableHeader | mismatch | medium | color | `rgb(67, 71, 82)` | `rgb(86, 94, 116)` |
+| 390x844 | tableHeader | mismatch | medium | background | `rgb(230, 238, 255)` | `rgb(239, 244, 255)` |
+
+### 2026-11-17T21:45:07.711Z · SC-04-list plans — role plan-administrator
+
+- Page: `http://127.0.0.1:3100/plans` · Stitch: `sc_28_users_and_roles` · config brace patched: sc_28_users_and_roles
+- Pixel mismatch is informational (sample data differs from API data); style fidelity is the check.
+
+| Viewport | Screenshot | Diff image | Pixel mismatch | App / reference size | Landmarks matched | Worst severity |
+|---|---|---|---|---|---|---|
+| 1440x900 | `testing/ui-screenshots/app/plans/plans/plan-administrator/1440x900.png` | `testing/ui-screenshots/app/plans/plans/plan-administrator/1440x900.diff.png` | 5.47% | 1440x900 / 1440x1154 | 3/8 | high |
+| 1280x800 | `testing/ui-screenshots/app/plans/plans/plan-administrator/1280x800.png` | `testing/ui-screenshots/app/plans/plans/plan-administrator/1280x800.diff.png` | 5.43% | 1280x800 / 1280x1314 | 3/8 | high |
+| 768x1024 | `testing/ui-screenshots/app/plans/plans/plan-administrator/768x1024.png` | `testing/ui-screenshots/app/plans/plans/plan-administrator/768x1024.diff.png` | 5.68% | 768x1024 / 768x1949 | 1/6 | high |
+| 390x844 | `testing/ui-screenshots/app/plans/plans/plan-administrator/390x844.png` | `testing/ui-screenshots/app/plans/plans/plan-administrator/390x844.diff.png` | 2.51% | 390x844 / 537x4179 | 0/6 | high |
+
+Style differences:
+
+| Viewport | Landmark | Status | Severity | Property | Stitch | App |
+|---|---|---|---|---|---|---|
+| 1440x900 | page | mismatch | high | background | `rgb(248, 250, 252)` | `rgb(248, 249, 255)` |
+| 1440x900 | sectionHeading | mismatch | medium | font-size | `16px` | `20px` |
+| 1440x900 | sectionHeading | mismatch | medium | line-height | `20px` | `28px` |
+| 1440x900 | primaryButton | mismatch | high | background-color | `rgb(30, 79, 163)` | `rgb(0, 56, 131)` |
+| 1440x900 | tableHeader | mismatch | medium | font-size | `12px` | `11px` |
+| 1440x900 | tableHeader | mismatch | medium | background | `rgb(230, 238, 255)` | `rgb(239, 244, 255)` |
+| 1440x900 | card | mismatch | medium | border-radius | `2px` | `4px` |
+| 1280x800 | page | mismatch | high | background | `rgb(248, 250, 252)` | `rgb(248, 249, 255)` |
+| 1280x800 | sectionHeading | mismatch | medium | font-size | `16px` | `20px` |
+| 1280x800 | sectionHeading | mismatch | medium | line-height | `20px` | `28px` |
+| 1280x800 | primaryButton | mismatch | high | background-color | `rgb(30, 79, 163)` | `rgb(0, 56, 131)` |
+| 1280x800 | tableHeader | mismatch | medium | font-size | `12px` | `11px` |
+| 1280x800 | tableHeader | mismatch | medium | background | `rgb(230, 238, 255)` | `rgb(239, 244, 255)` |
+| 1280x800 | card | mismatch | medium | border-radius | `2px` | `4px` |
+| 768x1024 | page | mismatch | high | background | `rgb(248, 250, 252)` | `rgb(248, 249, 255)` |
+| 768x1024 | sectionHeading | mismatch | medium | font-size | `16px` | `20px` |
+| 768x1024 | sectionHeading | mismatch | medium | line-height | `20px` | `28px` |
+| 768x1024 | primaryButton | mismatch | high | background-color | `rgb(30, 79, 163)` | `rgb(0, 56, 131)` |
+| 768x1024 | tableHeader | mismatch | medium | font-size | `12px` | `11px` |
+| 768x1024 | tableHeader | mismatch | medium | background | `rgb(230, 238, 255)` | `rgb(239, 244, 255)` |
+| 768x1024 | card | mismatch | medium | border-radius | `2px` | `4px` |
+| 390x844 | page | mismatch | high | background | `rgb(248, 250, 252)` | `rgb(248, 249, 255)` |
+| 390x844 | title | mismatch | medium | font-size | `24px` | `20px` |
+| 390x844 | title | mismatch | medium | line-height | `32px` | `28px` |
+| 390x844 | sectionHeading | mismatch | medium | font-size | `16px` | `20px` |
+| 390x844 | sectionHeading | mismatch | medium | line-height | `20px` | `28px` |
+| 390x844 | primaryButton | mismatch | high | background-color | `rgb(30, 79, 163)` | `rgb(0, 56, 131)` |
+| 390x844 | tableHeader | mismatch | medium | font-size | `12px` | `11px` |
+| 390x844 | tableHeader | mismatch | medium | background | `rgb(230, 238, 255)` | `rgb(239, 244, 255)` |
+| 390x844 | card | mismatch | medium | border-radius | `2px` | `4px` |
+
+### 2026-11-17T21:45:21.056Z · SC-04 plan-version — role plan-administrator
+
+- Page: `http://127.0.0.1:3100/plans/e42ba34e-058f-414f-841f-bfc53d996bb4/versions/1` · Stitch: `sc_04_plan_versions_simulation`
+- Pixel mismatch is informational (sample data differs from API data); style fidelity is the check.
+
+| Viewport | Screenshot | Diff image | Pixel mismatch | App / reference size | Landmarks matched | Worst severity |
+|---|---|---|---|---|---|---|
+| 1440x900 | `testing/ui-screenshots/app/plans/plan-version/plan-administrator/1440x900.png` | `testing/ui-screenshots/app/plans/plan-version/plan-administrator/1440x900.diff.png` | 6.21% | 1440x1787 / 1440x1583 | 5/7 | high |
+| 1280x800 | `testing/ui-screenshots/app/plans/plan-version/plan-administrator/1280x800.png` | `testing/ui-screenshots/app/plans/plan-version/plan-administrator/1280x800.diff.png` | 6.15% | 1280x1803 / 1280x1759 | 5/7 | high |
+| 768x1024 | `testing/ui-screenshots/app/plans/plan-version/plan-administrator/768x1024.png` | `testing/ui-screenshots/app/plans/plan-version/plan-administrator/768x1024.diff.png` | 6.72% | 768x2003 / 768x2951 | 3/5 | high |
+| 390x844 | `testing/ui-screenshots/app/plans/plan-version/plan-administrator/390x844.png` | `testing/ui-screenshots/app/plans/plan-version/plan-administrator/390x844.diff.png` | 4.36% | 390x2781 / 489x6853 | 3/5 | high |
+
+Style differences:
+
+| Viewport | Landmark | Status | Severity | Property | Stitch | App |
+|---|---|---|---|---|---|---|
+| 1440x900 | title | mismatch | medium | font-weight | `700` | `600` |
+| 1440x900 | title | mismatch | medium | color | `rgb(0, 56, 131)` | `rgb(13, 28, 46)` |
+| 1440x900 | primaryButton | mismatch | high | background-color | `rgb(30, 79, 163)` | `rgb(0, 56, 131)` |
+| 1440x900 | primaryButton | mismatch | high | font-weight | `500` | `600` |
+| 1280x800 | title | mismatch | medium | font-weight | `700` | `600` |
+| 1280x800 | title | mismatch | medium | color | `rgb(0, 56, 131)` | `rgb(13, 28, 46)` |
+| 1280x800 | primaryButton | mismatch | high | background-color | `rgb(30, 79, 163)` | `rgb(0, 56, 131)` |
+| 1280x800 | primaryButton | mismatch | high | font-weight | `500` | `600` |
+| 768x1024 | title | mismatch | medium | font-weight | `700` | `600` |
+| 768x1024 | title | mismatch | medium | color | `rgb(0, 56, 131)` | `rgb(13, 28, 46)` |
+| 768x1024 | primaryButton | mismatch | high | background-color | `rgb(30, 79, 163)` | `rgb(0, 56, 131)` |
+| 768x1024 | primaryButton | mismatch | high | font-weight | `500` | `600` |
+| 390x844 | title | mismatch | medium | font-size | `24px` | `20px` |
+| 390x844 | title | mismatch | medium | font-weight | `700` | `600` |
+| 390x844 | title | mismatch | medium | line-height | `32px` | `28px` |
+| 390x844 | title | mismatch | medium | color | `rgb(0, 56, 131)` | `rgb(13, 28, 46)` |
+| 390x844 | primaryButton | mismatch | high | background-color | `rgb(30, 79, 163)` | `rgb(0, 56, 131)` |
+| 390x844 | primaryButton | mismatch | high | font-weight | `500` | `600` |
+
+### 2026-11-17T21:45:34.179Z · SC-05 caps-and-pools — role plan-administrator
+
+- Page: `http://127.0.0.1:3100/plans/e42ba34e-058f-414f-841f-bfc53d996bb4/versions/2/caps` · Stitch: `sc_05_cap_and_pool_configuration`
+- Pixel mismatch is informational (sample data differs from API data); style fidelity is the check.
+
+| Viewport | Screenshot | Diff image | Pixel mismatch | App / reference size | Landmarks matched | Worst severity |
+|---|---|---|---|---|---|---|
+| 1440x900 | `testing/ui-screenshots/app/plans/caps-and-pools/plan-administrator/1440x900.png` | `testing/ui-screenshots/app/plans/caps-and-pools/plan-administrator/1440x900.diff.png` | 5.89% | 1440x900 / 1440x1941 | 5/7 | high |
+| 1280x800 | `testing/ui-screenshots/app/plans/caps-and-pools/plan-administrator/1280x800.png` | `testing/ui-screenshots/app/plans/caps-and-pools/plan-administrator/1280x800.diff.png` | 6.29% | 1280x800 / 1280x2055 | 5/7 | high |
+| 768x1024 | `testing/ui-screenshots/app/plans/caps-and-pools/plan-administrator/768x1024.png` | `testing/ui-screenshots/app/plans/caps-and-pools/plan-administrator/768x1024.diff.png` | 5.19% | 768x1024 / 768x4021 | 3/5 | high |
+| 390x844 | `testing/ui-screenshots/app/plans/caps-and-pools/plan-administrator/390x844.png` | `testing/ui-screenshots/app/plans/caps-and-pools/plan-administrator/390x844.diff.png` | 1.26% | 390x1280 / 599x10872 | 2/5 | high |
+
+Style differences:
+
+| Viewport | Landmark | Status | Severity | Property | Stitch | App |
+|---|---|---|---|---|---|---|
+| 1440x900 | page | mismatch | high | font-size | `14px` | `16px` |
+| 1440x900 | primaryButton | mismatch | high | font-size | `16px` | `13px` |
+| 1280x800 | page | mismatch | high | font-size | `14px` | `16px` |
+| 1280x800 | primaryButton | mismatch | high | font-size | `16px` | `13px` |
+| 768x1024 | page | mismatch | high | font-size | `14px` | `16px` |
+| 768x1024 | primaryButton | mismatch | high | font-size | `16px` | `13px` |
+| 390x844 | page | mismatch | high | font-size | `14px` | `16px` |
+| 390x844 | title | mismatch | medium | font-size | `24px` | `20px` |
+| 390x844 | title | mismatch | medium | line-height | `32px` | `28px` |
+| 390x844 | primaryButton | mismatch | high | font-size | `16px` | `13px` |
+
+### 2026-11-17T21:45:47.661Z · SC-42 simulation — role plan-administrator
+
+- Page: `http://127.0.0.1:3100/plans/e42ba34e-058f-414f-841f-bfc53d996bb4/versions/2/simulations/78176a4b-12f2-4a71-84c7-d2e3be652366` · Stitch: `sc_42_simulation_results_golden_datasets`
+- Pixel mismatch is informational (sample data differs from API data); style fidelity is the check.
+
+| Viewport | Screenshot | Diff image | Pixel mismatch | App / reference size | Landmarks matched | Worst severity |
+|---|---|---|---|---|---|---|
+| 1440x900 | `testing/ui-screenshots/app/plans/simulation/plan-administrator/1440x900.png` | `testing/ui-screenshots/app/plans/simulation/plan-administrator/1440x900.diff.png` | 5.79% | 1440x966 / 1440x1762 | 5/8 | high |
+| 1280x800 | `testing/ui-screenshots/app/plans/simulation/plan-administrator/1280x800.png` | `testing/ui-screenshots/app/plans/simulation/plan-administrator/1280x800.diff.png` | 5.79% | 1280x966 / 1280x1920 | 5/8 | high |
+| 768x1024 | `testing/ui-screenshots/app/plans/simulation/plan-administrator/768x1024.png` | `testing/ui-screenshots/app/plans/simulation/plan-administrator/768x1024.diff.png` | 3.87% | 768x1110 / 996x3406 | 3/6 | high |
+| 390x844 | `testing/ui-screenshots/app/plans/simulation/plan-administrator/390x844.png` | `testing/ui-screenshots/app/plans/simulation/plan-administrator/390x844.diff.png` | 1.73% | 390x1607 / 694x7915 | 2/6 | high |
+
+Style differences:
+
+| Viewport | Landmark | Status | Severity | Property | Stitch | App |
+|---|---|---|---|---|---|---|
+| 1440x900 | primaryButton | mismatch | high | height | `40px` | `32px` |
+| 1440x900 | primaryButton | mismatch | high | font-weight | `500` | `600` |
+| 1440x900 | tableHeader | mismatch | medium | font-size | `12px` | `11px` |
+| 1440x900 | card | mismatch | medium | border-radius | `4px` | `8px` |
+| 1280x800 | primaryButton | mismatch | high | height | `40px` | `32px` |
+| 1280x800 | primaryButton | mismatch | high | font-weight | `500` | `600` |
+| 1280x800 | tableHeader | mismatch | medium | font-size | `12px` | `11px` |
+| 1280x800 | card | mismatch | medium | border-radius | `4px` | `8px` |
+| 768x1024 | primaryButton | mismatch | high | height | `40px` | `32px` |
+| 768x1024 | primaryButton | mismatch | high | font-weight | `500` | `600` |
+| 768x1024 | tableHeader | mismatch | medium | font-size | `12px` | `11px` |
+| 768x1024 | card | mismatch | medium | border-radius | `4px` | `8px` |
+| 390x844 | title | mismatch | medium | font-size | `32px` | `26px` |
+| 390x844 | title | mismatch | medium | line-height | `40px` | `32px` |
+| 390x844 | primaryButton | mismatch | high | height | `40px` | `32px` |
+| 390x844 | primaryButton | mismatch | high | font-weight | `500` | `600` |
+| 390x844 | tableHeader | mismatch | medium | font-size | `12px` | `11px` |
+| 390x844 | card | mismatch | medium | border-radius | `4px` | `8px` |
+
+### 2026-11-17T21:46:00.717Z · SC-11 guardrails — role compliance-officer
+
+- Page: `http://127.0.0.1:3100/compliance/guardrails` · Stitch: `sc_11_guardrails_policy_overrides_log`
+- Pixel mismatch is informational (sample data differs from API data); style fidelity is the check.
+
+| Viewport | Screenshot | Diff image | Pixel mismatch | App / reference size | Landmarks matched | Worst severity |
+|---|---|---|---|---|---|---|
+| 1440x900 | `testing/ui-screenshots/app/compliance/guardrails/compliance-officer/1440x900.png` | `testing/ui-screenshots/app/compliance/guardrails/compliance-officer/1440x900.diff.png` | 8.86% | 1440x900 / 1440x1415 | 4/6 | medium |
+| 1280x800 | `testing/ui-screenshots/app/compliance/guardrails/compliance-officer/1280x800.png` | `testing/ui-screenshots/app/compliance/guardrails/compliance-officer/1280x800.diff.png` | 8.37% | 1280x929 / 1280x1616 | 4/6 | medium |
+| 768x1024 | `testing/ui-screenshots/app/compliance/guardrails/compliance-officer/768x1024.png` | `testing/ui-screenshots/app/compliance/guardrails/compliance-officer/768x1024.diff.png` | 7.22% | 768x1263 / 768x2692 | 2/4 | medium |
+| 390x844 | `testing/ui-screenshots/app/compliance/guardrails/compliance-officer/390x844.png` | `testing/ui-screenshots/app/compliance/guardrails/compliance-officer/390x844.diff.png` | 3.02% | 390x1635 / 551x6173 | 1/4 | medium |
+
+Style differences:
+
+| Viewport | Landmark | Status | Severity | Property | Stitch | App |
+|---|---|---|---|---|---|---|
+| 1440x900 | tableHeader | mismatch | medium | font-size | `12px` | `11px` |
+| 1440x900 | tableHeader | mismatch | medium | color | `rgb(67, 71, 82)` | `rgb(86, 94, 116)` |
+| 1440x900 | card | mismatch | medium | border-radius | `2px` | `8px` |
+| 1280x800 | tableHeader | mismatch | medium | font-size | `12px` | `11px` |
+| 1280x800 | tableHeader | mismatch | medium | color | `rgb(67, 71, 82)` | `rgb(86, 94, 116)` |
+| 1280x800 | card | mismatch | medium | border-radius | `2px` | `8px` |
+| 768x1024 | tableHeader | mismatch | medium | font-size | `12px` | `11px` |
+| 768x1024 | tableHeader | mismatch | medium | color | `rgb(67, 71, 82)` | `rgb(86, 94, 116)` |
+| 768x1024 | card | mismatch | medium | border-radius | `2px` | `8px` |
+| 390x844 | title | mismatch | medium | font-size | `24px` | `20px` |
+| 390x844 | title | mismatch | medium | line-height | `32px` | `28px` |
+| 390x844 | tableHeader | mismatch | medium | font-size | `12px` | `11px` |
+| 390x844 | tableHeader | mismatch | medium | color | `rgb(67, 71, 82)` | `rgb(86, 94, 116)` |
+| 390x844 | card | mismatch | medium | border-radius | `2px` | `8px` |
+
+## Increment B3 — round 3 (2026-11-18, retest after the fix of BUG-094)
+
+Harness runs below dated 2026-11-17T22:01–22:03Z (UTC): `--url` on `next start` :3100 (build of 2026-11-18 03:54 +06, no source newer than `.next/BUILD_ID`), cookies from the round-2 storage states, `nmp_e2e` in its round-2 end state. Results `testing/visual/results/<SC>__<role>.json`, captures `testing/ui-screenshots/app/…`, logs `var/qa-b3/r3/R3-visual-*.log`.
+
+| Screen | 1440x900 | 1280x800 | 768x1024 | 390x844 | Harness findings | Judgement |
+|---|---|---|---|---|---|---|
+| SC-01 Periods and runs | 6.89 % | 6.78 % | 6.38 % | 3.82 % | high: primary "missing"; medium: title 20 px at 390 | primary missing = state (Nov 2026 before cut-off). **BUG-094 verified fixed**: table fits its box at 1440 (1169/1169) and 1280 (1009/1009), every row action visible, rows 53–65 px, no clipped chip. Run diagnostics now stack below the table under 1920 px — a deliberate deviation from sc_01 (whose own table is clipped at 1440). Residuals: BUG-097 (Gross amount wraps from "EUR"), BUG-098 (768: table scrolls sideways, chips break per word) |
+| SC-02 Run review | 5.00 % | 4.53 % | 4.10 % | 3.12 % | as round 2 | unchanged (identical figures) |
+| SC-43 Qualification | 5.93 % | 5.50 % | 6.17 % | 3.84 % | as round 2 | unchanged |
+| SC-32 Late queue | 5.07 % | 5.08 % | 4.26 % | 2.15 % | as round 2 | unchanged; BUG-095 open |
+| SC-04 Plans list | 5.47 % | 5.43 % | 5.68 % | 2.51 % | as round 2 | unchanged |
+| SC-04 Plan version | 6.21 % | 6.15 % | 6.72 % | 4.36 % | as round 2 | unchanged |
+| SC-05 Caps and pools | 5.89 % | 6.29 % | 5.19 % | 1.26 % | as round 2 | unchanged |
+| SC-42 Simulation | 5.79 % | 5.79 % | 3.87 % | 1.73 % | as round 2 | unchanged; BUG-096 open |
+| SC-11 Guardrails | 8.86 % | 8.37 % | 7.22 % | 3.02 % | as round 2 (exit 0) | unchanged |
+
+No page scrolls sideways at 1440, 1280, 768 or 390 on SC-01, and at 1440 on the other eight routes. Real differences this round: BUG-097, BUG-098 (LOW, SC-01); everything else is the canonical-token drift recorded since MVP-A or state-dependent landmarks.
+
+### 2026-11-17T22:01:30.613Z · SC-01 periods-runs — role commission-analyst
+
+- Page: `http://127.0.0.1:3100/periods?calendar=a73e2419-522f-4c5d-85ec-96b360fca159` · Stitch: `sc_01_periods_runs_analyst_home`
+- Pixel mismatch is informational (sample data differs from API data); style fidelity is the check.
+
+| Viewport | Screenshot | Diff image | Pixel mismatch | App / reference size | Landmarks matched | Worst severity |
+|---|---|---|---|---|---|---|
+| 1440x900 | `testing/ui-screenshots/app/periods/periods-runs/commission-analyst/1440x900.png` | `testing/ui-screenshots/app/periods/periods-runs/commission-analyst/1440x900.diff.png` | 6.89% | 1440x1342 / 1440x1383 | 7/8 | high |
+| 1280x800 | `testing/ui-screenshots/app/periods/periods-runs/commission-analyst/1280x800.png` | `testing/ui-screenshots/app/periods/periods-runs/commission-analyst/1280x800.diff.png` | 6.78% | 1280x1410 / 1280x1571 | 7/8 | high |
+| 768x1024 | `testing/ui-screenshots/app/periods/periods-runs/commission-analyst/768x1024.png` | `testing/ui-screenshots/app/periods/periods-runs/commission-analyst/768x1024.diff.png` | 6.38% | 768x1708 / 768x2572 | 5/6 | high |
+| 390x844 | `testing/ui-screenshots/app/periods/periods-runs/commission-analyst/390x844.png` | `testing/ui-screenshots/app/periods/periods-runs/commission-analyst/390x844.diff.png` | 3.82% | 390x3234 / 541x5229 | 4/6 | high |
+
+Style differences:
+
+| Viewport | Landmark | Status | Severity | Property | Stitch | App |
+|---|---|---|---|---|---|---|
+| 1440x900 | primaryButton | missing-in-app | high | background-color | `rgb(0, 56, 131)` | — |
+| 1440x900 | primaryButton | missing-in-app | high | color | `rgb(255, 255, 255)` | — |
+| 1440x900 | primaryButton | missing-in-app | high | border-radius | `2px` | — |
+| 1440x900 | primaryButton | missing-in-app | high | height | `32px` | — |
+| 1440x900 | primaryButton | missing-in-app | high | font-family | `Inter` | — |
+| 1440x900 | primaryButton | missing-in-app | high | font-size | `13px` | — |
+| 1440x900 | primaryButton | missing-in-app | high | font-weight | `600` | — |
+| 1280x800 | primaryButton | missing-in-app | high | background-color | `rgb(0, 56, 131)` | — |
+| 1280x800 | primaryButton | missing-in-app | high | color | `rgb(255, 255, 255)` | — |
+| 1280x800 | primaryButton | missing-in-app | high | border-radius | `2px` | — |
+| 1280x800 | primaryButton | missing-in-app | high | height | `32px` | — |
+| 1280x800 | primaryButton | missing-in-app | high | font-family | `Inter` | — |
+| 1280x800 | primaryButton | missing-in-app | high | font-size | `13px` | — |
+| 1280x800 | primaryButton | missing-in-app | high | font-weight | `600` | — |
+| 768x1024 | primaryButton | missing-in-app | high | background-color | `rgb(0, 56, 131)` | — |
+| 768x1024 | primaryButton | missing-in-app | high | color | `rgb(255, 255, 255)` | — |
+| 768x1024 | primaryButton | missing-in-app | high | border-radius | `2px` | — |
+| 768x1024 | primaryButton | missing-in-app | high | height | `32px` | — |
+| 768x1024 | primaryButton | missing-in-app | high | font-family | `Inter` | — |
+| 768x1024 | primaryButton | missing-in-app | high | font-size | `13px` | — |
+| 768x1024 | primaryButton | missing-in-app | high | font-weight | `600` | — |
+| 390x844 | title | mismatch | medium | font-size | `24px` | `20px` |
+| 390x844 | title | mismatch | medium | line-height | `32px` | `28px` |
+| 390x844 | primaryButton | missing-in-app | high | background-color | `rgb(0, 56, 131)` | — |
+| 390x844 | primaryButton | missing-in-app | high | color | `rgb(255, 255, 255)` | — |
+| 390x844 | primaryButton | missing-in-app | high | border-radius | `2px` | — |
+| 390x844 | primaryButton | missing-in-app | high | height | `32px` | — |
+| 390x844 | primaryButton | missing-in-app | high | font-family | `Inter` | — |
+| 390x844 | primaryButton | missing-in-app | high | font-size | `13px` | — |
+| 390x844 | primaryButton | missing-in-app | high | font-weight | `600` | — |
+
+### 2026-11-17T22:01:43.204Z · SC-02 run-review — role commission-analyst
+
+- Page: `http://127.0.0.1:3100/periods/3f726fac-9e7d-4788-b439-f59cfa89a239/runs/b4f98f59-22b0-4195-a023-2e32dcd23b85/review` · Stitch: `sc_02_run_review`
+- Pixel mismatch is informational (sample data differs from API data); style fidelity is the check.
+
+| Viewport | Screenshot | Diff image | Pixel mismatch | App / reference size | Landmarks matched | Worst severity |
+|---|---|---|---|---|---|---|
+| 1440x900 | `testing/ui-screenshots/app/periods/run-review/commission-analyst/1440x900.png` | `testing/ui-screenshots/app/periods/run-review/commission-analyst/1440x900.diff.png` | 5% | 1440x900 / 1440x1866 | 4/8 | high |
+| 1280x800 | `testing/ui-screenshots/app/periods/run-review/commission-analyst/1280x800.png` | `testing/ui-screenshots/app/periods/run-review/commission-analyst/1280x800.diff.png` | 4.53% | 1280x800 / 1280x1982 | 4/8 | high |
+| 768x1024 | `testing/ui-screenshots/app/periods/run-review/commission-analyst/768x1024.png` | `testing/ui-screenshots/app/periods/run-review/commission-analyst/768x1024.diff.png` | 4.1% | 768x1024 / 768x3009 | 2/6 | high |
+| 390x844 | `testing/ui-screenshots/app/periods/run-review/commission-analyst/390x844.png` | `testing/ui-screenshots/app/periods/run-review/commission-analyst/390x844.diff.png` | 3.12% | 390x1216 / 484x6037 | 2/6 | high |
+
+Style differences:
+
+| Viewport | Landmark | Status | Severity | Property | Stitch | App |
+|---|---|---|---|---|---|---|
+| 1440x900 | title | mismatch | medium | font-size | `16px` | `24px` |
+| 1440x900 | title | mismatch | medium | font-weight | `700` | `600` |
+| 1440x900 | title | mismatch | medium | line-height | `24px` | `32px` |
+| 1440x900 | primaryButton | missing-in-app | high | background-color | `rgb(0, 56, 131)` | — |
+| 1440x900 | primaryButton | missing-in-app | high | color | `rgb(255, 255, 255)` | — |
+| 1440x900 | primaryButton | missing-in-app | high | border-radius | `2px` | — |
+| 1440x900 | primaryButton | missing-in-app | high | height | `36px` | — |
+| 1440x900 | primaryButton | missing-in-app | high | font-family | `Inter` | — |
+| 1440x900 | primaryButton | missing-in-app | high | font-size | `13px` | — |
+| 1440x900 | primaryButton | missing-in-app | high | font-weight | `700` | — |
+| 1440x900 | tableHeader | mismatch | medium | font-size | `12px` | `11px` |
+| 1440x900 | tableHeader | mismatch | medium | background | `rgb(230, 238, 255)` | `rgb(239, 244, 255)` |
+| 1440x900 | card | mismatch | medium | border-radius | `4px` | `8px` |
+| 1280x800 | title | mismatch | medium | font-size | `16px` | `24px` |
+| 1280x800 | title | mismatch | medium | font-weight | `700` | `600` |
+| 1280x800 | title | mismatch | medium | line-height | `24px` | `32px` |
+| 1280x800 | primaryButton | missing-in-app | high | background-color | `rgb(0, 56, 131)` | — |
+| 1280x800 | primaryButton | missing-in-app | high | color | `rgb(255, 255, 255)` | — |
+| 1280x800 | primaryButton | missing-in-app | high | border-radius | `2px` | — |
+| 1280x800 | primaryButton | missing-in-app | high | height | `36px` | — |
+| 1280x800 | primaryButton | missing-in-app | high | font-family | `Inter` | — |
+| 1280x800 | primaryButton | missing-in-app | high | font-size | `13px` | — |
+| 1280x800 | primaryButton | missing-in-app | high | font-weight | `700` | — |
+| 1280x800 | tableHeader | mismatch | medium | font-size | `12px` | `11px` |
+| 1280x800 | tableHeader | mismatch | medium | background | `rgb(230, 238, 255)` | `rgb(239, 244, 255)` |
+| 1280x800 | card | mismatch | medium | border-radius | `4px` | `8px` |
+| 768x1024 | title | mismatch | medium | font-size | `16px` | `24px` |
+| 768x1024 | title | mismatch | medium | font-weight | `700` | `600` |
+| 768x1024 | title | mismatch | medium | line-height | `24px` | `32px` |
+| 768x1024 | primaryButton | missing-in-app | high | background-color | `rgb(0, 56, 131)` | — |
+| 768x1024 | primaryButton | missing-in-app | high | color | `rgb(255, 255, 255)` | — |
+| 768x1024 | primaryButton | missing-in-app | high | border-radius | `2px` | — |
+| 768x1024 | primaryButton | missing-in-app | high | height | `36px` | — |
+| 768x1024 | primaryButton | missing-in-app | high | font-family | `Inter` | — |
+| 768x1024 | primaryButton | missing-in-app | high | font-size | `13px` | — |
+| 768x1024 | primaryButton | missing-in-app | high | font-weight | `700` | — |
+| 768x1024 | tableHeader | mismatch | medium | font-size | `12px` | `11px` |
+| 768x1024 | tableHeader | mismatch | medium | background | `rgb(230, 238, 255)` | `rgb(239, 244, 255)` |
+| 768x1024 | card | mismatch | medium | border-radius | `4px` | `8px` |
+| 390x844 | title | mismatch | medium | font-size | `16px` | `20px` |
+| 390x844 | title | mismatch | medium | font-weight | `700` | `600` |
+| 390x844 | title | mismatch | medium | line-height | `24px` | `28px` |
+| 390x844 | primaryButton | missing-in-app | high | background-color | `rgb(0, 56, 131)` | — |
+| 390x844 | primaryButton | missing-in-app | high | color | `rgb(255, 255, 255)` | — |
+| 390x844 | primaryButton | missing-in-app | high | border-radius | `2px` | — |
+| 390x844 | primaryButton | missing-in-app | high | height | `36px` | — |
+| 390x844 | primaryButton | missing-in-app | high | font-family | `Inter` | — |
+| 390x844 | primaryButton | missing-in-app | high | font-size | `13px` | — |
+| 390x844 | primaryButton | missing-in-app | high | font-weight | `700` | — |
+| 390x844 | tableHeader | mismatch | medium | font-size | `12px` | `11px` |
+| 390x844 | tableHeader | mismatch | medium | background | `rgb(230, 238, 255)` | `rgb(239, 244, 255)` |
+| 390x844 | card | mismatch | medium | border-radius | `4px` | `8px` |
+
+### 2026-11-17T22:01:56.310Z · SC-43 qualification — role commission-analyst
+
+- Page: `http://127.0.0.1:3100/people/bf560ebe-e987-4c3e-990d-a416cda147a7/qualification` · Stitch: `sc_43_rank_and_qualification_detail_staff`
+- Pixel mismatch is informational (sample data differs from API data); style fidelity is the check.
+
+| Viewport | Screenshot | Diff image | Pixel mismatch | App / reference size | Landmarks matched | Worst severity |
+|---|---|---|---|---|---|---|
+| 1440x900 | `testing/ui-screenshots/app/people/qualification/commission-analyst/1440x900.png` | `testing/ui-screenshots/app/people/qualification/commission-analyst/1440x900.diff.png` | 5.93% | 1440x1372 / 1440x1526 | 6/8 | high |
+| 1280x800 | `testing/ui-screenshots/app/people/qualification/commission-analyst/1280x800.png` | `testing/ui-screenshots/app/people/qualification/commission-analyst/1280x800.diff.png` | 5.5% | 1280x1426 / 1280x1737 | 6/8 | high |
+| 768x1024 | `testing/ui-screenshots/app/people/qualification/commission-analyst/768x1024.png` | `testing/ui-screenshots/app/people/qualification/commission-analyst/768x1024.diff.png` | 6.17% | 768x1690 / 768x2637 | 4/6 | high |
+| 390x844 | `testing/ui-screenshots/app/people/qualification/commission-analyst/390x844.png` | `testing/ui-screenshots/app/people/qualification/commission-analyst/390x844.diff.png` | 3.84% | 390x2268 / 434x5659 | 3/6 | high |
+
+Style differences:
+
+| Viewport | Landmark | Status | Severity | Property | Stitch | App |
+|---|---|---|---|---|---|---|
+| 1440x900 | primaryButton | mismatch | high | height | `34px` | `32px` |
+| 1440x900 | primaryButton | mismatch | high | font-weight | `400` | `600` |
+| 1440x900 | tableHeader | mismatch | medium | font-size | `12px` | `11px` |
+| 1280x800 | primaryButton | mismatch | high | height | `34px` | `32px` |
+| 1280x800 | primaryButton | mismatch | high | font-weight | `400` | `600` |
+| 1280x800 | tableHeader | mismatch | medium | font-size | `12px` | `11px` |
+| 768x1024 | primaryButton | mismatch | high | height | `34px` | `32px` |
+| 768x1024 | primaryButton | mismatch | high | font-weight | `400` | `600` |
+| 768x1024 | tableHeader | mismatch | medium | font-size | `12px` | `11px` |
+| 390x844 | title | mismatch | medium | font-size | `24px` | `20px` |
+| 390x844 | title | mismatch | medium | line-height | `32px` | `28px` |
+| 390x844 | primaryButton | mismatch | high | height | `88px` | `32px` |
+| 390x844 | primaryButton | mismatch | high | font-weight | `400` | `600` |
+| 390x844 | tableHeader | mismatch | medium | font-size | `12px` | `11px` |
+
+### 2026-11-17T22:02:09.136Z · SC-32 late-transactions — role commission-analyst
+
+- Page: `http://127.0.0.1:3100/periods/late?state=consumed` · Stitch: `sc_32_late_transaction_queue`
+- Pixel mismatch is informational (sample data differs from API data); style fidelity is the check.
+
+| Viewport | Screenshot | Diff image | Pixel mismatch | App / reference size | Landmarks matched | Worst severity |
+|---|---|---|---|---|---|---|
+| 1440x900 | `testing/ui-screenshots/app/orders/late-transactions/commission-analyst/1440x900.png` | `testing/ui-screenshots/app/orders/late-transactions/commission-analyst/1440x900.diff.png` | 5.07% | 1440x900 / 1440x1434 | 6/8 | high |
+| 1280x800 | `testing/ui-screenshots/app/orders/late-transactions/commission-analyst/1280x800.png` | `testing/ui-screenshots/app/orders/late-transactions/commission-analyst/1280x800.diff.png` | 5.08% | 1280x800 / 1280x1714 | 6/8 | high |
+| 768x1024 | `testing/ui-screenshots/app/orders/late-transactions/commission-analyst/768x1024.png` | `testing/ui-screenshots/app/orders/late-transactions/commission-analyst/768x1024.diff.png` | 4.26% | 768x1024 / 768x2678 | 4/6 | high |
+| 390x844 | `testing/ui-screenshots/app/orders/late-transactions/commission-analyst/390x844.png` | `testing/ui-screenshots/app/orders/late-transactions/commission-analyst/390x844.diff.png` | 2.15% | 390x955 / 538x5664 | 3/6 | high |
+
+Style differences:
+
+| Viewport | Landmark | Status | Severity | Property | Stitch | App |
+|---|---|---|---|---|---|---|
+| 1440x900 | primaryButton | missing-in-app | high | background-color | `rgb(0, 56, 131)` | — |
+| 1440x900 | primaryButton | missing-in-app | high | color | `rgb(255, 255, 255)` | — |
+| 1440x900 | primaryButton | missing-in-app | high | border-radius | `2px` | — |
+| 1440x900 | primaryButton | missing-in-app | high | height | `32px` | — |
+| 1440x900 | primaryButton | missing-in-app | high | font-family | `Inter` | — |
+| 1440x900 | primaryButton | missing-in-app | high | font-size | `13px` | — |
+| 1440x900 | primaryButton | missing-in-app | high | font-weight | `600` | — |
+| 1440x900 | tableHeader | mismatch | medium | font-size | `12px` | `11px` |
+| 1440x900 | tableHeader | mismatch | medium | font-weight | `700` | `600` |
+| 1440x900 | tableHeader | mismatch | medium | color | `rgb(67, 71, 82)` | `rgb(86, 94, 116)` |
+| 1440x900 | tableHeader | mismatch | medium | background | `rgb(230, 238, 255)` | `rgb(239, 244, 255)` |
+| 1280x800 | primaryButton | missing-in-app | high | background-color | `rgb(0, 56, 131)` | — |
+| 1280x800 | primaryButton | missing-in-app | high | color | `rgb(255, 255, 255)` | — |
+| 1280x800 | primaryButton | missing-in-app | high | border-radius | `2px` | — |
+| 1280x800 | primaryButton | missing-in-app | high | height | `32px` | — |
+| 1280x800 | primaryButton | missing-in-app | high | font-family | `Inter` | — |
+| 1280x800 | primaryButton | missing-in-app | high | font-size | `13px` | — |
+| 1280x800 | primaryButton | missing-in-app | high | font-weight | `600` | — |
+| 1280x800 | tableHeader | mismatch | medium | font-size | `12px` | `11px` |
+| 1280x800 | tableHeader | mismatch | medium | font-weight | `700` | `600` |
+| 1280x800 | tableHeader | mismatch | medium | color | `rgb(67, 71, 82)` | `rgb(86, 94, 116)` |
+| 1280x800 | tableHeader | mismatch | medium | background | `rgb(230, 238, 255)` | `rgb(239, 244, 255)` |
+| 768x1024 | primaryButton | missing-in-app | high | background-color | `rgb(0, 56, 131)` | — |
+| 768x1024 | primaryButton | missing-in-app | high | color | `rgb(255, 255, 255)` | — |
+| 768x1024 | primaryButton | missing-in-app | high | border-radius | `2px` | — |
+| 768x1024 | primaryButton | missing-in-app | high | height | `32px` | — |
+| 768x1024 | primaryButton | missing-in-app | high | font-family | `Inter` | — |
+| 768x1024 | primaryButton | missing-in-app | high | font-size | `13px` | — |
+| 768x1024 | primaryButton | missing-in-app | high | font-weight | `600` | — |
+| 768x1024 | tableHeader | mismatch | medium | font-size | `12px` | `11px` |
+| 768x1024 | tableHeader | mismatch | medium | font-weight | `700` | `600` |
+| 768x1024 | tableHeader | mismatch | medium | color | `rgb(67, 71, 82)` | `rgb(86, 94, 116)` |
+| 768x1024 | tableHeader | mismatch | medium | background | `rgb(230, 238, 255)` | `rgb(239, 244, 255)` |
+| 390x844 | title | mismatch | medium | font-size | `24px` | `20px` |
+| 390x844 | title | mismatch | medium | line-height | `32px` | `28px` |
+| 390x844 | primaryButton | missing-in-app | high | background-color | `rgb(0, 56, 131)` | — |
+| 390x844 | primaryButton | missing-in-app | high | color | `rgb(255, 255, 255)` | — |
+| 390x844 | primaryButton | missing-in-app | high | border-radius | `2px` | — |
+| 390x844 | primaryButton | missing-in-app | high | height | `32px` | — |
+| 390x844 | primaryButton | missing-in-app | high | font-family | `Inter` | — |
+| 390x844 | primaryButton | missing-in-app | high | font-size | `13px` | — |
+| 390x844 | primaryButton | missing-in-app | high | font-weight | `600` | — |
+| 390x844 | tableHeader | mismatch | medium | font-size | `12px` | `11px` |
+| 390x844 | tableHeader | mismatch | medium | font-weight | `700` | `600` |
+| 390x844 | tableHeader | mismatch | medium | color | `rgb(67, 71, 82)` | `rgb(86, 94, 116)` |
+| 390x844 | tableHeader | mismatch | medium | background | `rgb(230, 238, 255)` | `rgb(239, 244, 255)` |
+
+### 2026-11-17T22:02:21.741Z · SC-04-list plans — role plan-administrator
+
+- Page: `http://127.0.0.1:3100/plans` · Stitch: `sc_28_users_and_roles` · config brace patched: sc_28_users_and_roles
+- Pixel mismatch is informational (sample data differs from API data); style fidelity is the check.
+
+| Viewport | Screenshot | Diff image | Pixel mismatch | App / reference size | Landmarks matched | Worst severity |
+|---|---|---|---|---|---|---|
+| 1440x900 | `testing/ui-screenshots/app/plans/plans/plan-administrator/1440x900.png` | `testing/ui-screenshots/app/plans/plans/plan-administrator/1440x900.diff.png` | 5.47% | 1440x900 / 1440x1154 | 3/8 | high |
+| 1280x800 | `testing/ui-screenshots/app/plans/plans/plan-administrator/1280x800.png` | `testing/ui-screenshots/app/plans/plans/plan-administrator/1280x800.diff.png` | 5.43% | 1280x800 / 1280x1314 | 3/8 | high |
+| 768x1024 | `testing/ui-screenshots/app/plans/plans/plan-administrator/768x1024.png` | `testing/ui-screenshots/app/plans/plans/plan-administrator/768x1024.diff.png` | 5.68% | 768x1024 / 768x1949 | 1/6 | high |
+| 390x844 | `testing/ui-screenshots/app/plans/plans/plan-administrator/390x844.png` | `testing/ui-screenshots/app/plans/plans/plan-administrator/390x844.diff.png` | 2.51% | 390x844 / 537x4179 | 0/6 | high |
+
+Style differences:
+
+| Viewport | Landmark | Status | Severity | Property | Stitch | App |
+|---|---|---|---|---|---|---|
+| 1440x900 | page | mismatch | high | background | `rgb(248, 250, 252)` | `rgb(248, 249, 255)` |
+| 1440x900 | sectionHeading | mismatch | medium | font-size | `16px` | `20px` |
+| 1440x900 | sectionHeading | mismatch | medium | line-height | `20px` | `28px` |
+| 1440x900 | primaryButton | mismatch | high | background-color | `rgb(30, 79, 163)` | `rgb(0, 56, 131)` |
+| 1440x900 | tableHeader | mismatch | medium | font-size | `12px` | `11px` |
+| 1440x900 | tableHeader | mismatch | medium | background | `rgb(230, 238, 255)` | `rgb(239, 244, 255)` |
+| 1440x900 | card | mismatch | medium | border-radius | `2px` | `4px` |
+| 1280x800 | page | mismatch | high | background | `rgb(248, 250, 252)` | `rgb(248, 249, 255)` |
+| 1280x800 | sectionHeading | mismatch | medium | font-size | `16px` | `20px` |
+| 1280x800 | sectionHeading | mismatch | medium | line-height | `20px` | `28px` |
+| 1280x800 | primaryButton | mismatch | high | background-color | `rgb(30, 79, 163)` | `rgb(0, 56, 131)` |
+| 1280x800 | tableHeader | mismatch | medium | font-size | `12px` | `11px` |
+| 1280x800 | tableHeader | mismatch | medium | background | `rgb(230, 238, 255)` | `rgb(239, 244, 255)` |
+| 1280x800 | card | mismatch | medium | border-radius | `2px` | `4px` |
+| 768x1024 | page | mismatch | high | background | `rgb(248, 250, 252)` | `rgb(248, 249, 255)` |
+| 768x1024 | sectionHeading | mismatch | medium | font-size | `16px` | `20px` |
+| 768x1024 | sectionHeading | mismatch | medium | line-height | `20px` | `28px` |
+| 768x1024 | primaryButton | mismatch | high | background-color | `rgb(30, 79, 163)` | `rgb(0, 56, 131)` |
+| 768x1024 | tableHeader | mismatch | medium | font-size | `12px` | `11px` |
+| 768x1024 | tableHeader | mismatch | medium | background | `rgb(230, 238, 255)` | `rgb(239, 244, 255)` |
+| 768x1024 | card | mismatch | medium | border-radius | `2px` | `4px` |
+| 390x844 | page | mismatch | high | background | `rgb(248, 250, 252)` | `rgb(248, 249, 255)` |
+| 390x844 | title | mismatch | medium | font-size | `24px` | `20px` |
+| 390x844 | title | mismatch | medium | line-height | `32px` | `28px` |
+| 390x844 | sectionHeading | mismatch | medium | font-size | `16px` | `20px` |
+| 390x844 | sectionHeading | mismatch | medium | line-height | `20px` | `28px` |
+| 390x844 | primaryButton | mismatch | high | background-color | `rgb(30, 79, 163)` | `rgb(0, 56, 131)` |
+| 390x844 | tableHeader | mismatch | medium | font-size | `12px` | `11px` |
+| 390x844 | tableHeader | mismatch | medium | background | `rgb(230, 238, 255)` | `rgb(239, 244, 255)` |
+| 390x844 | card | mismatch | medium | border-radius | `2px` | `4px` |
+
+### 2026-11-17T22:02:34.302Z · SC-04 plan-version — role plan-administrator
+
+- Page: `http://127.0.0.1:3100/plans/e42ba34e-058f-414f-841f-bfc53d996bb4/versions/1` · Stitch: `sc_04_plan_versions_simulation`
+- Pixel mismatch is informational (sample data differs from API data); style fidelity is the check.
+
+| Viewport | Screenshot | Diff image | Pixel mismatch | App / reference size | Landmarks matched | Worst severity |
+|---|---|---|---|---|---|---|
+| 1440x900 | `testing/ui-screenshots/app/plans/plan-version/plan-administrator/1440x900.png` | `testing/ui-screenshots/app/plans/plan-version/plan-administrator/1440x900.diff.png` | 6.21% | 1440x1787 / 1440x1583 | 5/7 | high |
+| 1280x800 | `testing/ui-screenshots/app/plans/plan-version/plan-administrator/1280x800.png` | `testing/ui-screenshots/app/plans/plan-version/plan-administrator/1280x800.diff.png` | 6.15% | 1280x1803 / 1280x1759 | 5/7 | high |
+| 768x1024 | `testing/ui-screenshots/app/plans/plan-version/plan-administrator/768x1024.png` | `testing/ui-screenshots/app/plans/plan-version/plan-administrator/768x1024.diff.png` | 6.72% | 768x2003 / 768x2951 | 3/5 | high |
+| 390x844 | `testing/ui-screenshots/app/plans/plan-version/plan-administrator/390x844.png` | `testing/ui-screenshots/app/plans/plan-version/plan-administrator/390x844.diff.png` | 4.36% | 390x2781 / 489x6853 | 3/5 | high |
+
+Style differences:
+
+| Viewport | Landmark | Status | Severity | Property | Stitch | App |
+|---|---|---|---|---|---|---|
+| 1440x900 | title | mismatch | medium | font-weight | `700` | `600` |
+| 1440x900 | title | mismatch | medium | color | `rgb(0, 56, 131)` | `rgb(13, 28, 46)` |
+| 1440x900 | primaryButton | mismatch | high | background-color | `rgb(30, 79, 163)` | `rgb(0, 56, 131)` |
+| 1440x900 | primaryButton | mismatch | high | font-weight | `500` | `600` |
+| 1280x800 | title | mismatch | medium | font-weight | `700` | `600` |
+| 1280x800 | title | mismatch | medium | color | `rgb(0, 56, 131)` | `rgb(13, 28, 46)` |
+| 1280x800 | primaryButton | mismatch | high | background-color | `rgb(30, 79, 163)` | `rgb(0, 56, 131)` |
+| 1280x800 | primaryButton | mismatch | high | font-weight | `500` | `600` |
+| 768x1024 | title | mismatch | medium | font-weight | `700` | `600` |
+| 768x1024 | title | mismatch | medium | color | `rgb(0, 56, 131)` | `rgb(13, 28, 46)` |
+| 768x1024 | primaryButton | mismatch | high | background-color | `rgb(30, 79, 163)` | `rgb(0, 56, 131)` |
+| 768x1024 | primaryButton | mismatch | high | font-weight | `500` | `600` |
+| 390x844 | title | mismatch | medium | font-size | `24px` | `20px` |
+| 390x844 | title | mismatch | medium | font-weight | `700` | `600` |
+| 390x844 | title | mismatch | medium | line-height | `32px` | `28px` |
+| 390x844 | title | mismatch | medium | color | `rgb(0, 56, 131)` | `rgb(13, 28, 46)` |
+| 390x844 | primaryButton | mismatch | high | background-color | `rgb(30, 79, 163)` | `rgb(0, 56, 131)` |
+| 390x844 | primaryButton | mismatch | high | font-weight | `500` | `600` |
+
+### 2026-11-17T22:02:47.204Z · SC-05 caps-and-pools — role plan-administrator
+
+- Page: `http://127.0.0.1:3100/plans/e42ba34e-058f-414f-841f-bfc53d996bb4/versions/2/caps` · Stitch: `sc_05_cap_and_pool_configuration`
+- Pixel mismatch is informational (sample data differs from API data); style fidelity is the check.
+
+| Viewport | Screenshot | Diff image | Pixel mismatch | App / reference size | Landmarks matched | Worst severity |
+|---|---|---|---|---|---|---|
+| 1440x900 | `testing/ui-screenshots/app/plans/caps-and-pools/plan-administrator/1440x900.png` | `testing/ui-screenshots/app/plans/caps-and-pools/plan-administrator/1440x900.diff.png` | 5.89% | 1440x900 / 1440x1941 | 5/7 | high |
+| 1280x800 | `testing/ui-screenshots/app/plans/caps-and-pools/plan-administrator/1280x800.png` | `testing/ui-screenshots/app/plans/caps-and-pools/plan-administrator/1280x800.diff.png` | 6.29% | 1280x800 / 1280x2055 | 5/7 | high |
+| 768x1024 | `testing/ui-screenshots/app/plans/caps-and-pools/plan-administrator/768x1024.png` | `testing/ui-screenshots/app/plans/caps-and-pools/plan-administrator/768x1024.diff.png` | 5.19% | 768x1024 / 768x4021 | 3/5 | high |
+| 390x844 | `testing/ui-screenshots/app/plans/caps-and-pools/plan-administrator/390x844.png` | `testing/ui-screenshots/app/plans/caps-and-pools/plan-administrator/390x844.diff.png` | 1.26% | 390x1280 / 599x10872 | 2/5 | high |
+
+Style differences:
+
+| Viewport | Landmark | Status | Severity | Property | Stitch | App |
+|---|---|---|---|---|---|---|
+| 1440x900 | page | mismatch | high | font-size | `14px` | `16px` |
+| 1440x900 | primaryButton | mismatch | high | font-size | `16px` | `13px` |
+| 1280x800 | page | mismatch | high | font-size | `14px` | `16px` |
+| 1280x800 | primaryButton | mismatch | high | font-size | `16px` | `13px` |
+| 768x1024 | page | mismatch | high | font-size | `14px` | `16px` |
+| 768x1024 | primaryButton | mismatch | high | font-size | `16px` | `13px` |
+| 390x844 | page | mismatch | high | font-size | `14px` | `16px` |
+| 390x844 | title | mismatch | medium | font-size | `24px` | `20px` |
+| 390x844 | title | mismatch | medium | line-height | `32px` | `28px` |
+| 390x844 | primaryButton | mismatch | high | font-size | `16px` | `13px` |
+
+### 2026-11-17T22:03:00.715Z · SC-42 simulation — role plan-administrator
+
+- Page: `http://127.0.0.1:3100/plans/e42ba34e-058f-414f-841f-bfc53d996bb4/versions/2/simulations/78176a4b-12f2-4a71-84c7-d2e3be652366` · Stitch: `sc_42_simulation_results_golden_datasets`
+- Pixel mismatch is informational (sample data differs from API data); style fidelity is the check.
+
+| Viewport | Screenshot | Diff image | Pixel mismatch | App / reference size | Landmarks matched | Worst severity |
+|---|---|---|---|---|---|---|
+| 1440x900 | `testing/ui-screenshots/app/plans/simulation/plan-administrator/1440x900.png` | `testing/ui-screenshots/app/plans/simulation/plan-administrator/1440x900.diff.png` | 5.79% | 1440x966 / 1440x1762 | 5/8 | high |
+| 1280x800 | `testing/ui-screenshots/app/plans/simulation/plan-administrator/1280x800.png` | `testing/ui-screenshots/app/plans/simulation/plan-administrator/1280x800.diff.png` | 5.79% | 1280x966 / 1280x1920 | 5/8 | high |
+| 768x1024 | `testing/ui-screenshots/app/plans/simulation/plan-administrator/768x1024.png` | `testing/ui-screenshots/app/plans/simulation/plan-administrator/768x1024.diff.png` | 3.87% | 768x1110 / 996x3406 | 3/6 | high |
+| 390x844 | `testing/ui-screenshots/app/plans/simulation/plan-administrator/390x844.png` | `testing/ui-screenshots/app/plans/simulation/plan-administrator/390x844.diff.png` | 1.73% | 390x1607 / 694x7915 | 2/6 | high |
+
+Style differences:
+
+| Viewport | Landmark | Status | Severity | Property | Stitch | App |
+|---|---|---|---|---|---|---|
+| 1440x900 | primaryButton | mismatch | high | height | `40px` | `32px` |
+| 1440x900 | primaryButton | mismatch | high | font-weight | `500` | `600` |
+| 1440x900 | tableHeader | mismatch | medium | font-size | `12px` | `11px` |
+| 1440x900 | card | mismatch | medium | border-radius | `4px` | `8px` |
+| 1280x800 | primaryButton | mismatch | high | height | `40px` | `32px` |
+| 1280x800 | primaryButton | mismatch | high | font-weight | `500` | `600` |
+| 1280x800 | tableHeader | mismatch | medium | font-size | `12px` | `11px` |
+| 1280x800 | card | mismatch | medium | border-radius | `4px` | `8px` |
+| 768x1024 | primaryButton | mismatch | high | height | `40px` | `32px` |
+| 768x1024 | primaryButton | mismatch | high | font-weight | `500` | `600` |
+| 768x1024 | tableHeader | mismatch | medium | font-size | `12px` | `11px` |
+| 768x1024 | card | mismatch | medium | border-radius | `4px` | `8px` |
+| 390x844 | title | mismatch | medium | font-size | `32px` | `26px` |
+| 390x844 | title | mismatch | medium | line-height | `40px` | `32px` |
+| 390x844 | primaryButton | mismatch | high | height | `40px` | `32px` |
+| 390x844 | primaryButton | mismatch | high | font-weight | `500` | `600` |
+| 390x844 | tableHeader | mismatch | medium | font-size | `12px` | `11px` |
+| 390x844 | card | mismatch | medium | border-radius | `4px` | `8px` |
+
+### 2026-11-17T22:03:13.061Z · SC-11 guardrails — role compliance-officer
+
+- Page: `http://127.0.0.1:3100/compliance/guardrails` · Stitch: `sc_11_guardrails_policy_overrides_log`
+- Pixel mismatch is informational (sample data differs from API data); style fidelity is the check.
+
+| Viewport | Screenshot | Diff image | Pixel mismatch | App / reference size | Landmarks matched | Worst severity |
+|---|---|---|---|---|---|---|
+| 1440x900 | `testing/ui-screenshots/app/compliance/guardrails/compliance-officer/1440x900.png` | `testing/ui-screenshots/app/compliance/guardrails/compliance-officer/1440x900.diff.png` | 8.86% | 1440x900 / 1440x1415 | 4/6 | medium |
+| 1280x800 | `testing/ui-screenshots/app/compliance/guardrails/compliance-officer/1280x800.png` | `testing/ui-screenshots/app/compliance/guardrails/compliance-officer/1280x800.diff.png` | 8.37% | 1280x929 / 1280x1616 | 4/6 | medium |
+| 768x1024 | `testing/ui-screenshots/app/compliance/guardrails/compliance-officer/768x1024.png` | `testing/ui-screenshots/app/compliance/guardrails/compliance-officer/768x1024.diff.png` | 7.22% | 768x1263 / 768x2692 | 2/4 | medium |
+| 390x844 | `testing/ui-screenshots/app/compliance/guardrails/compliance-officer/390x844.png` | `testing/ui-screenshots/app/compliance/guardrails/compliance-officer/390x844.diff.png` | 3.02% | 390x1635 / 551x6173 | 1/4 | medium |
+
+Style differences:
+
+| Viewport | Landmark | Status | Severity | Property | Stitch | App |
+|---|---|---|---|---|---|---|
+| 1440x900 | tableHeader | mismatch | medium | font-size | `12px` | `11px` |
+| 1440x900 | tableHeader | mismatch | medium | color | `rgb(67, 71, 82)` | `rgb(86, 94, 116)` |
+| 1440x900 | card | mismatch | medium | border-radius | `2px` | `8px` |
+| 1280x800 | tableHeader | mismatch | medium | font-size | `12px` | `11px` |
+| 1280x800 | tableHeader | mismatch | medium | color | `rgb(67, 71, 82)` | `rgb(86, 94, 116)` |
+| 1280x800 | card | mismatch | medium | border-radius | `2px` | `8px` |
+| 768x1024 | tableHeader | mismatch | medium | font-size | `12px` | `11px` |
+| 768x1024 | tableHeader | mismatch | medium | color | `rgb(67, 71, 82)` | `rgb(86, 94, 116)` |
+| 768x1024 | card | mismatch | medium | border-radius | `2px` | `8px` |
+| 390x844 | title | mismatch | medium | font-size | `24px` | `20px` |
+| 390x844 | title | mismatch | medium | line-height | `32px` | `28px` |
+| 390x844 | tableHeader | mismatch | medium | font-size | `12px` | `11px` |
+| 390x844 | tableHeader | mismatch | medium | color | `rgb(67, 71, 82)` | `rgb(86, 94, 116)` |
+| 390x844 | card | mismatch | medium | border-radius | `2px` | `8px` |
+

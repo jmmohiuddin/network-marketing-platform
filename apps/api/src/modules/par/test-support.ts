@@ -132,3 +132,4 @@ export async function committedPeriod(tenantId: string, marketId: string, starts
     [tenantId, calendar!.id, startsAt, endsAt],
   )
 }
+

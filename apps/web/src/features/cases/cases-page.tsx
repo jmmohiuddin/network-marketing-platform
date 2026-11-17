@@ -147,7 +147,7 @@ export function CasesPage() {
     <>
       <PageHeader
         title="Cases"
-        summary="Genealogy changes, ownership transfers and duplicate reviews. Each case keeps its evidence and history and is decided by a second person."
+        summary="Genealogy changes, ownership transfers, duplicate reviews and restatements of committed periods. Each case keeps its evidence and history and is decided by a second person."
         actions={(
           <>
             {can('case.duplicate.read') && <LinkButton href="/cases/duplicates" icon="group_remove">Duplicate investigation</LinkButton>}

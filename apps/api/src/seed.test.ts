@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, test } from 'vitest'
 import { closePoolsAfterAll, ownerRows, resetApiDb, testConfig } from '../test/helpers/index.js'
-import { assertSeedable, E2E_FIXTURE_PACK, seed, seedFixtureMarket, seedFixturePack } from './seed.js'
+import { assertSeedable, E2E_FIXTURE_PACK, seed, seedFixtureMarket, seedFixturePack, seedFixturePlanMarket } from './seed.js'
 
 closePoolsAfterAll()
 
@@ -31,8 +31,8 @@ describe('seed', () => {
 
     const markets = await ownerRows('SELECT code, state FROM market ORDER BY code')
 
-    expect(users).toHaveLength(16)
-    expect(credentials).toEqual([{ passwords: 16, factors: 2 }]) // written as their own users; only vendors have a factor
+    expect(users).toHaveLength(18)
+    expect(credentials).toEqual([{ passwords: 18, factors: 2 }]) // written as their own users; only vendors have a factor
     expect(users.filter((user) => user.realm === 'vendor')).toEqual([
       { email: 'operator@vendor.example', realm: 'vendor', mfa_enrolled: true },
       { email: 'operator2@vendor.example', realm: 'vendor', mfa_enrolled: true },
@@ -46,6 +46,7 @@ describe('seed', () => {
       { name: 'Compliance officer', approved: true },
       { name: 'DPO', approved: true }, // privileged since B2 (privacy.manage): a second admin's approval
       { name: 'Finance approver', approved: true },
+      { name: 'Plan administrator', approved: false },
       { name: 'Support agent', approved: false },
       { name: 'Tenant admin', approved: false },
       { name: 'Tenant admin', approved: false },
@@ -78,9 +79,10 @@ describe('seed', () => {
     await seedFixturePack(database)
     const rules = await ownerRows(
       `SELECT 'guardrail' AS kind, id, title, mandatory, basis_status, source_ref FROM guardrail_rule WHERE market_pack = $1
-       UNION ALL SELECT 'tax', id, title, mandatory, basis_status, source_ref FROM tax_rule WHERE market_pack = $1 ORDER BY 1`,
+       UNION ALL SELECT 'tax', id, title, mandatory, basis_status, source_ref FROM tax_rule WHERE market_pack = $1 ORDER BY 1, 2`,
       [E2E_FIXTURE_PACK],
     )
+    const checks = await ownerRows('SELECT id, outcome, overridable, predicate FROM guardrail_rule ORDER BY id')
 
     expect(rules).toEqual([
       {
@@ -88,9 +90,17 @@ describe('seed', () => {
         mandatory: true, basis_status: 'screening', source_ref: 'E2E fixture, not a real market rule',
       },
       {
+        kind: 'guardrail', id: 'e2e-starter-kit-volume@2026-01-01', title: 'E2E FIXTURE — starter kit',
+        mandatory: true, basis_status: 'screening', source_ref: 'E2E fixture, not a real market rule',
+      },
+      {
         kind: 'tax', id: 'e2e-withholding@2026-01-01', title: 'E2E FIXTURE — withholding', mandatory: true,
         basis_status: 'counsel_confirmed', source_ref: 'E2E fixture',
       },
+    ])
+    expect(checks).toEqual([ // PLAN B3 section 6: the checks CPL evaluates
+      { id: 'e2e-enrolment-only-bonus@2026-01-01', outcome: 'blocked', overridable: false, predicate: { check: 'enrolment_only_pay' } },
+      { id: 'e2e-starter-kit-volume@2026-01-01', outcome: 'warned', overridable: true, predicate: { check: 'starter_kit_volume' } },
     ])
     await expect(seedFixturePack('nmp_e2e')).rejects.toThrow('not nmp_e2e')
   })
@@ -124,6 +134,50 @@ describe('seed', () => {
     expect(periods.filter((period) => period.state === 'committed').length).toBeGreaterThan(0)
     expect(periods).toHaveLength(bounds!.months) // 2026-01 up to twelve months ahead
     await expect(seedFixtureMarket('nmp_e2e')).rejects.toThrow('not nmp_e2e')
+  })
+
+  test('the e2e fixture market DE: Berlin months M-3 to M+3 open, A <- B <- C, K serviced by C, FX-1; idempotent', async () => {
+    await resetApiDb()
+    const database = (await ownerRows<{ name: string }>('SELECT current_database() AS name'))[0]!.name
+    await seed(testConfig({ NODE_ENV: 'test' }), undefined, () => undefined)
+
+    await seedFixturePlanMarket(database)
+    await seedFixturePlanMarket(database)
+    const periods = await ownerRows<{ state: string; starts_at: Date; first: Date }>(
+      `SELECT p.state, p.starts_at,
+              (date_trunc('month', now() AT TIME ZONE 'Europe/Berlin') - interval '3 months') AT TIME ZONE 'Europe/Berlin' AS first
+       FROM period p JOIN calendar c ON c.id = p.calendar_id WHERE c.name = 'DE monthly' ORDER BY p.starts_at`,
+    )
+    const sponsors = await ownerRows(
+      `SELECT pc.external_ref AS child, pp.external_ref AS parent
+       FROM relationship r
+       JOIN position_ownership oc ON oc.position_id = r.child_position_id JOIN participant pc ON pc.id = oc.participant_id
+       JOIN position_ownership op ON op.position_id = r.parent_position_id JOIN participant pp ON pp.id = op.participant_id
+       WHERE r.kind = 'sponsor' ORDER BY 1`,
+    )
+    const servicing = await ownerRows(
+      `SELECT k.external_ref AS customer, p.external_ref AS servicer, t.code
+       FROM customer_servicing s JOIN participant k ON k.id = s.customer_id
+       JOIN participant_type_assignment a ON a.participant_id = k.id JOIN participant_type t ON t.id = a.type_id
+       JOIN position_ownership o ON o.position_id = s.servicing_position_id JOIN participant p ON p.id = o.participant_id`,
+    )
+
+    expect(await ownerRows(`SELECT state, currency, time_zone, market_pack FROM market WHERE code = 'DE'`)).toEqual([
+      { state: 'live', currency: 'EUR', time_zone: 'Europe/Berlin', market_pack: E2E_FIXTURE_PACK },
+    ])
+    expect(periods).toHaveLength(7)
+    expect(periods.every((period) => period.state === 'open')).toBe(true)
+    expect(periods[0]!.starts_at).toEqual(periods[0]!.first)
+    expect(sponsors).toEqual([{ child: 'DE-B', parent: 'DE-A' }, { child: 'DE-C', parent: 'DE-B' }])
+    expect(servicing).toEqual([{ customer: 'DE-K', servicer: 'DE-C', code: 'FXRETAIL' }])
+    expect(await ownerRows(`SELECT sku, volumes FROM product_volume_map WHERE sku = 'FX-1'`)).toEqual([{ sku: 'FX-1', volumes: { pv: '10000' } }])
+    expect(await ownerRows(`SELECT state FROM participant_type WHERE code IN ('FXDIST', 'FXRETAIL')`)).toEqual([{ state: 'active' }, { state: 'active' }])
+    // BUG-085: a settings version is in force from the first DE period on, so M-3..M-1 can be simulated and run.
+    expect(await ownerRows(
+      `SELECT v.settings -> 'structure' -> 'markets' @> '[{"code": "DE"}]' AS has_de FROM tenant_setting_version v JOIN tenant t ON t.id = v.tenant_id
+       WHERE t.slug = 'acme' AND v.effective_from <= $1`, [periods[0]!.starts_at],
+    )).toEqual([{ has_de: true }])
+    await expect(seedFixturePlanMarket('nmp_e2e')).rejects.toThrow('not nmp_e2e')
   })
 
   test('seeds only the local databases, with a fixed password only in nmp_dev and nmp_e2e', () => {

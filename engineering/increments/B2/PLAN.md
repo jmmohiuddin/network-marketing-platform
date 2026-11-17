@@ -314,6 +314,8 @@ Case types (registry contract B1 §2.9):
 SQLSTATEs raised by SQL in hooks map per §4.3 (the decision rolls back; the case stays submitted).
 **`effective_from` is an instant**: the payload accepts a date (UTC) or RFC 3339 instant, stored as given and validated ≥ start of today UTC; `validateCreate`, `effectPreview` and `onDecision` pass `greatest(effective_from, now())` to G2/G4, so "today" means from the moment of the dry-run / approval and is always after a row opened earlier today (no GN005 for positions enrolled today). A future instant is used as is; if the open row starts later than it (a pending future change), G2 refuses GN005 → 409 RELATIONSHIP_STATE_CONFLICT (cancel it with a correction, E-GEN-04). Corrections keep their past `valid_from` (they need a row valid then, else GN005).
 
+> **Architect sign-off (2026-11-17, B3 plan, E-ADR-40):** the B2 deviations in §2.4 and §2.5 stand: reinstatement needs `participant.terminate` + step-up; a correction may start in the future only exactly at a pending row's start (E-GEN-04 cancel); change/correction proposed parents stay unscoped while staff genealogy reads need all markets (D-B2-21), to be scoped to the creator's markets when market-scoped genealogy readers ship.
+
 ### 2.5 Genealogy (GEN, BE2)
 | Method path | Perm | Step-up | Idem | Request | Response | Errors |
 |---|---|---|---|---|---|---|

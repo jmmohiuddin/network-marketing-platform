@@ -7,7 +7,9 @@ import { RequestCard } from '../../../components/request-card'
 import { LoadingState } from '../../../components/states'
 import { StatusBadge } from '../../../components/status-badge'
 import { useToast } from '../../../components/toast'
+import { ApiError } from '../../../lib/api'
 import { useSession } from '../../../lib/session'
+import { useNow } from '../../../lib/use-now'
 import type { Resource } from '../../../lib/use-resource'
 import { requiredError } from '../../../lib/validation'
 import { FormDialog, TextAreaField } from '../form-dialog'
@@ -18,6 +20,17 @@ import { approvalOf, approverNames, FINANCE_APPROVAL, keyLabel, noApproverText, 
 import type { ChangeRequest } from './types'
 
 const REASON_ID = 'change-request-reason'
+const MINUTE_MS = 60_000
+
+/** BUG-083: a change whose effective time has passed cannot be approved any more (the API refuses a past date). */
+export const EFFECTIVE_PASSED = 'The effective time of this change has passed. Withdraw it and request it again with a new date.'
+
+/** 422 SETTING_EFFECTIVE_FROM_INVALID on a decision says the same as the card. */
+export function decisionRefusal(error: unknown): unknown {
+  return error instanceof ApiError && error.code === 'SETTING_EFFECTIVE_FROM_INVALID'
+    ? new ApiError(error.status, error.code, EFFECTIVE_PASSED, error.details, error.requestId)
+    : error
+}
 
 type Action = { readonly kind: 'approve' | 'reject' | 'withdraw'; readonly request: ChangeRequest }
 
@@ -52,7 +65,7 @@ function RequestDialog({ action, onClose, onDone }: { readonly action: Action; r
             await api.post(`/v1/setting-change-requests/${request.id}/decision`, { decision: kind, reason: reason.trim() }, { idempotencyKey })
           }
         } catch (failure) {
-          throw withApprovers(failure, approverOf(request).role)
+          throw decisionRefusal(withApprovers(failure, approverOf(request).role))
         }
         toast({ message: kind === 'approve' ? `${keyLabel(request.key)} change approved.` : kind === 'reject' ? `${keyLabel(request.key)} change rejected.` : `${keyLabel(request.key)} change withdrawn.` })
         onDone()
@@ -76,18 +89,20 @@ interface CardProps {
   /** Approve is the primary action only when it is the only request listed (one primary per view). */
   readonly single: boolean
   readonly onAction: (action: Action) => void
+  readonly now: number
 }
 
-function ChangeRequestCard({ request, single, onAction }: CardProps) {
+function ChangeRequestCard({ request, single, onAction, now }: CardProps) {
   const { me, can, readOnly } = useSession()
   const approval = approverOf(request)
   const own = request.requested_by.id === me.user.id
   const canDecide = !readOnly && can(approval.permission) && !own && !request.no_eligible_approver
+  const passed = Date.parse(request.effective_from) < now
   const actions = readOnly ? undefined : (
     <>
       {own && can('settings.manage') && <Button onClick={() => onAction({ kind: 'withdraw', request })}>Withdraw</Button>}
       {canDecide && <Button variant="destructive" onClick={() => onAction({ kind: 'reject', request })}>Reject</Button>}
-      {canDecide && <Button variant={single ? 'primary' : 'secondary'} icon="verified_user" onClick={() => onAction({ kind: 'approve', request })}>Approve</Button>}
+      {canDecide && !passed && <Button variant={single ? 'primary' : 'secondary'} icon="verified_user" onClick={() => onAction({ kind: 'approve', request })}>Approve</Button>}
     </>
   )
   return (
@@ -108,6 +123,7 @@ function ChangeRequestCard({ request, single, onAction }: CardProps) {
         reason={request.reason}
         actions={actions}
       >
+        {passed && <p className={NOTE}>{EFFECTIVE_PASSED}</p>}
         {own && <p className={NOTE}>You requested this change, so a {approval.role} who did not request it must decide it.</p>}
       </RequestCard>
     </li>
@@ -117,6 +133,7 @@ function ChangeRequestCard({ request, single, onAction }: CardProps) {
 /** FR-TEN-003 changes waiting for their approver (second person, FR-IAM-004): money for Finance, visibility for the DPO. */
 export function ChangeRequestsSection({ requests, onChanged }: { readonly requests: Resource<readonly ChangeRequest[]>; readonly onChanged: () => void }) {
   const [action, setAction] = useState<Action | null>(null)
+  const now = useNow(MINUTE_MS)
   const list = requests.data ?? []
   return (
     <section className={SECTION_CARD} aria-labelledby="change-requests-title">
@@ -127,7 +144,7 @@ export function ChangeRequestsSection({ requests, onChanged }: { readonly reques
       {requests.data !== null && list.length === 0 && <p className={NOTE}>No change is waiting for approval.</p>}
       {list.length > 0 && (
         <ul aria-label="Changes waiting for approval" className="flex flex-col gap-space-md">
-          {list.map((request) => <ChangeRequestCard key={request.id} request={request} single={list.length === 1} onAction={setAction} />)}
+          {list.map((request) => <ChangeRequestCard key={request.id} request={request} single={list.length === 1} onAction={setAction} now={now} />)}
         </ul>
       )}
       {action !== null && (

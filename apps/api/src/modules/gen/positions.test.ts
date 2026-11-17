@@ -1,8 +1,7 @@
 import type { FastifyInstance } from 'fastify'
 import { afterAll, beforeAll, describe, expect, test } from 'vitest'
 import {
-  auditActions, buildTestApp, call, closePoolsAfterAll, createMarket, createSignedInUser, createTenant, ownerRows, resetApiDb,
-  type TestUser,
+  activePlanVersion, auditActions, buildTestApp, call, closePoolsAfterAll, createMarket, createSignedInUser, createTenant, ownerRows, resetApiDb, type TestUser,
 } from '../../../test/helpers/index.js'
 import { genModule } from './index.js'
 import { activeType, asUser, committedPeriod, daysAgo, enrol, participant, position, saveSettings } from './test-support.js'
@@ -117,7 +116,8 @@ describe('POST /v1/positions/:id/status (FR-PAR-005)', () => {
     await step(support, 'suspended', 409, 'STATUS_TRANSITION_INVALID')
     await step(support, 'active', 200)
     const terminated = await step(compliance, 'terminated', 200)
-    expect(terminated.json().data).toMatchObject({ position: { id: mid, status: 'terminated' }, reassigned_customers: 0 })
+    // BR-GEN-07: no reparent_on_termination rule covers GB, so nothing moves.
+    expect(terminated.json().data).toMatchObject({ position: { id: mid, status: 'terminated' }, reassigned_customers: 0, reparented: [] })
     await step(compliance, 'suspended', 409, 'STATUS_TRANSITION_INVALID')
     await step(support, 'active', 403, 'PERMISSION_DENIED') // reinstating reverses a termination: Compliance officer only
     await step(complianceNoStepUp, 'active', 403, 'STEP_UP_REQUIRED')
@@ -200,5 +200,104 @@ describe('POST /v1/positions/:id/status (FR-PAR-005)', () => {
     const servicing = await ownerRows('SELECT servicing_position_id FROM customer_servicing WHERE customer_id = $1 AND valid_to IS NULL', [customer])
     expect(servicing).toEqual([{ servicing_position_id: null }])
     expect((await auditActions(acmeId)).slice(-2)).toEqual(['POSITION.STATUS_CHANGED', 'SERVICING.REASSIGNED'])
+  })
+})
+
+describe('D-B3-07 rule re-parenting on termination (T-B3-33, TS-64 rule part, FR-GEN-009)', () => {
+  test('terminating B moves its direct sponsor children to B\'s parent from the termination instant, as rule rows', async () => {
+    const version = await activePlanVersion(acmeId, my, {
+      submitterId: admin.id, approverId: compliance.id, creditingEvent: 'paid',
+      rules: [{ rule_key: 'reparent', kind: 'genealogy.reparent_on_termination', params: { tree: 'sponsor' } }],
+    })
+    const ruleId = `${version}:reparent`
+    const [top, middle, left, right, grandchild] = await Promise.all(['RA', 'RB', 'RC', 'RD', 'RE'].map(async (ref) => (await holder(ref, my)).position))
+    await enrol(admin, 'sponsor', middle!, top!)
+    for (const child of [left!, right!]) await enrol(admin, 'sponsor', child, middle!)
+    await enrol(admin, 'sponsor', grandchild!, left!)
+    const at = new Date().toISOString()
+
+    const terminated = await setStatus(compliance, middle!, 'terminated', { effective_from: at })
+    const rows = await ownerRows<{ child_position_id: string; parent_position_id: string; valid_from: Date; valid_to: Date | null; event_type: string; rule_id: string | null }>(
+      `SELECT child_position_id, parent_position_id, valid_from, valid_to, event_type, rule_id FROM relationship
+       WHERE child_position_id = ANY ($1) AND superseded_at IS NULL ORDER BY child_position_id, valid_from`, [[left, right, grandchild]])
+    const inspector = (await get(support, left!)).json().data
+
+    expect(terminated.statusCode).toBe(200)
+    expect(terminated.json().data.reparented).toEqual([left, right].sort().map((id) => ({ position_id: id, tree: 'sponsor', rule_id: ruleId })))
+    for (const child of [left!, right!]) {
+      const [closed, moved] = rows.filter((row) => row.child_position_id === child)
+      expect(closed).toMatchObject({ parent_position_id: middle, event_type: 'enrolment', valid_to: new Date(at) })
+      expect(moved).toMatchObject({ parent_position_id: top, event_type: 'rule', rule_id: ruleId, valid_from: new Date(at), valid_to: null })
+    }
+    // Only direct children move; the grandchild keeps its parent.
+    expect(rows.filter((row) => row.child_position_id === grandchild)).toEqual([expect.objectContaining({ parent_position_id: left, valid_to: null })])
+    expect(inspector.parents.sponsor).toMatchObject({ position_id: top, event_type: 'rule', rule_id: ruleId })
+    const [audit] = await ownerRows<{ after_ref: string }>(
+      `SELECT after_ref FROM audit.audit_event WHERE tenant_id = $1 AND action = 'GENEALOGY.REPARENTED' AND object_id = $2`, [acmeId, middle])
+    expect(JSON.parse(audit!.after_ref).after).toMatchObject({ rule_id: ruleId, tree: 'sponsor', parent_position_id: top, children: [left, right].sort() })
+  })
+
+  test('a child\'s pending change keeps its date: only [T, change) moves; a backdated termination also moves later children', async () => {
+    const [ruleId] = (await ownerRows<{ id: string }>(
+      `SELECT plan_version_id::text || ':' || rule_key AS id FROM plan_rule WHERE tenant_id = $1 AND kind = 'genealogy.reparent_on_termination'`, [acmeId])).map((row) => row.id)
+    const [top, middle, pendingChild, other, early, late] = await Promise.all(['PA', 'PB', 'PC', 'PX', 'PE', 'PL'].map(async (ref) => (await holder(ref, my)).position))
+    await enrol(admin, 'sponsor', middle!, top!)
+    for (const child of [pendingChild!, early!]) await enrol(admin, 'sponsor', child, middle!)
+    await enrol(admin, 'sponsor', other!, top!)
+    const later = daysAgo(-5)
+    await asUser(admin, (tx) => tx.query(`SELECT gen_apply_relationship('sponsor', $1, $2, NULL, $3, 'rule', NULL, 'test-rule')`, [pendingChild, other, later]))
+    const at = daysAgo(8) // after MY's committed period (T-B2-12 above)
+    const joined = daysAgo(4)
+    await enrol(admin, 'sponsor', late!, middle!, joined)
+
+    const terminated = await setStatus(compliance, middle!, 'terminated', { effective_from: at })
+    const rows = async (child: string) => ownerRows<{ parent_position_id: string; valid_from: Date; valid_to: Date | null; event_type: string; rule_id: string | null }>(
+      `SELECT parent_position_id, valid_from, valid_to, event_type, rule_id FROM relationship
+       WHERE child_position_id = $1 AND superseded_at IS NULL ORDER BY valid_from`, [child])
+
+    expect(terminated.statusCode).toBe(200)
+    expect(terminated.json().data.reparented.map((row: { position_id: string }) => row.position_id)).toEqual([pendingChild, early, late].sort())
+    expect(await rows(pendingChild!)).toEqual([
+      expect.objectContaining({ parent_position_id: middle, event_type: 'enrolment', valid_to: new Date(at) }),
+      { parent_position_id: top, valid_from: new Date(at), valid_to: new Date(later), event_type: 'rule', rule_id: ruleId },
+      expect.objectContaining({ parent_position_id: other, valid_from: new Date(later), valid_to: null, rule_id: 'test-rule' }),
+    ])
+    expect(await rows(early!)).toEqual([
+      expect.objectContaining({ parent_position_id: middle, valid_to: new Date(at) }),
+      expect.objectContaining({ parent_position_id: top, valid_from: new Date(at), valid_to: null, rule_id: ruleId }),
+    ])
+    // Joined the terminated position after T: moves from its own start, the enrolment row superseded (history kept).
+    expect(await rows(late!)).toEqual([{ parent_position_id: top, valid_from: new Date(joined), valid_to: null, event_type: 'rule', rule_id: ruleId }])
+    expect(await ownerRows('SELECT event_type FROM relationship WHERE child_position_id = $1 AND superseded_at IS NOT NULL', [late])).toEqual([{ event_type: 'enrolment' }])
+    const [event] = await ownerRows<{ payload: Record<string, unknown> }>(
+      `SELECT payload FROM outbox_event WHERE topic = 'genealogy.changed' AND key = $1 ORDER BY created_at DESC LIMIT 1`, [late])
+    expect(event!.payload).toMatchObject({ kind: 'sponsor', child_position_id: late, event_type: 'rule' })
+  })
+
+  test('D-B3-07: reinstating a terminated position counts toward its owner\'s positions limit in the market', async () => {
+    await activePlanVersion(acmeId, my, {
+      submitterId: admin.id, approverId: compliance.id, creditingEvent: 'paid',
+      rules: [{ rule_key: 'limit', kind: 'genealogy.positions_limit', params: { max: 1 } }],
+    })
+    const owner = await participant(admin, my, typeId, 'LIM')
+    const first = await position(admin, owner, my)
+    expect((await setStatus(compliance, first, 'terminated')).statusCode).toBe(200)
+    await position(admin, owner, my)
+
+    const refused = await setStatus(compliance, first, 'active')
+
+    expect([refused.statusCode, refused.json().error.code]).toEqual([422, 'POSITION_LIMIT_REACHED'])
+    expect((await get(support, first)).json().data.status).toBe('terminated')
+  })
+
+  test('a root has no parent to move its children to: they stay under it', async () => {
+    const [lone, child] = await Promise.all(['RF', 'RG'].map(async (ref) => (await holder(ref, my)).position))
+    await enrol(admin, 'sponsor', child!, lone!)
+    const before = await ownerRows('SELECT * FROM relationship WHERE child_position_id = $1', [child])
+
+    const terminated = await setStatus(compliance, lone!, 'terminated')
+
+    expect([terminated.statusCode, terminated.json().data.reparented]).toEqual([200, []])
+    expect(await ownerRows('SELECT * FROM relationship WHERE child_position_id = $1', [child])).toEqual(before)
   })
 })

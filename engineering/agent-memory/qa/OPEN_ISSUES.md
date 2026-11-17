@@ -57,3 +57,5 @@ _Agent: qa. Read before every task; update after every task. Keep concise — fa
 ## 2026-11-17 — After B2 round 1
 - Open: BUG-069 MEDIUM; BUG-070..080 LOW (B2 web). B1 BUG-060 not retested this round.
 - Not exercised: WooCommerce, connector rotate/withdraw, webhook refunds/cancel, merge/terminate duplicate outcomes, servicing/type change dialogs, later agreement acceptance, sync behind/held-24h, support session on B2 pages, placement tree + known-at, affected committed periods list.
+- 2026-11-18 B3 round 1: open BUG-084 (CRITICAL, volume × quantity twice), 085 (seed settings), 086 (consumed_by_run_id), 087 (enrol dialog width), 088 (rule event not shown), 089 (SC-01 table), 090–093 LOW. Not executed: WooCommerce, duplicate merge/terminate, BUG-081/082/083 re-checks, plan Reject/Compare/golden upload/pools/CSV exports, support-session view of B3 pages.
+- 2026-11-18 B3 round 3: BUG-094 verified fixed. Open B3 web: BUG-095, 096, 097, 098 (LOW), 093 web part; engine text 090/092. Not executed in round 3: row Calculate/Re-run, restatement submit, W-B3-1..3/6/8 (unchanged since round 2), plus the round-1 not-executed list.

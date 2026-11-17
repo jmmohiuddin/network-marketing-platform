@@ -2,13 +2,8 @@ import type { Tx } from '@nmp/db'
 import { z } from 'zod'
 import type { Permission } from '../../lib/permissions.js'
 
-const INT64_MAX = 9_223_372_036_854_775_807n
-
-/** A non-negative bigint in minor units, as a decimal string (no floats in money or volume paths). */
-const bigintString = z
-  .string()
-  .regex(/^(0|[1-9]\d{0,18})$/, 'must be a non-negative whole number as a string')
-  .refine((value) => BigInt(value) <= INT64_MAX, 'must fit in 64 bits')
+/** A non-negative bigint in minor units, as a decimal string of at most 18 digits (fits bigint; no floats, OI-7). */
+const bigintString = z.string().regex(/^(0|[1-9]\d{0,17})$/, 'must be a non-negative whole number of at most 18 digits as a string')
 
 const positiveBigintString = bigintString.refine((value) => BigInt(value) > 0n, 'must be greater than zero')
 
@@ -30,6 +25,8 @@ export interface SettingDefinition<S extends z.ZodType = z.ZodType> {
    * migration 0204's approval_setting_keys() lists exactly the keys where it is set.
    */
   readonly approverPermission: Permission | null
+  /** D-B3-06: kept so stored values still parse; writes are refused (SETTING_RETIRED). */
+  readonly retired?: boolean
 }
 
 const COMPLIANCE_READERS: readonly Permission[] = ['settings.manage', 'compliance.read']
@@ -168,9 +165,16 @@ export const SETTINGS = {
    
     approverPermission: 'privacy.manage',
   },
-  /** D-B2-20: placement legs per position until B3 moves the width to the plan version. */
+  /** D-B2-20, retired by D-B3-06: the width now lives on the plan version; read only as the legacy fallback. */
   'genealogy.placement_width': {
     schema: z.number().int().min(2).max(20), readPermissions: ['settings.manage', 'genealogy.read'], stepUp: false,
+    approverPermission: null, retired: true,
+  },
+  /** D-B3-11: a result line at or above this amount is a blocking review exception; unset = the check is reported as not configured. */
+  'runs.exception_thresholds': {
+    schema: z.strictObject({ large_line_minor: bigintString }),
+    readPermissions: ['run.review', 'settings.manage'],
+    stepUp: false,
     approverPermission: null,
   },
 } as const satisfies Record<string, SettingDefinition>

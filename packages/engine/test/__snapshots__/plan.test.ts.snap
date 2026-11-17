@@ -1,0 +1,36 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`T-B3-07 plain-language rendering > every kind renders 1`] = `
+{
+  "cap": "Caps unilevel, match at 40 % of the market's cv; method priority (reduce match, unilevel in that order); breakage: removed amounts are not earned",
+  "carry carry_cv": "Carries cv forward while holding main ≥ R1, expiring after 3 periods",
+  "count.customers customers": "Count of end customers with at least 1000 minor units of retail_base",
+  "count.enrolled enrolled": "Count of personally enrolled positions with cv ≥ 0 minor units",
+  "counter streak": "Counts consecutive periods holding main ≥ R1",
+  "customer_roll_up roll_up": "Splits end-customer retail_base up the servicing chain: level 0 50 %, level 1 50 %",
+  "genealogy.change_window window": "Genealogy changes in the sponsor tree only within 30 days of enrolment",
+  "genealogy.positions_limit positions": "At most 3 positions per participant",
+  "genealogy.reparent_on_termination reparent": "On termination, the direct sponsor children move to the terminated position's parent",
+  "ladder lead": "Ladder L1: holds main ≥ R2",
+  "ladder main": "Ladder R1: cv ≥ 10000 minor units; R2: 1 sponsor legs with main ≥ R1 and (capped ≥ 10000) (grace 1 periods)",
+  "limit.max_per_period per_period": "Limits unilevel to 1000000 minor units per participant per period",
+  "limit.max_share_from_purpose personal_share": "Limits the share of unilevel paid on personal orders to 50 %",
+  "measure.derived capped": "Derived measure min(cv, 50000), rounded half-up to a whole minor unit",
+  "pay.differential diff": "Pays the rate difference by main rank (R1 1 %, R2 2 %) of cv down the sponsor tree; reversal: restatement; paid to every earner",
+  "pay.fast_start fast": "Pays 20 % (at most 5000 minor units per order) of cv on orders of buyers enrolled within 30 days, up the sponsor tree; reversal: order line; paid to every earner",
+  "pay.flat flat": "Pays 1000 minor units each period; reversal: restatement; paid to holders of main ≥ R2",
+  "pay.generations gens": "Pays 2 % of cv on sponsor generations 1–1 led by main ≥ R2; reversal: restatement; paid to every earner",
+  "pay.matching match": "Matches 10 % of unilevel on sponsor generations 1–1; reversal: restatement; paid to every earner",
+  "pay.one_time once": "Pays 5000 minor units once per position (welcome); reversal: restatement; paid to holders of main ≥ R2",
+  "pay.override over": "Pays 1 % of cv on placement levels 1–3; reversal: order line; paid to every earner",
+  "pay.percent_by_level unilevel": "Pays 8 %, 5 % of cv on sponsor levels 1–2; compression dynamic; reversal: order line; paid to holders of main ≥ R1",
+  "pay.percent_of_measure rank_bonus": "Pays by main rank (R1 1 %) of cv; reversal: restatement; paid to every earner",
+  "pay.pool pool": "Pools 1 % of the market's cv, split by shares by main rank (R2 1); reversal: restatement; paid to every earner",
+  "pay.retail_margin retail": "Pays 25 % of retail_base as retail margin; reversal: order line; paid to every earner",
+  "points_factor points": "Converts points to currency at 1 in market MKT from 0 µs",
+  "volume.enrolled_group egv": "cv summed over personally enrolled positions, excluding the position itself",
+  "volume.group gv": "Group volume: cv summed over the sponsor tree, including the position itself",
+  "volume.personal cv": "Personal volume from the volume "cv" per unit of all orders",
+  "volume.personal retail_base": "Personal volume from the order amount of end-customer orders",
+}
+`;

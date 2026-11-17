@@ -1,0 +1,25 @@
+{
+  "measured_at": "2026-11-17T18:24:51.805Z",
+  "results": [
+    {
+      "lines": 100000,
+      "positions": 100000,
+      "lines_ms": 120949.987916,
+      "state_ms": 4706.902166999993,
+      "flip_ms": 1976.0589580000087,
+      "total_ms": 127692.53195799999,
+      "result_line_bytes_after": 231792640,
+      "rss_mb": 379
+    },
+    {
+      "lines": 600000,
+      "positions": 100000,
+      "lines_ms": 142361.439958,
+      "state_ms": 4683.400332999998,
+      "flip_ms": 1641.23429199995,
+      "total_ms": 148815.34633300002,
+      "result_line_bytes_after": 1556520960,
+      "rss_mb": 247
+    }
+  ]
+}

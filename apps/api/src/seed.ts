@@ -1,7 +1,7 @@
 // Local development data (nmp_dev) and the browser-test seed (nmp_e2e, `pnpm --filter @nmp/api seed:e2e`): two
 // independent vendor operators with MFA (BUG-031: bootstrap users, no inviter, so either can be the other's second
 // person) and two tenants with staff (no MFA: their forced enrolment is part of the browser test). nmp_e2e also gets the
-// labelled fixture market pack and market (PLAN B1 and B2 section 6).
+// labelled fixture market pack and markets (PLAN B1, B2 and B3 section 6).
 // Idempotent: existing rows are kept and their passwords are not changed. Refuses production, any database but the
 // local ones, and any database server not on this machine.
 import { randomBytes, randomUUID } from 'node:crypto'
@@ -15,6 +15,7 @@ import { hashPassword } from './lib/passwords.js'
 import { BASE_ROLES, isPrivileged, type BaseRoleName } from './lib/permissions.js'
 import { seal } from './lib/secret-box.js'
 import { generateTotpSecret, totpUri } from './lib/totp.js'
+import { recordStructureChange } from './modules/ten/index.js'
 
 const SYSTEM: ActorContext = { actorType: 'system', requestId: 'seed', supportSessionId: null }
 const VENDORS = [
@@ -33,6 +34,7 @@ const STAFF: readonly { local: string; name: string; role: BaseRoleName }[] = [
   { local: 'analyst', name: 'Commission Analyst', role: 'Commission analyst' },
   { local: 'support', name: 'Support Agent', role: 'Support agent' },
   { local: 'dpo', name: 'Data Protection Officer', role: 'DPO' },
+  { local: 'planadmin', name: 'Plan Administrator', role: 'Plan administrator' },
 ]
 
 // The two admins are the bootstrap grants of provisioning; every other privileged grant needs a second admin's approval.
@@ -159,24 +161,34 @@ async function seedTenant(slug: string, legalName: string, passwordHash: string,
 const E2E_DATABASE = 'nmp_e2e'
 export const E2E_FIXTURE_PACK = 'e2e-fixture'
 
-/**
- * PLAN B1 section 6: a labelled fixture market pack for the browser tests (no real pack data ships, DEC-14). Pack
- * rules are platform tables only migrations or the owner write, so this goes through the owner connection, which
- * must point at the same database as the app (MIGRATE_DATABASE_URL). Idempotent.
- */
-export async function seedFixturePack(expectedDatabase: string): Promise<void> {
+/** The owner connection, refused unless it is on the database the app seeds (MIGRATE_DATABASE_URL, .env: nmp_dev). */
+async function ownerOn(expectedDatabase: string, what: string) {
   const owner = getOwnerPool()
   const { rows } = await owner.query<{ name: string }>('SELECT current_database() AS name')
   if (rows[0]?.name !== expectedDatabase) {
-    throw new Error(`seed refuses the fixture pack: the owner connection is on ${rows[0]?.name}, not ${expectedDatabase}`)
+    throw new Error(`seed refuses the fixture ${what}: the owner connection is on ${rows[0]?.name}, not ${expectedDatabase}`)
   }
+  return owner
+}
+
+/**
+ * PLAN B1 section 6: a labelled fixture market pack for the browser tests (no real pack data ships, DEC-14). Pack
+ * rules are platform tables only migrations or the owner write, so this goes through the owner connection. PLAN B3
+ * section 6: the guardrail rules carry the checks CPL evaluates (blocked enrolment-only pay, warned starter-kit
+ * volume). Idempotent; an older enrolment-only row gets the B3 predicate.
+ */
+export async function seedFixturePack(expectedDatabase: string): Promise<void> {
+  const owner = await ownerOn(expectedDatabase, 'pack')
   await owner.query(
     `INSERT INTO guardrail_rule (id, market_pack, title, outcome, predicate, overridable, mandatory, basis, basis_status,
        source_ref, effective_from)
      VALUES ('e2e-enrolment-only-bonus@2026-01-01', $1, 'E2E FIXTURE — enrolment-only bonus', 'blocked',
-       '{"fixture": "enrolment_only_bonus"}', false, true, 'E2E fixture basis, not a real market rule', 'screening',
-       'E2E fixture, not a real market rule', '2026-01-01')
-     ON CONFLICT (id) DO NOTHING`,
+       '{"check": "enrolment_only_pay"}', false, true, 'E2E fixture basis, not a real market rule', 'screening',
+       'E2E fixture, not a real market rule', '2026-01-01'),
+       ('e2e-starter-kit-volume@2026-01-01', $1, 'E2E FIXTURE — starter kit', 'warned', '{"check": "starter_kit_volume"}',
+       true, true, 'E2E fixture basis, not a real market rule', 'screening', 'E2E fixture, not a real market rule',
+       '2026-01-01')
+     ON CONFLICT (id) DO UPDATE SET predicate = EXCLUDED.predicate`,
     [E2E_FIXTURE_PACK],
   )
   await owner.query(
@@ -196,11 +208,7 @@ export async function seedFixturePack(expectedDatabase: string): Promise<void> {
  * pack; needs the acme tenant. Idempotent.
  */
 export async function seedFixtureMarket(expectedDatabase: string): Promise<void> {
-  const owner = getOwnerPool()
-  const { rows } = await owner.query<{ name: string }>('SELECT current_database() AS name')
-  if (rows[0]?.name !== expectedDatabase) {
-    throw new Error(`seed refuses the fixture market: the owner connection is on ${rows[0]?.name}, not ${expectedDatabase}`)
-  }
+  const owner = await ownerOn(expectedDatabase, 'market')
   await owner.query(
     `INSERT INTO market (tenant_id, code, currency, minor_unit, time_zone, languages, market_pack, state)
      SELECT t.id, 'NL', 'EUR', 2, 'Europe/Amsterdam', '{nl}', $1, 'live' FROM tenant t WHERE t.slug = 'acme'
@@ -226,6 +234,125 @@ export async function seedFixtureMarket(expectedDatabase: string): Promise<void>
      WHERE t.slug = 'acme' AND c.name = 'NL monthly'
      ON CONFLICT DO NOTHING`,
   )
+}
+
+const FIXTURE_DE = 'E2E FIXTURE'
+
+/** A participant type proposed by admin and approved by admin2, as the API records it (D-B2-09). */
+async function approvedType(tx: Tx, ids: { admin: string; admin2: string }, code: string, distributor: boolean): Promise<string> {
+  const { rows } = await asSelf(tx, ids.admin, () => tx.query<{ id: string }>(
+    `INSERT INTO participant_type (tenant_id, code, name, can_earn, counts_as_end_customer, can_sponsor, can_hold_positions,
+       state, reason, requested_by)
+     VALUES (app_tenant_id(), $1, $1, $2, NOT $2, $2, $2, 'pending', $3, $4) RETURNING id`,
+    [code, distributor, FIXTURE_DE, ids.admin],
+  ))
+  const typeId = rows[0]!.id
+  await asSelf(tx, ids.admin2, async () => {
+    const approval = await tx.query<{ id: string }>(
+      `INSERT INTO approval (tenant_id, object_type, object_id, preparer_id, approver_id, decision, reason, decided_at)
+       VALUES (app_tenant_id(), 'participant_type', $1, $2, $3, 'approved', $4, now()) RETURNING id`,
+      [typeId, ids.admin, ids.admin2, FIXTURE_DE],
+    )
+    await tx.query(
+      `UPDATE participant_type SET state = 'active', decided_by = $2, decided_at = now(), approval_id = $3 WHERE id = $1`,
+      [typeId, ids.admin2, approval.rows[0]!.id],
+    )
+  })
+  return typeId
+}
+
+/** An approved type with this code: the existing one, or a new one. */
+async function fixtureType(tx: Tx, ids: { admin: string; admin2: string }, code: string, distributor: boolean): Promise<string> {
+  const { rows } = await tx.query<{ id: string }>(`SELECT id FROM participant_type WHERE code = $1 AND state = 'active'`, [code])
+  return rows[0]?.id ?? approvedType(tx, ids, code, distributor)
+}
+
+/** A participant of the type enrolled at `at`, display name = its reference. */
+async function fixtureParticipant(tx: Tx, ref: string, marketId: string, typeId: string, at: string): Promise<string> {
+  const { rows } = await tx.query<{ id: string }>(
+    `INSERT INTO participant (tenant_id, external_ref, account_type, market_id, display_name, enrolled_at)
+     VALUES (app_tenant_id(), $1, 'individual', $2, $1, $3) RETURNING id`,
+    [ref, marketId, at],
+  )
+  await tx.query(
+    `INSERT INTO participant_type_assignment (tenant_id, participant_id, type_id, valid_from) VALUES (app_tenant_id(), $1, $2, $3)`,
+    [rows[0]!.id, typeId, at],
+  )
+  return rows[0]!.id
+}
+
+/**
+ * PLAN B3 section 6, E2E FIXTURE: acme's market DE (live, owner connection) with a Berlin monthly calendar from three
+ * months before this month to three months ahead (all open), approved types FXDIST and FXRETAIL, distributors DE-A <-
+ * DE-B <- DE-C (sponsor), customer DE-K serviced by DE-C and SKU FX-1 worth 100.00 pv per unit, written in acme's
+ * tenant realm through the shared SQL as the API would. No orders and no plan (the browser workflows make them).
+ * Needs the seeded acme staff. Idempotent: skipped once DE-A exists.
+ */
+export async function seedFixturePlanMarket(expectedDatabase: string): Promise<void> {
+  const owner = await ownerOn(expectedDatabase, 'plan market')
+  await owner.query(
+    `INSERT INTO market (tenant_id, code, currency, minor_unit, time_zone, languages, market_pack, state)
+     SELECT t.id, 'DE', 'EUR', 2, 'Europe/Berlin', '{de}', $1, 'live' FROM tenant t WHERE t.slug = 'acme'
+     ON CONFLICT DO NOTHING`,
+    [E2E_FIXTURE_PACK],
+  )
+  const { rows } = await owner.query<{ id: string }>(`SELECT id FROM tenant WHERE slug = 'acme'`)
+  await runInTenant({ tenantId: rows[0]!.id, userId: SYSTEM_ACTOR_ID }, SYSTEM, async (tx) => {
+    if ((await tx.query(`SELECT 1 FROM participant WHERE external_ref = 'DE-A'`)).rowCount !== 0) return
+    const staff = await tx.query<{ email: string; id: string }>(
+      `SELECT email, id FROM user_account WHERE email IN ('admin@acme.example', 'admin2@acme.example')`,
+    )
+    const userId = (email: string) => staff.rows.find((row) => row.email === email)!.id
+    const ids = { admin: userId('admin@acme.example'), admin2: userId('admin2@acme.example') }
+    const { rows: [setup] } = await tx.query<{ market_id: string; calendar_id: string; first_start: string }>(
+      `WITH market AS (SELECT id FROM market WHERE code = 'DE'),
+            start AS (SELECT (date_trunc('month', now() AT TIME ZONE 'Europe/Berlin') - interval '3 months')::date AS d),
+            cal AS (
+              INSERT INTO calendar (tenant_id, market_id, name, cadence, cutoff_time_zone, first_period_start)
+              SELECT app_tenant_id(), market.id, 'DE monthly', 'monthly', 'Europe/Berlin', start.d FROM market, start
+              RETURNING id, market_id, first_period_start)
+       SELECT cal.market_id, cal.id AS calendar_id, (cal.first_period_start::timestamp AT TIME ZONE 'Europe/Berlin')::text AS first_start
+       FROM cal`,
+    )
+    await tx.query(
+      `INSERT INTO period (tenant_id, calendar_id, starts_at, ends_at)
+       SELECT app_tenant_id(), c.id, d AT TIME ZONE c.cutoff_time_zone, (d + interval '1 month') AT TIME ZONE c.cutoff_time_zone
+       FROM calendar c
+       CROSS JOIN generate_series(c.first_period_start::timestamp, c.first_period_start::timestamp + interval '6 months',
+                                  interval '1 month') AS d
+       WHERE c.id = $1`,
+      [setup!.calendar_id],
+    )
+    const distributor = await fixtureType(tx, ids, 'FXDIST', true)
+    const retail = await fixtureType(tx, ids, 'FXRETAIL', false)
+    const at = setup!.first_start
+    const position = async (ref: string) => {
+      const participant = await fixtureParticipant(tx, ref, setup!.market_id, distributor, at)
+      const created = await tx.query<{ id: string }>(
+        `SELECT gen_create_position($1, $2, NULL, NULL, 'active', $3) AS id`, [participant, setup!.market_id, at],
+      )
+      return created.rows[0]!.id
+    }
+    const [a, b, c] = [await position('DE-A'), await position('DE-B'), await position('DE-C')]
+    for (const [child, parent] of [[b, a], [c, b]]) {
+      await tx.query(`SELECT gen_apply_relationship('sponsor', $1, $2, NULL, $3, 'enrolment', NULL, NULL)`, [child, parent, at])
+    }
+    const customer = await fixtureParticipant(tx, 'DE-K', setup!.market_id, retail, at)
+    await tx.query(`SELECT crm_set_servicer($1, $2, 'enrolment', $3, NULL, NULL)`, [customer, c, at])
+    await asSelf(tx, ids.admin, () => tx.query(
+      `INSERT INTO product_volume_map (tenant_id, market_id, sku, item_class, volumes, valid_from, reason, created_by)
+       VALUES (app_tenant_id(), $1, 'FX-1', 'product', '{"pv": "10000"}', $2, $3, $4)`,
+      [setup!.market_id, at, FIXTURE_DE, ids.admin],
+    ))
+    // BUG-085: runs and simulations of M-3..M-1 need a settings version in force at their end, and settings are only
+    // saved from now on: the fixture records its structure (market DE, its calendar) as of the first period start.
+    const { rows: [first] } = await tx.query<{ starts_at: Date; covered: boolean }>(
+      `SELECT p.starts_at, EXISTS (SELECT 1 FROM tenant_setting_version v WHERE v.effective_from <= p.starts_at) AS covered
+       FROM period p WHERE p.calendar_id = $1 ORDER BY p.starts_at LIMIT 1`,
+      [setup!.calendar_id],
+    )
+    if (!first!.covered) await asSelf(tx, ids.admin, () => recordStructureChange(tx, `${FIXTURE_DE}: market DE and its calendar`, first!.starts_at))
+  })
 }
 
 // The seed creates known staff accounts: only the local databases of PROJECT_ENGINEERING_CONTEXT may get them.
@@ -282,7 +409,9 @@ export async function seed(config: Config, password: string | undefined, print: 
   if (target.database === E2E_DATABASE) {
     await seedFixturePack(E2E_DATABASE)
     await seedFixtureMarket(E2E_DATABASE)
+    await seedFixturePlanMarket(E2E_DATABASE)
     print(`market pack: ${E2E_FIXTURE_PACK} (fixture), acme market NL live with committed past periods (fixture)`)
+    print('acme market DE live with DE-A, DE-B, DE-C, DE-K and SKU FX-1, no plan yet (fixture)')
   }
   if (created && password === undefined) print(`password of the accounts created now: ${effective}`)
 }

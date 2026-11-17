@@ -6,6 +6,8 @@ B1 figures (2026-11-17): unit/integration = test counts of each module in the re
 
 B2 figures (2026-11-17): records-step full run on nmp_test_4 (reset to 0208): 148 files, 2739 tests passed, 0 failed, 0 skipped; api + web typecheck clean. Unit column = test count of that module in this run (isolation 956 and role-matrix 31+11 cover every B2 route). Details `increments/B2/HANDOFF.md`.
 
+B3 figures (2026-11-18): records-step full run on nmp_test_4 (reset to 0306): 173 files, 3303 tests passed, 0 failed, 0 skipped (76 s); api + web typecheck clean. Unit column = test count of that module in this run (isolation 1208 and role-matrix 31+11 cover every B3 route). Details `increments/B3/HANDOFF.md`.
+
 | Module | Rel | Agent | Status | Backend | Frontend | DB | Unit | Integration | Playwright | Review | Open defects | % |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | db/RLS | A | database | Implemented | n/a | n/a | done | 76 pass | 76 pass | - | reviewed+fixed | 0 | 70 |
@@ -33,7 +35,14 @@ B2 figures (2026-11-17): records-step full run on nmp_test_4 (reset to 0208): 14
 | B2 INT (Shopify/WooCommerce inbound connectors, sync health) + IAM key scopes | B2 | backend BE3 | Ready for Review | done | built | done | int 121, iam 119 pass | pass | W-B2-7, 10 pass | reviewed+fixed; SEC-B2-2 fix in tree, unconfirmed | 0 bugs open | 90 |
 | B2 CAS mounted (types genealogy_change, genealogy_correction, transfer, duplicate) | B2 | backend BE1/BE2 | Ready for Review | done | built | done | 30 pass | pass | W-B2-5, 6 pass | reviewed+fixed; SEC-B2-4 fix in tree, unconfirmed | 0 bugs open | 90 |
 | B2 Web (People, SC-09, SC-07, SC-08, SC-06, SC-31, SC-32, SC-13 B2 tabs, SC-29 B2 part, SC-17 touch) | B2 | frontend W1/W2 | Completed | - | Stitch | - | apps/web 446 pass | - | rounds 1–2, 4 viewports pass; Impeccable 14/16 | reviewed | LOW: BUG-081, 082, 083 | 95 |
-| PLN/COMP | B | - | Not Started | - | - | - | - | - | - | - | 0 | 0 |
+| B3 db/RLS (0300–0306: plans, versions, rules, transitions, goldens, guardrail decisions, snapshots, runs, result lines, qualification state, simulations, adjustment origins, restatements; §4.2 SQL contracts; B2 OI-3/OI-7) | B3 | database | Ready for Review | n/a | n/a | done | packages/db 203 pass | pass | - | reviewed; 6 findings fixed (0305); security fix 0306 (guardrail author SoD) | 0306 not on nmp_dev/nmp_e2e (at 0305); nmp_test has no B3 migration (0208 + a 0250_firebase_identity.sql row not in the repo) | 90 |
+| B3 engine 0.2.0 (JSON-AST expressions, plan validation and compile, half_even, clawback) | B3 | compensation BE1 | Ready for Review | done | n/a | n/a | packages/engine 328 pass | pass | - | reviewed+fixed (15 findings across engine, PLN, CPL) | S-1: out of memory at 500k and 2M positions (4 GB heap) | 80 |
+| B3 PLN (plans, versions, rules, transitions, compare, goldens, lifecycle + SoD, activation job) | B3 | backend BE1 | Ready for Review | done | built | done | pln 43 pass | pass | W-B3-1, 2 pass (round 2) | reviewed+fixed; security fixes in tree (audit values, VERSION_NOT_DRAFT, golden input) | 0 bugs open | 90 |
+| B3 CPL guardrails (evaluation, acknowledgement, override with evidence, decisions log) | B3 | backend BE1 | Ready for Review | done | built | done | cpl 62 pass (incl. Release A reports) | pass | W-B3-1 pass | reviewed+fixed; override SoD by rule authors (0306) in tree | 0 bugs open | 90 |
+| B3 COMP (periods, run preflight + sync gate, snapshot, runs, review, commit with SoD + step-up, trace, replay, simulations, late adjustments, restatement case type, qualification) | B3 | backend BE2 | Ready for Review | done | built | done | comp 62 pass | pass | W-B3-3..7 pass (round 2) | reviewed+fixed; clawback fix (security HIGH) in tree | no 409 gate for an origin already consumed (500); S-2 100k end-to-end not re-run | 85 |
+| B3 B2 carry-over (placement width + crediting event by plan, rule re-parenting, change window, positions limit, checklist plan_variant, OI-3/4/7) | B3 | backend BE3 | Ready for Review | done | built | done | gen 52, par 42, ord 49, ten 80 pass | pass | W-B3-8 pass | reviewed+fixed | placement re-parenting with legs open (architect) | 90 |
+| B3 Web (SC-01, SC-02 + commit modal, SC-04 list/version, SC-05, SC-11, SC-42, SC-43; SC-06/07/09/32 and enrol dialog touches) | B3 | frontend W1/W2 | Completed | - | Stitch | - | apps/web 530 pass | - | rounds 1–3, 4 viewports; Impeccable 12→13/16 | reviewed | LOW: BUG-090/092 (engine text), 093 (web), 095, 096, 097, 098 | 95 |
+| PLN/COMP rest (FR-PLN-007/008 → B6, FR-COMP-011 → V1) | B | - | Not Started | - | - | - | - | - | - | - | 0 | 0 |
 | FIN/TAX/PAY | B | - | Not Started | - | - | - | - | - | - | - | 0 | 0 |
 | DIST portal | B | - | Not Started | - | - | - | - | - | - | - | 0 | 0 |
 | MIG/RPT | B | - | Not Started | - | - | - | - | - | - | - | 0 | 0 |

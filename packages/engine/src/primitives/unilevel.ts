@@ -1,6 +1,7 @@
 // pay.percent_by_level (TS-01, TS-02) plus the line builder shared by the payout primitives of this owner
 // (unilevel, generations, differential, override, matching, fast-start, one-time, pools).
 import { EngineError } from '../errors.js'
+import { expressionRefs } from '../expression.js'
 import { largestRemainder, mulRate, parseDecimal, toRaw } from '../money.js'
 import { ENGINE_VERSION, holdsRank, TRACE_SOURCE_LIMIT, type CreditedLine, type LineVolumes, type PayoutFn, type PositionVolumes, type QualificationOutput, type RunContext } from '../pipeline.js'
 import { nearestAncestor } from '../tree.js'
@@ -208,22 +209,39 @@ export function measureValues(volumes: PositionVolumes, key: string): BigInt64Ar
   return values
 }
 
-function measureRule(plan: PlanVersion, key: string): MeasureRule {
+function measureRule(plan: Pick<PlanVersion, 'measures'>, key: string): MeasureRule {
   const m = plan.measures.find((x) => x.key === key)
   if (m === undefined) throw new EngineError('INVALID_INPUT', 'bonus references an unknown measure', { measure: key })
   return m
 }
 
-/** Unit of a payable measure: a personal measure's unit, followed through group roll-ups. */
-export function measureUnit(plan: PlanVersion, key: string): 'currency' | 'points' {
-  let current = key
-  for (let step = 0; step <= plan.measures.length; step++) {
-    const m = measureRule(plan, current)
-    if (m.kind === 'volume.personal') return m.unit
-    if (m.kind !== 'volume.group' && m.kind !== 'volume.enrolled_group') throw new EngineError('INVALID_INPUT', 'a count is not a payable measure', { measure: key })
-    current = m.of
+/**
+ * Unit of a payable measure: a personal measure's unit, followed through group roll-ups and derived measures. A
+ * derived measure has the one unit of the volume measures it reads (counts are plain factors); none = not payable.
+ */
+export function measureUnit(plan: Pick<PlanVersion, 'measures'>, key: string): 'currency' | 'points' {
+  const unit = unitOf(plan, key, [])
+  if (unit === null) throw new EngineError('INVALID_INPUT', 'a count is not a payable measure', { measure: key })
+  return unit
+}
+
+function unitOf(plan: Pick<PlanVersion, 'measures'>, key: string, path: readonly string[]): 'currency' | 'points' | null {
+  if (path.includes(key)) throw new EngineError('INVALID_INPUT', 'measure roll-up is cyclic', { measure: key })
+  const m = measureRule(plan, key)
+  switch (m.kind) {
+    case 'volume.personal':
+      return m.unit
+    case 'volume.group':
+    case 'volume.enrolled_group':
+      return unitOf(plan, m.of, [...path, key])
+    case 'measure.derived': {
+      const units = new Set(expressionRefs(m.expr).measures.map((k) => unitOf(plan, k, [...path, key])).filter((u) => u !== null))
+      if (units.size > 1) throw new EngineError('INVALID_INPUT', 'a derived measure mixes currency and points', { measure: key })
+      return [...units][0] ?? null
+    }
+    default:
+      return null
   }
-  throw new EngineError('INVALID_INPUT', 'measure roll-up is cyclic', { measure: key })
 }
 
 /**
@@ -265,7 +283,7 @@ export function orderAttribution(ctx: RunContext, rule: BonusRule, lineVolumes: 
   const lines = lineVolumes.lines
   if (targets !== undefined) return { lines, mi, compact: false, targets }
   if (m.kind === 'volume.personal') return { lines, mi, compact: true, targets: (j, visit) => visit(j) }
-  const self = m.kind !== 'count.customers' && m.kind !== 'count.enrolled' && m.includeSelf
+  const self = (m.kind === 'volume.group' || m.kind === 'volume.enrolled_group') && m.includeSelf
   const tree = ctx.trees[m.kind === 'volume.group' ? m.tree : 'sponsor']
   const all = m.kind === 'volume.group'
   return {

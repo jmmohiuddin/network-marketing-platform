@@ -41,7 +41,7 @@ function violations(text: string): string[] {
 
 describe('static: src stays pure, integer-only and deterministic (TS-67, BR-MNY-01, BR-PLN-05)', () => {
   test('src has the contract modules', () => {
-    expect(files).toEqual(expect.arrayContaining(['errors.ts', 'index.ts', 'money.ts', 'pipeline.ts', 'tree.ts', 'types.ts']))
+    expect(files).toEqual(expect.arrayContaining(['errors.ts', 'expression.ts', 'index.ts', 'money.ts', 'pipeline.ts', 'plan.ts', 'tree.ts', 'types.ts']))
   })
 
   test.each(files)('%s', (name) => {

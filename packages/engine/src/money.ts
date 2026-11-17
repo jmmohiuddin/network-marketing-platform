@@ -7,8 +7,9 @@
 // - Unrounded amounts ("raw") are bigint minor x RAW_SCALE. mulRate is exact for up to two rate
 //   applications on a minor amount (e.g. matching on a unilevel line); deeper chains truncate toward
 //   zero at 10^-12 of a minor unit.
-// - Rounding happens ONCE per payout line, in pass 10, through roundRaw. The only mode defined is
-//   'half_up' (BR-MNY-02 platform default): ties away from zero, so -0.005 -> -0.01.
+// - Rounding happens ONCE per payout line, in pass 10, through roundRaw. Modes: 'half_up' (BR-MNY-02 platform
+//   default): ties away from zero, so -0.005 -> -0.01; 'half_even': ties to the even minor unit, so 0.125 -> 0.12,
+//   0.135 -> 0.14, -0.125 -> -0.12 (FR-COMP-012, applied to the magnitude like half_up).
 // - Splits, pools and scaled caps use largestRemainder (BR-MNY-03). A bound limit (cap, max_per_period,
 //   max_share_from_purpose) first fixes one whole total (the cap; roundRaw of the kept raw for max_share), then
 //   splits it. Ties: largestRemainder index order = payee position id ascending (MONEY I-11).
@@ -20,7 +21,7 @@ export const RAW_DECIMALS = 12
 export const RAW_SCALE = 10n ** 12n
 
 /** Rounding modes the engine implements. A tenant setting naming any other mode fails to type-check. */
-export type RoundingMode = 'half_up'
+export type RoundingMode = 'half_up' | 'half_even'
 
 const INT64_MAX = (1n << 63n) - 1n
 const INT64_MIN = -(1n << 63n)
@@ -55,13 +56,20 @@ export function mulRate(raw: bigint, rate: bigint): bigint {
 
 /** The single rounding function: raw -> minor units under `mode`. */
 export function roundRaw(raw: bigint, mode: RoundingMode): bigint {
+  const magnitude = raw < 0n ? -raw : raw
+  let rounded: bigint
   switch (mode) {
-    case 'half_up': {
-      const magnitude = raw < 0n ? -raw : raw
-      const rounded = (magnitude * 2n + RAW_SCALE) / (RAW_SCALE * 2n)
-      return raw < 0n ? -rounded : rounded
+    case 'half_up':
+      rounded = (magnitude * 2n + RAW_SCALE) / (RAW_SCALE * 2n)
+      break
+    case 'half_even': {
+      const floor = magnitude / RAW_SCALE
+      const twice = (magnitude % RAW_SCALE) * 2n
+      rounded = twice > RAW_SCALE || (twice === RAW_SCALE && floor % 2n === 1n) ? floor + 1n : floor
+      break
     }
   }
+  return raw < 0n ? -rounded : rounded
 }
 
 /**

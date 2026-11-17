@@ -50,7 +50,7 @@ async function assertNotIngested(tx: Tx, input: OrderInput): Promise<void> {
 async function buyerIdOf(tx: Tx, buyer: Buyer, input: OrderInput, marketId: string, at: string): Promise<string> {
   if (buyer.id !== null) return buyer.id
   const { rows } = await tx.query<{ id: string }>(
-    'SELECT par_create_customer($1, $2, $3, $4) AS id', [input.buyer.external_ref, marketId, buyer.type.type_id, at],
+    'SELECT id FROM par_create_customer($1, $2, $3, $4)', [input.buyer.external_ref, marketId, buyer.type.type_id, at],
   )
   const id = rows[0]!.id
   // created_at defaults to now(), this transaction's start: a buyer a concurrent order created first is not ours to audit.

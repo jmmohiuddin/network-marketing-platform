@@ -32,3 +32,4 @@ export const intModule: ApiModule = createIntModule()
 
 export { WEBHOOK_TOPICS, type WebhookTopic } from './topics.js'
 export type { WebhookResolver, WebhookTransport } from './transport.js'
+export { stateOf, syncHealth } from './health.js'

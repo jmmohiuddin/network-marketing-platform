@@ -44,7 +44,6 @@ describe('GenealogyCasePage (SC-08 change)', () => {
   function routes(extra: Record<string, () => Response> = {}) {
     return fetchByRoute({
       'GET /v1/documents/limits': () => ok({ max_file_bytes: 1048576, types: ['application/pdf'] }),
-      'GET /v1/settings/genealogy.placement_width': () => ok({ key: 'genealogy.placement_width', value: 2 }),
       'GET /v1/genealogy/search': (query) => ok(query.get('q') === 'C' ? [node('c', 'P-C')] : [node('a', 'P-A')]),
       'GET /v1/positions/c': () => detail('c', 'P-C', { position_id: 'b', position_ref: 'P-B', valid_from: '2026-11-17T08:00:00.123456Z' }),
       ...extra,

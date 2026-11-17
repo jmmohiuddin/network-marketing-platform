@@ -22,10 +22,11 @@ export async function structureSnapshot(tx: Tx): Promise<Record<string, unknown>
 }
 
 /**
- * Appends a settings version, effective now, holding the structure after the caller's change (same transaction). The
- * snapshot is read after the settings lock, so it includes every structure change committed before this one.
+ * Appends a settings version, effective now (or at `effectiveFrom`: only the e2e seed backdates, BUG-085), holding the
+ * structure after the caller's change (same transaction). The snapshot is read after the settings lock, so it includes
+ * every structure change committed before this one.
  */
-export async function recordStructureChange(tx: Tx, reason: string): Promise<AppendedVersion> {
+export async function recordStructureChange(tx: Tx, reason: string, effectiveFrom: Date | null = null): Promise<AppendedVersion> {
   await lockSettings(tx)
-  return appendVersion(tx, { effectiveFrom: null, patch: { structure: await structureSnapshot(tx) }, reason, approvalId: null, key: 'structure' })
+  return appendVersion(tx, { effectiveFrom, patch: { structure: await structureSnapshot(tx) }, reason, approvalId: null, key: 'structure' })
 }

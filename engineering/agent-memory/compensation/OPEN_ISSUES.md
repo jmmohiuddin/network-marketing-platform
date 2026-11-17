@@ -2,6 +2,14 @@
 
 _Agent: compensation. Read before every task; update after every task. Keep concise — facts and decisions, not transcripts._
 
+## B3 review fixes (2026-11-18)
+- ESCALATED (architect + records): S-1 engine OOM at 500k/2M positions with 4 GB heap (~16 KB RSS/position, packages/engine/results/s1-bench.json); TS-29 / NFR-PERF-04/05 not met; re-plan engine memory (per-line trace objects, input graph) and D-B3-21 worker sizing before COMP relies on in-process runs.
+- Architect decision needed: an opaque match of a non-overridable guardrail (enrolment_only_pay) is 'warned' and plan.edit may acknowledge it (D-B3-17 text); BR-GRD-01 suggests compliance (override.approve) instead.
+- Architect decision needed: new versions copy the base version's incoming transitions (PLAN 2.1); they satisfy TRANSITION_MISSING silently.
+- Contract deviation for UI: SOD_SELF_APPROVAL eligible_approvers items are the platform EligibleApprover {user_id, display_name, email} (cpl/sod.ts, ten/sod.ts), not PLAN section 2 {id, display_name}.
+- A superseded due version stays 'scheduled' (DB has no scheduled -> retired); DB agent may add that transition.
+- Not mine, failing: apps/api/test/authz/role-matrix.test.ts and test/isolation/isolation.test.ts seed PUT genealogy.placement_width -> 422 SETTING_RETIRED.
+
 ## B2 GEN (2026-11-17)
 - gen_create_position does not mark path_model stale: a position created without a relationship write is no read-model node until the next rebuild (reads fall back to SoR for it; top-level list from the model misses it). DB fix: mark both kinds stale on position insert.
 - Downline contact read directly from participant.contact and masked in GEN (no PAR SQL contract returns contact).

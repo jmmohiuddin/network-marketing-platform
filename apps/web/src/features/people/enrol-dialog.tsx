@@ -15,7 +15,7 @@ import { FormDialog } from '../admin/form-dialog'
 import { FIELDSET, LEGEND, NOTE, PAIR } from '../admin/ui'
 import { AGREEMENT_VERSIONS_PATH, type AgreementVersion, type ParticipantType } from '../admin/settings/types'
 import { SIGNAL_OPTIONS } from '../admin/settings/labels'
-import { ACCOUNT_TYPES } from './format'
+import { ACCOUNT_TYPES, LEG_OPTIONS } from './format'
 import { PARTICIPANTS_PATH, type Enrolment } from './types'
 
 const EXTERNAL_REF = /^[\x21-\x7e]{1,100}$/
@@ -126,8 +126,8 @@ export interface EnrolDialogProps {
 }
 
 /**
- * "Enrol participant" (API-12, PLAN B2 2.2.1): identity, market and type, optional sponsor and placement (legs only
- * when the tenant set a placement width), the market's current agreement when it needs acceptance, and optional
+ * "Enrol participant" (API-12, PLAN B2 2.2.1): identity, market and type, optional sponsor and placement (a leg or
+ * automatic placement within the width of the market's plan version), the market's current agreement when it needs acceptance, and optional
  * duplicate-check signals (hashed by the API on arrival).
  */
 export function EnrolDialog({ markets, types, onClose, onEnrolled }: EnrolDialogProps) {
@@ -144,9 +144,6 @@ export function EnrolDialog({ markets, types, onClose, onEnrolled }: EnrolDialog
   const marketId = live.find((market) => market.code === form.market)?.id ?? null
   const versions = useResource<readonly AgreementVersion[]>(marketId === null ? null : AGREEMENT_VERSIONS_PATH, { market_id: marketId ?? undefined })
   const agreement = versions.data?.find((version) => version.current) ?? null
-  // Readable with genealogy.read or settings.manage; anyone else enrols without legs (a 403 leaves it unknown).
-  const width = useResource<{ value: number | null }>('/v1/settings/genealogy.placement_width')
-  const legs = typeof width.data?.value === 'number' ? Array.from({ length: width.data.value }, (_, index) => String(index + 1)) : []
   const set = <K extends keyof EnrolForm>(field: K, value: EnrolForm[K]) => setForm((current) => ({ ...current, [field]: value }))
   const text = (field: keyof EnrolForm, path: string, label: string, extra: { readonly helper?: string; readonly type?: string; readonly optional?: boolean } = {}) => (
     <TextInput id={FIELD_IDS[path]} label={label} helper={extra.helper} type={extra.type} optional={extra.optional}
@@ -199,12 +196,10 @@ export function EnrolDialog({ markets, types, onClose, onEnrolled }: EnrolDialog
           {text('position_ref', 'position_ref', 'Position reference', { optional: true, helper: 'Generated when empty. Only types that can hold positions get one.' })}
           {text('sponsor', 'sponsor.position_ref', 'Sponsor position', { optional: true, helper: 'Empty: the position starts a sponsor tree of its own.' })}
           {text('placement', 'placement.position_ref', 'Place under position', { optional: true })}
-          {legs.length > 0 && (
-            <Select id={FIELD_IDS['placement.leg']} label="Leg" value={form.leg} helper="No leg places the position under that one without a leg." error={errors['placement.leg']} onChange={(event) => set('leg', event.target.value)}
-              options={[{ value: '', label: 'No leg' }, { value: 'auto', label: 'Automatic: first free leg, breadth-first' }, ...legs.map((leg) => ({ value: leg, label: `Leg ${leg}` }))]} />
-          )}
+          <Select id={FIELD_IDS['placement.leg']} label="Leg" value={form.leg} error={errors['placement.leg']} onChange={(event) => set('leg', event.target.value)}
+            helper="No leg places the position under that one without a leg. Legs run up to the width on the market’s plan version; a leg beyond it is refused."
+            options={[{ value: '', label: 'No leg' }, { value: 'auto', label: 'Automatic: first free leg, breadth-first' }, ...LEG_OPTIONS]} />
         </div>
-        {legs.length === 0 && <p className={NOTE}>Legs and automatic placement are available once a placement width is set in Settings.</p>}
         {text('enrolled_at', 'enrolled_at', 'Enrolled at', { type: 'datetime-local', optional: true, helper: 'Your local time. Empty: now. Never inside a committed period.' })}
       </fieldset>
       {agreement !== null && (

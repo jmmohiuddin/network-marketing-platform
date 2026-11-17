@@ -62,3 +62,9 @@ _Agent: security. Read before every task; update after every task. Keep concise 
 - MEDIUM R3: ord/attribution hintedPositions only excludes terminated: a duplicate-held pending position gets link attribution and becomes the customer's first_order servicer (hold does not stop accrual). crm_set_servicer (C1) also accepts pending/suspended.
 - LOW R4: PATCH /v1/cases/:id lets any create-holder rewrite another user's open case (comment says preparer); SoD still excludes the patcher. LOW R5: 409 PARTICIPANT_EXISTS / SPONSOR_* codes reveal other-market records.
 - BE3 R1/R5 from the earlier review are fixed (factsHash, apiSourceSystem). Repro file pattern unchanged (scratchpad b2sec/b2.test.ts).
+
+## B3 adversarial review (2026-11-18, read-only, nmp_test_2): findings
+- HIGH: comp/late.ts reversedShare divides by the GROSS order (amount or Σ line volumes) while the order's part comes from P's committed input, already net of in-period reversals: 2-unit order, 1 unit refunded in period, other unit refunded late -> committed 5.00, clawback -2.50 (fully refunded order keeps 2.50). Same root likely zeroes a late chargeback_reversed after an in-period chargeback (not run).
+- MEDIUM: guardrail override SoD only excludes the evaluation's decided_by (whoever's save/evaluate/submit triggered it), not the authors of the matched rules: author of pv overrode its starter-kit warning (201) after another editor's evaluate.
+- LOW: golden GET returns the frozen simulation snapshot (all tenant positions/relationships, market orders) to plan.read (Executive read-only); acknowledge/evaluate have no assertDraft; scopeOfAny union satisfies "every plan market"; PLAN_RULE.SAVED / PLAN_VERSION.UPDATED audit without values; review-opened gate set by a GET.
+- Repro: scratchpad b3sec/{clawback,override}.test.ts, config with hookTimeout 180000 (resetApiDb is slow on first run).

@@ -1,0 +1,1130 @@
+{
+  "when": "2026-11-17T22:01:30.613Z",
+  "screenId": "SC-01",
+  "stitch": "sc_01_periods_runs_analyst_home",
+  "module": "periods",
+  "screen": "periods-runs",
+  "route": "/periods",
+  "role": "commission-analyst",
+  "url": "http://127.0.0.1:3100/periods?calendar=a73e2419-522f-4c5d-85ec-96b360fca159",
+  "self": false,
+  "patched": [],
+  "viewports": [
+    {
+      "viewport": "1440x900",
+      "screenshot": "testing/ui-screenshots/app/periods/periods-runs/commission-analyst/1440x900.png",
+      "reference": "testing/ui-screenshots/reference/sc_01_periods_runs_analyst_home/1440x900.png",
+      "diffImage": "testing/ui-screenshots/app/periods/periods-runs/commission-analyst/1440x900.diff.png",
+      "mismatchPercent": 6.89,
+      "diffPixels": 137197,
+      "referenceSize": "1440x1383",
+      "actualSize": "1440x1342",
+      "landmarks": [
+        {
+          "landmark": "header",
+          "stitchText": "AuditLedgerAcrobex Global(TEN-842)arrow_drop_downUS - United",
+          "appText": "menuMenuAcme Direct LtdCACommission AnalystCommission analys",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "height",
+              "stitch": "48px",
+              "app": "48px",
+              "match": true
+            },
+            {
+              "prop": "background",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "sidebar",
+          "stitchText": "dashboardOverviewhistory_toggle_offPeriods & RunsschemaCompe",
+          "appText": "verified_userCompliancehubIntegrationsaccount_treePeoplelanG",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "width",
+              "stitch": "208px",
+              "app": "208px",
+              "match": true
+            },
+            {
+              "prop": "background",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "page",
+          "stitchText": "SC-01 REGULATORY AUDIT CONFORMANT Deterministic Engine v2026",
+          "appText": "DE corePeriods and runsCalculate each period after its cut-o",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "background",
+              "stitch": "rgb(248, 249, 255)",
+              "app": "rgb(248, 249, 255)",
+              "match": true
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "16px",
+              "app": "16px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "title",
+          "stitchText": "Periods & Runs",
+          "appText": "Periods and runs",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "24px",
+              "app": "24px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            },
+            {
+              "prop": "line-height",
+              "stitch": "32px",
+              "app": "32px",
+              "match": true
+            },
+            {
+              "prop": "letter-spacing",
+              "stitch": "-0.6px",
+              "app": "-0.36px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "sectionHeading",
+          "stitchText": "Flagged Run Exceptions Requiring Analyst Sign-Off (4)",
+          "appText": "Run diagnostics",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "16px",
+              "app": "16px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            },
+            {
+              "prop": "line-height",
+              "stitch": "24px",
+              "app": "24px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "primaryButton",
+          "stitchText": "verified Open Run Review (RUN-1042-3)",
+          "appText": "",
+          "status": "missing-in-app",
+          "severity": "high",
+          "props": [
+            {
+              "prop": "background-color",
+              "stitch": "rgb(0, 56, 131)",
+              "app": null,
+              "match": false
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": null,
+              "match": false
+            },
+            {
+              "prop": "border-radius",
+              "stitch": "2px",
+              "app": null,
+              "match": false
+            },
+            {
+              "prop": "height",
+              "stitch": "32px",
+              "app": null,
+              "match": false
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": null,
+              "match": false
+            },
+            {
+              "prop": "font-size",
+              "stitch": "13px",
+              "app": null,
+              "match": false
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": null,
+              "match": false
+            }
+          ]
+        },
+        {
+          "landmark": "tableHeader",
+          "stitchText": "Period Code",
+          "appText": "Period · cut-off",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "11px",
+              "app": "11px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(86, 94, 116)",
+              "app": "rgb(86, 94, 116)",
+              "match": true
+            },
+            {
+              "prop": "text-transform",
+              "stitch": "uppercase",
+              "app": "uppercase",
+              "match": true
+            },
+            {
+              "prop": "letter-spacing",
+              "stitch": "0.55px",
+              "app": "0.55px",
+              "match": true
+            },
+            {
+              "prop": "background",
+              "stitch": "rgb(239, 244, 255)",
+              "app": "rgb(239, 244, 255)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "card",
+          "stitchText": "Target Period 2026-M10 October 2026 Monthly Close CALCULATED",
+          "appText": "Target periodNov 1, 2026 – Nov 30, 2026radio_button_unchecke",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "border-radius",
+              "stitch": "8px",
+              "app": "8px",
+              "match": true
+            },
+            {
+              "prop": "box-shadow",
+              "stitch": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+              "app": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+              "match": true
+            },
+            {
+              "prop": "background-color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "viewport": "1280x800",
+      "screenshot": "testing/ui-screenshots/app/periods/periods-runs/commission-analyst/1280x800.png",
+      "reference": "testing/ui-screenshots/reference/sc_01_periods_runs_analyst_home/1280x800.png",
+      "diffImage": "testing/ui-screenshots/app/periods/periods-runs/commission-analyst/1280x800.diff.png",
+      "mismatchPercent": 6.78,
+      "diffPixels": 136328,
+      "referenceSize": "1280x1571",
+      "actualSize": "1280x1410",
+      "landmarks": [
+        {
+          "landmark": "header",
+          "stitchText": "AuditLedgerAcrobex Global(TEN-842)arrow_drop_downUS - United",
+          "appText": "menuMenuAcme Direct LtdCACommission AnalystCommission analys",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "height",
+              "stitch": "48px",
+              "app": "48px",
+              "match": true
+            },
+            {
+              "prop": "background",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "sidebar",
+          "stitchText": "dashboardOverviewhistory_toggle_offPeriods & RunsschemaCompe",
+          "appText": "verified_userCompliancehubIntegrationsaccount_treePeoplelanG",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "width",
+              "stitch": "208px",
+              "app": "208px",
+              "match": true
+            },
+            {
+              "prop": "background",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "page",
+          "stitchText": "SC-01 REGULATORY AUDIT CONFORMANT Deterministic Engine v2026",
+          "appText": "DE corePeriods and runsCalculate each period after its cut-o",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "background",
+              "stitch": "rgb(248, 249, 255)",
+              "app": "rgb(248, 249, 255)",
+              "match": true
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "16px",
+              "app": "16px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "title",
+          "stitchText": "Periods & Runs",
+          "appText": "Periods and runs",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "24px",
+              "app": "24px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            },
+            {
+              "prop": "line-height",
+              "stitch": "32px",
+              "app": "32px",
+              "match": true
+            },
+            {
+              "prop": "letter-spacing",
+              "stitch": "-0.6px",
+              "app": "-0.36px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "sectionHeading",
+          "stitchText": "Flagged Run Exceptions Requiring Analyst Sign-Off (4)",
+          "appText": "Run diagnostics",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "16px",
+              "app": "16px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            },
+            {
+              "prop": "line-height",
+              "stitch": "24px",
+              "app": "24px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "primaryButton",
+          "stitchText": "verified Open Run Review (RUN-1042-3)",
+          "appText": "",
+          "status": "missing-in-app",
+          "severity": "high",
+          "props": [
+            {
+              "prop": "background-color",
+              "stitch": "rgb(0, 56, 131)",
+              "app": null,
+              "match": false
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": null,
+              "match": false
+            },
+            {
+              "prop": "border-radius",
+              "stitch": "2px",
+              "app": null,
+              "match": false
+            },
+            {
+              "prop": "height",
+              "stitch": "32px",
+              "app": null,
+              "match": false
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": null,
+              "match": false
+            },
+            {
+              "prop": "font-size",
+              "stitch": "13px",
+              "app": null,
+              "match": false
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": null,
+              "match": false
+            }
+          ]
+        },
+        {
+          "landmark": "tableHeader",
+          "stitchText": "Period Code",
+          "appText": "Period · cut-off",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "11px",
+              "app": "11px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(86, 94, 116)",
+              "app": "rgb(86, 94, 116)",
+              "match": true
+            },
+            {
+              "prop": "text-transform",
+              "stitch": "uppercase",
+              "app": "uppercase",
+              "match": true
+            },
+            {
+              "prop": "letter-spacing",
+              "stitch": "0.55px",
+              "app": "0.55px",
+              "match": true
+            },
+            {
+              "prop": "background",
+              "stitch": "rgb(239, 244, 255)",
+              "app": "rgb(239, 244, 255)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "card",
+          "stitchText": "Target Period 2026-M10 October 2026 Monthly Close CALCULATED",
+          "appText": "Target periodNov 1, 2026 – Nov 30, 2026radio_button_unchecke",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "border-radius",
+              "stitch": "8px",
+              "app": "8px",
+              "match": true
+            },
+            {
+              "prop": "box-shadow",
+              "stitch": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+              "app": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+              "match": true
+            },
+            {
+              "prop": "background-color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "viewport": "768x1024",
+      "screenshot": "testing/ui-screenshots/app/periods/periods-runs/commission-analyst/768x1024.png",
+      "reference": "testing/ui-screenshots/reference/sc_01_periods_runs_analyst_home/768x1024.png",
+      "diffImage": "testing/ui-screenshots/app/periods/periods-runs/commission-analyst/768x1024.diff.png",
+      "mismatchPercent": 6.38,
+      "diffPixels": 125981,
+      "referenceSize": "768x2572",
+      "actualSize": "768x1708",
+      "landmarks": [
+        {
+          "landmark": "page",
+          "stitchText": "SC-01 REGULATORY AUDIT CONFORMANT Deterministic Engine v2026",
+          "appText": "DE corePeriods and runsCalculate each period after its cut-o",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "background",
+              "stitch": "rgb(248, 249, 255)",
+              "app": "rgb(248, 249, 255)",
+              "match": true
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "16px",
+              "app": "16px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "title",
+          "stitchText": "Periods & Runs",
+          "appText": "Periods and runs",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "24px",
+              "app": "24px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            },
+            {
+              "prop": "line-height",
+              "stitch": "32px",
+              "app": "32px",
+              "match": true
+            },
+            {
+              "prop": "letter-spacing",
+              "stitch": "-0.6px",
+              "app": "-0.36px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "sectionHeading",
+          "stitchText": "Flagged Run Exceptions Requiring Analyst Sign-Off (4)",
+          "appText": "Run diagnostics",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "16px",
+              "app": "16px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            },
+            {
+              "prop": "line-height",
+              "stitch": "24px",
+              "app": "24px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "primaryButton",
+          "stitchText": "verified Open Run Review (RUN-1042-3)",
+          "appText": "",
+          "status": "missing-in-app",
+          "severity": "high",
+          "props": [
+            {
+              "prop": "background-color",
+              "stitch": "rgb(0, 56, 131)",
+              "app": null,
+              "match": false
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": null,
+              "match": false
+            },
+            {
+              "prop": "border-radius",
+              "stitch": "2px",
+              "app": null,
+              "match": false
+            },
+            {
+              "prop": "height",
+              "stitch": "32px",
+              "app": null,
+              "match": false
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": null,
+              "match": false
+            },
+            {
+              "prop": "font-size",
+              "stitch": "13px",
+              "app": null,
+              "match": false
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": null,
+              "match": false
+            }
+          ]
+        },
+        {
+          "landmark": "tableHeader",
+          "stitchText": "Period Code",
+          "appText": "Period · cut-off",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "11px",
+              "app": "11px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(86, 94, 116)",
+              "app": "rgb(86, 94, 116)",
+              "match": true
+            },
+            {
+              "prop": "text-transform",
+              "stitch": "uppercase",
+              "app": "uppercase",
+              "match": true
+            },
+            {
+              "prop": "letter-spacing",
+              "stitch": "0.55px",
+              "app": "0.55px",
+              "match": true
+            },
+            {
+              "prop": "background",
+              "stitch": "rgb(239, 244, 255)",
+              "app": "rgb(239, 244, 255)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "card",
+          "stitchText": "Target Period 2026-M10 October 2026 Monthly Close CALCULATED",
+          "appText": "Target periodNov 1, 2026 – Nov 30, 2026radio_button_unchecke",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "border-radius",
+              "stitch": "8px",
+              "app": "8px",
+              "match": true
+            },
+            {
+              "prop": "box-shadow",
+              "stitch": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+              "app": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+              "match": true
+            },
+            {
+              "prop": "background-color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "viewport": "390x844",
+      "screenshot": "testing/ui-screenshots/app/periods/periods-runs/commission-analyst/390x844.png",
+      "reference": "testing/ui-screenshots/reference/sc_01_periods_runs_analyst_home/390x844.png",
+      "diffImage": "testing/ui-screenshots/app/periods/periods-runs/commission-analyst/390x844.diff.png",
+      "mismatchPercent": 3.82,
+      "diffPixels": 107941,
+      "referenceSize": "541x5229",
+      "actualSize": "390x3234",
+      "landmarks": [
+        {
+          "landmark": "page",
+          "stitchText": "SC-01 REGULATORY AUDIT CONFORMANT Deterministic Engine v2026",
+          "appText": "DE corePeriods and runsCalculate each period after its cut-o",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "background",
+              "stitch": "rgb(248, 249, 255)",
+              "app": "rgb(248, 249, 255)",
+              "match": true
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "16px",
+              "app": "16px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "title",
+          "stitchText": "Periods & Runs",
+          "appText": "Periods and runs",
+          "status": "mismatch",
+          "severity": "medium",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "24px",
+              "app": "20px",
+              "match": false
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            },
+            {
+              "prop": "line-height",
+              "stitch": "32px",
+              "app": "28px",
+              "match": false
+            },
+            {
+              "prop": "letter-spacing",
+              "stitch": "-0.6px",
+              "app": "-0.5px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "sectionHeading",
+          "stitchText": "Flagged Run Exceptions Requiring Analyst Sign-Off (4)",
+          "appText": "Run diagnostics",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "16px",
+              "app": "16px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            },
+            {
+              "prop": "line-height",
+              "stitch": "24px",
+              "app": "24px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "primaryButton",
+          "stitchText": "verified Open Run Review (RUN-1042-3)",
+          "appText": "",
+          "status": "missing-in-app",
+          "severity": "high",
+          "props": [
+            {
+              "prop": "background-color",
+              "stitch": "rgb(0, 56, 131)",
+              "app": null,
+              "match": false
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": null,
+              "match": false
+            },
+            {
+              "prop": "border-radius",
+              "stitch": "2px",
+              "app": null,
+              "match": false
+            },
+            {
+              "prop": "height",
+              "stitch": "32px",
+              "app": null,
+              "match": false
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": null,
+              "match": false
+            },
+            {
+              "prop": "font-size",
+              "stitch": "13px",
+              "app": null,
+              "match": false
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": null,
+              "match": false
+            }
+          ]
+        },
+        {
+          "landmark": "tableHeader",
+          "stitchText": "Period Code",
+          "appText": "Period · cut-off",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "11px",
+              "app": "11px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(86, 94, 116)",
+              "app": "rgb(86, 94, 116)",
+              "match": true
+            },
+            {
+              "prop": "text-transform",
+              "stitch": "uppercase",
+              "app": "uppercase",
+              "match": true
+            },
+            {
+              "prop": "letter-spacing",
+              "stitch": "0.55px",
+              "app": "0.55px",
+              "match": true
+            },
+            {
+              "prop": "background",
+              "stitch": "rgb(239, 244, 255)",
+              "app": "rgb(239, 244, 255)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "card",
+          "stitchText": "Target Period 2026-M10 October 2026 Monthly Close CALCULATED",
+          "appText": "Target periodNov 1, 2026 – Nov 30, 2026radio_button_unchecke",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "border-radius",
+              "stitch": "8px",
+              "app": "8px",
+              "match": true
+            },
+            {
+              "prop": "box-shadow",
+              "stitch": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+              "app": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+              "match": true
+            },
+            {
+              "prop": "background-color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

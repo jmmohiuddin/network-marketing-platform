@@ -2,6 +2,7 @@ import type { Tx } from '@nmp/db'
 import { recordAudit } from '../../lib/audit.js'
 import { getSetting } from '../ten/index.js'
 import type { BuyerType } from './order-checks.js'
+import { pgCode } from './pg.js'
 import { Refusal } from './refusal.js'
 import type { OrderInput } from './schemas.js'
 
@@ -89,9 +90,13 @@ export async function servicingFromFirstOrder(tx: Tx, customerId: string, type: 
      UNION ALL SELECT 1 FROM position WHERE id = $3 AND status <> 'active'`, [customerId, at, positionId],
   )
   if (rowCount !== 0) return
+  // OI-4: C1 refuses (23514) when a servicer row starting at or after `at` appeared since the check above (a concurrent change).
   const { rows } = await tx.query<{ id: string }>(
     `SELECT crm_set_servicer($1, $2, 'first_order', $3, NULL, NULL) AS id`, [customerId, positionId, at],
-  )
+  ).catch((error: unknown) => {
+    if (pgCode(error) !== '23514') throw error
+    throw new Refusal(409, 'SERVICING_CHANGE_PENDING', 'A servicing change of this customer is pending; send the order again.')
+  })
   await recordAudit(tx, {
     action: 'SERVICING.CHANGED', objectType: 'customer_servicing', objectId: rows[0]!.id,
     after: { customer_id: customerId, position_id: positionId, source: 'first_order', valid_from: at },

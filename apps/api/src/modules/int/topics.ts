@@ -35,6 +35,16 @@ export const WEBHOOK_TOPICS = [
       event_type: z.enum(['enrolment', 'change', 'correction', 'rule', 'migration']),
     }),
   },
+  {
+    topic: 'run.committed',
+    description: 'A commission run was committed with second-person approval; its result lines are final for the period.',
+    payload: z.object({ run_id: id, period_id: id, gross_minor: z.string() }),
+  },
+  {
+    topic: 'plan.version.activated',
+    description: 'A compensation plan version became active.',
+    payload: z.object({ plan_id: id, plan_version_id: id, effective_from: z.string() }),
+  },
 ] as const
 
 export type WebhookTopic = (typeof WEBHOOK_TOPICS)[number]['topic']

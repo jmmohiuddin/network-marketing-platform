@@ -7,7 +7,7 @@ import { storedContact } from './contact.js'
 import { createPosition, resolveSponsor, type PlacementView, type PositionView } from './positions.js'
 import type { EnrolmentBody } from './schemas.js'
 import { addSignals, findDuplicates, openDuplicateCases, type SignalDigests } from './signals.js'
-import { sqlCall } from './sql-errors.js'
+import { servicerCall } from './sql-errors.js'
 
 export interface ActiveType {
   readonly id: string
@@ -59,7 +59,7 @@ async function insertParticipant(tx: Tx, body: EnrolmentBody, marketId: string, 
 
 /** First servicer of an end customer enrolled with a sponsor (FR-CRM-001, source enrolment), audited. */
 async function servicerAtEnrolment(tx: Tx, customerId: string, positionId: string, at: Date): Promise<void> {
-  const { rows } = await sqlCall(() => tx.query<{ id: string }>(
+  const { rows } = await servicerCall(() => tx.query<{ id: string }>(
     `SELECT crm_set_servicer($1, $2, 'enrolment', $3, NULL, NULL) AS id`, [customerId, positionId, at],
   ))
   await recordAudit(tx, {

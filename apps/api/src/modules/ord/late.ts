@@ -21,6 +21,8 @@ export async function recordLate(
 ): Promise<LateItem[]> {
   const orderId = 'orderId' in origin ? origin.orderId : null
   const eventId = 'eventId' in origin ? origin.eventId : null
+  // D-B3-05: a commit of this market's period (exclusive lock on the same key) and late detection never interleave.
+  await tx.query(`SELECT pg_advisory_xact_lock_shared(hashtextextended('periods:' || app_tenant_id() || ':' || $1, 0))`, [marketId])
   const { rows } = await tx.query<LateItem>(
     `INSERT INTO late_transaction (tenant_id, order_id, order_event_id, original_period_id, effect_estimate, handling, state)
      SELECT app_tenant_id(), $1, $2, c.period_id, $5, 'adjust', 'pending'

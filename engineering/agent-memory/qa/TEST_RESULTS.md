@@ -89,3 +89,15 @@ _Agent: qa. Read before every task; update after every task. Keep concise — fa
 ## 2026-11-17 — B2 browser round 2 (retest of BUG-069..080, quick W-B2-1..11, regression, harness 9 screens, Impeccable + a11y)
 - BUG-069..074, 077, 078, 080 verified fixed; 075/076 fixed where scoped, residuals BUG-081/082; 079 count verified, scheduled-only banner state not re-created. Regression import 1466/4775/7442 + sums, R1 16.61 %, audit chain intact 154. No 5xx; console only intended 4xx/expired-session 401.
 - New: BUG-081, 082, 083 LOW. Impeccable 14/16. Evidence var/qa-b2/R2-*.
+
+## 2026-11-18 — B3 browser round 1 (W-B3-1..9, harness 9 screens, Impeccable + a11y)
+- W-B3-1/2/3/5/6/7/8 pass (with defects), W-B3-4 FAIL: quantity>1 lines count volume quantity² (BUG-084 CRITICAL: gross 73.00 vs 47.00). W-B3-2..7 needed a DB settings backdate (BUG-085). W-B3-9 partial (import 1466/4775/7442 + sums, R1 16.61 %, audit chain intact 127, globex 404). No 5xx; console only intended 4xx.
+- New: BUG-084 CRITICAL, BUG-085..089 MEDIUM, BUG-090..093 LOW. Impeccable 12/16. Evidence var/qa-b3/R1-*.
+
+## 2026-11-18 — B3 browser round 2 (retest of BUG-084..093, quick W-B3-1..8, MVP-A regression, harness 9 screens, Impeccable + a11y)
+- Verified fixed: BUG-084 (Aug 47.00, B 24.00, A 23.00), 085 (fresh seed, no DB workaround), 086, 087, 088. Partly: 089 → BUG-094 MEDIUM (SC-01 table clipped at 1440/1280, row actions off-screen), 091 → BUG-095 LOW (late queue period in viewer zone), 092 → BUG-096 LOW (SC-42 raw acknowledgement_required). Still open as registered: 090 engine text, 092 engine trace µs, 093 web What-changed copy.
+- W-B3-1..8 pass (restatement B −8.00, A +3.00 = PLAN). Regression import 1466/4775/7442 + sums, R1 16.61 %, audit chain intact, globex 404. No 5xx; console only intended 4xx. Impeccable 12/16. Evidence var/qa-b3/r2/.
+
+## 2026-11-18 — B3 browser round 3 (retest of BUG-094, quick repeat on round-2 data, regression, harness 9 screens, Impeccable + a11y)
+- BUG-094 verified fixed (1440: table 1169 in 1169 box; 1280: 1009/1009; all row actions visible; row menu keyboard-correct; Replay via menu → Match). Restatement dialog via menu ok (not submitted). Row Calculate not executed (no calculable period). Regression: fresh sign-in, imports 1466/4775/7442 (read), R1 16.61 %, audit chain intact. No 5xx; no console errors except intended 401.
+- New: BUG-097 LOW (Gross amount wraps from currency), BUG-098 LOW (768 table still scrolls, chips break per word). Impeccable 13/16. Evidence var/qa-b3/r3/.

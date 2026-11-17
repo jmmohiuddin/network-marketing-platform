@@ -1,10 +1,9 @@
 import { z } from 'zod'
 
 // API-10 / API-11 bodies (PLAN B2 2.6). Money and volumes are decimal strings of integer minor units, never numbers.
-const MAX_MINOR = 9_223_372_036_854_775_807n
-export const minorString = z.string().regex(/^(0|[1-9]\d{0,18})$/, 'must be a decimal string of minor units')
-  .refine((value) => !/^\d+$/.test(value) || BigInt(value) <= MAX_MINOR, 'is too large') // zod runs refinements after a failed regex
-export const signedMinorString = z.string().regex(/^-?(0|[1-9]\d{0,18})$/)
+// OI-7: at most 18 digits, so every value fits a bigint (the database checks volumes the same way).
+export const minorString = z.string().regex(/^(0|[1-9]\d{0,17})$/, 'must be a decimal string of minor units (at most 18 digits)')
+export const signedMinorString = z.string().regex(/^-?(0|[1-9]\d{0,17})$/, 'must be a signed decimal string of at most 18 digits')
 export const volumesSchema = z.record(z.string().regex(/^[a-z][a-z0-9_]{0,31}$/), signedMinorString)
 const instant = z.iso.datetime({ offset: true })
 const text100 = z.string().min(1).max(100)

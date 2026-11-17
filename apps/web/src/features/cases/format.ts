@@ -19,11 +19,16 @@ export interface CaseTypeInfo {
 
 const GENEALOGY = { read: 'case.genealogy.read', create: 'case.genealogy.create', decide: 'case.genealogy.approve', deciderRole: 'Compliance officer' }
 
-/** The registered case types of B2, in tab order. */
+/** The registered case types (B2, B3 restatement), in tab order. */
 export const CASE_TYPES: readonly CaseTypeInfo[] = [
   { type: 'genealogy_change', label: 'Genealogy change', plural: 'Genealogy changes', ...GENEALOGY, reasonCodes: ['PARTICIPANT_REQUEST', 'ENROLMENT_ERROR', 'COMPANY_DECISION'] },
   { type: 'genealogy_correction', label: 'Genealogy correction', plural: 'Corrections', ...GENEALOGY, reasonCodes: ['DATA_ENTRY_ERROR', 'MIGRATION_ERROR', 'DISPUTE_RESOLUTION'] },
   { type: 'transfer', label: 'Ownership transfer', plural: 'Transfers', ...GENEALOGY, reasonCodes: ['SUCCESSION', 'SALE', 'DIVORCE', 'CORPORATE_RESTRUCTURE'] },
+  {
+    type: 'restatement', label: 'Restatement', plural: 'Restatements', read: 'case.restatement.read', create: 'restatement.request',
+    decide: 'restatement.approve', deciderRole: 'Finance approver',
+    reasonCodes: ['ENGINE_DEFECT', 'INPUT_CORRECTION', 'GENEALOGY_CORRECTION', 'LATE_TRANSACTION', 'DISPUTE_UPHELD'],
+  },
   {
     type: 'duplicate', label: 'Duplicate review', plural: 'Duplicates', read: 'case.duplicate.read', create: 'case.duplicate.create',
     decide: 'case.duplicate.approve', deciderRole: 'Compliance officer',
@@ -43,6 +48,8 @@ const REASON_LABELS: Readonly<Record<string, string>> = {
   DATA_ENTRY_ERROR: 'Data entry error', MIGRATION_ERROR: 'Migration error', DISPUTE_RESOLUTION: 'Dispute resolution',
   SUCCESSION: 'Succession', SALE: 'Sale', DIVORCE: 'Divorce', CORPORATE_RESTRUCTURE: 'Corporate restructure',
   SIGNAL_MATCH: 'Matching signals at enrolment', STAFF_SUSPICION: 'Staff suspicion',
+  ENGINE_DEFECT: 'Engine defect', INPUT_CORRECTION: 'Input correction', GENEALOGY_CORRECTION: 'Genealogy correction',
+  LATE_TRANSACTION: 'Late transaction', DISPUTE_UPHELD: 'Dispute upheld',
 }
 
 export function reasonLabel(code: string): string {

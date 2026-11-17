@@ -1,9 +1,10 @@
 import { randomUUID } from 'node:crypto'
 import { withTenant } from '@nmp/db'
+import { getOwnerPool } from '@nmp/db/testing'
 import type { FastifyInstance } from 'fastify'
 import { afterAll, beforeAll, describe, expect, test } from 'vitest'
 import {
-  buildTestApp, call, closePoolsAfterAll, createMarket, createSignedInUser, createTenant, ownerRows, resetApiDb, type TestTenant, type TestUser,
+  activePlanVersion, buildTestApp, call, closePoolsAfterAll, createMarket, createSignedInUser, createTenant, ownerRows, resetApiDb, type TestTenant, type TestUser,
 } from '../../../test/helpers/index.js'
 import { iamModule } from '../iam/index.js'
 import { ordModule } from './index.js'
@@ -375,5 +376,97 @@ describe('T-B2-33 attribution precedence and FR-ORD-003 purpose', () => {
     const update = withTenant({ tenantId: acme.id, userId: shop.admin.id }, (tx) => tx.query('UPDATE sales_order SET amount_minor = 1 WHERE id = $1', [order.id]))
 
     await expect(update).rejects.toMatchObject({ code: '42501' })
+  })
+})
+
+describe('B3 carry-over in ingestion (D-B3-05, OI-4, OI-7)', () => {
+  const ago = (ms: number) => new Date(Date.now() - ms).toISOString()
+
+  test('T-B3-16: the plan version\'s crediting event wins over the setting; no covering version falls back to the setting', async () => {
+    const ie = await createMarket(acme.id, 'IE')
+    await volumes(app, shop.admin, ie, 'SKU-A', { qv: '150' })
+    await volumes(app, shop.admin, ie, 'SKU-B', { qv: '100' })
+    await activePlanVersion(acme.id, ie, { submitterId: shop.admin.id, approverId: analyst.id, creditingEvent: 'fulfilled', effectiveFrom: ago(3_600_000) })
+    const [paid, fulfilled] = [ago(120_000), ago(60_000)]
+    const times = { paid_at: paid, fulfilled_at: fulfilled }
+
+    const covered = await postOrder(orderBody({ market: 'IE', ordered_at: paid, ...times }))
+    const beforePlan = await postOrder(orderBody({ market: 'IE', ordered_at: ago(7_200_000), ...times }))
+    const uncovered = await postOrder(orderBody({ ordered_at: paid, ...times }))
+    const unfulfilled = await postOrder(orderBody({ market: 'IE', ordered_at: paid, paid_at: paid }))
+
+    const creditedAt = (response: Awaited<ReturnType<typeof postOrder>>) => Date.parse(response.json().data.order.credited_at)
+    expect([covered.statusCode, beforePlan.statusCode, uncovered.statusCode]).toEqual([201, 201, 201])
+    expect(creditedAt(covered)).toBe(Date.parse(fulfilled)) // plan: fulfilled; setting: paid
+    expect(creditedAt(beforePlan)).toBe(Date.parse(paid)) // ordered before the version took effect
+    expect(creditedAt(uncovered)).toBe(Date.parse(paid))
+    expect([unfulfilled.statusCode, unfulfilled.json().error.code]).toEqual([422, 'CREDITING_EVENT_MISSING'])
+  })
+
+  test('OI-7: minor strings hold at most 18 digits (19 refused); per-unit volumes are never negative', async () => {
+    const max = '999999999999999999'
+    const big = await postOrder(orderBody({ amount_minor: max, tax_minor: '0', lines: [{ line_no: 1, sku: 'SKU-A', quantity: 1, amount_minor: max }] }))
+    const tooBig = await postOrder(orderBody({ amount_minor: `${max}9`, lines: [{ line_no: 1, sku: 'SKU-A', quantity: 1, amount_minor: `${max}9` }] }))
+    const refund = await asKey(app, shop.token, '/v1/order-events', {
+      source_system: 'shop', source_event_id: randomUUID(), source_order_id: 'any', type: 'refund', occurred_at: ago(1_000), refund_minor: `${max}9`, fee_minor: '0',
+    })
+    const perUnit = (value: string) => call(app, {
+      method: 'POST', url: '/v1/product-volumes', as: shop.admin, idempotencyKey: true,
+      body: { market_id: shop.marketId, sku: `SKU-${randomUUID().slice(0, 8)}`, item_class: 'product', volumes: { qv: value }, valid_from: ago(1_000), reason: 'OI-7' },
+    })
+
+    expect(big.statusCode, big.body).toBe(201)
+    expect([tooBig.statusCode, tooBig.json().error.code]).toEqual([400, 'VALIDATION_FAILED'])
+    expect([refund.statusCode, refund.json().error.code]).toEqual([400, 'VALIDATION_FAILED'])
+    expect((await perUnit(max)).statusCode).toBe(201)
+    expect([(await perUnit('-1')).statusCode, (await perUnit(`${max}9`)).statusCode]).toEqual([400, 400])
+  })
+
+  test('OI-4: a servicing change landing between the first-order check and C1 is 409 SERVICING_CHANGE_PENDING, never a 500', async () => {
+    const seller = await participantWithPosition(acme.id, shop.admin.id, shop.marketId, shop.distributorType)
+    const other = await participantWithPosition(acme.id, shop.admin.id, shop.marketId, shop.distributorType)
+    const externalRef = `customer-${randomUUID()}`
+    const [customer] = await ownerRows<{ id: string }>(
+      `INSERT INTO participant (tenant_id, external_ref, account_type, market_id, enrolled_at, created_by)
+       VALUES ($1, $2, 'individual', $3, '2020-01-01', $4) RETURNING id`, [acme.id, externalRef, shop.marketId, shop.admin.id])
+    await ownerRows(`INSERT INTO participant_type_assignment (tenant_id, participant_id, type_id, valid_from, created_by)
+                     VALUES ($1, $2, $3, '2020-01-01', $4)`, [acme.id, customer!.id, shop.retailType, shop.admin.id])
+    const holder = await getOwnerPool().connect()
+    try {
+      // Holds C1's per-customer lock, so the ingestion waits inside C1 after its check found no servicer.
+      await holder.query(`SELECT pg_advisory_lock(hashtextextended('servicing:' || $1, 0))`, [customer!.id])
+      const ingesting = postOrder(orderBody({ buyer: { external_ref: externalRef }, attribution: { kind: 'link', position_ref: seller.positionRef } }))
+      while ((await holder.query(`SELECT 1 FROM pg_locks WHERE locktype = 'advisory' AND NOT granted`)).rowCount === 0) {
+        await new Promise((resolve) => setTimeout(resolve, 20))
+      }
+      await holder.query(
+        `INSERT INTO customer_servicing (tenant_id, customer_id, servicing_position_id, source, valid_from, reason, created_by, created_by_type)
+         VALUES ($1, $2, $3, 'manual', now() + interval '1 day', 'pending change', $4, 'user')`,
+        [acme.id, customer!.id, other.positionId, shop.admin.id])
+      await holder.query(`SELECT pg_advisory_unlock(hashtextextended('servicing:' || $1, 0))`, [customer!.id])
+      const response = await ingesting
+
+      expect([response.statusCode, response.json().error.code]).toEqual([409, 'SERVICING_CHANGE_PENDING'])
+      expect(await ownerRows('SELECT servicing_position_id FROM customer_servicing WHERE customer_id = $1', [customer!.id]))
+        .toEqual([{ servicing_position_id: other.positionId }])
+    } finally {
+      holder.release()
+    }
+  })
+
+  test('OI-4: with a pending future servicer the first order changes no servicing and is accepted', async () => {
+    const seller = await participantWithPosition(acme.id, shop.admin.id, shop.marketId, shop.distributorType)
+    const buyer = { external_ref: `customer-${randomUUID()}` }
+    const first = await postOrder(orderBody({ buyer }))
+    const customerId = first.json().data.order.buyer.id as string
+    await ownerRows(
+      `INSERT INTO customer_servicing (tenant_id, customer_id, servicing_position_id, source, valid_from, reason, created_by, created_by_type)
+       VALUES ($1, $2, $3, 'manual', now() + interval '1 day', 'pending change', $4, 'user')`,
+      [acme.id, customerId, seller.positionId, shop.admin.id])
+
+    const attributed = await postOrder(orderBody({ buyer, attribution: { kind: 'link', position_ref: seller.positionRef } }))
+
+    expect(attributed.statusCode).toBe(201)
+    expect(await ownerRows('SELECT source FROM customer_servicing WHERE customer_id = $1', [customerId])).toEqual([{ source: 'manual' }])
   })
 })

@@ -39,11 +39,23 @@ export function assertNotFuture(instants: readonly (string | undefined)[], toler
   }
 }
 
-/** The configured crediting event (unset: refused); null when the payload does not carry its time yet. */
+/**
+ * D-B3-05: the crediting event of the plan version in force for the market at `orderedAt`; without a covering plan the
+ * tenant setting orders.crediting_event; null when neither names one.
+ */
+export async function creditingEvent(tx: Tx, marketCode: string, orderedAt: string): Promise<'paid' | 'fulfilled' | null> {
+  const { rows } = await tx.query<{ event: 'paid' | 'fulfilled' | null }>(
+    'SELECT plan_crediting_event(id, $2) AS event FROM market WHERE code = $1', [marketCode, orderedAt],
+  )
+  // shortcut: setting fallback for markets without a plan, drop with B6 migration tooling
+  return rows[0]?.event ?? await getSetting(tx, 'orders.crediting_event')
+}
+
+/** The crediting event's time (no event configured: refused); null when the payload does not carry it yet. */
 export async function creditingTimeOf(tx: Tx, input: OrderInput): Promise<string | null> {
-  const event = await getSetting(tx, 'orders.crediting_event')
+  const event = await creditingEvent(tx, input.market, input.ordered_at)
   if (event === null) {
-    throw new Refusal(422, 'CREDITING_EVENT_NOT_CONFIGURED', 'Set orders.crediting_event before sending orders.')
+    throw new Refusal(422, 'CREDITING_EVENT_NOT_CONFIGURED', 'Set the crediting event on the market\'s plan version (or orders.crediting_event) before sending orders.')
   }
   return (event === 'paid' ? input.paid_at : input.fulfilled_at) ?? null
 }

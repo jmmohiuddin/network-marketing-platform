@@ -1,8 +1,7 @@
 import type { FastifyInstance } from 'fastify'
 import { afterAll, beforeAll, describe, expect, test } from 'vitest'
 import {
-  auditActions, buildTestApp, call, closePoolsAfterAll, createMarket, createSignedInUser, createTenant, ownerRows, resetApiDb,
-  type TestUser,
+  activePlanVersion, auditActions, buildTestApp, call, closePoolsAfterAll, createMarket, createSignedInUser, createTenant, ownerRows, resetApiDb, type TestUser,
 } from '../../../test/helpers/index.js'
 import { createCasModule } from '../cas/index.js'
 import { genealogyChangeType, changePayload, correctionPayload } from './genealogy-cases.js'
@@ -197,6 +196,66 @@ describe('genealogy_change decision re-checks (AC-GEN4-2)', () => {
   })
 })
 
+describe('plan parameters (D-B3-06, D-B3-07): width and change window from the plan version', () => {
+  test('T-B3-34 / TS-45 window part: a sponsor change after the window is refused with the rule; inside it, or a correction, passes', async () => {
+    const my = await createMarket(acmeId, 'MY')
+    const version = await activePlanVersion(acmeId, my, {
+      submitterId: support.id, approverId: compliance.id, creditingEvent: 'paid', placementWidth: 2,
+      rules: [{ rule_key: 'window', kind: 'genealogy.change_window', params: { tree: 'sponsor', withinDaysOfEnrolment: 30 } }],
+    })
+    const holderIn = async (ref: string, at: string) => position(support, await participant(support, my, typeId, ref, { at }), my, `P-${ref}`, at)
+    const parent = await holderIn('MP', daysAgo(90))
+    const old = await holderIn('MO', daysAgo(60))
+    const fresh = await holderIn('MF', daysAgo(1))
+    const create = (subject: string, payload: unknown, type = 'genealogy_change') => post(support, '/v1/cases', {
+      type, subject_type: 'position', subject_id: subject, reason_code: type === 'genealogy_change' ? 'COMPANY_DECISION' : 'DATA_ENTRY_ERROR', payload,
+    }, true)
+
+    const late = await create(old, change(parent))
+    const inside = await create(fresh, change(parent))
+    const correction = await create(old, { kind: 'sponsor', proposed_parent_position_id: parent, valid_from: daysAgo(1) }, 'genealogy_correction')
+    const placementChange = await create(old, { kind: 'placement', proposed_parent_position_id: parent, effective_from: today() })
+
+    expect(late.json().error).toMatchObject({ code: 'OUTSIDE_CHANGE_WINDOW', details: { rule_id: `${version}:window`, window_days: 30 } })
+    expect(late.statusCode).toBe(422)
+    expect([inside.statusCode, correction.statusCode, placementChange.statusCode]).toEqual([201, 201, 201])
+  })
+
+  test('T-B3-32: the plan version\'s placement width wins over the retired setting; without a plan the setting is the fallback', async () => {
+    const my = (await ownerRows<{ id: string }>(`SELECT id FROM market WHERE tenant_id = $1 AND code = 'MY'`, [acmeId]))[0]!.id
+    const child = await position(support, await participant(support, my, typeId, 'MW'), my, 'P-MW')
+    await saveSettings(support, { 'genealogy.placement_width': 5 })
+    const leg = (subject: string, value: string) => asUser(support, (tx) => genealogyChangeType.validateCreate(tx, { type: 'position', id: subject },
+      changePayload.parse({ kind: 'placement', proposed_parent_position_id: ids.R, effective_from: today(), leg: value }), null))
+
+    await expect(leg(child, '3')).rejects.toMatchObject({ statusCode: 422, code: 'LEG_OUT_OF_RANGE', details: { width: 2 } })
+    await expect(leg(child, '2')).resolves.toBeUndefined()
+    await expect(leg(ids.C!, '5')).resolves.toBeUndefined() // GB: no plan, the legacy setting
+    // A covering version that sets no width (unilevel) does not fall back to the setting.
+    const nl = await createMarket(acmeId, 'NL')
+    await activePlanVersion(acmeId, nl, { submitterId: support.id, approverId: compliance.id, creditingEvent: 'paid' })
+    const unilevel = await position(support, await participant(support, nl, typeId, 'NLW'), nl, 'P-NLW')
+    await expect(leg(unilevel, '1')).rejects.toMatchObject({ statusCode: 422, code: 'PLACEMENT_NOT_CONFIGURED' })
+  })
+
+  test('BR-GEN-05 at decision: a change window in force when the move applies refuses it; the case stays submitted', async () => {
+    const sg = await createMarket(acmeId, 'SG')
+    const old = await position(support, await participant(support, sg, typeId, 'SGO', { at: daysAgo(60) }), sg, 'P-SGO', daysAgo(60))
+    const id = await openCase('genealogy_change', old, change(ids.R!), 'COMPANY_DECISION')
+    expect((await submit(id)).statusCode).toBe(200)
+    const version = await activePlanVersion(acmeId, sg, {
+      submitterId: support.id, approverId: compliance.id, creditingEvent: 'paid',
+      rules: [{ rule_key: 'window', kind: 'genealogy.change_window', params: { tree: 'sponsor', withinDaysOfEnrolment: 30 } }],
+    })
+
+    const refused = await decide(id)
+
+    expect(refused.json().error).toMatchObject({ code: 'OUTSIDE_CHANGE_WINDOW', details: { rule_id: `${version}:window`, window_days: 30 } })
+    expect([refused.statusCode, await caseState(id)]).toEqual([422, 'submitted'])
+    expect(await rowsOf(old)).toEqual([])
+  })
+})
+
 describe('genealogy_correction (TS-03 flag part)', () => {
   test('lists the committed periods the corrected date reaches, with no payout figure before runs exist', async () => {
     const periodId = await committedPeriod(acmeId, gb, daysAgo(40), daysAgo(10))
@@ -205,7 +264,7 @@ describe('genealogy_correction (TS-03 flag part)', () => {
     const preview = (await submit(id)).json().data.effect_preview
     expect(preview).toMatchObject({
       structural_check: { ok: true }, affects_committed_periods: true, estimated_payout_impact: null,
-      impact_note: 'Payout impact is calculated once runs exist (B3).',
+      impact_note: 'Payout impact is not estimated on the correction: once it is approved, request a restatement of each affected committed period to preview the difference per payee.',
     })
     expect(preview.affected_committed_periods).toEqual([expect.objectContaining({ period_id: periodId, state: 'committed' })])
     expect((await decide(id)).statusCode).toBe(200)
@@ -241,6 +300,27 @@ describe('transfer (T-B2-15, AC-GEN1-2)', () => {
     await expect(check(customer)).rejects.toMatchObject({ statusCode: 422, code: 'TYPE_CANNOT_HOLD_POSITIONS' })
     await expect(check(owners.D!)).rejects.toMatchObject({ statusCode: 409, code: 'OWNERSHIP_CONFLICT' })
     await expect(check('00000000-0000-4000-8000-000000000000')).rejects.toMatchObject({ statusCode: 422, code: 'PARTICIPANT_NOT_FOUND' })
+  })
+
+  test('D-B3-07: the new owner\'s positions limit in the market refuses a transfer at create and at decision', async () => {
+    const nz = await createMarket(acmeId, 'NZ')
+    const version = await activePlanVersion(acmeId, nz, {
+      submitterId: support.id, approverId: compliance.id, creditingEvent: 'paid',
+      rules: [{ rule_key: 'limit', kind: 'genealogy.positions_limit', params: { max: 1 } }],
+    })
+    const heir = await participant(support, nz, typeId, 'NZ-HEIR')
+    const [first, second] = await Promise.all(['NZ1', 'NZ2'].map(async (ref) => position(support, await participant(support, nz, typeId, ref), nz, `P-${ref}`)))
+    const pending = await openCase('transfer', first!, { to_participant_id: heir, effective_from: today() }, 'SUCCESSION')
+    expect((await submit(pending)).statusCode).toBe(200)
+    await position(support, heir, nz)
+
+    const atCreate = await post(support, '/v1/cases', {
+      type: 'transfer', subject_type: 'position', subject_id: second, reason_code: 'SALE', payload: { to_participant_id: heir, effective_from: today() },
+    }, true)
+    const atDecision = await decide(pending)
+
+    expect(atCreate.json().error).toMatchObject({ code: 'POSITION_LIMIT_REACHED', details: { rule_id: `${version}:limit`, max: 1 } })
+    expect([atDecision.statusCode, atDecision.json().error.code, await caseState(pending)]).toEqual([422, 'POSITION_LIMIT_REACHED', 'submitted'])
   })
 
   test('a market-scoped filer cannot name a new owner outside their markets (unknown, as a missing participant)', async () => {

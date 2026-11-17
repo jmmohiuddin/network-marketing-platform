@@ -1,6 +1,6 @@
 import { randomBytes } from 'node:crypto'
 import { afterAll } from 'vitest'
-import { closePool, getPool, type Tx } from '../src/index.js'
+import { closePool, getPool, type TenantContext, type Tx } from '../src/index.js'
 import { closeOwnerPool } from '../src/testing.js'
 
 export const RLS_VIOLATION = /row-level security policy/
@@ -98,5 +98,43 @@ export async function withSettings<T>(settings: Record<string, string>, fn: (tx:
     } finally {
       client.release()
     }
+  }
+}
+
+const LOCK_WAIT_MS = 200
+
+/** A tenant-realm transaction on its own connection, acting as ctx's user. */
+async function begin(ctx: TenantContext): Promise<Tx> {
+  const client = await getPool().connect()
+  await client.query('BEGIN')
+  await client.query(`SELECT set_config('app.realm', 'tenant', true), set_config('app.tenant_id', $1, true),
+                             set_config('app.user_id', $2, true)`, [ctx.tenantId, ctx.userId])
+  return client
+}
+
+export interface RaceResult {
+  waited: boolean
+  outcome: { ok: true } | { ok: false; code: string | undefined }
+}
+
+/** Runs first's statement, starts second's (which must wait for first's lock), commits first, then settles second. */
+export async function race(ctx: TenantContext, first: (tx: Tx) => Promise<unknown>, second: (tx: Tx) => Promise<unknown>): Promise<RaceResult> {
+  const [one, two] = [await begin(ctx), await begin(ctx)]
+  try {
+    await first(one)
+    let settled = false
+    const pending = second(two).then(
+      () => ({ ok: true as const }),
+      (error: { code?: string }) => ({ ok: false as const, code: error.code }),
+    ).finally(() => { settled = true })
+    await new Promise((resolve) => setTimeout(resolve, LOCK_WAIT_MS))
+    const waited = !settled
+    await one.query('COMMIT')
+    const outcome = await pending
+    await two.query(outcome.ok ? 'COMMIT' : 'ROLLBACK')
+    return { waited, outcome }
+  } finally {
+    one.release()
+    two.release()
   }
 }

@@ -1,7 +1,7 @@
 import type { Tx } from '@nmp/db'
 import { recordAudit } from '../../lib/audit.js'
 import { ApiError } from '../../lib/errors.js'
-import { getSetting, inScope } from '../ten/index.js'
+import { inScope, placementWidthFor, structuralRules } from '../ten/index.js'
 import type { PlacementInput, PositionBody } from './schemas.js'
 import { inSavepoint, pgCode, sqlCall, translateSqlError } from './sql-errors.js'
 
@@ -49,10 +49,10 @@ async function positionIdByRef(tx: Tx, positionRef: string): Promise<string> {
   return rows[0].id
 }
 
-async function placementWidth(tx: Tx): Promise<number> {
-  const width = await getSetting(tx, 'genealogy.placement_width')
+async function placementWidth(tx: Tx, marketId: string): Promise<number> {
+  const width = await placementWidthFor(tx, marketId)
   if (width === null) {
-    throw new ApiError(422, 'PLACEMENT_NOT_CONFIGURED', 'Set genealogy.placement_width before placing by leg or automatically.')
+    throw new ApiError(422, 'PLACEMENT_NOT_CONFIGURED', 'Set the placement width on the market\'s plan version before placing by leg or automatically.')
   }
   return width
 }
@@ -92,22 +92,22 @@ async function placeOnLeg(tx: Tx, child: string, parent: string, leg: string, wi
 }
 
 /** Under a parent without leg (unilevel), on a requested leg, or by the auto rule (FR-GEN-005). */
-async function assign(tx: Tx, child: string, parent: string, input: PlacementInput, at: Date): Promise<Assigned> {
+async function assign(tx: Tx, child: string, parent: string, input: PlacementInput, marketId: string, at: Date): Promise<Assigned> {
   const requestedLeg = 'leg' in input ? input.leg ?? null : null
   if (!('auto' in input) && requestedLeg === null) {
     await applyPlacement(tx, child, parent, null, at)
     return { parent, leg: null, auto: false }
   }
-  const width = await placementWidth(tx)
+  const width = await placementWidth(tx, marketId)
   if (requestedLeg === null) return { ...(await autoPlace(tx, child, parent, width, at)), auto: true }
   if (Number(requestedLeg) > width) throw new ApiError(422, 'LEG_OUT_OF_RANGE', `Legs run from 1 to ${width}.`, { width })
   return placeOnLeg(tx, child, parent, requestedLeg, width, at)
 }
 
 /** Places the new position; GENEALOGY.PLACED records the request, the result and the tie-break rule. */
-async function place(tx: Tx, positionId: string, input: PlacementInput, at: Date): Promise<PlacementView> {
+async function place(tx: Tx, positionId: string, input: PlacementInput, marketId: string, at: Date): Promise<PlacementView> {
   const parent = await positionIdByRef(tx, input.position_ref)
-  const assigned = await assign(tx, positionId, parent, input, at)
+  const assigned = await assign(tx, positionId, parent, input, marketId, at)
   await recordAudit(tx, {
     action: 'GENEALOGY.PLACED', objectType: 'position', objectId: positionId,
     after: {
@@ -129,8 +129,32 @@ export interface NewPosition {
   readonly sponsorId: string | null
 }
 
+/**
+ * D-B3-07: refuses giving a participant `adding` more non-terminated positions in a market when that would pass a
+ * positions_limit rule in force now for the market. Counted per market: a market's plan governs the positions of that
+ * market only. Every path that gives a participant a non-terminated position calls it: creation, transfer, duplicate
+ * merge and reinstatement.
+ */
+export async function assertPositionsLimit(tx: Tx, participantId: string, marketId: string, adding = 1): Promise<void> {
+  if (adding === 0) return
+  const rules = await structuralRules(tx, marketId, new Date(), 'genealogy.positions_limit')
+  if (rules.length === 0) return
+  // Serialises the participant's concurrent position writes, so two cannot both pass the count.
+  await tx.query(`SELECT pg_advisory_xact_lock(hashtextextended('positions:' || app_tenant_id() || ':' || $1, 0))`, [participantId])
+  const { rows } = await tx.query<{ held: number }>(
+    `SELECT count(*)::int AS held FROM gen_positions_of($1, now()) WHERE status <> 'terminated' AND market_id = $2`, [participantId, marketId],
+  )
+  const reached = rules.find((rule) => rows[0]!.held + adding > rule.params.max)
+  if (reached !== undefined) {
+    throw new ApiError(422, 'POSITION_LIMIT_REACHED', `A participant holds at most ${reached.params.max} positions in this market that are not terminated.`, {
+      rule_id: reached.rule_id, max: reached.params.max,
+    })
+  }
+}
+
 /** G1 + sponsor (G2 enrolment) + placement: a position of the participant with its first relationships, audited. */
 export async function createPosition(tx: Tx, p: NewPosition): Promise<{ position: PositionView; placement: PlacementView | null }> {
+  await assertPositionsLimit(tx, p.participantId, p.marketId)
   if (p.input.brand_id !== undefined) {
     const { rowCount } = await tx.query('SELECT 1 FROM brand WHERE id = $1', [p.input.brand_id])
     if (rowCount !== 1) throw new ApiError(422, 'BRAND_NOT_FOUND', 'The brand does not exist.')
@@ -146,7 +170,7 @@ export async function createPosition(tx: Tx, p: NewPosition): Promise<{ position
       `SELECT gen_apply_relationship('sponsor', $1, $2, NULL, $3, 'enrolment', NULL, NULL)`, [position.id, p.sponsorId, p.at],
     ))
   }
-  const placement = p.input.placement === undefined ? null : await place(tx, position.id, p.input.placement, p.at)
+  const placement = p.input.placement === undefined ? null : await place(tx, position.id, p.input.placement, p.marketId, p.at)
   await recordAudit(tx, {
     action: 'POSITION.CREATED', objectType: 'position', objectId: position.id,
     after: { participant_id: p.participantId, market_id: p.marketId, status: position.status, sponsor_position_id: p.sponsorId, valid_from: p.at },

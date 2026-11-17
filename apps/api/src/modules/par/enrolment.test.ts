@@ -1,11 +1,11 @@
 import type { FastifyInstance } from 'fastify'
 import { afterAll, beforeAll, describe, expect, test } from 'vitest'
 import {
-  buildTestApp, call, closePoolsAfterAll, createMarket, createSignedInUser, createTenant, ownerRows, resetApiDb,
-  type TestTenant, type TestUser,
+  activePlanVersion, buildTestApp, call, closePoolsAfterAll, createMarket, createSignedInUser, createTenant, ownerRows, resetApiDb, type TestTenant, type TestUser,
 } from '../../../test/helpers/index.js'
 import { iamModule } from '../iam/index.js'
 import { parModule } from './index.js'
+import { servicerCall } from './sql-errors.js'
 import {
   activeType, apiKey, committedPeriod, CUSTOMER, DISTRIBUTOR, enrolled, enrolment, enrolRequest, publishAgreement, setSettings,
 } from './test-support.js'
@@ -244,5 +244,35 @@ describe('API keys and permissions (T-B2-07, AC-PAR2-2, OI-2)', () => {
     expect(await ownerRows('SELECT tenant_id FROM participant WHERE id = $1', [own.json().data.participant.id])).toEqual([{ tenant_id: globex.id }])
     const fromAcme = await call(app, { method: 'GET', url: `/v1/participants/${own.json().data.participant.id}`, as: support })
     expect(fromAcme.statusCode).toBe(404)
+  })
+})
+
+describe('plan parameters (D-B3-06, D-B3-07) and servicing refusals (OI-4)', () => {
+  test('T-B3-32 / T-B3-34: the plan version\'s width wins over the retired setting; the positions limit refuses the next position', async () => {
+    const ie = await createMarket(acme.id, 'IE')
+    const version = await activePlanVersion(acme.id, ie, {
+      submitterId: admin.id, approverId: compliance.id, creditingEvent: 'paid', placementWidth: 3,
+      rules: [{ rule_key: 'limit', kind: 'genealogy.positions_limit', params: { max: 2 } }],
+    })
+    const owner = await enrolled(app, support, enrolment('DIST', { position_ref: 'IE-ROOT' }, 'IE'))
+    const third = await enrolRequest(app, enrolment('DIST', { placement: { position_ref: 'IE-ROOT', leg: '3' } }, 'IE'), { as: support })
+    const fourth = await enrolRequest(app, enrolment('DIST', { placement: { position_ref: 'IE-ROOT', leg: '4' } }, 'IE'), { as: support })
+    const newPosition = () => call(app, { method: 'POST', url: `/v1/participants/${owner.participant.id}/positions`, as: support, body: {}, idempotencyKey: true })
+    const second = await newPosition()
+    const refused = await newPosition()
+
+    expect(third.statusCode).toBe(201) // the setting (width 2) would refuse leg 3
+    expect(fourth.json().error).toMatchObject({ code: 'LEG_OUT_OF_RANGE', details: { width: 3 } })
+    expect(second.statusCode).toBe(201)
+    expect(refused.statusCode).toBe(422)
+    expect(refused.json().error).toMatchObject({ code: 'POSITION_LIMIT_REACHED', details: { rule_id: `${version}:limit`, max: 2 } })
+    expect(await ownerRows('SELECT 1 FROM position_ownership WHERE participant_id = $1', [owner.participant.id])).toHaveLength(2)
+  })
+
+  test('OI-4: C1\'s 23514 (a pending servicing change) at enrolment is 409 SERVICING_CHANGE_PENDING, never a 500', async () => {
+    // A new participant has no servicer row, so C1 cannot raise it at enrolment today: the mapping is checked directly.
+    const pending = Object.assign(new Error('the current servicer starts at or after'), { code: '23514' })
+    await expect(servicerCall(() => Promise.reject(pending))).rejects.toMatchObject({ statusCode: 409, code: 'SERVICING_CHANGE_PENDING' })
+    await expect(servicerCall(() => Promise.reject(Object.assign(new Error('x'), { code: 'CR002' })))).rejects.toMatchObject({ code: 'SERVICER_NOT_ELIGIBLE' })
   })
 })

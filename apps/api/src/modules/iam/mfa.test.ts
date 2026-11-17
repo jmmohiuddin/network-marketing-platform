@@ -195,11 +195,13 @@ describe('GET /v1/me', () => {
     expect(body.roles.map((role: { name: string }) => role.name)).toEqual(['Compliance officer'])
     expect(body.permissions).toEqual([
       'agreement.publish', 'audit.read', 'case.duplicate.approve', 'case.duplicate.read', 'case.genealogy.approve',
-      'case.genealogy.read', 'compliance.read', 'export', 'genealogy.read', 'mapping.approve', 'market.signoff', 'order.read',
-      'participant.read', 'participant.terminate', 'participant_type.approve', 'snapshot.create',
+      'case.genealogy.read', 'case.restatement.read', 'compliance.read', 'export', 'genealogy.read', 'guardrail.read',
+      'mapping.approve', 'market.signoff', 'order.read', 'override.approve', 'participant.read', 'participant.terminate',
+      'participant_type.approve', 'period.read', 'plan.approve', 'plan.read', 'restatement.request', 'run.review',
+      'snapshot.create', 'trace.read',
     ])
     expect(body.navigation.map((entry: { key: string }) => entry.key)).toEqual(
-      ['compliance', 'audit', 'settings', 'markets', 'people', 'genealogy', 'cases', 'orders'],
+      ['compliance', 'audit', 'settings', 'markets', 'people', 'genealogy', 'cases', 'orders', 'periods', 'plans', 'guardrails'],
     )
   })
 
@@ -222,9 +224,22 @@ describe('GET /v1/me', () => {
     }
 
     expect(await keys(['Commission analyst'])).toEqual(expect.arrayContaining(['integrations', 'people', 'genealogy', 'cases', 'orders', 'late']))
-    expect(await keys(['Support agent'])).toEqual(['people', 'genealogy', 'cases', 'orders'])
+    expect(await keys(['Support agent'])).toEqual(['people', 'genealogy', 'cases', 'orders', 'periods'])
     expect(await keys(['DPO'])).toEqual(expect.arrayContaining(['settings', 'people']))
     expect(await keys(['Payout officer'])).not.toContain('late')
+  })
+
+  test('B3 screens open from their permissions (PLAN B3 2.7)', async () => {
+    const keys = async (roles: Parameters<typeof createSignedInUser>[0]['roles']) => {
+      const user = await createSignedInUser({ tenantId: tenant.id, roles })
+      return (await call(app, { method: 'GET', url: '/v1/me', as: user })).json().data.navigation.map((entry: { key: string }) => entry.key)
+    }
+
+    expect(await keys(['Plan administrator'])).toEqual(expect.arrayContaining(['periods', 'plans', 'guardrails']))
+    expect(await keys(['Finance approver'])).toEqual(expect.arrayContaining(['periods', 'plans', 'cases']))
+    expect(await keys(['Finance approver'])).not.toContain('guardrails')
+    expect(await keys(['Executive read-only'])).toEqual(['compliance', 'periods', 'plans'])
+    expect(await keys(['Payout officer'])).not.toContain('periods')
   })
 
   test('a vendor user sees the vendor console only and no tenant', async () => {

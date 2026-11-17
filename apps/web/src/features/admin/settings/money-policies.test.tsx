@@ -5,6 +5,7 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { apiError, json } from '../../../test/fetch'
 import { adminMe, bodyOf, callsTo, fetchByRoute, headerOf, renderAs } from '../test-support'
+import { decisionRefusal, EFFECTIVE_PASSED } from './change-requests'
 import { SettingsPage } from './settings-page'
 import { policyValue } from './policy-fields'
 import { effectiveError } from './version-dialog'
@@ -170,6 +171,29 @@ describe('change requests', () => {
     const card = await screen.findByRole('article', { name: /Rounding mode/ })
     expect(within(card).getByText('No one can approve this yet: a Tenant admin must assign Finance approver to another user.')).toBeTruthy()
     expect(within(card).queryByRole('button', { name: 'Approve' })).toBeNull()
+  })
+
+  it('BUG-083: hides Approve once the effective time has passed and says to withdraw and request again', async () => {
+    const passed = { ...REQUEST, requested_by: { id: 'x', display_name: 'X' }, effective_from: '2026-01-01T00:00:00.000Z' }
+    renderAs(FINANCE, <SettingsPage />, routes([passed]))
+    const card = await screen.findByRole('article', { name: /Rounding mode/ })
+    expect(within(card).getByText(EFFECTIVE_PASSED)).toBeTruthy()
+    expect(within(card).queryByRole('button', { name: 'Approve' })).toBeNull()
+    expect(within(card).getByRole('button', { name: 'Reject' })).toBeTruthy()
+  })
+
+  it('BUG-083: a decision refused with SETTING_EFFECTIVE_FROM_INVALID shows the same sentence', async () => {
+    const user = userEvent.setup()
+    const other = { ...REQUEST, requested_by: { id: 'x', display_name: 'X' }, effective_from: new Date(Date.now() + 60 * 60_000).toISOString() }
+    renderAs(FINANCE, <SettingsPage />, routes([other], {
+      [`POST /v1/setting-change-requests/${REQUEST.id}/decision`]: () => apiError(422, 'SETTING_EFFECTIVE_FROM_INVALID', 'effective_from cannot be in the past.'),
+    }))
+    await user.click(within(await screen.findByRole('article', { name: /Rounding mode/ })).getByRole('button', { name: 'Approve' }))
+    const dialog = screen.getByRole('dialog')
+    await user.type(within(dialog).getByLabelText('Reason'), 'Checked')
+    await user.click(within(dialog).getByRole('button', { name: 'Approve rounding mode change' }))
+    expect(await within(dialog).findByText(EFFECTIVE_PASSED)).toBeTruthy()
+    expect(decisionRefusal(new Error('other'))).toBeInstanceOf(Error)
   })
 })
 

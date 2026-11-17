@@ -31,3 +31,8 @@ _Agent: database. Read before every task; update after every task. Keep concise 
 ## B2 schema (2026-11-17)
 - Migrations 0200-0206 (19 tables, guards, shared SQL, base roles), permissions catalogue (+18, 6 privileged, B2_UPDATED_BASE_ROLES; B1 list removed), API_SCOPES +participants:write/orders:write, config D-B2-19 keys, settings registry (10 keys + approverPermission), seed STAFF support/dpo + seedFixtureMarket (nmp_e2e NL), support-session exclusions (PLAN 3, done here because the catalogue change exposed them).
 - Verified on nmp_test_2: packages/db 174/174, apps/api 1309/1309, typecheck (api + web) clean.
+
+## B3 schema (2026-11-17)
+- Migrations 0300 (PLN tables + guardrail_decision), 0301 (COMP: run_snapshot, run, period guard, simulation, golden_dataset, restatement, adjustment_origin, result_line, qualification_state, sim_result_line, late_transaction consumed guard), 0302 (PLAN 4.2 functions), 0303 (OI-3, OI-7, market_references +plans, document_references +guardrail_decision, case guard 'updated' actors, par_create_customer OUT (id, created)), 0304 base roles.
+- permissions.ts +14 (4 privileged), B3_UPDATED_BASE_ROLES (B2 list removed); settings registry: runs.exception_thresholds, `retired` field (placement_width), 18-digit minor strings; engine json.ts codec + test; seed: planadmin staff, B3 fixture pack checks, seedFixturePlanMarket (DE).
+- Verified on nmp_test_2: packages 102 files / 2320 tests (db 202), apps/api green, typecheck (api + web) clean.

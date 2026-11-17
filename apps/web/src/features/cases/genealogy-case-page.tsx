@@ -15,6 +15,7 @@ import { errorMessage } from '../../lib/messages'
 import { useSession } from '../../lib/session'
 import { useResource } from '../../lib/use-resource'
 import { fromLocalInput } from '../admin/format'
+import { LEG_OPTIONS } from '../people/format'
 import { CaseForm, type CaseProposal } from './case-form'
 import { caseTypeInfo, KIND_LABELS, utcToday, type CaseTypeInfo } from './format'
 import { nodeName, ParticipantPicker, PositionPicker } from './pickers'
@@ -76,9 +77,7 @@ function RelationshipForm({ initial }: { readonly initial: TreeNode | null }) {
   const [customAt, setCustomAt] = useState('')
   const [errors, setErrors] = useState<Readonly<Record<string, string | null>>>({})
   const detail = useResource<PositionDetail>(position === null ? null : positionPath(position.position_id))
-  const width = useResource<{ readonly value: number | null }>('/v1/settings/genealogy.placement_width')
   const current = detail.data?.parents[kind] ?? null
-  const legs = kind === 'placement' && typeof width.data?.value === 'number' ? width.data.value : null
   const fromStart = correctFrom === 'start' && current !== null
   // shortcut: cancelling a pending future change (E-GEN-04, a correction at exactly that row's start) is not offered here,
   // because GET /v1/positions/:id names only the current parent; offer the pending row's start once the API exposes it.
@@ -94,7 +93,7 @@ function RelationshipForm({ initial }: { readonly initial: TreeNode | null }) {
     }
     setErrors(found)
     const payload = {
-      kind, proposed_parent_position_id: parent?.position_id, ...(legs !== null && leg !== '' ? { leg } : {}),
+      kind, proposed_parent_position_id: parent?.position_id, ...(kind === 'placement' && leg !== '' ? { leg } : {}),
       ...(mode === 'change' ? { effective_from: effectiveFrom } : { valid_from: validFrom }),
     }
     const items = Object.entries(found).flatMap(([fieldId, message]) => (message === null ? [] : [{ fieldId, message }]))
@@ -118,9 +117,9 @@ function RelationshipForm({ initial }: { readonly initial: TreeNode | null }) {
           {parent !== null && <> · proposed: {nodeName(parent)}</>}
         </p>
       )}
-      {legs !== null && (
-        <Select id="gc-leg" label="Leg" optional helper="Leave empty to place without a leg." value={leg}
-          options={[{ value: '', label: 'No leg' }, ...Array.from({ length: legs }, (_, index) => ({ value: String(index + 1), label: `Leg ${index + 1}` }))]}
+      {kind === 'placement' && (
+        <Select id="gc-leg" label="Leg" optional helper="Leave empty to place without a leg. Legs run up to the width on the market’s plan version." value={leg}
+          options={[{ value: '', label: 'No leg' }, ...LEG_OPTIONS]}
           onChange={(event) => setLeg(event.target.value)} />
       )}
       {mode === 'change' ? (

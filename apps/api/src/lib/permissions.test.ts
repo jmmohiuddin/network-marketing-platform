@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, test } from 'vitest'
 import {
-  B2_UPDATED_BASE_ROLES,
+  B3_UPDATED_BASE_ROLES,
   BASE_ROLES,
   isPrivileged,
   PERMISSIONS,
@@ -14,23 +14,25 @@ import {
 const MIGRATION_0007 = new URL('../../../../packages/db/migrations/0007_iam_api.sql', import.meta.url)
 const MIGRATION_0106 = new URL('../../../../packages/db/migrations/0106_b1_base_roles.sql', import.meta.url)
 const MIGRATION_0206 = new URL('../../../../packages/db/migrations/0206_b2_base_roles.sql', import.meta.url)
+const MIGRATION_0304 = new URL('../../../../packages/db/migrations/0304_b3_base_roles.sql', import.meta.url)
 
 // TS-36 fixture (SDD-10 matrix, SEC-25 names, E-ADR-09). Changing a role's permissions must change this table.
 const MATRIX: Readonly<Record<string, string>> = {
   'Tenant admin':
     'user.manage settings.manage import.manage mapping.edit mapping.approve compliance.read audit.read vendor_access.decide market.manage integration.manage participant.read order.read product.manage integration.read',
   'Commission analyst':
-    'compliance.read participant.read genealogy.read case.genealogy.read order.read late.manage integration.read',
-  'Plan administrator': 'compliance.read',
-  'Finance approver': 'compliance.read participant.unmask plan.activate settings.approve participant.read order.read',
+    'compliance.read participant.read genealogy.read case.genealogy.read order.read late.manage integration.read plan.read period.read run.execute run.review trace.read restatement.request case.restatement.read',
+  'Plan administrator': 'compliance.read plan.read plan.edit plan.simulate period.read guardrail.read',
+  'Finance approver':
+    'compliance.read participant.unmask plan.activate settings.approve participant.read order.read plan.read period.read run.review run.commit trace.read restatement.approve case.restatement.read',
   'Payout officer': 'participant.unmask participant.read',
   'Compliance officer':
-    'mapping.approve compliance.read snapshot.create export audit.read market.signoff participant.read participant.terminate participant_type.approve agreement.publish genealogy.read case.genealogy.read case.genealogy.approve case.duplicate.read case.duplicate.approve order.read',
+    'mapping.approve compliance.read snapshot.create export audit.read market.signoff participant.read participant.terminate participant_type.approve agreement.publish genealogy.read case.genealogy.read case.genealogy.approve case.duplicate.read case.duplicate.approve order.read plan.read plan.approve period.read run.review trace.read restatement.request case.restatement.read guardrail.read override.approve',
   'Support agent':
-    'participant.read participant.manage genealogy.read case.genealogy.read case.genealogy.create case.duplicate.read case.duplicate.create servicing.manage order.read',
+    'participant.read participant.manage genealogy.read case.genealogy.read case.genealogy.create case.duplicate.read case.duplicate.create servicing.manage order.read period.read run.review trace.read',
   DPO: 'compliance.read audit.read participant.unmask participant.read privacy.manage',
-  'Implementation consultant': 'import.manage mapping.edit',
-  'Executive read-only': 'compliance.read',
+  'Implementation consultant': 'import.manage mapping.edit plan.read plan.edit plan.simulate period.read',
+  'Executive read-only': 'compliance.read plan.read period.read',
   Integration: '',
 }
 // SEC-03 union (SECURITY_IAM_TENANCY conflict 1).
@@ -39,15 +41,17 @@ const MFA_ROLES = ['Tenant admin', 'Finance approver', 'Payout officer', 'Compli
 const PRIVILEGED_ROLES = ['Tenant admin', 'Finance approver', 'Compliance officer', 'DPO']
 
 describe('permission catalogue (TS-36 fixture)', () => {
-  test('lists exactly the release A permissions, participant.unmask, plan.activate and the B1 and B2 additions', () => {
+  test('lists exactly the release A permissions, participant.unmask, plan.activate and the B1, B2 and B3 additions', () => {
     expect([...PERMISSIONS].sort()).toEqual([
       'agreement.publish', 'audit.read', 'case.duplicate.approve', 'case.duplicate.create', 'case.duplicate.read',
-      'case.genealogy.approve', 'case.genealogy.create', 'case.genealogy.read', 'compliance.read', 'export',
-      'genealogy.read', 'import.manage', 'integration.manage', 'integration.read', 'late.manage', 'mapping.approve',
-      'mapping.edit', 'market.manage', 'market.signoff', 'order.read', 'participant.manage', 'participant.read',
-      'participant.terminate', 'participant.unmask', 'participant_type.approve', 'plan.activate', 'privacy.manage',
-      'product.manage', 'servicing.manage', 'settings.approve', 'settings.manage', 'snapshot.create', 'user.manage',
-      'vendor_access.decide',
+      'case.genealogy.approve', 'case.genealogy.create', 'case.genealogy.read', 'case.restatement.read',
+      'compliance.read', 'export', 'genealogy.read', 'guardrail.read', 'import.manage', 'integration.manage',
+      'integration.read', 'late.manage', 'mapping.approve', 'mapping.edit', 'market.manage', 'market.signoff',
+      'order.read', 'override.approve', 'participant.manage', 'participant.read', 'participant.terminate',
+      'participant.unmask', 'participant_type.approve', 'period.read', 'plan.activate', 'plan.approve', 'plan.edit',
+      'plan.read', 'plan.simulate', 'privacy.manage', 'product.manage', 'restatement.approve', 'restatement.request',
+      'run.commit', 'run.execute', 'run.review', 'servicing.manage', 'settings.approve', 'settings.manage',
+      'snapshot.create', 'trace.read', 'user.manage', 'vendor_access.decide',
     ])
   })
 
@@ -57,6 +61,15 @@ describe('permission catalogue (TS-36 fixture)', () => {
       'case.duplicate.approve', 'privacy.manage',
     ] as const) expect(isPrivileged([permission])).toBe(true)
     expect(isPrivileged(BASE_ROLES.find((role) => role.name === 'Support agent')!.permissions)).toBe(false)
+  })
+
+  test('B3 approving, committing and overriding permissions are privileged; authoring, running and reads are not', () => {
+    for (const permission of ['plan.approve', 'run.commit', 'restatement.approve', 'override.approve'] as const) {
+      expect(isPrivileged([permission])).toBe(true)
+    }
+    for (const role of ['Plan administrator', 'Commission analyst', 'Support agent', 'Implementation consultant'] as const) {
+      expect(isPrivileged(BASE_ROLES.find((base) => base.name === role)!.permissions)).toBe(false)
+    }
   })
 
   test('B1 approving and credential permissions are privileged; market.manage is not', () => {
@@ -90,13 +103,13 @@ describe('permission catalogue (TS-36 fixture)', () => {
     expect(readFileSync(MIGRATION_0007, 'utf8')).toContain(RELEASE_A_BASE_ROLES_SEED)
   })
 
-  test('migration 0206 brings exactly the B2-changed base roles to the catalogue', () => {
-    expect(readFileSync(MIGRATION_0206, 'utf8')).toContain(renderBaseRoleUpdate(B2_UPDATED_BASE_ROLES))
+  test('migration 0304 brings exactly the B3-changed base roles to the catalogue', () => {
+    expect(readFileSync(MIGRATION_0304, 'utf8')).toContain(renderBaseRoleUpdate(B3_UPDATED_BASE_ROLES))
   })
 
-  test('0007, then 0106, then 0206 equals the catalogue: each role as its last migration leaves it', () => {
+  test('0007, then 0106, 0206 and 0304 equals the catalogue: each role as its last migration leaves it', () => {
     const lastUpdate = new Map<string, string>()
-    for (const file of [MIGRATION_0106, MIGRATION_0206]) {
+    for (const file of [MIGRATION_0106, MIGRATION_0206, MIGRATION_0304]) {
       for (const line of readFileSync(file, 'utf8').split('\n')) {
         const name = /^UPDATE role .* name = '([^']+)';$/.exec(line)?.[1]
         if (name !== undefined) lastUpdate.set(name, line)

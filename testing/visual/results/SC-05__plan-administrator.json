@@ -1,0 +1,926 @@
+{
+  "when": "2026-11-17T22:02:47.204Z",
+  "screenId": "SC-05",
+  "stitch": "sc_05_cap_and_pool_configuration",
+  "module": "plans",
+  "screen": "caps-and-pools",
+  "route": "/plans/[id]/versions/[v]/caps",
+  "role": "plan-administrator",
+  "url": "http://127.0.0.1:3100/plans/e42ba34e-058f-414f-841f-bfc53d996bb4/versions/2/caps",
+  "self": false,
+  "patched": [],
+  "viewports": [
+    {
+      "viewport": "1440x900",
+      "screenshot": "testing/ui-screenshots/app/plans/caps-and-pools/plan-administrator/1440x900.png",
+      "reference": "testing/ui-screenshots/reference/sc_05_cap_and_pool_configuration/1440x900.png",
+      "diffImage": "testing/ui-screenshots/app/plans/caps-and-pools/plan-administrator/1440x900.diff.png",
+      "mismatchPercent": 5.89,
+      "diffPixels": 164677,
+      "referenceSize": "1440x1941",
+      "actualSize": "1440x900",
+      "landmarks": [
+        {
+          "landmark": "header",
+          "stitchText": "AuditLedgerAcrobex Global(TEN-842)arrow_drop_downUS - United",
+          "appText": "menuMenuAcme Direct LtdPAPlan AdministratorPlan administrato",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "height",
+              "stitch": "48px",
+              "app": "48px",
+              "match": true
+            },
+            {
+              "prop": "background",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "sidebar",
+          "stitchText": "dashboardOverviewhistory_toggle_offPeriods & RunsschemaCompe",
+          "appText": "verified_userCompliancehistory_toggle_offPeriods and runssch",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "width",
+              "stitch": "208px",
+              "app": "208px",
+              "match": true
+            },
+            {
+              "prop": "background",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "page",
+          "stitchText": "account_tree Comp Plans / Plan Version v4.3-DRAFT / Cap & Po",
+          "appText": "Planschevron_rightDE corechevron_rightVersion 2chevron_right",
+          "status": "mismatch",
+          "severity": "high",
+          "props": [
+            {
+              "prop": "background",
+              "stitch": "rgb(248, 249, 255)",
+              "app": "rgb(248, 249, 255)",
+              "match": true
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "14px",
+              "app": "16px",
+              "match": false
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "title",
+          "stitchText": "Cap and Pool Configuration",
+          "appText": "Caps and pools",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "24px",
+              "app": "24px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            },
+            {
+              "prop": "line-height",
+              "stitch": "32px",
+              "app": "32px",
+              "match": true
+            },
+            {
+              "prop": "letter-spacing",
+              "stitch": "-0.6px",
+              "app": "-0.36px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "sectionHeading",
+          "stitchText": "Cap Definition & Mathematical Ceilings",
+          "appText": "Caps in precedence order",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "16px",
+              "app": "16px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            },
+            {
+              "prop": "line-height",
+              "stitch": "24px",
+              "app": "24px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "primaryButton",
+          "stitchText": "save Save Cap Configuration",
+          "appText": "addAdd cap",
+          "status": "mismatch",
+          "severity": "high",
+          "props": [
+            {
+              "prop": "background-color",
+              "stitch": "rgb(0, 56, 131)",
+              "app": "rgb(0, 56, 131)",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            },
+            {
+              "prop": "border-radius",
+              "stitch": "2px",
+              "app": "2px",
+              "match": true
+            },
+            {
+              "prop": "height",
+              "stitch": "32px",
+              "app": "32px",
+              "match": true
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "16px",
+              "app": "13px",
+              "match": false
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "card",
+          "stitchText": "tune Cap Definition & Mathematical Ceilings Configure aggreg",
+          "appText": "tuneCaps in precedence orderOverlapping caps apply from the ",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "border-radius",
+              "stitch": "2px",
+              "app": "2px",
+              "match": true
+            },
+            {
+              "prop": "box-shadow",
+              "stitch": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+              "app": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+              "match": true
+            },
+            {
+              "prop": "background-color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "viewport": "1280x800",
+      "screenshot": "testing/ui-screenshots/app/plans/caps-and-pools/plan-administrator/1280x800.png",
+      "reference": "testing/ui-screenshots/reference/sc_05_cap_and_pool_configuration/1280x800.png",
+      "diffImage": "testing/ui-screenshots/app/plans/caps-and-pools/plan-administrator/1280x800.diff.png",
+      "mismatchPercent": 6.29,
+      "diffPixels": 165322,
+      "referenceSize": "1280x2055",
+      "actualSize": "1280x800",
+      "landmarks": [
+        {
+          "landmark": "header",
+          "stitchText": "AuditLedgerAcrobex Global(TEN-842)arrow_drop_downUS - United",
+          "appText": "menuMenuAcme Direct LtdPAPlan AdministratorPlan administrato",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "height",
+              "stitch": "48px",
+              "app": "48px",
+              "match": true
+            },
+            {
+              "prop": "background",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "sidebar",
+          "stitchText": "dashboardOverviewhistory_toggle_offPeriods & RunsschemaCompe",
+          "appText": "verified_userCompliancehistory_toggle_offPeriods and runssch",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "width",
+              "stitch": "208px",
+              "app": "208px",
+              "match": true
+            },
+            {
+              "prop": "background",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "page",
+          "stitchText": "account_tree Comp Plans / Plan Version v4.3-DRAFT / Cap & Po",
+          "appText": "Planschevron_rightDE corechevron_rightVersion 2chevron_right",
+          "status": "mismatch",
+          "severity": "high",
+          "props": [
+            {
+              "prop": "background",
+              "stitch": "rgb(248, 249, 255)",
+              "app": "rgb(248, 249, 255)",
+              "match": true
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "14px",
+              "app": "16px",
+              "match": false
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "title",
+          "stitchText": "Cap and Pool Configuration",
+          "appText": "Caps and pools",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "24px",
+              "app": "24px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            },
+            {
+              "prop": "line-height",
+              "stitch": "32px",
+              "app": "32px",
+              "match": true
+            },
+            {
+              "prop": "letter-spacing",
+              "stitch": "-0.6px",
+              "app": "-0.36px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "sectionHeading",
+          "stitchText": "Cap Definition & Mathematical Ceilings",
+          "appText": "Caps in precedence order",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "16px",
+              "app": "16px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            },
+            {
+              "prop": "line-height",
+              "stitch": "24px",
+              "app": "24px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "primaryButton",
+          "stitchText": "save Save Cap Configuration",
+          "appText": "addAdd cap",
+          "status": "mismatch",
+          "severity": "high",
+          "props": [
+            {
+              "prop": "background-color",
+              "stitch": "rgb(0, 56, 131)",
+              "app": "rgb(0, 56, 131)",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            },
+            {
+              "prop": "border-radius",
+              "stitch": "2px",
+              "app": "2px",
+              "match": true
+            },
+            {
+              "prop": "height",
+              "stitch": "32px",
+              "app": "32px",
+              "match": true
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "16px",
+              "app": "13px",
+              "match": false
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "card",
+          "stitchText": "tune Cap Definition & Mathematical Ceilings Configure aggreg",
+          "appText": "tuneCaps in precedence orderOverlapping caps apply from the ",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "border-radius",
+              "stitch": "2px",
+              "app": "2px",
+              "match": true
+            },
+            {
+              "prop": "box-shadow",
+              "stitch": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+              "app": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+              "match": true
+            },
+            {
+              "prop": "background-color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "viewport": "768x1024",
+      "screenshot": "testing/ui-screenshots/app/plans/caps-and-pools/plan-administrator/768x1024.png",
+      "reference": "testing/ui-screenshots/reference/sc_05_cap_and_pool_configuration/768x1024.png",
+      "diffImage": "testing/ui-screenshots/app/plans/caps-and-pools/plan-administrator/768x1024.diff.png",
+      "mismatchPercent": 5.19,
+      "diffPixels": 160360,
+      "referenceSize": "768x4021",
+      "actualSize": "768x1024",
+      "landmarks": [
+        {
+          "landmark": "page",
+          "stitchText": "account_tree Comp Plans / Plan Version v4.3-DRAFT / Cap & Po",
+          "appText": "Planschevron_rightDE corechevron_rightVersion 2chevron_right",
+          "status": "mismatch",
+          "severity": "high",
+          "props": [
+            {
+              "prop": "background",
+              "stitch": "rgb(248, 249, 255)",
+              "app": "rgb(248, 249, 255)",
+              "match": true
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "14px",
+              "app": "16px",
+              "match": false
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "title",
+          "stitchText": "Cap and Pool Configuration",
+          "appText": "Caps and pools",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "24px",
+              "app": "24px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            },
+            {
+              "prop": "line-height",
+              "stitch": "32px",
+              "app": "32px",
+              "match": true
+            },
+            {
+              "prop": "letter-spacing",
+              "stitch": "-0.6px",
+              "app": "-0.36px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "sectionHeading",
+          "stitchText": "Cap Definition & Mathematical Ceilings",
+          "appText": "Caps in precedence order",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "16px",
+              "app": "16px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            },
+            {
+              "prop": "line-height",
+              "stitch": "24px",
+              "app": "24px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "primaryButton",
+          "stitchText": "save Save Cap Configuration",
+          "appText": "addAdd cap",
+          "status": "mismatch",
+          "severity": "high",
+          "props": [
+            {
+              "prop": "background-color",
+              "stitch": "rgb(0, 56, 131)",
+              "app": "rgb(0, 56, 131)",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            },
+            {
+              "prop": "border-radius",
+              "stitch": "2px",
+              "app": "2px",
+              "match": true
+            },
+            {
+              "prop": "height",
+              "stitch": "32px",
+              "app": "32px",
+              "match": true
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "16px",
+              "app": "13px",
+              "match": false
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "card",
+          "stitchText": "tune Cap Definition & Mathematical Ceilings Configure aggreg",
+          "appText": "tuneCaps in precedence orderOverlapping caps apply from the ",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "border-radius",
+              "stitch": "2px",
+              "app": "2px",
+              "match": true
+            },
+            {
+              "prop": "box-shadow",
+              "stitch": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+              "app": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+              "match": true
+            },
+            {
+              "prop": "background-color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "viewport": "390x844",
+      "screenshot": "testing/ui-screenshots/app/plans/caps-and-pools/plan-administrator/390x844.png",
+      "reference": "testing/ui-screenshots/reference/sc_05_cap_and_pool_configuration/390x844.png",
+      "diffImage": "testing/ui-screenshots/app/plans/caps-and-pools/plan-administrator/390x844.diff.png",
+      "mismatchPercent": 1.26,
+      "diffPixels": 82085,
+      "referenceSize": "599x10872",
+      "actualSize": "390x1280",
+      "landmarks": [
+        {
+          "landmark": "page",
+          "stitchText": "account_tree Comp Plans / Plan Version v4.3-DRAFT / Cap & Po",
+          "appText": "Planschevron_rightDE corechevron_rightVersion 2chevron_right",
+          "status": "mismatch",
+          "severity": "high",
+          "props": [
+            {
+              "prop": "background",
+              "stitch": "rgb(248, 249, 255)",
+              "app": "rgb(248, 249, 255)",
+              "match": true
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "14px",
+              "app": "16px",
+              "match": false
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "title",
+          "stitchText": "Cap and Pool Configuration",
+          "appText": "Caps and pools",
+          "status": "mismatch",
+          "severity": "medium",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "24px",
+              "app": "20px",
+              "match": false
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            },
+            {
+              "prop": "line-height",
+              "stitch": "32px",
+              "app": "28px",
+              "match": false
+            },
+            {
+              "prop": "letter-spacing",
+              "stitch": "-0.6px",
+              "app": "-0.5px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "sectionHeading",
+          "stitchText": "Cap Definition & Mathematical Ceilings",
+          "appText": "Caps in precedence order",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "16px",
+              "app": "16px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            },
+            {
+              "prop": "line-height",
+              "stitch": "24px",
+              "app": "24px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "primaryButton",
+          "stitchText": "save Save Cap Configuration",
+          "appText": "addAdd cap",
+          "status": "mismatch",
+          "severity": "high",
+          "props": [
+            {
+              "prop": "background-color",
+              "stitch": "rgb(0, 56, 131)",
+              "app": "rgb(0, 56, 131)",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            },
+            {
+              "prop": "border-radius",
+              "stitch": "2px",
+              "app": "2px",
+              "match": true
+            },
+            {
+              "prop": "height",
+              "stitch": "32px",
+              "app": "32px",
+              "match": true
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "16px",
+              "app": "13px",
+              "match": false
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "card",
+          "stitchText": "tune Cap Definition & Mathematical Ceilings Configure aggreg",
+          "appText": "tuneCaps in precedence orderOverlapping caps apply from the ",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "border-radius",
+              "stitch": "2px",
+              "app": "2px",
+              "match": true
+            },
+            {
+              "prop": "box-shadow",
+              "stitch": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+              "app": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+              "match": true
+            },
+            {
+              "prop": "background-color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

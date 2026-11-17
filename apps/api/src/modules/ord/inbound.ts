@@ -4,8 +4,8 @@ import { recordAudit } from '../../lib/audit.js'
 import { ApiError } from '../../lib/errors.js'
 import { envelope } from '../../lib/http.js'
 import type { StoredResponse } from '../../lib/idempotency.js'
-import { getSetting } from '../ten/index.js'
 import { processEvent } from './event-ingest.js'
+import { creditingEvent } from './order-checks.js'
 import { processOrder } from './order-ingest.js'
 import type { AttemptRefs, Outcome } from './outcome.js'
 import { asRefusal, Refusal, refusalBody } from './refusal.js'
@@ -55,7 +55,7 @@ const instant = (value: string | undefined) => (value === undefined ? null : Dat
 
 /**
  * A re-delivered order must repeat the time it is credited at: a processed order's credited_at must be its paid or its
- * fulfilled time (whichever the setting named at first receipt); a held one keeps the time the current setting names.
+ * fulfilled time (whichever event was in force at first receipt); a held one keeps the time of the event now in force (D-B3-05).
  */
 async function creditingTimeChanged(tx: Tx, submission: Submission, existing: { state: string; payload: unknown; result: Record<string, string> }): Promise<boolean> {
   if (submission.kind !== 'order') return false
@@ -64,10 +64,11 @@ async function creditingTimeChanged(tx: Tx, submission: Submission, existing: { 
     const { rows } = await tx.query<{ credited_at: Date }>('SELECT credited_at FROM sales_order WHERE id = $1', [existing.result.order_id])
     return ![instant(paidAt), instant(fulfilledAt)].includes(rows[0]!.credited_at.getTime())
   }
-  const crediting = await getSetting(tx, 'orders.crediting_event')
+  const held = existing.payload as OrderInput
+  const crediting = await creditingEvent(tx, held.market, held.ordered_at)
   if (crediting === null) return false
   const field = crediting === 'paid' ? 'paid_at' : 'fulfilled_at'
-  return instant((existing.payload as OrderInput)[field]) !== instant(submission.input[field])
+  return instant(held[field]) !== instant(submission.input[field])
 }
 
 const orderKey = (input: { source_system: string; source_order_id: string }) => `order:${input.source_system}:${input.source_order_id}`
