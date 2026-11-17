@@ -33,7 +33,15 @@ const STAFF: readonly { local: string; name: string; role: BaseRoleName }[] = [
   { local: 'analyst', name: 'Commission Analyst', role: 'Commission analyst' },
   { local: 'support', name: 'Support Agent', role: 'Support agent' },
   { local: 'dpo', name: 'Data Protection Officer', role: 'DPO' },
+  { local: 'plan', name: 'Plan Administrator', role: 'Plan administrator' },
+  { local: 'payout', name: 'Payout Officer', role: 'Payout officer' },
+  { local: 'consultant', name: 'Implementation Consultant', role: 'Implementation consultant' },
+  { local: 'executive', name: 'Executive Read-only', role: 'Executive read-only' },
 ]
+
+/** Staging opt-in: both the flag and the environment variable, like create-vendor-user, so a copied command is not enough. */
+export const STAGING_FLAG = '--i-understand'
+export const STAGING_ENV = 'NMP_ALLOW_STAGING_SEED'
 
 // The two admins are the bootstrap grants of provisioning; every other privileged grant needs a second admin's approval.
 const needsApproval = (role: BaseRoleName): boolean =>
@@ -249,7 +257,12 @@ export const isLocalDatabase = (target: SeedTarget): boolean => isLoopback(targe
  * Throws unless seeding is allowed: never in production, only into a local database on a server reached over a
  * Unix socket or loopback, a fixed password only where listed.
  */
-export function assertSeedable(env: Config['env'], target: SeedTarget, fixedPassword: boolean): void {
+export function assertSeedable(env: Config['env'], target: SeedTarget, fixedPassword: boolean, staging = false): void {
+  // A staging server (any database, even NODE_ENV=production) only with a random password, so no account is guessable.
+  if (staging) {
+    if (fixedPassword) throw new Error('seed refuses SEED_PASSWORD on staging: the password is generated and printed once')
+    return
+  }
   if (env === 'production') throw new Error('seed refuses to run with NODE_ENV=production')
   if (!isLoopback(target.serverAddress)) {
     throw new Error(`seed refuses the database server at ${target.serverAddress}: only a local server (Unix socket or loopback)`)
@@ -265,17 +278,18 @@ export function assertSeedable(env: Config['env'], target: SeedTarget, fixedPass
 
 /**
  * Seeds the database behind DATABASE_URL. password (SEED_PASSWORD) is used for every account created now; without
- * it a random one is generated and printed. The vendor's otpauth URI is printed in development or with a password.
+ * it a random one is generated and printed. The vendor's otpauth URI is printed in development, with a password or on
+ * staging (the operator needs it once for an authenticator).
  */
-export async function seed(config: Config, password: string | undefined, print: Print): Promise<void> {
+export async function seed(config: Config, password: string | undefined, print: Print, staging = false): Promise<void> {
   const { rows } = await withSystem((tx) =>
     tx.query<SeedTarget>('SELECT current_database() AS database, host(inet_server_addr()) AS "serverAddress"'),
   )
   const target = rows[0]!
-  assertSeedable(config.env, target, password !== undefined)
+  assertSeedable(config.env, target, password !== undefined, staging)
   const effective = password ?? randomBytes(18).toString('base64url')
   const passwordHash = await hashPassword(effective)
-  const printTotp = config.env === 'development' || password !== undefined
+  const printTotp = config.env === 'development' || password !== undefined || staging
   let created = false
   for (const vendor of VENDORS) created = (await seedVendor(config, vendor, passwordHash, printTotp, print)) || created
   for (const tenant of TENANTS) created = (await seedTenant(tenant.slug, tenant.legalName, passwordHash, print)) || created
@@ -290,7 +304,8 @@ export async function seed(config: Config, password: string | undefined, print: 
 if (process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const print: Print = (line) => process.stdout.write(`${line}\n`)
   const fixedPassword = process.env.SEED_PASSWORD
-  seed(loadConfig(process.env), fixedPassword === '' ? undefined : fixedPassword, print)
+  const staging = process.argv.includes(STAGING_FLAG) && process.env[STAGING_ENV] === 'yes'
+  seed(loadConfig(process.env), fixedPassword === '' ? undefined : fixedPassword, print, staging)
     .catch((error: unknown) => {
       process.stderr.write(`seed failed: ${error instanceof Error ? error.message : String(error)}\n`)
       process.exitCode = 1

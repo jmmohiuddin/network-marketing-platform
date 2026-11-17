@@ -31,8 +31,8 @@ describe('seed', () => {
 
     const markets = await ownerRows('SELECT code, state FROM market ORDER BY code')
 
-    expect(users).toHaveLength(16)
-    expect(credentials).toEqual([{ passwords: 16, factors: 2 }]) // written as their own users; only vendors have a factor
+    expect(users).toHaveLength(24)
+    expect(credentials).toEqual([{ passwords: 24, factors: 2 }]) // written as their own users; only vendors have a factor
     expect(users.filter((user) => user.realm === 'vendor')).toEqual([
       { email: 'operator@vendor.example', realm: 'vendor', mfa_enrolled: true },
       { email: 'operator2@vendor.example', realm: 'vendor', mfa_enrolled: true },
@@ -45,7 +45,11 @@ describe('seed', () => {
       { name: 'Commission analyst', approved: false },
       { name: 'Compliance officer', approved: true },
       { name: 'DPO', approved: true }, // privileged since B2 (privacy.manage): a second admin's approval
+      { name: 'Executive read-only', approved: false },
       { name: 'Finance approver', approved: true },
+      { name: 'Implementation consultant', approved: false },
+      { name: 'Payout officer', approved: false }, // MFA required, but no privileged permission: no approval
+      { name: 'Plan administrator', approved: false },
       { name: 'Support agent', approved: false },
       { name: 'Tenant admin', approved: false },
       { name: 'Tenant admin', approved: false },
@@ -135,6 +139,26 @@ describe('seed', () => {
     expect(() => assertSeedable('test', local('nmp_test'), true)).toThrow('refuses SEED_PASSWORD')
     expect(() => assertSeedable('development', local('nmp_prod'), false)).toThrow('refuses database nmp_prod')
     expect(() => assertSeedable('production', local('nmp_e2e'), true)).toThrow('production')
+  })
+
+  test('staging opt-in: any database server, even production, but never a fixed password', () => {
+    const remote = { database: 'nmp', serverAddress: '172.18.0.2' }
+
+    expect(() => assertSeedable('production', remote, false, true)).not.toThrow()
+    expect(() => assertSeedable('production', remote, true, true)).toThrow('refuses SEED_PASSWORD on staging')
+    expect(() => assertSeedable('production', remote, false)).toThrow('production')
+    expect(() => assertSeedable('test', remote, false)).toThrow('refuses the database server at 172.18.0.2')
+  })
+
+  test('a staging seed prints the vendor authenticator URIs and the generated password', async () => {
+    await resetApiDb()
+    const lines: string[] = []
+
+    await seed(testConfig({ NODE_ENV: 'production' }), undefined, (line) => lines.push(line), true)
+
+    expect(lines.filter((line) => line.startsWith('vendor TOTP: otpauth://'))).toHaveLength(2)
+    expect(lines.some((line) => line.startsWith('password of the accounts created now: '))).toBe(true)
+    expect(lines.filter((line) => line.startsWith('acme: '))).toHaveLength(11)
   })
 
   test('seeds only a server on this machine: Unix socket or loopback, never a remote host named like a local database', () => {
