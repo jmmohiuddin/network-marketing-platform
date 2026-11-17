@@ -1,6 +1,7 @@
 # One image for the migrator, the API (with its job workers) and the web app; docker-compose.yml picks the command.
 FROM node:26-slim
-RUN corepack enable
+# Node 25+ no longer bundles corepack: install the pnpm version pinned in package.json.
+RUN npm install -g pnpm@9.15.4
 WORKDIR /app
 
 # Dependencies first, so a code-only change reuses this layer.
