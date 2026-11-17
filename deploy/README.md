@@ -9,7 +9,7 @@ The VPS's shared Caddy (`/opt/voltix/infra/production/Caddyfile`) terminates HTT
 ## One-time server setup (done 2026-11-17)
 1. `/opt/nmp`: `docker-compose.yml` and `deploy/` from this repo (copy again when they change; the deploy key cannot).
 2. `sh deploy/bootstrap.sh <domain> ghcr.io/<owner>/<repo>` writes `.env` with random secrets (mode 600, never overwritten).
-3. Root's `docker login ghcr.io` can pull the image.
+3. The GHCR package is public; `deploy.sh` pulls it anonymously (`DOCKER_CONFIG=.docker-anon`), not with the host's ghcr.io login.
 4. `~root/.ssh/authorized_keys`: `command="/opt/nmp/deploy/deploy.sh",restrict <public key> nmp-github-actions`.
 5. Repo secrets `VPS_HOST`, `VPS_USER` (root), `VPS_SSH_KEY` (the private half).
 6. Caddy site block for the domain → `reverse_proxy 172.16.1.1:6600`; validate, then `docker exec voltix-prod-caddy-1 caddy reload --config /etc/caddy/Caddyfile`.
