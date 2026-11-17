@@ -1,7 +1,7 @@
 # Staging deployment (shared Hostinger VPS)
 
 Push to `main` → GitHub Actions typechecks, builds `ghcr.io/<owner>/<repo>:<sha>` and SSHes to the VPS with a key that
-can only run `deploy/deploy.sh <sha>`. That script pulls, migrates, restarts and rolls back if `/v1/me` does not answer 401.
+can only run `deploy/deploy.sh <sha>`. That script pulls, migrates, restarts and rolls back if `/v1/me` does not answer 401. The deployed tag is also written to `.env`, so plain `docker compose` works on the server.
 
 The VPS's shared Caddy (`/opt/voltix/infra/production/Caddyfile`) terminates HTTPS and proxies the domain to
 `172.16.1.1:6600`. This stack has no proxy of its own.

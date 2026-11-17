@@ -33,6 +33,8 @@ compose --profile tools run --rm migrate
 compose up -d --remove-orphans db api web
 if healthy; then
   printf '%s\n' "$IMAGE_TAG" > "$STATE_FILE"
+  # Lets a plain `docker compose ...` on the server resolve the running image (sed -i keeps the file's mode).
+  grep -q '^IMAGE_TAG=' .env && sed -i "s/^IMAGE_TAG=.*/IMAGE_TAG=$IMAGE_TAG/" .env || echo "IMAGE_TAG=$IMAGE_TAG" >> .env
   echo "deploy: healthy, recorded $IMAGE_TAG"
   exit 0
 fi
