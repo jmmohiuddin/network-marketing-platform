@@ -11,6 +11,7 @@ import { SecretText } from '../../components/secret-text'
 import { SignOutButton } from '../../components/sign-out-button'
 import { useToast } from '../../components/toast'
 import { isApiError } from '../../lib/api'
+import { leavePage } from '../../lib/leave-page'
 import { errorMessage } from '../../lib/messages'
 import { MFA_VERIFY_PATH, realmOf, safeNext, withNext } from '../../lib/navigation'
 import { useMe } from '../../lib/session'
@@ -22,9 +23,10 @@ function useTarget() {
   return { target, realm: realmOf(target), destination: target ?? '/' }
 }
 
+// Leaving the auth pages is a full page load (leavePage): app pages then run under their own, narrower CSP.
+
 /** SC-27 second step: the code from the enrolled authenticator app. */
 export function MfaVerification() {
-  const router = useRouter()
   const { realm, destination } = useTarget()
   // Who is signing in; the box is left out while loading or if it cannot be read (the code step works without it).
   const { me } = useMe()
@@ -39,7 +41,7 @@ export function MfaVerification() {
         endpoint="/v1/auth/sessions/current/mfa"
         autoFocus
         submitLabel="Verify code"
-        onVerified={() => router.replace(destination)}
+        onVerified={() => leavePage(destination)}
       />
       <AuthFooter><SignOutButton realm={realm} /></AuthFooter>
     </>
@@ -98,6 +100,7 @@ export function MfaEnrolment() {
 
   function verified() {
     toast({ message: 'Your authenticator app is set up.' })
+    // shortcut: a soft navigation keeps the toast, so this one session keeps the auth pages' wider CSP (csp.ts).
     router.replace(destination)
   }
 

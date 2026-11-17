@@ -8,8 +8,9 @@ import { renderWithProviders } from '../../test/render'
 import { adminMe } from '../admin/test-support'
 import { MfaEnrolment, MfaVerification } from './mfa'
 
-const navigation = vi.hoisted(() => ({ search: 'next=%2Fimports', router: { replace: vi.fn() } }))
+const navigation = vi.hoisted(() => ({ search: 'next=%2Fimports', router: { replace: vi.fn() }, leavePage: vi.fn() }))
 vi.mock('next/navigation', () => ({ useRouter: () => navigation.router, useSearchParams: () => new URLSearchParams(navigation.search) }))
+vi.mock('../../lib/leave-page', () => ({ leavePage: navigation.leavePage }))
 
 const ENROLMENT = { secret: 'JBSWY3DPEHPK3PXP', otpauth_uri: 'otpauth://totp/NMP:ada%40acme.example?secret=JBSWY3DPEHPK3PXP&issuer=NMP' }
 
@@ -62,7 +63,7 @@ describe('MfaVerification', () => {
     expect(await screen.findByText('The code is not valid. Enter the current code from your app.')).toBeTruthy()
     expect(field.getAttribute('aria-invalid')).toBe('true')
     await user.click(screen.getByRole('button', { name: 'Verify code' }))
-    await waitFor(() => expect(navigation.router.replace).toHaveBeenCalledWith('/imports'))
+    await waitFor(() => expect(navigation.leavePage).toHaveBeenCalledWith('/imports')) // a full load: the app page's own CSP
     expect(fetchMock.mock.calls[1]?.[0]).toBe('/v1/auth/sessions/current/mfa')
   })
 

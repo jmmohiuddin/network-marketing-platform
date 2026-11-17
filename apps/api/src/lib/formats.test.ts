@@ -50,6 +50,19 @@ describe('config', () => {
     }
   })
 
+  test('Firebase sign-in is enabled by all four FIREBASE_* values, disabled by none, and a partial set is refused', () => {
+    const firebase = {
+      FIREBASE_PROJECT_ID: 'nmp-test', FIREBASE_WEB_API_KEY: 'web-key', FIREBASE_AUTH_DOMAIN: 'nmp-test.firebaseapp.com', FIREBASE_APP_ID: '1:2:web:3',
+    }
+
+    expect(loadConfig(ENV).firebase).toBeNull()
+    expect(loadConfig({ ...ENV, FIREBASE_PROJECT_ID: ' ', FIREBASE_APP_ID: '' }).firebase).toBeNull()
+    expect(loadConfig({ ...ENV, ...firebase }).firebase).toEqual({
+      projectId: 'nmp-test', webApiKey: 'web-key', authDomain: 'nmp-test.firebaseapp.com', appId: '1:2:web:3',
+    })
+    expect(() => loadConfig({ ...ENV, ...firebase, FIREBASE_APP_ID: '' })).toThrow(/^FIREBASE_\*: set all four/m)
+  })
+
   test('fails closed: NODE_ENV has no default, COOKIE_SECURE takes only boolean words, a session lasts at most 12 h', () => {
     const { NODE_ENV: _omitted, ...withoutEnv } = ENV
 

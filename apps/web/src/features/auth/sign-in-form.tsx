@@ -1,25 +1,22 @@
 'use client'
 
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import { useState, type FormEvent } from 'react'
 import { useApi } from '../../components/api-provider'
 import { Banner } from '../../components/banner'
 import { Button } from '../../components/button'
 import { ErrorSummary, type SummaryItem } from '../../components/error-summary'
 import { TextInput } from '../../components/form-field'
+import { leavePage } from '../../lib/leave-page'
 import { errorMessage, fieldErrors } from '../../lib/messages'
-import { afterSignInPath, defaultHome, safeNext, tenantSlug, type NextStep, type Realm } from '../../lib/navigation'
+import { afterSignInPath, defaultHome, safeNext, tenantSlug, type Realm } from '../../lib/navigation'
 import { emailError, requiredError } from '../../lib/validation'
 import { AuthHeader } from './auth-card'
+import { FirebaseSignIn, type SignInSession } from './firebase-sign-in'
 
 type Field = 'tenant' | 'email' | 'password'
 type Values = Readonly<Record<Field, string>>
 type Errors = Readonly<Partial<Record<Field, string>>>
-
-interface SignInResponse {
-  readonly expires_at: string
-  readonly next_step: NextStep
-}
 
 const FIELDS: Readonly<Record<Realm, readonly Field[]>> = {
   tenant: ['tenant', 'email', 'password'],
@@ -37,9 +34,11 @@ function validate(field: Field, value: string): string | null {
   return requiredError(field === 'tenant' ? 'your company sign-in name' : 'your password', value)
 }
 
+const companyOf = (values: Values) => values.tenant.trim().toLowerCase()
+
 function bodyFor(realm: Realm, values: Values) {
   const credentials = { email: values.email.trim(), password: values.password }
-  return realm === 'tenant' ? { tenant: values.tenant.trim().toLowerCase(), ...credentials } : credentials
+  return realm === 'tenant' ? { tenant: companyOf(values), ...credentials } : credentials
 }
 
 const fieldId = (field: Field) => `signin-${field}`
@@ -47,7 +46,6 @@ const fieldId = (field: Field) => `signin-${field}`
 /** SC-27 password step for the tenant realm (company + email + password) or the vendor realm. */
 export function SignInForm({ realm }: { readonly realm: Realm }) {
   const api = useApi()
-  const router = useRouter()
   const params = useSearchParams()
   const fields = FIELDS[realm]
   // An invitation link names the company: it is filled in and fixed, so nobody has to know the sign-in name.
@@ -60,6 +58,17 @@ export function SignInForm({ realm }: { readonly realm: Realm }) {
   const set = (field: Field, value: string) => setValues((current) => ({ ...current, [field]: value }))
   const blur = (field: Field) => {
     if (values[field] !== '') setErrors((current) => ({ ...current, [field]: validate(field, values[field]) ?? undefined }))
+  }
+
+  // A full page load, not router.replace: the next page gets its own CSP, without the sign-in page's Firebase sources.
+  const finish = (session: SignInSession) => leavePage(afterSignInPath(session.next_step, safeNext(params.get('next')) ?? defaultHome(realm)))
+
+  /** Firebase sign-in needs the company first: its value, or null after showing what is wrong. */
+  function requireCompany(): string | null {
+    const message = validate('tenant', values.tenant)
+    setErrors((current) => ({ ...current, tenant: message ?? undefined }))
+    setSummary(message === null ? [] : [{ fieldId: fieldId('tenant'), message }])
+    return message === null ? companyOf(values) : null
   }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -76,8 +85,8 @@ export function SignInForm({ realm }: { readonly realm: Realm }) {
     }
     setBusy(true)
     try {
-      const { data } = await api.post<SignInResponse>(ENDPOINT[realm], bodyFor(realm, values))
-      router.replace(afterSignInPath(data.next_step, safeNext(params.get('next')) ?? defaultHome(realm)))
+      const { data } = await api.post<SignInSession>(ENDPOINT[realm], bodyFor(realm, values))
+      finish(data)
     } catch (error) {
       const server = fieldErrors(error)
       const items = fields.filter((field) => server[field] !== undefined).map((field) => ({ fieldId: fieldId(field), message: server[field]! }))
@@ -116,6 +125,8 @@ export function SignInForm({ realm }: { readonly realm: Realm }) {
         {field('password', 'Password', { type: 'password', autoComplete: 'current-password' })}
         <Button type="submit" variant="primary" size="lg" icon="login" loading={busy} className="w-full" data-testid="primary-action">Sign in</Button>
       </form>
+      <FirebaseSignIn realm={realm} company={realm === 'tenant' ? requireCompany : undefined} onSignedIn={finish}
+        onError={(message) => setSummary(message === null ? [] : [{ message }])} />
     </>
   )
 }

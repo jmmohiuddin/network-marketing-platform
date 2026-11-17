@@ -1,0 +1,79 @@
+# Staging stack on the shared VPS. The shared Caddy (voltix-prod) terminates HTTPS for $DOMAIN and proxies to
+# 172.16.1.1:$WEB_PORT. Images are built by GitHub Actions; deploy/deploy.sh pulls IMAGE_TAG. Secrets: .env next to
+# this file, written once by deploy/bootstrap.sh on the server.
+name: nmp
+
+x-app: &app
+  image: ${REGISTRY_IMAGE:?set in .env}:${IMAGE_TAG:?set by deploy.sh}
+  restart: unless-stopped
+
+# Each service gets only its own variables: the API never sees the owner password, so RLS cannot be bypassed from it.
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: nmp_owner
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?run deploy/bootstrap.sh}
+      POSTGRES_DB: nmp
+      NMP_APP_PASSWORD: ${NMP_APP_PASSWORD:?run deploy/bootstrap.sh}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./deploy/db-init.sh:/docker-entrypoint-initdb.d/10-app-role.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nmp_owner -d nmp"]
+      interval: 5s
+      retries: 20
+    mem_limit: 512m
+
+  migrate:
+    <<: *app
+    restart: "no"
+    profiles: [tools]
+    working_dir: /app/packages/db
+    command: ["/app/node_modules/.bin/tsx", "src/migrate.ts"]
+    environment:
+      MIGRATE_DATABASE_URL: postgres://nmp_owner:${POSTGRES_PASSWORD}@db:5432/nmp
+    depends_on:
+      db: { condition: service_healthy }
+
+  api:
+    <<: *app
+    working_dir: /app/apps/api
+    command: ["/app/node_modules/.bin/tsx", "src/server.ts"]
+    environment:
+      DATABASE_URL: postgres://nmp_app:${NMP_APP_PASSWORD}@db:5432/nmp
+      SECRET_ENCRYPTION_KEY: ${SECRET_ENCRYPTION_KEY:?run deploy/bootstrap.sh}
+      API_HOST: 0.0.0.0
+      API_PORT: "4000"
+      # Caddy -> web -> api: every hop is on a private network.
+      TRUST_PROXY: uniquelocal
+      WEB_URL: https://${DOMAIN:?run deploy/bootstrap.sh}
+      UPLOAD_DIR: /data/uploads
+      MAIL_DIR: /data/mail
+      # Firebase sign-in: all four set enables it, all empty disables it (.env.example).
+      FIREBASE_PROJECT_ID: ${FIREBASE_PROJECT_ID:-}
+      FIREBASE_WEB_API_KEY: ${FIREBASE_WEB_API_KEY:-}
+      FIREBASE_AUTH_DOMAIN: ${FIREBASE_AUTH_DOMAIN:-}
+      FIREBASE_APP_ID: ${FIREBASE_APP_ID:-}
+    volumes:
+      - appdata:/data
+    depends_on:
+      db: { condition: service_healthy }
+    mem_limit: 768m
+
+  web:
+    <<: *app
+    working_dir: /app/apps/web
+    command: ["node_modules/.bin/next", "start", "-p", "3100"]
+    environment:
+      # Firebase sign-in: the sign-in pages' CSP allows its auth iframe (same value as the API's).
+      FIREBASE_AUTH_DOMAIN: ${FIREBASE_AUTH_DOMAIN:-}
+    ports:
+      - "${WEB_BIND:-172.16.1.1}:${WEB_PORT:-6600}:3100"
+    depends_on: [api]
+    mem_limit: 512m
+
+volumes:
+  pgdata:
+  appdata:

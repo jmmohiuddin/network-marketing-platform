@@ -104,6 +104,10 @@ export const ROUTE_CASES: Readonly<Record<string, RouteCase>> = {
   'POST /v1/auth/sessions': object('public', (t) => json('POST', '/v1/auth/sessions', { tenant: t.otherSlug, email: t.email, password: PASSWORD })),
   'POST /v1/auth/vendor-sessions': object('public', (t) => json('POST', '/v1/auth/vendor-sessions', { email: t.email, password: PASSWORD })),
   'POST /v1/auth/invitations/accept': object('public', (t) => json('POST', '/v1/auth/invitations/accept', { token: t.user, password: PASSWORD })),
+  // Firebase sign-in is disabled in this suite (404 FIREBASE_DISABLED); firebase-sign-in.test.ts covers it enabled.
+  'GET /v1/auth/firebase-config': { ...object('public', () => get('/v1/auth/firebase-config')), anonymous: 404, inSession: 404 },
+  'POST /v1/auth/firebase-sessions': object('public', (t) => json('POST', '/v1/auth/firebase-sessions', { tenant: t.otherSlug, id_token: t.user })),
+  'POST /v1/auth/vendor-firebase-sessions': object('public', (t) => json('POST', '/v1/auth/vendor-firebase-sessions', { id_token: t.user })),
   'DELETE /v1/auth/sessions/current': own('self', 204, () => json('DELETE', '/v1/auth/sessions/current')),
   'POST /v1/auth/mfa/totp': own('self', 409, () => json('POST', '/v1/auth/mfa/totp')),
   'POST /v1/auth/mfa/totp/confirm': own('self', 409, () => json('POST', '/v1/auth/mfa/totp/confirm', code)),

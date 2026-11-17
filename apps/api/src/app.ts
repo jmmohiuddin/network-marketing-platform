@@ -2,11 +2,13 @@ import { randomUUID } from 'node:crypto'
 import cookie from '@fastify/cookie'
 import { getPool } from '@nmp/db'
 import fastify, { type FastifyInstance } from 'fastify'
+import type { JWTVerifyGetKey } from 'jose'
 import { loadConfig, type Config } from './config.js'
 import { registerErrorHandling } from './lib/errors.js'
 import type { ApiModule } from './lib/module.js'
 import { resolveAuth } from './lib/session.js'
 import { registerCsrfCheck, registerRateLimit } from './lib/web-security.js'
+import { googleFirebaseKeys } from './modules/iam/index.js'
 import { defaultModules } from './modules/index.js'
 import { registerSupportSessionAccess } from './modules/support/index.js'
 
@@ -15,6 +17,8 @@ export interface BuildAppOptions {
   readonly modules?: readonly ApiModule[]
   /** Defaults to loadConfig(process.env). */
   readonly config?: Config
+  /** Keys that sign Firebase ID tokens; defaults to Google's published set. Tests pass a local one. */
+  readonly firebaseKeys?: JWTVerifyGetKey
 }
 
 // Never log credentials, session tokens, one-time codes or database error details (which can echo values).
@@ -50,6 +54,7 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
   const trustProxy = config.trustProxy === false ? false : [...config.trustProxy]
   const app = fastify({ logger, genReqId: () => randomUUID(), requestIdHeader: false, trustProxy })
   app.decorate('config', config)
+  app.decorate('firebaseKeys', options.firebaseKeys ?? googleFirebaseKeys)
   app.decorateRequest('auth', null)
   registerErrorHandling(app)
   watchPool(app)

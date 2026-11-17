@@ -10,7 +10,7 @@ describe('safeNext', () => {
     expect(safeNext('/settings/users?tab=roles')).toBe('/settings/users?tab=roles')
   })
 
-  it.each([null, '', 'https://evil.example/', '//evil.example/x', '/\\evil.example', 'javascript:alert(1)', '/signin', '/signin/mfa?next=/x', '/invitation'])(
+  it.each([null, '', 'https://evil.example/', '//evil.example/x', '/\\evil.example', 'javascript:alert(1)', '/signin', '/signin/mfa?next=/x', '/invitation', '/.//evil.com', '/%2e//evil.com/x'])(
     'refuses %s',
     (value) => expect(safeNext(value)).toBeNull(),
   )
