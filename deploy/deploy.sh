@@ -11,6 +11,10 @@ IMAGE_TAG="${SSH_ORIGINAL_COMMAND:-${1:-}}"
 STATE_FILE=.deployed-tag
 previous="$(cat "$STATE_FILE" 2>/dev/null || true)"
 export IMAGE_TAG
+# The image is public. Pull anonymously: the host's stored ghcr.io login belongs to other apps, and GHCR refuses a
+# token that cannot read this package even when the package is public.
+export DOCKER_CONFIG="$PWD/.docker-anon"
+[ -f "$DOCKER_CONFIG/config.json" ] || { mkdir -p "$DOCKER_CONFIG" && echo '{}' > "$DOCKER_CONFIG/config.json"; }
 compose() { docker compose "$@"; }
 
 # Web up, and /v1/me answering 401 proves web -> api -> database.
