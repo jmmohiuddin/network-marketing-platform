@@ -7,10 +7,11 @@ import { apiError, ok } from '../../test/fetch'
 import { adminMe, bodyOf, callsTo, fetchByRoute, headerOf, renderAs } from '../admin/test-support'
 import { ToastProvider } from '../../components/toast'
 import { ApiProvider } from '../../components/api-provider'
-import { deliveryErrorText, failingEndpointCount, isNetwork, parseNetworks, retryableIds, usableKeyCount } from './format'
+import { deliveryErrorText, failingEndpointCount, isNetwork, lagLabel, parseNetworks, retryableIds, usableKeyCount } from './format'
+import { secretError } from './connectors-tab'
 import { IntegrationsPage } from './integrations-page'
 import { graceError } from './key-dialogs'
-import type { ApiKey, ServiceAccount, WebhookDelivery, WebhookEndpoint } from './types'
+import type { ApiKey, Connector, ServiceAccount, SyncSource, WebhookDelivery, WebhookEndpoint } from './types'
 import { nounOf } from './ui'
 import { EditEndpointDialog, endpointChange } from './webhook-dialogs'
 
@@ -47,6 +48,21 @@ function endpoint(overrides: Partial<WebhookEndpoint> = {}): WebhookEndpoint {
   }
 }
 
+function connector(overrides: Partial<Connector> = {}): Connector {
+  return {
+    id: 'c1', provider: 'shopify', name: 'NL store', market: { id: 'm1', code: 'NL' }, state: 'recorded',
+    webhook_url: 'https://app.example/v1/connectors/c1/webhooks', last_ok_at: null, created_at: CREATED,
+    created_by: { id: 'u1', display_name: 'Ada Admin' }, withdrawn_at: null, ...overrides,
+  }
+}
+
+function source(overrides: Partial<SyncSource> = {}): SyncSource {
+  return {
+    source: 'connector:c1', kind: 'connector', connector_id: 'c1', provider: 'shopify', name: 'NL store', market: { id: 'm1', code: 'NL' },
+    state: 'healthy', last_success_at: CREATED, lag_seconds: 125, errors_24h: 0, held: 1, held_overdue: 0, last_error: null, ...overrides,
+  }
+}
+
 const DELIVERY: WebhookDelivery = {
   id: 'd1', event: { id: 'ev1', type: 'webhook.test', occurred_at: CREATED }, attempt: 1, outcome: 'failed', status: null, error: 'DNS_FAILED',
   attempted_at: CREATED, next_attempt_at: '2026-11-10T10:02:00.000Z', duration_ms: 12,
@@ -66,6 +82,7 @@ function routes(extra: Record<string, (query: URLSearchParams) => Response> = {}
     'GET /v1/webhook-endpoints': () => ok([endpoint()]),
     'GET /v1/api-keys/options': () => ok(OPTIONS),
     'GET /v1/webhook-topics': () => ok(TOPICS),
+    'GET /v1/connectors': () => ok([connector()]),
     ...extra,
   })
 }
@@ -91,8 +108,8 @@ describe('IntegrationsPage: public API keys', () => {
     expect(within(kpis).getByText('Usable API keys').parentElement?.textContent).toContain('1')
     expect(within(kpis).getByText('Endpoints failing').parentElement?.textContent).toContain('1')
     expect(screen.getByRole('tab', { name: 'Public API keys 1' })).toBeTruthy()
-    // Must-not-implement items of SC-13 (PLAN B1 5).
-    expect(screen.queryByText(/Backfill|Shopify|WooCommerce|Hyperwallet|Connector|quota/i)).toBeNull()
+    // Must-not-implement items of SC-13 (PLAN B1 5, B2 5).
+    expect(screen.queryByText(/Backfill|Hyperwallet|Wells Fargo|quota|Re-sync|Sync history/i)).toBeNull()
   })
 
   it('creates a service account with its purpose and an Idempotency-Key', async () => {
@@ -410,7 +427,108 @@ describe('EditEndpointDialog', () => {
   })
 })
 
+describe('IntegrationsPage: storefront connectors and sync health (PLAN B2 5)', () => {
+  beforeEach(() => {
+    navigation.search = ''
+  })
+
+  it('shows a connector card with its webhook URL to copy, and no secret', async () => {
+    navigation.search = 'tab=connectors'
+    const user = userEvent.setup()
+    const writeText = vi.fn(async () => undefined)
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true })
+    renderAs(ME, <IntegrationsPage />, routes())
+    const card = await screen.findByTestId('connector')
+    expect(within(card).getByRole('heading', { name: 'NL store' })).toBeTruthy()
+    expect(within(card).getByText('Receiving')).toBeTruthy()
+    expect(within(card).getByText('None yet')).toBeTruthy()
+    await user.click(within(card).getByRole('button', { name: 'Copy webhook URL' }))
+    expect(writeText).toHaveBeenCalledWith('https://app.example/v1/connectors/c1/webhooks')
+    expect(within(card).getByText('The webhook URL was copied.')).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Add connector' }).dataset.testid).toBe('primary-action')
+    expect(screen.queryByText(/Re-sync|Backfill|Sync history|Hyperwallet/i)).toBeNull()
+  })
+
+  it('adds a connector with a write-only secret, market id and an Idempotency-Key', async () => {
+    navigation.search = 'tab=connectors'
+    const user = userEvent.setup()
+    const fetchMock = routes({
+      'GET /v1/markets': () => ok([{ id: 'm1', code: 'NL', name: 'Netherlands', currency: 'EUR', state: 'live', market_pack: 'x', time_zone: 'Europe/Amsterdam', languages: ['nl'], minor_unit: 2 }]),
+      'POST /v1/connectors': () => ok({ connector: connector(), webhook_url: connector().webhook_url }, 201),
+    })
+    renderAs(ME, <IntegrationsPage />, fetchMock)
+    await user.click(await screen.findByRole('button', { name: 'Add connector' }))
+    const dialog = await screen.findByRole('dialog', { name: 'Add connector' })
+    await user.selectOptions(within(dialog).getByLabelText('Market'), 'm1')
+    await user.type(within(dialog).getByLabelText('Name'), 'NL store')
+    await user.type(within(dialog).getByLabelText('Webhook signing secret'), 'short')
+    await user.click(within(dialog).getByRole('button', { name: 'Add connector' }))
+    expect(within(dialog).getByRole('alert').textContent).toContain('Use 16 to 200 characters.')
+    expect(within(dialog).getByLabelText('Webhook signing secret').getAttribute('type')).toBe('password')
+    await user.type(within(dialog).getByLabelText('Webhook signing secret'), '-long-enough-secret')
+    await user.click(within(dialog).getByLabelText('WooCommerce'))
+    await user.click(within(dialog).getByRole('button', { name: 'Add connector' }))
+    expect(await screen.findByText(/NL store was added/)).toBeTruthy()
+    const [, init] = callsTo(fetchMock, 'POST', '/v1/connectors')[0]!
+    expect(bodyOf(init)).toEqual({ provider: 'woocommerce', market_id: 'm1', name: 'NL store', webhook_secret: 'short-long-enough-secret' })
+    expect(headerOf(init, 'Idempotency-Key')).not.toBeNull()
+  })
+
+  it('withdraws a connector with a reason; a withdrawn one has no actions and no URL', async () => {
+    navigation.search = 'tab=connectors'
+    const user = userEvent.setup()
+    const fetchMock = routes({
+      'GET /v1/connectors': () => ok([connector(), connector({ id: 'c2', name: 'Old store', state: 'withdrawn', withdrawn_at: CREATED })]),
+      'POST /v1/connectors/c1/withdraw': () => ok(connector({ state: 'withdrawn' })),
+    })
+    renderAs(ME, <IntegrationsPage />, fetchMock)
+    const [, old] = await screen.findAllByTestId('connector')
+    expect(within(old!).queryByRole('button')).toBeNull()
+    expect(within(old!).getByText('Withdrawn')).toBeTruthy()
+    await user.click(screen.getByRole('button', { name: 'Withdraw NL store' }))
+    await user.type(screen.getByLabelText('Reason'), 'Store closed')
+    await user.click(screen.getByRole('button', { name: 'Withdraw connector' }))
+    expect(await screen.findByText('NL store was withdrawn.')).toBeTruthy()
+    expect(bodyOf(callsTo(fetchMock, 'POST', '/v1/connectors/c1/withdraw')[0]![1])).toEqual({ reason: 'Store closed' })
+  })
+
+  it('counts sync states from the server and says when thresholds are unset', async () => {
+    navigation.search = 'tab=health'
+    renderAs(ME, <IntegrationsPage />, routes({
+      'GET /v1/integrations/health': () => ok({
+        sources: [source(), source({ source: 'api:erp', kind: 'api', connector_id: undefined, provider: undefined, market: undefined, name: 'erp', state: 'failing', last_error: { code: 'ORDER_CONFLICT', at: CREATED } })],
+        thresholds: null,
+      }),
+    }))
+    const kpis = await screen.findByTestId('health-kpis')
+    expect(within(kpis).getByText('Healthy').parentElement?.textContent).toContain('1')
+    expect(within(kpis).getByText('Failing').parentElement?.textContent).toContain('1')
+    expect(screen.getByText('Sync thresholds are not set')).toBeTruthy()
+    const row = screen.getByText('erp').closest('tr')!
+    expect(within(row).getByText('Order API')).toBeTruthy()
+    expect(within(row).getByText(/ORDER_CONFLICT/)).toBeTruthy()
+    expect(screen.queryByRole('button', { name: /Add|Create/ })).toBeNull()
+  })
+
+  it('integration.read alone shows sync health only, without asking for keys or connectors', async () => {
+    const fetchMock = routes({ 'GET /v1/integrations/health': () => ok({ sources: [source()], thresholds: { behind_after_minutes: 60, failing_after_minutes: 240 } }) })
+    renderAs(adminMe({ permissions: ['integration.read'] }), <IntegrationsPage />, fetchMock)
+    expect(await screen.findByText('NL store')).toBeTruthy()
+    expect(screen.getByText(/Behind after 1 h without an accepted event; failing after 4 h/)).toBeTruthy()
+    expect(screen.queryByRole('tab')).toBeNull()
+    expect(callsTo(fetchMock, 'GET', '/v1/service-accounts')).toHaveLength(0)
+    expect(callsTo(fetchMock, 'GET', '/v1/connectors')).toHaveLength(0)
+  })
+})
+
 describe('integration helpers', () => {
+  it('checks connector secrets and words the sync lag', () => {
+    expect(secretError('')).toMatch(/Enter the signing secret/)
+    expect(secretError('x'.repeat(16))).toBeNull()
+    expect(secretError('x'.repeat(201))).toBe('Use 16 to 200 characters.')
+    expect([lagLabel(null), lagLabel(45), lagLabel(7500)]).toEqual(['No accepted event yet', '45 s', '2 h 5 min'])
+  })
+
   it('counts usable keys of active accounts and failing endpoints', () => {
     expect(usableKeyCount([account(), account({ id: 'sa2', state: 'disabled' })])).toBe(1)
     expect(failingEndpointCount([endpoint(), endpoint({ last_delivery: null }), endpoint({ last_delivery: { outcome: 'dead', attempted_at: CREATED } })])).toBe(2)

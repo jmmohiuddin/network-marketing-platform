@@ -1,14 +1,16 @@
 import { eligibleApprovers, type EligibleApprover, type Tx } from '@nmp/db'
 import { z } from 'zod'
 import { recordAudit } from '../../lib/audit.js'
-import { ApiError, notFound } from '../../lib/errors.js'
+import { assertAllMarkets, hasPermission, type AuthContext } from '../../lib/auth.js'
+import { ApiError, notFound, permissionDenied } from '../../lib/errors.js'
 import type { Envelope } from '../../lib/http.js'
 import { decodeCursor, toPage } from '../../lib/pagination.js'
+import type { Permission } from '../../lib/permissions.js'
 import { CHANGE_REQUEST_COLUMNS, assertEffectiveFrom, type ChangeRequestRow } from './settings-write.js'
 import { approveOrRefuse } from './sod.js'
+import { isSettingKey, SETTINGS } from './settings.js'
 import { appendVersion } from './versions.js'
 
-export const SETTINGS_APPROVER = 'settings.approve'
 const OBJECT_TYPE = 'setting_change_request'
 
 interface Person {
@@ -49,9 +51,23 @@ type ViewRow = Omit<ChangeRequestRow, 'approval_id' | 'version_id'> & {
   version: number | null
 }
 
+/** Who decides a change of the key (D-B2-08); null for a key no longer needing (or no longer having) an approval. */
+function approverOf(key: string): Permission | null {
+  return isSettingKey(key) ? SETTINGS[key].approverPermission : null
+}
+
+/** The key's approver permission, held by the caller for all markets (else 403). */
+function approverFor(auth: AuthContext, key: string): Permission {
+  const permission = approverOf(key)
+  if (permission === null || !hasPermission(auth, permission)) throw permissionDenied()
+  assertAllMarkets(auth, permission)
+  return permission
+}
+
 async function toView(tx: Tx, row: ViewRow): Promise<ChangeRequestView> {
-  const eligible = row.state === 'pending'
-    ? await eligibleApprovers(tx, { permission: SETTINGS_APPROVER, marketId: null, excludeUserIds: [row.requested_by], allMarkets: true })
+  const permission = approverOf(row.key)
+  const eligible = row.state === 'pending' && permission !== null
+    ? await eligibleApprovers(tx, { permission, marketId: null, excludeUserIds: [row.requested_by], allMarkets: true })
     : []
   return {
     id: row.id, key: row.key, value: row.value, effective_from: row.effective_from, reason: row.reason,
@@ -71,27 +87,35 @@ export async function changeRequestView(tx: Tx, id: string): Promise<ChangeReque
 
 const cursorSchema = z.tuple([z.iso.datetime({ offset: true }), z.uuid()])
 
-/** GET /v1/setting-change-requests: newest first; pending only unless state=all. */
+/** GET /v1/setting-change-requests: newest first, of the keys the caller reads; pending only unless state=all. */
 export async function listChangeRequests(
-  tx: Tx, query: { state: 'pending' | 'all'; cursor?: string; limit: number },
+  tx: Tx, query: { state: 'pending' | 'all'; cursor?: string; limit: number; keys: readonly string[] },
 ): Promise<Envelope<ChangeRequestView[]>> {
   const after = decodeCursor(query.cursor, cursorSchema)
   const { rows } = await tx.query<ViewRow>(
     `${VIEW_SELECT}
-     WHERE ($1 = 'all' OR r.state = 'pending')
+     WHERE ($1 = 'all' OR r.state = 'pending') AND r.key = ANY ($5::text[])
        AND ($2::timestamptz IS NULL OR (r.requested_at, r.id) < ($2::timestamptz, $3::uuid))
      ORDER BY r.requested_at DESC, r.id DESC LIMIT $4`,
-    [query.state, after?.[0] ?? null, after?.[1] ?? null, query.limit + 1],
+    [query.state, after?.[0] ?? null, after?.[1] ?? null, query.limit + 1, query.keys],
   )
   const views = await Promise.all(rows.map((row) => toView(tx, row)))
   return toPage(views, query.limit, (view) => [view.requested_at.toISOString(), view.id])
 }
 
-async function lockPending(tx: Tx, id: string): Promise<ChangeRequestRow> {
+async function lockRequest(tx: Tx, id: string): Promise<ChangeRequestRow> {
   const { rows } = await tx.query<ChangeRequestRow>(`SELECT ${CHANGE_REQUEST_COLUMNS} FROM setting_change_request WHERE id = $1 FOR UPDATE`, [id])
-  const row = rows[0]
-  if (row === undefined) throw notFound()
+  if (rows[0] === undefined) throw notFound()
+  return rows[0]
+}
+
+function assertPending(row: ChangeRequestRow): void {
   if (row.state !== 'pending') throw new ApiError(409, 'CHANGE_NOT_PENDING', 'This change request is already decided or withdrawn.', { state: row.state })
+}
+
+async function lockPending(tx: Tx, id: string): Promise<ChangeRequestRow> {
+  const row = await lockRequest(tx, id)
+  assertPending(row)
   return row
 }
 
@@ -103,16 +127,21 @@ export interface Decision {
 }
 
 /**
- * AC-TEN3-2/3: a Finance approver who neither requested it decides; approval re-validates the date (a request whose
- * date has passed or fallen into a committed period stays pending) and appends the version carrying the approval.
+ * AC-TEN3-2/3: a holder of the key's approverPermission for all markets (Finance approver for money keys, DPO for the
+ * visibility policy, D-B2-08) who did not request it decides; approval re-validates the date (a request whose date has
+ * passed or fallen into a committed period stays pending) and appends the version carrying the approval.
  */
-export async function decideChangeRequest(tx: Tx, id: string, decision: Decision): Promise<{ change_request: ChangeRequestView; version: number | null }> {
-  const request = await lockPending(tx, id)
+export async function decideChangeRequest(
+  tx: Tx, id: string, decision: Decision, auth: AuthContext,
+): Promise<{ change_request: ChangeRequestView; version: number | null }> {
+  const request = await lockRequest(tx, id)
+  const permission = approverFor(auth, request.key) // before the state: a caller who may not decide learns no state
+  assertPending(request)
   const approve = decision.decision === 'approve'
   const approval = await approveOrRefuse(tx, {
     objectType: OBJECT_TYPE, objectId: request.id, preparerId: request.requested_by, contributorIds: [], excludedIds: [],
     decision: approve ? 'approved' : 'rejected', reason: decision.reason, factorVerifiedAt: decision.factorVerifiedAt,
-    approverPermission: SETTINGS_APPROVER, marketId: null, allMarkets: true,
+    approverPermission: permission, marketId: null, allMarkets: true,
   })
   let versionId: string | null = null
   let version: number | null = null

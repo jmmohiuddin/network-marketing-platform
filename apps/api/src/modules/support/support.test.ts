@@ -75,8 +75,12 @@ describe('GET /v1/support-sessions/limits', () => {
     const tooLong = await fileRequest({ minutes: maxMinutes + 1 })
     const outOfScope = await fileRequest({ scope: { permissions: ['participant.unmask'] } })
 
-    const tenantOwn = ['participant.unmask', 'settings.approve', 'market.signoff', 'integration.manage']
-    expect(limits.json().data).toEqual({ max_minutes: 480, scopes: PERMISSIONS.filter((permission) => !tenantOwn.includes(permission)) })
+    const excluded = [
+      'participant.unmask', 'settings.approve', 'market.signoff', 'integration.manage', 'participant.terminate',
+      'participant_type.approve', 'agreement.publish', 'case.genealogy.approve', 'case.duplicate.approve', 'privacy.manage',
+      'participant.manage', 'case.genealogy.create', 'case.duplicate.create', 'servicing.manage', 'product.manage', 'late.manage',
+    ]
+    expect(limits.json().data).toEqual({ max_minutes: 480, scopes: PERMISSIONS.filter((permission) => !excluded.includes(permission)) })
     expect(scopes).toContain('market.manage')
     expect(longest.statusCode).toBe(201)
     expect([tooLong.statusCode, outOfScope.statusCode]).toEqual([400, 400])

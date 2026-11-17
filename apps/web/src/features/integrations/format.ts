@@ -1,5 +1,6 @@
 // Display helpers of SC-13 Integrations.
-import type { ApiKey, DeliveryOutcome, KeyStatus, ServiceAccount, WebhookDelivery, WebhookEndpoint } from './types'
+import { durationLabel } from '../admin/format'
+import type { ApiKey, CommerceProvider, DeliveryOutcome, KeyStatus, ServiceAccount, SyncState, WebhookDelivery, WebhookEndpoint } from './types'
 
 /** StatusBadge state (for its tone) and the label shown. */
 export interface Badge {
@@ -107,4 +108,25 @@ export function isNetwork(entry: string): boolean {
   const family = ipFamily(address)
   if (family === null || rest.length > 0) return false
   return prefix === undefined || (/^\d{1,3}$/.test(prefix) && Number(prefix) <= (family === 4 ? IPV4_BITS : IPV6_BITS))
+}
+
+export const PROVIDER_NAMES: Readonly<Record<CommerceProvider, string>> = { shopify: 'Shopify', woocommerce: 'WooCommerce' }
+
+const SYNC_BADGES: Readonly<Record<SyncState, Badge>> = {
+  healthy: { state: 'healthy', label: 'Healthy' },
+  behind: { state: 'behind', label: 'Behind' },
+  failing: { state: 'failed', label: 'Failing' },
+  thresholds_not_set: { state: 'draft', label: 'Thresholds not set' },
+}
+
+export function syncBadge(state: SyncState): Badge {
+  return SYNC_BADGES[state]
+}
+
+const SECONDS_PER_MINUTE = 60
+
+/** Time since the last accepted event: "45 s", "2 h 5 min"; null when no event was accepted yet. */
+export function lagLabel(seconds: number | null): string {
+  if (seconds === null) return 'No accepted event yet'
+  return seconds < SECONDS_PER_MINUTE ? `${seconds} s` : durationLabel(Math.floor(seconds / SECONDS_PER_MINUTE))
 }

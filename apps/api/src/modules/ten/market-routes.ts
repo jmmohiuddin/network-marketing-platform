@@ -1,6 +1,8 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify'
 import { z } from 'zod'
-import { assertStepUp, currentAuth, marketScope, requireAllMarkets, requirePermission, requireRealm } from '../../lib/auth.js'
+import {
+  assertStepUp, currentAuth, marketScope, requireAllMarkets, requireAnyPermission, requirePermission, requireRealm, scopeOfAny,
+} from '../../lib/auth.js'
 import { inTenant } from '../../lib/db.js'
 import { ApiError, permissionDenied } from '../../lib/errors.js'
 import { envelope, parse } from '../../lib/http.js'
@@ -11,7 +13,6 @@ import { createBrand, deleteBrand, listBrands, renameBrand } from './brands.js'
 import { createCalendar, deleteCalendar, extendPeriods, listCalendars, listPeriods, renameCalendar } from './calendars.js'
 import { checklistView, decideGoLive, listGoLiveRequests, recordEntry, requestGoLive, withdrawGoLive } from './go-live.js'
 import { createMarket, deleteMarket, listMarkets, marketDetail, updateMarket } from './markets.js'
-import { requireAnyPermission, scopeOfAny } from './scope.js'
 import { decideWithSod } from './sod.js'
 
 const reason = z.string().trim().min(1).max(500)

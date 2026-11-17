@@ -89,3 +89,46 @@ export interface WebhookDelivery {
   readonly next_attempt_at: string
   readonly duration_ms: number | null
 }
+
+export const CONNECTORS_PATH = '/v1/connectors'
+export const SYNC_HEALTH_PATH = '/v1/integrations/health'
+
+export type CommerceProvider = 'shopify' | 'woocommerce'
+
+/** GET /v1/connectors item (PLAN B2 2.6, D-B2-14): an inbound storefront webhook; the signing secret is never returned. */
+export interface Connector {
+  readonly id: string
+  readonly provider: CommerceProvider
+  readonly name: string
+  readonly market: { readonly id: string; readonly code: string }
+  readonly state: 'recorded' | 'withdrawn'
+  readonly webhook_url: string
+  readonly last_ok_at: string | null
+  readonly created_at: string
+  readonly created_by: { readonly id: string; readonly display_name: string | null }
+  readonly withdrawn_at: string | null
+}
+
+export type SyncState = 'healthy' | 'behind' | 'failing' | 'thresholds_not_set'
+
+/** GET /v1/integrations/health source (API-37): a connector or an API source system seen in inbound events. */
+export interface SyncSource {
+  readonly source: string
+  readonly kind: 'connector' | 'api'
+  readonly connector_id?: string | null
+  readonly provider?: CommerceProvider | null
+  readonly name: string
+  readonly market?: { readonly id: string; readonly code: string } | null
+  readonly state: SyncState
+  readonly last_success_at: string | null
+  readonly lag_seconds: number | null
+  readonly errors_24h: number
+  readonly held: number
+  readonly held_overdue: number
+  readonly last_error: { readonly code: string | null; readonly at: string | null } | null
+}
+
+export interface SyncHealth {
+  readonly sources: readonly SyncSource[]
+  readonly thresholds: { readonly behind_after_minutes: number; readonly failing_after_minutes: number } | null
+}

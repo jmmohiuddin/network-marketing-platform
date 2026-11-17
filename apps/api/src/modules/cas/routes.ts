@@ -13,8 +13,9 @@ import type { Permission } from '../../lib/permissions.js'
 import { holdsFor } from './access.js'
 import {
   caseEvents, caseEvidence, contributors, getCase, hasEvidence, insertCase, insertEvidence, listCases, markDecided,
-  markSubmitted, markWithdrawn, recordChange, setAssignee,
+  markSubmitted, markWithdrawn, preparerOf, recordChange, setAssignee,
 } from './cases.js'
+import { registerCaseUpdates } from './routes-update.js'
 import { caseTypeOf, type CaseRecord, type CaseTypeDefinition, type CaseTypeRegistry } from './types.js'
 
 const NOTE = z.string().trim().min(1).max(2000)
@@ -45,18 +46,18 @@ const emptyBody = z.strictObject({})
 const decisionBody = z.strictObject({ decision: z.enum(['approve', 'reject']), reason: REASON })
 const withdrawBody = z.strictObject({ reason: REASON })
 
-interface Loaded {
+export interface Loaded {
   readonly record: CaseRecord
   readonly definition: CaseTypeDefinition
 }
 
-const caseId = (request: FastifyRequest): string => parse(idParams, request.params).id
+export const caseId = (request: FastifyRequest): string => parse(idParams, request.params).id
 
-const stateConflict = (state: string): ApiError =>
+export const stateConflict = (state: string): ApiError =>
   new ApiError(409, 'CASE_STATE_CONFLICT', `The case is ${state}: this action is not possible now.`, { state })
 
 /** The case if the caller may read it (registered type, read permission over its market); anything else is 404. */
-async function readableCase(tx: Tx, registry: CaseTypeRegistry, auth: AuthContext, id: string, lock: boolean): Promise<Loaded> {
+export async function readableCase(tx: Tx, registry: CaseTypeRegistry, auth: AuthContext, id: string, lock: boolean): Promise<Loaded> {
   const record = await getCase(tx, id, lock)
   const definition = record === null ? undefined : caseTypeOf(registry, record.type)
   if (record === null || definition === undefined || !holdsFor(auth, definition.permissions.read, record.market_id)) {
@@ -65,23 +66,24 @@ async function readableCase(tx: Tx, registry: CaseTypeRegistry, auth: AuthContex
   return { record, definition }
 }
 
-function assertHolds(auth: AuthContext, permission: Permission, record: CaseRecord): void {
+export function assertHolds(auth: AuthContext, permission: Permission, record: CaseRecord): void {
   if (!holdsFor(auth, permission, record.market_id)) throw permissionDenied()
 }
 
 async function detail(tx: Tx, { record, definition }: Loaded) {
+  const preparer = preparerOf(record)
   const approvers = record.state === 'submitted'
     ? await eligibleApprovers(tx, {
       permission: definition.permissions.decide,
       marketId: record.market_id,
-      excludeUserIds: [record.opened_by, ...(await contributors(tx, record))],
+      excludeUserIds: [...(preparer === null ? [] : [preparer]), ...(await contributors(tx, record))],
     })
     : null
   return { ...record, evidence: await caseEvidence(tx, record.id), events: await caseEvents(tx, record.id), eligible_approvers: approvers }
 }
 
 /** The type's payload schema; a failure is 422 like the type's other checks (PLAN B1 section 2.9). */
-function parsePayload(definition: CaseTypeDefinition, payload: unknown): unknown {
+export function parsePayload(definition: CaseTypeDefinition, payload: unknown): unknown {
   const result = definition.payload.safeParse(payload)
   if (result.success) return result.data
   const { code, message, details } = validationFailed(result.error)
@@ -111,6 +113,7 @@ function registerOpen(app: FastifyInstance, registry: CaseTypeRegistry): void {
       if (subject === null || !holdsFor(auth, create, subject.marketId)) {
         throw new ApiError(422, 'SUBJECT_NOT_FOUND', 'The subject of the case does not exist.')
       }
+      await definition.validateCreate?.(tx, { type: body.subject_type, id: body.subject_id }, payload, marketScope(auth, create))
       const opened = await insertCase(tx, {
         type: definition.type, subjectType: body.subject_type, subjectId: body.subject_id, reasonCode: body.reason_code,
         payload, marketId: subject.marketId,
@@ -228,7 +231,8 @@ async function decide(
   if (record.state !== 'submitted') throw stateConflict(record.state)
   const decision = body.decision === 'approve' ? 'approved' : 'rejected'
   const outcome = await recordApproval(tx, {
-    objectType: 'case', objectId: record.id, preparerId: record.opened_by, contributorIds: await contributors(tx, record),
+    // A submitted case always has a preparer: its opener or, opened by the system, its submitter.
+    objectType: 'case', objectId: record.id, preparerId: preparerOf(record)!, contributorIds: await contributors(tx, record),
     excludedIds: [], decision, reason: body.reason, factorVerifiedAt: currentAuth(request).stepUpAt,
     approverPermission: definition.permissions.decide, marketId: record.market_id,
   })
@@ -256,7 +260,8 @@ async function decide(
 
 /**
  * The case if the caller opened it and still holds the type's create permission over its market (no read permission
- * needed); a reader who may not withdraw it gets 403, anyone else 404.
+ * needed); a reader who may not withdraw it gets 403, anyone else 404. A case the system opened has no opener, so it
+ * is never withdrawn (D-B2-04): it is decided.
  */
 async function withdrawableCase(tx: Tx, registry: CaseTypeRegistry, auth: AuthContext, id: string): Promise<CaseRecord> {
   const record = await getCase(tx, id, true)
@@ -302,4 +307,5 @@ export function registerCaseRoutes(app: FastifyInstance, registry: CaseTypeRegis
   registerReads(app, registry)
   registerPreparation(app, registry)
   registerDecisions(app, registry)
+  registerCaseUpdates(app, registry)
 }

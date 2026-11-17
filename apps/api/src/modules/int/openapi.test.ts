@@ -37,12 +37,44 @@ describe('T-B1-21 GET /v1/openapi.json (AC-INT1-1)', () => {
   test('is a public OpenAPI 3.1 document of the key-accessible paths with a bearer scheme', () => {
     expect(document.openapi).toBe('3.1.0')
     expect(document.info).toMatchObject({ title: expect.any(String), version: '1' })
-    expect(Object.keys(document.paths)).toEqual(['/v1/compliance/snapshots', '/v1/compliance/snapshots/{id}'])
+    expect(Object.keys(document.paths)).toEqual([
+      '/v1/compliance/snapshots', '/v1/compliance/snapshots/{id}', '/v1/orders', '/v1/order-events', '/v1/participants',
+      '/v1/participants/{id}/type', '/v1/participants/{id}/positions', '/v1/participants/{id}/agreement-acceptances',
+      '/v1/participants/{id}/signals', '/v1/customers/{id}/servicing',
+    ])
     expect(document.components.securitySchemes.bearer).toEqual(expect.objectContaining({ type: 'http', scheme: 'bearer' }))
-    for (const path of Object.values<{ get: { security: unknown; responses: object } }>(document.paths)) {
-      expect(path.get.security).toEqual([{ bearer: [] }])
-      expect(Object.keys(path.get.responses)).toEqual(['200', '401', '403', '429'])
+    for (const url of ['/v1/compliance/snapshots', '/v1/compliance/snapshots/{id}']) {
+      expect(document.paths[url].get.security).toEqual([{ bearer: [] }])
+      expect(Object.keys(document.paths[url].get.responses)).toEqual(['200', '401', '403', '429'])
     }
+  })
+
+  test('PLAN B2 2.6: order and event ingestion need orders:write, a fresh Idempotency-Key, and answer 201/200/202/409/422', () => {
+    for (const url of ['/v1/orders', '/v1/order-events']) {
+      const operation = document.paths[url].post
+      expect(operation).toMatchObject({ security: [{ bearer: [] }], 'x-required-scope': 'orders:write' })
+      expect(operation.parameters[0]).toMatchObject({ name: 'Idempotency-Key', in: 'header', required: true, description: expect.stringContaining('fresh UUID') })
+      expect(Object.keys(operation.responses).sort()).toEqual(['200', '201', '202', '400', '401', '403', '409', '422', '429'])
+    }
+    const body = document.components.schemas.OrderBody
+    expect(body.required).toEqual(expect.arrayContaining(['source_system', 'source_order_id', 'market', 'buyer', 'amount_minor', 'lines']))
+    expect(body.properties.amount_minor).toMatchObject({ type: 'string', pattern: expect.any(String) })
+    expect(document.components.schemas.OrderEventBody.properties.type.enum).toContain('chargeback_reversed')
+  })
+
+  test('PLAN B2 2.2/2.3: participant and servicing writes need participants:write and an Idempotency-Key', () => {
+    const operations = [
+      ['/v1/participants', 'post', '201'], ['/v1/participants/{id}/type', 'post', '200'], ['/v1/participants/{id}/positions', 'post', '201'],
+      ['/v1/participants/{id}/agreement-acceptances', 'post', '201'], ['/v1/participants/{id}/signals', 'post', '200'],
+      ['/v1/customers/{id}/servicing', 'put', '200'],
+    ] as const
+    for (const [url, method, status] of operations) {
+      const operation = document.paths[url][method]
+      expect(operation).toMatchObject({ security: [{ bearer: [] }], 'x-required-scope': 'participants:write' })
+      expect(operation.parameters.map((parameter: { name: string }) => parameter.name).at(-1)).toBe('Idempotency-Key')
+      expect(Object.keys(operation.responses)).toContain(status)
+    }
+    expect(document.components.schemas.EnrolmentBody.required).toEqual(expect.arrayContaining(['external_ref', 'market', 'type_code']))
   })
 
   test('takes its schemas from the validating zod schemas: query, list item, detail and the error envelope', () => {

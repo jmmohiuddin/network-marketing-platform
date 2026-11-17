@@ -2,7 +2,7 @@ import type { Tx } from '@nmp/db'
 import { z } from 'zod'
 import { decodeRefs } from '../../lib/audit.js'
 import { notFound } from '../../lib/errors.js'
-import { PERMISSIONS } from '../../lib/permissions.js'
+import { PERMISSIONS, type Permission } from '../../lib/permissions.js'
 
 // shortcut: E-ADR-10 engineering values (OQ-A8 leaves the tenant maximum and the request expiry open); move them
 // to tenant settings / config once the founder sets them.
@@ -13,9 +13,16 @@ export const REQUEST_TTL_MINUTES = 1440
 
 /**
  * Vendor staff never unmask participants, approve money settings, sign off market launches or mint integration
- * credentials (tenant-own decisions, PLAN B1 3): every other catalogue permission may be requested, read-only.
+ * credentials (tenant-own decisions, PLAN B1 3), never hold the B2 deciding and privacy permissions, and are not offered
+ * permissions that only write (meaningless in a read-only session, PLAN B2 3): every other one may be requested.
  */
-export const scopePermission = z.enum(PERMISSIONS).exclude(['participant.unmask', 'settings.approve', 'market.signoff', 'integration.manage'])
+const SUPPORT_EXCLUDED_PERMISSIONS = [
+  'participant.unmask', 'settings.approve', 'market.signoff', 'integration.manage',
+  'participant.terminate', 'participant_type.approve', 'agreement.publish', 'case.genealogy.approve', 'case.duplicate.approve',
+  'privacy.manage',
+  'participant.manage', 'case.genealogy.create', 'case.duplicate.create', 'servicing.manage', 'product.manage', 'late.manage',
+] as const satisfies readonly Permission[]
+export const scopePermission = z.enum(PERMISSIONS).exclude(SUPPORT_EXCLUDED_PERMISSIONS)
 export type ScopePermission = z.infer<typeof scopePermission>
 
 /**

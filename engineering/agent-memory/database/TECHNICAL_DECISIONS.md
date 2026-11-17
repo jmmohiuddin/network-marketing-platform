@@ -26,3 +26,10 @@ _Agent: database. Read before every task; update after every task. Keep concise 
 - **Realm in the tenant policy and a blank context in the helpers** are both kept: either alone closes the reported path, together a stray session-level SET cannot widen anything.
 - **Isolation tests are a matrix** (8 contexts x 24 tenant tables + 5 vendor tables) returning the list of leaking tables, with a guard test that the owner sees a seeded row in every table nmp_app can SELECT. Per-table `test.each` cases were removed, hence 76 tests instead of 90.
 - The LIKE-based policy test and the vendor-table-list test were replaced by one exact comparison of the whole policy set.
+
+## B2 schema
+- One generic set_once_guard(cols) for close-once rows (assignments, ownership, servicing, volume map, relationship, sales_order facts) instead of per-table triggers.
+- G2 'change' with no open row inserts directly (root positions can get a parent); overlap is still refused by relationship_guard.
+- System duplicate case decision: approval preparer must be the submitter (checked only for opened_by NULL; B1 user cases unchanged).
+- market_references splits provider_config into providers (non-commerce) and connectors (commerce).
+- order_event_quantity_guard locks the order row (FOR UPDATE) and also refuses unknown lines / non-positive quantities (23514).

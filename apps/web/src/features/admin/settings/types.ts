@@ -81,3 +81,39 @@ export type VersionChange =
 export interface VersionDetail extends VersionSummary {
   readonly changes: readonly VersionChange[]
 }
+
+export const PARTICIPANT_TYPES_PATH = '/v1/participant-types'
+export const AGREEMENT_VERSIONS_PATH = '/v1/agreement-versions'
+
+/** GET /v1/participant-types item (PLAN B2 2.2, D-B2-09): flags are fixed at proposal. */
+export interface ParticipantType {
+  readonly id: string
+  readonly code: string
+  readonly name: string
+  readonly can_earn: boolean
+  readonly counts_as_end_customer: boolean
+  readonly can_sponsor: boolean
+  readonly can_hold_positions: boolean
+  readonly state: 'pending' | 'active' | 'rejected' | 'withdrawn'
+  readonly reason: string
+  readonly requested_by: Person
+  readonly requested_at: string
+  readonly decided_by: Person | null
+  readonly decided_at: string | null
+  readonly decision_reason: string | null
+  /** Pending types only; null once decided. */
+  readonly eligible_approvers: readonly EligibleApprover[] | null
+}
+
+/** GET /v1/agreement-versions item (D-B2-15); counts are bigint strings or numbers as the driver sends them. */
+export interface AgreementVersion {
+  readonly id: string
+  readonly market: { readonly id: string; readonly code: string }
+  readonly label: string
+  readonly document: { readonly id: string; readonly file_name: string | null }
+  readonly acceptance_required: boolean
+  readonly published_at: string
+  readonly published_by: Person
+  readonly current: boolean
+  readonly acceptances: { readonly accepted: number | string; readonly not_accepted: number | string }
+}

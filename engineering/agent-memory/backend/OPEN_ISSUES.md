@@ -83,3 +83,20 @@ _Agent: backend. Read before every task; update after every task. Keep concise �
 - CAS: POST /v1/cases parses the body before the create-permission check, so a caller without any create permission gets 400 for a bad body (role-matrix probe sends a valid body). Schema only, nothing tenant-specific leaks.
 - Still open for DB owner/BE1: SECRET_UNAVAILABLE in webhook_delivery.error CHECK; IAM assertMarkets FOR KEY SHARE; PLAN decision on market-scoped authority over tenant-wide objects; PLAN §2.7 PATCH step-up text and D-B1-18 wording.
 - (2026-11-17) Root `.env.example` (not owned) should document TRUST_PROXY (e.g. `loopback` when the web app proxies /v1). Not verified that Next's rewrite proxy sets X-Forwarded-For (needs servers running).
+
+## From B2 BE1 (2026-11-17)
+- Integrator: mount parModule, crmModule, createCasModule({types:[...genCaseTypes, ...parCaseTypes]}) in modules/index.ts; openapi key paths from publicParticipantSchemas/publicServicingSchemas.
+- Integrator: test/isolation/seed.ts line ~197 records an `agreement_versions` checklist entry -> now 422 ITEM_NOT_RECORDABLE; publish an agreement version instead (POST /v1/documents class=agreement + POST /v1/agreement-versions by a Compliance officer). Isolation cases + role matrix rows for every B2 BE1 route.
+- int/connectors, openapi, webhooks tests failing on nmp_test_2 while BE3 is in flight (not BE1 code).
+- Pre-existing: ten/change-requests.ts listChangeRequests uses Promise.all on one tx client (pg deprecation warning).
+
+## From B2 GEN review fixes (2026-11-17)
+- DB agent: add `path_model.valid_until` (next valid_from/valid_to > now() at build) + list it in gen_stale_models, then drop the per-read relationship scan in gen/read-model.ts STATE_SQL (shortcut comment there).
+- GEN case types ignore the new CAS validateCreate `scope` arg: a market-scoped creator can name a proposed parent (genealogy_change/correction) or to_participant (transfer) in another market. Decide whether to refuse out-of-scope objects (MARKET scope check on the payload's objects).
+- Decision recorded: reinstating a terminated position is the reversal of a termination -> participant.terminate + step-up (FR-PAR-005). Role matrix: Support agent can no longer change a terminated position.
+
+## From B2 API integrator (2026-11-17)
+- POST /v1/connectors/:id/webhooks answers a known id without signature 401 SIGNATURE_INVALID, an unknown id 404 (PLAN 2.6): an existence answer for whoever holds the UUID. Isolation case documents it (`unsignedAnswer`); decide whether unknown ids should also be 401.
+- int/test-support.ts still repeats ord/test-support.ts fixtures (boundaries.test forbids cross-module test-support imports); moving them into apps/api/test/helpers not done.
+- Open from packages, not integrator scope: DB 0208+ (case decision guard vs 'updated' contributors; position insert marks path_model stale; path_model.valid_until), GEN validateCreate ignores market scope (decision), PLAN §2.4/§2.5 deviations need sign-off, resolveSponsor concurrency test, ten/change-requests Promise.all on one client.
+- Resolved by the integrator: module mounting, openapi PAR/CRM paths, agreement_versions seed, B2 isolation cases + role-matrix rows, ord/ten requireAnyPermission/scopeOfAny copies, TRUST_PROXY + D-B2-19 in .env.example, role-matrix hook timeout (OI-6).

@@ -61,3 +61,13 @@ _Agent: backend. Read before every task; update after every task. Keep concise â
 - Files: iam/{grants,admins,invitations,vendor-users,vendor-users-routes,index}.ts, ops/{routes,tenant-creation,first-admin-invitation}.ts, support/access.ts, aud/{events,routes}.ts, cpl/compute.ts, packages/compliance/src/{types,figure,r2,r3,r4}.ts, migration 0042; tests in iam, ops, support, cpl, packages/compliance, packages/db (migrations pins, auth), test/isolation/cases.ts, test/authz/role-matrix.test.ts.
 - Verified: `pnpm vitest run` 83 files / 1116 tests green; `pnpm -s typecheck` and `tsc -p apps/web --noEmit` clean.
 - 2026-11-17 B1 BE1: FR-IAM-006 keys + apiKeyOrSession, FR-INT-001 int module (OpenAPI, endpoints, dispatcher, SSRF guard), FR-CPL-012 pack rules API, key reads of snapshots, nav anyOf, BUG-023 API, support scope exclusions. 295 module tests green on nmp_test_2.
+
+## B2 BE1 par-crm-cas-ten-aud (2026-11-17)
+- PAR + CRM modules, CAS system cases/PATCH/counts/openSystemCase, TEN approver generalisation + automatic agreement item, AUD agreement class. 168 tests green in par, crm, cas, ten, aud, boundaries (nmp_test_2); tsc clean except BE3's int/connectors.test.ts.
+
+## B2 API integrator (2026-11-17)
+- modules/index.ts: par, crm, gen, ord + `createCasModule({ types: caseTypes })` (`caseTypes` = gen + par, exported). Fixture CAS module no longer in SUITE_MODULES (SUITE_MODULES = defaultModules).
+- lib/auth.ts now owns `requireAnyPermission`, `scopeOfAny`; ten/scope.ts keeps only `inScope`; ord/access.ts deleted; cpl local copy removed.
+- int/openapi.ts: participants:write paths (POST /v1/participants, /:id/type|positions|agreement-acceptances|signals, PUT /v1/customers/:id/servicing) from publicParticipantSchemas/publicServicingSchemas (+ test).
+- Isolation seed: agreement versions published via POST /v1/documents class=agreement + POST /v1/agreement-versions (agreement item is automatic); PLAN B2 6 objects (types, participants, positions, servicing, acceptance, duplicate + genealogy cases, path model, volumes, late order + refund, held event, connector). Cases + TS-36 probes for all 45 B2 routes; Access 'key', `unsignedAnswer`, `answerOf` echo-normalised phantom comparison; dedicated sponsor/placement/servicer cross-tenant test. SEED_TIMEOUT_MS 120 s on both seeding hooks (B1 OI-6). .env.example D-B2-19 keys.
+- Verified on nmp_test_1: `pnpm vitest run` 142 files / 2629 tests green; `pnpm -s typecheck` + `tsc -p apps/web` clean. nmp_dev migrated to 0207; API smoke on :4000 (openapi paths, 401 participants, 404 webhook) stopped by PID.

@@ -2,10 +2,11 @@ import type { Tx } from '@nmp/db'
 import { recordAudit } from '../../lib/audit.js'
 import type { CaseRecord, CaseState } from './types.js'
 
-type EventKind = 'opened' | 'evidence_added' | 'assigned' | 'submitted' | 'approved' | 'rejected' | 'withdrawn'
+type EventKind = 'opened' | 'evidence_added' | 'assigned' | 'submitted' | 'approved' | 'rejected' | 'withdrawn' | 'updated'
 
 const COLUMNS = `c.id, c.type, c.subject_type, c.subject_id, c.reason_code, c.state, c.payload, c.effect_preview, c.due_at,
-  c.market_id, c.opened_by, c.assigned_to, c.submitted_by, c.submitted_at, c.decided_at, c.approval_id, c.created_at`
+  c.market_id, c.opened_by, c.opened_by_kind, c.assigned_to, c.submitted_by, c.submitted_at, c.decided_at, c.approval_id,
+  c.created_at`
 
 // node-postgres sends JS arrays as Postgres arrays: JSON values go as text and are cast.
 const json = (value: unknown): string | null => (value === undefined || value === null ? null : JSON.stringify(value))
@@ -19,12 +20,28 @@ export interface NewCase {
   readonly marketId: string | null
 }
 
-/** Opens a case by the acting user (case_file_insert_guard binds opened_by to app.user_id). */
-export async function insertCase(tx: Tx, input: NewCase): Promise<CaseRecord> {
+/**
+ * Opens a case by the acting user, or by the system (D-B2-04: opened_by NULL, kind system). case_file_insert_guard binds
+ * a user opener to app.user_id and allows the system to open duplicates only.
+ */
+export async function insertCase(tx: Tx, input: NewCase, opener: 'user' | 'system' = 'user'): Promise<CaseRecord> {
   const { rows } = await tx.query<CaseRecord>(
-    `INSERT INTO case_file AS c (tenant_id, type, subject_type, subject_id, reason_code, state, payload, market_id, opened_by)
-     VALUES (app_tenant_id(), $1, $2, $3, $4, 'open', $5::jsonb, $6, app_user_id()) RETURNING ${COLUMNS}`,
-    [input.type, input.subjectType, input.subjectId, input.reasonCode, json(input.payload) ?? 'null', input.marketId],
+    `INSERT INTO case_file AS c (tenant_id, type, subject_type, subject_id, reason_code, state, payload, market_id, opened_by,
+       opened_by_kind)
+     VALUES (app_tenant_id(), $1, $2, $3, $4, 'open', $5::jsonb, $6, CASE WHEN $7 = 'user' THEN app_user_id() END, $7)
+     RETURNING ${COLUMNS}`,
+    [input.type, input.subjectType, input.subjectId, input.reasonCode, json(input.payload) ?? 'null', input.marketId, opener],
+  )
+  return rows[0]!
+}
+
+/** The SoD preparer: the opener, or the submitter of a case the system opened (D-B2-04). */
+export const preparerOf = (c: CaseRecord): string | null => c.opened_by ?? c.submitted_by
+
+export async function updateCase(tx: Tx, caseId: string, reasonCode: string, payload: unknown): Promise<CaseRecord> {
+  const { rows } = await tx.query<CaseRecord>(
+    `UPDATE case_file c SET reason_code = $2, payload = $3::jsonb WHERE c.id = $1 RETURNING ${COLUMNS}`,
+    [caseId, reasonCode, json(payload) ?? 'null'],
   )
   return rows[0]!
 }
@@ -53,6 +70,17 @@ export interface ReadableType {
   readonly markets: readonly string[] | null
 }
 
+/** The SQL condition "a readable type within its market scope"; its values are appended to params. */
+function readableScope(readable: readonly ReadableType[], params: unknown[]): string {
+  return readable.map(({ type, markets }) => {
+    params.push(type)
+    const typeParam = `$${params.length}`
+    if (markets === null) return `c.type = ${typeParam}`
+    params.push(markets)
+    return `(c.type = ${typeParam} AND (c.market_id IS NULL OR c.market_id = ANY ($${params.length}::uuid[])))`
+  }).join(' OR ')
+}
+
 /** Newest first, cases of readable types within each type's market scope. The cursor is the id of the last case shown. */
 export async function listCases(
   tx: Tx, filter: CaseFilter, readable: readonly ReadableType[], afterId: string | undefined, limit: number,
@@ -61,22 +89,43 @@ export async function listCases(
     filter.type ?? null, filter.state ?? null, filter.subject_type ?? null, filter.subject_id ?? null,
     filter.assigned_to ?? null, filter.overdue ?? null, afterId ?? null, limit + 1,
   ]
-  const scopes = readable.map(({ type, markets }) => {
-    params.push(type)
-    const typeParam = `$${params.length}`
-    if (markets === null) return `c.type = ${typeParam}`
-    params.push(markets)
-    return `(c.type = ${typeParam} AND (c.market_id IS NULL OR c.market_id = ANY ($${params.length}::uuid[])))`
-  })
+  const scope = readableScope(readable, params)
   const { rows } = await tx.query<CaseRecord>(
     `SELECT ${COLUMNS} FROM case_file c
-     WHERE (${scopes.join(' OR ')})
+     WHERE (${scope})
        AND ($1::text IS NULL OR c.type = $1) AND ($2::text IS NULL OR c.state = $2)
        AND ($3::text IS NULL OR c.subject_type = $3) AND ($4::uuid IS NULL OR c.subject_id = $4)
        AND ($5::uuid IS NULL OR c.assigned_to = $5)
        AND ($6::boolean IS NULL OR (c.state = 'submitted' AND c.due_at IS NOT NULL AND c.due_at < now()) = $6)
        AND ($7::uuid IS NULL OR (c.created_at, c.id) < (SELECT created_at, id FROM case_file WHERE id = $7))
      ORDER BY c.created_at DESC, c.id DESC LIMIT $8`,
+    params,
+  )
+  return rows
+}
+
+export interface CaseCounts {
+  readonly type: string
+  readonly open: number
+  readonly submitted: number
+  readonly overdue: number
+  readonly decided_30d: number
+}
+
+/** SC-06 KPI cards: counts per readable type, within the type's market scope. */
+export async function countCases(tx: Tx, readable: readonly ReadableType[]): Promise<CaseCounts[]> {
+  const params: unknown[] = [readable.map((entry) => entry.type)]
+  const scope = readableScope(readable, params)
+  const { rows } = await tx.query<CaseCounts>(
+    `SELECT t.type,
+       count(c.id) FILTER (WHERE c.state = 'open')::int AS open,
+       count(c.id) FILTER (WHERE c.state = 'submitted')::int AS submitted,
+       count(c.id) FILTER (WHERE c.state = 'submitted' AND c.due_at < now())::int AS overdue,
+       count(c.id) FILTER (WHERE c.state IN ('approved', 'rejected') AND c.decided_at > now() - interval '30 days')::int
+         AS decided_30d
+     FROM unnest($1::text[]) AS t (type)
+     LEFT JOIN case_file c ON c.type = t.type AND (${scope})
+     GROUP BY t.type ORDER BY t.type`,
     params,
   )
   return rows
@@ -119,10 +168,17 @@ export async function caseEvents(tx: Tx, caseId: string): Promise<EventView[]> {
   return rows
 }
 
-/** SoD contributors other than the opener: the submitter and everyone who added evidence (PLAN B1 section 2.9). */
+/**
+ * SoD contributors other than the opener: the submitter, everyone who added evidence (PLAN B1 section 2.9) and everyone
+ * who changed the case (PATCH chose e.g. the proposed outcome, D-B2-10).
+ */
 export async function contributors(tx: Tx, c: CaseRecord): Promise<string[]> {
-  const { rows } = await tx.query<{ added_by: string }>('SELECT DISTINCT added_by FROM case_evidence WHERE case_id = $1', [c.id])
-  return [...new Set([...(c.submitted_by === null ? [] : [c.submitted_by]), ...rows.map((row) => row.added_by)])]
+  const { rows } = await tx.query<{ user_id: string }>(
+    `SELECT added_by AS user_id FROM case_evidence WHERE case_id = $1
+     UNION SELECT actor_id FROM case_event WHERE case_id = $1 AND kind = 'updated' AND actor_id IS NOT NULL`,
+    [c.id],
+  )
+  return [...new Set([...(c.submitted_by === null ? [] : [c.submitted_by]), ...rows.map((row) => row.user_id)])]
 }
 
 export interface Change {
@@ -131,11 +187,17 @@ export interface Change {
   readonly reason?: string
 }
 
-/** The case_event and the CASE.<KIND> audit event of one change, in the change's transaction (AC-CAS1-5). */
-export async function recordChange(tx: Tx, caseId: string, kind: EventKind, data: unknown, change: Change = {}): Promise<void> {
+/**
+ * The case_event and the CASE.<KIND> audit event of one change, in the change's transaction (AC-CAS1-5). The event's
+ * actor is the acting user; NULL for the system and for actors that are not users, such as a service account (D-B2-03).
+ */
+export async function recordChange(
+  tx: Tx, caseId: string, kind: EventKind, data: unknown, change: Change = {}, actor: 'acting' | 'system' = 'acting',
+): Promise<void> {
   await tx.query(
-    `INSERT INTO case_event (tenant_id, case_id, actor_id, kind, data) VALUES (app_tenant_id(), $1, app_user_id(), $2, $3::jsonb)`,
-    [caseId, kind, json(data)],
+    `INSERT INTO case_event (tenant_id, case_id, actor_id, kind, data)
+     VALUES (app_tenant_id(), $1, CASE WHEN $4 = 'acting' AND app_actor_type() = 'user' THEN app_user_id() END, $2, $3::jsonb)`,
+    [caseId, kind, json(data), actor],
   )
   await recordAudit(tx, { action: `CASE.${kind.toUpperCase()}`, objectType: 'case', objectId: caseId, ...change })
 }

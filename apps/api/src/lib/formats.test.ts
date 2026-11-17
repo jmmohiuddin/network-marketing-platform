@@ -34,6 +34,14 @@ describe('config', () => {
     }
   })
 
+  test('applies the D-B2-19 ingestion and genealogy limits and refuses non-positive values', () => {
+    expect(loadConfig(ENV)).toMatchObject({
+      orderFutureToleranceSeconds: 300, genealogyFallbackMaxDepth: 10_000, genealogyPageMax: 200,
+    })
+    expect(loadConfig({ ...ENV, GENEALOGY_PAGE_MAX: '50' }).genealogyPageMax).toBe(50)
+    expect(() => loadConfig({ ...ENV, GENEALOGY_FALLBACK_MAX_DEPTH: '0' })).toThrow(/^GENEALOGY_FALLBACK_MAX_DEPTH/m)
+  })
+
   test('TRUST_PROXY: unset trusts no proxy; takes addresses, CIDRs and proxy-addr names, never a hop count', () => {
     expect(loadConfig(ENV).trustProxy).toBe(false)
     expect(loadConfig({ ...ENV, TRUST_PROXY: 'loopback, 10.0.0.0/8, fd00::1' }).trustProxy).toEqual(['loopback', '10.0.0.0/8', 'fd00::1'])

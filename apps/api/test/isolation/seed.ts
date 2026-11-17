@@ -7,29 +7,46 @@ import { BASE_ROLES, type BaseRoleName } from '../../src/lib/permissions.js'
 import { hashPassword } from '../../src/lib/passwords.js'
 import type { ApiModule } from '../../src/lib/module.js'
 import { uploadDocument } from '../../src/modules/aud/test-support.js'
-import { fixtureCasModule, openFixtureCase } from '../../src/modules/cas/test-support.js'
 import { computeSnapshotJob } from '../../src/modules/cpl/index.js'
 import { PROTOTYPE_SETTINGS } from '../../src/modules/cpl/test-fixtures.js'
+import { rebuildNow } from '../../src/modules/gen/test-support.js'
 import { approvedMappingId, TINY_MAPPING, tinyFiles, upload } from '../../src/modules/imp/test-support.js'
 import { defaultModules } from '../../src/modules/index.js'
+import { apiKey, asKey, committedPeriod } from '../../src/modules/ord/test-support.js'
+import { activeType, CUSTOMER, DISTRIBUTOR, enrolled } from '../../src/modules/par/test-support.js'
 import { supportScopePermission } from '../../src/modules/support/index.js'
 import {
   baseRoleId, call, createMarket, createSignedInUser, createTenant, ownerRows, runQueuedJobs, type CallOptions, type TestTenant,
   type TestUser,
 } from '../helpers/index.js'
 
+/** seedTenants under full-suite load takes far longer than the default 10 s hook timeout (B1 OI-6). */
+export const SEED_TIMEOUT_MS = 120_000
 /** Every base role: together they hold the whole permission catalogue. */
 export const ALL_ROLES: readonly BaseRoleName[] = BASE_ROLES.map((role) => role.name)
 /** What a support session may be granted (support/sessions.ts): the catalogue without the tenant-own decisions. */
 export const SUPPORT_SCOPE = supportScopePermission.options
 export const PASSWORD = 'Isolation-Test-Pa55'
 export const MARKET_CODE = 'TINY'
-/** Every module of the product plus CAS with its fixture type (D-B1-13: no production case type in B1). */
-export const SUITE_MODULES: readonly ApiModule[] = [...defaultModules, fixtureCasModule()]
+/** Every module of the product, CAS with the product's case types. */
+export const SUITE_MODULES: readonly ApiModule[] = defaultModules
 /** Tenant A's draft market (created through the API, launch pending). A valid region code, so tenant B may take it too. */
 export const DRAFT_MARKET_CODE = 'DE'
 export const PACK = 'isolation-pack'
 export const RECORDABLE_ITEM = 'licence_evidence'
+/** Tenant A's live market of participants and orders (enrolment names markets by ISO code). */
+export const PEOPLE_MARKET_CODE = 'GB'
+const DISTRIBUTOR_TYPE = 'DIST'
+const CUSTOMER_TYPE = 'CUST'
+/** B2 settings without an approver (PLAN B2 2.1), values chosen by the suite. */
+const B2_SETTINGS = {
+  'participants.duplicate_matching': { signals: ['identity_ref'], min_matches: 1, hold_activation: false },
+  'customers.reassignment_rule': { rule: 'sponsor', notice_days: 0 },
+  'orders.crediting_event': 'paid',
+  'orders.attribution_precedence': ['link', 'code', 'servicing'],
+  'orders.new_buyer_type': CUSTOMER_TYPE,
+  'genealogy.placement_width': 2,
+}
 
 /** Tenant A's objects, by the names the route cases use. */
 export interface Targets {
@@ -67,7 +84,25 @@ export interface Targets {
   readonly document: string
   /** Uploaded by the owner and referenced by nothing: free to reference. */
   readonly freeDocument: string
+  /** A genealogy_change case about the child position, with evidence. */
   readonly case: string
+  readonly participantType: string
+  readonly peopleMarket: string
+  readonly peopleMarketCode: string
+  /** A distributor with the root position, an agreement acceptance and a duplicate signal. */
+  readonly participant: string
+  readonly position: string
+  readonly positionRef: string
+  /** Sponsored and placed under the root position; matched the participant's signal (duplicate case). */
+  readonly childPosition: string
+  /** An end customer sponsored (and so serviced) by the root position. */
+  readonly customer: string
+  readonly agreementVersion: string
+  readonly duplicateCase: string
+  readonly order: string
+  readonly heldEvent: string
+  readonly lateTransaction: string
+  readonly connector: string
   /** Tenant B's slug: tenant A's credentials are tried against it. */
   readonly otherSlug: string
 }
@@ -96,7 +131,7 @@ async function send(app: FastifyInstance, status: number, what: string, options:
 }
 
 async function saveSettings(app: FastifyInstance, owner: TestUser): Promise<void> {
-  const values = { ...PROTOTYPE_SETTINGS, 'privacy.breach_contacts': [BREACH_CONTACT] }
+  const values = { ...PROTOTYPE_SETTINGS, 'privacy.breach_contacts': [BREACH_CONTACT], ...B2_SETTINGS }
   let version = 0
   for (const [key, value] of Object.entries(values)) {
     const headers = { 'if-match': `"${version}"` }
@@ -187,14 +222,30 @@ async function seedChangeRequest(app: FastifyInstance, owner: TestUser): Promise
   return created.data.change_request.id as string
 }
 
-/** A complete checklist (evidence, attestations, both providers) and a pending go-live request for the draft market. */
+/** An agreement version of the market: its document uploaded with class agreement, then published (agreement.publish). */
+async function agreementVersion(app: FastifyInstance, owner: TestUser, market: string, acceptanceRequired: boolean): Promise<string> {
+  const data = Buffer.concat([Buffer.from('%PDF-1.4\n'), Buffer.from(randomUUID())])
+  const response = await uploadDocument(app, owner, { data, fileName: 'terms.pdf', fields: { class: 'agreement' } })
+  const uploaded = expectStatus(response, 201, 'agreement')
+  const version = await send(app, 201, 'agreement version', {
+    method: 'POST', url: '/v1/agreement-versions', as: owner, idempotencyKey: true,
+    body: { market_id: market, label: `Terms ${randomUUID().slice(0, 8)}`, document_id: uploaded.json().data.id, acceptance_required: acceptanceRequired },
+  })
+  return version.data.id as string
+}
+
+/**
+ * A complete checklist (evidence, attestations, both providers; the agreement item is automatic, D-B2-15) and a pending
+ * go-live request for the draft market.
+ */
 async function seedLaunch(app: FastifyInstance, owner: TestUser, market: string) {
   const entry = (item: string, body: Record<string, unknown>) => send(app, 201, `entry ${item}`, {
     method: 'POST', url: `/v1/markets/${market}/checklist/${item}/entries`, as: owner, body, idempotencyKey: true,
   })
   const evidence = await document(app, owner)
   await entry(RECORDABLE_ITEM, { document_id: evidence })
-  for (const item of ['tax_configuration', 'agreement_versions']) await entry(item, { document_id: await document(app, owner) })
+  await entry('tax_configuration', { document_id: await document(app, owner) })
+  await agreementVersion(app, owner, market, true)
   for (const item of ['data_region', 'plan_variant']) await entry(item, { note: 'Confirmed for the isolation suite' })
   const provider = async (kind: 'payout' | 'payment') => send(app, 201, `provider ${kind}`, {
     method: 'POST', url: '/v1/provider-configs', as: owner, idempotencyKey: true,
@@ -236,13 +287,93 @@ async function seedIntegrations(app: FastifyInstance, owner: TestUser) {
   }
 }
 
-/** A fixture-type case about the draft market with one evidence document. */
-async function seedCase(app: FastifyInstance, owner: TestUser, market: string): Promise<string> {
-  const opened = expectStatus(await openFixtureCase(app, owner, market), 201, 'case').json().data.id as string
-  await send(app, 201, 'case evidence', {
-    method: 'POST', url: `/v1/cases/${opened}/evidence`, as: owner, body: { document_id: await document(app, owner) }, idempotencyKey: true,
+/** A genealogy_change case moving the child position's sponsor to another root, with one evidence document. */
+async function seedCase(app: FastifyInstance, owner: TestUser, child: string, parent: string): Promise<string> {
+  const opened = await send(app, 201, 'case', {
+    method: 'POST', url: '/v1/cases', as: owner, idempotencyKey: true,
+    body: {
+      type: 'genealogy_change', subject_type: 'position', subject_id: child, reason_code: 'PARTICIPANT_REQUEST',
+      payload: { kind: 'sponsor', proposed_parent_position_id: parent, effective_from: new Date().toISOString() },
+    },
   })
-  return opened
+  await send(app, 201, 'case evidence', {
+    method: 'POST', url: `/v1/cases/${opened.data.id}/evidence`, as: owner, body: { document_id: await document(app, owner) }, idempotencyKey: true,
+  })
+  return opened.data.id as string
+}
+
+/**
+ * PLAN B2 6: active types, a root distributor with an agreement acceptance, a sponsored and placed distributor whose
+ * signal matches (a system duplicate case), an end customer serviced by the root, another root, and the path models.
+ */
+async function seedPeopleAndGenealogy(app: FastifyInstance, a: TestTenant, owner: TestUser) {
+  const approver = await createSignedInUser({ tenantId: a.id, roles: ['Compliance officer'], stepUp: true })
+  const peopleMarket = await createMarket(a.id, PEOPLE_MARKET_CODE)
+  const participantType = await activeType(app, owner, approver, DISTRIBUTOR_TYPE, DISTRIBUTOR)
+  await activeType(app, owner, approver, CUSTOMER_TYPE, CUSTOMER)
+  const agreement = await agreementVersion(app, owner, peopleMarket, false)
+  const ref = () => `A-${randomUUID().slice(0, 8)}`
+  const enrol = (typeCode: string, extra: Record<string, unknown>) => enrolled(app, owner, {
+    external_ref: ref(), market: PEOPLE_MARKET_CODE, type_code: typeCode, account_type: 'individual', display_name: 'Canary participant',
+    contact: { email: `canary-${randomUUID().slice(0, 8)}@a.example` }, ...extra,
+  })
+  const signals = { identity_ref: `canary-identity-${randomUUID()}` }
+  const root = await enrol(DISTRIBUTOR_TYPE, { position_ref: ref(), signals })
+  const rootRef = root.position!.position_ref
+  const child = await enrol(DISTRIBUTOR_TYPE, {
+    position_ref: ref(), sponsor: { position_ref: rootRef }, placement: { position_ref: rootRef, leg: '1' }, signals,
+  })
+  const otherRoot = await enrol(DISTRIBUTOR_TYPE, { position_ref: ref() })
+  const customer = await enrol(CUSTOMER_TYPE, { sponsor: { position_ref: rootRef } })
+  await send(app, 201, 'agreement acceptance', {
+    method: 'POST', url: `/v1/participants/${root.participant.id}/agreement-acceptances`, as: owner, idempotencyKey: true,
+    body: { agreement_version_id: agreement, accepted_at: new Date().toISOString() },
+  })
+  if (child.duplicate_case_id === null || customer.servicing === null) throw new Error('seed: no duplicate case or no servicing')
+  const genealogyCase = await seedCase(app, owner, child.position!.id, otherRoot.position!.id)
+  await rebuildNow()
+  return {
+    participantType, peopleMarket, peopleMarketCode: PEOPLE_MARKET_CODE, participant: root.participant.id, position: root.position!.id,
+    positionRef: rootRef, childPosition: child.position!.id, customer: customer.participant.id, agreementVersion: agreement,
+    duplicateCase: child.duplicate_case_id, case: genealogyCase,
+  }
+}
+
+/**
+ * PLAN B2 6: a volume row, a late order (credited into a committed period) with a refund event through an orders:write
+ * key, a held order (SKU without volumes), and a connector.
+ */
+async function seedOrders(app: FastifyInstance, a: TestTenant, owner: TestUser, market: string) {
+  await send(app, 201, 'product volumes', {
+    method: 'POST', url: '/v1/product-volumes', as: owner, idempotencyKey: true,
+    body: { market_id: market, sku: 'CANARY-SKU', item_class: 'product', volumes: { qv: '100' }, valid_from: '2020-01-01T00:00:00Z', reason },
+  })
+  await committedPeriod(a.id, market, '2025-01-01T00:00:00Z', '2025-02-01T00:00:00Z')
+  const token = await apiKey(app, owner, ['orders:write'])
+  const order = (sku: string) => ({
+    source_system: 'canary', source_order_id: `o-${randomUUID()}`, market: PEOPLE_MARKET_CODE, buyer: { external_ref: `buyer-${randomUUID()}` },
+    ordered_at: '2025-01-15T00:00:00Z', paid_at: '2025-01-15T00:00:00Z', currency: 'GBP', amount_minor: '1000', tax_minor: '0',
+    lines: [{ line_no: 1, sku, quantity: 1, amount_minor: '1000' }],
+  })
+  const ingest = async (url: string, body: Record<string, unknown>, status: number) =>
+    expectStatus(await asKey(app, token, url, body), status, `POST ${url}`).json().data
+  const late = order('CANARY-SKU')
+  const created = await ingest('/v1/orders', late, 201)
+  await ingest('/v1/order-events', {
+    source_system: 'canary', source_event_id: `e-${randomUUID()}`, source_order_id: late.source_order_id, type: 'refund',
+    occurred_at: new Date().toISOString(), refund_minor: '100', fee_minor: '0',
+  }, 201)
+  const held = await ingest('/v1/orders', order('UNMAPPED-SKU'), 202)
+  const [lateTransaction] = await ownerRows<{ id: string }>('SELECT id FROM late_transaction WHERE order_id = $1', [created.order.id])
+  const connector = await send(app, 201, 'connector', {
+    method: 'POST', url: '/v1/connectors', as: owner, idempotencyKey: true,
+    body: { provider: 'shopify', market_id: market, name: 'Canary shop', webhook_secret: `canary-secret-${randomUUID()}` },
+  })
+  if (lateTransaction === undefined) throw new Error('seed: the order in the committed period is not late')
+  return {
+    order: created.order.id as string, heldEvent: held.held.inbound_event_id as string, lateTransaction: lateTransaction.id,
+    connector: connector.data.connector.id as string,
+  }
 }
 
 async function latestSettingsVersion(tenantId: string): Promise<number> {
@@ -271,11 +402,12 @@ export async function seedTenants(app: FastifyInstance): Promise<Seeded> {
   const changeRequest = await seedChangeRequest(app, owner)
   const launch = await seedLaunch(app, owner, structure.draftMarket)
   const integrations = await seedIntegrations(app, owner)
-  const fixtureCase = await seedCase(app, owner, structure.draftMarket)
+  const genealogy = await seedPeopleAndGenealogy(app, a, owner)
+  const orders = await seedOrders(app, a, owner, genealogy.peopleMarket)
   const freeDocument = await document(app, owner)
   const targets: Targets = {
     tenant: a.id, email: owner.email, ...people, ...imports, ...snapshot, export: exported.data.id as string, supportSession,
-    market: MARKET_CODE, ...structure, changeRequest, ...launch, ...integrations, case: fixtureCase, freeDocument,
+    market: MARKET_CODE, ...structure, changeRequest, ...launch, ...integrations, ...genealogy, ...orders, freeDocument,
     settingsVersion: await latestSettingsVersion(a.id), otherSlug: b.slug,
   }
   return { a, b, owner, consultant, vendor, targets }
@@ -290,7 +422,9 @@ export function phantomOf(targets: Targets): Targets {
     snapshot: id(), market: 'PHANTOM', draftMarket: id(), brand: id(), brandName: `Phantom ${id()}`, calendar: id(),
     settingsVersion: 2_000_000_000, changeRequest: id(), providerConfig: id(), goLiveRequest: id(), serviceAccount: id(),
     serviceAccountName: `Phantom ${id()}`, apiKey: id(), webhookEndpoint: id(), webhookDelivery: id(), document: id(), freeDocument: id(),
-    case: id(),
+    case: id(), participantType: id(), peopleMarket: id(), peopleMarketCode: 'XQ', participant: id(), position: id(),
+    positionRef: `phantom-${id()}`, childPosition: id(), customer: id(), agreementVersion: id(), duplicateCase: id(), order: id(),
+    heldEvent: id(), lateTransaction: id(), connector: id(),
   }
 }
 

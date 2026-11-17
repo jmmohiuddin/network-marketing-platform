@@ -1,10 +1,10 @@
 // Permission catalogue and base roles (E-ADR-09). One typed source: migration 0007 seeded the release A base roles
-// (RELEASE_A_BASE_ROLES_SEED, frozen), migration 0106 brings them to BASE_ROLES (renderBaseRoleUpdate), and
-// permissions.test.ts pins both files, the catalogue and the TS-36 role matrix.
+// (RELEASE_A_BASE_ROLES_SEED, frozen), migrations 0106 (B1) and 0206 (B2) bring the roles each increment changed to
+// BASE_ROLES (renderBaseRoleUpdate), and permissions.test.ts pins the files, the catalogue and the TS-36 role matrix.
 
 /**
  * Every role permission in release A (SECURITY_IAM_TENANCY 4.3, API 7) plus participant.unmask and plan.activate, and
- * the B1 additions (PLAN B1 section 3).
+ * the B1 and B2 additions (PLAN B1 section 3, PLAN B2 section 3).
  */
 export const PERMISSIONS = [
   'import.manage',
@@ -23,6 +23,24 @@ export const PERMISSIONS = [
   'market.manage',
   'market.signoff',
   'integration.manage',
+  'participant.read',
+  'participant.manage',
+  'participant.terminate',
+  'participant_type.approve',
+  'agreement.publish',
+  'genealogy.read',
+  'case.genealogy.read',
+  'case.genealogy.create',
+  'case.genealogy.approve',
+  'case.duplicate.read',
+  'case.duplicate.create',
+  'case.duplicate.approve',
+  'servicing.manage',
+  'order.read',
+  'product.manage',
+  'late.manage',
+  'integration.read',
+  'privacy.manage',
 ] as const
 
 export type Permission = (typeof PERMISSIONS)[number]
@@ -43,6 +61,12 @@ export const PRIVILEGED_PERMISSIONS: readonly Permission[] = [
   'settings.approve',
   'market.signoff',
   'integration.manage',
+  'participant.terminate',
+  'participant_type.approve',
+  'agreement.publish',
+  'case.genealogy.approve',
+  'case.duplicate.approve',
+  'privacy.manage',
 ]
 
 // SEC-03: privileged roles and anyone who can unmask sensitive fields use MFA.
@@ -69,31 +93,54 @@ export interface BaseRole {
 
 // SEC-25 names; permission sets from the SDD-10 matrix (SECURITY_IAM_TENANCY 4.4), restricted to the catalogue.
 // Implementation consultant has no matrix column: its set follows the personas of SC-24 and SC-25 (MVP_A 1.3).
-// Support agent and Integration have no release-A permission.
+// Integration has no permission; Support agent's arrive with B2 and none of them is privileged (no MFA).
 export const BASE_ROLES: readonly BaseRole[] = [
   {
     name: 'Tenant admin',
     permissions: [
       'user.manage', 'settings.manage', 'import.manage', 'mapping.edit', 'mapping.approve', 'compliance.read',
-      'audit.read', 'vendor_access.decide', 'market.manage', 'integration.manage',
+      'audit.read', 'vendor_access.decide', 'market.manage', 'integration.manage', 'participant.read', 'order.read',
+      'product.manage', 'integration.read',
     ],
     mfaRequired: true,
   },
-  { name: 'Commission analyst', permissions: ['compliance.read'], mfaRequired: false },
+  {
+    name: 'Commission analyst',
+    permissions: [
+      'compliance.read', 'participant.read', 'genealogy.read', 'case.genealogy.read', 'order.read', 'late.manage',
+      'integration.read',
+    ],
+    mfaRequired: false,
+  },
   { name: 'Plan administrator', permissions: ['compliance.read'], mfaRequired: false },
   {
     name: 'Finance approver',
-    permissions: ['compliance.read', 'participant.unmask', 'plan.activate', 'settings.approve'],
+    permissions: ['compliance.read', 'participant.unmask', 'plan.activate', 'settings.approve', 'participant.read', 'order.read'],
     mfaRequired: true,
   },
-  { name: 'Payout officer', permissions: ['participant.unmask'], mfaRequired: true },
+  { name: 'Payout officer', permissions: ['participant.unmask', 'participant.read'], mfaRequired: true },
   {
     name: 'Compliance officer',
-    permissions: ['mapping.approve', 'compliance.read', 'snapshot.create', 'export', 'audit.read', 'market.signoff'],
+    permissions: [
+      'mapping.approve', 'compliance.read', 'snapshot.create', 'export', 'audit.read', 'market.signoff',
+      'participant.read', 'participant.terminate', 'participant_type.approve', 'agreement.publish', 'genealogy.read',
+      'case.genealogy.read', 'case.genealogy.approve', 'case.duplicate.read', 'case.duplicate.approve', 'order.read',
+    ],
     mfaRequired: true,
   },
-  { name: 'Support agent', permissions: [], mfaRequired: false },
-  { name: 'DPO', permissions: ['compliance.read', 'audit.read', 'participant.unmask'], mfaRequired: true },
+  {
+    name: 'Support agent',
+    permissions: [
+      'participant.read', 'participant.manage', 'genealogy.read', 'case.genealogy.read', 'case.genealogy.create',
+      'case.duplicate.read', 'case.duplicate.create', 'servicing.manage', 'order.read',
+    ],
+    mfaRequired: false,
+  },
+  {
+    name: 'DPO',
+    permissions: ['compliance.read', 'audit.read', 'participant.unmask', 'participant.read', 'privacy.manage'],
+    mfaRequired: true,
+  },
   { name: 'Implementation consultant', permissions: ['import.manage', 'mapping.edit'], mfaRequired: false },
   { name: 'Executive read-only', permissions: ['compliance.read'], mfaRequired: false },
   { name: 'Integration', permissions: [], mfaRequired: false },
@@ -122,8 +169,10 @@ export const RELEASE_A_BASE_ROLES_SEED = `INSERT INTO role (tenant_id, name, per
   (NULL, 'Integration', '{}'::text[], true, false);
 `
 
-/** The base roles whose permissions B1 changed (PLAN B1 section 3); migration 0106 updates exactly these. */
-export const B1_UPDATED_BASE_ROLES: readonly BaseRoleName[] = ['Tenant admin', 'Finance approver', 'Compliance officer']
+/** The base roles whose permissions B2 changed (PLAN B2 section 3); migration 0206 updates exactly these. */
+export const B2_UPDATED_BASE_ROLES: readonly BaseRoleName[] = [
+  'Tenant admin', 'Commission analyst', 'Finance approver', 'Payout officer', 'Compliance officer', 'Support agent', 'DPO',
+]
 
 /** The SQL that brings the named base roles to their BASE_ROLES permissions. */
 export function renderBaseRoleUpdate(names: readonly BaseRoleName[]): string {

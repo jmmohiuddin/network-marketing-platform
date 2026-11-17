@@ -21,9 +21,17 @@ const TENANT_NAVIGATION: readonly (NavigationEntry & { readonly anyOf: readonly 
   { key: 'users', path: '/settings/users', label: 'Users and roles', anyOf: ['user.manage'] },
   { key: 'vendor_access', path: '/settings/vendor-access', label: 'Vendor access', anyOf: ['vendor_access.decide'] },
   { key: 'audit', path: '/settings/audit', label: 'Audit log', anyOf: ['audit.read'], allMarkets: true },
-  { key: 'settings', path: '/settings', label: 'Settings', anyOf: ['settings.manage', 'settings.approve'] },
+  {
+    key: 'settings', path: '/settings', label: 'Settings',
+    anyOf: ['settings.manage', 'settings.approve', 'participant_type.approve', 'privacy.manage', 'agreement.publish'],
+  },
   { key: 'markets', path: '/settings/markets', label: 'Markets', anyOf: ['settings.manage', 'market.manage', 'market.signoff'] },
-  { key: 'integrations', path: '/settings/integrations', label: 'Integrations', anyOf: ['integration.manage'], allMarkets: true },
+  { key: 'integrations', path: '/settings/integrations', label: 'Integrations', anyOf: ['integration.manage', 'integration.read'], allMarkets: true },
+  { key: 'people', path: '/people', label: 'People', anyOf: ['participant.read'] },
+  { key: 'genealogy', path: '/genealogy', label: 'Genealogy', anyOf: ['genealogy.read'], allMarkets: true },
+  { key: 'cases', path: '/cases', label: 'Cases', anyOf: ['case.genealogy.read', 'case.duplicate.read'] },
+  { key: 'orders', path: '/orders', label: 'Orders', anyOf: ['order.read', 'product.manage'] },
+  { key: 'late', path: '/periods/late', label: 'Late transactions', anyOf: ['late.manage'] },
 ]
 const VENDOR_NAVIGATION: readonly NavigationEntry[] = [{ key: 'console', path: '/vendor', label: 'Operations console' }]
 

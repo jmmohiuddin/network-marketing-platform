@@ -15,9 +15,13 @@ const SIGNATURES: readonly { readonly mime: string; readonly magic: readonly num
 export const EVIDENCE_TYPES: readonly string[] = SIGNATURES.map((signature) => signature.mime)
 
 const MAX_FILE_NAME = 200
-const fieldsSchema = z.strictObject({ class: z.literal('evidence') })
+// agreement: participant agreement documents (D-B2-15), uploaded by agreement.publish holders.
+export const DOCUMENT_CLASSES = ['evidence', 'agreement'] as const
+export type DocumentClass = (typeof DOCUMENT_CLASSES)[number]
+const fieldsSchema = z.strictObject({ class: z.enum(DOCUMENT_CLASSES) })
 
 export interface EvidenceFile {
+  readonly documentClass: DocumentClass
   readonly data: Buffer
   readonly mime: string
   /** hex */
@@ -62,7 +66,7 @@ async function readParts(request: FastifyRequest, maxFileBytes: number) {
   return { fields, file }
 }
 
-/** POST /v1/documents: one file in the field "file" and class=evidence (PLAN B1 section 2.8). */
+/** POST /v1/documents: one file in the field "file" and class=evidence|agreement (PLAN B1 2.8, B2 2.2). */
 export async function readEvidenceFile(request: FastifyRequest, maxFileBytes: number): Promise<EvidenceFile> {
   if (!request.isMultipart()) {
     throw new ApiError(415, 'UNSUPPORTED_MEDIA_TYPE', 'Send the document as multipart/form-data.')
@@ -76,7 +80,7 @@ export async function readEvidenceFile(request: FastifyRequest, maxFileBytes: nu
     }
     throw error
   }
-  parse(fieldsSchema, read.fields)
+  const { class: documentClass } = parse(fieldsSchema, read.fields)
   // A browser form with no file chosen still sends the part, with an empty name and no bytes.
   if (read.file === null || read.file.data.length === 0) throw new ApiError(400, 'FILE_MISSING', 'Choose a file to upload.')
   const mime = detectType(read.file.data)
@@ -84,6 +88,7 @@ export async function readEvidenceFile(request: FastifyRequest, maxFileBytes: nu
     throw new ApiError(415, 'FILE_TYPE_NOT_ALLOWED', 'Upload a PDF, PNG or JPEG file.', { types: EVIDENCE_TYPES })
   }
   return {
+    documentClass,
     data: read.file.data,
     mime,
     sha256: createHash('sha256').update(read.file.data).digest('hex'),

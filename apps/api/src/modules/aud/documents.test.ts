@@ -137,13 +137,37 @@ describe('POST /v1/documents', () => {
       method: 'POST', url: '/v1/documents', as: admin, idempotencyKey: true, headers: { 'content-type': `multipart/form-data; boundary=${boundary}` },
       body: Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="class"\r\n\r\nevidence\r\n--${boundary}--\r\n`),
     })
-    const wrongClass = await uploadDocument(app, admin, { fields: { class: 'agreement' } })
+    const wrongClass = await uploadDocument(app, admin, { fields: { class: 'tax_form' } })
     const json = await call(app, { method: 'POST', url: '/v1/documents', as: admin, idempotencyKey: true, body: { class: 'evidence' } })
 
     expect(noFile.statusCode).toBe(400)
     expect(noFile.json().error.code).toBe('FILE_MISSING')
     expect(wrongClass.statusCode).toBe(400)
     expect(json.statusCode).toBe(415)
+  })
+
+  test('class agreement: only agreement.publish holders upload; the version that references it lets its readers download (PLAN B2 2.2)', async () => {
+    const byAdmin = await uploadDocument(app, admin, { data: PDF, fields: { class: 'agreement' } })
+    const uploaded = await uploadDocument(app, compliance, { data: PDF, fileName: 'terms.pdf', fields: { class: 'agreement' } })
+    const id = uploaded.json().data.id as string
+    const before = await call(app, { method: 'GET', url: `/v1/documents/${id}`, as: support })
+    await ownerRows(
+      `INSERT INTO agreement_version (tenant_id, market_id, label, document_id, acceptance_required, published_by)
+       VALUES ($1, $2, 'v-doc', $3, true, $4)`,
+      [acme.id, gb, id, compliance.id],
+    )
+    const asSupport = await call(app, { method: 'GET', url: `/v1/documents/${id}/content`, as: support })
+    const asAnalyst = await call(app, { method: 'GET', url: `/v1/documents/${id}`, as: analyst })
+    const asOtherMarket = await call(app, { method: 'GET', url: `/v1/documents/${id}`, as: adminMy })
+
+    expect(byAdmin.statusCode).toBe(403)
+    expect(uploaded.statusCode).toBe(201)
+    expect((await ownerRows('SELECT class FROM document WHERE id = $1', [id]))[0]).toEqual({ class: 'agreement' })
+    expect(before.statusCode).toBe(404)
+    expect(asSupport.statusCode).toBe(200)
+    expect(asSupport.rawPayload.equals(PDF)).toBe(true)
+    expect(asAnalyst.statusCode).toBe(200)
+    expect(asOtherMarket.statusCode).toBe(404)
   })
 
   test('needs market.manage, market.signoff or a registered case type\'s create permission', async () => {

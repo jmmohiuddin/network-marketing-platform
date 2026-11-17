@@ -49,6 +49,8 @@ describe('GET /v1/webhook-topics', () => {
       expect.objectContaining({ topic: 'compliance.snapshot.ready', payload_fields: ['snapshot_id', 'market_id'] }),
       expect.objectContaining({ topic: 'market.went_live', payload_fields: ['market_id', 'code'] }),
       expect.objectContaining({ topic: 'case.decided', payload_fields: ['case_id', 'type', 'decision'] }),
+      expect.objectContaining({ topic: 'order.ingested', payload_fields: ['order_id', 'market_id', 'source_system'] }),
+      expect.objectContaining({ topic: 'genealogy.changed', payload_fields: ['kind', 'child_position_id', 'valid_from', 'event_type'] }),
     ])
     expect((await call(app, { method: 'GET', url: '/v1/webhook-topics', as: analyst })).statusCode).toBe(403)
     expect((await call(app, { method: 'GET', url: '/v1/webhook-topics' })).statusCode).toBe(401)

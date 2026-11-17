@@ -24,7 +24,8 @@ export const CHECKLIST_ITEMS = [
   { item: 'payout_provider', title: 'Payout provider eligibility', kind: 'provider', category: 'payment', providerKind: 'payout' },
   { item: 'payment_provider', title: 'Payment provider eligibility', kind: 'provider', category: 'payment', providerKind: 'payment' },
   { item: 'tax_configuration', title: 'Tax configuration reference', kind: 'evidence', category: 'tax' },
-  { item: 'agreement_versions', title: 'Participant agreement versions', kind: 'evidence', category: 'regulatory' },
+  // D-B2-15: complete when the market has a published agreement version (PAR).
+  { item: 'agreement_versions', title: 'Participant agreement versions', kind: 'automatic', category: 'regulatory' },
   { item: 'data_region', title: 'Data region', kind: 'attestation', category: 'data' },
   { item: 'plan_variant', title: 'Plan variant', kind: 'attestation', category: 'plan' },
   { item: 'breach_contacts', title: 'Breach notification contacts', kind: 'automatic', category: 'data' },
@@ -37,12 +38,15 @@ export function checklistItem(item: string): ItemDefinition | undefined {
   return CHECKLIST_ITEMS.find((definition) => definition.item === item)
 }
 
-const MISSING_REASONS: Readonly<Record<ItemKind, string>> = {
+const MISSING_REASONS: Readonly<Record<Exclude<ItemKind, 'automatic'>, string>> = {
   evidence: 'No evidence document is recorded.',
   attestation: 'No attestation note is recorded.',
   provider: 'No recorded provider approval for this market.',
-  // The only automatic item that can be missing (pack rules need a risk acceptance at sign-off instead).
-  automatic: 'No breach notification contact is in force.',
+}
+// The automatic items that can be missing (pack rules need a risk acceptance at sign-off instead).
+const AUTOMATIC_MISSING: Readonly<Record<string, string>> = {
+  breach_contacts: 'No breach notification contact is in force.',
+  agreement_versions: 'No participant agreement version is published for this market.',
 }
 
 export interface PackRule {
@@ -137,8 +141,24 @@ export async function packRules(tx: Tx, pack: string): Promise<PackRule[]> {
   return rows
 }
 
+interface AgreementVersionRef {
+  readonly id: string
+  readonly label: string
+  readonly published_at: Date
+}
+
+/** The market's current agreement version: the latest published (D-B2-15). */
+async function currentAgreement(tx: Tx, marketId: string): Promise<AgreementVersionRef | null> {
+  const { rows } = await tx.query<AgreementVersionRef>(
+    `SELECT id, label, published_at FROM agreement_version WHERE market_id = $1 ORDER BY published_at DESC, id DESC LIMIT 1`,
+    [marketId],
+  )
+  return rows[0] ?? null
+}
+
 interface Facts {
   readonly entries: Map<string, EntryView>
+  readonly agreement: AgreementVersionRef | null
   readonly providers: RecordedProvider[]
   readonly region: string
   readonly contacts: number
@@ -153,6 +173,7 @@ function statusOf(definition: ItemDefinition, facts: Facts, providers: RecordedP
     case 'provider': return providers.length > 0 ? 'complete' : 'missing'
     case 'automatic':
       if (definition.item === 'breach_contacts') return facts.contacts > 0 ? 'complete' : 'missing'
+      if (definition.item === 'agreement_versions') return facts.agreement !== null ? 'complete' : 'missing'
       return facts.rules.some((rule) => rule.mandatory && rule.basis_status === 'screening') ? 'needs_risk_acceptance' : 'complete'
   }
 }
@@ -164,6 +185,7 @@ function detailOf(definition: ItemDefinition, facts: Facts, providers: RecordedP
   switch (definition.item) {
     case 'data_region': return { region: facts.region }
     case 'breach_contacts': return { contacts: facts.contacts }
+    case 'agreement_versions': return { version: facts.agreement }
     case 'pack_rules': return { rules: facts.rules }
     case 'tax_configuration': return { rules: facts.rules.filter((rule) => rule.kind === 'tax') }
     default: return null
@@ -175,6 +197,7 @@ export async function evaluateChecklist(tx: Tx, market: MarketView): Promise<Eva
   const { rows } = await tx.query<{ region: string }>('SELECT region FROM tenant WHERE id = app_tenant_id()')
   const facts: Facts = {
     entries: await currentEntries(tx, market.id),
+    agreement: await currentAgreement(tx, market.id),
     providers: await recordedProviders(tx, market.id),
     region: rows[0]!.region,
     contacts: (await getSetting(tx, 'privacy.breach_contacts'))?.length ?? 0,
@@ -185,7 +208,8 @@ export async function evaluateChecklist(tx: Tx, market: MarketView): Promise<Eva
   const contributors = new Set<string>()
   for (const definition of CHECKLIST_ITEMS as readonly ItemDefinition[]) {
     const providers = facts.providers.filter((provider) => provider.kind === definition.providerKind)
-    const entry = facts.entries.get(definition.item) ?? null
+    // B1 entries of an item that is automatic now (agreement_versions) are history: not counted.
+    const entry = definition.kind === 'automatic' ? null : facts.entries.get(definition.item) ?? null
     const status = statusOf(definition, facts, providers)
     if (entry !== null) contributors.add(entry.recorded_by.id)
     for (const provider of providers) contributors.add(provider.createdBy)
@@ -202,7 +226,10 @@ export async function evaluateChecklist(tx: Tx, market: MarketView): Promise<Eva
 export function missingItems(evaluation: Evaluation): { item: string; title: string; reason: string }[] {
   return evaluation.items
     .filter((item) => item.status === 'missing')
-    .map((item) => ({ item: item.item, title: item.title, reason: MISSING_REASONS[item.kind] }))
+    .map((item) => ({
+      item: item.item, title: item.title,
+      reason: item.kind === 'automatic' ? AUTOMATIC_MISSING[item.item]! : MISSING_REASONS[item.kind],
+    }))
 }
 
 export function summaryOf(evaluation: Evaluation): Record<ItemStatus, number> {

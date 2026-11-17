@@ -22,6 +22,19 @@ export const WEBHOOK_TOPICS = [
     description: 'A case was approved or rejected.',
     payload: z.object({ case_id: id, type: z.string(), decision: z.enum(['approved', 'rejected']) }),
   },
+  {
+    topic: 'order.ingested',
+    description: 'An order was accepted (by API or a store connector) with its facts fixed.',
+    payload: z.object({ order_id: id, market_id: id, source_system: z.string() }),
+  },
+  {
+    topic: 'genealogy.changed',
+    description: 'A sponsor or placement relationship was written (enrolment, change, correction, rule or migration).',
+    payload: z.object({
+      kind: z.enum(['sponsor', 'placement']), child_position_id: id, valid_from: z.string(),
+      event_type: z.enum(['enrolment', 'change', 'correction', 'rule', 'migration']),
+    }),
+  },
 ] as const
 
 export type WebhookTopic = (typeof WEBHOOK_TOPICS)[number]['topic']

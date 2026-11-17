@@ -90,7 +90,7 @@ describe('POST /v1/users/:id/role-assignments', () => {
     const user = await createSignedInUser({ tenantId: acme.id })
     const own = await createMarket(acme.id, 'GB')
     const foreign = await createMarket(globexAdmin.tenantId!, 'FR')
-    const roleId = await baseRoleId('Commission analyst')
+    const roleId = await baseRoleId('Executive read-only') // within the admin's own permissions: granted at once
 
     const scoped = await grant(admin, user.id, { role_id: roleId, market_ids: [own] })
     const refused = await grant(admin, user.id, { role_id: roleId, market_ids: [foreign] })
@@ -154,7 +154,7 @@ describe('POST /v1/users/:id/role-assignments', () => {
     expect(requested.statusCode).toBe(202)
     expect(before).toEqual([])
     expect(approved.statusCode).toBe(200)
-    expect(await permissionsOf(user)).toEqual(['participant.unmask'])
+    expect(await permissionsOf(user)).toEqual(['participant.read', 'participant.unmask'])
   })
 
   test('another tenant: its users are 404 and its roles are unknown', async () => {

@@ -63,14 +63,20 @@ function summary(row: HistoryRow): VersionSummary {
   }
 }
 
-/** GET /v1/settings/versions: newest first, cursor = version. */
-export async function listVersions(tx: Tx, query: { cursor?: string; limit: number }): Promise<Envelope<VersionSummary[]>> {
+/** GET /v1/settings/versions: newest first, cursor = version; `changed` names the keys the caller reads, and structure. */
+export async function listVersions(
+  tx: Tx, query: { cursor?: string; limit: number }, visible: KeyVisibility,
+): Promise<Envelope<VersionSummary[]>> {
   const before = decodeCursor(query.cursor, z.number().int().positive())
   const { rows } = await tx.query<HistoryRow>(
     `${HISTORY_SELECT} WHERE ($1::int IS NULL OR v.version < $1) ORDER BY v.version DESC LIMIT $2`,
     [before ?? null, query.limit + 1],
   )
-  return toPage(rows.map(summary), query.limit, (row) => row.version)
+  const summaries = rows.map((row) => {
+    const view = summary(row)
+    return { ...view, changed: view.changed.filter(({ key }) => key === 'structure' || visible(key)) }
+  })
+  return toPage(summaries, query.limit, (row) => row.version)
 }
 
 interface StructureEntry {

@@ -1,0 +1,19 @@
+{
+  "_fixture": "FIXTURE: synthetic WooCommerce order payload for tests (order.created / order.updated); not real store data",
+  "id": 4321,
+  "status": "processing",
+  "currency": "GBP",
+  "total": "37.60",
+  "customer_id": 55,
+  "date_created_gmt": "2026-11-10T09:00:00",
+  "date_paid_gmt": "2026-11-10T09:01:00",
+  "date_completed_gmt": null,
+  "date_modified_gmt": "2026-11-10T09:01:00",
+  "meta_data": [{ "id": 1, "key": "_wc_order_attribution", "value": "direct" }],
+  "coupon_lines": [],
+  "shipping_lines": [{ "total": "4.00" }],
+  "line_items": [
+    { "id": 11, "sku": "SKU-A", "quantity": 2, "total": "18.00", "total_tax": "3.60" },
+    { "id": 12, "sku": "SKU-B", "quantity": 1, "total": "10.00", "total_tax": "2.00" }
+  ]
+}

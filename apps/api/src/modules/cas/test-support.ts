@@ -5,6 +5,7 @@ import type { FastifyInstance, LightMyRequestResponse } from 'fastify'
 import { z } from 'zod'
 import { call, ownerRows, type Caller } from '../../../test/helpers/index.js'
 import { recordAudit } from '../../lib/audit.js'
+import { ApiError } from '../../lib/errors.js'
 import { createCasModule } from './index.js'
 import type { CaseTypeDefinition } from './types.js'
 
@@ -17,8 +18,9 @@ type FixturePayload = z.infer<typeof fixturePayload>
 /**
  * The 'adjustment' slot with a market row (created through the owner pool) as its subject and existing catalogue
  * permissions: read compliance.read, create import.manage, decide mapping.approve. Its hooks show where they run:
- * effectPreview echoes the amount, dueAt is two days after submission, onDecision writes FIXTURE.CASE_DECIDED in
- * the decision's transaction and throws when the payload asks for it (atomicity test).
+ * validateCreate refuses amount -999 (409 FIXTURE_REFUSED), effectPreview echoes the amount, dueAt is two days after
+ * submission, onDecision writes FIXTURE.CASE_DECIDED in the decision's transaction and throws when the payload asks for
+ * it (atomicity test).
  */
 export const FIXTURE_CASE_TYPE: CaseTypeDefinition<FixturePayload> = {
   type: 'adjustment',
@@ -30,6 +32,9 @@ export const FIXTURE_CASE_TYPE: CaseTypeDefinition<FixturePayload> = {
   async resolveSubject(tx: Tx, _subjectType: string, subjectId: string) {
     const { rows } = await tx.query<{ id: string }>('SELECT id FROM market WHERE id = $1', [subjectId])
     return rows[0] === undefined ? null : { marketId: rows[0].id }
+  },
+  async validateCreate(_tx, _subject, payload) {
+    if (payload.amount_minor === '-999') throw new ApiError(409, 'FIXTURE_REFUSED', 'The fixture refuses this amount.')
   },
   async effectPreview(_tx, c) {
     return { amount_minor: c.payload.amount_minor }

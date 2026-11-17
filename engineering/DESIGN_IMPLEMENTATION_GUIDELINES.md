@@ -339,8 +339,10 @@ Source: S1 (sc_01) icons; keys that S1 does not draw take the S3/S6 icon.
 |---|---|
 | overview (SC-35 / role home) | `dashboard` |
 | periods | `history_toggle_off` |
+| late (SC-32 late transactions, under periods) | `history_toggle_off` |
 | plans | `schema` |
 | people | `account_tree` |
+| genealogy (SC-07; not drawn by S1/S3/S6, B2 integrator choice) | `lan` |
 | orders | `receipt_long` |
 | cases | `rule_folder` |
 | payouts | `payments` |

@@ -2,6 +2,14 @@
 
 _Agent: compensation. Read before every task; update after every task. Keep concise — facts and decisions, not transcripts._
 
+## 2026-11-17 — B2 BE2 GEN module (apps/api/src/modules/gen), 37 tests green, typecheck clean
+- Exports genModule (routes + job gen.paths.rebuild) and genCaseTypes (genealogy_change, genealogy_correction, transfer). Never imports par/crm/ord TS: SQL contracts G1-G5/C3 + par_display/par_search/gen_positions_of/committed_periods_overlapping.
+- Routes: GET /v1/genealogy/tree, GET /v1/genealogy/search (genealogy.read all markets); GET /v1/positions/:id (genealogy.read all or participant.read market scope); POST /v1/positions/:id/status (participant.manage; terminated = participant.terminate + step-up instead); GET /v1/positions/:id/downline (genealogy.read all, ?viewer required).
+- Instants stay text (dates.ts toInstant) end to end: JS Date drops microseconds and breaks known_at. Unused bind params must still be referenced/cast (tree.ts childrenSql) or PG errors.
+- Read model used only when path_model current (version>0, stale null) and the position is a node; every other read = SoR with validKnownAt(D,T). Rebuild: temp table + per-depth reverse pass for subtree_count, count == count(position), stale cleared only if path_model xmin unchanged (every relationship write upserts it), version switch always, old versions deleted.
+- Case hooks: validateCreate dry-runs G2 in a savepoint with a scratch case_file (CHECK needs case_id); effectPreview throws GEN_CYCLE, stores other refusals as structural_check {ok:false, code}. Corrections may be future only at the exact start of a pending row (E-GEN-04 cancel), else 422 VALID_FROM_IN_FUTURE.
+- Tests: scripts/heavy.sh with NMP_TEST_DB=nmp_test_1 pnpm vitest run apps/api/src/modules/gen. Fixtures in gen/test-support.ts (owner-pool types/participants/settings incl. approved visibility policy, committed periods).
+
 ## 2026-11-13 — B engine review fixes (architect): 22 findings, packages/engine green (257 tests, tsc clean, 100k bench 1.9 s / 1.47 GB)
 - Contract changes: RawLine.purposeRaw (purpose split, never truncated); TraceSource.orderIds -> `orders: {orderId, raw}[]` (+ `share`, `capMinor`); PeriodSummary.startsAtUs (history must be contiguous); CreditedLine.creditIndex; PositionVolumes.byPurpose (pass 2 recomputes measures per purpose named by a max_share constraint); Totals.volumeSummaries; allocateCap(..., mode).
 - max_share reads RawLine.purposeRaw (every primitive supplies LineSpec.purposeRaw; matching scales the matched line's split; pools by market purpose total). Works for restatement, group measures, >16 sources; independent of fullTraceFor.

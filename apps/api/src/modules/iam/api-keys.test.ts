@@ -7,7 +7,7 @@ import {
 import { requirePermission, requireRealm } from '../../lib/auth.js'
 import { inTenant } from '../../lib/db.js'
 import type { ApiModule } from '../../lib/module.js'
-import { apiKeyOrSession, iamModule } from './index.js'
+import { API_SCOPES, apiKeyOrSession, iamModule } from './index.js'
 
 // A key-accessible route: who the request runs as inside its tenant transaction.
 const probeModule: ApiModule = {
@@ -71,7 +71,14 @@ describe('GET /v1/api-keys/options', () => {
     const response = await call(app, { method: 'GET', url: '/v1/api-keys/options', as: admin })
 
     expect(response.json().data).toEqual({
-      scopes: [{ scope: 'compliance:read', description: 'Read compliance snapshots', personal_data: false, permission: 'compliance.read' }],
+      scopes: [
+        { scope: 'compliance:read', description: 'Read compliance snapshots', personal_data: false, permission: 'compliance.read' },
+        {
+          scope: 'participants:write', description: 'Enrol participants and record types, positions, agreements, signals and servicing',
+          personal_data: true, permission: 'integration.manage',
+        },
+        { scope: 'orders:write', description: 'Send orders and order events', personal_data: false, permission: 'integration.manage' },
+      ],
       rate_tiers: [{ tier: 'standard', requests_per_minute: 120 }, { tier: 'high', requests_per_minute: 1200 }],
       max_grace_minutes: 10_080,
     })
@@ -165,8 +172,8 @@ describe('T-B1-15/17 POST /v1/service-accounts/:id/keys', () => {
     const mint = (body: Record<string, unknown>, as: TestUser = admin) =>
       call(app, { method: 'POST', url: `/v1/service-accounts/${accountId}/keys`, as, body: keyBody(body), idempotencyKey: true })
 
-    const unknownScope = await mint({ scopes: ['compliance:read', 'orders:write'] })
-    expect(unknownScope.json().error).toMatchObject({ code: 'SCOPE_UNKNOWN', details: { scopes: ['orders:write'] } })
+    const unknownScope = await mint({ scopes: ['compliance:read', 'ledger:export'] })
+    expect(unknownScope.json().error).toMatchObject({ code: 'SCOPE_UNKNOWN', details: { scopes: ['ledger:export'] } })
     expect((await mint({ ip_allow: ['not-an-ip'] })).json().error.code).toBe('VALIDATION_FAILED')
     expect((await mint({ ip_allow: ['10.0.0.0/33'] })).json().error.code).toBe('VALIDATION_FAILED')
     expect((await mint({ ip_allow: ['fe80::1%eth0'] })).json().error.code).toBe('VALIDATION_FAILED')
@@ -203,6 +210,21 @@ describe('keys are tenant-wide: minting and rotating need all-markets scope', ()
     expect(await ownerRows('SELECT id FROM api_key WHERE service_account_id = $1', [accountId])).toEqual([])
     const me = await call(app, { method: 'GET', url: '/v1/me', as: scoped })
     expect(me.json().data.navigation.map((entry: { key: string }) => entry.key)).not.toContain('integrations')
+  })
+
+  test('PLAN B2 2.8 scope pin: orders:write and participants:write keys need integration.manage for all markets', async () => {
+    const accountId = await serviceAccount()
+    const scoped = await createSignedInUser({ tenantId: acme.id, roles: ['Tenant admin'], marketIds: [await createMarket(acme.id, 'NL')], stepUp: true })
+    const body = keyBody({ scopes: ['orders:write', 'participants:write'] })
+
+    const refused = await call(app, { method: 'POST', url: `/v1/service-accounts/${accountId}/keys`, as: scoped, body, idempotencyKey: true })
+    const minted = await call(app, { method: 'POST', url: `/v1/service-accounts/${accountId}/keys`, as: admin, body, idempotencyKey: true })
+
+    expect(API_SCOPES.filter((entry) => entry.scope !== 'compliance:read').map(({ scope, permission }) => [scope, permission]))
+      .toEqual([['participants:write', 'integration.manage'], ['orders:write', 'integration.manage']])
+    expect(refused.json().error).toMatchObject({ code: 'SCOPE_NOT_HELD', details: { permission: 'integration.manage' } })
+    expect(minted.statusCode).toBe(201)
+    expect(minted.json().data.key.scopes).toEqual(['orders:write', 'participants:write'])
   })
 
   test('minting or rotating a compliance:read key needs compliance.read for all markets', async () => {

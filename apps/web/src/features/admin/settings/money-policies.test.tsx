@@ -6,7 +6,8 @@ import { describe, expect, it, vi } from 'vitest'
 import { apiError, json } from '../../../test/fetch'
 import { adminMe, bodyOf, callsTo, fetchByRoute, headerOf, renderAs } from '../test-support'
 import { SettingsPage } from './settings-page'
-import { effectiveError, policyValue } from './version-dialog'
+import { policyValue } from './policy-fields'
+import { effectiveError } from './version-dialog'
 import { structureLines, versionState } from './versions-section'
 import type { ChangeRequest, VersionSummary } from './types'
 
@@ -193,8 +194,8 @@ describe('versions', () => {
 
 describe('helpers', () => {
   it('builds policy values and needs a date for money keys only', () => {
-    expect(policyValue('money.clawback_policy', 'restatement')).toEqual({ value: { default: 'restatement' }, error: null })
-    expect(policyValue('plan.activation_notice_days', '400').error).toContain('0 to 365')
+    expect(policyValue('money.clawback_policy', { value: 'restatement' })).toEqual({ value: { default: 'restatement' }, errors: {} })
+    expect(policyValue('plan.activation_notice_days', { value: '400' }).errors.value).toContain('0 to 365')
     expect(effectiveError('money.rounding_mode', '').error).toBe('Enter the date and time the change takes effect.')
     expect(effectiveError('plan.activation_notice_days', '')).toEqual({ iso: null, error: null })
     const now = Date.parse('2026-11-17T12:00:00.000Z')

@@ -68,8 +68,10 @@ export interface ChecklistItem {
   readonly mandatory: boolean
   readonly status: ItemStatus
   readonly entry: ChecklistEntry | null
-  /** providers / {region} / {contacts} / {rules}; null for the other items. */
+  /** providers / {region} / {contacts} / {rules} / {version}; null for the other items. */
   readonly detail: {
+    /** agreement_versions (D-B2-15): the market's current published version, null while none is published. */
+    readonly version?: { readonly id: string; readonly label: string; readonly published_at: string } | null
     readonly providers?: readonly { readonly id: string; readonly provider: string }[]
     readonly region?: string
     readonly contacts?: number

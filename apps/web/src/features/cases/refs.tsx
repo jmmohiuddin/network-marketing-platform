@@ -1,0 +1,50 @@
+'use client'
+
+import Link from 'next/link'
+import { useResource } from '../../lib/use-resource'
+import { shortId } from '../admin/format'
+import type { ParticipantDetail, PositionDetail } from './types'
+
+const LINK = 'text-primary font-semibold hover:underline'
+const MONO = 'font-data-mono-sm text-data-mono-sm'
+
+export const positionPath = (id: string): string => `/v1/positions/${id}`
+export const participantPath = (id: string): string => `/v1/participants/${id}`
+
+/** "P-1A2B" for a position, "DIST-1 · Ann Example" for a participant; the short id while loading or unreadable. */
+export function useRefLabel(subjectType: string | null, id: string | null): string | null {
+  const position = useResource<PositionDetail>(subjectType === 'position' && id !== null ? positionPath(id) : null)
+  const participant = useResource<ParticipantDetail>(subjectType === 'participant' && id !== null ? participantPath(id) : null)
+  if (id === null) return null
+  if (position.data !== null) return position.data.position_ref
+  if (participant.data !== null) return participantText(participant.data)
+  return shortId(id)
+}
+
+function participantText(participant: Pick<ParticipantDetail, 'external_ref' | 'display_name'>): string {
+  return participant.display_name === null ? participant.external_ref : `${participant.external_ref} · ${participant.display_name}`
+}
+
+/** A position by id: its reference, linked to the genealogy explorer (SC-07), and its owner. */
+export function PositionLink({ id }: { readonly id: string }) {
+  const position = useResource<PositionDetail>(positionPath(id))
+  const owner = position.data?.owner
+  return (
+    <span className="inline-flex flex-wrap items-baseline gap-x-1.5">
+      <Link className={`${MONO} ${LINK}`} href={`/genealogy?root=${id}`}>{position.data?.position_ref ?? shortId(id)}</Link>
+      {owner != null && <span className="font-body-sm text-body-sm text-on-surface-variant">{participantText(owner)}</span>}
+    </span>
+  )
+}
+
+/** A participant by id: reference and name, linked to the participant record (SC-09). */
+export function ParticipantLink({ id }: { readonly id: string }) {
+  const participant = useResource<ParticipantDetail>(participantPath(id))
+  return <Link className={LINK} href={`/people/${id}`}>{participant.data === null ? shortId(id) : participantText(participant.data)}</Link>
+}
+
+export function SubjectLink({ subjectType, id }: { readonly subjectType: string; readonly id: string }) {
+  if (subjectType === 'position') return <PositionLink id={id} />
+  if (subjectType === 'participant') return <ParticipantLink id={id} />
+  return <span className={MONO}>{shortId(id)}</span>
+}

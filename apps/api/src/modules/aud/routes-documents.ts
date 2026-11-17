@@ -9,7 +9,7 @@ import { envelope, parse } from '../../lib/http.js'
 import { idempotent, sendIdempotent } from '../../lib/idempotency.js'
 import { caseTypesOf } from '../cas/index.js'
 import type { DocumentStore } from './document-store.js'
-import { canUploadEvidence, insertDocument, readableDocument } from './documents.js'
+import { canUploadAgreement, canUploadEvidence, insertDocument, readableDocument } from './documents.js'
 import { contentDisposition, EVIDENCE_TYPES, readEvidenceFile } from './evidence-file.js'
 
 const idParams = z.object({ id: z.uuid() })
@@ -25,7 +25,7 @@ function tenantAuth(request: FastifyRequest): TenantAuth {
 
 function uploader(request: FastifyRequest): TenantAuth {
   const auth = tenantAuth(request)
-  if (!canUploadEvidence(auth, caseTypesOf(request.server))) throw permissionDenied()
+  if (!canUploadEvidence(auth, caseTypesOf(request.server)) && !canUploadAgreement(auth)) throw permissionDenied()
   return auth
 }
 
@@ -39,17 +39,20 @@ export function registerDocumentRoutes(app: FastifyInstance, store: DocumentStor
   })
 
   app.post('/v1/documents', TENANT, async (request, reply) => {
-    const { tenantId } = uploader(request)
+    const auth = uploader(request)
     const file = await readEvidenceFile(request, maxFileBytes)
+    const allowed = file.documentClass === 'agreement' ? canUploadAgreement(auth) : canUploadEvidence(auth, caseTypesOf(request.server))
+    if (!allowed) throw permissionDenied()
+    const { tenantId } = auth
     // The Idempotency-Key's request hash covers request.body: the class, the file name and the content digest.
-    request.body = { class: 'evidence', file_name: file.fileName, sha256: file.sha256 }
+    request.body = { class: file.documentClass, file_name: file.fileName, sha256: file.sha256 }
     const id = randomUUID()
     try {
       const result = await inTenant(request, (tx) => idempotent(tx, request, async () => {
         const document = await insertDocument(tx, id, file)
         await recordAudit(tx, {
           action: 'DOCUMENT.UPLOADED', objectType: 'document', objectId: id,
-          after: { mime: file.mime, size_bytes: file.data.length, sha256: file.sha256 },
+          after: { class: file.documentClass, mime: file.mime, size_bytes: file.data.length, sha256: file.sha256 },
         })
         await store.put(tenantId, id, file.data) // last: a failed write rolls the row back
         return { statusCode: 201, body: envelope(document) }

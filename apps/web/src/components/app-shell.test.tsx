@@ -112,6 +112,23 @@ describe('AppShell', () => {
     expect(screen.getByRole('link', { name: 'Settings' }).getAttribute('aria-current')).toBeNull()
   })
 
+  it('shows the B2 entries the API grants with their icons; a genealogy case page is under Cases', async () => {
+    navigation.pathname = '/cases/genealogy/new'
+    const entries = [
+      { key: 'people', path: '/people', label: 'People' },
+      { key: 'genealogy', path: '/genealogy', label: 'Genealogy' },
+      { key: 'cases', path: '/cases', label: 'Cases' },
+      { key: 'orders', path: '/orders', label: 'Orders' },
+      { key: 'late', path: '/periods/late', label: 'Late transactions' },
+    ]
+    renderWithProviders(<AppShell realm="tenant"><Page /></AppShell>, fetchReturning(ok(me({ navigation: entries }))))
+    await screen.findByText('May invite users')
+    const links = entries.map((entry) => screen.getByRole('link', { name: entry.label }))
+    expect(links.map((link) => link.querySelector('.material-symbols-outlined')?.textContent))
+      .toEqual(['account_tree', 'lan', 'rule_folder', 'receipt_long', 'history_toggle_off'])
+    expect(links.map((link) => link.getAttribute('aria-current'))).toEqual([null, null, 'page', null, null])
+  })
+
   it('opens the navigation as an overlay from Menu and closes it with Escape', async () => {
     const user = userEvent.setup()
     renderWithProviders(<AppShell realm="tenant"><Page /></AppShell>, fetchReturning(ok(me())))

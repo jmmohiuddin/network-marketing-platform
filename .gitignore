@@ -24,3 +24,4 @@ testing/ui-screenshots/
 
 # knowledge-graph tool output
 graphify-out/
+.playwright-mcp/

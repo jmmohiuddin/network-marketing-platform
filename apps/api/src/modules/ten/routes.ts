@@ -1,13 +1,13 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify'
 import { z } from 'zod'
-import { assertStepUp, currentAuth, requireAllMarkets, requirePermission, requireRealm } from '../../lib/auth.js'
+import { assertStepUp, currentAuth, requireAllMarkets, requireAnyPermission, requirePermission, requireRealm } from '../../lib/auth.js'
+import type { Permission } from '../../lib/permissions.js'
 import { inTenant } from '../../lib/db.js'
 import { ApiError, notFound, permissionDenied } from '../../lib/errors.js'
 import { envelope, parse } from '../../lib/http.js'
 import { sendIdempotent } from '../../lib/idempotency.js'
 import { pageQuery } from '../../lib/pagination.js'
 import { changeRequestView, decideChangeRequest, listChangeRequests, withdrawChangeRequest } from './change-requests.js'
-import { requireAnyPermission } from './scope.js'
 import { canReadSetting, getEffectiveSettings, isSettingKey, SETTINGS, type SettingKey } from './settings.js'
 import { createChangeRequest, putSetting } from './settings-write.js'
 import { valueSince } from './timeline.js'
@@ -29,7 +29,10 @@ const withdrawBody = z.strictObject({ reason: reasonField })
 const changeRequestQuery = z.strictObject({ state: z.enum(['pending', 'all']).default('pending'), ...pageQuery })
 const versionsQuery = z.strictObject(pageQuery)
 const IF_MATCH = /^(?:W\/)?"?(\d{1,9})"?$/
-const SETTINGS_READERS = ['settings.manage', 'settings.approve'] as const
+// privacy.manage: the DPO reads and decides genealogy.visibility_policy (D-B2-08).
+const SETTINGS_READERS = ['settings.manage', 'settings.approve', 'privacy.manage'] as const
+const APPROVER_PERMISSIONS = [...new Set(Object.values(SETTINGS).flatMap((definition): Permission[] =>
+  definition.approverPermission === null ? [] : [definition.approverPermission]))]
 
 function settingKey(request: FastifyRequest): SettingKey {
   const { key } = parse(keyParams, request.params)
@@ -70,7 +73,8 @@ export function registerSettingsRoutes(app: FastifyInstance): void {
 
   app.get('/v1/settings/versions', { preHandler: [requireRealm('tenant'), requireAnyPermission(...SETTINGS_READERS)] }, async (request) => {
     const query = parse(versionsQuery, request.query)
-    return inTenant(request, (tx) => listVersions(tx, query))
+    const auth = currentAuth(request)
+    return inTenant(request, (tx) => listVersions(tx, query, (key) => canReadSetting(auth.permissions, key)))
   })
 
   app.get('/v1/settings/versions/:version', { preHandler: [requireRealm('tenant'), requireAnyPermission(...SETTINGS_READERS)] }, async (request) => {
@@ -103,10 +107,10 @@ export function registerSettingsRoutes(app: FastifyInstance): void {
     const value: unknown = parse(z.object({ value: definition.schema }), { value: body.value }).value
     const effectiveFrom = body.effective_from === undefined ? null : new Date(body.effective_from)
     const write = { key, value, reason: body.reason, effectiveFrom, expectedVersion: version }
-    if (definition.moneyAffecting) {
+    if (definition.approverPermission !== null) {
       if (effectiveFrom === null) {
-        throw new ApiError(400, 'VALIDATION_FAILED', 'A money-affecting setting needs an effective date.', {
-          issues: [{ path: 'effective_from', message: 'required for money-affecting settings' }],
+        throw new ApiError(400, 'VALIDATION_FAILED', 'A setting that needs an approval needs an effective date.', {
+          issues: [{ path: 'effective_from', message: 'required for settings that need an approval' }],
         })
       }
       const changeRequest = await inTenant(request, async (tx) => {
@@ -123,19 +127,22 @@ export function registerSettingsRoutes(app: FastifyInstance): void {
 
   app.get('/v1/setting-change-requests', { preHandler: [requireRealm('tenant'), requireAnyPermission(...SETTINGS_READERS)] }, async (request) => {
     const query = parse(changeRequestQuery, request.query)
-    return inTenant(request, (tx) => listChangeRequests(tx, query))
+    const auth = currentAuth(request)
+    const keys = Object.keys(SETTINGS).filter((key) => canReadSetting(auth.permissions, key))
+    return inTenant(request, (tx) => listChangeRequests(tx, { ...query, keys }))
   })
 
   app.post(
     '/v1/setting-change-requests/:id/decision',
-    { preHandler: [requireRealm('tenant'), requirePermission('settings.approve'), requireAllMarkets('settings.approve')] },
+    // The key's approverPermission (all markets) is checked once the request is loaded (D-B2-08).
+    { preHandler: [requireRealm('tenant'), requireAnyPermission(...APPROVER_PERMISSIONS)] },
     async (request, reply) => {
       assertStepUp(request)
       const { id } = parse(idParams, request.params)
       const body = parse(decisionBody, request.body)
-      const factorVerifiedAt = currentAuth(request).stepUpAt
+      const auth = currentAuth(request)
       const result = await decideWithSod(request, async (tx) => ({
-        statusCode: 200, body: envelope(await decideChangeRequest(tx, id, { ...body, factorVerifiedAt })),
+        statusCode: 200, body: envelope(await decideChangeRequest(tx, id, { ...body, factorVerifiedAt: auth.stepUpAt }, auth)),
       }))
       return sendIdempotent(reply, result)
     },

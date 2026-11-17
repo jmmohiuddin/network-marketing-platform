@@ -4,7 +4,8 @@ import { caseTypeRegistry, mountCaseTypes, type CaseTypeDefinition } from './typ
 
 /**
  * Case framework (CAS, FR-CAS-001, API-30): one case model, state machine, evidence, separation-of-duties decisions
- * and immutable history for every registered case type. Types arrive with their subjects (D-B1-13).
+ * and immutable history for every registered case type. Types arrive with their subjects (D-B1-13); modules/index.ts
+ * mounts it with the B2 types.
  */
 export function createCasModule(options: { types: readonly CaseTypeDefinition[] }): ApiModule {
   return {
@@ -17,10 +18,9 @@ export function createCasModule(options: { types: readonly CaseTypeDefinition[] 
   }
 }
 
-/** No case type is enabled in B1, so this module is not in defaultModules (D-B1-13); B2 mounts it with its first types. */
-export const casModule: ApiModule = createCasModule({ types: [] })
-
 export { canReadCase, casePermissions, holdsFor } from './access.js'
+export type { NewCase } from './cases.js'
+export { openSystemCase } from './system-cases.js'
 export {
   CASE_TYPES, caseTypesOf, type CaseRecord, type CaseState, type CaseType, type CaseTypeDefinition, type CaseTypePermissions,
   type CaseTypeRegistry,

@@ -8,13 +8,16 @@ import { TabPanel, Tabs } from '../../components/tabs'
 import { useToast } from '../../components/toast'
 import { isNotAvailable } from '../../lib/messages'
 import { useSession } from '../../lib/session'
+import { useResource } from '../../lib/use-resource'
 import { LoadFailure, useTabParam } from '../admin/page-states'
 import { usePagedList, type PagedList } from '../admin/resource'
 import { NOTE } from '../admin/ui'
 import { ApiKeysTab } from './api-keys-tab'
+import { ConnectorsTab } from './connectors-tab'
+import { HealthTab } from './health-tab'
 import { failingEndpointCount, usableKeyCount } from './format'
 import { CreateServiceAccountDialog } from './key-dialogs'
-import { SERVICE_ACCOUNTS_PATH, WEBHOOK_ENDPOINTS_PATH, type IssuedSecret, type ServiceAccount, type WebhookEndpoint } from './types'
+import { CONNECTORS_PATH, SERVICE_ACCOUNTS_PATH, WEBHOOK_ENDPOINTS_PATH, type Connector, type IssuedSecret, type ServiceAccount, type WebhookEndpoint } from './types'
 import { OneTimeSecretDialog } from './ui'
 import { CreateEndpointDialog } from './webhook-dialogs'
 import { WebhooksTab } from './webhooks-tab'
@@ -22,7 +25,8 @@ import { WebhooksTab } from './webhooks-tab'
 const ID_PREFIX = 'integrations'
 const LOST_SECRET = 'If you did not store it, rotate the secret with no grace period.'
 
-type PageDialog = { readonly kind: 'account' | 'endpoint' } | { readonly kind: 'secret'; readonly issued: IssuedSecret }
+type FormKind = 'account' | 'endpoint' | 'connector'
+type PageDialog = { readonly kind: FormKind } | { readonly kind: 'secret'; readonly issued: IssuedSecret }
 
 const paged = (list: PagedList<unknown>) => list.pagination.hasNext || list.pagination.hasPrevious
 
@@ -44,33 +48,59 @@ function IntegrationKpis({ accounts, endpoints }: { readonly accounts: PagedList
   )
 }
 
+const HEADER_SUMMARY = 'API keys for the systems that read your data, webhooks that tell your systems when something happens, and the storefronts that send orders.'
+
+/** integration.read without integration.manage (Commission analyst): the sync health tab only (PLAN B2 2.7). */
+function HealthOnlyPage() {
+  return (
+    <>
+      <PageHeader title="Integrations" summary="How current the orders from each storefront and API source are." />
+      <HealthTab />
+    </>
+  )
+}
+
 /**
- * SC-13 Integrations (FR-IAM-006, FR-INT-001; PLAN B1 5): public API keys of service accounts and webhook
- * subscriptions with their deliveries. integration.manage; minting, rotating and revoking ask for step-up.
+ * SC-13 Integrations (FR-IAM-006, FR-INT-001, FR-ORD-002, FR-INT-002; PLAN B1 5, B2 5): public API keys of service
+ * accounts, webhook subscriptions with their deliveries, storefront connectors and sync health. integration.manage;
+ * minting, rotating and revoking ask for step-up. Holders of integration.read alone see sync health only.
  */
 export function IntegrationsPage() {
+  const { can } = useSession()
+  return can('integration.manage') ? <ManagedIntegrationsPage /> : <HealthOnlyPage />
+}
+
+function ManagedIntegrationsPage() {
   const { readOnly } = useSession()
   const toast = useToast()
   const accounts = usePagedList<ServiceAccount>(SERVICE_ACCOUNTS_PATH)
   const endpoints = usePagedList<WebhookEndpoint>(WEBHOOK_ENDPOINTS_PATH)
+  const connectors = useResource<readonly Connector[]>(CONNECTORS_PATH)
   const [dialog, setDialog] = useState<PageDialog | null>(null)
   const known = (list: PagedList<unknown>) => !list.loading && list.error === null && !paged(list)
   const tabs = [
     { id: 'api-keys', label: 'Public API keys', ...(known(accounts) ? { count: accounts.rows.length } : {}) },
     { id: 'webhooks', label: 'Webhook subscriptions', ...(known(endpoints) ? { count: endpoints.rows.length } : {}) },
+    { id: 'connectors', label: 'Storefront connectors', ...(connectors.data === null ? {} : { count: connectors.data.length }) },
+    { id: 'health', label: 'Sync health' },
   ]
   const [tab, selectTab] = useTabParam(tabs)
   const failure = [accounts.error, endpoints.error].find(isNotAvailable)
   if (failure !== undefined) return <LoadFailure error={failure} onRetry={accounts.reload} />
   const close = () => setDialog(null)
-  const primary = tab === 'api-keys'
-    ? <Button variant="primary" icon="add_circle" data-testid="primary-action" onClick={() => setDialog({ kind: 'account' })}>Create service account</Button>
-    : <Button variant="primary" icon="add_circle" data-testid="primary-action" onClick={() => setDialog({ kind: 'endpoint' })}>Add webhook endpoint</Button>
+  const primaries: Readonly<Record<string, { readonly label: string; readonly kind: FormKind }>> = {
+    'api-keys': { label: 'Create service account', kind: 'account' },
+    webhooks: { label: 'Add webhook endpoint', kind: 'endpoint' },
+    connectors: { label: 'Add connector', kind: 'connector' },
+  }
+  const action = primaries[tab]
+  const primary = action === undefined ? undefined
+    : <Button variant="primary" icon="add_circle" data-testid="primary-action" onClick={() => setDialog({ kind: action.kind })}>{action.label}</Button>
   return (
     <>
       <PageHeader
         title="Integrations"
-        summary="API keys for the systems that read your data, and webhooks that tell your systems when something happens."
+        summary={HEADER_SUMMARY}
         actions={readOnly ? undefined : primary}
       />
       <IntegrationKpis accounts={accounts} endpoints={endpoints} />
@@ -79,6 +109,8 @@ export function IntegrationsPage() {
         <TabPanel idPrefix={ID_PREFIX} tabId={tab}>
           {tab === 'api-keys' && <ApiKeysTab accounts={accounts} onChanged={accounts.reload} />}
           {tab === 'webhooks' && <WebhooksTab endpoints={endpoints} onChanged={endpoints.reload} />}
+          {tab === 'connectors' && <ConnectorsTab connectors={connectors} adding={dialog?.kind === 'connector'} onAddClosed={close} />}
+          {tab === 'health' && <HealthTab />}
         </TabPanel>
       </div>
       {dialog?.kind === 'account' && (

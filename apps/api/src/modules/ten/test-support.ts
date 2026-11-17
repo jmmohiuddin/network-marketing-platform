@@ -44,3 +44,19 @@ export async function fixturePackRule(pack: string, options: { basisStatus: 'scr
   )
   return id
 }
+
+/** FIXTURE: an agreement version of the market (D-B2-15) with its agreement document, published by `userId`. */
+export async function publishedAgreement(tenantId: string, marketId: string, userId: string, label = 'v1'): Promise<string> {
+  const documentId = randomUUID()
+  await ownerRows(
+    `INSERT INTO document (id, tenant_id, class, storage_key, sha256, mime, size_bytes, uploaded_by, version, created_by, file_name)
+     VALUES ($1, $2, 'agreement', $3, $4, 'application/pdf', 1024, $5, 1, $5, 'agreement.pdf')`,
+    [documentId, tenantId, `documents/${documentId}`, createHash('sha256').update(documentId).digest(), userId],
+  )
+  const [row] = await ownerRows<{ id: string }>(
+    `INSERT INTO agreement_version (tenant_id, market_id, label, document_id, acceptance_required, published_by)
+     VALUES ($1, $2, $3, $4, true, $5) RETURNING id`,
+    [tenantId, marketId, label, documentId, userId],
+  )
+  return row!.id
+}

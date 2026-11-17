@@ -1,6 +1,7 @@
 // Local development data (nmp_dev) and the browser-test seed (nmp_e2e, `pnpm --filter @nmp/api seed:e2e`): two
 // independent vendor operators with MFA (BUG-031: bootstrap users, no inviter, so either can be the other's second
-// person) and two tenants with staff (no MFA: their forced enrolment is part of the browser test).
+// person) and two tenants with staff (no MFA: their forced enrolment is part of the browser test). nmp_e2e also gets the
+// labelled fixture market pack and market (PLAN B1 and B2 section 6).
 // Idempotent: existing rows are kept and their passwords are not changed. Refuses production, any database but the
 // local ones, and any database server not on this machine.
 import { randomBytes, randomUUID } from 'node:crypto'
@@ -30,6 +31,8 @@ const STAFF: readonly { local: string; name: string; role: BaseRoleName }[] = [
   { local: 'compliance', name: 'Compliance Officer', role: 'Compliance officer' },
   { local: 'finance', name: 'Finance Approver', role: 'Finance approver' },
   { local: 'analyst', name: 'Commission Analyst', role: 'Commission analyst' },
+  { local: 'support', name: 'Support Agent', role: 'Support agent' },
+  { local: 'dpo', name: 'Data Protection Officer', role: 'DPO' },
 ]
 
 // The two admins are the bootstrap grants of provisioning; every other privileged grant needs a second admin's approval.
@@ -186,6 +189,45 @@ export async function seedFixturePack(expectedDatabase: string): Promise<void> {
   )
 }
 
+/**
+ * PLAN B2 section 6, E2E FIXTURE: acme's market NL inserted live (the browser tests cannot commit a period, and a launch
+ * is covered by B1), with a monthly calendar from 2026-01-01 to twelve months ahead whose periods ending a month or more
+ * before this month are committed (late-transaction and correction workflows). Owner connection, like the fixture
+ * pack; needs the acme tenant. Idempotent.
+ */
+export async function seedFixtureMarket(expectedDatabase: string): Promise<void> {
+  const owner = getOwnerPool()
+  const { rows } = await owner.query<{ name: string }>('SELECT current_database() AS name')
+  if (rows[0]?.name !== expectedDatabase) {
+    throw new Error(`seed refuses the fixture market: the owner connection is on ${rows[0]?.name}, not ${expectedDatabase}`)
+  }
+  await owner.query(
+    `INSERT INTO market (tenant_id, code, currency, minor_unit, time_zone, languages, market_pack, state)
+     SELECT t.id, 'NL', 'EUR', 2, 'Europe/Amsterdam', '{nl}', $1, 'live' FROM tenant t WHERE t.slug = 'acme'
+     ON CONFLICT DO NOTHING`,
+    [E2E_FIXTURE_PACK],
+  )
+  await owner.query(
+    `INSERT INTO calendar (tenant_id, market_id, name, cadence, cutoff_time_zone, first_period_start)
+     SELECT m.tenant_id, m.id, 'NL monthly', 'monthly', 'Europe/Amsterdam', '2026-01-01'
+     FROM market m JOIN tenant t ON t.id = m.tenant_id WHERE t.slug = 'acme' AND m.code = 'NL'
+     ON CONFLICT DO NOTHING`,
+  )
+  await owner.query(
+    `INSERT INTO period (tenant_id, calendar_id, starts_at, ends_at, state)
+     SELECT c.tenant_id, c.id, s.starts_at, s.ends_at,
+            CASE WHEN s.ends_at <= date_trunc('month', now()) - interval '1 month' THEN 'committed' ELSE 'open' END
+     FROM calendar c JOIN tenant t ON t.id = c.tenant_id
+     CROSS JOIN LATERAL (
+       SELECT d AT TIME ZONE c.cutoff_time_zone AS starts_at, (d + interval '1 month') AT TIME ZONE c.cutoff_time_zone AS ends_at
+       FROM generate_series(c.first_period_start::timestamp,
+                            date_trunc('month', now() AT TIME ZONE c.cutoff_time_zone) + interval '11 months', interval '1 month') AS d
+     ) AS s
+     WHERE t.slug = 'acme' AND c.name = 'NL monthly'
+     ON CONFLICT DO NOTHING`,
+  )
+}
+
 // The seed creates known staff accounts: only the local databases of PROJECT_ENGINEERING_CONTEXT may get them.
 const SEEDABLE_DATABASES: ReadonlySet<string> = new Set(['nmp_dev', 'nmp_test', 'nmp_test_1', 'nmp_test_2', 'nmp_test_3', 'nmp_test_4', 'nmp_test_5', 'nmp_test_6', 'nmp_e2e'])
 // A fixed password (SEED_PASSWORD) makes every seeded account known: development and browser-test databases only.
@@ -239,7 +281,8 @@ export async function seed(config: Config, password: string | undefined, print: 
   for (const tenant of TENANTS) created = (await seedTenant(tenant.slug, tenant.legalName, passwordHash, print)) || created
   if (target.database === E2E_DATABASE) {
     await seedFixturePack(E2E_DATABASE)
-    print(`market pack: ${E2E_FIXTURE_PACK} (fixture)`)
+    await seedFixtureMarket(E2E_DATABASE)
+    print(`market pack: ${E2E_FIXTURE_PACK} (fixture), acme market NL live with committed past periods (fixture)`)
   }
   if (created && password === undefined) print(`password of the accounts created now: ${effective}`)
 }

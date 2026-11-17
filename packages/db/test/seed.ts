@@ -22,6 +22,9 @@ export interface TenantSeed {
   endpointId: string
   outboxEventId: string
   serviceAccountId: string
+  typeId: string
+  participantId: string
+  positionId: string
 }
 
 /**
@@ -96,7 +99,8 @@ export function seedTenantRows(ctx: TenantContext, secondUserId: string): Promis
     await insertAuditEvent(tx, tenant_id, 'TEST.SEED')
     const outboxEventId = await insertOutboxEvent(tx, tenant_id)
     const b1 = await seedB1Rows(tx, ctx, marketId, outboxEventId)
-    return { marketId, roleId, approvalId, settingsVersionId, documentId, mappingId, batchId, snapshotId, outboxEventId, ...b1 }
+    const b2 = await seedB2Rows(tx, ctx, secondUserId, marketId, b1.brandId)
+    return { marketId, roleId, approvalId, settingsVersionId, documentId, mappingId, batchId, snapshotId, outboxEventId, ...b1, ...b2 }
   })
 }
 
@@ -150,6 +154,90 @@ async function seedB1Rows(tx: Tx, ctx: TenantContext, marketId: string, outboxEv
     next_attempt_at: new Date(),
   })
   return { brandId, calendarId, caseId, endpointId, serviceAccountId }
+}
+
+const DAY_MS = 86_400_000
+
+/**
+ * One row in every B2 tenant table (PLAN B2 section 1), written through the shared SQL functions where one exists: a
+ * type proposed by the acting user and approved by secondUserId, a distributor and a customer with positions, a sponsor
+ * row, a read-model row, servicing, an agreement, a signal, an order with a line, an event and a late item.
+ */
+async function seedB2Rows(tx: Tx, ctx: TenantContext, secondUserId: string, marketId: string, brandId: string) {
+  const tenant_id = ctx.tenantId
+  const since = new Date(Date.now() - DAY_MS)
+  const typeId = await insertRow(tx, 'participant_type', {
+    tenant_id, code: 'SEED', name: 'Seed type', can_earn: true, counts_as_end_customer: true, can_sponsor: true,
+    can_hold_positions: true, state: 'pending', reason: 'seed', requested_by: ctx.userId,
+  })
+  await asUser(tx, secondUserId, async () => {
+    const approvalId = await insertRow(tx, 'approval', {
+      tenant_id, object_type: 'participant_type', object_id: typeId, preparer_id: ctx.userId, approver_id: secondUserId,
+      decision: 'approved', decided_at: new Date(),
+    })
+    await tx.query(
+      `UPDATE participant_type SET state = 'active', decided_by = $2, decided_at = now(), approval_id = $3 WHERE id = $1`,
+      [typeId, secondUserId, approvalId],
+    )
+  })
+  const one = async <T>(sql: string, params: unknown[]): Promise<T> => Object.values((await tx.query(sql, params)).rows[0]!)[0] as T
+  const customer = (ref: string) => one<string>('SELECT par_create_customer($1, $2, $3, $4)', [ref, marketId, typeId, since])
+  const participantId = await customer('seed-distributor')
+  const customerId = await customer('seed-customer')
+  const position = (owner: string) =>
+    one<string>(`SELECT gen_create_position($1, $2, $3, NULL, 'active', $4)`, [owner, marketId, brandId, since])
+  const positionId = await position(participantId)
+  await one(`SELECT gen_apply_relationship('sponsor', $1, $2, NULL, $3, 'enrolment', NULL, NULL)`, [
+    await position(customerId), positionId, since,
+  ])
+  await tx.query(
+    `INSERT INTO path_node (tenant_id, kind, model_version, position_id, path, depth, subtree_count)
+     VALUES ($1, 'sponsor', 1, $2, 'seed', 0, 1)`,
+    [tenant_id, positionId],
+  )
+  await one(`SELECT crm_set_servicer($1, $2, 'enrolment', $3, NULL, NULL)`, [customerId, positionId, since])
+  await insertRow(tx, 'participant_signal', {
+    tenant_id, participant_id: participantId, kind: 'identity_ref', digest: randomBytes(32),
+  })
+  const agreementDocumentId = await insertRow(tx, 'document', {
+    tenant_id, class: 'agreement', storage_key: 'agreement', sha256: randomBytes(32), mime: 'application/pdf',
+    size_bytes: 1, uploaded_by: ctx.userId, version: 1, file_name: 'agreement.pdf',
+  })
+  const versionId = await insertRow(tx, 'agreement_version', {
+    tenant_id, market_id: marketId, label: 'v1', document_id: agreementDocumentId, acceptance_required: true,
+    published_by: ctx.userId,
+  })
+  await insertRow(tx, 'agreement_acceptance', {
+    tenant_id, participant_id: participantId, agreement_version_id: versionId, accepted_at: since,
+  })
+  await insertRow(tx, 'product_volume_map', {
+    tenant_id, market_id: marketId, sku: 'SKU-1', item_class: 'product', volumes: { qv: '1000' }, valid_from: since,
+    reason: 'seed', created_by: ctx.userId,
+  })
+  const inbound = (key: string) => insertRow(tx, 'inbound_event', {
+    tenant_id, source: 'api:seed', idempotency_key: key, payload_hash: randomBytes(32), processed_at: new Date(),
+    state: 'processed',
+  })
+  const orderId = await insertRow(tx, 'sales_order', {
+    tenant_id, source_system: 'seed', source_order_id: 'o1', market_id: marketId, buyer_id: customerId,
+    buyer_type_id: typeId, purpose: 'customer', purpose_missing: false, attributed_position_id: positionId,
+    attribution_source: 'servicing', attribution_conflict: false, ordered_at: since, credited_at: since,
+    amount_minor: 1000, tax_minor: 0, currency: 'GBP', payload_hash: randomBytes(32), inbound_event_id: await inbound('order:seed:o1'),
+  })
+  await insertRow(tx, 'order_line', {
+    tenant_id, order_id: orderId, line_no: 1, sku: 'SKU-1', item_class: 'product', quantity: 2, amount_minor: 1000,
+    volumes: { qv: '2000' },
+  })
+  await insertRow(tx, 'order_event', {
+    tenant_id, order_id: orderId, source_system: 'seed', source_event_id: 'e1', type: 'return', occurred_at: new Date(),
+    lines: JSON.stringify([{ line_no: 1, quantity: 1 }]), refund_minor: 500, fee_minor: 0,
+    volume_effect: { total: { qv: '-1000' } }, inbound_event_id: await inbound('event:seed:e1'),
+  })
+  const { rows } = await tx.query<{ id: string }>('SELECT id FROM period LIMIT 1')
+  await insertRow(tx, 'late_transaction', {
+    tenant_id, order_id: orderId, original_period_id: rows[0]!.id, handling: 'adjust', state: 'pending',
+  })
+  return { typeId, participantId, positionId }
 }
 
 export interface VendorSeed {

@@ -27,3 +27,7 @@ _Agent: database. Read before every task; update after every task. Keep concise 
 - §P: config.ts D-B1-16 keys (+ retry base/max/give-up) with test in formats.test; db.ts `ApiKeyCaller`, `request.apiKey`, ActorType 'service_account', inTenant key branch (db.test.ts); ops tenant-creation inserts markets draft.
 - Verified: `pnpm vitest run packages/db apps/api` 869/869, typecheck + web tsc clean, seed:e2e run OK.
 - 2026-11-17 B1 review round 2: 0108 (actor binding, case submission/evidence integrity, money same-date supersede, webhook scheduled CHECK, pack-rule versions EXCLUDE) + 7 regression tests in b1-guards.test.ts. `pnpm vitest run packages apps/api` 1266/1266, typecheck clean.
+
+## B2 schema (2026-11-17)
+- Migrations 0200-0206 (19 tables, guards, shared SQL, base roles), permissions catalogue (+18, 6 privileged, B2_UPDATED_BASE_ROLES; B1 list removed), API_SCOPES +participants:write/orders:write, config D-B2-19 keys, settings registry (10 keys + approverPermission), seed STAFF support/dpo + seedFixtureMarket (nmp_e2e NL), support-session exclusions (PLAN 3, done here because the catalogue change exposed them).
+- Verified on nmp_test_2: packages/db 174/174, apps/api 1309/1309, typecheck (api + web) clean.

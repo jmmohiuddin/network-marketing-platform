@@ -29,7 +29,7 @@ interface DocumentLinkProps {
  * A stored document's download. In a read-only support session a plain link cannot send X-Support-Session, so the
  * file is fetched with it and handed to the browser's save dialog.
  */
-function DocumentLink({ document, fallback, className }: DocumentLinkProps) {
+export function DocumentLink({ document, fallback, className }: DocumentLinkProps) {
   const { readOnly } = useSession()
   const [problem, setProblem] = useState<string | null>(null)
   const name = document.file_name ?? fallback
@@ -186,6 +186,14 @@ export function GateInspector({ marketId, item, locked, limits, providers, onRec
         {item.item === 'breach_contacts' && (
           <p className={NOTE}>
             {item.detail?.contacts ?? 0} breach-notification contacts in force. They are set in <Link className="text-primary underline" href="/settings">Settings</Link>.
+          </p>
+        )}
+        {item.item === 'agreement_versions' && (
+          <p className={NOTE}>
+            {item.detail?.version == null
+              ? 'No participant agreement version is published for this market yet. '
+              : `Current version ${item.detail.version.label}, published ${formatDateTime(item.detail.version.published_at)}. `}
+            Versions are published in <Link className="text-primary underline" href="/settings#agreements-title">Settings</Link>; this item completes itself once one is.
           </p>
         )}
         {item.item === 'pack_rules' && (

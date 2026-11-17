@@ -15,10 +15,13 @@ import type { DocumentLimits, DocumentSummary } from './types'
 
 const NOTE_MAX = 2000
 
-/** POST /v1/documents (D-B1-04): one evidence file, uploaded once, then referenced by id. */
-export async function uploadEvidence(api: ApiClient, file: File, idempotencyKey: string): Promise<DocumentSummary> {
+/** Document classes POST /v1/documents takes: evidence (D-B1-04) and agreement (agreement.publish, PLAN B2 2.2). */
+export type DocumentClass = 'evidence' | 'agreement'
+
+/** POST /v1/documents: one file, uploaded once, then referenced by id. */
+export async function uploadEvidence(api: ApiClient, file: File, idempotencyKey: string, documentClass: DocumentClass = 'evidence'): Promise<DocumentSummary> {
   const form = new FormData()
-  form.append('class', 'evidence')
+  form.append('class', documentClass)
   form.append('file', file)
   return (await api.post<DocumentSummary>('/v1/documents', form, { idempotencyKey })).data
 }
@@ -27,7 +30,7 @@ export async function uploadEvidence(api: ApiClient, file: File, idempotencyKey:
  * The evidence document of one attempt: uploaded at most once per chosen file (its own Idempotency-Key), so a failed
  * second step retries without a second upload. Choosing another file starts again.
  */
-export function useEvidenceFile(): {
+export function useEvidenceFile(documentClass: DocumentClass = 'evidence'): {
   readonly file: File | null
   readonly choose: (files: readonly File[]) => void
   readonly upload: (api: ApiClient) => Promise<DocumentSummary>
@@ -45,7 +48,7 @@ export function useEvidenceFile(): {
     upload: async (api) => {
       if (uploaded !== null) return uploaded
       if (file === null) throw new Error('no file chosen')
-      const document = await uploadEvidence(api, file, key)
+      const document = await uploadEvidence(api, file, key, documentClass)
       setUploaded(document)
       return document
     },

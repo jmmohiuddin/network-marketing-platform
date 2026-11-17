@@ -14,6 +14,11 @@ const TENANT_ID_TABLES = [
   'brand', 'calendar', 'period', 'setting_change_request', 'provider_config', 'market_checklist_entry',
   'market_go_live_request', 'service_account', 'api_key', 'case_file', 'case_event', 'case_evidence',
   'webhook_endpoint', 'webhook_delivery',
+  // PLAN B2 section 1
+  'participant_type', 'participant', 'participant_type_assignment', 'participant_signal', 'agreement_version',
+  'agreement_acceptance', 'position', 'position_status_history', 'position_ownership', 'relationship', 'path_model',
+  'path_node', 'customer_servicing', 'product_volume_map', 'inbound_event', 'sales_order', 'order_line', 'order_event',
+  'late_transaction',
 ]
 // Platform tables (no tenant): every realm reads them, none writes them (pack-rules.test.ts).
 const PLATFORM_TABLES = ['guardrail_rule', 'tax_rule']
@@ -75,7 +80,7 @@ describe('row visibility as nmp_app', () => {
     const owner = await getOwnerPool().connect()
     try {
       const readable = await owner.query<{ name: string }>(
-        `SELECT c.oid::regclass::text AS name FROM pg_class c
+        `SELECT replace(c.oid::regclass::text, '"', '') AS name FROM pg_class c
          WHERE c.relkind IN ('r', 'p') AND c.relnamespace IN ('public'::regnamespace, 'audit'::regnamespace)
            AND has_table_privilege('nmp_app', c.oid, 'SELECT')`,
       )

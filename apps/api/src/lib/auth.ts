@@ -102,6 +102,21 @@ export function requirePermission(...permissions: Permission[]): preHandlerAsync
   }
 }
 
+/** Any one of the listed permissions is enough. */
+export function requireAnyPermission(...permissions: Permission[]): preHandlerAsyncHookHandler {
+  return async (request) => {
+    const auth = currentAuth(request)
+    if (!permissions.some((permission) => auth.permissions.has(permission))) throw permissionDenied()
+  }
+}
+
+/** Markets reachable through any of the permissions the caller holds: null = all markets, [] = none. */
+export function scopeOfAny(auth: AuthContext, permissions: readonly Permission[]): readonly string[] | null {
+  const scopes = permissions.filter((permission) => auth.permissions.has(permission)).map((permission) => marketScope(auth, permission))
+  if (scopes.some((scope) => scope === null)) return null
+  return [...new Set(scopes.flatMap((scope) => scope ?? []))]
+}
+
 /** 403 SCOPE_NOT_HELD unless the caller holds the permission for all markets: tenant-wide objects (keys, webhooks, settings). */
 export function assertAllMarkets(auth: AuthContext, permission: Permission): void {
   if (marketScope(auth, permission) !== null) {

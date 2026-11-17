@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
-  durationLabel, fromLocalInput, isUuid, marketScopeLabel, permissionLabel, remainingLabel, requestableScopes, supportApproverRoles,
+  BASE_ROLE_PERMISSIONS, durationLabel, fromLocalInput, isUuid, marketScopeLabel, permissionLabel, remainingLabel, requestableScopes, supportApproverRoles,
   supportApproverText, supportScopeLabel, toLocalInput, unapprovableAreas,
 } from './format'
 
@@ -53,6 +53,39 @@ describe('admin format helpers', () => {
     expect(permissionLabel('market.signoff')).toBe('Sign off market launches')
     expect(permissionLabel('integration.manage')).toBe('Manage API keys and webhooks')
     expect(supportScopeLabel('market.manage')).toBe('Market launches')
+  })
+
+  it('labels the 18 B2 permissions (PLAN B2 section 3)', () => {
+    const labels = {
+      'participant.read': 'View participants', 'participant.manage': 'Enrol and manage participants',
+      'participant.terminate': 'Terminate positions', 'participant_type.approve': 'Approve participant types',
+      'agreement.publish': 'Publish agreement versions', 'genealogy.read': 'View genealogy',
+      'case.genealogy.read': 'View genealogy cases', 'case.genealogy.create': 'File genealogy cases',
+      'case.genealogy.approve': 'Approve genealogy cases', 'case.duplicate.read': 'View duplicate cases',
+      'case.duplicate.create': 'Investigate duplicates', 'case.duplicate.approve': 'Decide duplicate cases',
+      'servicing.manage': 'Manage customer servicing', 'order.read': 'View orders', 'product.manage': 'Manage product volumes',
+      'late.manage': 'Decide late transactions', 'integration.read': 'View integration health', 'privacy.manage': 'Approve privacy policies',
+    }
+    expect(Object.fromEntries(Object.keys(labels).map((permission) => [permission, permissionLabel(permission)]))).toEqual(labels)
+  })
+
+  it('names the read-only B2 support areas and only those (support/sessions.ts exclusions)', () => {
+    expect(['participant.read', 'genealogy.read', 'case.genealogy.read', 'case.duplicate.read', 'order.read', 'integration.read'].map(supportScopeLabel))
+      .toEqual(['Participants', 'Genealogy', 'Genealogy cases', 'Duplicate cases', 'Orders', 'Integration health'])
+    for (const writeOnly of ['participant.manage', 'servicing.manage', 'late.manage', 'privacy.manage']) expect(supportScopeLabel(writeOnly)).toBe(writeOnly)
+  })
+
+  it('carries the B2 base-role permissions (permissions.ts BASE_ROLES)', () => {
+    expect(BASE_ROLE_PERMISSIONS['Support agent']).toEqual([
+      'participant.read', 'participant.manage', 'genealogy.read', 'case.genealogy.read', 'case.genealogy.create',
+      'case.duplicate.read', 'case.duplicate.create', 'servicing.manage', 'order.read',
+    ])
+    expect(BASE_ROLE_PERMISSIONS.DPO).toEqual(['compliance.read', 'audit.read', 'participant.unmask', 'participant.read', 'privacy.manage'])
+    expect(BASE_ROLE_PERMISSIONS['Compliance officer']).toContain('participant.terminate')
+    expect(BASE_ROLE_PERMISSIONS['Tenant admin']).toEqual(expect.arrayContaining(['participant.read', 'order.read', 'product.manage', 'integration.read']))
+    expect(BASE_ROLE_PERMISSIONS['Commission analyst']).toContain('late.manage')
+    expect(BASE_ROLE_PERMISSIONS['Payout officer']).toEqual(['participant.unmask', 'participant.read'])
+    expect(BASE_ROLE_PERMISSIONS['Finance approver']).toEqual(expect.arrayContaining(['participant.read', 'order.read']))
   })
 
   it('BUG-048: never offers compensation plans as a support area', () => {

@@ -1,14 +1,13 @@
 import type { Tx } from '@nmp/db'
-import type { FastifyInstance, FastifyReply, FastifyRequest, preHandlerAsyncHookHandler } from 'fastify'
+import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify'
 import { z } from 'zod'
 import { recordAudit } from '../../lib/audit.js'
-import { currentAuth, hasPermission, marketScope, requirePermission, requireRealm } from '../../lib/auth.js'
+import { currentAuth, hasPermission, marketScope, requireAnyPermission, requirePermission, requireRealm } from '../../lib/auth.js'
 import { inTenant } from '../../lib/db.js'
 import { permissionDenied } from '../../lib/errors.js'
 import { envelope, parse } from '../../lib/http.js'
 import { idempotent, sendIdempotent } from '../../lib/idempotency.js'
 import { decodeCursor, pageQuery, toPage } from '../../lib/pagination.js'
-import type { Permission } from '../../lib/permissions.js'
 import { apiKeyOrSession } from '../iam/index.js'
 import { batchDataQuality } from '../imp/index.js'
 import { drillPage, drillTarget, exportDrillRows, type DrillExport } from './drill.js'
@@ -39,13 +38,6 @@ const rowsQuery = z.strictObject({
 })
 const snapshotCursor = z.uuid()
 const rowCursor = z.string().min(1).max(300)
-
-function requireAnyPermission(...permissions: Permission[]): preHandlerAsyncHookHandler {
-  return async (request) => {
-    const auth = currentAuth(request)
-    if (!permissions.some((permission) => hasPermission(auth, permission))) throw permissionDenied()
-  }
-}
 
 /** A key caller sees every market of its tenant (RLS still isolates tenants); a session caller its compliance.read markets. */
 function readScope(request: FastifyRequest): MarketScope {

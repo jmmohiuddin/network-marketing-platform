@@ -6,14 +6,13 @@ import type { LightMyRequestResponse } from 'fastify'
 import { afterAll, beforeAll, describe, expect, test, vi } from 'vitest'
 import { BASE_ROLES, isPrivileged, type BaseRoleName, type Permission } from '../../src/lib/permissions.js'
 import type { SettingKey } from '../../src/modules/ten/settings.js'
-import { FIXTURE_REASONS, FIXTURE_SUBJECT } from '../../src/modules/cas/test-support.js'
 import { multipartBody, tinyFiles } from '../../src/modules/imp/test-support.js'
 import {
   baseRoleId, buildTestApp, call, closePoolsAfterAll, createMarket, createSignedInUser, ownerRows, resetApiDb, type TestUser,
 } from '../helpers/index.js'
 import type { CaseRequest } from '../isolation/cases.js'
 import { routesOf } from '../isolation/route-registry.js'
-import { MARKET_CODE, PACK, seedTenants, SUITE_MODULES, type Seeded } from '../isolation/seed.js'
+import { MARKET_CODE, PACK, SEED_TIMEOUT_MS, seedTenants, SUITE_MODULES, type Seeded } from '../isolation/seed.js'
 
 // TS-36 (AC-36.1, AC-36.2, BR-SEC-05, E-SEC-02): every base role against every route buildApp() registers. A probe is
 // side-effect free (an id that exists nowhere, or a body that fails validation), so "allowed" is any answer past the
@@ -56,18 +55,37 @@ const SETTING_READERS: Readonly<Record<SettingKey, Needs>> = {
   'money.rounding_mode': any('settings.manage', 'settings.approve'),
   'money.clawback_policy': any('settings.manage', 'settings.approve'),
   'plan.activation_notice_days': any('settings.manage', 'settings.approve'),
+  // PLAN B2 section 2.1.
+  'participants.duplicate_matching': any('settings.manage', 'case.duplicate.read'),
+  'customers.reassignment_rule': any('settings.manage', 'servicing.manage'),
+  'orders.crediting_event': any('settings.manage', 'order.read'),
+  'orders.purpose_required': any('settings.manage', 'order.read'),
+  'orders.attribution_precedence': any('settings.manage', 'order.read'),
+  'orders.new_buyer_type': any('settings.manage', 'order.read'),
+  'orders.restocking_fee_volume_effect': any('settings.manage', 'order.read'),
+  'integrations.sync_health': any('settings.manage', 'integration.read'),
+  'genealogy.visibility_policy': any('settings.manage', 'privacy.manage', 'genealogy.read'),
+  'genealogy.placement_width': any('settings.manage', 'genealogy.read'),
 }
 const SETTING_KEYS = Object.keys(SETTING_READERS) as SettingKey[]
 const MAPPING_READERS = any('import.manage', 'mapping.edit', 'mapping.approve')
-const SETTINGS_HISTORY = any('settings.manage', 'settings.approve')
+// A key's approver reads and decides its change requests (PLAN B2 2.1: privacy.manage for the visibility policy).
+const SETTINGS_HISTORY = any('settings.manage', 'settings.approve', 'privacy.manage')
 const STRUCTURE_READERS = any('settings.manage', 'market.manage', 'market.signoff')
 const LAUNCH_READERS = any('market.manage', 'market.signoff')
 const SETTINGS_MANAGE = all('settings.manage')
 const MARKET_MANAGE = all('market.manage')
 const INTEGRATION = all('integration.manage')
-// Evidence uploaders: launch preparers and signers, and the create permission of a registered case type (the suite
-// mounts CAS with its fixture type: create import.manage, read compliance.read).
-const UPLOADERS = any('market.manage', 'market.signoff', 'import.manage')
+// Evidence uploaders: launch preparers and signers, and the create permission of a registered case type; agreement
+// publishers upload agreement documents (PLAN B2 2.2).
+const UPLOADERS = any('market.manage', 'market.signoff', 'case.genealogy.create', 'case.duplicate.create', 'agreement.publish')
+const CASE_READERS = any('case.genealogy.read', 'case.duplicate.read')
+const PARTICIPANT_READ = all('participant.read')
+const PARTICIPANT_MANAGE = all('participant.manage')
+const GENEALOGY_READ = all('genealogy.read')
+const ORDER_READ = all('order.read')
+const LATE = all('late.manage')
+const TODAY = new Date().toISOString()
 // A case id that exists nowhere has no type, so no permission can be checked: 404 for every role.
 const caseProbe = (path: string, body?: unknown) => probe(everyone, 'POST', `/v1/cases/${NOWHERE}/${path}`, body)
 const ROWS = `/v1/compliance/snapshots/${NOWHERE}/figures/R1.2025-01.customer_share_pct/rows`
@@ -144,7 +162,7 @@ const PROBES: Readonly<Record<string, readonly Probe[]>> = {
   'GET /v1/settings/versions': [read(SETTINGS_HISTORY, '/v1/settings/versions')],
   'GET /v1/settings/versions/:version': [read(SETTINGS_HISTORY, '/v1/settings/versions/2000000000')],
   'GET /v1/setting-change-requests': [read(SETTINGS_HISTORY, '/v1/setting-change-requests')],
-  'POST /v1/setting-change-requests/:id/decision': [probe(all('settings.approve'), 'POST', `/v1/setting-change-requests/${NOWHERE}/decision`, {})],
+  'POST /v1/setting-change-requests/:id/decision': [probe(any('settings.approve', 'privacy.manage'), 'POST', `/v1/setting-change-requests/${NOWHERE}/decision`, {})],
   'POST /v1/setting-change-requests/:id/withdraw': [probe(SETTINGS_MANAGE, 'POST', `/v1/setting-change-requests/${NOWHERE}/withdraw`, {})],
   'GET /v1/markets/:id': [read(STRUCTURE_READERS, `/v1/markets/${NOWHERE}`)],
   'POST /v1/markets': [probe(SETTINGS_MANAGE, 'POST', '/v1/markets', {})],
@@ -192,16 +210,76 @@ const PROBES: Readonly<Record<string, readonly Probe[]>> = {
   'GET /v1/documents/:id': [read(everyone, `/v1/documents/${NOWHERE}`)],
   'GET /v1/documents/:id/content': [read(everyone, `/v1/documents/${NOWHERE}/content`)],
   // The body is checked before the permission (cas/routes.ts): a valid one about a subject that exists nowhere.
-  'POST /v1/cases': [probe(all('import.manage'), 'POST', '/v1/cases', {
-    type: 'adjustment', subject_type: FIXTURE_SUBJECT, subject_id: NOWHERE, reason_code: FIXTURE_REASONS[0], payload: { amount_minor: '1' },
-  })],
-  'GET /v1/cases': [read(all('compliance.read'), '/v1/cases')],
+  'POST /v1/cases': [
+    probe(all('case.genealogy.create'), 'POST', '/v1/cases', {
+      type: 'genealogy_change', subject_type: 'position', subject_id: NOWHERE, reason_code: 'PARTICIPANT_REQUEST',
+      payload: { kind: 'sponsor', proposed_parent_position_id: NOWHERE, effective_from: TODAY },
+    }),
+    probe(all('case.duplicate.create'), 'POST', '/v1/cases', {
+      type: 'duplicate', subject_type: 'participant', subject_id: NOWHERE, reason_code: 'STAFF_SUSPICION',
+      payload: { matched_participant_id: NOWHERE, matched_kinds: [] },
+    }),
+  ],
+  'GET /v1/cases': [read(CASE_READERS, '/v1/cases')],
   'GET /v1/cases/:id': [read(everyone, `/v1/cases/${NOWHERE}`)],
   'POST /v1/cases/:id/evidence': [caseProbe('evidence', {})],
   'POST /v1/cases/:id/assign': [caseProbe('assign', {})],
   'POST /v1/cases/:id/submit': [caseProbe('submit', {})],
   'POST /v1/cases/:id/decision': [caseProbe('decision', {})],
   'POST /v1/cases/:id/withdraw': [caseProbe('withdraw', {})],
+  'PATCH /v1/cases/:id': [probe(everyone, 'PATCH', `/v1/cases/${NOWHERE}`, {})],
+  'GET /v1/cases/counts': [read(CASE_READERS, '/v1/cases/counts')],
+  // PAR / CRM (PLAN B2 2.2, 2.3)
+  'GET /v1/participant-types': [read(any('participant.read', 'settings.manage', 'participant_type.approve'), '/v1/participant-types')],
+  'POST /v1/participant-types': [probe(SETTINGS_MANAGE, 'POST', '/v1/participant-types', {})],
+  'POST /v1/participant-types/:id/decision': [probe(all('participant_type.approve'), 'POST', `/v1/participant-types/${NOWHERE}/decision`, {})],
+  'POST /v1/participant-types/:id/withdraw': [probe(SETTINGS_MANAGE, 'POST', `/v1/participant-types/${NOWHERE}/withdraw`, {})],
+  'GET /v1/participants': [read(PARTICIPANT_READ, '/v1/participants')],
+  'POST /v1/participants': [probe(PARTICIPANT_MANAGE, 'POST', '/v1/participants', {})],
+  'GET /v1/participants/:id': [read(PARTICIPANT_READ, `/v1/participants/${NOWHERE}`)],
+  'POST /v1/participants/:id/unmask': [probe(all('participant.unmask'), 'POST', `/v1/participants/${NOWHERE}/unmask`, {})],
+  'POST /v1/participants/:id/type': [probe(PARTICIPANT_MANAGE, 'POST', `/v1/participants/${NOWHERE}/type`, {})],
+  'POST /v1/participants/:id/positions': [probe(PARTICIPANT_MANAGE, 'POST', `/v1/participants/${NOWHERE}/positions`, {})],
+  'POST /v1/participants/:id/agreement-acceptances': [probe(PARTICIPANT_MANAGE, 'POST', `/v1/participants/${NOWHERE}/agreement-acceptances`, {})],
+  'POST /v1/participants/:id/signals': [probe(PARTICIPANT_MANAGE, 'POST', `/v1/participants/${NOWHERE}/signals`, {})],
+  'GET /v1/agreement-versions': [read(any('participant.read', 'agreement.publish', 'market.manage', 'market.signoff'), '/v1/agreement-versions')],
+  'POST /v1/agreement-versions': [probe(all('agreement.publish'), 'POST', '/v1/agreement-versions', {})],
+  'PUT /v1/customers/:id/servicing': [probe(all('servicing.manage'), 'PUT', `/v1/customers/${NOWHERE}/servicing`, {})],
+  'GET /v1/participants/:id/servicing': [read(PARTICIPANT_READ, `/v1/participants/${NOWHERE}/servicing`)],
+  'GET /v1/positions/:id/customers': [read(PARTICIPANT_READ, `/v1/positions/${NOWHERE}/customers`)],
+  // GEN (PLAN B2 2.5). The status body is checked before the permission: valid ones; terminating needs participant.terminate.
+  'GET /v1/genealogy/tree': [read(GENEALOGY_READ, '/v1/genealogy/tree')],
+  'GET /v1/genealogy/search': [read(GENEALOGY_READ, '/v1/genealogy/search?q=nowhere')],
+  'GET /v1/positions/:id': [read(any('genealogy.read', 'participant.read'), `/v1/positions/${NOWHERE}`)],
+  'POST /v1/positions/:id/status': [
+    probe(any('participant.manage', 'participant.terminate'), 'POST', `/v1/positions/${NOWHERE}/status`, {
+      status: 'suspended', effective_from: '2026-01-01T00:00:00Z', reason: 'probe',
+    }),
+    probe(all('participant.terminate'), 'POST', `/v1/positions/${NOWHERE}/status`, {
+      status: 'terminated', effective_from: '2026-01-01T00:00:00Z', reason: 'probe',
+    }),
+  ],
+  'GET /v1/positions/:id/downline': [read(GENEALOGY_READ, `/v1/positions/${NOWHERE}/downline?viewer=${NOWHERE}`)],
+  // ORD (PLAN B2 2.6): ingestion takes API keys only, so every session is refused.
+  'POST /v1/orders': [probe(nobody, 'POST', '/v1/orders', {})],
+  'POST /v1/order-events': [probe(nobody, 'POST', '/v1/order-events', {})],
+  'GET /v1/orders': [read(ORDER_READ, '/v1/orders')],
+  'GET /v1/orders/summary': [read(ORDER_READ, '/v1/orders/summary')],
+  'GET /v1/orders/:id': [read(ORDER_READ, `/v1/orders/${NOWHERE}`)],
+  'GET /v1/inbound-events': [read(any('order.read', 'product.manage'), '/v1/inbound-events')],
+  'POST /v1/inbound-events/:id/retry': [probe(all('product.manage'), 'POST', `/v1/inbound-events/${NOWHERE}/retry`, {})],
+  'GET /v1/product-volumes': [read(any('order.read', 'product.manage'), '/v1/product-volumes')],
+  'POST /v1/product-volumes': [probe(all('product.manage'), 'POST', '/v1/product-volumes', {})],
+  'GET /v1/late-transactions': [read(LATE, '/v1/late-transactions')],
+  'POST /v1/late-transactions/preview': [probe(LATE, 'POST', '/v1/late-transactions/preview', {})],
+  'POST /v1/late-transactions/decisions': [probe(LATE, 'POST', '/v1/late-transactions/decisions', {})],
+  // INT (PLAN B2 2.6): connectors need integration.manage for all markets; sync health integration.read or .manage.
+  'GET /v1/connectors': [read(INTEGRATION, '/v1/connectors')],
+  'POST /v1/connectors': [probe(INTEGRATION, 'POST', '/v1/connectors', {})],
+  'POST /v1/connectors/:id/rotate-secret': [probe(INTEGRATION, 'POST', `/v1/connectors/${NOWHERE}/rotate-secret`, {})],
+  'POST /v1/connectors/:id/withdraw': [probe(INTEGRATION, 'POST', `/v1/connectors/${NOWHERE}/withdraw`, {})],
+  'POST /v1/connectors/:id/webhooks': [probe(everyone, 'POST', `/v1/connectors/${NOWHERE}/webhooks`, {})],
+  'GET /v1/integrations/health': [read(any('integration.read', 'integration.manage'), '/v1/integrations/health')],
 }
 
 /** Fastify's HEAD routes run their GET handler: they take the GET probes with method HEAD. */
@@ -210,7 +288,8 @@ function probesOf(route: string): readonly Probe[] | undefined {
   return PROBES[`GET ${route.slice('HEAD '.length)}`]?.map((found) => ({ ...found, request: { ...found.request, method: 'HEAD' } }))
 }
 
-const DENIALS = new Set(['PERMISSION_DENIED', 'REALM_FORBIDDEN'])
+// API_KEY_REQUIRED: a key-only route refuses every session (PLAN B2 2.6).
+const DENIALS = new Set(['PERMISSION_DENIED', 'REALM_FORBIDDEN', 'API_KEY_REQUIRED'])
 
 function classify(response: LightMyRequestResponse, method: CaseRequest['method']): string {
   if (response.statusCode === 401 || response.statusCode >= 500) return `failed ${response.statusCode}`
@@ -231,7 +310,7 @@ beforeAll(async () => {
   await resetApiDb()
   seeded = await seedTenants(app)
   for (const role of BASE_ROLES) users.set(role.name, await createSignedInUser({ tenantId: seeded.a.id, roles: [role.name], stepUp: true }))
-})
+}, SEED_TIMEOUT_MS)
 
 afterAll(async () => {
   await app.close()

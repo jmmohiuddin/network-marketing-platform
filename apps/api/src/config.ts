@@ -86,6 +86,10 @@ const EnvSchema = z.object({
   WEBHOOK_RETRY_MAX_SECONDS: positiveInt(21_600),
   WEBHOOK_GIVE_UP_HOURS: positiveInt(72),
   EVIDENCE_MAX_FILE_BYTES: positiveInt(10_485_760),
+  // D-B2-19 (PLAN B2): engineering limits of order ingestion and genealogy reads, not plan or compliance values.
+  ORDER_FUTURE_TOLERANCE_SECONDS: positiveInt(300),
+  GENEALOGY_FALLBACK_MAX_DEPTH: positiveInt(10_000),
+  GENEALOGY_PAGE_MAX: positiveInt(200),
 })
 
 export interface Config {
@@ -121,6 +125,12 @@ export interface Config {
   /** A delivery still failing this long after its first attempt is dead. */
   readonly webhookGiveUpHours: number
   readonly evidenceMaxFileBytes: number
+  /** An order or event timestamp may lie at most this far after the server clock. */
+  readonly orderFutureToleranceSeconds: number
+  /** Depth bound of the authorisation walk on the system of record while the path model is stale; deeper = deny. */
+  readonly genealogyFallbackMaxDepth: number
+  /** Largest page of genealogy children or downline rows. */
+  readonly genealogyPageMax: number
 }
 
 /** Validates the environment once at start-up and fails fast with every problem listed. */
@@ -161,5 +171,8 @@ export function loadConfig(env: NodeJS.ProcessEnv): Config {
     webhookRetryMaxSeconds: e.WEBHOOK_RETRY_MAX_SECONDS,
     webhookGiveUpHours: e.WEBHOOK_GIVE_UP_HOURS,
     evidenceMaxFileBytes: e.EVIDENCE_MAX_FILE_BYTES,
+    orderFutureToleranceSeconds: e.ORDER_FUTURE_TOLERANCE_SECONDS,
+    genealogyFallbackMaxDepth: e.GENEALOGY_FALLBACK_MAX_DEPTH,
+    genealogyPageMax: e.GENEALOGY_PAGE_MAX,
   }
 }

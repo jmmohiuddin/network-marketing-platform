@@ -64,6 +64,24 @@ const PERMISSION_LABELS: Readonly<Record<string, string>> = {
   'market.manage': 'Prepare market launches',
   'market.signoff': 'Sign off market launches',
   'integration.manage': 'Manage API keys and webhooks',
+  'participant.read': 'View participants',
+  'participant.manage': 'Enrol and manage participants',
+  'participant.terminate': 'Terminate positions',
+  'participant_type.approve': 'Approve participant types',
+  'agreement.publish': 'Publish agreement versions',
+  'genealogy.read': 'View genealogy',
+  'case.genealogy.read': 'View genealogy cases',
+  'case.genealogy.create': 'File genealogy cases',
+  'case.genealogy.approve': 'Approve genealogy cases',
+  'case.duplicate.read': 'View duplicate cases',
+  'case.duplicate.create': 'Investigate duplicates',
+  'case.duplicate.approve': 'Decide duplicate cases',
+  'servicing.manage': 'Manage customer servicing',
+  'order.read': 'View orders',
+  'product.manage': 'Manage product volumes',
+  'late.manage': 'Decide late transactions',
+  'integration.read': 'View integration health',
+  'privacy.manage': 'Approve privacy policies',
 }
 
 export function permissionLabel(permission: string): string {
@@ -86,6 +104,12 @@ const SUPPORT_SCOPE_LABELS: Readonly<Record<string, string>> = {
   'settings.manage': 'Settings',
   'user.manage': 'Users and roles',
   'market.manage': 'Market launches',
+  'participant.read': 'Participants',
+  'genealogy.read': 'Genealogy',
+  'case.genealogy.read': 'Genealogy cases',
+  'case.duplicate.read': 'Duplicate cases',
+  'order.read': 'Orders',
+  'integration.read': 'Integration health',
 }
 
 // BUG-048: areas with no screen to view yet (plans arrive in B3); never offered in a session request.
@@ -137,19 +161,30 @@ export function jobHealthLabel(health: { readonly queued: number; readonly runni
   return `${health.queued} queued · ${health.running} running · ${health.failed} failed`
 }
 
-/** The tenant base roles and their permissions (apps/api/src/lib/permissions.ts BASE_ROLES, PLAN B1 section 3). */
+/** The tenant base roles and their permissions (apps/api/src/lib/permissions.ts BASE_ROLES, PLAN B1 and B2 section 3). */
 export const BASE_ROLE_PERMISSIONS: Readonly<Record<string, readonly string[]>> = {
   'Tenant admin': [
     'user.manage', 'settings.manage', 'import.manage', 'mapping.edit', 'mapping.approve', 'compliance.read',
-    'audit.read', 'vendor_access.decide', 'market.manage', 'integration.manage',
+    'audit.read', 'vendor_access.decide', 'market.manage', 'integration.manage', 'participant.read', 'order.read',
+    'product.manage', 'integration.read',
   ],
-  'Commission analyst': ['compliance.read'],
+  'Commission analyst': [
+    'compliance.read', 'participant.read', 'genealogy.read', 'case.genealogy.read', 'order.read', 'late.manage',
+    'integration.read',
+  ],
   'Plan administrator': ['compliance.read'],
-  'Finance approver': ['compliance.read', 'participant.unmask', 'plan.activate', 'settings.approve'],
-  'Payout officer': ['participant.unmask'],
-  'Compliance officer': ['mapping.approve', 'compliance.read', 'snapshot.create', 'export', 'audit.read', 'market.signoff'],
-  'Support agent': [],
-  DPO: ['compliance.read', 'audit.read', 'participant.unmask'],
+  'Finance approver': ['compliance.read', 'participant.unmask', 'plan.activate', 'settings.approve', 'participant.read', 'order.read'],
+  'Payout officer': ['participant.unmask', 'participant.read'],
+  'Compliance officer': [
+    'mapping.approve', 'compliance.read', 'snapshot.create', 'export', 'audit.read', 'market.signoff',
+    'participant.read', 'participant.terminate', 'participant_type.approve', 'agreement.publish', 'genealogy.read',
+    'case.genealogy.read', 'case.genealogy.approve', 'case.duplicate.read', 'case.duplicate.approve', 'order.read',
+  ],
+  'Support agent': [
+    'participant.read', 'participant.manage', 'genealogy.read', 'case.genealogy.read', 'case.genealogy.create',
+    'case.duplicate.read', 'case.duplicate.create', 'servicing.manage', 'order.read',
+  ],
+  DPO: ['compliance.read', 'audit.read', 'participant.unmask', 'participant.read', 'privacy.manage'],
   'Implementation consultant': ['import.manage', 'mapping.edit'],
   'Executive read-only': ['compliance.read'],
   Integration: [],

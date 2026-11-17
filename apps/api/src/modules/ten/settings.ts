@@ -25,12 +25,18 @@ export interface SettingDefinition<S extends z.ZodType = z.ZodType> {
   readonly readPermissions: readonly Permission[]
   /** Security-relevant: writing needs a fresh second factor (SEC-20). */
   readonly stepUp: boolean
-  /** BR-MNY-02: a change needs a Finance approver (setting change request, FR-TEN-003); never written directly. */
-  readonly moneyAffecting: boolean
+  /**
+   * D-B2-08: the permission (all markets) of whoever approves a change, or null when the key is written directly.
+   * migration 0204's approval_setting_keys() lists exactly the keys where it is set.
+   */
+  readonly approverPermission: Permission | null
 }
 
 const COMPLIANCE_READERS: readonly Permission[] = ['settings.manage', 'compliance.read']
 const POLICY_READERS: readonly Permission[] = ['settings.manage', 'settings.approve']
+const ORDER_READERS: readonly Permission[] = ['settings.manage', 'order.read']
+const SIGNAL_KINDS = ['identity_ref', 'payment_fingerprint', 'address', 'device_id'] as const
+const unique = (values: readonly string[]): boolean => new Set(values).size === values.length
 
 /**
  * Every tenant setting key. None has a default (DEC-14, E-ADR-11): an unset threshold is null and the
@@ -38,17 +44,18 @@ const POLICY_READERS: readonly Permission[] = ['settings.manage', 'settings.appr
  */
 export const SETTINGS = {
   /** R4: personal volume (minor units) that makes an earner active. */
-  'compliance.active_pv_minor': { schema: bigintString, readPermissions: COMPLIANCE_READERS, stepUp: false, moneyAffecting: false },
+  'compliance.active_pv_minor': { schema: bigintString, readPermissions: COMPLIANCE_READERS, stepUp: false, approverPermission: null },
   /** R4: rank name -> personal volume threshold (minor units). */
   'compliance.rank_thresholds_pv_minor': {
     schema: z.record(z.string().trim().min(1).max(64), bigintString).refine((value) => Object.keys(value).length > 0, 'needs at least one rank'),
     readPermissions: COMPLIANCE_READERS,
     stepUp: false,
-    moneyAffecting: false,
+   
+    approverPermission: null,
   },
   /** R4: day of month from which an order counts as late (end-of-period threshold orders). */
   'compliance.late_order_day': {
-    schema: z.number().int().min(1).max(31), readPermissions: COMPLIANCE_READERS, stepUp: false, moneyAffecting: false,
+    schema: z.number().int().min(1).max(31), readPermissions: COMPLIANCE_READERS, stepUp: false, approverPermission: null,
   },
   /** R2: personal-use share that flags an earner, as an exact fraction (numerator <= denominator). */
   'compliance.personal_share_flag': {
@@ -57,29 +64,114 @@ export const SETTINGS = {
       .refine((ratio) => BigInt(ratio.numerator) <= BigInt(ratio.denominator), 'numerator must not exceed denominator'),
     readPermissions: COMPLIANCE_READERS,
     stepUp: false,
-    moneyAffecting: false,
+   
+    approverPermission: null,
   },
   /** FR-PRV-004: breach-notification contacts (at least one). */
   'privacy.breach_contacts': {
     schema: z.array(breachContact).min(1).max(20),
     readPermissions: ['settings.manage'],
     stepUp: true,
-    moneyAffecting: false,
+   
+    approverPermission: null,
   },
   /** BR-MNY-02: rounding of money amounts. Unset = the platform rule half-up applies (engine, B3). */
   'money.rounding_mode': {
-    schema: z.enum(['half_up', 'half_even']), readPermissions: POLICY_READERS, stepUp: false, moneyAffecting: true,
+    schema: z.enum(['half_up', 'half_even']), readPermissions: POLICY_READERS, stepUp: false, approverPermission: 'settings.approve',
   },
   /** How a refund claws back commission already paid (B4 may add per-bonus-type overrides). */
   'money.clawback_policy': {
     schema: z.strictObject({ default: z.enum(['order_line', 'restatement']) }),
     readPermissions: POLICY_READERS,
     stepUp: false,
-    moneyAffecting: true,
+   
+    approverPermission: 'settings.approve',
   },
   /** BR-PLN-04: days of notice before a plan version activates. */
   'plan.activation_notice_days': {
-    schema: z.number().int().min(0).max(365), readPermissions: POLICY_READERS, stepUp: false, moneyAffecting: false,
+    schema: z.number().int().min(0).max(365), readPermissions: POLICY_READERS, stepUp: false, approverPermission: null,
+  },
+  // PLAN B2 section 2.1: none has a default (DEC-14); each unset key's consequence is stated where it is read.
+  /** FR-PAR-003 (D-B2-10): which hashed signals match, how many must, and whether a match holds activation. */
+  'participants.duplicate_matching': {
+    schema: z
+      .strictObject({
+        signals: z.array(z.enum(SIGNAL_KINDS)).min(1).max(SIGNAL_KINDS.length).refine(unique, 'signals must be unique'),
+        min_matches: z.number().int().min(1),
+        hold_activation: z.boolean(),
+      })
+      .refine((value) => value.min_matches <= value.signals.length, 'min_matches must not exceed the number of signals'),
+    readPermissions: ['settings.manage', 'case.duplicate.read'],
+    stepUp: false,
+   
+    approverPermission: null,
+  },
+  /** FR-CRM-002 (D-B2-16): where a terminated position's customers go, and after how many days. */
+  'customers.reassignment_rule': {
+    schema: z.strictObject({
+      rule: z.enum(['sponsor', 'company', 'customer_choice']),
+      notice_days: z.number().int().min(0).max(90),
+    }),
+    readPermissions: ['settings.manage', 'servicing.manage'],
+    stepUp: false,
+   
+    approverPermission: null,
+  },
+  /** D-B2-12: the event whose time credits an order. */
+  'orders.crediting_event': {
+    schema: z.enum(['paid', 'fulfilled']), readPermissions: ORDER_READERS, stepUp: false,
+    approverPermission: null,
+  },
+  /** FR-ORD-003: an order without a purpose is flagged purpose_missing. */
+  'orders.purpose_required': {
+    schema: z.boolean(), readPermissions: ORDER_READERS, stepUp: false, approverPermission: null,
+  },
+  /** D-B2-13: attribution hint precedence. */
+  'orders.attribution_precedence': {
+    schema: z.array(z.enum(['link', 'code', 'servicing'])).min(1).max(3).refine(unique, 'precedence entries must be unique'),
+    readPermissions: ORDER_READERS,
+    stepUp: false,
+   
+    approverPermission: null,
+  },
+  /** FR-ORD-001: the type code of buyers created by ingestion. */
+  'orders.new_buyer_type': {
+    schema: z.string().regex(/^[A-Z][A-Z0-9_]{0,31}$/, 'must be a participant type code'),
+    readPermissions: ORDER_READERS,
+    stepUp: false,
+   
+    approverPermission: null,
+  },
+  /** D-B2-17: how a restocking fee affects the volume a return reverses. */
+  'orders.restocking_fee_volume_effect': {
+    schema: z.enum(['none', 'proportional']), readPermissions: ORDER_READERS, stepUp: false,
+    approverPermission: null,
+  },
+  /** FR-INT-002: lag after which a source is behind, then failing. */
+  'integrations.sync_health': {
+    schema: z
+      .strictObject({
+        behind_after_minutes: z.number().int().min(1).max(10_080),
+        failing_after_minutes: z.number().int().min(2).max(20_160),
+      })
+      .refine((value) => value.failing_after_minutes > value.behind_after_minutes, 'failing_after_minutes must exceed behind_after_minutes'),
+    readPermissions: ['settings.manage', 'integration.read'],
+    stepUp: false,
+   
+    approverPermission: null,
+  },
+  /** FR-GEN-006 (D-B2-08): named downline depth and contact visibility; a DPO approves every change. */
+  'genealogy.visibility_policy': {
+    schema: z.strictObject({ named_depth: z.number().int().min(1).max(20), contact_for_personally_sponsored: z.boolean() }),
+    readPermissions: ['settings.manage', 'privacy.manage', 'genealogy.read'],
+    stepUp: false,
+   
+    approverPermission: 'privacy.manage',
+  },
+  /** D-B2-20: placement legs per position until B3 moves the width to the plan version. */
+  'genealogy.placement_width': {
+    schema: z.number().int().min(2).max(20), readPermissions: ['settings.manage', 'genealogy.read'], stepUp: false,
+    approverPermission: null,
   },
 } as const satisfies Record<string, SettingDefinition>
 

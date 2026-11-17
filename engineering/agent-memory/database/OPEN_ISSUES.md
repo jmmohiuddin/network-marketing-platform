@@ -38,3 +38,11 @@ _Agent: database. Read before every task; update after every task. Keep concise 
 - BE3 cases: submit sets submitted_by = acting user + submitted_at; withdraw only by the opener and must set decided_at; payload/reason_code frozen after submit; case_event.actor_id must be the acting user or NULL; evidence insert on a non-open case raises 23514 (map to 409 CASE_STATE_CONFLICT).
 - BE2: provider withdraw / service-account disable must set withdrawn_by / disabled_by = acting user.
 - Evidence-vs-submit concurrency (FOR SHARE) is reasoned, not tested.
+
+## From B2 schema (2026-11-17)
+- relationship cycle check is conservative (D-B2-01 shortcut comment). gen_auto_place skips terminated nodes as parents but walks their subtree.
+- crm_set_servicer called directly (manual servicing route) still raises 23514 (unmapped) when the new row would start at/before the current one: the API must validate or map it (0207 fixed the C3 and G5 paths).
+- crm_reassign_customers re-checks each customer's end-customer type at the new valid_from: a customer whose type changed aborts the termination with CR001.
+- money_setting_keys() kept (ten/change-requests.test.ts pins it) next to approval_setting_keys(); drop once BE1 removes moneyAffecting.
+- Touched outside the DB file list to keep suites green: modules/support/sessions.ts (+test), iam/api-keys.test.ts, iam/grants.test.ts, iam/mfa.test.ts, ten/settings.test.ts, ten/change-requests.test.ts, test/authz/role-matrix.test.ts SETTING_READERS, lib/formats.test.ts.
+- nmp_dev / nmp_e2e / nmp_test are not migrated to 0206 (only nmp_test_2 was reset).

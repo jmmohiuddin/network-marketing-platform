@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, test } from 'vitest'
 import { closePoolsAfterAll, ownerRows, resetApiDb, testConfig } from '../test/helpers/index.js'
-import { assertSeedable, E2E_FIXTURE_PACK, seed, seedFixturePack } from './seed.js'
+import { assertSeedable, E2E_FIXTURE_PACK, seed, seedFixtureMarket, seedFixturePack } from './seed.js'
 
 closePoolsAfterAll()
 
@@ -31,8 +31,8 @@ describe('seed', () => {
 
     const markets = await ownerRows('SELECT code, state FROM market ORDER BY code')
 
-    expect(users).toHaveLength(12)
-    expect(credentials).toEqual([{ passwords: 12, factors: 2 }]) // written as their own users; only vendors have a factor
+    expect(users).toHaveLength(16)
+    expect(credentials).toEqual([{ passwords: 16, factors: 2 }]) // written as their own users; only vendors have a factor
     expect(users.filter((user) => user.realm === 'vendor')).toEqual([
       { email: 'operator@vendor.example', realm: 'vendor', mfa_enrolled: true },
       { email: 'operator2@vendor.example', realm: 'vendor', mfa_enrolled: true },
@@ -44,7 +44,9 @@ describe('seed', () => {
     expect(grants).toEqual([
       { name: 'Commission analyst', approved: false },
       { name: 'Compliance officer', approved: true },
+      { name: 'DPO', approved: true }, // privileged since B2 (privacy.manage): a second admin's approval
       { name: 'Finance approver', approved: true },
+      { name: 'Support agent', approved: false },
       { name: 'Tenant admin', approved: false },
       { name: 'Tenant admin', approved: false },
     ])
@@ -91,6 +93,37 @@ describe('seed', () => {
       },
     ])
     await expect(seedFixturePack('nmp_e2e')).rejects.toThrow('not nmp_e2e')
+  })
+
+  test('the e2e fixture market NL is live for acme with a monthly calendar, past periods committed; idempotent', async () => {
+    await resetApiDb()
+    const database = (await ownerRows<{ name: string }>('SELECT current_database() AS name'))[0]!.name
+    await seed(testConfig({ NODE_ENV: 'test' }), undefined, () => undefined)
+
+    await seedFixtureMarket(database)
+    await seedFixtureMarket(database)
+    const markets = await ownerRows(
+      `SELECT t.slug, m.code, m.currency, m.time_zone, m.languages, m.market_pack, m.state
+       FROM market m JOIN tenant t ON t.id = m.tenant_id WHERE m.code = 'NL'`,
+    )
+    const periods = await ownerRows<{ state: string; starts_at: Date; ends_at: Date }>(
+      `SELECT p.state, p.starts_at, p.ends_at FROM period p JOIN calendar c ON c.id = p.calendar_id
+       WHERE c.name = 'NL monthly' ORDER BY p.starts_at`,
+    )
+    const [bounds] = await ownerRows<{ committed_until: Date; months: number }>(
+      `SELECT date_trunc('month', now()) - interval '1 month' AS committed_until,
+              ((extract(year FROM x) - 2026) * 12 + extract(month FROM x) - 1)::int AS months
+       FROM (SELECT date_trunc('month', now()) + interval '12 months' AS x) AS ahead`,
+    )
+
+    expect(markets).toEqual([
+      { slug: 'acme', code: 'NL', currency: 'EUR', time_zone: 'Europe/Amsterdam', languages: ['nl'], market_pack: E2E_FIXTURE_PACK, state: 'live' },
+    ])
+    expect(periods[0]!.starts_at).toEqual(new Date('2025-12-31T23:00:00Z')) // 2026-01-01 00:00 Amsterdam
+    expect(periods.every((period) => (period.state === 'committed') === (period.ends_at <= bounds!.committed_until))).toBe(true)
+    expect(periods.filter((period) => period.state === 'committed').length).toBeGreaterThan(0)
+    expect(periods).toHaveLength(bounds!.months) // 2026-01 up to twelve months ahead
+    await expect(seedFixtureMarket('nmp_e2e')).rejects.toThrow('not nmp_e2e')
   })
 
   test('seeds only the local databases, with a fixed password only in nmp_dev and nmp_e2e', () => {

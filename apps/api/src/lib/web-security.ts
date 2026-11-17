@@ -12,17 +12,21 @@ declare module 'fastify' {
   interface FastifyContextConfig {
     /** The route takes API keys (apiKeyOrSession): bearer callers are limited per key, not here (D-B1-18). */
     apiKey?: boolean
+    /** The route authenticates by an HMAC over the raw body and carries no cookie authority (PLAN B2 2): no CSRF header. */
+    signedWebhook?: boolean
   }
 }
 
 /**
  * CSRF defence for cookie authentication (SEC-35), on top of SameSite=Strict: every unsafe request must
  * carry X-Requested-With. A cross-site form cannot set it, and a cross-site script cannot send it without
- * a CORS preflight, which this API never grants.
+ * a CORS preflight, which this API never grants. Exempt (PLAN B2 2): API key bearers (a cross-site form cannot send an
+ * Authorization header either) and signed webhooks (no cookie authority; the HMAC authenticates them).
  */
 export function registerCsrfCheck(app: FastifyInstance): void {
   app.addHook('onRequest', async (request) => {
     if (!UNSAFE_METHODS.has(request.method)) return
+    if (API_KEY_BEARER.test(request.headers.authorization ?? '') || request.routeOptions.config.signedWebhook === true) return
     const header = request.headers[CSRF_HEADER]
     if (typeof header !== 'string' || header.length === 0) {
       throw new ApiError(403, 'CSRF_HEADER_MISSING', 'Send the X-Requested-With header with this request.')

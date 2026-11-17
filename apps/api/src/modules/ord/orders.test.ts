@@ -1,0 +1,318 @@
+import { randomUUID } from 'node:crypto'
+import { withTenant } from '@nmp/db'
+import type { FastifyInstance } from 'fastify'
+import { afterAll, beforeAll, describe, expect, test } from 'vitest'
+import {
+  buildTestApp, call, closePoolsAfterAll, createMarket, createSignedInUser, createTenant, ownerRows, resetApiDb, type TestTenant, type TestUser,
+} from '../../../test/helpers/index.js'
+import { iamModule } from '../iam/index.js'
+import { ordModule } from './index.js'
+import {
+  apiKey, asKey, committedPeriod, orderBody, ordersTenant, participantWithPosition, setSettings, volumes, type OrdersTenant,
+} from './test-support.js'
+
+let app: FastifyInstance
+let acme: TestTenant
+let globex: TestTenant
+let shop: OrdersTenant
+let analyst: TestUser
+let gbPeriod: string
+
+closePoolsAfterAll()
+
+beforeAll(async () => {
+  await resetApiDb()
+  acme = await createTenant()
+  globex = await createTenant()
+  const gb = await createMarket(acme.id, 'GB')
+  const admin = await createSignedInUser({ tenantId: acme.id, roles: ['Tenant admin'], stepUp: true })
+  const approver = await createSignedInUser({ tenantId: acme.id, roles: ['Compliance officer'] })
+  analyst = await createSignedInUser({ tenantId: acme.id, roles: ['Commission analyst'] })
+  app = await buildTestApp({ modules: [iamModule, ordModule] })
+  shop = await ordersTenant(app, acme.id, gb, admin, approver)
+  gbPeriod = await committedPeriod(acme.id, gb, '2025-01-01T00:00:00Z', '2025-02-01T00:00:00Z')
+})
+
+afterAll(async () => {
+  await app.close()
+})
+
+const postOrder = (body: Record<string, unknown>, token = shop.token, key?: string) => asKey(app, token, '/v1/orders', body, key)
+const inbound = (key: string) => ownerRows<{ state: string; result: unknown; attempts: number; payload: unknown }>(
+  'SELECT state, result, attempts, payload FROM inbound_event WHERE idempotency_key = $1 ORDER BY received_at', [key],
+)
+
+describe('POST /v1/orders (API-10)', () => {
+  test('TS-15 / AC-22.1: the same order twice is one order; the second answer is 200 with the same order', async () => {
+    const body = orderBody()
+    const first = await postOrder(body)
+    const second = await postOrder(body)
+    const order = first.json().data.order
+
+    expect(first.statusCode).toBe(201)
+    expect(first.json().data).toMatchObject({ late: false, late_transactions: [] })
+    expect(order).toMatchObject({
+      source_system: 'shop', purpose: 'customer', buyer_type: { code: 'RETAIL' }, amount_minor: '3000', tax_minor: '500',
+      volumes: { bv: '14', qv: '400' }, attributed_position: null, attribution_conflict: false,
+    })
+    expect(order.lines).toEqual([
+      expect.objectContaining({ line_no: 1, sku: 'SKU-A', quantity: 2, amount_minor: '2000', volumes: { qv: '300', bv: '14' } }),
+      expect.objectContaining({ line_no: 2, sku: 'SKU-B', quantity: 1, amount_minor: '1000', volumes: { qv: '100' } }),
+    ])
+    expect(second.statusCode).toBe(200)
+    expect(second.json().data).toMatchObject({ replayed: true, order: { id: order.id } })
+    expect(await ownerRows('SELECT id FROM sales_order WHERE source_order_id = $1', [body.source_order_id])).toHaveLength(1)
+    const [audit] = await ownerRows<{ actor_type: string }>(`SELECT actor_type FROM audit.audit_event WHERE action = 'ORDER.INGESTED' AND object_id = $1`, [order.id])
+    expect(audit).toEqual({ actor_type: 'service_account' })
+    const [outbox] = await ownerRows<{ payload: unknown }>(`SELECT payload FROM outbox_event WHERE topic = 'order.ingested' AND key = $1`, [order.id])
+    expect(outbox!.payload).toEqual({ order_id: order.id, market_id: shop.marketId, source_system: 'shop' })
+  })
+
+  test('the same Idempotency-Key replays the stored answer; another body under it is 422 IDEMPOTENCY_KEY_REUSED', async () => {
+    const key = randomUUID()
+    const body = orderBody()
+    const first = await postOrder(body, shop.token, key)
+    const replay = await postOrder(body, shop.token, key)
+    const reused = await postOrder(orderBody(), shop.token, key)
+
+    expect(replay.statusCode).toBe(201)
+    expect(replay.headers['idempotent-replayed']).toBe('true')
+    expect(replay.json().data.order.id).toBe(first.json().data.order.id)
+    expect(reused.json().error.code).toBe('IDEMPOTENCY_KEY_REUSED')
+  })
+
+  test('AC-22.3: a key without orders:write is 403 and nothing is stored; sessions are refused; no credentials is 401', async () => {
+    const readKey = await apiKey(app, shop.admin, ['compliance:read'])
+    const body = orderBody()
+
+    const refused = await postOrder(body, readKey)
+    const session = await call(app, { method: 'POST', url: '/v1/orders', as: shop.admin, body, idempotencyKey: true })
+    const anonymous = await call(app, { method: 'POST', url: '/v1/orders', body, idempotencyKey: true })
+
+    expect(refused.statusCode).toBe(403)
+    expect(refused.json().error.code).toBe('SCOPE_MISSING')
+    expect(session.json().error.code).toBe('API_KEY_REQUIRED')
+    expect(anonymous.statusCode).toBe(401)
+    expect(await inbound(`order:shop:${String(body.source_order_id)}`)).toEqual([])
+  })
+
+  test('a bearer key needs no X-Requested-With; a session POST without it is still refused (CSRF)', async () => {
+    const withoutHeader = await app.inject({ method: 'POST', url: '/v1/orders', headers: { cookie: shop.admin.cookie, 'idempotency-key': randomUUID() }, payload: orderBody() })
+
+    expect(withoutHeader.json().error.code).toBe('CSRF_HEADER_MISSING')
+    expect((await postOrder(orderBody())).statusCode).toBe(201)
+  })
+
+  test('C-B2-21: an API order may not use a store connector source system; a later fulfilment time is no conflict', async () => {
+    const body = orderBody()
+    const namespaced = await postOrder(orderBody({ source_system: 'woocommerce:00000000-0000-4000-8000-000000000000' }))
+    const original = await postOrder(body)
+    const fulfilled = await postOrder({ ...body, fulfilled_at: new Date().toISOString() }, shop.token, randomUUID())
+
+    expect(namespaced.json().error.code).toBe('VALIDATION_FAILED')
+    expect(original.statusCode).toBe(201)
+    expect(fulfilled.statusCode).toBe(200)
+    expect(fulfilled.json().data.replayed).toBe(true)
+  })
+
+  test('AC-ORD1-1: the same natural key with another body is 409 ORDER_CONFLICT, persisted as a rejected inbound event', async () => {
+    const body = orderBody()
+    const original = await postOrder(body)
+    const key = randomUUID()
+    const conflict = await postOrder({ ...body, tax_minor: '600' }, shop.token, key)
+    const repeated = await postOrder({ ...body, tax_minor: '600' }, shop.token, key)
+
+    expect(conflict.statusCode).toBe(409)
+    expect(conflict.json().error).toMatchObject({ code: 'ORDER_CONFLICT' })
+    expect(repeated.statusCode).toBe(409)
+    expect((await inbound(`order:shop:${String(body.source_order_id)}`)).map((row) => row.state)).toEqual(['processed', 'rejected'])
+    const rejectedId = (await ownerRows<{ id: string }>(`SELECT id FROM inbound_event WHERE idempotency_key = $1 AND state = 'rejected'`, [`order:shop:${String(body.source_order_id)}`]))[0]!.id
+    expect(await ownerRows(`SELECT 1 FROM audit.audit_event WHERE action = 'ORDER.CONFLICT' AND object_id = $1`, [rejectedId])).toHaveLength(1)
+    expect(await ownerRows('SELECT tax_minor FROM sales_order WHERE id = $1', [original.json().data.order.id])).toEqual([{ tax_minor: '500' }])
+  })
+
+  test('T-B2-25: concurrent posts of one order (different keys) create one order', async () => {
+    const body = orderBody()
+    const answers = await Promise.all(Array.from({ length: 5 }, () => postOrder(body)))
+
+    expect(answers.map((answer) => answer.statusCode).sort()).toEqual([200, 200, 200, 200, 201])
+    expect(await ownerRows('SELECT id FROM sales_order WHERE source_order_id = $1', [body.source_order_id])).toHaveLength(1)
+  })
+})
+
+describe('T-B2-23 validation matrix: refusals are persisted, body-shape failures are not', () => {
+  const expectRefused = async (body: Record<string, unknown>, status: number, code: string, token = shop.token) => {
+    const response = await postOrder(body, token)
+    expect(response.statusCode, response.body).toBe(status)
+    expect(response.json().error.code).toBe(code)
+    const rows = await ownerRows<{ result: unknown }>(`SELECT result FROM inbound_event WHERE idempotency_key = $1 AND state = 'rejected'`, [
+      `order:${String(body.source_system)}:${String(body.source_order_id)}`,
+    ])
+    expect(rows).toEqual([{ result: { error: { code } } }])
+  }
+
+  test('fact checks of API-10', async () => {
+    await createMarket(acme.id, 'DE')
+    await ownerRows(`UPDATE market SET state = 'draft' WHERE tenant_id = $1 AND code = 'DE'`, [acme.id])
+    const future = new Date(Date.now() + 86_400_000).toISOString()
+    const lines = [{ line_no: 1, sku: 'SKU-A', quantity: 1, amount_minor: '1000' }, { line_no: 1, sku: 'SKU-B', quantity: 1, amount_minor: '2000' }]
+
+    await expectRefused(orderBody({ market: 'XX' }), 422, 'MARKET_NOT_LIVE')
+    await expectRefused(orderBody({ market: 'DE' }), 422, 'MARKET_NOT_LIVE') // TS-50 (order part)
+    await expectRefused(orderBody({ currency: 'EUR' }), 422, 'CURRENCY_MISMATCH')
+    await expectRefused(orderBody({ amount_minor: '2999' }), 422, 'TOTALS_MISMATCH')
+    await expectRefused(orderBody({ lines }), 422, 'LINE_NUMBERS_INVALID')
+    await expectRefused(orderBody({ ordered_at: future, paid_at: future }), 422, 'TIMESTAMP_IN_FUTURE')
+    await expectRefused(orderBody({ paid_at: undefined }), 422, 'CREDITING_EVENT_MISSING')
+    await expectRefused(orderBody({ purpose: 'resale' }), 422, 'PURPOSE_INVALID')
+  })
+
+  test('BUYER_TYPE_MISSING: a buyer enrolled after the crediting time', async () => {
+    const late = await participantWithPosition(acme.id, shop.admin.id, shop.marketId, shop.distributorType, new Date().toISOString())
+    const [buyer] = await ownerRows<{ external_ref: string }>('SELECT external_ref FROM participant WHERE id = $1', [late.participantId])
+    const at = new Date(Date.now() - 86_400_000).toISOString()
+
+    await expectRefused(orderBody({ buyer: { external_ref: buyer!.external_ref }, ordered_at: at, paid_at: at }), 422, 'BUYER_TYPE_MISSING')
+  })
+
+  test('settings are required, none has a default (DEC-14); another tenant\'s orders stay apart', async () => {
+    const globexAdmin = await createSignedInUser({ tenantId: globex.id, roles: ['Tenant admin'], stepUp: true })
+    await createMarket(globex.id, 'GB')
+    const token = await apiKey(app, globexAdmin, ['orders:write'])
+
+    await expectRefused(orderBody(), 422, 'CREDITING_EVENT_NOT_CONFIGURED', token)
+    await setSettings(globex.id, globexAdmin.id, { 'orders.crediting_event': 'paid' })
+    await expectRefused(orderBody(), 422, 'ATTRIBUTION_NOT_CONFIGURED', token)
+    await setSettings(globex.id, globexAdmin.id, { 'orders.attribution_precedence': ['servicing'] })
+    await expectRefused(orderBody(), 422, 'BUYER_NOT_FOUND', token)
+    await setSettings(globex.id, globexAdmin.id, { 'orders.new_buyer_type': 'NOPE' })
+    await expectRefused(orderBody(), 422, 'BUYER_TYPE_INVALID', token)
+    const acmeOrder = (await postOrder(orderBody())).json().data.order
+    const event = await asKey(app, token, '/v1/order-events', {
+      source_system: 'shop', source_event_id: randomUUID(), source_order_id: acmeOrder.source_order_id, type: 'refund',
+      occurred_at: new Date().toISOString(), refund_minor: '100', fee_minor: '0',
+    })
+    expect(event.statusCode).toBe(202) // acme's order does not exist in globex
+    expect(event.json().data.held.reason).toBe('ORDER_NOT_FOUND')
+  })
+
+  test('a body-shape failure is 400 VALIDATION_FAILED and leaves no inbound event', async () => {
+    const body = orderBody({ amount_minor: 3000 })
+    const response = await postOrder(body)
+
+    expect(response.json().error.code).toBe('VALIDATION_FAILED')
+    expect(await inbound(`order:shop:${String(body.source_order_id)}`)).toEqual([])
+  })
+})
+
+describe('T-B2-24 held orders, retry and re-post', () => {
+  test('unknown SKU -> 202 held; its first volumes row back-dated, then retry -> processed and late in the committed period (TS-13)', async () => {
+    const at = '2025-01-15T10:00:00Z'
+    const body = orderBody({ ordered_at: at, paid_at: at, lines: [{ line_no: 1, sku: 'SKU-NEW', quantity: 2, amount_minor: '3000' }] })
+    const held = await postOrder(body)
+    const again = await postOrder(body)
+    const id = held.json().data.held.inbound_event_id
+
+    expect(held.statusCode).toBe(202)
+    expect(held.json().data.held).toEqual({ inbound_event_id: id, reason: 'UNKNOWN_SKU', skus: ['SKU-NEW'] })
+    expect(again.statusCode).toBe(202)
+    expect((await inbound(`order:shop:${String(body.source_order_id)}`))[0]).toMatchObject({ state: 'held', attempts: 2 })
+    expect((await call(app, { method: 'POST', url: `/v1/inbound-events/${id}/retry`, as: analyst, body: {} })).statusCode).toBe(403)
+
+    await volumes(app, shop.admin, shop.marketId, 'SKU-NEW', { qv: '10' }, '2024-06-01T00:00:00Z')
+    const [first, second] = await Promise.all([
+      call(app, { method: 'POST', url: `/v1/inbound-events/${id}/retry`, as: shop.admin, body: {} }),
+      call(app, { method: 'POST', url: `/v1/inbound-events/${id}/retry`, as: shop.admin, body: {} }),
+    ])
+
+    const answers = [first!, second!].sort((a, b) => a.statusCode - b.statusCode)
+    expect(answers.map((answer) => answer.statusCode)).toEqual([200, 409])
+    expect(answers[1]!.json().error.code).toBe('NOT_HELD')
+    const orderId = answers[0]!.json().data.result.order_id
+    expect(answers[0]!.json().data.state).toBe('processed')
+    expect((await inbound(`order:shop:${String(body.source_order_id)}`))[0]).toMatchObject({ state: 'processed', payload: null, attempts: 3 })
+    const late = await ownerRows('SELECT original_period_id, handling, state, effect_estimate FROM late_transaction WHERE order_id = $1', [orderId])
+    expect(late).toEqual([{
+      original_period_id: gbPeriod, handling: 'adjust', state: 'pending',
+      effect_estimate: { volumes: { qv: '20' }, amount_minor: '3000', attributed_position_id: null },
+    }])
+    expect(await ownerRows('SELECT period_id FROM sales_order WHERE id = $1', [orderId])).toEqual([{ period_id: gbPeriod }])
+    expect(await ownerRows('SELECT state FROM period WHERE id = $1', [gbPeriod])).toEqual([{ state: 'committed' }])
+  })
+
+  test('a re-post of a held order with a new key processes it once the SKU is mapped; another tenant cannot retry', async () => {
+    const body = orderBody({ lines: [{ line_no: 1, sku: 'SKU-LATER', quantity: 1, amount_minor: '3000' }] })
+    const held = await postOrder(body)
+    const globexAdmin = await createSignedInUser({ tenantId: globex.id, roles: ['Tenant admin'] })
+
+    const foreign = await call(app, { method: 'POST', url: `/v1/inbound-events/${held.json().data.held.inbound_event_id}/retry`, as: globexAdmin, body: {} })
+    await volumes(app, shop.admin, shop.marketId, 'SKU-LATER', { qv: '5' })
+    const processed = await postOrder(body)
+
+    expect(foreign.statusCode).toBe(404)
+    expect(processed.statusCode).toBe(201)
+    expect(processed.json().data.order.volumes).toEqual({ qv: '5' })
+  })
+})
+
+describe('T-B2-33 attribution precedence and FR-ORD-003 purpose', () => {
+  let p1: { positionRef: string; positionId: string }
+  let p2: { positionRef: string; positionId: string }
+
+  beforeAll(async () => {
+    p1 = await participantWithPosition(acme.id, shop.admin.id, shop.marketId, shop.distributorType)
+    p2 = await participantWithPosition(acme.id, shop.admin.id, shop.marketId, shop.distributorType)
+  })
+
+  const attributed = async (body: Record<string, unknown>) => {
+    const response = await postOrder(body)
+    expect(response.statusCode, response.body).toBe(201)
+    const order = response.json().data.order
+    return { position: order.attributed_position?.position_ref ?? null, source: order.attribution_source, conflict: order.attribution_conflict, order }
+  }
+
+  test('first attributed order makes the servicer (first_order); later hints that differ flag a conflict (AC-CRM1-3)', async () => {
+    const buyer = { external_ref: `customer-${randomUUID()}` }
+
+    const first = await attributed(orderBody({ buyer, attribution: { kind: 'link', position_ref: p1.positionRef } }))
+    const linked = await attributed(orderBody({ buyer, attribution: { kind: 'link', position_ref: p2.positionRef } }))
+    const coded = await attributed(orderBody({ buyer, attribution: { kind: 'code', position_ref: p2.positionRef } }))
+    const plain = await attributed(orderBody({ buyer }))
+    const unknownRef = await attributed(orderBody({ buyer, attribution: { kind: 'link', position_ref: 'NO-SUCH-REF' } }))
+
+    expect(first).toMatchObject({ position: p1.positionRef, source: 'link', conflict: false })
+    expect(await ownerRows('SELECT servicing_position_id, source FROM customer_servicing WHERE customer_id = $1', [first.order.buyer.id]))
+      .toEqual([{ servicing_position_id: p1.positionId, source: 'first_order' }])
+    expect(linked).toMatchObject({ position: p2.positionRef, source: 'link', conflict: true })
+    expect(coded).toMatchObject({ position: p2.positionRef, source: 'code', conflict: true })
+    expect(plain).toMatchObject({ position: p1.positionRef, source: 'servicing', conflict: false })
+    expect(unknownRef).toMatchObject({ position: p1.positionRef, source: 'servicing', conflict: false })
+    await setSettings(acme.id, shop.admin.id, { 'orders.attribution_precedence': ['servicing', 'link'] })
+    const servicingFirst = await attributed(orderBody({ buyer, attribution: { kind: 'link', position_ref: p2.positionRef } }))
+    await setSettings(acme.id, shop.admin.id, { 'orders.attribution_precedence': ['link', 'code', 'servicing'] })
+    expect(servicingFirst).toMatchObject({ position: p1.positionRef, source: 'servicing', conflict: true })
+  })
+
+  test('a distributor buying is credited to their own position; purpose given, unspecified, or flagged when required (TS-65)', async () => {
+    const [own] = await ownerRows<{ external_ref: string }>('SELECT external_ref FROM participant WHERE id = (SELECT participant_id FROM position_ownership WHERE position_id = $1)', [p2.positionId])
+    const buyer = { external_ref: own!.external_ref }
+
+    const resale = await attributed(orderBody({ buyer, purpose: 'resale', attribution: { kind: 'link', position_ref: p1.positionRef } }))
+    const unspecified = await attributed(orderBody({ buyer }))
+    await setSettings(acme.id, shop.admin.id, { 'orders.purpose_required': true })
+    const missing = await attributed(orderBody({ buyer }))
+    await setSettings(acme.id, shop.admin.id, { 'orders.purpose_required': null })
+
+    expect(resale).toMatchObject({ position: p2.positionRef, source: 'buyer', conflict: false })
+    expect(resale.order).toMatchObject({ purpose: 'resale', purpose_missing: false, buyer_type: { code: 'DIST' } })
+    expect(unspecified.order).toMatchObject({ purpose: 'unspecified', purpose_missing: false })
+    expect(missing.order).toMatchObject({ purpose: 'unspecified', purpose_missing: true })
+  })
+
+  test('T-B2-28: order facts are fixed: the runtime role cannot change them', async () => {
+    const { order } = await attributed(orderBody())
+    const update = withTenant({ tenantId: acme.id, userId: shop.admin.id }, (tx) => tx.query('UPDATE sales_order SET amount_minor = 1 WHERE id = $1', [order.id]))
+
+    await expect(update).rejects.toMatchObject({ code: '42501' })
+  })
+})

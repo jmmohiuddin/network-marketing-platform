@@ -17,6 +17,9 @@ export interface DocumentView {
 
 // Readers of documents that markets reference: checklist entries, provider records, go-live risk documents.
 const MARKET_READERS: readonly Permission[] = ['market.manage', 'market.signoff']
+// Readers of a market's agreement versions and so of their documents (PLAN B2 section 2.2).
+const AGREEMENT_READERS: readonly Permission[] = ['participant.read', 'agreement.publish', ...MARKET_READERS]
+const AGREEMENT_PUBLISHER: Permission = 'agreement.publish'
 
 const COLUMNS = `id, file_name, mime, size_bytes::int AS size_bytes, encode(sha256, 'hex') AS sha256, uploaded_by,
   created_at AS uploaded_at`
@@ -37,12 +40,17 @@ export function canUploadEvidence(auth: AuthContext, caseTypes: CaseTypeRegistry
   return permissions.some((permission) => holdsSomewhere(auth, permission))
 }
 
+/** Agreement documents: agreement.publish over some market. */
+export function canUploadAgreement(auth: AuthContext): boolean {
+  return holdsSomewhere(auth, AGREEMENT_PUBLISHER)
+}
+
 export async function insertDocument(tx: Tx, id: string, file: EvidenceFile): Promise<DocumentView> {
   const { rows } = await tx.query<DocumentView>(
     `INSERT INTO document (id, tenant_id, class, storage_key, sha256, mime, size_bytes, uploaded_by, version, created_by, file_name)
-     VALUES ($1, app_tenant_id(), 'evidence', $6, decode($2, 'hex'), $3, $4, app_user_id(), 1, app_user_id(), $5)
+     VALUES ($1, app_tenant_id(), $7, $6, decode($2, 'hex'), $3, $4, app_user_id(), 1, app_user_id(), $5)
      RETURNING ${COLUMNS}`,
-    [id, file.sha256, file.mime, file.data.length, file.fileName, `documents/${id}`],
+    [id, file.sha256, file.mime, file.data.length, file.fileName, `documents/${id}`, file.documentClass],
   )
   return rows[0]!
 }
@@ -53,22 +61,23 @@ async function readsAReference(tx: Tx, auth: AuthContext, documentId: string, ca
     [documentId],
   )
   for (const reference of rows) {
+    const readers = reference.object_type === 'agreement_version' ? AGREEMENT_READERS : MARKET_READERS
     const readable = reference.object_type === 'case_file'
       ? await canReadCase(tx, auth, reference.object_id, caseTypes)
-      : MARKET_READERS.some((permission) => readsMarketRecord(auth, permission, reference.market_id))
+      : readers.some((permission) => readsMarketRecord(auth, permission, reference.market_id))
     if (readable) return true
   }
   return false
 }
 
 /**
- * The evidence document if the caller uploaded it or may read an object that references it (D-B1-04,
+ * The evidence or agreement document if the caller uploaded it or may read an object that references it (D-B1-04,
  * document_references); null otherwise, so the route answers 404 whether it exists or not.
  */
 export async function readableDocument(
   tx: Tx, auth: AuthContext, id: string, caseTypes: CaseTypeRegistry,
 ): Promise<DocumentView | null> {
-  const { rows } = await tx.query<DocumentView>(`SELECT ${COLUMNS} FROM document WHERE id = $1 AND class = 'evidence'`, [id])
+  const { rows } = await tx.query<DocumentView>(`SELECT ${COLUMNS} FROM document WHERE id = $1 AND class IN ('evidence', 'agreement')`, [id])
   const document = rows[0]
   if (document === undefined) return null
   return document.uploaded_by === auth.userId || (await readsAReference(tx, auth, id, caseTypes)) ? document : null

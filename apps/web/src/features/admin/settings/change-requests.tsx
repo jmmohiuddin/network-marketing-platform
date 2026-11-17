@@ -14,13 +14,15 @@ import { FormDialog, TextAreaField } from '../form-dialog'
 import { formatDateTime, shortId } from '../format'
 import { LoadFailure } from '../page-states'
 import { NOTE, SECTION_CARD, SectionTitle } from '../ui'
-import { approverNames, keyLabel, noApproverText, valueText, withApprovers } from './labels'
+import { approvalOf, approverNames, FINANCE_APPROVAL, keyLabel, noApproverText, valueText, withApprovers, type Approval } from './labels'
 import type { ChangeRequest } from './types'
 
-export const FINANCE_APPROVER = 'Finance approver'
 const REASON_ID = 'change-request-reason'
 
 type Action = { readonly kind: 'approve' | 'reject' | 'withdraw'; readonly request: ChangeRequest }
+
+// A request whose key lost its approver is shown as a Finance one (the only approver role before B2).
+const approverOf = (request: ChangeRequest): Approval => approvalOf(request.key) ?? FINANCE_APPROVAL
 
 const TITLES = { approve: 'Approve', reject: 'Reject', withdraw: 'Withdraw' } as const
 
@@ -50,7 +52,7 @@ function RequestDialog({ action, onClose, onDone }: { readonly action: Action; r
             await api.post(`/v1/setting-change-requests/${request.id}/decision`, { decision: kind, reason: reason.trim() }, { idempotencyKey })
           }
         } catch (failure) {
-          throw withApprovers(failure, FINANCE_APPROVER)
+          throw withApprovers(failure, approverOf(request).role)
         }
         toast({ message: kind === 'approve' ? `${keyLabel(request.key)} change approved.` : kind === 'reject' ? `${keyLabel(request.key)} change rejected.` : `${keyLabel(request.key)} change withdrawn.` })
         onDone()
@@ -78,8 +80,9 @@ interface CardProps {
 
 function ChangeRequestCard({ request, single, onAction }: CardProps) {
   const { me, can, readOnly } = useSession()
+  const approval = approverOf(request)
   const own = request.requested_by.id === me.user.id
-  const canDecide = !readOnly && can('settings.approve') && !own && !request.no_eligible_approver
+  const canDecide = !readOnly && can(approval.permission) && !own && !request.no_eligible_approver
   const actions = readOnly ? undefined : (
     <>
       {own && can('settings.manage') && <Button onClick={() => onAction({ kind: 'withdraw', request })}>Withdraw</Button>}
@@ -92,33 +95,33 @@ function ChangeRequestCard({ request, single, onAction }: CardProps) {
       <RequestCard
         reference={shortId(request.id)}
         title={keyLabel(request.key)}
-        state={<StatusBadge state="pending" label="Waiting for Finance approval" />}
+        state={<StatusBadge state="pending" label={`Waiting for ${approval.short} approval`} />}
         fields={[
           { label: 'New value', value: valueText(request.key, request.value) },
           { label: 'Effective from', value: formatDateTime(request.effective_from), detail: `Based on version ${request.base_version}` },
           { label: 'Requested by', value: request.requested_by.display_name ?? 'Another user', detail: formatDateTime(request.requested_at) },
           {
             label: 'Can approve',
-            value: request.no_eligible_approver ? noApproverText(FINANCE_APPROVER) : approverNames(request.eligible_approvers),
+            value: request.no_eligible_approver ? noApproverText(approval.role) : approverNames(request.eligible_approvers),
           },
         ]}
         reason={request.reason}
         actions={actions}
       >
-        {own && <p className={NOTE}>You requested this change, so a Finance approver who did not request it must decide it.</p>}
+        {own && <p className={NOTE}>You requested this change, so a {approval.role} who did not request it must decide it.</p>}
       </RequestCard>
     </li>
   )
 }
 
-/** FR-TEN-003 money changes waiting for a Finance approver (second person, FR-IAM-004). */
+/** FR-TEN-003 changes waiting for their approver (second person, FR-IAM-004): money for Finance, visibility for the DPO. */
 export function ChangeRequestsSection({ requests, onChanged }: { readonly requests: Resource<readonly ChangeRequest[]>; readonly onChanged: () => void }) {
   const [action, setAction] = useState<Action | null>(null)
   const list = requests.data ?? []
   return (
     <section className={SECTION_CARD} aria-labelledby="change-requests-title">
       <SectionTitle id="change-requests-title" icon="pending_actions" title="Changes waiting for approval" />
-      <p className={NOTE}>Money policy changes take effect only after a Finance approver who did not request them approves.</p>
+      <p className={NOTE}>Money policy changes take effect only after a Finance approver who did not request them approves; downline depth masking after the DPO approves.</p>
       {requests.loading && <LoadingState label="Loading changes waiting for approval" />}
       {requests.error !== null && <LoadFailure error={requests.error} onRetry={requests.reload} section />}
       {requests.data !== null && list.length === 0 && <p className={NOTE}>No change is waiting for approval.</p>}

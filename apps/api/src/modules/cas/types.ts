@@ -25,7 +25,9 @@ export interface CaseRecord<P = unknown> {
   readonly effect_preview: unknown
   readonly due_at: Date | null
   readonly market_id: string | null
-  readonly opened_by: string
+  /** null for a case the system opened (D-B2-04, type duplicate only). */
+  readonly opened_by: string | null
+  readonly opened_by_kind: 'user' | 'system'
   readonly assigned_to: string | null
   readonly submitted_by: string | null
   readonly submitted_at: Date | null
@@ -50,6 +52,14 @@ export interface CaseTypeDefinition<P = unknown> {
   readonly payload: z.ZodType<P>
   /** The subject in the caller's tenant transaction, or null when it does not exist. */
   resolveSubject(tx: Tx, subjectType: string, subjectId: string): Promise<{ marketId: string | null } | null>
+  /**
+   * Type checks of a new or changed case (PLAN B2 section 2.4): runs after resolveSubject at create and after the payload
+   * is validated again at PATCH; throws an ApiError and nothing is stored. `scope`: the markets the caller's create
+   * permission covers (null = all), for objects the payload names besides the subject.
+   */
+  validateCreate?(
+    tx: Tx, subject: { readonly type: string; readonly id: string }, payload: P, scope: readonly string[] | null,
+  ): Promise<void>
   effectPreview?(tx: Tx, c: CaseRecord<P>): Promise<unknown>
   dueAt?(tx: Tx, c: CaseRecord<P>): Promise<Date | null>
   /** Runs in the decision's transaction, after the case is approved or rejected. */

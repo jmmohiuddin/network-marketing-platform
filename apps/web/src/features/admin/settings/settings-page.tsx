@@ -1,7 +1,7 @@
 'use client'
 
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { Banner } from '../../../components/banner'
 import { Button } from '../../../components/button'
 import { PageHeader } from '../../../components/page-header'
@@ -13,9 +13,11 @@ import { formatDateTime } from '../format'
 import { LoadFailure } from '../page-states'
 import type { BreachContact } from '../types'
 import { NOTE, NoticeCard, SECTION_CARD, SectionTitle } from '../ui'
+import { AgreementsSection } from './agreements'
 import { BreachContactsDialog } from './breach-contacts-dialog'
 import { ChangeRequestsSection } from './change-requests'
 import { POLICY_KEYS, valueText, type PolicyKey } from './labels'
+import { ParticipantTypesSection } from './participant-types'
 import type { SettingKey } from './setting-dialog'
 import { ContactCard, SettingRow } from './setting-row'
 import { ActivePvDialog, LateOrderDayDialog, PersonalShareDialog, RankThresholdsDialog, type PersonalShare } from './threshold-dialogs'
@@ -39,6 +41,43 @@ export function unsetThresholdsTitle(thresholds: readonly SettingEntry[]): strin
   return unset === 1 ? '1 threshold is not set' : `${unset} thresholds are not set`
 }
 
+/** Permissions that read GET /v1/settings (ten/routes.ts SETTINGS_READERS). */
+const SETTINGS_READERS = ['settings.manage', 'settings.approve', 'privacy.manage'] as const
+
+/** PLAN B2 5 SC-29: the B2 keys of the "Participants, orders and integrations" card, each with what holds while unset. */
+const B2_ROWS: readonly { readonly key: PolicyKey; readonly title: string; readonly description: string; readonly whenUnset: string }[] = [
+  { key: 'orders.crediting_event', title: 'Crediting event', description: 'Whether an order counts when it is paid or when it is fulfilled.', whenUnset: 'Orders are refused until set.' },
+  { key: 'orders.attribution_precedence', title: 'Attribution precedence', description: 'Which hint names the distributor credited with an order: a link, a code or the customer’s servicer.', whenUnset: 'Orders are refused until set.' },
+  { key: 'orders.purpose_required', title: 'Order purpose required', description: 'Whether each order must say if it is for resale or personal use; orders without one are flagged.', whenUnset: 'Orders without a purpose are not flagged.' },
+  { key: 'orders.new_buyer_type', title: 'Type of new buyers', description: 'The participant type given to buyers an order names who are not enrolled yet.', whenUnset: 'Orders from buyers who are not enrolled are refused until set.' },
+  { key: 'orders.restocking_fee_volume_effect', title: 'Restocking-fee volume effect', description: 'Whether a restocking fee reduces the volume a return takes back.', whenUnset: 'Events with a restocking fee are refused until set.' },
+  { key: 'customers.reassignment_rule', title: 'Customer reassignment rule', description: 'Where the customers of a terminated position go, and after how many days.', whenUnset: 'Positions that service customers cannot be terminated until set.' },
+  { key: 'participants.duplicate_matching', title: 'Duplicate matching', description: 'Which hashed signals two participants must share to open a duplicate case at enrolment.', whenUnset: 'No duplicate matching.' },
+  { key: 'genealogy.placement_width', title: 'Placement width', description: 'Placement legs per position, for automatic placement and chosen legs.', whenUnset: 'Auto placement and legs unavailable.' },
+  { key: 'integrations.sync_health', title: 'Sync health thresholds', description: 'How long a storefront or API source may go without an accepted event before it is behind, then failing.', whenUnset: 'Sources are only marked failing; behind is not measured.' },
+]
+
+/**
+ * SC-29 Tenant settings: the settings readers (settings.manage, settings.approve, privacy.manage) see the policy
+ * cards; participant types and agreement versions show to the roles that propose, approve or publish them.
+ */
+export function SettingsPage() {
+  const { can } = useSession()
+  const sections = (
+    <>
+      {(can('settings.manage') || can('participant_type.approve')) && <ParticipantTypesSection />}
+      {(can('agreement.publish') || can('market.manage') || can('market.signoff')) && <AgreementsSection />}
+    </>
+  )
+  if (SETTINGS_READERS.some(can)) return <PolicySettings>{sections}</PolicySettings>
+  return (
+    <>
+      <PageHeader title="Settings" summary="Participant types and the agreement versions of each market." />
+      {sections}
+    </>
+  )
+}
+
 type Editing = { readonly kind: 'setting'; readonly key: SettingKey } | { readonly kind: 'version'; readonly key: PolicyKey }
 
 /** The diff drawer's version, kept in the URL as ?version= (UI_UX §4.7). */
@@ -51,8 +90,8 @@ function useVersionParam(): readonly [number | null, (version: number | null) =>
   return [Number.isInteger(version) && version > 0 ? version : null, open] as const
 }
 
-/** SC-29 Tenant settings (API-39, FR-TEN-003): money policies, plan notice, thresholds, breach contacts, versions. */
-export function SettingsPage() {
+/** SC-29 Tenant settings (API-39, FR-TEN-003): money policies, plan notice, B2 policies, thresholds, breach contacts, versions. */
+function PolicySettings({ children }: { readonly children: ReactNode }) {
   const { can, readOnly } = useSession()
   const settings = useResource<SettingsView>('/v1/settings')
   const requests = useResource<readonly ChangeRequest[]>('/v1/setting-change-requests', { state: 'pending' }) // at most one per money key
@@ -83,6 +122,12 @@ export function SettingsPage() {
   const rounding = entry('money.rounding_mode')
   const clawback = entry('money.clawback_policy')
   const notice = entry('plan.activation_notice_days')
+  const visibility = entry('genealogy.visibility_policy')
+  const b2Rows = B2_ROWS.flatMap((row) => {
+    const found = entry(row.key)
+    return found === undefined ? [] : [{ ...row, entry: found }]
+  })
+  const values = Object.fromEntries(Object.entries(view?.values ?? {}).map(([key, setting]) => [key, setting?.value]))
   return (
     <>
       <PageHeader
@@ -101,7 +146,7 @@ export function SettingsPage() {
       {view !== null && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-space-lg items-start">
           <div className="lg:col-span-8 flex flex-col gap-space-md">
-            {policyKeys.length > 0 && (
+            {(rounding !== undefined || clawback !== undefined || notice !== undefined) && (
               <section className={SECTION_CARD} aria-labelledby="money-title">
                 <SectionTitle id="money-title" icon="account_balance" title="Money policies" />
                 <p className={NOTE}>How amounts are rounded and how refunds recover commission already paid, and the notice before a plan version activates.</p>
@@ -165,7 +210,24 @@ export function SettingsPage() {
               </section>
             )}
           </div>
-          <div className="lg:col-span-4">
+          <div className="lg:col-span-4 flex flex-col gap-space-md">
+            {visibility !== undefined && (
+              <section className={SECTION_CARD} aria-labelledby="visibility-title" data-testid="visibility-policy">
+                <SectionTitle id="visibility-title" icon="visibility_off" title="Privacy and visibility" />
+                <p className={NOTE}>What a distributor sees of their downline. Every change waits for the DPO’s approval.</p>
+                <ul className="flex flex-col gap-space-md">
+                  <SettingRow
+                    title="Downline depth masking"
+                    description="Levels named to a distributor; deeper levels show only as counts per level."
+                    unsetLabel="Platform safe default in force"
+                    whenUnset="Names 1 level down; contact of personally sponsored hidden."
+                    entry={visibility}
+                    show={(value: unknown) => valueText('genealogy.visibility_policy', value)}
+                    onChange={versionOf('genealogy.visibility_policy')}
+                  />
+                </ul>
+              </section>
+            )}
             <ChangeRequestsSection requests={requests} onChanged={refresh} />
           </div>
         </div>
@@ -225,9 +287,22 @@ export function SettingsPage() {
           </ul>
         </section>
       )}
+      {b2Rows.length > 0 && (
+        <section className={SECTION_CARD} aria-labelledby="operations-title">
+          <SectionTitle id="operations-title" icon="settings_applications" title="Participants, orders and integrations" />
+          <p className={NOTE}>How enrolments, orders and storefront syncs are handled. The product ships no default value for any of them.</p>
+          <ul className="flex flex-col gap-space-md">
+            {b2Rows.map((row) => (
+              <SettingRow key={row.key} title={row.title} description={row.description} whenUnset={row.whenUnset} entry={row.entry}
+                show={(value: unknown) => valueText(row.key, value)} onChange={versionOf(row.key)} />
+            ))}
+          </ul>
+        </section>
+      )}
+      {children}
       {view !== null && <VersionsSection key={round} inForce={view.version} now={now} onInspect={inspect} />}
       {inspected !== null && <DiffDrawer version={inspected} onClose={() => inspect(null)} />}
-      {editing?.kind === 'version' && <VersionDialog keys={policyKeys} initialKey={editing.key} latestVersion={latestVersion} onClose={dialog.onClose} onSaved={refresh} />}
+      {editing?.kind === 'version' && <VersionDialog keys={policyKeys} initialKey={editing.key} values={values} latestVersion={latestVersion} onClose={dialog.onClose} onSaved={refresh} />}
       {editing?.kind === 'setting' && editing.key === 'compliance.active_pv_minor' && <ActivePvDialog {...dialog} title="Active earner threshold" current={entry(editing.key)?.value as string | null} />}
       {editing?.kind === 'setting' && editing.key === 'compliance.rank_thresholds_pv_minor' && <RankThresholdsDialog {...dialog} title="Rank thresholds" current={entry(editing.key)?.value as Record<string, string> | null} />}
       {editing?.kind === 'setting' && editing.key === 'compliance.late_order_day' && <LateOrderDayDialog {...dialog} title="Late-order day" current={entry(editing.key)?.value as number | null} />}

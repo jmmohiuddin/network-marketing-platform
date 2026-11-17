@@ -49,3 +49,9 @@ _Agent: security. Read before every task; update after every task. Keep concise 
 - MEDIUM: no Fastify trustProxy; behind the Next /v1 rewrite request.ip is the proxy, so ip_allow and api-key-fail-ip limiter see one address (not run, code reading).
 - LOW: IP_NOT_ALLOWED path runs before any limiter (400 requests, 400x403, no 429).
 - Repro method: vitest test files in the scratchpad importing repo files by absolute path, config without imports, `--root <dir> --config <dir>/vitest.config.ts`, NMP_TEST_DB slot, via scripts/heavy.sh.
+
+## B2 BE3 adversarial review (2026-11-17, read-only, nmp_test_3): findings
+- HIGH: order payload_hash covers non-crediting timestamps, so Shopify paid->fulfilled (crediting=paid) and Woo processing->completed are 409 ORDER_CONFLICT, rejected inbound_event, connector health `failing` (repro R1).
+- MEDIUM: Shopify mapping ignores financial_status (processed_at = paid_at), unpaid orders/updated is credited (R2); Woo refunded order re-saved -> EVENT_CONFLICT (occurred_at = date_modified_gmt) (R3); reversal of an already reversed chargeback after a new chargeback -> 23505 -> 500, nothing persisted (R4b); API key can use source_system `shopify:<connector id>` and squat/act on store orders (R5); signed but unparsable body (Shopify orders/edited payload is {order_edit}) -> 400 so the store retries; link-beats-code hint shortcut breaks precedence.
+- LOW: proportional rounding rounds negatives away from zero; double reversal answers RETURN_EXCEEDS_PURCHASED; inbound list/retry/health/summary held tenant-wide for market-scoped users; Integrations nav needs integration.read for all markets but the health API does not.
+- Repro: scratchpad vitest (--root/--config pointing at the scratchpad dir, absolute imports of apps/api/test/helpers and module test-support) via scripts/heavy.sh.

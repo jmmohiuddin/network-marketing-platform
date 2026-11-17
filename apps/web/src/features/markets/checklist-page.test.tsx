@@ -331,6 +331,34 @@ describe('ChecklistPage', () => {
   })
 })
 
+describe('ChecklistPage: B2 agreement item and rule lines', () => {
+  const AGREEMENT = item({
+    item: 'agreement_versions', title: 'Participant agreement versions', kind: 'automatic', category: 'regulatory', status: 'complete',
+    detail: { version: { id: 'v1', label: 'NL v1', published_at: '2026-11-17T09:00:00.000Z' } },
+  })
+
+  it('shows the current agreement version on the automatic item (D-B2-15)', async () => {
+    router.params = new URLSearchParams('item=agreement_versions')
+    renderAs(ADMIN, <ChecklistPage marketId={MARKET} />, routes(checklist({ items: [...ITEMS, AGREEMENT] })))
+    const inspector = await screen.findByRole('complementary', { name: 'Participant agreement versions' })
+    expect(within(inspector).getByText(/Current version NL v1, published/)).toBeTruthy()
+    expect(within(inspector).getByRole('link', { name: 'Settings' }).getAttribute('href')).toBe('/settings#agreements-title')
+    expect(within(inspector).queryByRole('button')).toBeNull()
+    expect(within(screen.getByRole('table', { name: 'Launch checklist items' })).getByText('Version NL v1')).toBeTruthy()
+  })
+
+  it('BUG-060: only the rule id may break anywhere, never the word "mandatory"', async () => {
+    router.params = new URLSearchParams('item=pack_rules')
+    renderAs(ADMIN, <ChecklistPage marketId={MARKET} />, routes(checklist()))
+    const rules = await screen.findByRole('list', { name: 'Market-pack rules' })
+    expect(within(rules).getByText(SCREENING_RULE.id).className).toContain('break-all')
+    const label = within(rules).getByText('· mandatory')
+    expect(label.className).toContain('whitespace-nowrap')
+    expect(label.className).not.toContain('break-all')
+    expect(label.parentElement?.className).not.toContain('break-all')
+  })
+})
+
 describe('checklist helpers', () => {
   it('says what the market state means for enrolments and orders (BUG-059)', () => {
     expect(stateSentence('FR', 'draft')).toBe('Enrolments and orders for FR are accepted only once it is live.')
@@ -355,5 +383,6 @@ describe('basisText', () => {
     expect(basisText(ITEMS[3]!)).toBe('1 rule, 1 mandatory at screening')
     expect(basisText(ITEMS[1]!)).toBe('No approval recorded')
     expect(basisText(item({ item: 'breach_contacts', title: 'B', kind: 'automatic', category: 'data', detail: { contacts: 2 } }))).toBe('2 contacts')
+    expect(basisText(item({ item: 'agreement_versions', title: 'A', kind: 'automatic', category: 'regulatory', detail: { version: null } }))).toBe('No version published')
   })
 })

@@ -21,21 +21,33 @@ const B1_TABLES = [
   'market_go_live_request', 'guardrail_rule', 'tax_rule', 'service_account', 'api_key', 'case_file', 'case_event',
   'case_evidence', 'webhook_endpoint', 'webhook_delivery',
 ]
+// PLAN B2 section 1.
+const B2_TABLES = [
+  'participant_type', 'participant', 'participant_type_assignment', 'participant_signal', 'agreement_version',
+  'agreement_acceptance', 'position', 'position_status_history', 'position_ownership', 'relationship', 'path_model',
+  'path_node', 'customer_servicing', 'product_volume_map', 'inbound_event', 'sales_order', 'order_line', 'order_event',
+  'late_transaction',
+]
 const INSERT_ONLY_TABLES = [
   'audit.audit_event', 'audit.vendor_event', 'outbox_event', 'approval', 'tenant_setting_version',
-  'market_checklist_entry', 'case_event', 'case_evidence', 'document',
+  'market_checklist_entry', 'case_event', 'case_evidence', 'document', 'participant_signal', 'agreement_version',
+  'agreement_acceptance', 'position_status_history', 'order_line', 'order_event',
 ]
-// market_references (0105, AC-TEN2-3) counts every table with a key to market under these names, plus 'grants'
-// (market_ids arrays carry no key).
+// market_references (0105, 0204, AC-TEN2-3) counts every table with a key to market under these names, plus 'grants'
+// (market_ids arrays carry no key) and 'connectors' (the commerce rows of provider_config).
 const MARKET_REFERENCES: Record<string, string> = {
   calendar: 'calendars', import_batch: 'imports', compliance_report_snapshot: 'snapshots',
   cpl_fact_participant: 'fact_participants', provider_config: 'providers', market_checklist_entry: 'checklist_entries',
-  market_go_live_request: 'go_live_requests', case_file: 'cases',
+  market_go_live_request: 'go_live_requests', case_file: 'cases', participant: 'participants', position: 'positions',
+  sales_order: 'orders', product_volume_map: 'product_volumes', agreement_version: 'agreement_versions',
 }
 // PLAN B1 1.1 (FR-TEN-003). The TEN settings registry pins its money-affecting keys against money_setting_keys().
 const MONEY_SETTING_KEYS = ['money.rounding_mode', 'money.clawback_policy']
+// PLAN B2 1.7 (D-B2-08): every key whose change needs an approval; the registry pins it against approverPermission.
+const APPROVAL_SETTING_KEYS = [...MONEY_SETTING_KEYS, 'genealogy.visibility_policy']
+// Table names unquoted: regclass quotes keywords such as position.
 const TENANT_ID_TABLES = `
-  SELECT c.oid, c.oid::regclass::text AS name, c.relrowsecurity AS enabled, c.relforcerowsecurity AS forced
+  SELECT c.oid, replace(c.oid::regclass::text, '"', '') AS name, c.relrowsecurity AS enabled, c.relforcerowsecurity AS forced
   FROM pg_class c JOIN pg_attribute a ON a.attrelid = c.oid AND a.attname = 'tenant_id' AND NOT a.attisdropped
   WHERE c.relkind IN ('r', 'p') AND c.relnamespace IN ('public'::regnamespace, 'audit'::regnamespace)`
 
@@ -106,14 +118,14 @@ describe('migrations', () => {
     expect(again).toEqual([])
   })
 
-  test('create every release A table, the engineering additions and the B1 tables', async () => {
+  test('create every release A table, the engineering additions and the B1 and B2 tables', async () => {
     const { rows } = await getOwnerPool().query<{ name: string }>(
       `SELECT CASE schemaname WHEN 'public' THEN tablename ELSE schemaname || '.' || tablename END AS name
        FROM pg_tables WHERE schemaname IN ('public', 'audit')`,
     )
 
     expect(rows.map((row) => row.name).sort()).toEqual(
-      [...RELEASE_A_TABLES, ...ENGINEERING_TABLES, ...B1_TABLES, 'schema_migration'].sort(),
+      [...RELEASE_A_TABLES, ...ENGINEERING_TABLES, ...B1_TABLES, ...B2_TABLES, 'schema_migration'].sort(),
     )
   })
 
@@ -131,7 +143,7 @@ describe('shared functions match the catalogue', () => {
   test('market_references counts every table with a foreign key to market', async () => {
     const owner = getOwnerPool()
     const keys = await owner.query<{ name: string }>(
-      `SELECT DISTINCT conrelid::regclass::text AS name FROM pg_constraint
+      `SELECT DISTINCT replace(conrelid::regclass::text, '"', '') AS name FROM pg_constraint
        WHERE contype = 'f' AND confrelid = 'market'::regclass ORDER BY 1`,
     )
     const counted = await owner.query<{ keys: string[] }>(
@@ -139,13 +151,19 @@ describe('shared functions match the catalogue', () => {
     )
 
     expect(keys.rows.map((row) => row.name)).toEqual(Object.keys(MARKET_REFERENCES).sort())
-    expect(counted.rows[0]!.keys).toEqual([...Object.values(MARKET_REFERENCES), 'grants'].sort())
+    expect(counted.rows[0]!.keys).toEqual([...Object.values(MARKET_REFERENCES), 'grants', 'connectors'].sort())
   })
 
   test('money_setting_keys is the PLAN list of money-affecting settings', async () => {
     const { rows } = await getOwnerPool().query<{ keys: string[] }>('SELECT money_setting_keys() AS keys')
 
     expect(rows[0]!.keys).toEqual(MONEY_SETTING_KEYS)
+  })
+
+  test('approval_setting_keys is the PLAN list of settings whose change needs an approval', async () => {
+    const { rows } = await getOwnerPool().query<{ keys: string[] }>('SELECT approval_setting_keys() AS keys')
+
+    expect(rows[0]!.keys).toEqual(APPROVAL_SETTING_KEYS)
   })
 })
 
@@ -161,7 +179,7 @@ describe('row-level security coverage', () => {
     const owner = getOwnerPool()
     const tenantIdTables = await owner.query<{ name: string }>(TENANT_ID_TABLES)
     const actual = await owner.query<{ policy: Policy }>(
-      `SELECT ARRAY[p.polrelid::regclass::text, p.polname::text, p.polcmd::text,
+      `SELECT ARRAY[replace(p.polrelid::regclass::text, '"', ''), p.polname::text, p.polcmd::text,
                     regexp_replace(pg_get_expr(p.polqual, p.polrelid), '\\s+', ' ', 'g'),
                     regexp_replace(pg_get_expr(p.polwithcheck, p.polrelid), '\\s+', ' ', 'g')] AS policy
        FROM pg_policy p WHERE p.polpermissive AND p.polroles = '{0}'`,
@@ -180,7 +198,7 @@ describe('row-level security coverage', () => {
 
   test('every application table has RLS enabled and forced, with or without a tenant_id column', async () => {
     const { rows } = await getOwnerPool().query<{ name: string }>(
-      `SELECT c.oid::regclass::text AS name FROM pg_class c
+      `SELECT replace(c.oid::regclass::text, '"', '') AS name FROM pg_class c
        WHERE c.relkind IN ('r', 'p') AND c.relnamespace IN ('public'::regnamespace, 'audit'::regnamespace)
          AND c.relname <> 'schema_migration' AND NOT (c.relrowsecurity AND c.relforcerowsecurity)`,
     )

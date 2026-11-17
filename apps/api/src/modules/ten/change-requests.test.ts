@@ -134,7 +134,7 @@ describe('POST /v1/setting-change-requests/:id/decision (AC-TEN3-2, TS-42 settin
   test('AC-TEN3-3: a request whose date has passed is refused at approval and stays pending', async () => {
     const [request] = await ownerRows<{ id: string }>(
       `INSERT INTO setting_change_request (tenant_id, key, value, effective_from, reason, base_version, state, requested_by)
-       VALUES ($1, 'plan.activation_notice_days', '7', now() - interval '1 hour', 'FIXTURE: date passed while pending', 0, 'pending', $2)
+       VALUES ($1, 'money.clawback_policy', '{"default": "order_line"}', now() - interval '1 hour', 'FIXTURE: date passed while pending', 0, 'pending', $2)
        RETURNING id`,
       [acme.id, admin.id],
     )
@@ -144,6 +144,7 @@ describe('POST /v1/setting-change-requests/:id/decision (AC-TEN3-2, TS-42 settin
 
     expect(response.json().error.code).toBe('SETTING_EFFECTIVE_FROM_INVALID')
     expect(state).toEqual([{ state: 'pending' }])
+    await withdraw(admin, request!.id)
   })
 })
 
@@ -204,7 +205,15 @@ describe('database backstop (T-B1-08)', () => {
   test('the database money-key list matches the registry', async () => {
     const [row] = await ownerRows<{ keys: string[] }>('SELECT money_setting_keys() AS keys')
     const { SETTINGS } = await import('./settings.js')
-    const registry = Object.entries(SETTINGS).filter(([, definition]) => definition.moneyAffecting).map(([key]) => key)
+    const registry = Object.entries(SETTINGS).filter(([, definition]) => definition.approverPermission === 'settings.approve').map(([key]) => key)
+
+    expect(row!.keys.sort()).toEqual(registry.sort())
+  })
+
+  test('the database list of keys needing an approval matches the registry (D-B2-08)', async () => {
+    const [row] = await ownerRows<{ keys: string[] }>('SELECT approval_setting_keys() AS keys')
+    const { SETTINGS } = await import('./settings.js')
+    const registry = Object.entries(SETTINGS).filter(([, definition]) => definition.approverPermission !== null).map(([key]) => key)
 
     expect(row!.keys.sort()).toEqual(registry.sort())
   })
@@ -267,5 +276,46 @@ describe('only the requester can withdraw a tenant-wide change request', () => {
     expect(withdrawn.statusCode).toBe(404)
     expect((await ownerRows('SELECT state FROM setting_change_request WHERE id = $1', [id]))[0]).toMatchObject({ state: 'pending' })
     await withdraw(preparer, id)
+  })
+})
+
+describe('genealogy.visibility_policy is approved by the DPO (D-B2-08, PLAN B2 2.1)', () => {
+  test('a DPO decides it, a Finance approver may not; a DPO may not decide money keys; lists show readable keys only', async () => {
+    const tenant = await createTenant()
+    const requester = await createSignedInUser({ tenantId: tenant.id, roles: ['Tenant admin'], stepUp: true })
+    const dpo = await createSignedInUser({ tenantId: tenant.id, roles: ['DPO'], stepUp: true })
+    const financeApprover = await createSignedInUser({ tenantId: tenant.id, roles: ['Finance approver'], stepUp: true })
+    const policy = { named_depth: 2, contact_for_personally_sponsored: false }
+
+    const visibility = await requestChange(requester, 'genealogy.visibility_policy', policy, inDays(5))
+    const money = await requestChange(requester, 'money.rounding_mode', 'half_even', inDays(6))
+    const visibilityId = visibility.json().data.change_request.id as string
+    const moneyId = money.json().data.change_request.id as string
+    const dpoList = await call(app, { method: 'GET', url: '/v1/setting-change-requests', as: dpo })
+    const financeList = await call(app, { method: 'GET', url: '/v1/setting-change-requests', as: financeApprover })
+    const byFinance = await decide(financeApprover, visibilityId, 'approve')
+    const moneyByDpo = await decide(dpo, moneyId, 'approve')
+    const byDpo = await decide(dpo, visibilityId, 'approve')
+
+    expect(visibility.statusCode).toBe(202)
+    expect(visibility.json().data.change_request.eligible_approvers.map((u: { user_id: string }) => u.user_id)).toEqual([dpo.id])
+    expect(dpoList.json().data.map((r: { id: string }) => r.id)).toEqual([visibilityId])
+    expect(financeList.json().data.map((r: { id: string }) => r.id)).toEqual([moneyId])
+    expect(byFinance.statusCode).toBe(403)
+    expect(moneyByDpo.statusCode).toBe(403)
+    expect(byDpo.json().data.change_request).toMatchObject({ state: 'approved', decided_by: { id: dpo.id } })
+    const read = await call(app, { method: 'GET', url: '/v1/settings/genealogy.visibility_policy', as: dpo })
+    expect(read.statusCode).toBe(200)
+    expect((await call(app, { method: 'GET', url: '/v1/settings', as: dpo })).json().data.values).toHaveProperty('genealogy.visibility_policy')
+
+    // A decided money request: the DPO still gets 403 (not its state); the version list names only keys the DPO reads.
+    expect((await decide(financeApprover, moneyId, 'approve')).statusCode).toBe(200)
+    const decidedByDpo = await decide(dpo, moneyId, 'reject')
+    const versions = await call(app, { method: 'GET', url: '/v1/settings/versions', as: dpo })
+    const changed = versions.json().data.flatMap((v: { changed: { key: string }[] }) => v.changed.map((c) => c.key))
+
+    expect(decidedByDpo.statusCode).toBe(403)
+    expect(changed).toContain('genealogy.visibility_policy')
+    expect(changed).not.toContain('money.rounding_mode')
   })
 })

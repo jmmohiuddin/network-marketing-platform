@@ -2,6 +2,11 @@
 
 _Agent: compensation. Read before every task; update after every task. Keep concise — facts and decisions, not transcripts._
 
+## B2 GEN (2026-11-17)
+- gen_create_position does not mark path_model stale: a position created without a relationship write is no read-model node until the next rebuild (reads fall back to SoR for it; top-level list from the model misses it). DB fix: mark both kinds stale on position insert.
+- Downline contact read directly from participant.contact and masked in GEN (no PAR SQL contract returns contact).
+- Integrator: add genModule + genCaseTypes, isolation cases and role-matrix rows for the 5 routes.
+
 ## B engine review fixes (2026-11-13) — supersedes older lines where they differ
 - BLOCKED on product semantics (finding 8, catalogue gaps; not built, not "done"): banked points (no accrue/redeem rule; state passes through), carry balance readable by measures/requirements/payouts, `limit.max_per_order` (per order of what: pay or volume?), tier-2 expression language (FR-PLN-003 Must; grammar unwritten), cross-calendar state (BR-PER-01), pass-10 "minimums" (ENGINE_GENEALOGY Open). Binary pairing (Could) absent.
 - Order-line clawback origin: for group/generation measures the orders are cited only in a full trace; the clawback component must replay the paid run with fullTraceFor = the order_line lines whose payee is the refunded order's credit position or an ancestor in the rule's tree.

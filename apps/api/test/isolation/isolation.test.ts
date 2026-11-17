@@ -7,13 +7,15 @@ import { afterAll, beforeAll, describe, expect, test, vi } from 'vitest'
 import { BASE_ROLES, PERMISSIONS } from '../../src/lib/permissions.js'
 import { SUPPORT_SESSION_HEADER } from '../../src/modules/support/index.js'
 import { multipartBody, tinyFiles } from '../../src/modules/imp/test-support.js'
+import { activeType, CUSTOMER, DISTRIBUTOR, enrolled } from '../../src/modules/par/test-support.js'
 import {
   baseRoleId, buildTestApp, call, closePoolsAfterAll, createMarket, createSignedInUser, ownerRows, resetApiDb, type TestUser,
 } from '../helpers/index.js'
 import { caseOf, ROUTE_CASES, type CaseRequest, type RouteCase } from './cases.js'
 import { routesOf } from './route-registry.js'
 import {
-  ALL_ROLES, BREACH_CONTACT, canariesOf, fingerprintOf, PASSWORD, phantomOf, seedTenants, SUITE_MODULES, type Seeded, type Targets,
+  ALL_ROLES, BREACH_CONTACT, canariesOf, fingerprintOf, PASSWORD, PEOPLE_MARKET_CODE, phantomOf, SEED_TIMEOUT_MS, seedTenants, SUITE_MODULES,
+  type Seeded, type Targets,
 } from './seed.js'
 
 // TS-21 / SEC-28 / NFR-SEC-01: generated from the routes buildApp() registers, so a new route fails this suite until
@@ -46,7 +48,7 @@ beforeAll(async () => {
   const vendorVisible = new Set(['tenant', 'public.market', 'public.support_session'])
   businessCanaries = [...found].filter(([table]) => !vendorVisible.has(table)).flatMap(([, values]) => values)
     .filter((value) => value !== seeded.owner.id) // the decider of the support session, shown on it
-})
+}, SEED_TIMEOUT_MS)
 
 afterAll(async () => {
   await app.close()
@@ -82,10 +84,27 @@ function leaked(response: LightMyRequestResponse, request: CaseRequest, values: 
   return values.filter((value) => response.body.includes(value) && !sent.includes(value))
 }
 
-/** The same request with ids that exist nowhere: the response must be identical (existence is not revealed). */
-async function asPhantom(as: TestUser | undefined, routeCase: RouteCase) {
-  const response = await send(as, routeCase.request(phantom))
-  return { status: response.statusCode, error: errorOf(response) }
+/** Status and error with every target value the request echoes back named by its key (details may list the sent ids). */
+function answerOf(response: LightMyRequestResponse, values: Targets): string {
+  const echoes = (Object.keys(values) as (keyof Targets)[])
+    .filter((key) => typeof values[key] === 'string' && targets[key] !== phantom[key])
+    .map((key) => [String(values[key]), `<${key}>`] as const)
+    .sort(([left], [right]) => right.length - left.length)
+  return echoes.reduce((text, [value, name]) => text.replaceAll(value, name),
+    JSON.stringify({ status: response.statusCode, error: errorOf(response) }))
+}
+
+/**
+ * The same request with ids that exist nowhere answers identically (existence is not revealed), except a signed route:
+ * a known id without a valid signature gets its unsigned answer, an unknown one 404.
+ */
+async function expectLikePhantom(as: TestUser | undefined, routeCase: RouteCase, response: LightMyRequestResponse) {
+  const unknown = await send(as, routeCase.request(phantom))
+  if (routeCase.unsignedAnswer !== undefined) {
+    expect([outcome(response), outcome(unknown)]).toEqual([routeCase.unsignedAnswer.join(' '), '404 NOT_FOUND'])
+    return
+  }
+  expect(answerOf(response, targets)).toBe(answerOf(unknown, phantom))
 }
 
 /** Values no vendor user named in a refused request (the vendor log keeps their params and query, E-ADR-22). */
@@ -133,7 +152,7 @@ describe('without a session', () => {
     }
     if (routeCase.anonymous === undefined) expect(response.statusCode).toBeGreaterThanOrEqual(400)
     else expect(response.statusCode).toBe(routeCase.anonymous)
-    expect({ status: response.statusCode, error: errorOf(response) }).toEqual(await asPhantom(undefined, routeCase))
+    await expectLikePhantom(undefined, routeCase, response)
   })
 
   test('tenant A\'s credentials do open tenant A (so their refusal at tenant B is the isolation, not a typo)', async () => {
@@ -186,9 +205,7 @@ describe('tenant B user holding every permission (E-SEC-01: denied without revea
       const [status, code] = routeCase.refusedAs ?? [404, 'NOT_FOUND']
       expect(outcome(response)).toBe(refusal(request, status, code))
     }
-    if (routeCase.shape === 'object') {
-      expect({ status: response.statusCode, error: errorOf(response) }).toEqual(await asPhantom(as, routeCase))
-    }
+    if (routeCase.shape === 'object') await expectLikePhantom(as, routeCase, response)
   })
 
   test('cannot grant its own user tenant A\'s role, or a role over tenant A\'s market: answered as for ones that do not exist', async () => {
@@ -224,6 +241,37 @@ describe('tenant B user holding every permission (E-SEC-01: denied without revea
     expect(uploaded.statusCode).toBe(201)
     expect(outcome(foreign)).toBe('422 MAPPING_UNKNOWN')
     expect(errorOf(foreign)).toEqual(errorOf(unknown))
+  })
+
+  test('cannot sponsor, place or service with tenant A\'s position: answered as for a reference that does not exist', async () => {
+    const as = await createSignedInUser({ tenantId: seeded.b.id, roles: ALL_ROLES, stepUp: true })
+    const approver = await createSignedInUser({ tenantId: seeded.b.id, roles: ['Compliance officer'], stepUp: true })
+    await createMarket(seeded.b.id, PEOPLE_MARKET_CODE)
+    // Not DIST: the route cases proposed a DIST type in tenant B (still pending).
+    await activeType(app, as, approver, 'B_DIST', DISTRIBUTOR)
+    await activeType(app, as, approver, 'B_CUST', CUSTOMER)
+    const enrol = (relation: Record<string, unknown>) => send(as, {
+      method: 'POST', url: '/v1/participants', idempotencyKey: true,
+      body: { external_ref: `B-${randomUUID()}`, market: PEOPLE_MARKET_CODE, type_code: 'B_DIST', account_type: 'individual', ...relation },
+    })
+    const customer = await enrolled(app, as, {
+      external_ref: `B-${randomUUID()}`, market: PEOPLE_MARKET_CODE, type_code: 'B_CUST', account_type: 'individual',
+    })
+    const service = (positionRef: string) => send(as, {
+      method: 'PUT', url: `/v1/customers/${customer.participant.id}/servicing`, idempotencyKey: true,
+      body: { position_ref: positionRef, reason: 'isolation' },
+    })
+    const pair = async (attempt: (ref: string) => Promise<LightMyRequestResponse>) => {
+      const foreign = await attempt(targets.positionRef)
+      const unknown = await attempt(phantom.positionRef)
+      expect(errorOf(foreign)).toEqual(errorOf(unknown))
+      return outcome(foreign)
+    }
+
+    expect(await pair((ref) => enrol({ sponsor: { position_ref: ref } }))).toBe('422 SPONSOR_NOT_FOUND')
+    expect(await pair((ref) => enrol({ position_ref: `B-${randomUUID().slice(0, 8)}`, placement: { position_ref: ref, leg: '1' } })))
+      .toBe('422 PARENT_NOT_ELIGIBLE')
+    expect(await pair(service)).toBe('422 SERVICER_NOT_ELIGIBLE')
   })
 
   test('changed nothing of tenant A (every row of every tenant table, audit included)', async () => {

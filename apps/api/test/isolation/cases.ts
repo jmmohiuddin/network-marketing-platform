@@ -1,7 +1,6 @@
 // TS-21 route cases: one per route buildApp registers (`METHOD /url`), keyed exactly as Fastify reports it. The
 // isolation suite fails when a route has no case here, or a case has no route.
 import { documentBody } from '../../src/modules/aud/test-support.js'
-import { FIXTURE_REASONS, FIXTURE_SUBJECT } from '../../src/modules/cas/test-support.js'
 import { multipartBody, TINY_MAPPING, tinyFiles } from '../../src/modules/imp/test-support.js'
 import { PROTOTYPE_SETTINGS } from '../../src/modules/cpl/test-fixtures.js'
 import type { CallOptions } from '../helpers/index.js'
@@ -9,9 +8,10 @@ import { DRAFT_MARKET_CODE, PACK, PASSWORD, RECORDABLE_ITEM, SUPPORT_SCOPE, type
 
 /**
  * Who the route is for. public: no session (sign-in, invitation); self: the caller's own session or account;
- * tenant: tenant realm; vendor: vendor realm only; either: vendor users, or tenant users with vendor_access.decide.
+ * tenant: tenant realm; vendor: vendor realm only; either: vendor users, or tenant users with vendor_access.decide;
+ * key: API keys only, every session is refused (PLAN B2 2.6).
  */
-export type Access = 'public' | 'self' | 'tenant' | 'vendor' | 'either'
+export type Access = 'public' | 'self' | 'tenant' | 'vendor' | 'either' | 'key'
 
 /**
  * What a tenant-B caller reaches with tenant A's targets. object: an A object by id (404, as an unknown id);
@@ -37,6 +37,12 @@ export interface RouteCase {
    * may be tenant ids they named themselves; nothing else of a tenant may show.
    */
   readonly echoesRefusedRequests?: boolean
+  /**
+   * The path id is a capability authenticated by a signature over the body (connector webhooks, PLAN B2 2.6): a known id
+   * without a valid signature is this answer, an unknown one 404. Ids are random UUIDs, so this tells nothing to a caller
+   * without the id.
+   */
+  readonly unsignedAnswer?: readonly [number, string]
   readonly request: (t: Targets) => CaseRequest
 }
 
@@ -68,6 +74,22 @@ function documentRequest(): CaseRequest {
   const { payload, contentType } = documentBody()
   return { method: 'POST', url: '/v1/documents', body: payload, headers: { 'content-type': contentType }, idempotencyKey: true }
 }
+
+/** Today, as the genealogy case payloads take it (effective_from >= start of today UTC). */
+const today = () => new Date().toISOString()
+const genealogyCase = (t: Targets) => ({
+  type: 'genealogy_change', subject_type: 'position', subject_id: t.childPosition, reason_code: 'PARTICIPANT_REQUEST',
+  payload: { kind: 'sponsor', proposed_parent_position_id: t.position, effective_from: today() },
+})
+const enrolment = (t: Targets) => ({ external_ref: 'B-isolation', market: t.peopleMarketCode, type_code: 'DIST', account_type: 'individual' })
+const order = (t: Targets) => ({
+  source_system: 'canary', source_order_id: `o-${t.order}`, market: t.peopleMarketCode, buyer: { external_ref: 'buyer' },
+  ordered_at: '2025-01-15T00:00:00Z', paid_at: '2025-01-15T00:00:00Z', currency: 'GBP', amount_minor: '1000', tax_minor: '0',
+  lines: [{ line_no: 1, sku: 'CANARY-SKU', quantity: 1, amount_minor: '1000' }],
+})
+const keyOnly = (request: (t: Targets) => CaseRequest): RouteCase =>
+  ({ access: 'key', shape: 'object', refusedAs: [403, 'API_KEY_REQUIRED'], request })
+const PAST = '2026-01-01T00:00:00Z'
 
 const rows = (t: Targets) => `/v1/compliance/snapshots/${t.snapshot}/figures/${encodeURIComponent(t.figure)}/rows`
 
@@ -235,10 +257,8 @@ export const ROUTE_CASES: Readonly<Record<string, RouteCase>> = {
   'POST /v1/documents': own('tenant', 201, documentRequest),
   'GET /v1/documents/:id': object('tenant', (t) => get(`/v1/documents/${t.document}`)),
   'GET /v1/documents/:id/content': object('tenant', (t) => get(`/v1/documents/${t.document}/content`)),
-  // CAS B1 with the fixture case type (D-B1-13): tenant A's market is no subject in tenant B.
-  'POST /v1/cases': named(422, 'SUBJECT_NOT_FOUND', (t) => json('POST', '/v1/cases', {
-    type: 'adjustment', subject_type: FIXTURE_SUBJECT, subject_id: t.draftMarket, reason_code: FIXTURE_REASONS[0], payload: { amount_minor: '1' },
-  }, true)),
+  // CAS with the product's case types: tenant A's position is no subject in tenant B.
+  'POST /v1/cases': named(422, 'SUBJECT_NOT_FOUND', (t) => json('POST', '/v1/cases', genealogyCase(t), true)),
   'GET /v1/cases': collection('tenant', () => get('/v1/cases?limit=200')),
   'GET /v1/cases/:id': object('tenant', (t) => get(`/v1/cases/${t.case}`)),
   'POST /v1/cases/:id/evidence': object('tenant', (t) => json('POST', `/v1/cases/${t.case}/evidence`, { document_id: t.freeDocument }, true)),
@@ -247,6 +267,82 @@ export const ROUTE_CASES: Readonly<Record<string, RouteCase>> = {
   'POST /v1/cases/:id/decision': object('tenant', (t) =>
     json('POST', `/v1/cases/${t.case}/decision`, { decision: 'approve', reason: 'isolation' }, true)),
   'POST /v1/cases/:id/withdraw': object('tenant', (t) => json('POST', `/v1/cases/${t.case}/withdraw`, withReason())),
+  // CAS B2
+  'PATCH /v1/cases/:id': object('tenant', (t) => json('PATCH', `/v1/cases/${t.duplicateCase}`, { payload: {
+    matched_participant_id: t.participant, matched_kinds: ['identity_ref'], proposed_outcome: 'allow',
+  } })),
+  'GET /v1/cases/counts': collection('tenant', () => get('/v1/cases/counts')),
+  // PAR B2: tenant A's type code and market code are free in tenant B; its market id names nothing there.
+  'GET /v1/participant-types': collection('tenant', () => get('/v1/participant-types')),
+  'POST /v1/participant-types': own('tenant', 201, () => json('POST', '/v1/participant-types', {
+    code: 'DIST', name: 'Distributor', can_earn: true, counts_as_end_customer: false, can_sponsor: true, can_hold_positions: true, reason: 'isolation',
+  }, true)),
+  'POST /v1/participant-types/:id/decision': object('tenant', (t) =>
+    json('POST', `/v1/participant-types/${t.participantType}/decision`, { decision: 'approve', reason: 'isolation' }, true)),
+  'POST /v1/participant-types/:id/withdraw': object('tenant', (t) => json('POST', `/v1/participant-types/${t.participantType}/withdraw`, withReason())),
+  'GET /v1/participants': collection('tenant', () => get('/v1/participants?limit=200')),
+  'POST /v1/participants': named(422, 'MARKET_UNKNOWN', (t) => json('POST', '/v1/participants', enrolment(t), true)),
+  'GET /v1/participants/:id': object('tenant', (t) => get(`/v1/participants/${t.participant}`)),
+  // participant.unmask is a tenant-own decision: a support session never holds it.
+  'POST /v1/participants/:id/unmask': object('tenant', (t) => json('POST', `/v1/participants/${t.participant}/unmask`, { fields: ['email'] })),
+  'POST /v1/participants/:id/type': object('tenant', (t) =>
+    json('POST', `/v1/participants/${t.participant}/type`, withReason({ type_code: 'DIST', valid_from: '2099-01-01T00:00:00Z' }), true)),
+  'POST /v1/participants/:id/positions': object('tenant', (t) => json('POST', `/v1/participants/${t.participant}/positions`, {}, true)),
+  'POST /v1/participants/:id/agreement-acceptances': object('tenant', (t) => json('POST', `/v1/participants/${t.participant}/agreement-acceptances`, {
+    agreement_version_id: t.agreementVersion, accepted_at: PAST,
+  }, true)),
+  'POST /v1/participants/:id/signals': object('tenant', (t) =>
+    json('POST', `/v1/participants/${t.participant}/signals`, { device_id: 'isolation-device' }, true)),
+  'GET /v1/agreement-versions': collection('tenant', () => get('/v1/agreement-versions')),
+  'POST /v1/agreement-versions': named(422, 'MARKET_UNKNOWN', (t) => json('POST', '/v1/agreement-versions', {
+    market_id: t.peopleMarket, label: 'Isolation terms', document_id: t.freeDocument, acceptance_required: true,
+  }, true)),
+  // CRM B2
+  'PUT /v1/customers/:id/servicing': object('tenant', (t) => json('PUT', `/v1/customers/${t.customer}/servicing`, withReason({
+    position_ref: t.positionRef, valid_from: '2099-01-01T00:00:00Z',
+  }), true)),
+  'GET /v1/participants/:id/servicing': object('tenant', (t) => get(`/v1/participants/${t.customer}/servicing`)),
+  'GET /v1/positions/:id/customers': object('tenant', (t) => get(`/v1/positions/${t.position}/customers`)),
+  // GEN B2
+  'GET /v1/genealogy/tree': collection('tenant', () => get('/v1/genealogy/tree')),
+  'GET /v1/genealogy/search': collection('tenant', (t) => get(`/v1/genealogy/search?q=${encodeURIComponent(t.positionRef)}`)),
+  'GET /v1/positions/:id': object('tenant', (t) => get(`/v1/positions/${t.position}`)),
+  'POST /v1/positions/:id/status': object('tenant', (t) =>
+    json('POST', `/v1/positions/${t.position}/status`, withReason({ status: 'suspended', effective_from: PAST }), true)),
+  'GET /v1/positions/:id/downline': object('tenant', (t) => get(`/v1/positions/${t.childPosition}/downline?viewer=${t.position}`)),
+  // ORD B2: ingestion takes API keys only; tenant A's market and late items are refused as unknown ones.
+  'POST /v1/orders': keyOnly((t) => json('POST', '/v1/orders', order(t), true)),
+  'POST /v1/order-events': keyOnly((t) => json('POST', '/v1/order-events', {
+    source_system: 'canary', source_event_id: `e-${t.order}`, source_order_id: `o-${t.order}`, type: 'refund', occurred_at: PAST,
+    refund_minor: '1', fee_minor: '0',
+  }, true)),
+  'GET /v1/orders': collection('tenant', () => get('/v1/orders?limit=200')),
+  'GET /v1/orders/summary': collection('tenant', () => get('/v1/orders/summary')),
+  'GET /v1/orders/:id': object('tenant', (t) => get(`/v1/orders/${t.order}`)),
+  'GET /v1/inbound-events': collection('tenant', () => get('/v1/inbound-events?limit=200')),
+  'POST /v1/inbound-events/:id/retry': object('tenant', (t) => json('POST', `/v1/inbound-events/${t.heldEvent}/retry`, {})),
+  'GET /v1/product-volumes': collection('tenant', () => get('/v1/product-volumes?limit=200')),
+  'POST /v1/product-volumes': named(422, 'VALIDATION_FAILED', (t) => json('POST', '/v1/product-volumes', withReason({
+    market_id: t.peopleMarket, sku: 'CANARY-SKU', item_class: 'product', volumes: { qv: '1' }, valid_from: '2099-01-01T00:00:00Z',
+  }), true)),
+  // late.manage only writes: no support session holds it.
+  'GET /v1/late-transactions': { ...collection('tenant', () => get('/v1/late-transactions?limit=200')), inSession: 403 },
+  'POST /v1/late-transactions/preview': named(422, 'LATE_SELECTION_INVALID', (t) =>
+    json('POST', '/v1/late-transactions/preview', { ids: [t.lateTransaction] })),
+  'POST /v1/late-transactions/decisions': named(422, 'LATE_SELECTION_INVALID', (t) =>
+    json('POST', '/v1/late-transactions/decisions', withReason({ ids: [t.lateTransaction], handling: 'adjust' }), true)),
+  // INT B2: connectors are integration credentials (integration.manage); the webhook is signed, not signed in.
+  'GET /v1/connectors': integrationRead('collection', () => get('/v1/connectors')),
+  'POST /v1/connectors': named(422, 'VALIDATION_FAILED', (t) => json('POST', '/v1/connectors', {
+    provider: 'shopify', market_id: t.peopleMarket, name: 'Isolation shop', webhook_secret: 'isolation-secret-0123456789',
+  }, true)),
+  'POST /v1/connectors/:id/rotate-secret': object('tenant', (t) =>
+    json('POST', `/v1/connectors/${t.connector}/rotate-secret`, { webhook_secret: 'isolation-secret-0123456789' })),
+  'POST /v1/connectors/:id/withdraw': object('tenant', (t) => json('POST', `/v1/connectors/${t.connector}/withdraw`, withReason())),
+  'POST /v1/connectors/:id/webhooks': {
+    ...object('public', (t) => json('POST', `/v1/connectors/${t.connector}/webhooks`, { id: 1 })), unsignedAnswer: [401, 'SIGNATURE_INVALID'],
+  },
+  'GET /v1/integrations/health': collection('tenant', () => get('/v1/integrations/health')),
 }
 
 /** The case of a route; Fastify's HEAD routes run their GET handler, so they take the GET case with method HEAD. */
