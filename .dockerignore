@@ -2,7 +2,9 @@
 .github
 **/node_modules
 **/.next
-**/dist
+# Build output only: apps/api/src/modules/dist is the distributor portal module, so never ignore **/dist.
+apps/*/dist
+packages/*/dist
 **/var
 **/*.tsbuildinfo
 **/ruvector.db
