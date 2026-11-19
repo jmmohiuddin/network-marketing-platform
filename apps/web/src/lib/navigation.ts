@@ -1,4 +1,4 @@
-export type Realm = 'tenant' | 'vendor'
+export type Realm = 'tenant' | 'vendor' | 'portal'
 
 /** A page the server lets the caller open (GET /v1/me navigation). */
 export interface NavigationEntry {
@@ -14,7 +14,9 @@ export const VENDOR_SIGN_IN_PATH = '/signin/vendor'
 export const MFA_ENROL_PATH = '/signin/enrol'
 export const MFA_VERIFY_PATH = '/signin/mfa'
 export const VENDOR_HOME_PATH = '/vendor'
-const AUTH_PREFIXES = ['/signin', '/invitation']
+export const PORTAL_HOME_PATH = '/portal'
+export const PORTAL_SIGN_IN_PATH = '/portal/signin'
+const AUTH_PREFIXES = ['/signin', '/invitation', PORTAL_SIGN_IN_PATH]
 const ORIGIN = 'https://web.invalid'
 
 function under(pathname: string, prefix: string): boolean {
@@ -40,8 +42,8 @@ export function safeNext(value: string | null | undefined): string | null {
   return `${url.pathname}${url.search}${url.hash}`
 }
 
-// The page to return to: the current page, or (on an auth page) the target it already carries.
-function returnTarget(current: string): string | null {
+/** The page to return to: the current page, or (on an auth page) the target it already carries. */
+export function returnTarget(current: string): string | null {
   const url = new URL(current, ORIGIN)
   return isAuthPage(url.pathname) ? safeNext(url.searchParams.get('next')) : safeNext(current)
 }
@@ -51,8 +53,11 @@ export function withNext(path: string, target: string | null): string {
   return target === null || target === '/' ? path : `${path}?next=${encodeURIComponent(target)}`
 }
 
+/** The realm whose pages hold `target` (a safe target: auth pages such as /portal/signin are never one). */
 export function realmOf(target: string | null): Realm {
-  return target !== null && under(target.split(/[?#]/)[0] ?? '', VENDOR_HOME_PATH) ? 'vendor' : 'tenant'
+  const pathname = target?.split(/[?#]/)[0] ?? ''
+  if (under(pathname, VENDOR_HOME_PATH)) return 'vendor'
+  return under(pathname, PORTAL_HOME_PATH) ? 'portal' : 'tenant'
 }
 
 // The tenant_slug CHECK of migration 0002 (and the provisioning route's SLUG).
@@ -68,16 +73,21 @@ export function tenantSignInPath(slug: string | null): string {
   return slug === null ? SIGN_IN_PATH : `${SIGN_IN_PATH}?tenant=${encodeURIComponent(slug)}`
 }
 
+const SIGN_IN_PATHS: Readonly<Record<Realm, string>> = { tenant: SIGN_IN_PATH, vendor: VENDOR_SIGN_IN_PATH, portal: PORTAL_SIGN_IN_PATH }
+const HOMES: Readonly<Record<Realm, string>> = { tenant: '/', vendor: VENDOR_HOME_PATH, portal: PORTAL_HOME_PATH }
+
 export function signInPathFor(realm: Realm): string {
-  return realm === 'vendor' ? VENDOR_SIGN_IN_PATH : SIGN_IN_PATH
+  return SIGN_IN_PATHS[realm]
 }
 
-export function signedOutPath(realm: Realm): string {
-  return `${signInPathFor(realm)}?reason=signed_out`
+/** The realm's sign-in page after sign-out; the portal one names the member's company when known (no company field). */
+export function signedOutPath(realm: Realm, slug: string | null = null): string {
+  const tenant = realm === 'portal' && slug !== null ? `tenant=${encodeURIComponent(slug)}&` : ''
+  return `${signInPathFor(realm)}?${tenant}reason=signed_out`
 }
 
 export function defaultHome(realm: Realm): string {
-  return realm === 'vendor' ? VENDOR_HOME_PATH : '/'
+  return HOMES[realm]
 }
 
 /** Where an auth error code sends the user from `current` (path + query), or null for other codes. */

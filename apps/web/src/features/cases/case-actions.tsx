@@ -19,6 +19,9 @@ import { withApprovers } from '../admin/settings/labels'
 import { extensionsOf } from '../markets/format'
 import { useEvidenceFile } from '../markets/evidence-forms'
 import type { DocumentLimits } from '../markets/types'
+import { MARKETS_PATH, type Market } from '../../lib/markets'
+import { erasureRefusal } from '../privacy/format'
+import type { PrivacyPayload } from '../privacy/types'
 import { caseTypeLabel, personName, type CaseTypeInfo } from './format'
 import type { CaseDetail, CaseRecord } from './types'
 
@@ -45,12 +48,19 @@ export function decisionRefusal(error: unknown): unknown {
   return new ApiError(error.status, error.code, 'Another posting or commit is using this market right now, so nothing was decided. Decide the case again in a moment.', error.details, error.requestId)
 }
 
+/** A dispute's decision is upheld or not upheld, and its reason is the explanation the distributor reads (D-B5-15). */
+export const DECISION_LABELS: Readonly<Record<'approve' | 'reject', string>> = { approve: 'Approve', reject: 'Reject' }
+export const DISPUTE_DECISION_LABELS: Readonly<Record<'approve' | 'reject', string>> = { approve: 'Uphold', reject: 'Not upheld' }
+
 /** Approve or reject (type.decide, step-up through ApiProvider with the dialog's Idempotency-Key), or withdraw (opener). */
 export function ReasonDialog({ record, info, action, onClose, onDone }: DialogProps & { readonly action: 'approve' | 'reject' | 'withdraw' }) {
   const api = useApi()
   const toast = useToast()
   const [reason, setReason] = useState('')
   const [error, setError] = useState<string | null>(null)
+  // An erasure that must wait (409 ERASURE_DEFERRED) names amounts in the market's currency.
+  const markets = useResource<Market[]>(record.type === 'privacy' ? MARKETS_PATH : null)
+  const dispute = record.type === 'dispute'
   const label = caseTypeLabel(record.type).toLowerCase()
   function submit(idempotencyKey: string) {
     const missing = requiredError('the reason', reason)
@@ -68,23 +78,71 @@ export function ReasonDialog({ record, info, action, onClose, onDone }: DialogPr
             const { data } = await api.post<CaseRecord>(`/v1/cases/${record.id}/decision`, { decision: action, reason: reason.trim() }, { idempotencyKey })
             // D-B4-10: a case that needs two approvals stays submitted after the first.
             const first = action === 'approve' && data.state === 'submitted'
-            toast({ message: first ? 'First approval recorded. A second approver decides next.' : action === 'approve' ? 'Case approved. Its change is applied.' : 'Case rejected.' })
+            const decided = dispute
+              ? `Dispute ${action === 'approve' ? 'upheld' : 'not upheld'}. The distributor is told with your explanation.`
+              : action === 'approve' ? 'Case approved. Its change is applied.' : 'Case rejected.'
+            toast({ message: first ? 'First approval recorded. A second approver decides next.' : decided })
           }
         } catch (failure) {
-          throw withApprovers(decisionRefusal(failure), info.deciderRole)
+          throw withApprovers(erasureRefusal(decisionRefusal(failure), markets.data ?? undefined), info.deciderRole)
         }
         onDone()
       },
     }
   }
-  const titles = { approve: `Approve this ${label}`, reject: `Reject this ${label}`, withdraw: `Withdraw this ${label}` }
-  const labels = { approve: 'Approve', reject: 'Reject', withdraw: 'Withdraw case' }
+  const titles = dispute
+    ? { approve: 'Uphold this dispute', reject: 'Do not uphold this dispute', withdraw: `Withdraw this ${label}` }
+    : { approve: `Approve this ${label}`, reject: `Reject this ${label}`, withdraw: `Withdraw this ${label}` }
+  const labels = { ...(dispute ? DISPUTE_DECISION_LABELS : DECISION_LABELS), withdraw: 'Withdraw case' }
   return (
     <FormDialog title={titles[action]} submitLabel={labels[action]} submitVariant={action === 'approve' ? 'primary' : 'destructive-solid'} onClose={onClose} onSubmit={submit}>
-      {action === 'approve' && <p>Approving applies the change in the same step. You may be asked for a code from your authenticator app.</p>}
-      {action === 'reject' && <p>The case is closed and nothing changes. You may be asked for a code from your authenticator app.</p>}
+      {action === 'approve' && <p>{dispute
+        ? 'Upholding tells the distributor they are right, with your explanation. It changes no amount by itself: propose an adjustment or request a restatement afterwards.'
+        : 'Approving applies the change in the same step.'} You may be asked for a code from your authenticator app.</p>}
+      {action === 'reject' && <p>{dispute ? 'The dispute is closed as not upheld and the distributor is sent your explanation.' : 'The case is closed and nothing changes.'} You may be asked for a code from your authenticator app.</p>}
       {action === 'withdraw' && <p>The case is closed without a decision and nothing changes.</p>}
-      <TextAreaField id={REASON_FIELD} label="Reason" value={reason} error={error} onChange={setReason} />
+      <TextAreaField id={REASON_FIELD} label={dispute && action !== 'withdraw' ? 'Explanation sent to the distributor' : 'Reason'} value={reason} error={error} onChange={setReason} />
+    </FormDialog>
+  )
+}
+
+/** Request types whose submit needs a retention basis (privacy-case.ts NEEDS_RETENTION_BASIS). */
+const NEEDS_RETENTION_BASIS = new Set(['access', 'portability', 'erasure'])
+const RETENTION_FIELD = 'case-retention-basis'
+
+/**
+ * A privacy case is submitted with the retention basis (what is kept and why, D-B5-16): PATCH the payload, then submit.
+ * A correction needs none; its corrected fields are saved on the request first (SC-15).
+ */
+export function PrivacySubmitDialog({ record, requestType, onClose, onDone }: DialogProps & { readonly requestType: string }) {
+  const api = useApi()
+  const toast = useToast()
+  const current = record.payload as PrivacyPayload
+  const needsBasis = NEEDS_RETENTION_BASIS.has(requestType)
+  const [basis, setBasis] = useState(current.retention_basis ?? '')
+  const [error, setError] = useState<string | null>(null)
+  function submit() {
+    const missing = needsBasis ? requiredError('the retention basis', basis) : null
+    setError(missing)
+    if (missing !== null) return { items: [{ fieldId: RETENTION_FIELD, message: missing }] }
+    return {
+      items: [],
+      fieldIds: { 'payload.retention_basis': RETENTION_FIELD, retention_basis: RETENTION_FIELD },
+      send: async () => {
+        if (needsBasis && basis.trim() !== current.retention_basis) await api.patch(`/v1/cases/${record.id}`, { payload: { ...current, retention_basis: basis.trim() } })
+        await api.post(`/v1/cases/${record.id}/submit`, {})
+        toast({ message: 'Case submitted. Another DPO decides it.' })
+        onDone()
+      },
+    }
+  }
+  return (
+    <FormDialog title="Submit the privacy request" submitLabel="Submit for decision" onClose={onClose} onSubmit={submit}>
+      <p>Another DPO decides it. The effect preview is calculated now: the identity must be verified first.</p>
+      {needsBasis && (
+        <TextAreaField id={RETENTION_FIELD} label="Retention basis" helper="What the company keeps after this request and the legal reason for keeping it; sent with the outcome."
+          maxLength={NOTE_MAX} value={basis} error={error} onChange={setBasis} />
+      )}
     </FormDialog>
   )
 }

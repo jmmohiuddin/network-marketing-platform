@@ -2,13 +2,12 @@ import { createHmac } from 'node:crypto'
 import type { FastifyInstance } from 'fastify'
 import { afterAll, beforeAll, describe, expect, test } from 'vitest'
 import {
-  auditActions, buildTestApp, call, closePoolsAfterAll, createMarket, createSignedInUser, mailsTo, ownerRows, resetApiDb, runQueuedJobs, type TestUser,
+  auditActions, buildTestApp, call, closePoolsAfterAll, createMarket, createSignedInUser, ownerRows, resetApiDb, runQueuedJobs, type TestUser,
 } from '../../../test/helpers/index.js'
 import { createCasModule } from '../cas/index.js'
 import { intModule } from '../int/index.js'
 import { batchDispatchJob, sandboxAdapter } from './dispatch.js'
 import { payCaseTypes, payModule } from './index.js'
-import { noticeJob } from './notices.js'
 import {
   approvedBatch, balance, bankVersion, committedPeriod, credit, IBAN, participant, payWorld, post, provider, setSettings, webhook, WEBHOOK_SECRET, type PayWorld,
 } from './test-support.js'
@@ -109,12 +108,15 @@ describe('signed sandbox webhook (AC-16.2, AC-16.3, TS-40)', () => {
     const outbox = await ownerRows<{ payload: { case_id: string } }>(`SELECT payload FROM outbox_event WHERE topic = 'payout.returned' AND tenant_id = $1`, [w.tenant.id])
     expect(outbox).toEqual([{ payload: expect.objectContaining({ instruction_id: instructionId, case_id: cases[0]!.id, amount_minor: '9800' }) }])
 
-    await runQueuedJobs(noticeJob as never)
-    const mails = await mailsTo(EMAIL)
-    expect(mails).toHaveLength(1)
-    expect(mails[0]).toContain('98.00 GBP')
-    expect(mails[0]).not.toContain(IBAN)
-    expect(await auditActions(w.tenant.id)).toEqual(expect.arrayContaining(['PAYOUT.INSTRUCTION_STATE', 'PERIOD.PAID', 'NOTICE.SENT']))
+    // D-B5-14: the returned notice is a notification row (in-app + queued email), masked values only
+    const notices = await ownerRows<{ channel: string; params: Record<string, unknown> }>(
+      `SELECT channel, params FROM notification WHERE recipient_participant_id = $1 AND template = 'payout.returned' ORDER BY channel`, [payee])
+    expect(notices.map((n) => n.channel)).toEqual(['email', 'in_app'])
+    expect(notices[0]!.params).toEqual({
+      batch_id: firstBatch, instruction_id: instructionId, amount_minor: '9800', currency: 'GBP', minor_unit: 2, masked: expect.stringMatching(/^•••• /),
+    })
+    expect(JSON.stringify(notices)).not.toContain(IBAN)
+    expect(await auditActions(w.tenant.id)).toEqual(expect.arrayContaining(['PAYOUT.INSTRUCTION_STATE', 'PERIOD.PAID']))
   })
 
   test('valid events for a terminal instruction or another amount open exceptions without changing it', async () => {
@@ -154,6 +156,12 @@ describe('signed sandbox webhook (AC-16.2, AC-16.3, TS-40)', () => {
     const decided = await call(app, { method: 'POST', url: `/v1/cases/${caseId}/decision`, as: w.finance, body: { decision: 'approve', reason: 'resolved' }, idempotencyKey: true })
     expect(decided.statusCode).toBe(200)
     expect(decided.json().data.effect_preview).toMatchObject({ amount_minor: '9800', reason: 'ACCOUNT_CLOSED', instruction: { id: instructionId, bank_detail_masked: '•••• 5432' } })
+    // BUG-109: the stored preview names no one (erasure cannot clear it); the view carries the current name.
+    const [stored] = await ownerRows<{ names: string; id: string; name: string | null }>(
+      `SELECT jsonb_path_query_array(f.effect_preview, 'strict $.**.display_name')::text AS names, p.id, p.display_name AS name FROM case_file f JOIN participant p ON p.id = (f.effect_preview #>> '{instruction,participant,id}')::uuid
+       WHERE f.id = $1`, [caseId])
+    expect(stored!.names).toBe('[null]')
+    expect(decided.json().data.effect_preview.instruction.participant).toEqual({ id: stored!.id, external_ref: expect.any(String), display_name: stored!.name })
   })
 })
 

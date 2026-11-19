@@ -85,6 +85,12 @@ describe('AppShell', () => {
     await waitFor(() => expect(navigation.router.replace).toHaveBeenCalledWith('/'))
   })
 
+  it('sends a distributor (portal session) from the staff shell to the portal, without a next', async () => {
+    const member = me({ realm: 'portal', navigation: [{ key: 'home', path: '/portal', label: 'Home' }] })
+    renderWithProviders(<AppShell realm="tenant"><Page /></AppShell>, fetchReturning(ok(member)))
+    await waitFor(() => expect(navigation.router.replace).toHaveBeenCalledWith('/portal'))
+  })
+
   it('shows the user as initials, name and roles, with an icon per known navigation key', async () => {
     renderWithProviders(<AppShell realm="tenant"><Page /></AppShell>, fetchReturning(ok(me({ roles: [{ assignment_id: 'a1', role_id: 'r1', name: 'Tenant admin', market_ids: null }] }))))
     await screen.findByText('May invite users')

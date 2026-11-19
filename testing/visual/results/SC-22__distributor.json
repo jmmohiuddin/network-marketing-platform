@@ -1,0 +1,863 @@
+{
+  "when": "2026-11-19T16:40:55.219Z",
+  "screenId": "SC-22",
+  "stitch": "sc_22_distributor_bank_details_tax_profile",
+  "module": "portal",
+  "screen": "payment-details",
+  "route": "/portal/more/payment-details",
+  "role": "distributor",
+  "url": "http://127.0.0.1:3100/portal/more/payment-details",
+  "self": false,
+  "patched": [],
+  "viewports": [
+    {
+      "viewport": "1440x900",
+      "screenshot": "testing/ui-screenshots/app/portal/payment-details/distributor/1440x900.png",
+      "reference": "testing/ui-screenshots/reference/sc_22_distributor_bank_details_tax_profile/1440x900.png",
+      "diffImage": "testing/ui-screenshots/app/portal/payment-details/distributor/1440x900.diff.png",
+      "mismatchPercent": 6.32,
+      "diffPixels": 119812,
+      "referenceSize": "1440x1316",
+      "actualSize": "1440x900",
+      "landmarks": [
+        {
+          "landmark": "page",
+          "stitchText": "verified_user KYC & Payout Verified US-USD Payment & Tax Pro",
+          "appText": "Payment details and tax profilewarningCooling off until Nov ",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "background",
+              "stitch": "rgb(248, 249, 255)",
+              "app": "rgb(248, 249, 255)",
+              "match": true
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "16px",
+              "app": "16px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "title",
+          "stitchText": "Payment & Tax Profile",
+          "appText": "Payment details and tax profile",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "20px",
+              "app": "20px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            },
+            {
+              "prop": "line-height",
+              "stitch": "28px",
+              "app": "28px",
+              "match": true
+            },
+            {
+              "prop": "letter-spacing",
+              "stitch": "-0.5px",
+              "app": "-0.5px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "sectionHeading",
+          "stitchText": "Tax Profile & Form W-9",
+          "appText": "Payout account",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "16px",
+              "app": "16px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            },
+            {
+              "prop": "line-height",
+              "stitch": "24px",
+              "app": "24px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "primaryButton",
+          "stitchText": "security_update_good Update Direct Deposit Details",
+          "appText": "editChange bank details",
+          "status": "mismatch",
+          "severity": "high",
+          "props": [
+            {
+              "prop": "background-color",
+              "stitch": "rgb(0, 56, 131)",
+              "app": "rgb(0, 56, 131)",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            },
+            {
+              "prop": "border-radius",
+              "stitch": "2px",
+              "app": "2px",
+              "match": true
+            },
+            {
+              "prop": "height",
+              "stitch": "40px",
+              "app": "44px",
+              "match": false
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "16px",
+              "app": "16px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "card",
+          "stitchText": "verified_user KYC & Payout Verified US-USD Payment & Tax Pro",
+          "appText": "account_balancePayout accountAccount•••• 2051FormatIBANRecor",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "border-radius",
+              "stitch": "8px",
+              "app": "8px",
+              "match": true
+            },
+            {
+              "prop": "box-shadow",
+              "stitch": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+              "app": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+              "match": true
+            },
+            {
+              "prop": "background-color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "viewport": "1280x800",
+      "screenshot": "testing/ui-screenshots/app/portal/payment-details/distributor/1280x800.png",
+      "reference": "testing/ui-screenshots/reference/sc_22_distributor_bank_details_tax_profile/1280x800.png",
+      "diffImage": "testing/ui-screenshots/app/portal/payment-details/distributor/1280x800.diff.png",
+      "mismatchPercent": 6.66,
+      "diffPixels": 113779,
+      "referenceSize": "1280x1334",
+      "actualSize": "1280x800",
+      "landmarks": [
+        {
+          "landmark": "page",
+          "stitchText": "verified_user KYC & Payout Verified US-USD Payment & Tax Pro",
+          "appText": "Payment details and tax profilewarningCooling off until Nov ",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "background",
+              "stitch": "rgb(248, 249, 255)",
+              "app": "rgb(248, 249, 255)",
+              "match": true
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "16px",
+              "app": "16px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "title",
+          "stitchText": "Payment & Tax Profile",
+          "appText": "Payment details and tax profile",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "20px",
+              "app": "20px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            },
+            {
+              "prop": "line-height",
+              "stitch": "28px",
+              "app": "28px",
+              "match": true
+            },
+            {
+              "prop": "letter-spacing",
+              "stitch": "-0.5px",
+              "app": "-0.5px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "sectionHeading",
+          "stitchText": "Tax Profile & Form W-9",
+          "appText": "Payout account",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "16px",
+              "app": "16px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            },
+            {
+              "prop": "line-height",
+              "stitch": "24px",
+              "app": "24px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "primaryButton",
+          "stitchText": "security_update_good Update Direct Deposit Details",
+          "appText": "editChange bank details",
+          "status": "mismatch",
+          "severity": "high",
+          "props": [
+            {
+              "prop": "background-color",
+              "stitch": "rgb(0, 56, 131)",
+              "app": "rgb(0, 56, 131)",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            },
+            {
+              "prop": "border-radius",
+              "stitch": "2px",
+              "app": "2px",
+              "match": true
+            },
+            {
+              "prop": "height",
+              "stitch": "40px",
+              "app": "44px",
+              "match": false
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "16px",
+              "app": "16px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "card",
+          "stitchText": "verified_user KYC & Payout Verified US-USD Payment & Tax Pro",
+          "appText": "account_balancePayout accountAccount•••• 2051FormatIBANRecor",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "border-radius",
+              "stitch": "8px",
+              "app": "8px",
+              "match": true
+            },
+            {
+              "prop": "box-shadow",
+              "stitch": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+              "app": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+              "match": true
+            },
+            {
+              "prop": "background-color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "viewport": "768x1024",
+      "screenshot": "testing/ui-screenshots/app/portal/payment-details/distributor/768x1024.png",
+      "reference": "testing/ui-screenshots/reference/sc_22_distributor_bank_details_tax_profile/768x1024.png",
+      "diffImage": "testing/ui-screenshots/app/portal/payment-details/distributor/768x1024.diff.png",
+      "mismatchPercent": 8.49,
+      "diffPixels": 89609,
+      "referenceSize": "768x1374",
+      "actualSize": "768x1024",
+      "landmarks": [
+        {
+          "landmark": "page",
+          "stitchText": "verified_user KYC & Payout Verified US-USD Payment & Tax Pro",
+          "appText": "Payment details and tax profilewarningCooling off until Nov ",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "background",
+              "stitch": "rgb(248, 249, 255)",
+              "app": "rgb(248, 249, 255)",
+              "match": true
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "16px",
+              "app": "16px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "title",
+          "stitchText": "Payment & Tax Profile",
+          "appText": "Payment details and tax profile",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "20px",
+              "app": "20px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            },
+            {
+              "prop": "line-height",
+              "stitch": "28px",
+              "app": "28px",
+              "match": true
+            },
+            {
+              "prop": "letter-spacing",
+              "stitch": "-0.5px",
+              "app": "-0.5px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "sectionHeading",
+          "stitchText": "Tax Profile & Form W-9",
+          "appText": "Payout account",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "16px",
+              "app": "16px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            },
+            {
+              "prop": "line-height",
+              "stitch": "24px",
+              "app": "24px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "primaryButton",
+          "stitchText": "security_update_good Update Direct Deposit Details",
+          "appText": "editChange bank details",
+          "status": "mismatch",
+          "severity": "high",
+          "props": [
+            {
+              "prop": "background-color",
+              "stitch": "rgb(0, 56, 131)",
+              "app": "rgb(0, 56, 131)",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            },
+            {
+              "prop": "border-radius",
+              "stitch": "2px",
+              "app": "2px",
+              "match": true
+            },
+            {
+              "prop": "height",
+              "stitch": "40px",
+              "app": "44px",
+              "match": false
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "16px",
+              "app": "16px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "card",
+          "stitchText": "verified_user KYC & Payout Verified US-USD Payment & Tax Pro",
+          "appText": "account_balancePayout accountAccount•••• 2051FormatIBANRecor",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "border-radius",
+              "stitch": "8px",
+              "app": "8px",
+              "match": true
+            },
+            {
+              "prop": "box-shadow",
+              "stitch": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+              "app": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+              "match": true
+            },
+            {
+              "prop": "background-color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "viewport": "390x844",
+      "screenshot": "testing/ui-screenshots/app/portal/payment-details/distributor/390x844.png",
+      "reference": "testing/ui-screenshots/reference/sc_22_distributor_bank_details_tax_profile/390x844.png",
+      "diffImage": "testing/ui-screenshots/app/portal/payment-details/distributor/390x844.diff.png",
+      "mismatchPercent": 8.97,
+      "diffPixels": 59978,
+      "referenceSize": "390x1715",
+      "actualSize": "390x844",
+      "landmarks": [
+        {
+          "landmark": "header",
+          "stitchText": "AuditLedger•Apex HealthDistributor Homenotificationsperson",
+          "appText": "arrow_backAcme Direct LtdMoredashboardHomereceipt_longEarnin",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "height",
+              "stitch": "64px",
+              "app": "64px",
+              "match": true
+            },
+            {
+              "prop": "background",
+              "stitch": "rgba(248, 249, 255, 0.9)",
+              "app": "rgba(248, 249, 255, 0.9)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "page",
+          "stitchText": "verified_user KYC & Payout Verified US-USD Payment & Tax Pro",
+          "appText": "Payment details and tax profilewarningCooling off until Nov ",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "background",
+              "stitch": "rgb(248, 249, 255)",
+              "app": "rgb(248, 249, 255)",
+              "match": true
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "16px",
+              "app": "16px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "title",
+          "stitchText": "Payment & Tax Profile",
+          "appText": "Payment details and tax profile",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "20px",
+              "app": "20px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            },
+            {
+              "prop": "line-height",
+              "stitch": "28px",
+              "app": "28px",
+              "match": true
+            },
+            {
+              "prop": "letter-spacing",
+              "stitch": "-0.5px",
+              "app": "-0.5px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "sectionHeading",
+          "stitchText": "Tax Profile & Form W-9",
+          "appText": "Payout account",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "16px",
+              "app": "16px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            },
+            {
+              "prop": "line-height",
+              "stitch": "24px",
+              "app": "24px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "primaryButton",
+          "stitchText": "security_update_good Update Direct Deposit Details",
+          "appText": "editChange bank details",
+          "status": "mismatch",
+          "severity": "high",
+          "props": [
+            {
+              "prop": "background-color",
+              "stitch": "rgb(0, 56, 131)",
+              "app": "rgb(0, 56, 131)",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            },
+            {
+              "prop": "border-radius",
+              "stitch": "2px",
+              "app": "2px",
+              "match": true
+            },
+            {
+              "prop": "height",
+              "stitch": "40px",
+              "app": "44px",
+              "match": false
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "16px",
+              "app": "16px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "card",
+          "stitchText": "verified_user KYC & Payout Verified US-USD Payment & Tax Pro",
+          "appText": "account_balancePayout accountAccount•••• 2051FormatIBANRecor",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "border-radius",
+              "stitch": "8px",
+              "app": "8px",
+              "match": true
+            },
+            {
+              "prop": "box-shadow",
+              "stitch": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+              "app": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+              "match": true
+            },
+            {
+              "prop": "background-color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

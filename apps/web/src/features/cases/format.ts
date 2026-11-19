@@ -21,7 +21,7 @@ const GENEALOGY = { read: 'case.genealogy.read', create: 'case.genealogy.create'
 
 const FINANCE = { deciderRole: 'Finance approver' }
 
-/** The registered case types (B2, B3 restatement, B4 money cases), in tab order. */
+/** The registered case types (B2, B3 restatement, B4 money cases, B5 disputes and privacy requests), in tab order. */
 export const CASE_TYPES: readonly CaseTypeInfo[] = [
   { type: 'genealogy_change', label: 'Genealogy change', plural: 'Genealogy changes', ...GENEALOGY, reasonCodes: ['PARTICIPANT_REQUEST', 'ENROLMENT_ERROR', 'COMPANY_DECISION'] },
   { type: 'genealogy_correction', label: 'Genealogy correction', plural: 'Corrections', ...GENEALOGY, reasonCodes: ['DATA_ENTRY_ERROR', 'MIGRATION_ERROR', 'DISPUTE_RESOLUTION'] },
@@ -52,6 +52,16 @@ export const CASE_TYPES: readonly CaseTypeInfo[] = [
     type: 'returned_payment', label: 'Returned payment', plural: 'Returned payments', read: 'case.returned_payment.read',
     create: 'case.returned_payment.create', decide: 'payout.approve', ...FINANCE,
   },
+  {
+    // D-B5-15: only the line's payee opens a dispute (in the portal); no staff create permission exists, so `create` is the decider's.
+    type: 'dispute', label: 'Commission dispute', plural: 'Disputes', read: 'case.dispute.read', create: 'case.dispute.approve',
+    decide: 'case.dispute.approve', deciderRole: 'Commission analyst',
+  },
+  {
+    // D-B5-16: opened by the system for a data-subject request; the DPO verifies, states the retention basis and submits; another DPO decides.
+    type: 'privacy', label: 'Privacy request', plural: 'Privacy requests', read: 'privacy.manage', create: 'privacy.manage',
+    decide: 'privacy.manage', deciderRole: 'DPO',
+  },
 ]
 
 export function caseTypeInfo(type: string): CaseTypeInfo | undefined {
@@ -72,6 +82,8 @@ const REASON_LABELS: Readonly<Record<string, string>> = {
   COMMISSION_ERROR: 'Commission error', DATA_CORRECTION: 'Data correction', GOODWILL: 'Goodwill', OTHER: 'Other',
   UNRECOVERABLE: 'Unrecoverable', NO_FUTURE_EARNINGS: 'No future earnings expected', BELOW_THRESHOLD: 'Below the write-off threshold',
   PAYEE_REQUEST: 'Payee request', CORRECTION: 'Correction', RETURNED_BY_BANK: 'Returned by the bank',
+  DISTRIBUTOR_DISPUTE: 'Disputed by the distributor', PORTAL_REQUEST: 'Requested in the portal', PUBLIC_FORM: 'Public request form',
+  RECEIVED_BY_STAFF: 'Received by staff',
 }
 
 export function reasonLabel(code: string): string {
@@ -158,12 +170,17 @@ export function personName(id: string | null, myId: string, approvers: readonly 
 
 /** A personName inside a sentence: "you", "another user", "the system", or the name as it is. */
 export function inSentence(name: string): string {
-  return ['You', 'Another user', 'The system'].includes(name) ? name.toLowerCase() : name
+  return ['You', 'Another user', 'The system', 'The distributor'].includes(name) ? name.toLowerCase() : name
 }
 
-/** "the system", "you" or "another user": who opened the case. */
+/** personName within a case: a dispute's opener is the distributor's portal account (D-B5-15, BUG-117). */
+export function actorName(c: CaseRecord, id: string | null, myId: string, approvers: readonly EligibleApprover[] | null = null): string {
+  return c.type === 'dispute' && id !== null && id === c.opened_by ? 'The distributor' : personName(id, myId, approvers)
+}
+
+/** "the system", "the distributor", "you" or "another user": who opened the case. */
 export function openerText(c: CaseRecord, myId: string): string {
-  return c.opened_by_kind === 'system' ? 'the system' : inSentence(personName(c.opened_by, myId))
+  return c.opened_by_kind === 'system' ? 'the system' : inSentence(actorName(c, c.opened_by, myId))
 }
 
 const DATE_ONLY = 10

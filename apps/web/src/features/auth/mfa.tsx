@@ -1,26 +1,26 @@
 'use client'
 
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useState, type ReactNode } from 'react'
+import { useState } from 'react'
 import { useApi } from '../../components/api-provider'
 import { Banner } from '../../components/banner'
 import { Button } from '../../components/button'
 import { CodeInput } from '../../components/code-input'
-import { QrCode } from '../../components/qr-code'
-import { SecretText } from '../../components/secret-text'
 import { SignOutButton } from '../../components/sign-out-button'
 import { useToast } from '../../components/toast'
+import { TOTP_ENROL_PATH, TotpSteps, type TotpEnrolment } from '../../components/totp-steps'
 import { isApiError } from '../../lib/api'
 import { leavePage } from '../../lib/leave-page'
 import { errorMessage } from '../../lib/messages'
 import { MFA_VERIFY_PATH, realmOf, safeNext, withNext } from '../../lib/navigation'
 import { useMe } from '../../lib/session'
-import { AUTH_TEXT, AuthFooter, AuthHeader, IdentityBox } from './auth-card'
+import { AuthFooter, AuthHeader, IdentityBox } from './auth-card'
 
-/** The page to continue to (from ?next=), its realm, and the MFA pages' shared redirect. */
+/** The page to continue to (from ?next=), its realm, and the MFA pages' shared redirect; portal: a portal page (MFA optional). */
 function useTarget() {
   const target = safeNext(useSearchParams().get('next'))
-  return { target, realm: realmOf(target), destination: target ?? '/' }
+  const realm = realmOf(target)
+  return { target, realm, destination: target ?? '/', portal: realm === 'portal' }
 }
 
 // Leaving the auth pages is a full page load (leavePage): app pages then run under their own, narrower CSP.
@@ -43,40 +43,24 @@ export function MfaVerification() {
         submitLabel="Verify code"
         onVerified={() => leavePage(destination)}
       />
-      <AuthFooter><SignOutButton realm={realm} /></AuthFooter>
+      <AuthFooter><SignOutButton realm={realm} tenant={me?.tenant?.slug ?? null} /></AuthFooter>
     </>
   )
 }
 
-/** One enrolment step in the sc_27 inner-panel look (bg-surface-container-low, rounded-lg). */
-function EnrolStep({ number, title, text, children }: { readonly number: number; readonly title: string; readonly text?: string; readonly children: ReactNode }) {
-  return (
-    <li className="p-space-md bg-surface-container-low rounded-lg flex flex-col gap-space-sm">
-      <div className="flex items-center gap-space-sm">
-        <span aria-hidden="true" className="w-6 h-6 rounded bg-primary text-on-primary flex items-center justify-center font-caption text-caption font-bold shrink-0">{number}</span>
-        <h2 className="font-section-heading text-section-heading text-on-surface">{title}</h2>
-      </div>
-      {text !== undefined && <p className={AUTH_TEXT}>{text}</p>}
-      {children}
-    </li>
-  )
-}
-
-/** POST /v1/auth/mfa/totp: shown once; the API keeps only the sealed secret. */
-interface TotpEnrolment {
-  readonly secret: string
-  readonly otpauth_uri: string
-}
-
 /**
- * Forced TOTP enrolment (AC-35.1: no page until a factor is enrolled). Enrolment starts on the user's click,
- * so reloading or double rendering never replaces a secret the user is scanning.
+ * TOTP enrolment: forced when the role requires it (AC-35.1: no page until a factor is enrolled), else optional (portal
+ * members, and staff whose role needs a factor only for step-up, BUG-110). Enrolment starts on the user's click, so
+ * reloading or double rendering never replaces a secret the user is scanning.
  */
 export function MfaEnrolment() {
   const api = useApi()
   const router = useRouter()
   const toast = useToast()
-  const { target, realm, destination } = useTarget()
+  const { target, realm, destination, portal } = useTarget()
+  const { me } = useMe()
+  // Optional: the member or user may go back without a factor (D-B5-03; mfa.required false).
+  const optional = portal || me?.mfa.required === false
   const [enrolment, setEnrolment] = useState<TotpEnrolment | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -85,7 +69,7 @@ export function MfaEnrolment() {
     setBusy(true)
     setError(null)
     try {
-      const { data } = await api.post<TotpEnrolment>('/v1/auth/mfa/totp')
+      const { data } = await api.post<TotpEnrolment>(TOTP_ENROL_PATH)
       setEnrolment(data)
       setBusy(false)
     } catch (failure) {
@@ -108,11 +92,15 @@ export function MfaEnrolment() {
     return (
       <>
         <AuthHeader eyebrow="Second factor" icon="phonelink_lock" title="Set up your authenticator app">
-          Your role needs a second factor. You can open pages after you set up an authenticator app on your phone, one that shows 6-digit time-based codes.
+          {portal
+            ? 'Protect your portal account with a second factor: after you set up an authenticator app on your phone, each sign-in also asks for the 6-digit code it shows.'
+            : optional
+              ? 'Some actions, such as deciding a case, ask for a fresh code from an authenticator app. Set one up on your phone, one that shows 6-digit time-based codes.'
+              : 'Your role needs a second factor. You can open pages after you set up an authenticator app on your phone, one that shows 6-digit time-based codes.'}
         </AuthHeader>
         {error !== null && <Banner tone="danger">{error}</Banner>}
         <Button variant="primary" size="lg" icon="qr_code_2" loading={busy} onClick={start} className="w-full" data-testid="primary-action">Set up authenticator app</Button>
-        <AuthFooter><SignOutButton realm={realm} /></AuthFooter>
+        <AuthFooter>{optional ? <Button variant="tertiary" onClick={() => leavePage(destination)}>Not now</Button> : <SignOutButton realm={realm} />}</AuthFooter>
       </>
     )
   }
@@ -121,19 +109,7 @@ export function MfaEnrolment() {
       <AuthHeader eyebrow="Second factor" icon="phonelink_lock" title="Set up your authenticator app">
         Add this account to your authenticator app, then enter the code it shows.
       </AuthHeader>
-      <ol className="flex flex-col gap-space-md">
-        <EnrolStep number={1} title="Scan the QR code" text="In your authenticator app, add an account and scan this code.">
-          <div className="flex justify-center">
-            <QrCode value={enrolment.otpauth_uri} label="QR code that adds this account to your authenticator app. The same key is shown as text below." />
-          </div>
-        </EnrolStep>
-        <EnrolStep number={2} title="Or type the setup key" text="If you cannot scan, add the account by typing this key. Do not share it.">
-          <SecretText label="Setup key" value={enrolment.secret} />
-        </EnrolStep>
-        <EnrolStep number={3} title="Enter the code from the app">
-          <CodeInput idPrefix="enrol" endpoint="/v1/auth/mfa/totp/confirm" submitLabel="Confirm code" onVerified={verified} />
-        </EnrolStep>
-      </ol>
+      <TotpSteps enrolment={enrolment} idPrefix="enrol" onVerified={verified} />
     </>
   )
 }

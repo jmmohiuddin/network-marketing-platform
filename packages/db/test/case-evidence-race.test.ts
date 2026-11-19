@@ -17,7 +17,7 @@ beforeEach(async () => {
   ctx = { tenantId, userId: (await createUser({ tenantId })).id }
   ;[caseId, documentId] = await withTenant(ctx, async (tx) => [
     await insertRow(tx, 'case_file', {
-      tenant_id: tenantId, type: 'adjustment', subject_type: 'test_subject', subject_id: tenantId, reason_code: 'TEST',
+      tenant_id: tenantId, type: 'grievance', subject_type: 'test_subject', subject_id: tenantId, reason_code: 'TEST',
       state: 'open', payload: {}, opened_by: ctx.userId,
     }),
     await insertEvidence(tx, tenantId, ctx.userId),

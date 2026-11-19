@@ -20,7 +20,7 @@ export function createCasModule(options: { types: readonly CaseTypeDefinition[] 
 
 export { canReadCase, casePermissions, holdsFor } from './access.js'
 export type { NewCase } from './cases.js'
-export { openSystemCase } from './system-cases.js'
+export { escalateCase, openPortalCase, openSystemCase } from './system-cases.js'
 export {
   CASE_TYPES, caseTypesOf, type CaseRecord, type CaseState, type CaseType, type CaseTypeDefinition, type CaseTypePermissions,
   type CaseTypeRegistry,

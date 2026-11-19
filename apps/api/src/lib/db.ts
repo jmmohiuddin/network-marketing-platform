@@ -78,7 +78,7 @@ export function inTenant<T>(request: FastifyRequest, fn: (tx: Tx) => Promise<T>)
     return runInTenant({ tenantId: key.tenantId, userId: key.serviceAccountId }, actor, fn)
   }
   const auth = currentAuth(request)
-  if (auth.tenantId === null) {
+  if (auth.tenantId === null || auth.realm === 'portal') {
     throw new ApiError(403, 'REALM_FORBIDDEN', 'This endpoint is not available to your account type.')
   }
   const ctx = { tenantId: auth.tenantId, userId: auth.userId, sessionId: auth.sessionId }
@@ -114,7 +114,19 @@ export function inVendor<T>(request: FastifyRequest, fn: (tx: Tx) => Promise<T>)
   return runInVendor(auth.userId, actorOf(request, auth), fn)
 }
 
-/** The caller's own realm: tenant users in their tenant, vendor users in the vendor realm. */
+/** A portal caller's tenant transaction with its participant set (D-B5-02): the self-scope policies apply. */
+export function inPortal<T>(request: FastifyRequest, fn: (tx: Tx) => Promise<T>): Promise<T> {
+  const auth = currentAuth(request)
+  if (auth.realm !== 'portal' || auth.tenantId === null || auth.participantId === null) {
+    throw new ApiError(403, 'REALM_FORBIDDEN', 'This endpoint is not available to your account type.')
+  }
+  const ctx = { tenantId: auth.tenantId, userId: auth.userId, sessionId: auth.sessionId, participantId: auth.participantId }
+  return runInTenant(ctx, { actorType: 'user', requestId: request.id, supportSessionId: null }, fn)
+}
+
+/** The caller's own realm: tenant users in their tenant, vendor users in the vendor realm, portal users in their portal scope. */
 export function inOwnRealm<T>(request: FastifyRequest, fn: (tx: Tx) => Promise<T>): Promise<T> {
-  return currentAuth(request).realm === 'vendor' ? inVendor(request, fn) : inTenant(request, fn)
+  const realm = currentAuth(request).realm
+  if (realm === 'vendor') return inVendor(request, fn)
+  return realm === 'portal' ? inPortal(request, fn) : inTenant(request, fn)
 }

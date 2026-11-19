@@ -373,7 +373,7 @@ describe('ChecklistPage', () => {
     renderAs(OFFICER, <ChecklistPage marketId={MARKET} />, routes(checklist({ pending_request: PENDING, eligible_signers: [] })))
     const bar = await screen.findByRole('region', { name: 'Approval' })
     expect(within(bar).getByText('You prepared or contributed to this checklist, so another Compliance officer must sign off.')).toBeTruthy()
-    expect(within(bar).getByText('No one can approve this yet: a Tenant admin must assign Compliance officer to another user.')).toBeTruthy()
+    expect(within(bar).getByText('No one can approve this yet: another user must hold Compliance officer and, if the role requires it, have set up their authenticator app at sign-in. A Tenant admin assigns roles.')).toBeTruthy()
     expect(within(bar).queryByRole('button', { name: 'Sign off' })).toBeNull()
   })
 

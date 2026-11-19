@@ -29,17 +29,17 @@ const USER_SELECT = `
              '[]'::json) AS roles
   FROM user_account u`
 
-/** One page of the tenant's users, ordered by email (RLS limits rows to the caller's tenant). */
+/** One page of the tenant's staff users, ordered by email (RLS limits rows to the caller's tenant; portal accounts are managed per participant). */
 export async function listUsers(tx: Tx, afterEmail: string | undefined, limit: number): Promise<UserView[]> {
   const { rows } = await tx.query<UserView>(
-    `${USER_SELECT} WHERE ($1::text IS NULL OR u.email > $1) ORDER BY u.email LIMIT $2`,
+    `${USER_SELECT} WHERE u.realm = 'tenant' AND ($1::text IS NULL OR u.email > $1) ORDER BY u.email LIMIT $2`,
     [afterEmail ?? null, limit + 1],
   )
   return rows
 }
 
 export async function getUser(tx: Tx, userId: string): Promise<UserView> {
-  const { rows } = await tx.query<UserView>(`${USER_SELECT} WHERE u.id = $1`, [userId])
+  const { rows } = await tx.query<UserView>(`${USER_SELECT} WHERE u.id = $1 AND u.realm = 'tenant'`, [userId])
   const user = rows[0]
   if (user === undefined) throw notFound()
   return user

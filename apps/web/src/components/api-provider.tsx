@@ -3,8 +3,9 @@
 import { createContext, use, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { createApiClient, type ApiClient } from '../lib/api'
 import { leavePage } from '../lib/leave-page'
+import { realmOf, returnTarget } from '../lib/navigation'
 import { leaveSupportSession, SUPPORT_SESSIONS_PATH, supportSessionFor } from '../lib/support-session'
-import { StepUpModal } from './step-up-modal'
+import { PasswordStepUpModal, StepUpModal } from './step-up-modal'
 
 const ApiContext = createContext<ApiClient | null>(null)
 
@@ -37,13 +38,15 @@ function restore(aside: SetAside): void {
 }
 
 /**
- * Provides the API client: auth errors leave the page (leavePage), STEP_UP_REQUIRED opens StepUpModal.
+ * Provides the API client: auth errors leave the page (leavePage), STEP_UP_REQUIRED opens StepUpModal (on a portal page
+ * the password re-authentication, D-B5-04: it works for every portal session, with or without an authenticator app).
  * Requests that need step-up at the same time share one dialog. Step-up never stacks: an open action dialog is hidden
  * while the code is asked for, shown again afterwards, and focus goes back to the control that started the action
  * (the action's primary button) while the action is retried with the same Idempotency-Key.
  */
 export function ApiProvider({ children }: { readonly children: ReactNode }) {
   const [resolveStepUp, setResolveStepUp] = useState<((verified: boolean) => void) | null>(null)
+  const [portal, setPortal] = useState(false)
   const pending = useRef<Promise<boolean> | null>(null)
   const aside = useRef<SetAside | null>(null)
   const closed = useRef<SetAside | null>(null)
@@ -54,6 +57,8 @@ export function ApiProvider({ children }: { readonly children: ReactNode }) {
       stepUp: () => {
         if (pending.current === null) {
           aside.current = setAside()
+          // An auth page (portal TOTP enrolment, /signin/enrol?next=/portal/…) asks as the realm it returns to.
+          setPortal(realmOf(returnTarget(`${window.location.pathname}${window.location.search}`)) === 'portal')
           pending.current = new Promise<boolean>((resolve) => setResolveStepUp(() => resolve))
         }
         return pending.current
@@ -87,7 +92,7 @@ export function ApiProvider({ children }: { readonly children: ReactNode }) {
   return (
     <ApiContext value={api}>
       {children}
-      <StepUpModal open={resolveStepUp !== null} onDone={finish} />
+      {portal ? <PasswordStepUpModal open={resolveStepUp !== null} onDone={finish} /> : <StepUpModal open={resolveStepUp !== null} onDone={finish} />}
     </ApiContext>
   )
 }

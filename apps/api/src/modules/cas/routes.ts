@@ -13,7 +13,7 @@ import type { Permission } from '../../lib/permissions.js'
 import { holdsFor, readsCase } from './access.js'
 import {
   caseEvents, caseEvidence, contributors, firstApprovals, getCase, hasEvidence, insertCase, insertEvidence, listCases, markDecided,
-  markFirstApproved, markSubmitted, markWithdrawn, pinnedExclusions, preparerOf, recordChange, setAssignee, type FirstApproval,
+  markFirstApproved, markSubmitted, markWithdrawn, pinnedExclusions, preparerOf, recordChange, setAssignee, withCurrentNames, type FirstApproval,
 } from './cases.js'
 import { registerCaseUpdates } from './routes-update.js'
 import { caseTypeOf, type CaseRecord, type CaseTypeDefinition, type CaseTypeRegistry } from './types.js'
@@ -79,7 +79,7 @@ const approvalsRequired = async (tx: Tx, definition: CaseTypeDefinition | undefi
  */
 export async function caseViews(tx: Tx, records: readonly CaseRecord[]): Promise<CaseView[]> {
   const firsts = await firstApprovals(tx, records.flatMap((r) => (r.first_approval_id === null ? [] : [r.first_approval_id])))
-  return records.map((r) => ({
+  return (await withCurrentNames(tx, records)).map((r) => ({
     ...r,
     approvals_required: r.approvals_required ?? (r.state === 'open' ? null : 1),
     first_approval: r.first_approval_id === null ? null : firsts.get(r.first_approval_id)!,
@@ -268,22 +268,28 @@ function registerPreparation(app: FastifyInstance, registry: CaseTypeRegistry): 
     const auth = currentAuth(request)
     parse(emptyBody, request.body ?? {})
     return envelope(await inTenant(request, async (tx) => {
-      const { record, definition } = await readableCase(tx, registry, auth, id, true)
-      assertHolds(auth, definition.permissions.create, record)
-      if (record.state !== 'open') throw stateConflict(record.state)
-      if (definition.evidenceRequired && !(await hasEvidence(tx, record.id))) {
-        throw new ApiError(422, 'EVIDENCE_REQUIRED', 'Attach evidence before submitting this case.')
-      }
-      const preview = definition.effectPreview === undefined ? null : await definition.effectPreview(tx, record)
-      const dueAt = definition.dueAt === undefined ? null : await definition.dueAt(tx, record)
-      // D-B4-10: pinned with the preview, so a later policy change never changes what this submission needs.
-      const required = await approvalsRequired(tx, definition, record)
-      const excluded = await excludedApprovers(tx, { record, definition })
-      const submitted = await markSubmitted(tx, record.id, preview, dueAt, required)
-      await recordChange(tx, record.id, 'submitted', excluded.length === 0 ? null : { excluded_approvers: excluded }, { after: { state: 'submitted', due_at: submitted.due_at, approvals_required: required } })
-      return caseView(tx, registry, submitted)
+      const loaded = await readableCase(tx, registry, auth, id, true)
+      assertHolds(auth, loaded.definition.permissions.create, loaded.record)
+      if (loaded.record.state !== 'open') throw stateConflict(loaded.record.state)
+      return caseView(tx, registry, await submitCase(tx, loaded))
     }))
   })
+}
+
+/** Submits an open case (the submit route and openPortalCase): the type's preview, due date, approvals and exclusions. */
+export async function submitCase(tx: Tx, loaded: Loaded): Promise<CaseRecord> {
+  const { record, definition } = loaded
+  if (definition.evidenceRequired && !(await hasEvidence(tx, record.id))) {
+    throw new ApiError(422, 'EVIDENCE_REQUIRED', 'Attach evidence before submitting this case.')
+  }
+  const preview = definition.effectPreview === undefined ? null : await definition.effectPreview(tx, record)
+  const dueAt = definition.dueAt === undefined ? null : await definition.dueAt(tx, record)
+  // D-B4-10: pinned with the preview, so a later policy change never changes what this submission needs.
+  const required = await approvalsRequired(tx, definition, record)
+  const excluded = await excludedApprovers(tx, loaded)
+  const submitted = await markSubmitted(tx, record.id, preview, dueAt, required)
+  await recordChange(tx, record.id, 'submitted', excluded.length === 0 ? null : { excluded_approvers: excluded }, { after: { state: 'submitted', due_at: submitted.due_at, approvals_required: required } })
+  return submitted
 }
 
 /**

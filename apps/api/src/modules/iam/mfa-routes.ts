@@ -1,6 +1,6 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify'
 import { z } from 'zod'
-import { currentAuth, requireAuth } from '../../lib/auth.js'
+import { assertStepUp, currentAuth, requireAuth } from '../../lib/auth.js'
 import { inOwnRealm } from '../../lib/db.js'
 import { ApiError } from '../../lib/errors.js'
 import { envelope, parse } from '../../lib/http.js'
@@ -38,7 +38,10 @@ export function registerMfaRoutes(app: FastifyInstance): void {
 
   app.post('/v1/auth/mfa/totp', pending, async (request, reply) => {
     const auth = currentAuth(request)
-    const enrolment = await inOwnRealm(request, (tx) => startTotpEnrolment(tx, app.config, auth))
+    const assertReauth = () => {
+      if (auth.realm === 'portal') assertStepUp(request)
+    }
+    const enrolment = await inOwnRealm(request, (tx) => startTotpEnrolment(tx, app.config, auth, assertReauth))
     reply.code(201)
     return envelope(enrolment)
   })

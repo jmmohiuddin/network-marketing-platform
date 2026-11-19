@@ -102,6 +102,11 @@ interface UserRow {
   state: string
   mfa_enrolled: boolean
   tenant_state: string | null
+  participant_id: string | null
+  /** Portal accounts: the participant is active and not pseudonymised (true otherwise). */
+  participant_active: boolean
+  /** Portal accounts: no owned position is anything but terminated (D-B5-06). */
+  participant_terminated: boolean
 }
 
 interface GrantRow {
@@ -133,8 +138,15 @@ async function touch(tx: Tx, session: SessionRow, idleMinutes: number): Promise<
 
 async function loadUser(tx: Tx, userId: string): Promise<UserRow | undefined> {
   const { rows } = await tx.query<UserRow>(
-    `SELECT u.state, u.mfa_enrolled, t.state AS tenant_state
-     FROM user_account u LEFT JOIN tenant t ON t.id = u.tenant_id WHERE u.id = $1`,
+    `SELECT u.state, u.mfa_enrolled, t.state AS tenant_state, u.participant_id,
+            u.participant_id IS NULL OR (p.status = 'active' AND p.pseudonymised_at IS NULL) AS participant_active,
+            u.participant_id IS NOT NULL AND NOT EXISTS (
+              SELECT 1 FROM position_ownership o JOIN position x ON x.id = o.position_id
+              WHERE o.participant_id = u.participant_id AND o.valid_from <= now() AND (o.valid_to IS NULL OR o.valid_to > now())
+                AND x.status <> 'terminated') AS participant_terminated
+     FROM user_account u LEFT JOIN tenant t ON t.id = u.tenant_id
+     LEFT JOIN participant p ON p.tenant_id = u.tenant_id AND p.id = u.participant_id
+     WHERE u.id = $1`,
     [userId],
   )
   return rows[0]
@@ -170,6 +182,8 @@ function buildAuth(session: SessionRow, user: UserRow, grants: GrantRow[]): Auth
     mfaVerified: session.mfa_verified_at !== null,
     stepUpAt: session.step_up_at,
     supportSessionId: null,
+    participantId: realm === 'portal' ? user.participant_id : null,
+    participantTerminated: realm === 'portal' && user.participant_terminated,
   }
 }
 
@@ -179,7 +193,7 @@ function buildAuth(session: SessionRow, user: UserRow, grants: GrantRow[]): Auth
 async function loadContext(tx: Tx, session: SessionRow, idleMinutes: number): Promise<AuthContext | null> {
   if (!(await touch(tx, session, idleMinutes))) return null
   const user = await loadUser(tx, session.user_id)
-  if (user === undefined || user.state !== 'active' || user.tenant_state === 'archived') return null
+  if (user === undefined || user.state !== 'active' || user.tenant_state === 'archived' || !user.participant_active) return null
   const grants = session.realm === 'tenant' ? await loadGrants(tx, session.user_id) : []
   return buildAuth(session, user, grants)
 }
@@ -200,10 +214,10 @@ export async function resolveAuth(request: FastifyRequest, config: Config): Prom
   const idle = config.sessionIdleMinutes
   // The platform acts here (expiry, revocation), so the transaction's actor is the system, not the user.
   const actor: ActorContext = { actorType: 'system', requestId: request.id, supportSessionId: null }
-  if (session.realm === 'tenant' && session.tenant_id !== null) {
+  if ((session.realm === 'tenant' || session.realm === 'portal') && session.tenant_id !== null) {
     const ctx = { tenantId: session.tenant_id, userId: SYSTEM_ACTOR_ID, sessionId: session.id }
     return runInTenant(ctx, actor, (tx) => loadContext(tx, session, idle))
   }
   if (session.realm === 'vendor') return runInVendor(SYSTEM_ACTOR_ID, actor, (tx) => loadContext(tx, session, idle))
-  return null // portal realm arrives in release B
+  return null
 }

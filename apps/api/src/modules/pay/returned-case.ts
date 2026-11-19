@@ -29,14 +29,15 @@ export const RETURNED_PAYMENT_CASE_TYPE: CaseTypeDefinition<ReturnedPayload> = {
       })
     }
   },
-  // Runs at submit (CAS): the officer records what was confirmed with the payee before the amount is payable again.
+  // Runs at submit (CAS): the officer records what was confirmed with the payee before the amount is payable again. The
+  // participant's name stays null: the preview is history erasure cannot clear; case views fill in the current one (BUG-109).
   async effectPreview(tx, c) {
     if (c.payload.note === undefined) {
       throw new ApiError(422, 'VALIDATION_FAILED', 'note is required to submit a returned-payment case.', { issues: [{ path: 'note', message: 'is required' }] })
     }
     const { rows } = await tx.query(
       `SELECT jsonb_build_object('id', i.id, 'batch_id', i.batch_id, 'bank_detail_masked', v.masked,
-                'participant', jsonb_build_object('id', x.id, 'external_ref', x.external_ref, 'display_name', x.display_name)) AS instruction,
+                'participant', jsonb_build_object('id', x.id, 'external_ref', x.external_ref, 'display_name', NULL)) AS instruction,
               i.amount_minor::text AS amount_minor, i.currency, i.terminal_at AS returned_at, i.last_error AS reason
        FROM payout_instruction i JOIN bank_detail_version v ON v.id = i.bank_detail_version_id JOIN participant x ON x.id = i.payee_participant_id
        WHERE i.id = $1`,

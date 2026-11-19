@@ -195,7 +195,7 @@ describe('GET /v1/me', () => {
     expect(body.roles.map((role: { name: string }) => role.name)).toEqual(['Compliance officer'])
     expect(body.permissions).toEqual([
       'agreement.publish', 'audit.read', 'case.adjustment.read', 'case.bank_detail.approve', 'case.bank_detail.read',
-      'case.duplicate.approve', 'case.duplicate.read', 'case.genealogy.approve', 'case.genealogy.read', 'case.restatement.read',
+      'case.dispute.read', 'case.duplicate.approve', 'case.duplicate.read', 'case.genealogy.approve', 'case.genealogy.read', 'case.restatement.read',
       'case.write_off.read', 'compliance.read', 'export', 'genealogy.read', 'guardrail.read', 'ledger.read', 'mapping.approve',
       'market.signoff', 'order.read', 'override.approve', 'participant.read', 'participant.terminate', 'participant_type.approve',
       'payout.hold', 'payout.read', 'period.read', 'plan.approve', 'plan.read', 'restatement.request', 'run.review',

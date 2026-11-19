@@ -68,6 +68,30 @@ afterAll(async () => {
   await app.close()
 })
 
+/** An FR market with a committed period and an FR clawback receivable of `amount` for the payee (owner fixture). */
+async function frReceivable(x: World, payee: Member, amount: number): Promise<{ fr: string; periodId: string; accountId: string }> {
+  const [market] = await ownerRows<{ id: string }>(
+    `INSERT INTO market (tenant_id, code, currency, minor_unit, time_zone, languages, market_pack, state)
+     VALUES ($1, 'FR', 'EUR', 2, 'Europe/Paris', '{fr}', 'none', 'live') RETURNING id`, [x.tenantId])
+  const fr = market!.id
+  // The FR market's committed period (the write-off's attribution period) and the FR receivable of the DE participant.
+  const [period] = await ownerRows<{ id: string }>(
+    `WITH c AS (INSERT INTO calendar (tenant_id, market_id, name, cadence, cutoff_time_zone, first_period_start)
+                VALUES ($1, $2, 'FR monthly', 'monthly', 'Europe/Paris', ($3::timestamptz AT TIME ZONE 'Europe/Paris')::date) RETURNING id)
+     INSERT INTO period (tenant_id, calendar_id, starts_at, ends_at, state) SELECT $1, c.id, $3, $4, 'committed' FROM c RETURNING id`,
+    [x.tenantId, fr, x.periods[0]!.starts_at, x.periods[0]!.ends_at])
+  await ownerUnchecked(
+    `WITH r AS (INSERT INTO ledger_account (tenant_id, market_id, type, payee_participant_id, currency) VALUES ($1, $2, 'clawback_receivable', $4, 'EUR') RETURNING id),
+          x AS (INSERT INTO ledger_account (tenant_id, market_id, type, payee_participant_id, currency) VALUES ($1, $2, 'commission_expense', NULL, 'EUR') RETURNING id),
+          e AS (INSERT INTO journal_entry (tenant_id, market_id, period_id, event_type, origin_type, origin_id, idempotency_key, approval_id, created_by, created_by_type)
+                SELECT $1, $2, $3, 'run_committed', 'run', g.id, 'run:' || g.id, gen_random_uuid(), $5, 'user' FROM (SELECT gen_random_uuid() AS id) g RETURNING id)
+     INSERT INTO posting (tenant_id, entry_id, account_id, debit_minor, credit_minor, currency)
+     SELECT $1, e.id, r.id, $6, 0, 'EUR' FROM e, r UNION ALL SELECT $1, e.id, x.id, 0, $6, 'EUR' FROM e, x`,
+    [x.tenantId, fr, period!.id, payee.participantId, x.finance.id, amount])
+  const [account] = await ownerRows<{ id: string }>(`SELECT id FROM ledger_account WHERE market_id = $1 AND type = 'clawback_receivable'`, [fr])
+  return { fr, periodId: period!.id, accountId: account!.id }
+}
+
 const get = (url: string, as: TestUser = w.finance) => call(app, { method: 'GET', url, as })
 const putMapping = (type: string, glCode: string, as: TestUser = w.finance, marketId = w.marketId) =>
   call(app, { method: 'PUT', url: `/v1/ledger/gl-mappings/${marketId}/${type}`, as, body: { gl_code: glCode } })
@@ -236,6 +260,11 @@ describe('write-off case (FR-FIN-004, D-B4-08, T-B4-07)', () => {
       market: { id: w.marketId, code: 'DE' }, payee: { id: c.participantId }, receivable_minor: '3000', amount_minor: '1000', after_minor: '2000', eligible: false,
       approvals_required: 2, reasons: ['not_eligible'], outstanding_since: expect.any(String),
     })
+    // BUG-109: the stored preview names no one (erasure cannot clear it); the view carries the current name.
+    const [stored] = await ownerRows<{ names: string; name: string | null }>(
+      `SELECT jsonb_path_query_array(f.effect_preview, 'strict $.**.display_name')::text AS names, p.display_name AS name FROM case_file f, participant p WHERE f.id = $1 AND p.id = $2`, [caseId, c.participantId])
+    expect(stored!.names).toBe('[null]')
+    expect(submitted.json().data.effect_preview.payee).toEqual({ id: c.participantId, external_ref: expect.any(String), display_name: stored!.name })
     expect((await get('/v1/ledger/receivables')).json().data[0].open_write_off_case_id).toBe(caseId)
     // ledger.read without case.write_off.read: the receivable, not that a write-off is in progress.
     expect((await get('/v1/ledger/receivables', payoutOfficer)).json().data[0]).toMatchObject({ balance_minor: '3000', open_write_off_case_id: null })
@@ -296,33 +325,15 @@ describe('write-off case (FR-FIN-004, D-B4-08, T-B4-07)', () => {
   test('AC-FIN4-3: a DE participant\'s FR receivable is an FR case: DE-only staff cannot open, see or decide it; FR-scoped staff do', async () => {
     const x = await createWorld({ settings: { 'write_offs.policy': { eligible_below_minor: '2000', second_approver_above_minor: '100000' } } })
     const payee = await member(x, 'DE-P')
-    const [market] = await ownerRows<{ id: string }>(
-      `INSERT INTO market (tenant_id, code, currency, minor_unit, time_zone, languages, market_pack, state)
-       VALUES ($1, 'FR', 'EUR', 2, 'Europe/Paris', '{fr}', 'none', 'live') RETURNING id`, [x.tenantId])
-    const fr = market!.id
-    // The FR market's committed period (the write-off's attribution period) and a 10.00 FR receivable of the DE participant.
-    const [period] = await ownerRows<{ id: string }>(
-      `WITH c AS (INSERT INTO calendar (tenant_id, market_id, name, cadence, cutoff_time_zone, first_period_start)
-                  VALUES ($1, $2, 'FR monthly', 'monthly', 'Europe/Paris', ($3::timestamptz AT TIME ZONE 'Europe/Paris')::date) RETURNING id)
-       INSERT INTO period (tenant_id, calendar_id, starts_at, ends_at, state) SELECT $1, c.id, $3, $4, 'committed' FROM c RETURNING id`,
-      [x.tenantId, fr, x.periods[0]!.starts_at, x.periods[0]!.ends_at])
-    await ownerUnchecked(
-      `WITH r AS (INSERT INTO ledger_account (tenant_id, market_id, type, payee_participant_id, currency) VALUES ($1, $2, 'clawback_receivable', $4, 'EUR') RETURNING id),
-            x AS (INSERT INTO ledger_account (tenant_id, market_id, type, payee_participant_id, currency) VALUES ($1, $2, 'commission_expense', NULL, 'EUR') RETURNING id),
-            e AS (INSERT INTO journal_entry (tenant_id, market_id, period_id, event_type, origin_type, origin_id, idempotency_key, approval_id, created_by, created_by_type)
-                  SELECT $1, $2, $3, 'run_committed', 'run', g.id, 'run:' || g.id, gen_random_uuid(), $5, 'user' FROM (SELECT gen_random_uuid() AS id) g RETURNING id)
-       INSERT INTO posting (tenant_id, entry_id, account_id, debit_minor, credit_minor, currency)
-       SELECT $1, e.id, r.id, 1000, 0, 'EUR' FROM e, r UNION ALL SELECT $1, e.id, x.id, 0, 1000, 'EUR' FROM e, x`,
-      [x.tenantId, fr, period!.id, payee.participantId, x.finance.id])
-    const [account] = await ownerRows<{ id: string }>(`SELECT id FROM ledger_account WHERE market_id = $1 AND type = 'clawback_receivable'`, [fr])
+    const { fr, periodId, accountId } = await frReceivable(x, payee, 1000)
     const [deAnalyst, frAnalyst, deFinance, frFinance] = await Promise.all([
       user(x.tenantId, ['Commission analyst'], [x.marketId]), user(x.tenantId, ['Commission analyst'], [fr]),
       user(x.tenantId, ['Finance approver'], [x.marketId]), user(x.tenantId, ['Finance approver'], [fr]),
     ])
 
     // AC-FIN4-3 asks for 403 SCOPE_NOT_HELD here; CAS answers 422 SUBJECT_NOT_FOUND (open CAS-owner issue).
-    expect((await open(account!.id, '1000', deAnalyst)).json().error.code).toBe('SUBJECT_NOT_FOUND')
-    const opened = await open(account!.id, '1000', frAnalyst)
+    expect((await open(accountId, '1000', deAnalyst)).json().error.code).toBe('SUBJECT_NOT_FOUND')
+    const opened = await open(accountId, '1000', frAnalyst)
     expect(opened.statusCode, opened.body).toBe(201)
     const caseId = opened.json().data.id as string
     expect(opened.json().data.market_id).toBe(fr)
@@ -335,9 +346,41 @@ describe('write-off case (FR-FIN-004, D-B4-08, T-B4-07)', () => {
     expect((await get(`/v1/cases/${caseId}`, frFinance)).statusCode).toBe(200)
     const decided = await decide(frFinance)
     expect(decided.statusCode, decided.body).toBe(200)
-    expect(await ownerRows('SELECT market_id, period_id FROM journal_entry WHERE origin_id = $1', [caseId])).toEqual([{ market_id: fr, period_id: period!.id }])
+    expect(await ownerRows('SELECT market_id, period_id FROM journal_entry WHERE origin_id = $1', [caseId])).toEqual([{ market_id: fr, period_id: periodId }])
     expect((await get(`/v1/payees/${payee.participantId}/balances`, frFinance)).json().data)
       .toEqual([{ market: { id: fr, code: 'FR', currency: 'EUR' }, payable_minor: '0', in_transit_minor: '0', receivable_minor: '0' }])
+  })
+
+  test('SEC-B4-7 / D-B5-21: write-offs of one receivable since it became outstanding add up towards the threshold', async () => {
+    const x = await createWorld({ settings: { 'write_offs.policy': { eligible_below_minor: '5000', second_approver_above_minor: '1500' } } })
+    const { fr, accountId } = await frReceivable(x, await member(x, 'DE-S'), 3000)
+    const [analyst, finance] = await Promise.all([user(x.tenantId, ['Commission analyst'], [fr]), user(x.tenantId, ['Finance approver'], [fr])])
+    const proposeAndSubmit = async (amount: string) => {
+      const opened = await open(accountId, amount, analyst)
+      expect(opened.statusCode, opened.body).toBe(201)
+      return (await call(app, { method: 'POST', url: `/v1/cases/${opened.json().data.id}/submit`, as: analyst, body: {} })).json().data
+    }
+    const first = await proposeAndSubmit('1000')
+    expect(first).toMatchObject({ approvals_required: 1, effect_preview: { reasons: [] } })
+    const approved = await call(app, { method: 'POST', url: `/v1/cases/${first.id}/decision`, as: finance, idempotencyKey: true, body: { decision: 'approve', reason: 'Small' } })
+    expect(approved.statusCode, approved.body).toBe(200)
+    // 10.00 approved + 10.00 now = 20.00 > 15.00: splitting never avoids the second approver.
+    expect(await proposeAndSubmit('1000')).toMatchObject({ approvals_required: 2, effect_preview: { reasons: ['above_threshold'] } })
+  })
+
+  test('TK-B4-14 / D-B5-22: a proposer related to the payee cannot open or submit the write-off', async () => {
+    const x = await createWorld({ settings: { 'write_offs.policy': { eligible_below_minor: '5000', second_approver_above_minor: '1500' } } })
+    const payee = await member(x, 'DE-R')
+    const { fr, accountId } = await frReceivable(x, payee, 3000)
+    const [related, unrelated] = await Promise.all([user(x.tenantId, ['Commission analyst'], [fr]), user(x.tenantId, ['Commission analyst'], [fr])])
+    await ownerRows(`INSERT INTO user_related_participant (tenant_id, user_id, participant_id, relation, declared_by) VALUES ($1, $2, $3, 'relative', $2)`,
+      [x.tenantId, related.id, payee.participantId])
+    expect((await open(accountId, '100', related)).json().error).toMatchObject({ code: 'WRITE_OFF_BLOCKED', details: { reason: 'related_party' } })
+    const opened = await open(accountId, '100', unrelated)
+    expect(opened.statusCode, opened.body).toBe(201)
+    const submitted = await call(app, { method: 'POST', url: `/v1/cases/${opened.json().data.id}/submit`, as: related, body: {} })
+    expect(submitted.json().error).toMatchObject({ code: 'WRITE_OFF_BLOCKED', details: { reason: 'related_party' } })
+    expect((await call(app, { method: 'POST', url: `/v1/cases/${opened.json().data.id}/submit`, as: unrelated, body: {} })).statusCode).toBe(200)
   })
 
   test('AC-FIN4-1: without write_offs.policy the case is refused 422 SETTING_NOT_CONFIGURED', async () => {

@@ -115,6 +115,8 @@ const PERMISSION_LABELS: Readonly<Record<string, string>> = {
   'case.bank_detail.approve': 'Approve bank-detail changes',
   'case.returned_payment.read': 'View returned-payment cases',
   'case.returned_payment.create': 'Handle returned payments',
+  'case.dispute.read': 'View commission disputes',
+  'case.dispute.approve': 'Decide commission disputes',
 }
 
 export function permissionLabel(permission: string): string {
@@ -155,6 +157,7 @@ const SUPPORT_SCOPE_LABELS: Readonly<Record<string, string>> = {
   'case.write_off.read': 'Write-off cases',
   'case.bank_detail.read': 'Bank-detail cases',
   'case.returned_payment.read': 'Returned-payment cases',
+  'case.dispute.read': 'Commission dispute cases',
 }
 
 // BUG-048: areas with no screen to view yet (plans arrive in B3); never offered in a session request.
@@ -206,7 +209,7 @@ export function jobHealthLabel(health: { readonly queued: number; readonly runni
   return `${health.queued} queued · ${health.running} running · ${health.failed} failed`
 }
 
-/** The tenant base roles and their permissions (apps/api/src/lib/permissions.ts BASE_ROLES, PLAN B1 to B4 section 3). */
+/** The tenant base roles and their permissions (apps/api/src/lib/permissions.ts BASE_ROLES, PLAN B1 to B5 section 3). */
 export const BASE_ROLE_PERMISSIONS: Readonly<Record<string, readonly string[]>> = {
   'Tenant admin': [
     'user.manage', 'settings.manage', 'import.manage', 'mapping.edit', 'mapping.approve', 'compliance.read',
@@ -217,7 +220,7 @@ export const BASE_ROLE_PERMISSIONS: Readonly<Record<string, readonly string[]>> 
     'compliance.read', 'participant.read', 'genealogy.read', 'case.genealogy.read', 'order.read', 'late.manage',
     'integration.read', 'plan.read', 'period.read', 'run.execute', 'run.review', 'trace.read', 'restatement.request',
     'case.restatement.read', 'ledger.read', 'case.adjustment.read', 'case.adjustment.create', 'case.write_off.read',
-    'case.write_off.create',
+    'case.write_off.create', 'case.dispute.read', 'case.dispute.approve',
   ],
   'Plan administrator': ['compliance.read', 'plan.read', 'plan.edit', 'plan.simulate', 'period.read', 'guardrail.read'],
   'Finance approver': [
@@ -225,7 +228,7 @@ export const BASE_ROLE_PERMISSIONS: Readonly<Record<string, readonly string[]>> 
     'plan.read', 'period.read', 'run.review', 'run.commit', 'trace.read', 'restatement.approve', 'case.restatement.read',
     'ledger.read', 'ledger.export', 'payout.read', 'payout.approve', 'tax.manage', 'case.adjustment.read',
     'case.adjustment.approve', 'case.write_off.read', 'case.write_off.create', 'case.write_off.approve',
-    'case.returned_payment.read',
+    'case.returned_payment.read', 'case.dispute.read',
   ],
   'Payout officer': [
     'participant.unmask', 'participant.read', 'ledger.read', 'payout.read', 'payout.prepare', 'payout.reconcile',
@@ -237,12 +240,12 @@ export const BASE_ROLE_PERMISSIONS: Readonly<Record<string, readonly string[]>> 
     'case.genealogy.read', 'case.genealogy.approve', 'case.duplicate.read', 'case.duplicate.approve', 'order.read',
     'plan.read', 'plan.approve', 'period.read', 'run.review', 'trace.read', 'restatement.request', 'case.restatement.read',
     'guardrail.read', 'override.approve', 'ledger.read', 'payout.read', 'payout.hold', 'case.adjustment.read',
-    'case.write_off.read', 'case.bank_detail.read', 'case.bank_detail.approve',
+    'case.write_off.read', 'case.bank_detail.read', 'case.bank_detail.approve', 'case.dispute.read',
   ],
   'Support agent': [
     'participant.read', 'participant.manage', 'genealogy.read', 'case.genealogy.read', 'case.genealogy.create',
     'case.duplicate.read', 'case.duplicate.create', 'servicing.manage', 'order.read', 'period.read', 'run.review',
-    'trace.read', 'case.bank_detail.read', 'case.bank_detail.create',
+    'trace.read', 'case.bank_detail.read', 'case.bank_detail.create', 'case.dispute.read',
   ],
   DPO: ['compliance.read', 'audit.read', 'participant.unmask', 'participant.read', 'privacy.manage'],
   'Implementation consultant': ['import.manage', 'mapping.edit', 'plan.read', 'plan.edit', 'plan.simulate', 'period.read'],

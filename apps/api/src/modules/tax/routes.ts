@@ -1,10 +1,10 @@
 import { createHmac, randomUUID } from 'node:crypto'
 import type { Tx } from '@nmp/db'
-import type { FastifyInstance } from 'fastify'
+import type { FastifyInstance, FastifyRequest } from 'fastify'
 import { z } from 'zod'
 import { recordAudit } from '../../lib/audit.js'
-import { currentAuth, marketScope, requirePermission, requireRealm, requireStepUp } from '../../lib/auth.js'
-import { inTenant } from '../../lib/db.js'
+import { assertStepUp, currentAuth, marketScope, requirePermission, requirePortal, requireRealm, requireStepUp } from '../../lib/auth.js'
+import { inPortal, inTenant } from '../../lib/db.js'
 import { ApiError, notFound } from '../../lib/errors.js'
 import { envelope, parse } from '../../lib/http.js'
 import { idempotent, sendIdempotent } from '../../lib/idempotency.js'
@@ -19,6 +19,9 @@ const putBody = z.strictObject({
   entity_type: z.enum(['individual', 'company', 'partnership', 'other']).optional(),
   tax_id: z.string().max(100).optional(),
 })
+type PutBody = z.infer<typeof putBody>
+// D-B5-13: the payee states residency and entity type; the tax id is optional.
+const portalPutBody = putBody.required({ residency: true, entity_type: true })
 
 const TAX_ID = /^[A-Z0-9-]{4,32}$/
 const context = (versionId: string) => `tax_profile:${versionId}`
@@ -46,6 +49,58 @@ async function versions(tx: Tx, participantId: string, scope: readonly string[] 
 }
 
 const view = ({ tax_id_sealed: _sealed, ...rest }: Version) => rest
+
+/**
+ * The tax id normalised and format-checked (422 TAX_ID_FORMAT). The Idempotency-Key hash is unkeyed SHA-256, so the
+ * request body gets a keyed digest of the tax id, never the tax id itself.
+ */
+function taxIdOf(body: PutBody, request: FastifyRequest, secretKey: Buffer): string | undefined {
+  const taxId = body.tax_id === undefined ? undefined : body.tax_id.replace(/\s+/g, '').toUpperCase()
+  if (taxId === undefined) return undefined
+  if (!TAX_ID.test(taxId)) throw new ApiError(422, 'TAX_ID_FORMAT', 'The tax id must be 4 to 32 letters, digits or hyphens.')
+  request.body = { ...body, tax_id: createHmac('sha256', secretKey).update(`tax:${currentAuth(request).tenantId}:${taxId}`).digest('hex') }
+  return taxId
+}
+
+interface Change {
+  readonly participantId: string
+  readonly body: PutBody
+  readonly taxId: string | undefined
+  readonly secretKey: Buffer
+}
+
+/** D-B4-17: closes the current version now and starts the next one; fields not sent carry over. Notifies the payee. */
+async function saveVersion(tx: Tx, change: Change, scope: readonly string[] | null, action: string): Promise<Version> {
+  const { participantId: id, body, taxId, secretKey } = change
+  await tx.query(`SELECT pg_advisory_xact_lock(hashtextextended('tax_profile:' || app_tenant_id() || ':' || $1::text, 0))`, [id])
+  // clock_timestamp, not now(): a PUT that waited here began before the version it closes was written (now() is that start).
+  const { rows: clock } = await tx.query<{ at: string }>('SELECT clock_timestamp()::text AS at') // text keeps the microseconds
+  const at = clock[0]!.at
+  const previous = (await versions(tx, id, scope)).find((v) => v.valid_to === null)
+  const versionId = randomUUID()
+  const sealed = taxId !== undefined
+    ? seal(secretKey, taxId, context(versionId))
+    : previous?.tax_id_sealed == null ? null : seal(secretKey, open(secretKey, previous.tax_id_sealed, context(previous.id)), context(versionId))
+  const mask = taxId !== undefined ? masked(taxId) : previous?.tax_id_masked ?? null
+  if (previous !== undefined) await tx.query('UPDATE tax_profile SET valid_to = $2::timestamptz WHERE id = $1', [previous.id, at])
+  const { rows } = await tx.query<Version>(
+    `INSERT INTO tax_profile (id, tenant_id, participant_id, residency, entity_type, tax_id_sealed, tax_id_masked, valid_from, created_by)
+     VALUES ($1, app_tenant_id(), $2, $3, $4, $5, $6, $7::timestamptz, app_user_id())
+     RETURNING id, residency, entity_type, tax_id_sealed, tax_id_masked, valid_from, valid_to`,
+    [versionId, id, body.residency ?? previous?.residency ?? null, body.entity_type ?? previous?.entity_type ?? null, sealed, mask, at],
+  )
+  await recordAudit(tx, {
+    action, objectType: 'tax_profile', objectId: versionId,
+    after: { participant_id: id, previous_id: previous?.id ?? null, fields: Object.keys(body).sort(), tax_id_masked: mask },
+  })
+  // The mandatory security notice (D-B5-14), whether the payee or staff changed the profile.
+  await tx.query(
+    `SELECT notify_participant($1, 'tax_profile.changed', jsonb_build_object('version_id', $2::uuid, 'tax_id_masked', $3::text,
+       'valid_from', json_instant($4)))`,
+    [id, versionId, mask, at],
+  )
+  return rows[0]!
+}
 const isCurrent = (v: Version) => v.valid_to === null || v.valid_to > new Date()
 
 export function registerTaxProfileRoutes(app: FastifyInstance): void {
@@ -66,38 +121,11 @@ export function registerTaxProfileRoutes(app: FastifyInstance): void {
     if (Object.keys(body).length === 0) {
       throw new ApiError(422, 'VALIDATION_FAILED', 'Send at least one of residency, entity_type, tax_id.', { issues: [{ path: '', message: 'nothing to change' }] })
     }
-    const taxId = body.tax_id === undefined ? undefined : body.tax_id.replace(/\s+/g, '').toUpperCase()
-    if (taxId !== undefined && !TAX_ID.test(taxId)) {
-      throw new ApiError(422, 'TAX_ID_FORMAT', 'The tax id must be 4 to 32 letters, digits or hyphens.')
-    }
-    const auth = currentAuth(request)
-    // The Idempotency-Key hash is unkeyed SHA-256: it gets a keyed digest of the tax id, never the tax id itself.
-    if (taxId !== undefined) request.body = { ...body, tax_id: createHmac('sha256', secretKey).update(`tax:${auth.tenantId}:${taxId}`).digest('hex') }
-    const scope = marketScope(auth, 'tax.manage')
-    const result = await inTenant(request, (tx) => idempotent(tx, request, async () => {
-      await tx.query(`SELECT pg_advisory_xact_lock(hashtextextended('tax_profile:' || app_tenant_id() || ':' || $1::text, 0))`, [id])
-      // clock_timestamp, not now(): a PUT that waited here began before the version it closes was written (now() is that start).
-      const { rows: clock } = await tx.query<{ at: string }>('SELECT clock_timestamp()::text AS at') // text keeps the microseconds
-      const at = clock[0]!.at
-      const previous = (await versions(tx, id, scope)).find((v) => v.valid_to === null)
-      const versionId = randomUUID()
-      const sealed = taxId !== undefined
-        ? seal(secretKey, taxId, context(versionId))
-        : previous?.tax_id_sealed == null ? null : seal(secretKey, open(secretKey, previous.tax_id_sealed, context(previous.id)), context(versionId))
-      const mask = taxId !== undefined ? masked(taxId) : previous?.tax_id_masked ?? null
-      if (previous !== undefined) await tx.query('UPDATE tax_profile SET valid_to = $2::timestamptz WHERE id = $1', [previous.id, at])
-      const { rows } = await tx.query<Version>(
-        `INSERT INTO tax_profile (id, tenant_id, participant_id, residency, entity_type, tax_id_sealed, tax_id_masked, valid_from, created_by)
-         VALUES ($1, app_tenant_id(), $2, $3, $4, $5, $6, $7::timestamptz, app_user_id())
-         RETURNING id, residency, entity_type, tax_id_sealed, tax_id_masked, valid_from, valid_to`,
-        [versionId, id, body.residency ?? previous?.residency ?? null, body.entity_type ?? previous?.entity_type ?? null, sealed, mask, at],
-      )
-      await recordAudit(tx, {
-        action: 'TAX_PROFILE.VERSION_CREATED', objectType: 'tax_profile', objectId: versionId,
-        after: { participant_id: id, previous_id: previous?.id ?? null, fields: Object.keys(body).sort(), tax_id_masked: mask },
-      })
-      return { statusCode: 200, body: envelope(view(rows[0]!)) }
-    }))
+    const change = { participantId: id, body, taxId: taxIdOf(body, request, secretKey), secretKey }
+    const scope = marketScope(currentAuth(request), 'tax.manage')
+    const result = await inTenant(request, (tx) => idempotent(tx, request, async () => (
+      { statusCode: 200, body: envelope(view(await saveVersion(tx, change, scope, 'TAX_PROFILE.VERSION_CREATED'))) }
+    )))
     return sendIdempotent(reply, result)
   })
 
@@ -112,5 +140,29 @@ export function registerTaxProfileRoutes(app: FastifyInstance): void {
     })
     reply.header('cache-control', 'no-store')
     return envelope({ tax_id: taxId })
+  })
+}
+
+/** D-B5-13 self-service (FR-DIST-006): the payee's own profile, masked only (no portal unmask); a terminated payee too. */
+export function registerSelfTaxProfileRoutes(app: FastifyInstance): void {
+  const { secretKey } = app.config
+  const portal = { preHandler: [requirePortal()] }
+
+  app.get('/v1/me/tax-profile', portal, async (request) => {
+    const participantId = currentAuth(request).participantId!
+    const all = await inPortal(request, (tx) => versions(tx, participantId, null))
+    const current = all.find(isCurrent)
+    return envelope({ current: current === undefined ? null : view(current), history: all.filter((v) => v !== current).map(view) })
+  })
+
+  app.put('/v1/me/tax-profile', portal, async (request, reply) => {
+    assertStepUp(request)
+    const participantId = currentAuth(request).participantId!
+    const body = parse(portalPutBody, request.body)
+    const change = { participantId, body, taxId: taxIdOf(body, request, secretKey), secretKey }
+    const result = await inPortal(request, (tx) => idempotent(tx, request, async () => {
+      return { statusCode: 201, body: envelope(view(await saveVersion(tx, change, null, 'TAX_PROFILE.CHANGED'))) }
+    }))
+    return sendIdempotent(reply, result)
   })
 }

@@ -46,7 +46,18 @@ async function sharedWith(tx: Tx, participantId: string, fingerprint: Buffer, sc
   return rows[0]!.n
 }
 
-const invalid = (path: string) => new ApiError(422, 'BANK_DETAILS_INVALID', `The bank details are not valid (${path}).`, { path })
+/** The mandatory security notice of a new current version, to the contact on record (D-B5-12, D-B5-14). */
+export async function notifyBankDetailChanged(
+  tx: Tx, participantId: string, versionId: string, masked: string, previousMasked: string | null, until: Date,
+): Promise<void> {
+  await tx.query(
+    `SELECT notify_participant($1, 'bank_detail.changed', jsonb_build_object('version_id', $2::uuid, 'masked', $3::text,
+       'previous_masked', $4::text, 'cooling_off_until', json_instant($5)))`,
+    [participantId, versionId, masked, previousMasked, until],
+  )
+}
+
+export const invalid = (path: string) => new ApiError(422, 'BANK_DETAILS_INVALID', `The bank details are not valid (${path}).`, { path })
 
 export function registerBankDetailRoutes(app: FastifyInstance): void {
   const tenant = requireRealm('tenant')
@@ -106,7 +117,8 @@ export function registerBankDetailRoutes(app: FastifyInstance): void {
   })
 }
 
-const payload = z.strictObject({ request_id: z.uuid() })
+// participant_id: set on the shared-account review the portal opens (the self policies read it, D-B5-02); staff omit it.
+const payload = z.strictObject({ request_id: z.uuid(), participant_id: z.uuid().optional() })
 type BankDetailPayload = z.infer<typeof payload>
 
 interface RequestRow {
@@ -117,11 +129,13 @@ interface RequestRow {
   readonly fingerprint: Buffer
   readonly masked: string
   readonly created_by: string
+  readonly has_contact: boolean
 }
 
 async function requestOf(tx: Tx, id: string): Promise<RequestRow | undefined> {
   const { rows } = await tx.query<RequestRow>(
-    'SELECT id, participant_id, scheme, details_sealed, fingerprint, masked, created_by FROM bank_detail_request WHERE id = $1', [id])
+    `SELECT id, participant_id, scheme, details_sealed, fingerprint, masked, created_by, contact_email_sealed IS NOT NULL AS has_contact
+     FROM bank_detail_request WHERE id = $1`, [id])
   return rows[0]
 }
 
@@ -140,6 +154,7 @@ export const BANK_DETAIL_CASE_TYPE: CaseTypeDefinition<BankDetailPayload> = {
   type: 'bank_detail',
   subjectTypes: ['participant'],
   reasonCodes: ['PAYEE_REQUEST', 'CORRECTION'],
+  systemReasonCodes: ['SHARED_ACCOUNT'],
   evidenceRequired: true,
   permissions: { read: 'case.bank_detail.read', create: 'case.bank_detail.create', decide: 'case.bank_detail.approve' },
   payload,
@@ -150,7 +165,10 @@ export const BANK_DETAIL_CASE_TYPE: CaseTypeDefinition<BankDetailPayload> = {
   async validateCreate(tx, subject, value, _scope, stored) {
     const found = await requestOf(tx, value.request_id)
     const { rows: acting } = await tx.query<{ id: string }>('SELECT app_user_id() AS id')
-    if (found === undefined || found.participant_id !== subject.id || found.created_by !== acting[0]!.id) {
+    // A system-opened review (SHARED_ACCOUNT) names the payee's own portal request: staff may PATCH it without changing it.
+    const keptSystemRequest = stored?.opened_by_kind === 'system' && stored.payload.request_id === value.request_id
+    if (found === undefined || found.participant_id !== subject.id || (found.created_by !== acting[0]!.id && !keptSystemRequest)
+      || (value.participant_id !== undefined && value.participant_id !== subject.id)) {
       throw new ApiError(422, 'VALIDATION_FAILED', 'request_id is not valid: it must be your bank-detail request for this participant.', {
         issues: [{ path: 'request_id', message: 'must be your bank-detail request for this participant' }],
       })
@@ -180,8 +198,13 @@ export const BANK_DETAIL_CASE_TYPE: CaseTypeDefinition<BankDetailPayload> = {
     const hours = await getSetting(tx, 'payouts.bank_detail_cooling_off_hours')
     if (hours === null) throw notConfigured('payouts.bank_detail_cooling_off_hours')
     const found = (await requestOf(tx, c.payload.request_id))!
-    const { rows: previous } = await tx.query<{ id: string; masked: string }>(
-      'SELECT id, masked FROM bank_detail_version WHERE participant_id = $1 AND superseded_at IS NULL FOR UPDATE', [c.subject_id])
+    const { rows: previous } = await tx.query<{ id: string; masked: string; newer: boolean }>(
+      `SELECT id, masked, created_at > (SELECT r.created_at FROM bank_detail_request r WHERE r.id = $2) AS newer FROM bank_detail_version
+       WHERE participant_id = $1 AND superseded_at IS NULL FOR UPDATE`, [c.subject_id, found.id])
+    // An older request never replaces details recorded after it (e.g. the payee's own change while this case waited).
+    if (previous[0]?.newer === true) {
+      throw new ApiError(409, 'BANK_DETAIL_SUPERSEDED', 'Newer bank details were recorded after this request: reject this case.', { case_id: c.id })
+    }
     if (previous[0] !== undefined) await tx.query('UPDATE bank_detail_version SET superseded_at = now() WHERE id = $1', [previous[0].id])
     const versionId = randomUUID()
     const secretKey = currentSealKey()
@@ -197,6 +220,7 @@ export const BANK_DETAIL_CASE_TYPE: CaseTypeDefinition<BankDetailPayload> = {
       before: previous[0] === undefined ? null : { masked: previous[0].masked },
       after: { participant_id: c.subject_id, masked: found.masked, case_id: c.id, cooling_off_until: rows[0]!.cooling_off_until },
     })
-    await enqueue(tx, noticeJob, { template: 'bank_detail.changed', participant_id: c.subject_id, ref_id: versionId })
+    await notifyBankDetailChanged(tx, c.subject_id, versionId, found.masked, previous[0]?.masked ?? null, rows[0]!.cooling_off_until)
+    if (found.has_contact) await enqueue(tx, noticeJob, { template: 'bank_detail.changed', participant_id: c.subject_id, ref_id: versionId })
   },
 }

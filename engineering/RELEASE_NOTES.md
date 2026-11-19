@@ -2,6 +2,38 @@
 
 ## Unreleased
 
+### Increment B5 — distributor portal: sign-in, statements, line explanation, rank, team, customers, self-service bank/tax, notifications, disputes, data-subject requests, erasure (2026-11-19)
+Sandbox only: payouts still go to the sandbox provider or a downloaded bank file, mails are written to the local mail folder, and no real provider is called. English only.
+
+**Distributor portal (mobile first)**
+- Distributors are invited by Support from the participant record (SC-09) and sign in at `/portal/signin` with an emailed one-time code (the default), a password set through the invitation, or Google/Firebase when configured (SC-27). Staff pages refuse portal sessions and the portal refuses staff.
+- Home (SC-37): identity, paid-as rank, the latest net amount and its payout state, notices.
+- Earnings (SC-18): one statement per committed period with every line, refunds, restatements, recoveries, the net arithmetic and the payout state; CSV download. Each line has a plain explanation (rule, base, rate, rank used, period, rounding) that names no other person.
+- Rank (SC-19): paid-as and titles per committed period, grace, measured values against requirements; no targets, streaks or projections.
+- Team (SC-20): named people down to the policy's named depth, totals only below; anyone outside your downline is "not found". Customers (SC-21): current and past customers with masked contact, last order and order count.
+- Payment details and tax (SC-22): change your bank account or tax profile after confirming your password; a new account has a cooling-off period, and an account shared with other payees goes to staff review first.
+- Notifications (SC-38): inbox for statements, payouts (sent, returned, held with the reason), disputes, privacy requests, plan changes and security; email per topic can be switched off except security, privacy and plan changes.
+
+**Disputes**
+- A distributor disputes a statement line from the explanation; the line's trace is attached automatically, one open dispute per line. Staff (SC-06) start a review, uphold or reject with an explanation the distributor sees, then propose an adjustment or request a restatement. Overdue disputes are mailed to staff.
+
+**Data-subject requests**
+- Requests for access, portability, correction or erasure from the portal (My data), the public form (SC-41, reference number only) or recorded by staff. The DPO verifies, submits with a retention basis and a second DPO approves (SC-15); deadlines follow the privacy policy.
+- Access and portability give one JSON export of the subject's own data.
+- Erasure pseudonymises the person (name, contact, sign-in credentials, tax id, sealed bank details, session addresses and exports cleared; bank fingerprints, tax residency and case history kept) while ledger entries, runs and snapshots stay, so committed periods replay identically. It waits while money is owed, a payout is in flight or a hold applies.
+
+**Settings**
+- New settings without defaults: dispute policy (window and response days per market), privacy policy (response days, escalation), and whether distributors see customer contact details (DPO approval).
+
+**Fixed**
+- B4 carry-over: splitting an adjustment or write-off across cases no longer avoids the second approver; a staff member related to the payee cannot propose a write-off; the case queue names a write-off's payee.
+- B5 browser findings BUG-109..118 (names no longer stored in case previews, authenticator set-up inside the step-up dialog, second payout officer in the seed, invitation time, "No payout due", approver text, readable privacy previews, dispute wording, adjustment period, portal wording).
+- Security: setting up an authenticator in the portal now needs your password first; email verification alone no longer authorises an erasure or correction; a DPO related to the subject cannot decide its request; erasure also clears the previous account digits in notices; sign-in codes are limited per account; any pending staff bank-detail review blocks a self-service change.
+
+**Known issues**
+- Some distributor-facing API text still uses the UTC day or engine wording (team enrolment date, explanation text, invitation mail), and the payout batch view shows its period with the server offset (BUG-112, BUG-119, BUG-120, all LOW).
+- The B5 security fixes are tested but not yet re-reviewed or checked in the browser.
+
 ### Increment B4 — ledger, balances, clawbacks, write-offs, GL export, payouts (sandbox), bank details, tax profile, manual adjustments (2026-11-19)
 Sandbox only: payouts go to an in-process sandbox provider or to a bank file you download; no real provider is called and no money moves. Withholding is not computed yet (tax rules come with the market packs).
 
@@ -38,7 +70,6 @@ Sandbox only: payouts go to an in-process sandbox provider or to a bank file you
 
 **Known issues**
 - The engine handles up to 750,000 positions in a 4 GB worker; larger tenants need a bigger worker or the streaming output (open).
-- The case queue shows a write-off's subject as an account id (the case page names the payee).
 
 ### Increment B3 — plans, runs, commit, replay, restatement, adjustments, guardrails (2026-11-18)
 Sandbox only: a commit records the run and its approval but posts nothing to a ledger and pays nobody (payouts and the ledger are B4); no provider is called and no money moves.

@@ -9,8 +9,8 @@ import { Banner } from './banner'
 import { Button } from './button'
 import { FormField } from './form-field'
 
-// sc_27 l.92 six-slot look as ONE input (pasteable, autofillable: guidelines §6.9).
-const CODE_CLASS = 'w-full h-11 text-center font-data-mono-lg text-data-mono-lg tracking-[0.5em] text-on-surface bg-surface-container-lowest rounded shadow-sm border border-outline-variant placeholder:text-outline-variant focus:outline-none focus:bg-surface-container-high focus:ring-1 focus:ring-primary aria-[invalid=true]:border-error aria-[invalid=true]:ring-1 aria-[invalid=true]:ring-error transition-colors'
+// sc_27 l.92 six-slot look as ONE input (pasteable, autofillable: guidelines §6.9); also the portal's emailed sign-in code.
+export const CODE_CLASS = 'w-full h-11 text-center font-data-mono-lg text-data-mono-lg tracking-[0.5em] text-on-surface bg-surface-container-lowest rounded shadow-sm border border-outline-variant placeholder:text-outline-variant focus:outline-none focus:bg-surface-container-high focus:ring-1 focus:ring-primary aria-[invalid=true]:border-error aria-[invalid=true]:ring-1 aria-[invalid=true]:ring-error transition-colors'
 
 export interface CodeInputProps {
   /** Prefix of the field id. */

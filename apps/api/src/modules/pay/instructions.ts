@@ -1,11 +1,9 @@
 import { randomUUID } from 'node:crypto'
 import type { Tx } from '@nmp/db'
 import { recordAudit } from '../../lib/audit.js'
-import { enqueue } from '../../lib/jobs.js'
 import { enqueueOutbox } from '../../lib/outbox.js'
 import { openSystemCase } from '../cas/index.js'
 import { postInstruction } from './ledger.js'
-import { noticeJob } from './notices.js'
 import { signInstruction, type SignedFacts } from './signing.js'
 
 // D-B4-13/15: an instruction is written pending with its posting #2 (it is the outbox record the dispatcher works);
@@ -125,7 +123,12 @@ export async function finishInstruction(tx: Tx, i: InstructionRow, state: Termin
       type: 'returned_payment', subjectType: 'payout_instruction', subjectId: i.id, reasonCode: 'RETURNED_BY_BANK',
       payload: { instruction_id: i.id }, marketId: i.market_id,
     })
-    await enqueue(tx, noticeJob, { template: 'payout.returned', participant_id: i.payee_participant_id, ref_id: i.id })
+    await tx.query(
+      `SELECT notify_participant(i.payee_participant_id, 'payout.returned', jsonb_build_object('batch_id', i.batch_id, 'instruction_id', i.id,
+         'amount_minor', i.amount_minor::text, 'currency', i.currency, 'minor_unit', m.minor_unit, 'masked', v.masked))
+       FROM payout_instruction i JOIN market m ON m.id = $2 JOIN bank_detail_version v ON v.id = i.bank_detail_version_id WHERE i.id = $1`,
+      [i.id, i.market_id],
+    )
     await enqueueOutbox(tx, { type: 'payout.returned', payload: { ...event, case_id: opened.id }, key: i.id })
   }
   await refreshBatchState(tx, i.batch_id)

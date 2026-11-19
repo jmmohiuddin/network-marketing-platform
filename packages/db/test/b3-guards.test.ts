@@ -565,7 +565,7 @@ describe('B2 follow-ups (OI-3, OI-7)', () => {
 
   test('someone who edited a case cannot decide it', async () => {
     const caseId = await as(a, (tx) => insertRow(tx, 'case_file', {
-      tenant_id: a.tenantId, type: 'adjustment', subject_type: 'test', subject_id: randomUUID(), reason_code: 'R', state: 'open',
+      tenant_id: a.tenantId, type: 'grievance', subject_type: 'test', subject_id: randomUUID(), reason_code: 'R', state: 'open',
       payload: {}, opened_by: a.userId,
     }))
     await as(b, (tx) => insertRow(tx, 'case_event', { tenant_id: a.tenantId, case_id: caseId, actor_id: b.userId, kind: 'updated' }))

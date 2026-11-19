@@ -1,12 +1,12 @@
 {
-  "when": "2026-11-17T15:41:43.425Z",
+  "when": "2026-11-19T16:41:58.771Z",
   "screenId": "SC-09",
   "stitch": "sc_09_participant_deep_fact_record",
   "module": "people",
   "screen": "participant-record",
   "route": "/people/[id]",
   "role": "support-agent",
-  "url": "http://127.0.0.1:3100/people/0a76ef62-fbc8-478b-a791-3785d852dc35",
+  "url": "http://127.0.0.1:3100/people/4045483b-6e45-4be5-8197-fbed77598ab7",
   "self": false,
   "patched": [],
   "viewports": [
@@ -15,10 +15,10 @@
       "screenshot": "testing/ui-screenshots/app/people/participant-record/support-agent/1440x900.png",
       "reference": "testing/ui-screenshots/reference/sc_09_participant_deep_fact_record/1440x900.png",
       "diffImage": "testing/ui-screenshots/app/people/participant-record/support-agent/1440x900.diff.png",
-      "mismatchPercent": 7.04,
-      "diffPixels": 184838,
+      "mismatchPercent": 7.42,
+      "diffPixels": 194775,
       "referenceSize": "1440x1824",
-      "actualSize": "1440x900",
+      "actualSize": "1440x970",
       "landmarks": [
         {
           "landmark": "header",
@@ -65,7 +65,7 @@
         {
           "landmark": "page",
           "stitchText": "People & Organization chevron_right Participants chevron_rig",
-          "appText": "Peoplechevron_rightNL-BBram BetacheckActiveNL · Distributor ",
+          "appText": "Peoplechevron_rightDE-AErased participant DE-AcheckActivearc",
           "status": "match",
           "severity": "none",
           "props": [
@@ -98,7 +98,7 @@
         {
           "landmark": "title",
           "stitchText": "Elena Gomez (POS-01948) — Participant Master Record",
-          "appText": "Bram Beta",
+          "appText": "Erased participant DE-A",
           "status": "match",
           "severity": "none",
           "props": [
@@ -284,7 +284,7 @@
         {
           "landmark": "card",
           "stitchText": "fingerprint Masked Identity & Contact Master FR-CRM-001 / BR",
-          "appText": "fingerprintIdentity and contact (masked)NameBram BetaExterna",
+          "appText": "fingerprintIdentity and contact (masked)NameErased participa",
           "status": "match",
           "severity": "none",
           "props": [
@@ -315,10 +315,10 @@
       "screenshot": "testing/ui-screenshots/app/people/participant-record/support-agent/1280x800.png",
       "reference": "testing/ui-screenshots/reference/sc_09_participant_deep_fact_record/1280x800.png",
       "diffImage": "testing/ui-screenshots/app/people/participant-record/support-agent/1280x800.diff.png",
-      "mismatchPercent": 7.05,
-      "diffPixels": 184387,
+      "mismatchPercent": 7.5,
+      "diffPixels": 196009,
       "referenceSize": "1280x2042",
-      "actualSize": "1280x800",
+      "actualSize": "1280x988",
       "landmarks": [
         {
           "landmark": "header",
@@ -365,7 +365,7 @@
         {
           "landmark": "page",
           "stitchText": "People & Organization chevron_right Participants chevron_rig",
-          "appText": "Peoplechevron_rightNL-BBram BetacheckActiveNL · Distributor ",
+          "appText": "Peoplechevron_rightDE-AErased participant DE-AcheckActivearc",
           "status": "match",
           "severity": "none",
           "props": [
@@ -398,7 +398,7 @@
         {
           "landmark": "title",
           "stitchText": "Elena Gomez (POS-01948) — Participant Master Record",
-          "appText": "Bram Beta",
+          "appText": "Erased participant DE-A",
           "status": "match",
           "severity": "none",
           "props": [
@@ -584,7 +584,7 @@
         {
           "landmark": "card",
           "stitchText": "fingerprint Masked Identity & Contact Master FR-CRM-001 / BR",
-          "appText": "fingerprintIdentity and contact (masked)NameBram BetaExterna",
+          "appText": "fingerprintIdentity and contact (masked)NameErased participa",
           "status": "match",
           "severity": "none",
           "props": [
@@ -615,15 +615,15 @@
       "screenshot": "testing/ui-screenshots/app/people/participant-record/support-agent/768x1024.png",
       "reference": "testing/ui-screenshots/reference/sc_09_participant_deep_fact_record/768x1024.png",
       "diffImage": "testing/ui-screenshots/app/people/participant-record/support-agent/768x1024.diff.png",
-      "mismatchPercent": 5.35,
-      "diffPixels": 148391,
+      "mismatchPercent": 5.8,
+      "diffPixels": 160839,
       "referenceSize": "768x3612",
-      "actualSize": "768x1024",
+      "actualSize": "768x1076",
       "landmarks": [
         {
           "landmark": "page",
           "stitchText": "People & Organization chevron_right Participants chevron_rig",
-          "appText": "Peoplechevron_rightNL-BBram BetacheckActiveNL · Distributor ",
+          "appText": "Peoplechevron_rightDE-AErased participant DE-AcheckActivearc",
           "status": "match",
           "severity": "none",
           "props": [
@@ -656,7 +656,7 @@
         {
           "landmark": "title",
           "stitchText": "Elena Gomez (POS-01948) — Participant Master Record",
-          "appText": "Bram Beta",
+          "appText": "Erased participant DE-A",
           "status": "match",
           "severity": "none",
           "props": [
@@ -842,7 +842,7 @@
         {
           "landmark": "card",
           "stitchText": "fingerprint Masked Identity & Contact Master FR-CRM-001 / BR",
-          "appText": "fingerprintIdentity and contact (masked)NameBram BetaExterna",
+          "appText": "fingerprintIdentity and contact (masked)NameErased participa",
           "status": "match",
           "severity": "none",
           "props": [
@@ -873,15 +873,15 @@
       "screenshot": "testing/ui-screenshots/app/people/participant-record/support-agent/390x844.png",
       "reference": "testing/ui-screenshots/reference/sc_09_participant_deep_fact_record/390x844.png",
       "diffImage": "testing/ui-screenshots/app/people/participant-record/support-agent/390x844.diff.png",
-      "mismatchPercent": 2.2,
-      "diffPixels": 99673,
+      "mismatchPercent": 2.39,
+      "diffPixels": 108512,
       "referenceSize": "601x7545",
-      "actualSize": "390x1020",
+      "actualSize": "390x1645",
       "landmarks": [
         {
           "landmark": "page",
           "stitchText": "People & Organization chevron_right Participants chevron_rig",
-          "appText": "Peoplechevron_rightNL-BBram BetacheckActiveNL · Distributor ",
+          "appText": "Peoplechevron_rightDE-AErased participant DE-AcheckActivearc",
           "status": "match",
           "severity": "none",
           "props": [
@@ -914,7 +914,7 @@
         {
           "landmark": "title",
           "stitchText": "Elena Gomez (POS-01948) — Participant Master Record",
-          "appText": "Bram Beta",
+          "appText": "Erased participant DE-A",
           "status": "mismatch",
           "severity": "medium",
           "props": [
@@ -1100,7 +1100,7 @@
         {
           "landmark": "card",
           "stitchText": "fingerprint Masked Identity & Contact Master FR-CRM-001 / BR",
-          "appText": "fingerprintIdentity and contact (masked)NameBram BetaExterna",
+          "appText": "fingerprintIdentity and contact (masked)NameErased participa",
           "status": "match",
           "severity": "none",
           "props": [

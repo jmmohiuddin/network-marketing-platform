@@ -35,10 +35,11 @@ const sessionCursor = z.object({ created_at: z.iso.datetime({ offset: true }), i
 const logQuery = z.strictObject(pageQuery)
 const seqCursor = z.string().regex(/^\d+$/)
 
-// Vendor users see every request (vendor console); tenant users need vendor_access.decide (SC-14).
+// Vendor users see every request (vendor console); tenant users need vendor_access.decide (SC-14); portal sessions hold
+// no permission, so they are refused too (T-B5-40).
 async function vendorOrDecider(request: FastifyRequest): Promise<void> {
   const auth = currentAuth(request)
-  if (auth.realm === 'tenant' && !hasPermission(auth, 'vendor_access.decide')) throw permissionDenied()
+  if (auth.realm !== 'vendor' && !hasPermission(auth, 'vendor_access.decide')) throw permissionDenied()
 }
 
 const either = { preHandler: [vendorOrDecider] }

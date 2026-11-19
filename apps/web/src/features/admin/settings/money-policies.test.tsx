@@ -171,7 +171,7 @@ describe('change requests', () => {
   it('names the missing approver role and offers no approval when nobody can approve', async () => {
     renderAs(FINANCE, <SettingsPage />, routes([{ ...REQUEST, requested_by: { id: 'x', display_name: 'X' }, eligible_approvers: [], no_eligible_approver: true }]))
     const card = await screen.findByRole('article', { name: /Rounding mode/ })
-    expect(within(card).getByText('No one can approve this yet: a Tenant admin must assign Finance approver to another user.')).toBeTruthy()
+    expect(within(card).getByText('No one can approve this yet: another user must hold Finance approver and, if the role requires it, have set up their authenticator app at sign-in. A Tenant admin assigns roles.')).toBeTruthy()
     expect(within(card).queryByRole('button', { name: 'Approve' })).toBeNull()
   })
 

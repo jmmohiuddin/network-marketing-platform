@@ -8,8 +8,8 @@ import { renderWithProviders } from '../../test/render'
 import { SignInForm } from './sign-in-form'
 
 
-const navigation = vi.hoisted(() => ({ search: '', leavePage: vi.fn() }))
-vi.mock('next/navigation', () => ({ useSearchParams: () => new URLSearchParams(navigation.search) }))
+const navigation = vi.hoisted(() => ({ search: '', leavePage: vi.fn(), router: { replace: vi.fn(), push: vi.fn() } }))
+vi.mock('next/navigation', () => ({ useSearchParams: () => new URLSearchParams(navigation.search), useRouter: () => navigation.router }))
 vi.mock('../../lib/leave-page', () => ({ leavePage: navigation.leavePage }))
 
 async function fill(user: ReturnType<typeof userEvent.setup>, values: Record<string, string>) {
@@ -91,6 +91,15 @@ describe('SignInForm', () => {
     renderWithProviders(<SignInForm realm="vendor" firebase={false} />, fetchReturning(ok({ expires_at: '2026-11-12T20:00:00Z', next_step: 'none' }, 201)))
     await fill(user, { 'Email address': 'ops@vendor.example', Password: 'long enough secret' })
     await waitFor(() => expect(navigation.leavePage).toHaveBeenCalledWith('/vendor'))
+  })
+
+  it('sends a portal target to the portal sign-in, keeping the company and the target', async () => {
+    navigation.search = `tenant=acme&next=${encodeURIComponent('/portal/earnings')}`
+    const fetchMock = fetchReturning()
+    renderWithProviders(<SignInForm realm="tenant" firebase={false} />, fetchMock)
+    await waitFor(() => expect(navigation.router.replace).toHaveBeenCalledWith(`/portal/signin?tenant=acme&next=${encodeURIComponent('/portal/earnings')}`))
+    expect(screen.queryByRole('button', { name: 'Sign in' })).toBeNull()
+    expect(fetchMock).not.toHaveBeenCalled()
   })
 
   it('confirms a sign-out', () => {

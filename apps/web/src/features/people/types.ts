@@ -34,8 +34,11 @@ export interface ParticipantDetail {
   readonly external_ref: string
   readonly account_type: 'individual' | 'joint' | 'entity'
   readonly market: { readonly id: string; readonly code: string }
+  /** "Erased participant <external_ref>" once pseudonymised (D-B5-18). */
   readonly display_name: string | null
   readonly contact_masked: Contact | null
+  /** Set when the participant's personal data was erased (D-B5-18); absent from records read before B5. */
+  readonly pseudonymised_at?: string | null
   readonly status: 'active' | 'merged'
   readonly merged_into: { readonly id: string; readonly external_ref: string } | null
   readonly enrolled_at: string

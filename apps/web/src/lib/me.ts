@@ -1,4 +1,4 @@
-import { defaultHome, MFA_ENROL_PATH, MFA_VERIFY_PATH, withNext, type NavigationEntry, type Realm } from './navigation'
+import { defaultHome, MFA_ENROL_PATH, MFA_VERIFY_PATH, PORTAL_HOME_PATH, withNext, type NavigationEntry, type Realm } from './navigation'
 
 /** GET /v1/me (iam/me-routes.ts). */
 export interface Me {
@@ -36,7 +36,7 @@ export function homePath(me: Me): string | null {
   return me.navigation[0]?.path ?? null
 }
 
-/** Where a shell for `realm` must send this user instead of rendering, or null. */
+/** Where a shell for `realm` must send this user instead of rendering, or null: a portal user goes to the portal, others to '/'. */
 export function shellRedirect(me: Me, realm: Realm): string | null {
-  return pendingMfaPath(me) ?? (me.realm === realm ? null : '/')
+  return pendingMfaPath(me) ?? (me.realm === realm ? null : me.realm === 'portal' ? PORTAL_HOME_PATH : '/')
 }

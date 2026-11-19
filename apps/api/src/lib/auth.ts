@@ -2,7 +2,7 @@ import type { FastifyRequest, preHandlerAsyncHookHandler } from 'fastify'
 import { ApiError, permissionDenied, unauthenticated } from './errors.js'
 import type { Permission } from './permissions.js'
 
-export type Realm = 'tenant' | 'vendor'
+export type Realm = 'tenant' | 'vendor' | 'portal'
 export type Assurance = 'aal1' | 'aal2'
 
 /** One active role assignment. marketIds null = every market of the tenant (SEC-26 attribute a); validTo null = open-ended. */
@@ -31,6 +31,10 @@ export interface AuthContext {
   readonly mfaVerified: boolean
   readonly stepUpAt: Date | null
   readonly supportSessionId: string | null
+  /** Portal realm: the session's participant (D-B5-02), else null. */
+  readonly participantId: string | null
+  /** Portal realm: every owned position is terminated (D-B5-06). */
+  readonly participantTerminated: boolean
 }
 
 declare module 'fastify' {
@@ -133,5 +137,17 @@ export function requireAllMarkets(permission: Permission): preHandlerAsyncHookHa
 export function requireStepUp(maxAgeSeconds?: number): preHandlerAsyncHookHandler {
   return async (request) => {
     assertStepUp(request, maxAgeSeconds)
+  }
+}
+
+/** Portal routes (D-B5-02): a portal session only, else 403 REALM_FORBIDDEN. */
+export function requirePortal(): preHandlerAsyncHookHandler {
+  return requireRealm('portal')
+}
+
+/** D-B5-06: team, customers, rank and new disputes refuse a participant whose positions are all terminated. */
+export function assertPortalActive(auth: AuthContext): void {
+  if (auth.participantTerminated) {
+    throw new ApiError(403, 'PARTICIPANT_TERMINATED', 'Your account is closed: you can still read your statements.')
   }
 }

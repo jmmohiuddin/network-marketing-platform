@@ -6,7 +6,7 @@ import { useResource } from '../../../lib/use-resource'
 import { minorToDecimal } from '../../orders/format'
 import { FIELDSET, LEGEND, PAIR } from '../ui'
 import {
-  ATTRIBUTION_OPTIONS, CLAWBACK_OPTIONS, CREDITING_OPTIONS, keyLabel, PURPOSE_OPTIONS, REASSIGNMENT_OPTIONS, RELATED_ACTION_OPTIONS, RESTOCKING_OPTIONS,
+  ATTRIBUTION_OPTIONS, CLAWBACK_OPTIONS, CONTACT_VISIBLE_OPTIONS, CREDITING_OPTIONS, keyLabel, PURPOSE_OPTIONS, REASSIGNMENT_OPTIONS, RELATED_ACTION_OPTIONS, RESTOCKING_OPTIONS,
   ROUNDING_OPTIONS, SIGNAL_OPTIONS, type PolicyKey,
 } from './labels'
 import { PARTICIPANT_TYPES_PATH, type ParticipantType } from './types'
@@ -37,6 +37,10 @@ const REMINDER_MAX_DAYS = 365
 const MINOR = /^(0|[1-9]\d{0,17})$/
 const MIN_PREFIX = 'min_'
 const TAX_PREFIX = 'tax_'
+/** disputes.policy and privacy.policy: per market id the days to respond (D-B5-20). */
+const DAYS_PREFIX = 'days_'
+const RESPONSE_MAX_DAYS = 365
+const ESCALATE_MAX_DAYS = 60
 
 const yes = (flag: unknown): string => (flag === true ? 'true' : '')
 const text = (value: unknown): string => (value === null || value === undefined ? '' : String(value))
@@ -60,12 +64,18 @@ export function draftOf(key: PolicyKey, value: unknown): Draft {
         const entry = (policy ?? {}) as Readonly<Record<string, unknown>>
         return [[`${MIN_PREFIX}${marketId}`, text(entry.minimum_payout_minor)], [`${TAX_PREFIX}${marketId}`, yes(entry.tax_profile_required)]]
       }))
+    case 'disputes.policy': return { window: text(record.window_days), ...marketDaysDraft(record.response_days) }
+    case 'privacy.policy': return { escalate: text(record.escalate_before_days), ...marketDaysDraft(record.response_days) }
     case 'adjustments.policy':
       return { above: text(record.second_approver_above_minor), new_days: text(record.new_account_days), related: text(record.related_account_action) }
     case 'write_offs.policy':
       return { below: text(record.eligible_below_minor), after_days: text(record.eligible_after_days), above: text(record.second_approver_above_minor) }
     default: return { value: text(value) }
   }
+}
+
+function marketDaysDraft(record: unknown): Draft {
+  return Object.fromEntries(Object.entries((record ?? {}) as Readonly<Record<string, unknown>>).map(([marketId, count]) => [`${DAYS_PREFIX}${marketId}`, text(count)]))
 }
 
 interface Built {
@@ -107,6 +117,13 @@ function marketPolicy(draft: Draft): Built {
     taxOnly === undefined ? undefined : [`${MIN_PREFIX}${taxOnly.slice(TAX_PREFIX.length)}`, 'Enter the minimum payout of this market too.'] as const,
     markets.length === 0 ? ['markets', 'Enter the minimum payout of at least one market.'] as const : undefined,
   ])
+}
+
+/** response_days from the days_<market> fields: markets left empty have no response time (DEC-14). */
+function marketDays(draft: Draft): { readonly value: Readonly<Record<string, number | undefined>>; readonly errors: readonly (readonly [string, string] | undefined)[] } {
+  const fields = Object.keys(draft).filter((field) => field.startsWith(DAYS_PREFIX) && (draft[field] ?? '').trim() !== '')
+  const counts = fields.map((field) => whole(draft, field, 1, RESPONSE_MAX_DAYS, 'the days'))
+  return { value: Object.fromEntries(fields.map((field, index) => [field.slice(DAYS_PREFIX.length), counts[index]!.number])), errors: counts.map((count) => count.error) }
 }
 
 /** The value to PUT for a key from its form text, or the errors by field (the API validates again). */
@@ -184,6 +201,17 @@ export function policyValue(key: PolicyKey, draft: Draft): Built {
         [above.error, days.error, (draft.related ?? '') === '' ? ['related', 'Choose what happens for a related or new account.'] : undefined],
       )
     }
+    case 'disputes.policy': {
+      const open = (draft.window ?? '').trim() === '' ? { number: undefined, error: undefined } : whole(draft, 'window', 1, DAYS_MAX, 'the dispute window')
+      const response = marketDays(draft)
+      return built({ ...(open.number === undefined ? {} : { window_days: open.number }), response_days: response.value }, [open.error, ...response.errors])
+    }
+    case 'privacy.policy': {
+      const escalate = whole(draft, 'escalate', 0, ESCALATE_MAX_DAYS, 'the days before the deadline')
+      const response = marketDays(draft)
+      return built({ response_days: response.value, escalate_before_days: escalate.number }, [...response.errors, escalate.error])
+    }
+    case 'portal.customer_contact_visible': return built(value === 'true', [choice(draft, key)])
     case 'write_offs.policy': {
       const below = minorField(draft, 'below', 'the eligibility amount', true)
       const afterRaw = (draft.after_days ?? '').trim()
@@ -223,6 +251,22 @@ function MarketPolicyFields({ draft, errors, onChange }: Omit<PolicyFieldsProps,
         )
       })}
       {errors.markets !== undefined && <FieldError message={errors.markets} />}
+    </fieldset>
+  )
+}
+
+/** disputes.policy / privacy.policy: the days to respond per market; an empty market has no response time. */
+function MarketDaysFields({ draft, errors, onChange, legend }: Omit<PolicyFieldsProps, 'policyKey'> & { readonly legend: string }) {
+  const markets = useResource<Market[]>(MARKETS_PATH)
+  return (
+    <fieldset className={FIELDSET}>
+      <legend className={LEGEND}>{legend}</legend>
+      {markets.data === null && <p>Loading markets…</p>}
+      {(markets.data ?? []).map((market) => (
+        <TextInput key={market.id} id={fieldId(`${DAYS_PREFIX}${market.id}`)} label={`${market.code} (days)`} inputMode="numeric" optional
+          helper={`1 to ${RESPONSE_MAX_DAYS}. Leave empty for no response time in ${market.code}.`} value={draft[`${DAYS_PREFIX}${market.id}`] ?? ''}
+          error={errors[`${DAYS_PREFIX}${market.id}`]} onChange={(event) => onChange(`${DAYS_PREFIX}${market.id}`, event.target.value)} />
+      ))}
     </fieldset>
   )
 }
@@ -321,6 +365,22 @@ export function PolicyFields({ policyKey, draft, errors, onChange }: PolicyField
           {input('above', 'Second approver above (minor units)', MINOR_HELP)}
         </>
       )
+    case 'disputes.policy':
+      return (
+        <>
+          <TextInput id={fieldId('window')} label="Dispute window (days after a commit)" inputMode="numeric" optional value={draft.window ?? ''} error={errors.window}
+            helper={`1 to ${DAYS_MAX}. A line can be disputed this long after its run is committed; leave empty for no window.`} onChange={(event) => onChange('window', event.target.value)} />
+          <MarketDaysFields draft={draft} errors={errors} onChange={onChange} legend="Days to respond to a dispute, per market" />
+        </>
+      )
+    case 'privacy.policy':
+      return (
+        <>
+          <MarketDaysFields draft={draft} errors={errors} onChange={onChange} legend="Days to answer a privacy request, per market" />
+          {input('escalate', 'Escalate days before the deadline', `0 to ${ESCALATE_MAX_DAYS}. Open requests this close to their deadline are escalated to the DPOs.`)}
+        </>
+      )
+    case 'portal.customer_contact_visible': return select('value', 'Customers’ contact in the portal', CONTACT_VISIBLE_OPTIONS)
     case 'genealogy.visibility_policy':
       return (
         <>

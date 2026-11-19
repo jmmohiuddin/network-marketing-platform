@@ -109,6 +109,61 @@ describe('step-up through ApiProvider', () => {
     expect(requestHeaders(fetchMock, 3).get('Idempotency-Key')).toBe('action-1')
   })
 
+  it('asks a portal user for the password on STEP_UP_REQUIRED (D-B5-04) and retries the action once', async () => {
+    const user = userEvent.setup()
+    window.history.replaceState(null, '', '/portal/more/payment-details')
+    const fetchMock = fetchReturning(apiError(403, 'STEP_UP_REQUIRED'), ok({ step_up_at: '2026-11-19T10:00:00Z' }), ok({ id: 'r1' }))
+    renderWithProviders(<Approve />, fetchMock)
+    await user.click(screen.getByRole('button', { name: 'Approve grant' }))
+    expect(await screen.findByRole('dialog', { name: 'Confirm it is you' })).toBeTruthy()
+    await user.type(screen.getByLabelText('Password'), 'correct horse battery')
+    await user.click(screen.getByRole('button', { name: 'Confirm and continue' }))
+    expect(await screen.findByText('Grant approved.')).toBeTruthy()
+    expect(fetchMock.mock.calls.map((call) => call[0])).toEqual([
+      '/v1/role-grant-requests/r1/decision', '/v1/auth/sessions/current/reauth', '/v1/role-grant-requests/r1/decision',
+    ])
+    expect(requestBody(fetchMock, 1)).toEqual({ password: 'correct horse battery' })
+    window.history.replaceState(null, '', '/')
+  })
+
+  it('asks for the password on an auth page that returns to the portal (portal TOTP enrolment needs re-auth)', async () => {
+    const user = userEvent.setup()
+    window.history.replaceState(null, '', '/signin/enrol?next=%2Fportal%2Fmore')
+    renderWithProviders(<Approve />, fetchReturning(apiError(403, 'STEP_UP_REQUIRED')))
+    await user.click(screen.getByRole('button', { name: 'Approve grant' }))
+    expect(await screen.findByRole('dialog', { name: 'Confirm it is you' })).toBeTruthy()
+    window.history.replaceState(null, '', '/')
+  })
+
+  it('BUG-110: a user without an authenticator app sets one up in the dialog, and the action goes ahead', async () => {
+    const user = userEvent.setup()
+    const enrolment = { secret: 'JBSWY3DPEHPK3PXP', otpauth_uri: 'otpauth://totp/NMP:ann%40acme.example?secret=JBSWY3DPEHPK3PXP&issuer=NMP' }
+    const fetchMock = fetchReturning(apiError(403, 'STEP_UP_REQUIRED'), ok(enrolment, 201), ok({ assurance: 'aal2' }), ok({ id: 'r1' }))
+    renderWithProviders(<Approve />, fetchMock)
+    await user.click(screen.getByRole('button', { name: 'Approve grant' }))
+    await user.click(await screen.findByRole('button', { name: 'Set one up now' }))
+    expect(await screen.findByRole('dialog', { name: 'Set up your authenticator app' })).toBeTruthy()
+    expect(screen.getByText('JBSW Y3DP EHPK 3PXP')).toBeTruthy()
+    await user.type(screen.getByLabelText('Verification code'), '333333')
+    await user.click(screen.getByRole('button', { name: 'Confirm code' }))
+    expect(await screen.findByText('Grant approved.')).toBeTruthy()
+    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(fetchMock.mock.calls.map((call) => call[0])).toEqual([
+      '/v1/role-grant-requests/r1/decision', '/v1/auth/mfa/totp', '/v1/auth/mfa/totp/confirm', '/v1/role-grant-requests/r1/decision',
+    ])
+    expect(requestBody(fetchMock, 2)).toEqual({ code: '333333' })
+    expect(requestHeaders(fetchMock, 3).get('Idempotency-Key')).toBe('action-1')
+  })
+
+  it('BUG-110: an already enrolled user who asks to set one up is sent back to the code', async () => {
+    const user = userEvent.setup()
+    renderWithProviders(<Approve />, fetchReturning(apiError(403, 'STEP_UP_REQUIRED'), apiError(409, 'MFA_ALREADY_ENROLLED')))
+    await user.click(screen.getByRole('button', { name: 'Approve grant' }))
+    await user.click(await screen.findByRole('button', { name: 'Set one up now' }))
+    expect(await screen.findByText('Your account already has an authenticator app. Enter the code it shows.')).toBeTruthy()
+    expect(screen.getByRole('dialog', { name: 'Confirm with your authenticator app' })).toBeTruthy()
+  })
+
   it('reports the refused action when the user cancels', async () => {
     const user = userEvent.setup()
     renderWithProviders(<Approve />, fetchReturning(apiError(403, 'STEP_UP_REQUIRED')))

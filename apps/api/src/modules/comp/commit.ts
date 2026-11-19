@@ -144,6 +144,8 @@ async function applyCommit(tx: Tx, run: RunView, approvalId: string, lateIds: re
   )
   const { rows: caughtUp } = await tx.query<{ id: string }>('SELECT id FROM comp_late_catch_up($1) AS id', [run.id])
   const { rows: entry } = await tx.query<{ id: string | null }>('SELECT led_post_run($1) AS id', [run.id])
+  // D-B5-14: statement.ready to every settled payee, in the commit transaction, after posting.
+  await tx.query('SELECT notify_run_statements($1)', [run.id])
   return {
     consumed_late_ids: lateIds, applied_restatement_ids: applied.map((r) => r.id), late_catch_up_ids: caughtUp.map((r) => r.id),
     journal_entry_id: entry[0]!.id,

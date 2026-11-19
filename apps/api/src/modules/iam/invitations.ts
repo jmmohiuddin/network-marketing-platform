@@ -40,20 +40,22 @@ interface Invitee {
   state: string
   tenant_name: string
   tenant_slug: string
+  realm: string
   inviter: string | null
 }
 
 /**
  * The accept page's link. The token travels in the URL fragment, which browsers never send to a server or put in a
- * Referer; the tenant slug in the query lets the web prefill the company on sign-in after accepting.
+ * Referer; the tenant slug in the query lets the web prefill the company on sign-in after accepting, and realm=portal sends
+ * a portal account to the portal sign-in (D-B5-03).
  */
-export function invitationLink(webUrl: string, tenantSlug: string, token: string): string {
-  return `${webUrl}/invitation?tenant=${encodeURIComponent(tenantSlug)}#token=${token}`
+export function invitationLink(webUrl: string, tenantSlug: string, token: string, portal = false): string {
+  return `${webUrl}/invitation?tenant=${encodeURIComponent(tenantSlug)}${portal ? '&realm=portal' : ''}#token=${token}`
 }
 
 async function findInvitee(tx: Tx, userId: string, invitedBy: string): Promise<Invitee | undefined> {
   const { rows } = await tx.query<Invitee>(
-    `SELECT u.email, u.state, t.legal_name AS tenant_name, t.slug AS tenant_slug,
+    `SELECT u.email, u.state, u.realm, t.legal_name AS tenant_name, t.slug AS tenant_slug,
             (SELECT coalesce(i.display_name, i.email) FROM user_account i WHERE i.id = $2) AS inviter
      FROM user_account u JOIN tenant t ON t.id = u.tenant_id WHERE u.id = $1`,
     [userId, invitedBy],
@@ -69,7 +71,7 @@ function invitationMail(config: Config, invitee: Invitee, invitation: IssuedInvi
       `${invitee.inviter ?? 'An administrator'} invited you to ${invitee.tenant_name}.`,
       '',
       `Choose your password with this link. It works once, until ${invitation.expires_at.toISOString()}:`,
-      invitationLink(config.webUrl, invitee.tenant_slug, invitation.token),
+      invitationLink(config.webUrl, invitee.tenant_slug, invitation.token, invitee.realm === 'portal'),
       '',
       'If you did not expect this invitation, ignore this email.',
     ].join('\n'),
@@ -112,7 +114,8 @@ export async function acceptInvitation(token: string, password: string, requestI
   if (invitation === undefined) throw invalidInvitation()
   const passwordHash = await hashPassword(password) // slow: hashed before the transaction opens
   const realm = invitation.tenant_id === null ? 'vendor' as const : 'tenant' as const
-  const user = { userId: invitation.user_id, tenantId: invitation.tenant_id, realm }
+  // A portal invitee is activated in a staff transaction of its tenant (no session yet, so no participant scope).
+  const user = { userId: invitation.user_id, tenantId: invitation.tenant_id, realm, participantId: null }
   await asUser(user, requestId, async (tx) => {
     const used = await tx.query(
       'UPDATE user_invitation SET used_at = now() WHERE id = $1 AND used_at IS NULL AND revoked_at IS NULL',

@@ -28,6 +28,8 @@ const SUPPORT_EXCLUDED_PERMISSIONS = [
   'payout.prepare', 'payout.approve', 'payout.reconcile', 'payout.hold', 'ledger.export', 'tax.manage', 'case.adjustment.create',
   'case.adjustment.approve', 'case.write_off.create', 'case.write_off.approve', 'case.bank_detail.create', 'case.bank_detail.approve',
   'case.returned_payment.create',
+  // PLAN B5 section 3: deciding a dispute stays with the tenant (reading stays requestable).
+  'case.dispute.approve',
 ] as const satisfies readonly Permission[]
 export const scopePermission = z.enum(PERMISSIONS).exclude(SUPPORT_EXCLUDED_PERMISSIONS)
 export type ScopePermission = z.infer<typeof scopePermission>

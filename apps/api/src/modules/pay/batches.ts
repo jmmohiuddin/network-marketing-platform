@@ -262,7 +262,9 @@ export async function approveBatch(tx: Tx, request: FastifyRequest, auth: AuthCo
   const result = await recalculate(tx, batch)
   if (result.changed.length > 0) return recalculated(tx, request, batch, result)
   const approvalId = await recordBatchApproval(tx, auth, batch, related)
-  await tx.query(`UPDATE payout_batch SET state = 'approved', approval_id = $2, approved_at = now() WHERE id = $1`, [id, approvalId])
+  // The exclusions in force now (a hold or cooling-off may differ from submit): notify_batch announces these.
+  await tx.query(`UPDATE payout_batch SET state = 'approved', approval_id = $2, approved_at = now(), exclusions = $3::jsonb WHERE id = $1`,
+    [id, approvalId, JSON.stringify(result.exclusions)])
   for (const line of result.lines) {
     await createInstruction(tx, request.server.config.secretKey, {
       batchId: id, marketId: batch.market_id, periodId: batch.period_id, payeeId: line.participant_id,
@@ -270,6 +272,7 @@ export async function approveBatch(tx: Tx, request: FastifyRequest, auth: AuthCo
     }, approvalId)
   }
   await tx.query(`UPDATE payout_batch SET state = 'instructing' WHERE id = $1`, [id])
+  await tx.query('SELECT notify_batch($1)', [id]) // D-B5-24: payout.sent and payout.held notices, in the approval transaction
   const total = result.lines.reduce((sum, line) => sum + BigInt(line.amount_minor), 0n).toString()
   await recordAudit(tx, {
     action: 'PAYOUT.BATCH_APPROVED', objectType: 'payout_batch', objectId: id,

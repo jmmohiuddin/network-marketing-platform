@@ -58,7 +58,7 @@ export function coversMarkets(auth: AuthContext, grants: readonly (readonly stri
 }
 
 async function assertGrantee(tx: Tx, userId: string): Promise<void> {
-  const { rows } = await tx.query<{ state: string }>('SELECT state FROM user_account WHERE id = $1', [userId])
+  const { rows } = await tx.query<{ state: string }>(`SELECT state FROM user_account WHERE id = $1 AND realm = 'tenant'`, [userId])
   if (rows[0] === undefined) throw notFound()
   if (rows[0].state === 'deactivated') {
     throw new ApiError(409, 'USER_DEACTIVATED', 'Roles cannot be granted to a deactivated user.')

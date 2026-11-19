@@ -17,10 +17,14 @@ export const B4_KEYS = [
   'payouts.market_policy', 'payouts.bank_detail_cooling_off_hours', 'payouts.shared_account_threshold', 'payouts.dormant_after_days',
   'payouts.provider_review_reminder_days', 'adjustments.policy', 'write_offs.policy',
 ] as const
+/** PLAN B5 D-B5-20: dispute window and response times, privacy-request deadlines, customers' contact in the portal; none has a default (DEC-14). */
+export const B5_KEYS = ['disputes.policy', 'privacy.policy', 'portal.customer_contact_visible'] as const
+/** Keys the DPO approves (settings.ts approverPermission privacy.manage). */
+const DPO_APPROVED: readonly string[] = ['genealogy.visibility_policy', 'privacy.policy', 'portal.customer_contact_visible']
 /** B4 keys a Finance approver approves (settings.ts approverPermission settings.approve). */
 const B4_APPROVED: readonly string[] = ['payouts.market_policy', 'payouts.bank_detail_cooling_off_hours', 'adjustments.policy', 'write_offs.policy']
 /** Keys changed through "Save new version with effective date". */
-export const POLICY_KEYS = [...MONEY_KEYS, 'plan.activation_notice_days', ...B2_KEYS, ...B4_KEYS] as const
+export const POLICY_KEYS = [...MONEY_KEYS, 'plan.activation_notice_days', ...B2_KEYS, ...B4_KEYS, ...B5_KEYS] as const
 export type PolicyKey = (typeof POLICY_KEYS)[number]
 
 export interface Approval {
@@ -35,10 +39,10 @@ export interface Approval {
 export const FINANCE_APPROVAL: Approval = { permission: 'settings.approve', role: 'Finance approver', short: 'Finance' }
 const DPO: Approval = { permission: 'privacy.manage', role: 'DPO', short: 'DPO' }
 
-/** Who must approve a change of the key (D-B2-08): money keys a Finance approver, the visibility policy the DPO; else null. */
+/** Who must approve a change of the key (D-B2-08, D-B5-20): money keys a Finance approver, privacy keys the DPO; else null. */
 export function approvalOf(key: string): Approval | null {
   if ((MONEY_KEYS as readonly string[]).includes(key) || B4_APPROVED.includes(key)) return FINANCE_APPROVAL
-  return key === 'genealogy.visibility_policy' ? DPO : null
+  return DPO_APPROVED.includes(key) ? DPO : null
 }
 
 export const KEY_LABELS: Readonly<Record<string, string>> = {
@@ -67,6 +71,9 @@ export const KEY_LABELS: Readonly<Record<string, string>> = {
   'payouts.provider_review_reminder_days': 'Provider review reminder',
   'adjustments.policy': 'Adjustment policy',
   'write_offs.policy': 'Write-off policy',
+  'disputes.policy': 'Dispute policy',
+  'privacy.policy': 'Privacy request deadlines',
+  'portal.customer_contact_visible': 'Customer contact in the portal',
   structure: 'Markets, brands and calendars',
 }
 
@@ -118,6 +125,11 @@ export const ATTRIBUTION_OPTIONS = [
   { value: 'servicing', label: 'Servicing' },
 ] as const
 
+export const CONTACT_VISIBLE_OPTIONS = [
+  { value: 'true', label: 'Shown, masked' },
+  { value: 'false', label: 'Hidden' },
+] as const
+
 export const RESTOCKING_OPTIONS = [
   { value: 'none', label: 'No volume effect' },
   { value: 'proportional', label: 'Proportional' },
@@ -133,6 +145,13 @@ const days = (count: number): string => (count === 1 ? '1 day' : `${count} days`
 /** Tenant-wide amounts are minor units of each market's currency (D-B4-18). */
 const minor = (value: unknown): string => `${BigInt(String(value)).toLocaleString()} minor units`
 const minutes = (count: number): string => (count === 1 ? '1 minute' : `${count} minutes`)
+
+/** Per market id a number of days (disputes.policy and privacy.policy response_days): "DE: 10 days, AT: 30 days". */
+function marketDaysText(record: unknown, markets: readonly Market[] | undefined): string {
+  const entries = Object.entries((record ?? {}) as Readonly<Record<string, number>>)
+  if (entries.length === 0) return 'no market'
+  return entries.map(([marketId, count]) => `${markets?.find((market) => market.id === marketId)?.code ?? 'Market'}: ${days(count)}`).join(', ')
+}
 
 type MarketPolicy = Readonly<Record<string, { readonly minimum_payout_minor: string; readonly tax_profile_required: boolean }>>
 
@@ -182,6 +201,12 @@ function b2ValueText(key: string, value: unknown, markets: readonly Market[] | u
         record.eligible_after_days === undefined ? null : `eligible after ${days(Number(record.eligible_after_days))}`,
         `second approver above ${minor(record.second_approver_above_minor)}`,
       ].filter((part) => part !== null).join('; ').replace(/^./, (first) => first.toUpperCase())
+    case 'disputes.policy':
+      return `${record.window_days === undefined ? 'No dispute window' : `Disputes open for ${days(Number(record.window_days))} after a commit`}; response time ${marketDaysText(record.response_days, markets)}`
+    case 'privacy.policy':
+      return `Answer within ${marketDaysText(record.response_days, markets)}; escalate ${days(Number(record.escalate_before_days))} before the deadline`
+    case 'portal.customer_contact_visible':
+      return value === true ? 'Shown, masked' : 'Hidden'
     case 'genealogy.visibility_policy':
       return `Names ${String(record.named_depth)} ${record.named_depth === 1 ? 'level' : 'levels'} down; contact of personally sponsored ${record.contact_for_personally_sponsored === true ? 'shown' : 'hidden'}`
     default:
@@ -209,9 +234,12 @@ export function approverNames(approvers: readonly EligibleApprover[]): string {
   return approvers.map(personLabel).join(', ')
 }
 
-/** FR-IAM-004 AC-IAM4-4 sentence when nobody may decide; role = the base role that holds the permission. */
+/**
+ * FR-IAM-004 AC-IAM4-4 sentence when nobody may decide; role = the base role that holds the permission. The API lists
+ * only users who could decide now: a holder of a role that requires a second factor counts once it is set up (BUG-115).
+ */
 export function noApproverText(role: string): string {
-  return `No one can approve this yet: a Tenant admin must assign ${role} to another user.`
+  return `No one can approve this yet: another user must hold ${role} and, if the role requires it, have set up their authenticator app at sign-in. A Tenant admin assigns roles.`
 }
 
 /**

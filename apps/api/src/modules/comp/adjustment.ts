@@ -19,6 +19,8 @@ const payload = z.strictObject({
   period_id: z.uuid(),
   amount_minor: z.string().regex(/^-?[1-9]\d{0,17}$/, 'a non-zero amount in minor units'),
   note: z.string().trim().min(1).max(2000),
+  /** D-B5-15: the upheld dispute this adjustment settles (reason DISPUTE_UPHELD). */
+  dispute_case_id: z.uuid().optional(),
 })
 type Payload = z.infer<typeof payload>
 
@@ -27,13 +29,44 @@ interface Subject {
   readonly position_ref: string
   readonly participant_id: string
   readonly external_ref: string
-  readonly display_name: string | null
   readonly period_market_id: string | null
   readonly starts_at: Date | null
   readonly ends_at: Date | null
   readonly state: string | null
   readonly related: boolean
   readonly new_account: boolean
+}
+
+const invalid = (path: string, message: string) => new ApiError(422, 'VALIDATION_FAILED', message, { issues: [{ path, message }] })
+
+/**
+ * An approved dispute of a line of this position (AC-CAS3-4) that no other open, submitted or approved adjustment
+ * settles (one upheld dispute is paid once); 422 otherwise.
+ */
+async function assertUpheldDispute(tx: Tx, positionId: string, disputeCaseId: string, caseId: string | null): Promise<void> {
+  const { rows } = await tx.query<{ settled: boolean }>(
+    `SELECT EXISTS (SELECT 1 FROM case_file a WHERE a.type = 'adjustment' AND a.payload ->> 'dispute_case_id' = d.id::text
+                      AND a.state IN ('open', 'submitted', 'approved') AND a.id IS DISTINCT FROM $3::uuid) AS settled
+     FROM case_file d JOIN result_line l ON l.id = d.subject_id
+     WHERE d.id = $1 AND d.type = 'dispute' AND d.state = 'approved' AND l.payee_position_id = $2`,
+    [disputeCaseId, positionId, caseId],
+  )
+  if (rows[0] === undefined) throw invalid('payload.dispute_case_id', 'not an upheld dispute of this position')
+  if (rows[0].settled) throw invalid('payload.dispute_case_id', 'another adjustment already settles this dispute')
+}
+
+/**
+ * SEC-B4-7 (D-B5-21): the absolute amounts of the position's other submitted or approved adjustments of the same
+ * period count towards the second-approver threshold, so splitting one adjustment never avoids it.
+ */
+async function otherAdjustmentsMinor(tx: Tx, positionId: string, periodId: string, caseId: string | null): Promise<bigint> {
+  const { rows } = await tx.query<{ total: string }>(
+    `SELECT coalesce(sum(abs((payload ->> 'amount_minor')::bigint)), 0)::text AS total FROM case_file
+     WHERE type = 'adjustment' AND subject_id = $1 AND payload ->> 'period_id' = $2::text AND state IN ('submitted', 'approved')
+       AND id IS DISTINCT FROM $3::uuid`,
+    [positionId, periodId, caseId],
+  )
+  return BigInt(rows[0]!.total)
 }
 
 const periodNotOpen = (state: string | null) =>
@@ -45,13 +78,13 @@ const periodNotOpen = (state: string | null) =>
  * submit it), or enrolled within the policy's new_account_days. 422 when the period is not one of the
  * position's market, 409 PERIOD_NOT_OPEN once it is committed, 422 SETTING_NOT_CONFIGURED without a policy.
  */
-async function assess(tx: Tx, positionId: string, p: Payload, preparers: readonly (string | null)[]) {
+async function assess(tx: Tx, positionId: string, p: Payload, preparers: readonly (string | null)[], caseId: string | null) {
   const policy = await getSetting(tx, 'adjustments.policy')
   if (policy === null) {
     throw new ApiError(422, 'SETTING_NOT_CONFIGURED', 'Set the adjustment policy before proposing adjustments.', { key: 'adjustments.policy' })
   }
   const { rows } = await tx.query<Subject>(
-    `SELECT s.market_id, s.position_ref, pt.id AS participant_id, pt.external_ref, pt.display_name, c.market_id AS period_market_id,
+    `SELECT s.market_id, s.position_ref, pt.id AS participant_id, pt.external_ref, c.market_id AS period_market_id,
             o.starts_at, o.ends_at, o.state,
             EXISTS (SELECT 1 FROM staff_related_users(pt.id) AS r(id) WHERE r.id = ANY ($3::uuid[]) OR r.id = app_user_id()) AS related,
             pt.enrolled_at > now() - make_interval(days => $4::int) AS new_account
@@ -69,22 +102,37 @@ async function assess(tx: Tx, positionId: string, p: Payload, preparers: readonl
   if (flagged.length > 0 && policy.related_account_action === 'block') {
     throw new ApiError(422, 'ADJUSTMENT_BLOCKED', 'Adjustments to this payee are blocked by the adjustment policy.', { reason: flagged[0] })
   }
-  const aboveThreshold = (BigInt(p.amount_minor) < 0n ? -BigInt(p.amount_minor) : BigInt(p.amount_minor)) > BigInt(policy.second_approver_above_minor)
+  if (p.dispute_case_id !== undefined) await assertUpheldDispute(tx, positionId, p.dispute_case_id, caseId)
+  const magnitude = BigInt(p.amount_minor) < 0n ? -BigInt(p.amount_minor) : BigInt(p.amount_minor)
+  const cumulative = magnitude + await otherAdjustmentsMinor(tx, positionId, p.period_id, caseId)
+  const aboveThreshold = cumulative > BigInt(policy.second_approver_above_minor)
   const escalations = [...flagged, ...(aboveThreshold ? ['above_threshold'] : [])]
   return { subject, escalations, approvals: escalations.length > 0 ? 2 as const : 1 as const }
 }
 
 const preparersOf = (c: Pick<CaseRecord, 'opened_by' | 'assigned_to'>) => [c.opened_by, c.assigned_to]
 
+/**
+ * Runs first at submit. The position's adjustment lock, held to commit, serialises submits of one position, so each
+ * sees the others' submissions in the threshold sum and the dispute check (SEC-B4-7, D-B5-21). Only submit takes it:
+ * submit takes the audit lock after it, while the assign route reads approvals_required after the audit lock.
+ */
 async function effectPreview(tx: Tx, c: CaseRecord<Payload>) {
-  const { subject, escalations, approvals } = await assess(tx, c.subject_id, c.payload, preparersOf(c))
+  // validateCreate does not receive the reason code (CaseTypeDefinition), so a mismatch is refused here, before the
+  // case can take effect.
+  if (c.payload.dispute_case_id !== undefined && c.reason_code !== 'DISPUTE_UPHELD') {
+    throw invalid('reason_code', 'an adjustment settling a dispute has reason DISPUTE_UPHELD')
+  }
+  await tx.query(`SELECT pg_advisory_xact_lock(hashtextextended('adjustment:' || app_tenant_id() || ':' || $1, 0))`, [c.subject_id])
+  const { subject, escalations, approvals } = await assess(tx, c.subject_id, c.payload, preparersOf(c), c.id)
   return {
     payee: {
-      participant: { id: subject.participant_id, external_ref: subject.external_ref, display_name: subject.display_name },
+      // The name stays null: the preview is history erasure cannot clear; case views fill in the current one (BUG-109).
+      participant: { id: subject.participant_id, external_ref: subject.external_ref, display_name: null },
       position: { id: c.subject_id, position_ref: subject.position_ref },
     },
     period: { id: c.payload.period_id, starts_at: subject.starts_at, ends_at: subject.ends_at, state: subject.state },
-    amount_minor: c.payload.amount_minor, approvals_required: approvals, escalations, included_in: 'next calculation of this period',
+    amount_minor: c.payload.amount_minor, dispute_case_id: c.payload.dispute_case_id ?? null, approvals_required: approvals, escalations, included_in: 'next calculation of this period',
   }
 }
 
@@ -142,10 +190,10 @@ export const ADJUSTMENT_CASE_TYPE: CaseTypeDefinition<Payload> = {
     return rows[0] === undefined ? null : { marketId: rows[0].market_id }
   },
   async validateCreate(tx, subject, p, _scope, stored) {
-    await assess(tx, subject.id, p, stored === undefined ? [] : preparersOf(stored))
+    await assess(tx, subject.id, p, stored === undefined ? [] : preparersOf(stored), stored?.id ?? null)
   },
   effectPreview,
-  approvalsRequired: async (tx, c) => (await assess(tx, c.subject_id, c.payload, preparersOf(c))).approvals,
+  approvalsRequired: async (tx, c) => (await assess(tx, c.subject_id, c.payload, preparersOf(c), c.id)).approvals,
   excludedApprovers,
   onDecision,
 }

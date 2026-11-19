@@ -80,41 +80,53 @@ function registerStatusChange(app: FastifyInstance): void {
   })
 }
 
+export interface DownlineRequest {
+  readonly viewer: string
+  readonly target: string
+  readonly cursor: string | undefined
+  readonly limit: number
+}
+
 /**
- * API-13 for a staff viewer position (D-B2-08): the target as the viewer would see it, its visible children (one
- * page) and per-level counts beyond the named depth. Outside the viewer's downline is 404, exactly as an unknown id.
+ * API-13 logic, shared by the staff route and the portal team view (D-B2-08, D-B5-10): the target as the viewer would
+ * see it, its visible children (one page) and per-level counts beyond the named depth, audited with the policy
+ * version. Outside the viewer's downline is 404, exactly as an unknown id.
  */
-async function downline(tx: Tx, request: FastifyRequest, target: string, query: z.infer<typeof downlineQuery>) {
+export async function downlineView(tx: Tx, request: FastifyRequest, input: DownlineRequest) {
+  const { viewer, target } = input
   const state = await modelState(tx, 'sponsor')
   const modelVersion = await modelVersionFor(tx, 'sponsor', state, target)
   const maxDepth = request.server.config.genealogyFallbackMaxDepth
-  const levels = await levelsBelow(tx, modelVersion, query.viewer, target, maxDepth)
+  const levels = await levelsBelow(tx, modelVersion, viewer, target, maxDepth)
   if (levels === null) throw notFound()
   const policy = await policyInForce(tx)
   const childLevels = levels + 1
   const page = childLevels > policy.named_depth
     ? { ids: [], last: null, more: false }
     : await childrenPage(tx, { kind: 'sponsor', asOf: null, knownAt: null, modelVersion }, target,
-      decodeCursor(query.cursor, childCursor), pageLimit(request, query.limit))
+      decodeCursor(input.cursor, childCursor), pageLimit(request, input.limit))
   const [node] = await downlineNodes(tx, [target], levels, policy)
   const children = await downlineNodes(tx, page.ids, childLevels, policy)
   const fromLevel = Math.max(0, policy.named_depth + 1 - levels)
   const aggregates = await hiddenLevels(tx, modelVersion, target, fromLevel, levels, maxDepth)
   await recordAudit(tx, {
     action: 'GENEALOGY.DOWNLINE_VIEWED', objectType: 'position', objectId: target,
-    after: { viewer: query.viewer, target, policy_version: policy.version_id, rows: (node === undefined ? 0 : 1) + children.length },
+    after: { viewer, target, policy_version: policy.version_id, rows: (node === undefined ? 0 : 1) + children.length },
   })
-  return envelope(
-    { node: node ?? null, children, aggregates, policy },
-    { next_cursor: nextCursor(page.last, page.more), read_model: readModelMeta(state, modelVersion !== null) },
-  )
+  return {
+    node: node ?? null, children, aggregates, policy,
+    meta: { next_cursor: nextCursor(page.last, page.more), read_model: readModelMeta(state, modelVersion !== null) },
+  }
 }
 
 function registerDownline(app: FastifyInstance): void {
   app.get('/v1/positions/:id/downline', { preHandler: genealogyReader }, async (request) => {
     const id = positionId(request)
     const query = parse(downlineQuery, request.query)
-    return inTenant(request, (tx) => downline(tx, request, id, query))
+    return inTenant(request, async (tx) => {
+      const { meta, ...data } = await downlineView(tx, request, { viewer: query.viewer, target: id, cursor: query.cursor, limit: query.limit })
+      return envelope(data, meta)
+    })
   })
 }
 

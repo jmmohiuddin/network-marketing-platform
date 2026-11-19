@@ -277,7 +277,7 @@ describe('money-affecting settings (D-B1-01 backstop)', () => {
 
 describe('cases (FR-CAS-001)', () => {
   const openCase = (overrides: Record<string, unknown> = {}) => as(a, (tx) => insertRow(tx, 'case_file', {
-    tenant_id: a.tenantId, type: 'adjustment', subject_type: 'test', subject_id: randomUUID(), reason_code: 'r',
+    tenant_id: a.tenantId, type: 'grievance', subject_type: 'test', subject_id: randomUUID(), reason_code: 'r',
     state: 'open', payload: {}, opened_by: a.userId, ...overrides,
   }))
   const decide = (decider: TenantContext, caseId: string, decision = 'approved') => as(decider, async (tx) => {

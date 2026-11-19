@@ -27,6 +27,8 @@ const TENANT_ID_TABLES = [
   'ledger_account', 'journal_entry', 'posting', 'gl_account_map', 'journal_export', 'run_settlement',
   'user_related_participant', 'bank_detail_request', 'bank_detail_version', 'payout_batch', 'payout_batch_line',
   'payout_instruction', 'sandbox_provider_payment', 'payout_exception', 'payout_hold', 'tax_profile',
+  // PLAN B5 section 1
+  'portal_sign_in_code', 'notification', 'notification_preference', 'privacy_request', 'privacy_export',
 ]
 // Platform tables (no tenant): every realm reads them, none writes them (pack-rules.test.ts).
 const PLATFORM_TABLES = ['guardrail_rule', 'tax_rule']

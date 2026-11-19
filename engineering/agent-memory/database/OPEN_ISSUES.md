@@ -66,3 +66,16 @@ _Agent: database. Read before every task; update after every task. Keep concise 
 - PLAN amendment needed (planner): PLAN 1.3 / D-B4-12 "settled only when every instruction is settled" now reads "every instruction no retry replaced"; retry-failed must set payout_instruction.retry_of; API batch-state derivation must use the same rule.
 - Not enforced (blocked on BE1): approvals_required NOT NULL at submit for adjustment/write_off — cas/cases.ts markSubmitted does not pin it yet and the CAS fixture slot is 'adjustment'; add the CHECK once submit pins it. Unconsumed manual origin at period commit still API-gated.
 - Write-off amount <= receivable still API-side (onDecision under the ledger lock).
+
+## From B5 schema (2026-11-19)
+- Not done by DB (outside the files this task assigned): PLAN 1.7 lib/auth.ts, lib/db.ts (inPortal), lib/session.ts (portal resolveAuth), test/helpers/users.ts createPortalUser. Done: sign-in.ts auth_find_user call, settings registry (3 keys), support SUPPORT_EXCLUDED_PERMISSIONS, cas test-support (grievance) + cases tests' literals.
+- Not tested in SQL: tax_profile_missing blocker and privacy_deadline_lookup positive path (both need an approved setting change: money guard); notify_plan_change positive path (needs a scheduled plan version). selection.ts vs pay_payee_blockers equality pin is BE3's (it composes the function).
+- notify_batch must be called after the batch's instructions are written; payout.held amount = led_balance at call time.
+- No user_account column guards beyond realm/tenant/participant pinning (nmp_app keeps full UPDATE grant on user_account).
+- nmp_dev / nmp_e2e / nmp_test not migrated to 0505 (only nmp_test_2).
+
+## From B5 review fixes (2026-11-19)
+- PLAN amendment needed (C-B5 entry, PLAN owner): D-B5-18 blocker list gains open_run; D-B5-18 cleared list gains session.ip/user_agent, notification.params.masked; D-B5-07 statement reads batch period via pay_batch_period(batch) (payout_batch hidden from portal); D-B5-02 self-policy table list extended.
+- Opening an adjustment/dispute case still takes no lock against a concurrent erasure (blocker check race); erasure holds participant FOR UPDATE + ledger locks only.
+- pay_payee_blockers still returns hold.reason text to a portal caller: COMP must map to codes (D-B5-07).
+- nmp_dev / nmp_e2e / nmp_test not migrated to 0506.

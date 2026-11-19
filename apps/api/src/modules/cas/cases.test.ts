@@ -79,13 +79,13 @@ const decide = (as: TestUser, id: string, decision: 'approve' | 'reject' = 'appr
 describe('POST /v1/cases (AC-CAS1-1, AC-CAS1-2)', () => {
   test('opens a case of a registered type about an existing subject, with its event and audit; a replay opens nothing', async () => {
     const key = randomUUID()
-    const body = { type: 'adjustment', subject_type: FIXTURE_SUBJECT, subject_id: gb, reason_code: 'fixture_reason_a', payload: { amount_minor: '-250' }, note: 'Customer call' }
+    const body = { type: 'grievance', subject_type: FIXTURE_SUBJECT, subject_id: gb, reason_code: 'fixture_reason_a', payload: { amount_minor: '-250' }, note: 'Customer call' }
     const first = await call(app, { method: 'POST', url: '/v1/cases', as: admin, body, idempotencyKey: key })
     const replay = await call(app, { method: 'POST', url: '/v1/cases', as: admin, body, idempotencyKey: key })
     const opened = first.json().data
 
     expect(first.statusCode).toBe(201)
-    expect(opened).toMatchObject({ type: 'adjustment', state: 'open', market_id: gb, opened_by: admin.id, payload: { amount_minor: '-250' } })
+    expect(opened).toMatchObject({ type: 'grievance', state: 'open', market_id: gb, opened_by: admin.id, payload: { amount_minor: '-250' } })
     expect(replay.statusCode).toBe(201)
     expect(replay.headers['idempotent-replayed']).toBe('true')
     expect(replay.json().data.id).toBe(opened.id)
@@ -102,14 +102,14 @@ describe('POST /v1/cases (AC-CAS1-1, AC-CAS1-2)', () => {
   })
 
   test('a caller who may open no case type gets 403 before learning which types are enabled', async () => {
-    for (const type of ['dispute', 'adjustment']) {
+    for (const type of ['dispute', 'grievance']) {
       const response = await post(support, '/v1/cases', { type, subject_type: FIXTURE_SUBJECT, subject_id: gb, reason_code: 'x', payload: {} }, true)
       expect(response.statusCode).toBe(403)
     }
   })
 
   test('reason codes, subjects and payloads are checked against the type', async () => {
-    const base = { type: 'adjustment', subject_type: FIXTURE_SUBJECT, subject_id: gb, reason_code: 'fixture_reason_a', payload: { amount_minor: '1' } }
+    const base = { type: 'grievance', subject_type: FIXTURE_SUBJECT, subject_id: gb, reason_code: 'fixture_reason_a', payload: { amount_minor: '1' } }
     const reason = await post(admin, '/v1/cases', { ...base, reason_code: 'made_up' }, true)
     const unknown = await post(admin, '/v1/cases', { ...base, subject_id: randomUUID() }, true)
     const otherType = await post(admin, '/v1/cases', { ...base, subject_type: 'participant' }, true)
@@ -227,7 +227,7 @@ describe('decision (AC-CAS1-4, AC-07.1, AC-07.2, AC-IAM4-1)', () => {
     expect(approval).toMatchObject({ preparer_id: admin.id, approver_id: decider.id, decision: 'approved', reason: 'Checked against the bank letter' })
     expect(approval!.factor_verified_at).not.toBeNull()
     const outbox = await ownerRows('SELECT payload FROM outbox_event WHERE topic = $1 AND key = $2', ['case.decided', id])
-    expect(outbox).toEqual([{ payload: { case_id: id, type: 'adjustment', decision: 'approved' } }])
+    expect(outbox).toEqual([{ payload: { case_id: id, type: 'grievance', decision: 'approved' } }])
     const actions = await ownerRows<{ action: string }>('SELECT action FROM audit.audit_event WHERE object_id = $1 ORDER BY seq', [id])
     expect(actions.map((row) => row.action).slice(-2)).toEqual(['CASE.APPROVED', 'FIXTURE.CASE_DECIDED'])
     const again = await decide(decider, id, 'reject')
@@ -242,7 +242,7 @@ describe('decision (AC-CAS1-4, AC-07.1, AC-07.2, AC-IAM4-1)', () => {
     expect(rejected.statusCode).toBe(200)
     expect(rejected.json().data.state).toBe('rejected')
     expect(await ownerRows('SELECT payload FROM outbox_event WHERE key = $1', [id])).toEqual([
-      { payload: { case_id: id, type: 'adjustment', decision: 'rejected' } },
+      { payload: { case_id: id, type: 'grievance', decision: 'rejected' } },
     ])
   })
 

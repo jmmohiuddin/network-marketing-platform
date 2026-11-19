@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
 import { errorMessage } from '../lib/messages'
-import { activeEntry, withNext, type NavigationEntry, type Realm } from '../lib/navigation'
+import { activeEntry, isAuthPage, withNext, type NavigationEntry, type Realm } from '../lib/navigation'
 import { shellRedirect, type Me } from '../lib/me'
 import { supportFrameOf, type SupportSessionFrame } from '../lib/support-session'
 import { SessionContext, useMe } from '../lib/session'
@@ -15,15 +15,10 @@ import { SignOutButton } from './sign-out-button'
 import { ErrorState, LoadingState, NotAvailable } from './states'
 import { SupportFrame } from './support-frame'
 
-const SHELL_TITLE: Readonly<Record<Realm, (me: Me) => string>> = {
-  tenant: (me) => me.tenant?.legal_name ?? 'Staff application',
-  vendor: () => 'Operations console',
-}
-
 /** Client icon map by server navigation key (guidelines §8.1); an unknown key gets no icon. */
 const NAV_ICONS: Readonly<Record<string, string>> = {
   overview: 'dashboard', periods: 'history_toggle_off', late: 'history_toggle_off', plans: 'schema', people: 'account_tree', genealogy: 'lan', orders: 'receipt_long',
-  cases: 'rule_folder', payouts: 'payments', reconciliation: 'fact_check', ledger: 'account_balance', compliance: 'verified_user', imports: 'sync_alt',
+  cases: 'rule_folder', privacy: 'lock_person', payouts: 'payments', reconciliation: 'fact_check', ledger: 'account_balance', compliance: 'verified_user', imports: 'sync_alt',
   settings: 'tune', users: 'admin_panel_settings', vendor_access: 'vpn_key', audit: 'history_edu', markets: 'public', integrations: 'hub', guardrails: 'policy',
 }
 
@@ -92,7 +87,7 @@ function TopBar({ me, framed, menuOpen, onMenu, signOutRealm }: {
           <Icon name={menuOpen ? 'close' : 'menu'} size={20} />
           <span className="font-body-sm text-body-sm">Menu</span>
         </button>
-        <span className="font-section-heading text-section-heading text-primary font-bold tracking-tight truncate">{SHELL_TITLE[me.realm](me)}</span>
+        <span className="font-section-heading text-section-heading text-primary font-bold tracking-tight truncate">{me.realm === 'vendor' ? 'Operations console' : me.tenant?.legal_name ?? 'Staff application'}</span>
       </div>
       <div className="flex items-center gap-space-sm pl-space-xs">
         <Avatar name={me.user.display_name} email={me.user.email} />
@@ -161,8 +156,8 @@ export function AppShell({ realm, children }: { readonly realm: Realm; readonly 
   const pathname = usePathname()
   const redirect = me === null ? null : shellRedirect(me, realm)
   useEffect(() => {
-    // The query string comes back too (filters such as /settings/audit?action=...).
-    if (redirect !== null) router.replace(redirect === '/' ? redirect : withNext(redirect, `${pathname}${window.location.search}`))
+    // MFA pages bring the user back here, query string too (filters such as /settings/audit?action=...).
+    if (redirect !== null) router.replace(isAuthPage(redirect) ? withNext(redirect, `${pathname}${window.location.search}`) : redirect)
   }, [redirect, pathname, router])
   if (error !== null) return <StatePage><ErrorState message={errorMessage(error)} onRetry={reload} /></StatePage>
   if (me === null || redirect !== null) return <StatePage><LoadingState label="Loading your workspace" /></StatePage>

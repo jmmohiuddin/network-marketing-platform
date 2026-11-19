@@ -41,3 +41,12 @@ _Agent: database. Read before every task; update after every task. Keep concise 
 - Migrations 0400-0406 (16 tables, guards, PLAN 4.2 functions, base roles, OI-3 b). permissions.ts +19 (5 privileged, case.bank_detail.create MFA), Support agent mfa_required; settings registry D-B4-18 (+clawback retired); cas/types.ts hook fields; api-scopes ledger:export; lib/bank-crypto.ts (+test); seed finance2, DE contacts, DE-A bank version (owner).
 - Tests: packages/db b4-guards.test.ts (17), seed/isolation/migrations catalogues; kept API suites green by updating pins in seed, comp/commit, iam/api-keys, iam/grants, iam/mfa, ten/change-requests (moved off the retired clawback key), ten/settings, test/authz/role-matrix SETTING_READERS.
 - Verified on nmp_test_2: packages/db + apps/api 96 files / 2378 tests, typecheck (api + web) clean.
+
+## B5 schema (2026-11-19)
+- Migrations 0500-0505 (5 tables, RESTRICTIVE self policies, guards, PLAN 4.2 functions, base roles, approval keys). permissions.ts +2 (case.dispute.read/approve, B5_UPDATED_BASE_ROLES); settings registry 3 keys; seed dpo2 + DE-K contact; TenantContext.participantId.
+- Tests: packages/db b5-guards.test.ts (26) + catalogue updates; API pins updated (permissions, seed, role-matrix SETTING_READERS, cas fixture grievance).
+- Verified on nmp_test_2: packages/db 15 files / 260 tests; apps/api 97 files / 2512 tests (4 pins fixed after the run: permissions 0405 test now checks role names + MFA, mfa /v1/me list, support exclusions, settings keys; re-run green); typecheck (api + web) clean.
+
+## B5 review fixes (2026-11-19)
+- 0506_b5_review_fixes.sql: HIGH self bank version (cooling-off, review, shared threshold), MEDIUM system-opened cases, self scope on 8 more tables, case_event/assignee guards; LOW open_run blocker + wider ledger lock, deactivated portal account frozen, owner allow-list, fingerprint lock, session/notice erasure.
+- Tests: b5-guards +7 tests/assertions, migrations.test pins. nmp_test_2: packages + apps/api 3243/3244 (gen positions E-GEN-10 flaked once in the full run, green alone and with gen+par); typecheck clean.

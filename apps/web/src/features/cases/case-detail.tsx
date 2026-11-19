@@ -8,7 +8,8 @@ import { Button, LinkButton } from '../../components/button'
 import { Icon } from '../../components/icon'
 import { PageHeader } from '../../components/page-header'
 import { StatusBadge } from '../../components/status-badge'
-import { LoadingState, NotAvailable } from '../../components/states'
+import { Modal } from '../../components/modal'
+import { ErrorState, LoadingState, NotAvailable } from '../../components/states'
 import { useToast } from '../../components/toast'
 import { formatDateTime } from '../../lib/format'
 import { errorMessage } from '../../lib/messages'
@@ -18,17 +19,20 @@ import { shortId } from '../admin/format'
 import { LoadFailure } from '../admin/page-states'
 import { approverNames, noApproverText } from '../admin/settings/labels'
 import { formatMegabytes } from '../../components/file-drop-zone'
-import { adjustmentRefusal } from './adjustment-dialog'
-import { AddEvidence, AssignDialog, ReasonDialog, ReturnedSubmitDialog, type CaseDialog } from './case-actions'
+import { AdjustmentDialog, adjustmentRefusal } from './adjustment-dialog'
+import { privacyFacts, type DisputePayload, type DisputePreview } from './b5-effects'
+import { AddEvidence, AssignDialog, DECISION_LABELS, DISPUTE_DECISION_LABELS, PrivacySubmitDialog, ReasonDialog, ReturnedSubmitDialog, type CaseDialog } from './case-actions'
+import { RestatementDialog } from './restatement-dialog'
+import { PRIVACY_REQUESTS_PATH, type PrivacyPayload, type PrivacyRequestDetail } from '../privacy/types'
 import { EffectPreview } from './effect-preview'
 import { MONEY_CASE_TYPES, payeeLink, useCaseMarket } from './money-effects'
 import {
-  caseTypeInfo, contributorsOf, EVENT_LABELS, inSentence, instantText, isLive, KIND_LABELS, openerText, OUTCOME_LABELS, personName, reasonLabel,
+  actorName, caseTypeInfo, contributorsOf, EVENT_LABELS, inSentence, instantText, isLive, KIND_LABELS, openerText, OUTCOME_LABELS, personName, reasonLabel,
   SIGNAL_LABELS, STATE_BADGES, STATE_LABELS, type CaseTypeInfo,
 } from './format'
 import { DocumentLink } from '../markets/gate-inspector'
 import { ParticipantLink, PeriodLink, PositionLink, SubjectLink } from './refs'
-import { marketMoney, signedMoney } from '../periods/format'
+import { marketMoney, periodText, signedMoney } from '../periods/format'
 import type { CaseDetail, CaseEvent, DuplicatePayload, RelationshipPayload, TransferPayload, WriteOffPreview } from './types'
 
 const CARD = 'bg-surface-container-lowest rounded shadow-sm p-space-md flex flex-col gap-space-sm'
@@ -73,6 +77,11 @@ function PayloadFacts({ record }: { readonly record: CaseDetail }) {
     return <Fact label="Note">{(record.payload as { readonly note: string }).note}</Fact>
   }
   if (MONEY_CASE_TYPES.includes(record.type)) return <MoneyPayloadFacts record={record} />
+  if (record.type === 'dispute') {
+    // The line's stored trace is attached to the case; the page links to it, never dumps it (PLAN B5 §5 SC-06).
+    return <Fact label="Distributor’s message">{(record.payload as DisputePayload).message}</Fact>
+  }
+  if (record.type === 'privacy') return <>{privacyFacts(record).map(([label, value]) => <Fact key={label} label={label}>{value}</Fact>)}</>
   if (record.type === 'duplicate') {
     const payload = record.payload as DuplicatePayload
     return (
@@ -117,7 +126,7 @@ function Timeline({ record, myId }: { readonly record: CaseDetail; readonly myId
                 <span className="font-body-sm text-body-sm font-semibold text-on-surface">{EVENT_LABELS[event.kind]}</span>
                 <span className="font-data-mono-sm text-data-mono-sm text-secondary">{formatDateTime(event.occurred_at)}</span>
               </div>
-              <span className="font-caption text-caption text-secondary">{personName(event.actor_id, myId, record.eligible_approvers)}</span>
+              <span className="font-caption text-caption text-secondary">{actorName(record, event.actor_id, myId, record.eligible_approvers)}</span>
               {detail !== null && <p className="font-body-sm text-body-sm text-on-surface-variant break-words">{detail}</p>}
             </li>
           )
@@ -166,7 +175,7 @@ function Duties({ record, info, myId, involved }: { readonly record: CaseDetail;
       <h2 id="duties-title" className={LABEL}>Separation of duties</h2>
       <p className="font-body-sm text-body-sm text-on-surface">
         Opened by {openerText(record, myId)} · {formatDateTime(record.created_at)}
-        {record.submitted_by !== null && <> · submitted by {inSentence(personName(record.submitted_by, myId, approvers))} · {formatDateTime(record.submitted_at)}</>}
+        {record.submitted_by !== null && <> · submitted by {inSentence(actorName(record, record.submitted_by, myId, approvers))} · {formatDateTime(record.submitted_at)}</>}
       </p>
       {approvers !== null && (
         <p className="font-body-sm text-body-sm text-on-surface-variant">
@@ -178,6 +187,20 @@ function Duties({ record, info, myId, involved }: { readonly record: CaseDetail;
       )}
       {involved && <p className="font-caption text-caption text-error">You prepared or contributed to this case, so someone else must decide it.</p>}
     </section>
+  )
+}
+
+/** The privacy case's submit dialog, once the request's type (which decides whether a retention basis is needed) is read. */
+function PrivacyRequestSubmit(props: { readonly record: CaseDetail; readonly info: CaseTypeInfo; readonly onClose: () => void; readonly onDone: () => void }) {
+  const request = useResource<PrivacyRequestDetail>(`${PRIVACY_REQUESTS_PATH}/${(props.record.payload as PrivacyPayload).request_id}`)
+  if (request.data !== null) return <PrivacySubmitDialog {...props} requestType={request.data.type} />
+  // Loading and a failed read stay inside the dialog, so Close always returns to the case and Try again reads it again.
+  return (
+    <Modal open onClose={props.onClose} title="Submit the privacy request">
+      {request.error === null
+        ? <LoadingState label="Loading the privacy request" />
+        : <ErrorState section message={errorMessage(request.error)} onRetry={request.reload} />}
+    </Modal>
   )
 }
 
@@ -198,6 +221,7 @@ function CaseView({ record, info, reload }: { readonly record: CaseDetail; reado
   const [dialog, setDialog] = useState<CaseDialog | null>(null)
   const [problem, setProblem] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const [follow, setFollow] = useState<'adjustment' | 'restatement' | null>(null)
   const myId = me.user.id
   const preparing = record.state === 'open'
   const live = isLive(record)
@@ -221,13 +245,36 @@ function CaseView({ record, info, reload }: { readonly record: CaseDetail; reado
     setDialog(null)
     reload()
   }
+  // D-B5-15: "Start review" is assigning the dispute to yourself; the distributor then sees it under review.
+  async function startReview() {
+    setProblem(null)
+    try {
+      await api.post(`/v1/cases/${record.id}/assign`, { user_id: myId })
+      toast({ message: 'Review started. The distributor sees the dispute as under review.' })
+      reload()
+    } catch (error) {
+      setProblem(errorMessage(error))
+    }
+  }
+  const dispute = record.type === 'dispute'
+  // A dispute's subject is a result line: named by its position and period (BUG-117), not its id.
+  const disputed = dispute ? record.effect_preview as DisputePreview | null : null
+  const upheld = record.state === 'approved' ? disputed : null
+  const decisionLabels = dispute ? DISPUTE_DECISION_LABELS : DECISION_LABELS
+  const overdue = record.state === 'submitted' && record.due_at !== null && Date.parse(record.due_at) < Date.now()
+  const submitDialog = record.type === 'returned_payment' || record.type === 'privacy'
   // A write-off's subject is a ledger account: name whose receivable it is from the preview (BUG-103).
+  const market = useCaseMarket(record)
   const receivableOf = record.type === 'write_off' ? (record.effect_preview as WriteOffPreview | null)?.payee : undefined
   const actions = (
     <>
-      {live && canDecide && <Button icon="person_add" onClick={() => setDialog('assign')}>Assign</Button>}
+      {upheld !== null && !readOnly && can('case.adjustment.create') && market !== undefined && <Button icon="exposure" onClick={() => setFollow('adjustment')}>Propose adjustment</Button>}
+      {upheld !== null && !readOnly && can('restatement.request') && <Button icon="history_edu" onClick={() => setFollow('restatement')}>Request restatement</Button>}
+      {live && canDecide && dispute && record.assigned_to === null
+        ? <Button variant="primary" icon="rate_review" data-testid="primary-action" onClick={startReview}>Start review</Button>
+        : live && canDecide && <Button icon="person_add" onClick={() => setDialog('assign')}>Assign</Button>}
       {live && canCreate && record.opened_by === myId && <Button variant="destructive" onClick={() => setDialog('withdraw')}>Withdraw</Button>}
-      {preparing && canCreate && <Button variant="primary" icon="send" loading={submitting} data-testid="primary-action" onClick={record.type === 'returned_payment' ? () => setDialog('submit') : submit}>Submit for decision</Button>}
+      {preparing && canCreate && <Button variant="primary" icon="send" loading={submitting} data-testid="primary-action" onClick={submitDialog ? () => setDialog('submit') : submit}>Submit for decision</Button>}
     </>
   )
   return (
@@ -239,14 +286,17 @@ function CaseView({ record, info, reload }: { readonly record: CaseDetail; reado
         summary={`${reasonLabel(record.reason_code)} · opened ${formatDateTime(record.created_at)} by ${openerText(record, myId)}${record.due_at === null ? '' : ` · due ${formatDateTime(record.due_at)}`}`}
         actions={actions}
       />
-      {problem !== null && <Banner tone="danger" title="The case was not submitted">{problem}</Banner>}
+      {problem !== null && <Banner tone="danger" title="The action did not go through">{problem}</Banner>}
+      {overdue && <Banner tone="warning" title="Overdue">The response date {formatDateTime(record.due_at)} has passed; the case is still waiting for a decision.</Banner>}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-space-md items-start">
         <div className="lg:col-span-7 flex flex-col gap-space-md min-w-0">
           <section className={`${CARD} border-l-4 border-l-primary`} aria-labelledby="proposal-title" data-testid="card">
             <h2 id="proposal-title" className={LABEL}>Subject and proposal</h2>
             <dl className="grid grid-cols-1 sm:grid-cols-2 gap-space-sm">
-              <Fact label={`Subject (${record.subject_type.replace(/_/g, ' ')})`}>
-                {receivableOf === undefined ? <SubjectLink subjectType={record.subject_type} id={record.subject_id} withOwner={live} /> : <>Clawback receivable of {payeeLink(receivableOf)}</>}
+              <Fact label={`Subject (${disputed === null ? record.subject_type.replace(/_/g, ' ') : 'commission line'})`}>
+                {receivableOf !== undefined ? <>Clawback receivable of {payeeLink(receivableOf)}</>
+                  : disputed !== null ? <>Line of <PositionLink id={disputed.position.id} withOwner={false} /> in <PeriodLink id={disputed.period.id} /></>
+                    : <SubjectLink subjectType={record.subject_type} id={record.subject_id} withOwner={live} />}
               </Fact>
               <Fact label="Reason">{reasonLabel(record.reason_code)}</Fact>
               <PayloadFacts record={record} />
@@ -264,19 +314,27 @@ function CaseView({ record, info, reload }: { readonly record: CaseDetail; reado
       </div>
       {record.state === 'submitted' && (
         <ApprovalBar
-          preparedBy={`Prepared by ${inSentence(personName(record.opened_by ?? record.submitted_by, myId, record.eligible_approvers))}`}
+          preparedBy={`Prepared by ${inSentence(actorName(record, record.opened_by ?? record.submitted_by, myId, record.eligible_approvers))}`}
           preparedAt={formatDateTime(record.submitted_at)}
           blockedReason={canDecide && involved ? (firstApprover ? 'You gave the first approval, so a second approver must decide it.' : 'You prepared or contributed to this case, so someone else must decide it.') : undefined}
           approvers={record.eligible_approvers === null ? undefined : record.eligible_approvers.length === 0 ? noApproverText(info.deciderRole) : `Can decide: ${approverNames(record.eligible_approvers)}`}
           actions={canDecide && !involved ? (
             <>
-              <Button variant="destructive" onClick={() => setDialog('reject')}>Reject</Button>
-              <Button variant="primary" icon="verified_user" onClick={() => setDialog('approve')}>Approve</Button>
+              <Button variant="destructive" onClick={() => setDialog('reject')}>{decisionLabels.reject}</Button>
+              <Button variant="primary" icon="verified_user" onClick={() => setDialog('approve')}>{decisionLabels.approve}</Button>
             </>
           ) : undefined}
         />
       )}
-      {dialog === 'submit' && <ReturnedSubmitDialog record={record} info={info} onClose={() => setDialog(null)} onDone={done} />}
+      {dialog === 'submit' && record.type === 'privacy' && <PrivacyRequestSubmit record={record} info={info} onClose={() => setDialog(null)} onDone={done} />}
+      {dialog === 'submit' && record.type === 'returned_payment' && <ReturnedSubmitDialog record={record} info={info} onClose={() => setDialog(null)} onDone={done} />}
+      {follow === 'adjustment' && upheld !== null && market !== undefined && (
+        <AdjustmentDialog onClose={() => setFollow(null)} dispute={{
+          disputeCaseId: record.id,
+          position: { position_id: upheld.position.id, position_ref: upheld.position.position_ref, owner: null, status: null, market_code: market.code, leg: null },
+        }} />
+      )}
+      {follow === 'restatement' && upheld !== null && <RestatementDialog period={{ id: upheld.period.id, label: periodText(upheld.period, undefined) }} onClose={() => setFollow(null)} />}
       {dialog === 'assign' && <AssignDialog record={record} info={info} onClose={() => setDialog(null)} onDone={done} />}
       {(dialog === 'approve' || dialog === 'reject' || dialog === 'withdraw') && (
         <ReasonDialog record={record} info={info} action={dialog} onClose={() => setDialog(null)} onDone={done} />

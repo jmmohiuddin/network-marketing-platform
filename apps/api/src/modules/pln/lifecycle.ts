@@ -224,6 +224,8 @@ export function registerLifecycleRoutes(app: FastifyInstance): void {
         "UPDATE plan_version SET state = 'scheduled', activation_approval_id = $2, effective_from = $3, justification = $4 WHERE id = $1",
         [version.id, approvalId, body.effective_from, body.justification],
       )
+      // D-B5-14: plan.change_scheduled to the owners of the plan's markets, in the transaction that schedules it.
+      await tx.query('SELECT notify_plan_change($1)', [version.id])
       await recordAudit(tx, { action: 'PLAN_VERSION.SCHEDULED', objectType: 'plan_version', objectId: version.id, after: { effective_from: body.effective_from, activation_approval_id: approvalId }, reason: body.justification })
       await activate(tx, version.id)
       return reloaded(tx, version)

@@ -43,6 +43,8 @@ interface CaseFormProps {
   readonly statement?: boolean
   /** The type's own refusals at create, in words (adjustment: ADJUSTMENT_BLOCKED). */
   readonly explain?: (error: unknown) => unknown
+  /** The reason chosen at first (an upheld dispute's adjustment: DISPUTE_UPHELD). */
+  readonly initialReason?: string
   readonly children: ReactNode
 }
 
@@ -57,13 +59,13 @@ function explained(error: unknown): unknown {
  * (POST /v1/documents, class evidence), attach it, then open the case page to submit it. A case opened before a failed
  * evidence step is kept: the retry only attaches the evidence.
  */
-export function CaseForm({ idPrefix, info, prepare, fieldIds, submitLabel, statement = true, explain = (error) => error, children }: CaseFormProps) {
+export function CaseForm({ idPrefix, info, prepare, fieldIds, submitLabel, statement = true, explain = (error) => error, initialReason = '', children }: CaseFormProps) {
   const api = useApi()
   const router = useRouter()
   const toast = useToast()
   const limits = useResource<DocumentLimits>('/v1/documents/limits')
   const evidence = useEvidenceFile()
-  const [reason, setReason] = useState('')
+  const [reason, setReason] = useState(initialReason)
   const [note, setNote] = useState('')
   const [summary, setSummary] = useState<readonly SummaryItem[]>([])
   const [errors, setErrors] = useState<Readonly<Record<string, string | null>>>({})

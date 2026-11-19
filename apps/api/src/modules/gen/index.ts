@@ -4,11 +4,13 @@ import { genealogyChangeType, genealogyCorrectionType } from './genealogy-cases.
 import { registerPositionRoutes } from './position-routes.js'
 import { pathsRebuildJob } from './rebuild.js'
 import { transferType } from './transfer-case.js'
+import { registerTeamRoutes } from './team-routes.js'
 import { registerTreeRoutes } from './tree-routes.js'
 
 /**
  * Genealogy (GEN, FR-GEN-001..009, FR-PAR-005): positions and their status lifecycle, the bitemporal tree read as of a
  * date and as known at a time, the downline visibility policy, and the path read model rebuilt by a system job.
+ * B5: the portal team view (GET /v1/me/team, D-B5-10) on the same downline logic.
  * Structural writes go through the shared SQL contracts (PLAN B2 4.2).
  */
 export const genModule: ApiModule = {
@@ -16,6 +18,7 @@ export const genModule: ApiModule = {
   register(app) {
     registerTreeRoutes(app)
     registerPositionRoutes(app)
+    registerTeamRoutes(app)
   },
   jobs: [pathsRebuildJob],
 }

@@ -70,3 +70,9 @@ _Agent: compensation. Read before every task; update after every task. Keep conc
 - Edits outside my ownership, additive, owners to accept: TEN `getSettingsVersion`; IMP `lockLoads`/`tryLockLoads`/`batchDataQuality` (load.ts now calls lockLoads); lib/csv.ts numeric exemption (formats.test.ts updated: '-1' is no longer prefixed — security owner to confirm against T14 wording); packages/db/test/seed.ts (facts written while batch mapped).
 - Observed, not mine: apps/api/src/modules/ops/ops.test.ts "second-person approval" expects 1 queued invitation job, gets 2 (OPS files were being edited at the time).
 - Native facts (batch_id NULL, release B) bypass the fact guard and are ignored by snapshots; release B must define both.
+
+## 2026-11-19 (B5 review)
+- BLOCKED on lib §1.7 (integrator/DB): portal sessions resolve to null (lib/session.ts), no createPortalUser; then switch comp/portal-routes.ts to lib and delete comp/portal.ts.
+- lib/idempotency.ts: per-user route key for portal sessions (PLAN §R) — integrator; covered by comp/portal-routes.test.ts.
+- Staging check for committed runs with result_line but no run_settlement (pre-B4) — needs operator/DB agent; would 500 INVARIANT_FAILED on statement detail.
+- dispute due_at stored up to 999 µs before submitted_at + days (JS Date in CaseTypeDefinition.dueAt, cas/types.ts); exact at API ms precision.

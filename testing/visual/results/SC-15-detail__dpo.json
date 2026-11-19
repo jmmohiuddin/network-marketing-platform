@@ -1,0 +1,722 @@
+{
+  "when": "2026-11-19T16:41:32.475Z",
+  "screenId": "SC-15-detail",
+  "stitch": "sc_15_privacy_requests_dpo_fulfillment",
+  "module": "privacy",
+  "screen": "privacy-request",
+  "route": "/privacy/[id]",
+  "role": "dpo",
+  "url": "http://127.0.0.1:3100/privacy/85a6f19b-1498-404a-b425-e513e62f0024",
+  "self": false,
+  "patched": [],
+  "viewports": [
+    {
+      "viewport": "1440x900",
+      "screenshot": "testing/ui-screenshots/app/privacy/privacy-request/dpo/1440x900.png",
+      "reference": "testing/ui-screenshots/reference/sc_15_privacy_requests_dpo_fulfillment/1440x900.png",
+      "diffImage": "testing/ui-screenshots/app/privacy/privacy-request/dpo/1440x900.diff.png",
+      "mismatchPercent": 7.78,
+      "diffPixels": 190383,
+      "referenceSize": "1440x1700",
+      "actualSize": "1440x1254",
+      "landmarks": [
+        {
+          "landmark": "header",
+          "stitchText": "AuditLedgerAcrobex Global(TEN-842)arrow_drop_downUS - United",
+          "appText": "menuMenuAcme Direct LtdDOData Protection OfficerDPOlogoutSig",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "height",
+              "stitch": "48px",
+              "app": "48px",
+              "match": true
+            },
+            {
+              "prop": "background",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "sidebar",
+          "stitchText": "dashboardOverviewhistory_toggle_offPeriods & RunsschemaCompe",
+          "appText": "verified_userCompliancehistory_eduAudit logtuneSettingsaccou",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "width",
+              "stitch": "208px",
+              "app": "208px",
+              "match": true
+            },
+            {
+              "prop": "background",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "page",
+          "stitchText": "Compliance & Settings chevron_right Privacy Requests & Statu",
+          "appText": "Privacy requestschevron_right85A6F19BAccess request 85A6F19B",
+          "status": "mismatch",
+          "severity": "high",
+          "props": [
+            {
+              "prop": "background",
+              "stitch": "rgb(248, 249, 255)",
+              "app": "rgb(248, 249, 255)",
+              "match": true
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "14px",
+              "app": "16px",
+              "match": false
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "title",
+          "stitchText": "SC-15 Privacy Requests & Statutory DPO Fulfillment",
+          "appText": "Access request 85A6F19B",
+          "status": "mismatch",
+          "severity": "medium",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "24px",
+              "app": "24px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "700",
+              "app": "600",
+              "match": false
+            },
+            {
+              "prop": "line-height",
+              "stitch": "32px",
+              "app": "32px",
+              "match": true
+            },
+            {
+              "prop": "letter-spacing",
+              "stitch": "-0.6px",
+              "app": "-0.36px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "sectionHeading",
+          "stitchText": "Active Subject Request Queue",
+          "appText": "Request",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "16px",
+              "app": "16px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            },
+            {
+              "prop": "line-height",
+              "stitch": "24px",
+              "app": "24px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "card",
+          "stitchText": "verified_user Request Inspector: #PRV-8812 GDPR ART. 17 Subj",
+          "appText": "assignmentRequestTypeAccessChannelPublic formReceivedNov 19,",
+          "status": "mismatch",
+          "severity": "medium",
+          "props": [
+            {
+              "prop": "border-radius",
+              "stitch": "2px",
+              "app": "2px",
+              "match": true
+            },
+            {
+              "prop": "box-shadow",
+              "stitch": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.1) 0px 4px 6px -1px, rgba(0, 0, 0, 0.1) 0px 2px 4px -2px",
+              "app": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+              "match": false
+            },
+            {
+              "prop": "background-color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "viewport": "1280x800",
+      "screenshot": "testing/ui-screenshots/app/privacy/privacy-request/dpo/1280x800.png",
+      "reference": "testing/ui-screenshots/reference/sc_15_privacy_requests_dpo_fulfillment/1280x800.png",
+      "diffImage": "testing/ui-screenshots/app/privacy/privacy-request/dpo/1280x800.diff.png",
+      "mismatchPercent": 8.3,
+      "diffPixels": 201257,
+      "referenceSize": "1280x1894",
+      "actualSize": "1280x1254",
+      "landmarks": [
+        {
+          "landmark": "header",
+          "stitchText": "AuditLedgerAcrobex Global(TEN-842)arrow_drop_downUS - United",
+          "appText": "menuMenuAcme Direct LtdDOData Protection OfficerDPOlogoutSig",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "height",
+              "stitch": "48px",
+              "app": "48px",
+              "match": true
+            },
+            {
+              "prop": "background",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "sidebar",
+          "stitchText": "dashboardOverviewhistory_toggle_offPeriods & RunsschemaCompe",
+          "appText": "verified_userCompliancehistory_eduAudit logtuneSettingsaccou",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "width",
+              "stitch": "208px",
+              "app": "208px",
+              "match": true
+            },
+            {
+              "prop": "background",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "page",
+          "stitchText": "Compliance & Settings chevron_right Privacy Requests & Statu",
+          "appText": "Privacy requestschevron_right85A6F19BAccess request 85A6F19B",
+          "status": "mismatch",
+          "severity": "high",
+          "props": [
+            {
+              "prop": "background",
+              "stitch": "rgb(248, 249, 255)",
+              "app": "rgb(248, 249, 255)",
+              "match": true
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "14px",
+              "app": "16px",
+              "match": false
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "title",
+          "stitchText": "SC-15 Privacy Requests & Statutory DPO Fulfillment",
+          "appText": "Access request 85A6F19B",
+          "status": "mismatch",
+          "severity": "medium",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "24px",
+              "app": "24px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "700",
+              "app": "600",
+              "match": false
+            },
+            {
+              "prop": "line-height",
+              "stitch": "32px",
+              "app": "32px",
+              "match": true
+            },
+            {
+              "prop": "letter-spacing",
+              "stitch": "-0.6px",
+              "app": "-0.36px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "sectionHeading",
+          "stitchText": "Active Subject Request Queue",
+          "appText": "Request",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "16px",
+              "app": "16px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            },
+            {
+              "prop": "line-height",
+              "stitch": "24px",
+              "app": "24px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "card",
+          "stitchText": "verified_user Request Inspector: #PRV-8812 GDPR ART. 17 Subj",
+          "appText": "assignmentRequestTypeAccessChannelPublic formReceivedNov 19,",
+          "status": "mismatch",
+          "severity": "medium",
+          "props": [
+            {
+              "prop": "border-radius",
+              "stitch": "2px",
+              "app": "2px",
+              "match": true
+            },
+            {
+              "prop": "box-shadow",
+              "stitch": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.1) 0px 4px 6px -1px, rgba(0, 0, 0, 0.1) 0px 2px 4px -2px",
+              "app": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+              "match": false
+            },
+            {
+              "prop": "background-color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "viewport": "768x1024",
+      "screenshot": "testing/ui-screenshots/app/privacy/privacy-request/dpo/768x1024.png",
+      "reference": "testing/ui-screenshots/reference/sc_15_privacy_requests_dpo_fulfillment/768x1024.png",
+      "diffImage": "testing/ui-screenshots/app/privacy/privacy-request/dpo/768x1024.diff.png",
+      "mismatchPercent": 7.15,
+      "diffPixels": 173249,
+      "referenceSize": "768x3157",
+      "actualSize": "768x1757",
+      "landmarks": [
+        {
+          "landmark": "page",
+          "stitchText": "Compliance & Settings chevron_right Privacy Requests & Statu",
+          "appText": "Privacy requestschevron_right85A6F19BAccess request 85A6F19B",
+          "status": "mismatch",
+          "severity": "high",
+          "props": [
+            {
+              "prop": "background",
+              "stitch": "rgb(248, 249, 255)",
+              "app": "rgb(248, 249, 255)",
+              "match": true
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "14px",
+              "app": "16px",
+              "match": false
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "title",
+          "stitchText": "SC-15 Privacy Requests & Statutory DPO Fulfillment",
+          "appText": "Access request 85A6F19B",
+          "status": "mismatch",
+          "severity": "medium",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "24px",
+              "app": "24px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "700",
+              "app": "600",
+              "match": false
+            },
+            {
+              "prop": "line-height",
+              "stitch": "32px",
+              "app": "32px",
+              "match": true
+            },
+            {
+              "prop": "letter-spacing",
+              "stitch": "-0.6px",
+              "app": "-0.36px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "sectionHeading",
+          "stitchText": "Active Subject Request Queue",
+          "appText": "Request",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "16px",
+              "app": "16px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            },
+            {
+              "prop": "line-height",
+              "stitch": "24px",
+              "app": "24px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "card",
+          "stitchText": "verified_user Request Inspector: #PRV-8812 GDPR ART. 17 Subj",
+          "appText": "assignmentRequestTypeAccessChannelPublic formReceivedNov 19,",
+          "status": "mismatch",
+          "severity": "medium",
+          "props": [
+            {
+              "prop": "border-radius",
+              "stitch": "2px",
+              "app": "2px",
+              "match": true
+            },
+            {
+              "prop": "box-shadow",
+              "stitch": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.1) 0px 4px 6px -1px, rgba(0, 0, 0, 0.1) 0px 2px 4px -2px",
+              "app": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+              "match": false
+            },
+            {
+              "prop": "background-color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "viewport": "390x844",
+      "screenshot": "testing/ui-screenshots/app/privacy/privacy-request/dpo/390x844.png",
+      "reference": "testing/ui-screenshots/reference/sc_15_privacy_requests_dpo_fulfillment/390x844.png",
+      "diffImage": "testing/ui-screenshots/app/privacy/privacy-request/dpo/390x844.diff.png",
+      "mismatchPercent": 2.68,
+      "diffPixels": 120081,
+      "referenceSize": "567x7917",
+      "actualSize": "390x2269",
+      "landmarks": [
+        {
+          "landmark": "page",
+          "stitchText": "Compliance & Settings chevron_right Privacy Requests & Statu",
+          "appText": "Privacy requestschevron_right85A6F19BAccess request 85A6F19B",
+          "status": "mismatch",
+          "severity": "high",
+          "props": [
+            {
+              "prop": "background",
+              "stitch": "rgb(248, 249, 255)",
+              "app": "rgb(248, 249, 255)",
+              "match": true
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "14px",
+              "app": "16px",
+              "match": false
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "title",
+          "stitchText": "SC-15 Privacy Requests & Statutory DPO Fulfillment",
+          "appText": "Access request 85A6F19B",
+          "status": "mismatch",
+          "severity": "medium",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "24px",
+              "app": "20px",
+              "match": false
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "700",
+              "app": "600",
+              "match": false
+            },
+            {
+              "prop": "line-height",
+              "stitch": "32px",
+              "app": "28px",
+              "match": false
+            },
+            {
+              "prop": "letter-spacing",
+              "stitch": "-0.6px",
+              "app": "-0.5px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "sectionHeading",
+          "stitchText": "Active Subject Request Queue",
+          "appText": "Request",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "16px",
+              "app": "16px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            },
+            {
+              "prop": "line-height",
+              "stitch": "24px",
+              "app": "24px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "card",
+          "stitchText": "verified_user Request Inspector: #PRV-8812 GDPR ART. 17 Subj",
+          "appText": "assignmentRequestTypeAccessChannelPublic formReceivedNov 19,",
+          "status": "mismatch",
+          "severity": "medium",
+          "props": [
+            {
+              "prop": "border-radius",
+              "stitch": "2px",
+              "app": "2px",
+              "match": true
+            },
+            {
+              "prop": "box-shadow",
+              "stitch": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.1) 0px 4px 6px -1px, rgba(0, 0, 0, 0.1) 0px 2px 4px -2px",
+              "app": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+              "match": false
+            },
+            {
+              "prop": "background-color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

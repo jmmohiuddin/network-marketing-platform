@@ -23,7 +23,7 @@ export function useCaseMarket(record: CaseRecord): Market | undefined {
   return markets.data?.find((market) => market.id === record.market_id)
 }
 
-function Facts({ items }: { readonly items: readonly (readonly [string, ReactNode])[] }) {
+export function Facts({ items }: { readonly items: readonly (readonly [string, ReactNode])[] }) {
   return (
     <dl className="grid grid-cols-1 sm:grid-cols-2 gap-space-sm">
       {items.map(([label, value]) => (

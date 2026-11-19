@@ -36,12 +36,17 @@ export interface TotpEnrolment {
   readonly otpauth_uri: string
 }
 
-/** Starts (or restarts) TOTP enrolment; the secret is stored sealed and returned only in this response. */
-export async function startTotpEnrolment(tx: Tx, config: Config, auth: AuthContext): Promise<TotpEnrolment> {
+/**
+ * Starts (or restarts) TOTP enrolment; the secret is stored sealed and returned only in this response. assertReauth runs
+ * once the account is known to have no factor: confirming the first code sets step_up_at, so a portal session (which a
+ * mailed code alone can open, D-B5-03) must first re-prove its password (D-B5-04).
+ */
+export async function startTotpEnrolment(tx: Tx, config: Config, auth: AuthContext, assertReauth: () => void): Promise<TotpEnrolment> {
   const existing = await findCredential(tx, auth.userId)
   if (existing?.confirmed_at != null) {
     throw new ApiError(409, 'MFA_ALREADY_ENROLLED', 'A second factor is already enrolled.')
   }
+  assertReauth()
   const { rows } = await tx.query<{ email: string }>('SELECT email FROM user_account WHERE id = $1', [auth.userId])
   const secret = generateTotpSecret()
   await tx.query(

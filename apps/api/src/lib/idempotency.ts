@@ -37,7 +37,7 @@ function idempotencyKey(request: FastifyRequest): string {
 }
 
 /**
- * Runs a creating request at most once per (tenant, Idempotency-Key, route), inside the caller's tenant
+ * Runs a creating request at most once per (tenant, Idempotency-Key, route; plus the user for portal sessions), inside the caller's tenant
  * transaction, so the key and the side effect commit or roll back together. Same key and same request:
  * the stored response is returned without side effects. Same key, different request: 422
  * IDEMPOTENCY_KEY_REUSED. A concurrent duplicate waits on the key's row until the first request commits (then
@@ -49,7 +49,9 @@ export async function idempotent(
   run: () => Promise<StoredResponse>,
 ): Promise<IdempotentResult> {
   const key = idempotencyKey(request)
-  const route = `${request.method} ${request.routeOptions.url ?? request.url}`
+  // A portal session's keys are its own (PLAN B5 FR-IAM-007): participants of one tenant never replay each other's responses.
+  const portalUser = request.auth?.realm === 'portal' ? ` ${request.auth.userId}` : ''
+  const route = `${request.method} ${request.routeOptions.url ?? request.url}${portalUser}`
   const hash = requestHash(request)
   const inserted = await tx.query(
     `INSERT INTO idempotency_key (tenant_id, key, route, request_hash) VALUES (app_tenant_id(), $1, $2, $3)

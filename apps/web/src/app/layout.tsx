@@ -12,7 +12,8 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 }
 
-export const viewport: Viewport = { width: 'device-width', initialScale: 1 }
+// viewportFit cover: the portal's pt-safe / pb-safe insets read the notch and home-indicator areas.
+export const viewport: Viewport = { width: 'device-width', initialScale: 1, viewportFit: 'cover' }
 
 // Rendered per request: Next adds the proxy's CSP nonce (proxy.ts) to its scripts only when it renders them.
 // Body classes live on each layout's outer element (staff, vendor and card layouts differ: guidelines §2.3).

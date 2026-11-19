@@ -33,8 +33,8 @@ describe('seed', () => {
 
     const markets = await ownerRows('SELECT code, state FROM market ORDER BY code')
 
-    expect(users).toHaveLength(26)
-    expect(credentials).toEqual([{ passwords: 26, factors: 2 }]) // written as their own users; only vendors have a factor
+    expect(users).toHaveLength(30)
+    expect(credentials).toEqual([{ passwords: 30, factors: 2 }]) // written as their own users; only vendors have a factor
     expect(users.filter((user) => user.realm === 'vendor')).toEqual([
       { email: 'operator@vendor.example', realm: 'vendor', mfa_enrolled: true },
       { email: 'operator2@vendor.example', realm: 'vendor', mfa_enrolled: true },
@@ -47,11 +47,13 @@ describe('seed', () => {
       { name: 'Commission analyst', approved: false },
       { name: 'Compliance officer', approved: true },
       { name: 'DPO', approved: true }, // privileged since B2 (privacy.manage): a second admin's approval
+      { name: 'DPO', approved: true }, // dpo2: B5 privacy decisions need a second DPO
       { name: 'Executive read-only', approved: false },
       { name: 'Finance approver', approved: true },
       { name: 'Finance approver', approved: true }, // finance2: B4 second approvals
       { name: 'Implementation consultant', approved: false },
       { name: 'Payout officer', approved: false }, // MFA required, but no privileged permission: no approval
+      { name: 'Payout officer', approved: false }, // payout2 (BUG-111): the result file is imported by someone other than its batch's preparer
       { name: 'Plan administrator', approved: false },
       { name: 'Support agent', approved: false },
       { name: 'Tenant admin', approved: false },
@@ -187,7 +189,7 @@ describe('seed', () => {
     // PLAN B4 section 6: contacts for notices and DE-A's labelled bank details, sealed for its version row.
     expect(await ownerRows(`SELECT external_ref, contact FROM participant WHERE external_ref LIKE 'DE-%' ORDER BY 1`)).toEqual([
       { external_ref: 'DE-A', contact: { email: 'de-a@example.test' } }, { external_ref: 'DE-B', contact: { email: 'de-b@example.test' } },
-      { external_ref: 'DE-C', contact: { email: 'de-c@example.test' } }, { external_ref: 'DE-K', contact: null },
+      { external_ref: 'DE-C', contact: { email: 'de-c@example.test' } }, { external_ref: 'DE-K', contact: { email: 'de-k@example.test' } },
     ])
     const [version] = await ownerRows<{ id: string; details_sealed: string; masked: string; created_via: string; cooling_off_until: Date }>(
       'SELECT id, details_sealed, masked, created_via, cooling_off_until FROM bank_detail_version')
@@ -226,7 +228,7 @@ describe('seed', () => {
 
     expect(lines.filter((line) => line.startsWith('vendor TOTP: otpauth://'))).toHaveLength(2)
     expect(lines.some((line) => line.startsWith('password of the accounts created now: '))).toBe(true)
-    expect(lines.filter((line) => line.startsWith('acme: '))).toHaveLength(12)
+    expect(lines.filter((line) => line.startsWith('acme: '))).toHaveLength(14)
   })
 
   test('seeds only a server on this machine: Unix socket or loopback, never a remote host named like a local database', () => {

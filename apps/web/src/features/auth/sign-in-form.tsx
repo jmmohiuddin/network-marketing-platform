@@ -1,30 +1,34 @@
 'use client'
 
-import { useSearchParams } from 'next/navigation'
-import { useState, type FormEvent } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { useEffect, useState, type FormEvent } from 'react'
 import { useApi } from '../../components/api-provider'
 import { Banner } from '../../components/banner'
 import { Button } from '../../components/button'
 import { ErrorSummary, type SummaryItem } from '../../components/error-summary'
 import { TextInput } from '../../components/form-field'
+import { LoadingState } from '../../components/states'
 import { leavePage } from '../../lib/leave-page'
 import { errorMessage, fieldErrors } from '../../lib/messages'
-import { afterSignInPath, defaultHome, safeNext, tenantSlug, type Realm } from '../../lib/navigation'
+import { afterSignInPath, defaultHome, PORTAL_SIGN_IN_PATH, realmOf, safeNext, tenantSlug, type Realm } from '../../lib/navigation'
 import { emailError, requiredError } from '../../lib/validation'
 import { AuthHeader } from './auth-card'
 import { FirebaseSignIn, type SignInSession } from './firebase-sign-in'
+import { portalQuery } from './portal-sign-in'
 
+/** The staff realms this form signs in to (the portal has its own sign-in, PortalSignIn). */
+type StaffRealm = Exclude<Realm, 'portal'>
 type Field = 'tenant' | 'email' | 'password'
 type Values = Readonly<Record<Field, string>>
 type Errors = Readonly<Partial<Record<Field, string>>>
 
-const FIELDS: Readonly<Record<Realm, readonly Field[]>> = {
+const FIELDS: Readonly<Record<StaffRealm, readonly Field[]>> = {
   tenant: ['tenant', 'email', 'password'],
   vendor: ['email', 'password'],
 }
-const ENDPOINT: Readonly<Record<Realm, string>> = { tenant: '/v1/auth/sessions', vendor: '/v1/auth/vendor-sessions' }
-const TITLE: Readonly<Record<Realm, string>> = { tenant: 'Sign in to your company', vendor: 'Sign in to the operations console' }
-const INTRO: Readonly<Record<Realm, string>> = {
+const ENDPOINT: Readonly<Record<StaffRealm, string>> = { tenant: '/v1/auth/sessions', vendor: '/v1/auth/vendor-sessions' }
+const TITLE: Readonly<Record<StaffRealm, string>> = { tenant: 'Sign in to your company', vendor: 'Sign in to the operations console' }
+const INTRO: Readonly<Record<StaffRealm, string>> = {
   tenant: 'Enter your company’s sign-in name, your email address and your password.',
   vendor: 'Vendor staff only. Enter your email address and your password.',
 }
@@ -36,7 +40,7 @@ function validate(field: Field, value: string): string | null {
 
 const companyOf = (values: Values) => values.tenant.trim().toLowerCase()
 
-function bodyFor(realm: Realm, values: Values) {
+function bodyFor(realm: StaffRealm, values: Values) {
   const credentials = { email: values.email.trim(), password: values.password }
   return realm === 'tenant' ? { tenant: companyOf(values), ...credentials } : credentials
 }
@@ -44,7 +48,7 @@ function bodyFor(realm: Realm, values: Values) {
 const fieldId = (field: Field) => `signin-${field}`
 
 export interface SignInFormProps {
-  readonly realm: Realm
+  readonly realm: StaffRealm
   /** The web server has FIREBASE_AUTH_DOMAIN (the CSP admits Firebase): only then is Firebase sign-in offered. */
   readonly firebase: boolean
 }
@@ -52,8 +56,15 @@ export interface SignInFormProps {
 /** SC-27 password step for the tenant realm (company + email + password) or the vendor realm. */
 export function SignInForm({ realm, firebase }: SignInFormProps) {
   const api = useApi()
+  const router = useRouter()
   const params = useSearchParams()
   const fields = FIELDS[realm]
+  // A portal page sent here (?next=/portal…) signs in on the portal's own page, with the company and target kept.
+  const portalNext = realm === 'tenant' && realmOf(safeNext(params.get('next'))) === 'portal'
+  const portalSignIn = `${PORTAL_SIGN_IN_PATH}${portalQuery(tenantSlug(params.get('tenant')), params.get('next'))}`
+  useEffect(() => {
+    if (portalNext) router.replace(portalSignIn)
+  }, [portalNext, portalSignIn, router])
   // An invitation link names the company: it is filled in and fixed, so nobody has to know the sign-in name.
   const knownTenant = realm === 'tenant' ? tenantSlug(params.get('tenant')) : null
   const [values, setValues] = useState<Values>({ tenant: knownTenant ?? '', email: '', password: '' })
@@ -118,6 +129,7 @@ export function SignInForm({ realm, firebase }: SignInFormProps) {
     />
   )
 
+  if (portalNext) return <LoadingState label="Opening the portal sign-in" />
   return (
     <>
       <AuthHeader eyebrow={realm === 'vendor' ? 'Operations console' : 'Staff sign-in'} icon="lock" title={TITLE[realm]}>{INTRO[realm]}</AuthHeader>

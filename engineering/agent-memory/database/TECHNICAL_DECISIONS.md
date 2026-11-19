@@ -45,3 +45,8 @@ _Agent: database. Read before every task; update after every task. Keep concise 
 - led_post_run aggregates commission_expense into one debit and one credit line (not one per payee); withholding aggregated; payee lines per payee.
 - Added beyond PLAN: journal_entry origin/approval guard, ledger_account currency = market currency, composite FKs (tenant, participant, version/request) so lines/instructions/versions name the payee's own bank version/request, unique request per version, period_mark_paid locks the period row first (race of last two settlements), Paid needs >= 1 instruction, bank-detail versions by nmp_app only from a case.
 - Opaque override limited to blocked evaluations; NULL-safe comparison on detail->>'opaque'.
+
+## B5 schema
+- Added beyond PLAN: user_account realm/tenant/participant pinned (self scope cannot be redirected); dispute guard also checks payload line_id/run_id and market = line's position market; privacy_request insert guard (own privacy case, portal = self verified by session); privacy_export insert guard (approved access/portability); notification_template() map enforced by CHECK; notification_preference.updated_by FK + actor binding; prv_sign_in_attempts definer (nmp_app has no login_attempt grant).
+- prv_personal_data INVOKER (RLS) with a definer only for login_attempt; the map is a SQL function (section or reason per FK column).
+- prv_correct_participant refuses portal transactions; prv_erase_participant also resets mfa_enrolled.

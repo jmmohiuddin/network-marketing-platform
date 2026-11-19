@@ -18,12 +18,21 @@ export interface SegmentedControlProps {
   readonly options: readonly SegmentOption[]
   readonly value: string
   readonly onChange: (value: string) => void
+  /** Portal size (sc_38 view switch): full width, 44 px targets, 16 px labels. */
+  readonly touch?: boolean
 }
 
-const ITEM = `flex-1 px-2.5 py-1 text-center font-body-sm text-body-sm rounded flex items-center justify-center gap-1 transition-all ${FOCUS_RING}`
+const ITEM = `flex-1 text-center flex items-center justify-center gap-1 transition-all ${FOCUS_RING}`
+const LOOK = {
+  // sc_07 l.50
+  desk: { group: 'inline-flex h-8 bg-surface-container-lowest p-0.5 rounded shadow-sm', item: 'px-2.5 py-1 font-body-sm text-body-sm rounded', checked: 'bg-primary text-on-primary shadow-sm' },
+  // sc_38 l.40
+  touch: { group: 'flex w-full bg-surface-container-high p-1 rounded-lg', item: 'min-h-11 px-1 font-body-lg text-body-lg rounded-md', checked: 'bg-surface text-primary shadow-sm' },
+}
 
 /** sc_07 l.50 segmented control: a radio group of buttons (arrow keys move and select, one tab stop). */
-export function SegmentedControl({ label, options, value, onChange }: SegmentedControlProps) {
+export function SegmentedControl({ label, options, value, onChange, touch = false }: SegmentedControlProps) {
+  const look = touch ? LOOK.touch : LOOK.desk
   const labelId = useId()
   const refs = useRef<(HTMLButtonElement | null)[]>([])
   function onKeyDown(event: KeyboardEvent<HTMLButtonElement>, index: number) {
@@ -37,7 +46,7 @@ export function SegmentedControl({ label, options, value, onChange }: SegmentedC
   return (
     <div className="flex flex-col">
       <span id={labelId} className="font-caption text-caption text-secondary uppercase font-semibold mb-1">{label}</span>
-      <div role="radiogroup" aria-labelledby={labelId} className="inline-flex h-8 bg-surface-container-lowest p-0.5 rounded shadow-sm">
+      <div role="radiogroup" aria-labelledby={labelId} className={look.group}>
         {options.map((option, index) => {
           const checked = option.value === value
           return (
@@ -50,7 +59,7 @@ export function SegmentedControl({ label, options, value, onChange }: SegmentedC
               role="radio"
               aria-checked={checked}
               tabIndex={checked ? 0 : -1}
-              className={`${ITEM} ${checked ? 'font-semibold bg-primary text-on-primary shadow-sm' : 'font-medium text-secondary hover:text-on-surface'}`}
+              className={`${ITEM} ${look.item} ${checked ? `font-semibold ${look.checked}` : 'font-medium text-secondary hover:text-on-surface'}`}
               onClick={() => onChange(option.value)}
               onKeyDown={(event) => onKeyDown(event, index)}
             >

@@ -292,3 +292,27 @@ describe('T-B3-03 activation cron (pln.versions.activate)', () => {
     expect((await ownerRows<{ state: string }>('SELECT state FROM plan_version WHERE plan_id = $1 ORDER BY version', [plan.planId])).map((r) => r.state)).toEqual(['scheduled', 'active'])
   })
 })
+
+describe('D-B5-14 plan change notice', () => {
+  test('scheduling notifies every owner of a position in a plan market once (plan.change_scheduled), in the schedule transaction', async () => {
+    const plan = await newPlan(app, w)
+    await approved(plan)
+    // FIXTURE: a participant of market A with an active position and a contact email (as PAR and GEN write them).
+    const [owner] = await ownerRows<{ id: string }>(
+      `WITH x AS (INSERT INTO participant (tenant_id, external_ref, account_type, market_id, display_name, enrolled_at, contact, created_by, created_by_type)
+                  VALUES ($1, $2, 'individual', $3, 'Owner', '2020-01-01', jsonb_build_object('email', $2 || '@example.test'), $4, 'system') RETURNING id),
+            p AS (INSERT INTO position (tenant_id, position_ref, market_id, status, status_from, created_by, created_by_type)
+                  VALUES ($1, $2, $3, 'active', '2020-01-01', $4, 'system') RETURNING id)
+       INSERT INTO position_ownership (tenant_id, position_id, participant_id, valid_from, created_by, created_by_type)
+       SELECT $1, p.id, x.id, '2020-01-01', $4, 'system' FROM p, x RETURNING participant_id AS id`,
+      [w.tenantId, `OWN-${randomUUID().slice(0, 8)}`, w.marketA, '00000000-0000-0000-0000-000000000000'])
+    expect((await schedule(plan.planId, NEXT_JANUARY)).json().data.state).toBe('scheduled')
+    const notices = await ownerRows<{ channel: string; template: string; effective_from: string; version_id: string }>(
+      `SELECT channel, template, params ->> 'effective_from' AS effective_from, params ->> 'plan_version_id' AS version_id
+       FROM notification WHERE recipient_participant_id = $1 ORDER BY channel`, [owner!.id])
+    expect(notices).toEqual([
+      { channel: 'email', template: 'plan.change_scheduled', effective_from: '2026-12-31T23:00:00.000Z', version_id: await versionId(plan.planId) },
+      { channel: 'in_app', template: 'plan.change_scheduled', effective_from: '2026-12-31T23:00:00.000Z', version_id: await versionId(plan.planId) },
+    ])
+  })
+})

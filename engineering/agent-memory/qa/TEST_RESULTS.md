@@ -110,3 +110,12 @@ _Agent: qa. Read before every task; update after every task. Keep concise — fa
 - BUG-099..107 all verified fixed in the browser (099 SC-17 record on a live market + SC-13 configure; 100 mail "Nov 22, 2026, 11:46 AM (Europe/Berlin)"; 101 no firebase request; 102 one banner; 103 detail subject + info icon; 104 `…Z` ms; 105 "DE core, version 1"; 106 value in queue/dialog/diff/card; 107 "N undecided" + caption).
 - W-B4-0..8 pass (money = PLAN: M-3 52.00 incl. C 5.00; clawbacks A −10/B −16; restatement A +3/B −8; write-off 7.00 by two approvers; GL 144.00 = 144.00, identical downloads). W-B4-9 partial (executive only; vendor session not executed), W-B4-10 partial. Regression import 1466/4775/7442 + sums, R1 16.61 %, audit chain intact 102. No 5xx.
 - New: BUG-108 LOW (SC-06 queue write-off subject still raw ledger-account id). Evidence var/qa-b4/run3/.
+
+## 2026-11-19 — B5 browser round 1 (W-B5-0..10, MVP-A quick regression, harness 14 screens, Impeccable + a11y)
+- Chain by API reached PLAN §7 money (A 0/0, C 5.00; M-3 returned→settled 23.00). W-B5-0/1/2/3/6/8/9 pass (with defects), W-B5-4/5/10 partial, W-B5-7 pass but "payout held" step not executable (BATCH_EMPTY). Erasure: session ends, replay M-3 match (same result hash), ledger 191 = 191. Import validated 1466/4775/7442 + sums (mapping/load/snapshot not run), audit chain intact. No 5xx.
+- New: BUG-109 HIGH (display_name in immutable case effect_preview survives erasure), BUG-110/111 MEDIUM, BUG-112..119 LOW. BUG-108 verified fixed. Evidence var/qa-b5/r1/.
+
+## 2026-11-19 — B5 browser round 2 (retest of BUG-109..119, quick W-B5-0..10, MVP-A regression, harness 14 screens, Impeccable + a11y)
+- Verified fixed: BUG-109 (previews display_name null; erased DE-A shown by reference only), 110 (StepUp "Set one up now" + optional /signin/enrol), 111 (payout2@), 113, 114, 115, 116, 117, 118. BUG-112 and 119: web parts verified, API parts still reproduce (as registered).
+- W-B5-0/1/2/3/6/7/8/9 pass, W-B5-4 partial (no requirements data), W-B5-5 pass before correction, W-B5-10 partial. Money = PLAN (M-3 52.00; A 23 returned→settled; clawbacks A −10/B −16; restatement A +3/B −8; write-off 7.00; ledger 191 = 191; replay M-3 match same hash before/after erasure). Regression import 1466/4775/7442 + sums, audit chain intact. No 5xx.
+- New: BUG-120 LOW (batch view period instants with +06:00 offset). Impeccable 13/16-equivalent. Evidence var/qa-b5/r2/.

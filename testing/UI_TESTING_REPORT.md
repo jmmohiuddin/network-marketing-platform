@@ -895,3 +895,158 @@ No 5xx and no page errors in the round. Console errors are only "Failed to load 
 
 - SC-17 on a live market still shows "MISSING 5 · Block a go-live request" in the KPI strip although no go-live request is possible any more (original Stitch copy; note).
 - The bank-detail case shows "BANK-DETAIL REQUEST 0a7dd46f (masked values in the effect preview)" and the returned-payment case "PAYOUT INSTRUCTION b239e522" as short ids; both state where the readable values are (by design).
+
+## Increment B5 — round 1 (2026-11-19)
+
+Environment: web build 2026-11-19 20:53 (no `apps/web/src` file newer), API from source (`pnpm start`, workers in-process) on a freshly seeded `nmp_e2e` (`seed:e2e`); web `next start -p 3100`; both started with PID files in `var/qa-b5/r1/` and stopped by PID tree. Playwright MCP, one browser, one context per user (TZ Asia/Dhaka; portal contexts 390x844 unless stated). Helper `var/qa-b5/r1/helper.js`.
+
+Starting state (PLAN §7 precondition, built by API in each staff user's own session, not through the UI): W-B2-1 settings; B4 settings (DE minimum 10.00, cooling-off 72 h, shared threshold 3, adjustment and write-off policies, approved by finance@); plan "DE core" (pv/gv/main R1/unilevel 0.08·0.05/reparent/capped_pv, golden from the M-3 simulation, compliance approval, finance schedule from Aug 1); orders A/B/C 1×FX-1 and K 2×FX-1 in Aug, B in Sep; C +5.00 manual adjustment; M-3 run 52.00 committed; sandbox batch (A 23.00 accepted) → signed `payout.returned` → returned-payment case → bank-file batch → result file settled 23.00 (needed a second `payout.reconcile` holder, BUG-111); K refund → Sep run (A −10.00, B −16.00) committed; C → A correction, M-3 restatement (−5.00), Oct run (A +3.00, B −8.00) committed; write-off of A's 7.00 by finance@ + finance2@. Balances then: A payable 0/receivable 0, B 0, C payable 5.00 = PLAN §7. W-B3-8 (terminate DE-B) not run, so DE-B stays active.
+
+### Workflows (PLAN §7)
+
+| Workflow | Result | Evidence and notes |
+|---|---|---|
+| W-B5-0 Settings | pass | admin@ SC-29: cards "Not set" with consequence text before; dispute policy window 60 / DE 10 saved at once (version 14); privacy deadlines DE 30 / escalate 5 and customer contact "Shown, masked" sent for approval (effective 9:21 PM), dpo@ approved both (StepUp); cards "In force since … (version 17)". Before dpo2@ ever signed in the queue said "No one can approve this yet: a Tenant admin must assign DPO to another user" (BUG-115). `R1-W0-0[1-5]-*.png` |
+| W-B5-1 Portal accounts and sign-in | pass (defect) | support@ SC-09 invited DE-A/B/C (state Invited, masked email; "Invitation sent —" until reload, BUG-113); DE-K → "This member cannot have a portal account: their type is not an earning type." Mails in MAIL_DIR with `…/invitation?tenant=acme&realm=portal#token=…`; each set a password → `/portal/signin?tenant=acme&method=password`; reused link → "This invitation link does not work". DE-A password → SC-37. DE-B "Email me a code" → code from MAIL_DIR → SC-37; same code again (UI and API) → "The code is not valid or has expired. Request a new code." (401 INVALID_CREDENTIALS); unknown email code/password → identical 401 bodies; `portal-codes` for an unknown email → 202. DE-C five wrong passwords → "Too many failed sign-in attempts. Try again later." (per-IP throttle "Too many attempts. Try again in N seconds" appears first when attempts are faster than ~13 s). DE-A `/periods` → `/portal`; executive@ `/portal` → redirected to `/compliance`, `/v1/me/statements` 403 REALM_FORBIDDEN. DE-A session: 9 staff routes → 403 REALM_FORBIDDEN; `/v1/me` portal shape with `permissions: []`; `/v1/users` lists no portal account |
+| W-B5-2 Statements and explanation | pass (defects) | DE-A Earnings: Oct, Sep, Aug only (committed). M-3: net 23.00, "Returned by the bank · 4:17 PM" then "Paid · 4:21 PM" (list "Several payout states"); explanation (dialog at 390, 360 px side panel at 1280): rule, Level 1 1 source base 100.00 rate 0.08 = 8.00, Level 2 base 300.00 rate 0.05 = 15.00, rank R1, period Aug 1–31, rounding half up 23.00 → 23.00, `reconciles: true`; only the line and run uuids in the body, no other person's name/ref. CSV `statement-2026-07-31.csv` (BUG-112 name) same figures, `Cache-Control: no-store`. M-2: refund −10.00 "Refund of an earlier period", "Carried to the amount you owe +10.00", net 0.00. M-1: restatement +3.00, "Recovered from what you owed −3.00", net 0.00; invariant holds for all three. Net-0 statements say "Not paid out yet" (BUG-114); engine wording (BUG-119). TS-53 scan: no projection/target/streak/wallet words |
+| W-B5-3 Dispute | pass (defects) | DE-A disputed the M-3 line "Volume missing" → "The company answers by Nov 29, 2026, 4:24 PM" (10 days); second dispute → "This line already has a dispute in progress" (409 DISPUTE_OPEN). analyst@ SC-06 Disputes 1: trace link, due date, `payload.trace` = the line's stored trace (API compare), staff `POST /v1/cases` type dispute → 422. Start review → portal "Dispute under review". Uphold needed step-up but the analyst has no authenticator and the dialog offers none (BUG-110; enrolled via `/signin/enrol` by URL to continue); upheld with explanation → portal "Dispute upheld" + explanation, inbox "Dispute updated", mail. Propose adjustment prefilled (P-1, reason Dispute upheld) but period preselected Feb 2027 (BUG-118); not submitted (an open adjustment would block DE-A's erasure in W-B5-9). Staff wording "another user" (BUG-117) |
+| W-B5-4 Rank | partial | DE-A Rank: Oct/Sep "Paid as No rank", Aug "Paid as R1", title R1, grace none, measures pv/capped_pv/gv, all "Final"; no not-final row (none calculated); no streak/target/next rank. **Not verifiable with this data:** requirements list (the latest committed period has no paid-as rank, so `requirements: []` and the page shows no requirements section), transition notice |
+| W-B5-5 Team | partial (PLAN data conflict) | Before the C → A correction DE-A saw DE-B level 1 and "Level 2 · 1 person (totals only)" with the policy notice (`R1-E-_portal_team.png`). After the chain DE-A sees DE-B and DE-C at level 1; search "DE-C" returns DE-C (now level 1, within named depth); DE-B has no one below. DE-B `?node=<DE-A position>` and a random uuid → identical "Not found or not available to you" (API 404 bodies equal). The PLAN's expectations (DE-C under DE-B) contradict its own chain (W-B3-7 moves C under A) |
+| W-B5-6 Customers | pass | DE-C: DE-K current, "Last order Aug 10, 2026", Orders 1, no repeat chip, "Since Aug 1, 2026", contact `d•••@e•••.test`. support@ SC-09 DE-K "Change servicer" → P-2 today. DE-B: DE-K current "No orders yet", since Nov 19 (bottom nav now Customers, no downline); DE-C Past: "Reassigned Nov 19, 2026: you no longer service this customer", "until Nov 19, 2026" |
+| W-B5-7 Bank and tax self-service | pass (PLAN step not executable) | DE-C: IBAN with wrong check digits → "Enter a valid IBAN: its check digits do not match."; valid IBAN → "Confirm it is you" password dialog (wrong password → "The password is not correct.") → "Cooling off until Nov 22, 2026, 4:28 PM · Payouts prepared before then skip you. 5.00 EUR waits."; tax DE / Individual / DE123456789 → "•••• 6789" (password asked again); inbox + mails "Bank details changed", "Tax profile changed". payout@ prepared a DE sandbox batch: DE-C excluded below minimum + `bank_detail_cooling_off {until}`; submit → 422 BATCH_EMPTY (C is the only payee), so the "finance approves → payout held" step cannot run; held notices for `no_bank_details` were written by the two B4 batches. Batch cancelled |
+| W-B5-8 Notifications | pass | DE-A inbox (8 unread): Statement ready ×3, Payout sent ×2, Payout returned, Dispute updated, Plan change scheduled; Mark all read → 0; Channels: Statements/Payouts/Disputes switches (keyboard and pointer), Security/Privacy/Plan changes locked "Always sent"; statement email off saved; `PUT … {topic:'security'}` → 422. Delivery: every email row `sent`, 20 notification mails in MAIL_DIR, none for the erased DE-A queued row (`suppressed`) |
+| W-B5-9 Privacy | pass (defects) | (a) public form `/privacy-request?tenant=acme`: empty submit → three field errors; access request for DE-B → "Request reference: FCCD3D1A"; unknown tenant → 404 TENANT_NOT_FOUND. dpo@ SC-15: Not verified, "Set when the identity is verified"; verify contact_match with DE-A → "The requester's email does not match the member's contact email."; with DE-B → "30 days left · Dec 19"; submit without retention basis → "Enter the retention basis."; submitter decision → 422 SOD_SELF_APPROVAL; dpo2@ approved (StepUp) → Fulfilled, export 1,826 bytes + SHA-256, download holds DE-B's data only (no other member's name, contact, IBAN; own sponsor ref P-1); DE-B portal export 200, DE-A 404; outcome mail to de-b@. (b) DE-C erasure from My data (checkbox + password) → "Erasure waits because: Money is still owed to you."; preview "5.00 EUR is still owed to the member in DE."; dpo2@ approve → "Erasure deferred: 5.00 EUR …", case stays `submitted`. (c) DE-A erasure → preview "Nothing defers the erasure now", cleared vs retained lists (raw identifiers, BUG-116) → dpo2@ approved → DE-A session 401 at once, sign-in refused generically, SC-09 "Erased participant DE-A · Personal data erased", contact "Not recorded"; ledger DE balanced 191.00 = 191.00; replay of M-3 before and after: `match`, result hash `74bebf69…` both times. Name kept in money-case effect previews (BUG-109) |
+| W-B5-10 Regression | partial | BUG-108 verified fixed (write-off queue subject "DE-A · DE-A", not a ledger-account id). TS-53 / "wallet" scan on 10 portal routes clean. Not executed: globex portal user (no globex fixture market), B4 not-exercised paths, BUG-093/095..098 re-checks, 4 viewports for SC-06/09/29 beyond the harness |
+
+### MVP-A regression (quick)
+
+| Area | Result | Notes |
+|---|---|---|
+| Sign-in / MFA | pass | 12 acme staff users incl. forced enrolment (admin, admin2, compliance, finance, finance2, support, payout, dpo, dpo2) and StepUp dialogs; admin/compliance re-enrolled after their TOTP seeds were lost with the closed browser (MFA reset in `nmp_e2e`) |
+| Import | partial | DEMO 2025-01…12 validated: 1,466 / 4,775 / 7,442; 53,195,001 / 53,195,001 / 2,600,070 / 9,225,679 = CSV sums. **Not executed:** mapping, approval, load |
+| Snapshot | not executed | needs the loaded import |
+| Audit | pass | compliance@ "Verify audit chain" → "The audit chain is intact" |
+
+### Per screen
+
+| Screen | Stitch Reference | Functional Testing | Visual Fidelity | Responsive Testing | Accessibility | Impeccable Review | Defects | Final Status |
+|---|---|---|---|---|---|---|---|---|
+| SC-27 portal sign-in + code step | `sc_27_sign_in_and_second_factor` | pass | pass | pass | labelled fields, `one-time-code` + numeric, errors in alert | – | – | pass |
+| SC-37 Home | `sc_37_distributor_home` | pass | pass with notes | pass (320–1440) | one h1, named controls | – | BUG-114, BUG-119 | pass with defects |
+| SC-18 Statements + explanation + dispute | `sc_18_distributor_statement_line_explanation` | pass | pass with notes | pass (dialog at 390, side panel ≥ 1024) | dialog labelled, CSV link named | – | BUG-112, BUG-114, BUG-119 | pass with defects |
+| SC-19 Rank | `sc_19_distributor_rank_status` | partial (requirements not shown: no rank in the latest period) | pass | pass | – | – | BUG-119 | pass with defects |
+| SC-20 Team | `sc_20_distributor_team_view` | pass | pass | pass | search labelled | – | BUG-112 | pass with defects |
+| SC-21 Customers | `sc_21_distributor_customers` | pass | pass | pass | filter/sort named | – | – | pass |
+| SC-22 Payment details and tax | `sc_22_distributor_bank_details_tax_profile` | pass | pass with notes | pass | re-auth password field `autocomplete=current-password`, inline errors | – | BUG-119 | pass with defects |
+| SC-38 Notifications and profile + More | `sc_38_distributor_notifications_profile` | pass | pass | pass | switches named, locked ones disabled | side-tab on unread cards (Stitch anatomy, note) | – | pass |
+| My data | sc_38 patterns | pass | – | pass | checkbox labelled | – | – | pass |
+| SC-41 Public privacy request | `sc_41_public_privacy_request_form` | pass | pass with notes | pass | radio cards labelled | – | – | pass |
+| SC-15 Privacy requests + detail | `sc_15_privacy_requests_dpo_fulfillment` | pass | pass with notes | pass | "Choose DE-B · DE-B", "Change member the request is about" | – | BUG-115, BUG-116 | pass with defects |
+| SC-06 Disputes + privacy cases | `sc_06_cases_exceptions` | pass (with enrolment workaround) | pass with notes | pass | – | – | BUG-109, BUG-110, BUG-117, BUG-118 | fail (BUG-109 HIGH) |
+| SC-09 Portal access, erased header | `sc_09_participant_deep_fact_record` | pass | pass with notes | pass | – | – | BUG-113 | pass with defects |
+| SC-29 Settings (B5 cards) | `sc_29_tenant_settings` | pass | pass with notes | pass | – | – | BUG-115 | pass with defects |
+
+### Impeccable audit (audit only) and accessibility pass
+
+- `impeccable detect` on `features/portal`, `features/privacy`, `app/(portal)` (41 files, regex only): 1 finding, `side-tab` `border-l-4` on unread notices (`portal/notifications.tsx:94`) = Stitch sc_38 anatomy (inline `border-left: 4px`) → original-design note. Parsed-page rules did not run (launcher has no app target: no PRODUCT.md/DESIGN.md).
+- Scripted pass on 10 portal routes (DE-B/DE-C): 0 unnamed buttons/links/switches, 0 unlabelled fields, 0 duplicate ids, one `h1` each, `lang=en`, no target smaller than 44 px in both dimensions, no horizontal overflow at 320/768/1024/1440. Keyboard: notification switches toggle with Space (re-auth dialog focus not checked).
+- Scores (0–4, performance not scored): Accessibility 3, Theming 3 (canonical tokens), Responsive 4, Implementation integrity 2 (BUG-109, BUG-110 verified) → 12/16-equivalent.
+
+### Console and network
+
+No 5xx in the API log and no page errors. Console errors are only "Failed to load resource" for intended responses: QA realm/permission probes (403 REALM_FORBIDDEN), failed sign-ins and throttles (401/429), reused invitation (422), DE-K invitation (422), step-up 403s before StepUp dialogs, dispute 409s, team 404 probes, empty-batch 422, QA SoD/permission probes on the result file (403/422), one QA malformed URL (404). No firebase-config request.
+
+### Notes (not registered)
+
+- PLAN §7 data conflicts: W-B5-5 expects DE-C under DE-B although W-B3-7 (part of the required chain) moves C under A; W-B5-7 "finance approves → payout held" cannot run because the only payable payee (C, 5.00) is below the minimum (422 BATCH_EMPTY).
+- The portal shows instants in the market time zone (Europe/Berlin) without naming it ("Nov 19, 2026, 4:28 PM"), while staff screens use the viewer's zone; the bank-detail mail names the zone.
+- The plan-change notice of a backdated schedule says "takes effect on Aug 1, 2026" (in the past) — chain artefact.
+- The portal asks for the password before every bank or tax change, even inside the 10-minute re-auth window (stricter than D-B5-04, not a defect).
+- The SC-27 code step uses one text field (`one-time-code`, numeric), not six slots.
+- Privacy export instants carry the server offset `+06:00`.
+- Evidence: `var/qa-b5/r1/R1-*.png`, `statement-2026-07-31.csv`, `export-privacy-export-fccd3d1a-….json`, harness logs `var/qa-b5/r1/visual-*.log`, server logs `var/qa-b5/r1/{api,web}.log`.
+
+## Increment B5 — round 2 (2026-11-19, retest after the fixes of BUG-109..119)
+
+Environment: web build 2026-11-19 22:00 (no `apps/web/src` or `apps/api/src` file newer), API from source (`pnpm start`, workers in-process) on a freshly seeded `nmp_e2e` (`seed:e2e`, now with payout2@); web `next start -p 3100`; both started with PID files in `var/qa-b5/r2/` and stopped by PID tree. Playwright MCP, one browser, one context per user (TZ Asia/Dhaka; portal contexts 390x844). Helpers `var/qa-b5/r2/{helper,portal,runs,pay,erase,b3a}.js`.
+
+Starting state (PLAN §7 precondition, by API in each staff user's own session): W-B2-1 order settings; B4 settings (DE minimum 10.00, cooling-off 72 h, adjustment and write-off policies, approved by finance@); plan "DE core" (golden from the M-3 simulation, compliance approval, finance schedule from Aug 1); providers "Sandbox payouts (E2E)" + "Bank file (E2E)" with adapters; orders A/B/C 1×FX-1 and K 2×FX-1 in Aug, B in Sep; C +5.00 adjustment; M-3 run 52.00 (A 23.00, B 24.00, C 5.00) committed; sandbox batch A 23.00 accepted → signed `payout.returned` (twice, one case) → returned-payment case approved → bank-file batch → result file imported by **payout2@** (settled 23.00, 1 unknown-reference exception); K refund → Sep run (A −10.00, B −16.00); C → A correction, M-3 restatement, Oct run (A +3.00, B −8.00); write-off of A's 7.00 by finance@ + finance2@. Balances then: A 0/0, B 0/0, C payable 5.00 = PLAN §7. No database workaround was needed.
+
+### Fix verification (first step)
+
+| Bug | Result | Evidence |
+|---|---|---|
+| BUG-109 HIGH | verified fixed | `case_file.effect_preview` of write_off, returned_payment and both adjustments (approved C, rejected A) holds `display_name: null` before and after erasure; after DE-A's erasure the case API refs are `{display_name: null, external_ref: "DE-A"}`, SC-06 queue reads "DE-A Clawback receivable" (reference only, r1: "DE-A · DE-A") and the write-off detail "Clawback receivable of DE-A" (member reference, kept by D-B5-18). `R2-F109-0[1-2]-*.png` |
+| BUG-110 MEDIUM | verified fixed | analyst@ (`mfa {required:false, enrolled:false}`) Uphold → StepUp dialog "No authenticator app set up yet? · Set one up now" → in-dialog QR, setup key, code → the dispute was upheld without repeating the action. executive@ `/signin/enrol`: optional copy ("Some actions, such as deciding a case, ask for a fresh code…") and "Not now". `R2-F110-0[1-4]-*.png` |
+| BUG-111 MEDIUM | verified fixed | seed lists payout2@acme/globex; payout@ importing the result of its own bank-file batch → 422 SOD_SELF_APPROVAL; payout2@ → 200 `{rows 2, settled 1, exceptions 1}`; A payable 0.00 |
+| BUG-112 LOW | web part verified; API part still open (as registered) | CSV now `statement-2026-08-01.csv` for Aug. Still UTC: Team "enrolled Jul 31, 2026" (API `enrolled_on` "2026-07-31"), explanation API text "Period: 2026-07-31 to 2026-08-31." (the web shows only text[0]), invitation mail "until 2026-11-22T16:09:29.986Z" |
+| BUG-113 LOW | verified fixed | SC-09 after Invite: "Invitation sent · Being sent", ~6 s later "Nov 19, 2026, 10:09 PM" without reload (DE-A, DE-B, DE-C). `R2-F113-01-*.png` |
+| BUG-114 LOW | verified fixed | Earnings Sep/Oct and Home "No payout due"; detail "No payout is due for this statement." |
+| BUG-115 LOW | verified fixed | before any DPO/Finance user signed in, all six pending requests: "No one can approve this yet: another user must hold DPO (Finance approver) and, if the role requires it, have set up their authenticator app at sign-in. A Tenant admin assigns roles."; after dpo@/finance@ enrolled: "CAN APPROVE Data Protection Officer (dpo@acme.example)". `R2-F115-01-*.png` |
+| BUG-116 LOW | verified fixed | access preview "THE EXPORT HOLDS Accepted agreements, Bank detail change requests, … Tax profiles, Member types"; erasure preview "CLEARED Member name, Member contact details, … RETAINED (KEPT WITHOUT THE NAME) Positions, … Journal entries, Ledger postings …". `R2-F116-0[1-2]-*.png` |
+| BUG-117 LOW | verified fixed | queue "P-1 · Disputed line · By the distributor"; detail "Subject (commission line) Line of P-1 in Aug 1, 2026 – Aug 31, 2026", history and SoD "The distributor"; Uphold dialog "It changes no amount by itself: propose an adjustment or request a restatement afterwards." `R2-F117-0[1-3]-*.png` |
+| BUG-118 LOW | verified fixed | Propose adjustment from the upheld dispute preselects "Nov 1, 2026 – Nov 30, 2026 · Open", reason Dispute upheld. `R2-F118-01-*.png` |
+| BUG-119 LOW | web part verified; API part still open (as registered) | Statement/explanation "Unilevel", "rate 8 %", rank measures "Personal volume · Capped personal volume · Group volume", "No paid-as rank", bank notice "Your payout account is now •••• 2051." Explanation API `text` still "Rule: Pays 8 %, 5 % of pv … compression none; reversal: order line …", "rate 0.08" |
+
+### Workflows (PLAN §7, quick repeat)
+
+| Workflow | Result | Evidence and notes |
+|---|---|---|
+| W-B5-0 Settings | pass | disputes.policy 60 / DE 10 saved at once; privacy.policy DE 30 / escalate 5 and customer contact visible requested, dpo@ approved (API, step-up). Cards and SoD text checked in SC-29 (BUG-115 above) |
+| W-B5-1 Portal accounts and sign-in | pass | support@ SC-09 invited DE-A/B/C; DE-K → "This member cannot have a portal account: their type is not an earning type."; links from MAIL_DIR → password set → `/portal/signin?tenant=acme&method=password`; DE-A password → `/portal`; DE-B "Email me a code" → code 767483 from MAIL_DIR → `/portal`; reusing it → 401 "The code is not valid or has expired. Request a new code."; DE-A `/periods` → `/portal`; executive@ `/portal` → `/compliance`, `/v1/me/statements` 403. **Not re-executed:** DE-C lockout, unknown-email refusals |
+| W-B5-2 Statements and explanation | pass | DE-A Earnings: Oct, Sep, Aug only. Aug net 23.00, "Returned by the bank · 5:23 PM" then "Paid · 5:24 PM"; explanation dialog at 390: Unilevel, period Aug 1–31, rank R1, Level 1 base 100.00 rate 8 % = 8.00, Level 2 base 300.00 rate 5 % = 15.00, rounded 23.00; CSV `statement-2026-08-01.csv` line 23.00, net 23.00. Sep: −10.00 "Refund of an earlier period", "Carried to the amount you owe +10.00", net 0.00. Oct: +3.00 "Restatement of an earlier period", "Recovered from what you owed −3.00", net 0.00 |
+| W-B5-3 Dispute | pass | DE-A disputed the Aug line "Volume missing" → "The company answers by Nov 29, 2026, 5:27 PM"; again → 409 DISPUTE_OPEN; analyst@ Start review → portal "Dispute under review"; Uphold with explanation (BUG-110 path) → portal "Dispute upheld" + explanation, inbox "dispute.updated"; Propose adjustment opened (2.00, evidence) and submitted, then rejected by finance@ so DE-A stays erasable |
+| W-B5-4 Rank | partial (as round 1) | DE-A: Oct/Sep "No paid-as rank", Aug "Paid as R1", title R1, grace none, measures in words, all Final; requirements list not shown (latest period has no rank) |
+| W-B5-5 Team | pass (before correction) | Before the C → A correction: DE-A sees DE-B (level 1), "Level 2 · 1 person (totals only)", policy notice; search "DE-C" → "Nobody within your named levels matches". After the chain DE-A sees DE-B and DE-C at level 1 (PLAN data conflict, round 1 note). DE-B `?node=<DE-A position>` and a random uuid → identical 404 NOT_FOUND bodies; page "Not found or not available to you" |
+| W-B5-6 Customers | pass | DE-C: DE-K current, last order Aug 10, 2026, Orders 1, since Aug 1, masked contact; support@ servicing → P-2 (API); DE-C Past "Reassigned Nov 19, 2026: you no longer service this customer", "until Nov 19, 2026"; DE-B DE-K current "No orders yet", since Nov 19 |
+| W-B5-7 Bank and tax self-service | pass (PLAN step not executable, as round 1) | DE-C: wrong check digits → "Enter a valid IBAN: its check digits do not match."; valid IBAN → "Confirm it is you" (focus in `#reauth-password`, Esc closes, focus back on the trigger, nothing saved) → "Cooling off until Nov 22, 2026, 5:33 PM … 5.00 EUR waits."; tax DE / Individual / DE123456789 → "•••• 6789"; inbox "Bank details changed", "Tax profile changed", "Payout on hold" ×2. Sandbox batch: C excluded `below_minimum` + `bank_detail_cooling_off {until "…Z"}`, submit 422 BATCH_EMPTY, cancelled |
+| W-B5-8 Notifications | pass | DE-A inbox: dispute.updated, statement.ready ×3, payout.sent ×2, payout.returned, plan.change_scheduled; Mark all read → no unread; Channels: Statements/Payouts/Disputes switches, Security/Privacy requests/Plan changes locked; Space on the Statements switch → preference `statement email false` |
+| W-B5-9 Privacy | pass | (a) public form (390) access for DE-B → "Request reference: 85A6F19B"; dpo@ SC-15 Not verified → verify email match with DE-B → "30 days left · Dec 19, 2026"; submit with retention basis; dpo2@ approved → Fulfilled, export 200 holds DE-B only. (b) DE-C erasure from My data (password) → "Erasure waits because: Money is still owed to you."; preview "5.00 EUR is still owed to the member in DE."; dpo2@ approve → 409 ERASURE_DEFERRED, case stays submitted. (c) DE-A erasure → preview "Nothing defers the erasure now" → dpo2@ approved → DE-A `/v1/me` 401, `/portal` → sign-in, password sign-in 401 generic; SC-09 "Erased participant DE-A · Personal data erased"; ledger DE debits 191.00 = credits 191.00; M-3 replay before and after `match`, result hash `47b6cc29…` both times |
+| W-B5-10 Regression | partial | BUG-108 still fixed (write-off queue names the payee by reference). TS-53 / "wallet" scan on 10 portal routes × 5 widths clean. Not executed: globex portal user (no globex fixture market), B4 not-exercised paths, BUG-093/095..098 re-checks |
+
+### MVP-A regression (quick)
+
+| Area | Result | Notes |
+|---|---|---|
+| Sign-in / MFA | pass | 12 acme staff users incl. forced enrolment and API step-ups; analyst enrolled through the new StepUp path |
+| Import | partial | DEMO 2025-01…12 validated: 1,466 / 4,775 / 7,442; 53,195,001 / 53,195,001 / 2,600,070 / 9,225,679 = CSV sums. **Not executed:** mapping, approval, load |
+| Snapshot | not executed | needs the loaded import |
+| Audit | pass | compliance@ "Verify audit chain" → "The audit chain is intact" (`R2-REG-01-audit-chain.png`) |
+
+### Per screen
+
+| Screen | Stitch Reference | Functional Testing | Visual Fidelity | Responsive Testing | Accessibility | Impeccable Review | Defects | Final Status |
+|---|---|---|---|---|---|---|---|---|
+| SC-27 portal sign-in + code step | `sc_27_sign_in_and_second_factor` | pass | pass | pass | pass | – | – | pass |
+| SC-37 Home | `sc_37_distributor_home` | pass | pass with notes | pass (320–1440) | pass | – | – | pass |
+| SC-18 Statements + explanation + dispute | `sc_18_distributor_statement_line_explanation` | pass | pass with notes | pass | pass | – | BUG-112 (API part), BUG-119 (API part) | pass with defects |
+| SC-19 Rank | `sc_19_distributor_rank_status` | partial (no requirements: no rank in the latest period) | pass | pass | pass | – | – | pass |
+| SC-20 Team | `sc_20_distributor_team_view` | pass | pass | pass | pass | – | BUG-112 (API part) | pass with defects |
+| SC-21 Customers | `sc_21_distributor_customers` | pass | pass | pass | pass | – | – | pass |
+| SC-22 Payment details and tax | `sc_22_distributor_bank_details_tax_profile` | pass | pass with notes | pass | pass (re-auth focus + Esc checked) | – | – | pass |
+| SC-38 Notifications and profile + More | `sc_38_distributor_notifications_profile` | pass | pass | pass | pass | side-tab = Stitch anatomy (note) | – | pass |
+| My data | sc_38 patterns | pass | – | pass | pass | – | – | pass |
+| SC-41 Public privacy request | `sc_41_public_privacy_request_form` | pass | pass with notes | pass | pass | – | – | pass |
+| SC-15 Privacy requests + detail | `sc_15_privacy_requests_dpo_fulfillment` | pass | pass with notes | pass | pass | – | – | pass |
+| SC-06 Disputes + privacy + money cases | `sc_06_cases_exceptions` | pass | pass with notes | pass | pass | side-tab = Stitch anatomy (note) | – | pass |
+| SC-09 Portal access, erased header | `sc_09_participant_deep_fact_record` | pass | pass with notes | pass | pass | – | – | pass |
+| SC-29 Settings (B5 cards) | `sc_29_tenant_settings` | pass | pass with notes | pass | pass | – | – | pass |
+
+### Impeccable audit (audit only) and accessibility pass
+
+- `impeccable detect` (regex only; the launcher has no PRODUCT.md/DESIGN.md, so parsed-page rules did not run) on `features/portal`, `features/privacy`, `features/cases`, `components/totp-steps.tsx`, `components/step-up-modal.tsx`, `app/(portal)` (65 files): 2 findings, both `side-tab` `border-l-4` — `portal/notifications.tsx:94` (sc_38 unread notice) and `cases/case-detail.tsx:293` (sc_06 proposal card, Stitch line 364 `border-l-4 border-l-primary`) → original-design notes, not defects.
+- Scripted pass on 10 portal routes (DE-C) at 320/390/768/1024/1440: 0 horizontal overflow, 0 unnamed controls, 0 duplicate ids, one `h1`, `lang=en`, no projection/target/streak/wallet words; the only control under 44 px is the visually hidden "Skip to main content" link (expected). Re-auth dialog: autofocus on the password, Esc closes and returns focus. StepUp enrolment dialog: numbered steps, labelled code field, setup key with Copy.
+- Scores (0–4, performance not scored): Accessibility 3, Theming 3, Responsive 4, Implementation integrity 3 (no open HIGH/MEDIUM; API parts of BUG-112/119 open) → 13/16-equivalent.
+
+### Console and network
+
+No 5xx in the API log (0 `statusCode 5xx`, 0 level-50 lines) and no page errors. Console errors are only "Failed to load resource" for intended responses: QA probes on provider configs (DOCUMENT_NOT_FOUND reuse, adapter name), DE-K invitation 422, reused code 401, executive realm 403, own-batch result file 422 SoD, dispute 409, step-up 403s before the StepUp dialogs, team 404 probes, empty batch 422, ERASURE_DEFERRED 409, erased session 401.
+
+### Notes (not registered)
+
+- New: BUG-120 LOW (payout batch view `period.starts_at/ends_at` with the server offset `+06:00`, residual of BUG-104).
+- Staff dispute effect preview shows the rule key "BONUS unilevel" (staff view; BUG-119 covered the portal only).
+- The portal line page keeps "Dispute this line" after the dispute was upheld (a new dispute is possible once none is open; by design per D-B5-15).
+- Same PLAN §7 data conflicts as round 1 (W-B5-5 after the C → A correction; W-B5-7 "payout held" needs an includable payee).
+- The test TOTP setup key of analyst@ (local `nmp_e2e` only) is visible in `R2-F110-02-enrol-in-dialog.png`.
+- Evidence: `var/qa-b5/r2/R2-*.png`, `statement-2026-08-01.csv`, harness logs `var/qa-b5/r2/visual-*.log`, server logs `var/qa-b5/r2/{api,web}.log`.

@@ -5,11 +5,12 @@ import { join } from 'node:path'
 import type { LightMyRequestResponse } from 'fastify'
 import { afterAll, beforeAll, describe, expect, test, vi } from 'vitest'
 import { BASE_ROLES, PERMISSIONS } from '../../src/lib/permissions.js'
+import { portalMember } from '../../src/modules/iam/portal-test-support.js'
 import { SUPPORT_SESSION_HEADER } from '../../src/modules/support/index.js'
 import { multipartBody, tinyFiles } from '../../src/modules/imp/test-support.js'
 import { activeType, CUSTOMER, DISTRIBUTOR, enrolled } from '../../src/modules/par/test-support.js'
 import {
-  baseRoleId, buildTestApp, call, closePoolsAfterAll, createMarket, createSignedInUser, ownerRows, resetApiDb, type TestUser,
+  baseRoleId, buildTestApp, call, closePoolsAfterAll, createMarket, createPortalUser, createSignedInUser, ownerRows, resetApiDb, type TestUser,
 } from '../helpers/index.js'
 import { caseOf, ROUTE_CASES, type CaseRequest, type RouteCase } from './cases.js'
 import { routesOf } from './route-registry.js'
@@ -20,7 +21,8 @@ import {
 
 // TS-21 / SEC-28 / NFR-SEC-01: generated from the routes buildApp() registers, so a new route fails this suite until
 // it has a case in cases.ts. Per route: no session, a tenant-B user holding every permission, a vendor user without
-// a support session, and the vendor inside tenant A's approved (read-only) support session.
+// a support session, the vendor inside tenant A's approved (read-only) support session, a tenant-B portal session on the
+// portal routes, and tenant A's own portal session on every other route (T-B5-40).
 vi.mock('fastify', async (original) => (await import('./route-registry.js')).collecting(await original()))
 
 const uploadDir = await mkdtemp(join(tmpdir(), 'nmp-isolation-'))
@@ -195,7 +197,7 @@ describe('tenant B user holding every permission (E-SEC-01: denied without revea
     const response = await send(as, request)
 
     expect(leaked(response, request, canaries)).toEqual([])
-    if (routeCase.access === 'vendor') {
+    if (routeCase.access === 'vendor' || routeCase.access === 'portal') {
       expect(outcome(response)).toBe(refusal(request, 403, 'REALM_FORBIDDEN'))
     } else if (routeCase.shape === 'collection') {
       expect(response.statusCode).toBe(200)
@@ -326,7 +328,7 @@ describe('vendor user inside tenant A\'s approved support session (FR-IAM-005: r
       expect(outcome(response)).toBe('403 SUPPORT_SESSION_READ_ONLY')
       expect(await refusalsLogged('audit.vendor_event', requestId)).toEqual(['SUPPORT_SESSION_READ_ONLY'])
       expect(await refusalsLogged('audit.audit_event', requestId)).toEqual(['SUPPORT_SESSION_READ_ONLY'])
-    } else if (routeCase.access === 'vendor') {
+    } else if (routeCase.access === 'vendor' || routeCase.access === 'portal') {
       expect(outcome(response)).toBe(refusal(request, 403, 'REALM_FORBIDDEN'))
       expect(await refusalsLogged('audit.audit_event', requestId)).toEqual(['REALM_FORBIDDEN'])
     } else if (routeCase.inSession === 403) {
@@ -373,8 +375,64 @@ describe('vendor user without a support session (AC-29.3, E-ADR-22: no business 
 
     expect(leaked(response, request, shown)).toEqual([])
     expect(response.statusCode).toBeLessThan(500)
-    if (routeCase.access !== 'tenant') return
+    if (routeCase.access !== 'tenant' && routeCase.access !== 'portal') return
     expect(outcome(response)).toBe(refusal(request, 403, 'REALM_FORBIDDEN'))
     expect(await refusalsLogged('audit.vendor_event', response.headers['x-request-id'] as string)).toEqual(['NO_SESSION'])
+  })
+})
+
+describe('tenant B portal session (D-B5-02: tenant A\'s objects are unknown ids)', () => {
+  const portalRoutes = routes.filter((route) => caseOf(route)?.access === 'portal')
+  let as: TestUser
+  let before: Record<string, string>
+
+  beforeAll(async () => {
+    before = await fingerprintOf(seeded.a.id, ['public', 'audit'])
+    const member = await portalMember(seeded.b.id, await createMarket(seeded.b.id, 'PO'))
+    as = await createPortalUser({ tenantId: seeded.b.id, participantId: member.id, stepUp: true })
+  })
+
+  test.each(portalRoutes)('%s', async (route) => {
+    const routeCase = caseFor(route)
+    const request = routeCase.request(targets)
+
+    const response = await send(as, request)
+
+    expect(leaked(response, request, canaries)).toEqual([])
+    if (routeCase.shape === 'collection') {
+      expect(response.statusCode).toBe(200)
+    } else if (routeCase.shape === 'own') {
+      expect(response.statusCode).toBe(routeCase.own)
+    } else {
+      expect(outcome(response)).toBe(refusal(request, 404, 'NOT_FOUND'))
+      await expectLikePhantom(as, routeCase, response)
+    }
+  })
+
+  test('changed nothing of tenant A (every row of every tenant table, audit included)', async () => {
+    expect(await fingerprintOf(seeded.a.id, ['public', 'audit'])).toEqual(before)
+  })
+})
+
+// PLAN B5 AC-IAM7-4 allowlist: the routes a portal session uses by design.
+const PORTAL_ALLOWED = /^[A-Z]+ \/v1\/(auth\/|me$|me\/|public\/privacy-requests$)/
+
+describe('T-B5-40: tenant A\'s portal session on every other route (AC-IAM7-4: 401/403/404, never 2xx)', () => {
+  // Public routes that answer anyone (the OpenAPI document) hold no tenant data and are not portal-specific.
+  const others = routes.filter((route) => !PORTAL_ALLOWED.test(route) && (caseOf(route)?.anonymous ?? 400) >= 400)
+
+  test.each(others)('%s', async (route) => {
+    const request = caseFor(route).request(targets)
+
+    const response = await send(seeded.portal, request)
+
+    expect(leaked(response, request, canaries)).toEqual([])
+    expect([401, 403, 404]).toContain(response.statusCode)
+  })
+
+  test('the session is a working portal session (so the refusals are the realm, not a dead session)', async () => {
+    const response = await send(seeded.portal, { method: 'GET', url: '/v1/me/statements' })
+
+    expect(response.statusCode).toBe(200)
   })
 })

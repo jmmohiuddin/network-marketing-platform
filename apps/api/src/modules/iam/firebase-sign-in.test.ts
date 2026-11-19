@@ -5,10 +5,11 @@ import type { FastifyInstance } from 'fastify'
 import { createLocalJWKSet, createRemoteJWKSet, exportJWK, generateKeyPair, SignJWT, type CryptoKey } from 'jose'
 import { afterAll, beforeAll, describe, expect, test } from 'vitest'
 import {
-  buildTestApp, call, closePoolsAfterAll, createSignedInUser, createTenant, ownerRows, resetApiDb, sessionFrom,
+  buildTestApp, call, closePoolsAfterAll, createMarket, createPortalUser, createSignedInUser, createTenant, ownerRows, resetApiDb, sessionFrom,
   type TestTenant,
 } from '../../../test/helpers/index.js'
 import { hashPassword } from '../../lib/passwords.js'
+import { portalMember } from './portal-test-support.js'
 
 const PROJECT = 'nmp-test'
 const FIREBASE_ENV = {
@@ -360,5 +361,27 @@ describe('Google key set unavailable', () => {
         server.close()
       }
     }
+  })
+})
+
+describe('POST /v1/auth/portal-firebase-sessions (T-B5-02)', () => {
+  test('binds with the account password once, then opens a portal session; the staff route refuses the same token', async () => {
+    const market = await createMarket(acme.id, 'NL')
+    const member = await portalMember(acme.id, market)
+    const user = await createPortalUser({ tenantId: acme.id, participantId: member.id, email: member.email!, passwordHash })
+    const token = await idToken({ email: user.email })
+    const portalSignIn = (password?: string) => call(app, {
+      method: 'POST', url: '/v1/auth/portal-firebase-sessions', body: { tenant: acme.slug, id_token: token, ...withPassword(password) },
+    })
+
+    const unlinked = await portalSignIn()
+    const linked = await portalSignIn(PASSWORD)
+    const atStaff = await signIn(acme.slug, token)
+    const [session] = await ownerRows<{ realm: string }>('SELECT realm FROM session WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1', [user.id])
+
+    expect(unlinked.json().error.code).toBe('FIREBASE_LINK_REQUIRED')
+    expect(linked.statusCode).toBe(201)
+    expect(session!.realm).toBe('portal')
+    expect(atStaff.statusCode).toBe(401)
   })
 })

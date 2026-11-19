@@ -11,7 +11,7 @@ import { clearSessionCookie, revokeSession, setSessionCookie } from '../../lib/s
 import { signInRateLimit } from '../../lib/web-security.js'
 import { FIREBASE_REFUSED, requireFirebase, verifyFirebaseToken } from './firebase.js'
 import { acceptInvitation } from './invitations.js'
-import { firebaseSignIn, signIn, type SignInResult } from './sign-in.js'
+import { codeSignIn, firebaseSignIn, reauthenticate, requestSignInCode, signIn, type SignInResult } from './sign-in.js'
 
 export const emailSchema = z.email().max(320).transform((value) => value.toLowerCase())
 const password = z.string().min(1).max(256)
@@ -23,6 +23,12 @@ const idToken = z.string().min(1).max(4096)
 const tenantFirebaseBody = z.strictObject({ tenant: tenantSlug, id_token: idToken, password: password.optional() })
 const vendorFirebaseBody = z.strictObject({ id_token: idToken, password: password.optional() })
 const acceptBody = z.strictObject({ token: z.string().min(1).max(128), password: passwordSchema })
+const portalSignInBody = z.union([
+  tenantSignInBody,
+  z.strictObject({ tenant: tenantSlug, email: emailSchema, code: z.string().regex(/^\d{6}$/) }),
+])
+const portalCodeBody = z.strictObject({ tenant: tenantSlug, email: emailSchema })
+const reauthBody = z.strictObject({ password })
 
 const ACCOUNT_KEY_MAX = 400
 
@@ -31,6 +37,9 @@ function accountOf(request: FastifyRequest): string {
   const body = (request.body ?? {}) as { tenant?: unknown; email?: unknown }
   return `${String(body.tenant ?? '')}:${String(body.email ?? '')}`.toLowerCase().slice(0, ACCOUNT_KEY_MAX)
 }
+
+// D-B5-03: portal counters never share a bucket with staff sign-in, so portal-code requests cannot lock out a staff account.
+const portalAccountOf = (request: FastifyRequest): string => `portal:${accountOf(request)}`
 
 /**
  * Rate-limit key of a Firebase sign-in: the email is only known once the token is verified, and keying by tenant would
@@ -44,6 +53,7 @@ function firebaseTokenOf(request: FastifyRequest): string {
 }
 
 const PASSWORD_REFUSED = 'The email or password is not correct.'
+const CODE_REFUSED = 'The code is not valid or has expired. Request a new code.'
 
 function respond(app: FastifyInstance, reply: FastifyReply, result: SignInResult, refused = PASSWORD_REFUSED) {
   if (!result.ok && result.failure === 'locked') {
@@ -88,6 +98,13 @@ function registerFirebaseRoutes(app: FastifyInstance): void {
     return respond(app, reply, await firebaseSignIn(app.config, input), FIREBASE_REFUSED)
   })
 
+  app.post('/v1/auth/portal-firebase-sessions', firebaseRoute, async (request, reply) => {
+    requireFirebase(app.config.firebase)
+    const body = parse(tenantFirebaseBody, request.body)
+    const input = { ...(await firebaseInput(app, request, body)), realm: 'portal' as const, tenantSlug: body.tenant }
+    return respond(app, reply, await firebaseSignIn(app.config, input), FIREBASE_REFUSED)
+  })
+
   app.post('/v1/auth/vendor-firebase-sessions', firebaseRoute, async (request, reply) => {
     requireFirebase(app.config.firebase)
     const body = parse(vendorFirebaseBody, request.body)
@@ -96,7 +113,38 @@ function registerFirebaseRoutes(app: FastifyInstance): void {
   })
 }
 
-/** API-07: sign-in (tenant and vendor realms; password or Firebase), sign-out, invitation acceptance. */
+const realmForbidden = (): ApiError => new ApiError(403, 'REALM_FORBIDDEN', 'This endpoint is not available to your account type.')
+
+/** FR-IAM-007 distributor sign-in (D-B5-03, D-B5-04): password or emailed code, code requests, re-authentication. */
+function registerPortalRoutes(app: FastifyInstance): void {
+  const signInRoute = { config: { rateLimit: false as const }, preHandler: [signInRateLimit(app, portalAccountOf)] }
+  app.post('/v1/auth/portal-sessions', signInRoute, async (request, reply) => {
+    const body = parse(portalSignInBody, request.body)
+    const base = { ip: request.ip, userAgent: request.headers['user-agent'], requestId: request.id, realm: 'portal' as const, tenantSlug: body.tenant }
+    if ('code' in body) return respond(app, reply, await codeSignIn(app.config, { ...base, email: body.email, code: body.code }), CODE_REFUSED)
+    return respond(app, reply, await signIn(app.config, { ...base, email: body.email, password: body.password }))
+  })
+
+  // Always 202: the answer is the same whether or not a portal account uses the address.
+  app.post('/v1/auth/portal-codes', signInRoute, async (request, reply) => {
+    const body = parse(portalCodeBody, request.body)
+    await requestSignInCode(body.tenant, body.email, request.id)
+    return reply.code(202).send(envelope({ accepted: true }))
+  })
+
+  app.post('/v1/auth/sessions/current/reauth', { preHandler: [requireAuth()] }, async (request) => {
+    const auth = currentAuth(request)
+    if (auth.realm !== 'portal') throw realmForbidden()
+    const body = parse(reauthBody, request.body)
+    const user = { userId: auth.userId, tenantId: auth.tenantId, realm: auth.realm, participantId: auth.participantId }
+    const result = await reauthenticate(app.config, { user, sessionId: auth.sessionId, password: body.password, ip: request.ip, requestId: request.id })
+    if (!result.ok && result.failure === 'locked') throw new ApiError(429, 'SIGN_IN_LOCKED', 'Too many failed sign-in attempts. Try again later.')
+    if (!result.ok) throw new ApiError(401, 'INVALID_CREDENTIALS', 'The password is not correct.')
+    return envelope({ step_up_at: result.stepUpAt })
+  })
+}
+
+/** API-07: sign-in (tenant, vendor and portal realms; password, code or Firebase), sign-out, invitation acceptance. */
 export function registerAuthRoutes(app: FastifyInstance): void {
   const signInRoute = { config: { rateLimit: false as const }, preHandler: [signInRateLimit(app, accountOf)] }
 
@@ -113,6 +161,7 @@ export function registerAuthRoutes(app: FastifyInstance): void {
   })
 
   registerFirebaseRoutes(app)
+  registerPortalRoutes(app)
 
   app.delete(
     '/v1/auth/sessions/current',

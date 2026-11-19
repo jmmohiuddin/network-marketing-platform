@@ -228,6 +228,31 @@ export const SETTINGS = {
     stepUp: false,
     approverPermission: 'settings.approve',
   },
+  // PLAN B5 D-B5-20: none has a default (DEC-14); unset = no dispute window, no response time, no deadline, contacts hidden.
+  /** FR-CAS-003 (D-B5-15): days after a run's commit a line may be disputed, and per market id the days to respond. */
+  'disputes.policy': {
+    schema: z.strictObject({
+      window_days: z.number().int().min(1).max(3650).optional(),
+      response_days: z.record(z.uuid(), z.number().int().min(1).max(365)),
+    }),
+    readPermissions: [...POLICY_READERS, 'case.dispute.read'],
+    stepUp: false,
+    approverPermission: null,
+  },
+  /** FR-PRV-001 (D-B5-16): per market id the days to answer a data-subject request, and how early it escalates. */
+  'privacy.policy': {
+    schema: z.strictObject({
+      response_days: z.record(z.uuid(), z.number().int().min(1).max(365)),
+      escalate_before_days: z.number().int().min(0).max(60),
+    }),
+    readPermissions: [...POLICY_READERS, 'privacy.manage'],
+    stepUp: false,
+    approverPermission: 'privacy.manage',
+  },
+  /** FR-DIST-005 (D-B5-11): whether a distributor sees its customers' (masked) contact details. */
+  'portal.customer_contact_visible': {
+    schema: z.boolean(), readPermissions: [...POLICY_READERS, 'privacy.manage'], stepUp: false, approverPermission: 'privacy.manage',
+  },
 } as const satisfies Record<string, SettingDefinition>
 
 export type SettingKey = keyof typeof SETTINGS

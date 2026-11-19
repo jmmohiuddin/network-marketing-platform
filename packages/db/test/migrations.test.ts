@@ -40,13 +40,15 @@ const B4_TABLES = [
   'user_related_participant', 'bank_detail_request', 'bank_detail_version', 'payout_batch', 'payout_batch_line',
   'payout_instruction', 'sandbox_provider_payment', 'payout_exception', 'payout_hold', 'tax_profile',
 ]
+// PLAN B5 section 1.
+const B5_TABLES = ['portal_sign_in_code', 'notification', 'notification_preference', 'privacy_request', 'privacy_export']
 const INSERT_ONLY_TABLES = [
   'audit.audit_event', 'audit.vendor_event', 'outbox_event', 'approval', 'tenant_setting_version',
   'market_checklist_entry', 'case_event', 'case_evidence', 'document', 'participant_signal', 'agreement_version',
   'agreement_acceptance', 'position_status_history', 'order_line', 'order_event', 'plan_market', 'plan_calendar',
   'guardrail_decision', 'run_snapshot', 'result_line', 'qualification_state', 'sim_result_line',
   'ledger_account', 'journal_entry', 'posting', 'journal_export', 'run_settlement', 'bank_detail_request',
-  'sandbox_provider_payment',
+  'sandbox_provider_payment', 'privacy_export',
 ]
 // market_references (0105, 0204, AC-TEN2-3) counts every table with a key to market under these names, plus 'grants'
 // (market_ids arrays carry no key) and 'connectors' (the commerce rows of provider_config).
@@ -64,7 +66,10 @@ const MONEY_SETTING_KEYS = [
   'adjustments.policy', 'write_offs.policy',
 ]
 // PLAN B2 1.7 (D-B2-08): every key whose change needs an approval; the registry pins it against approverPermission.
-const APPROVAL_SETTING_KEYS = [...MONEY_SETTING_KEYS.slice(0, 2), 'genealogy.visibility_policy', ...MONEY_SETTING_KEYS.slice(2)]
+const APPROVAL_SETTING_KEYS = [
+  ...MONEY_SETTING_KEYS.slice(0, 2), 'genealogy.visibility_policy', ...MONEY_SETTING_KEYS.slice(2), 'privacy.policy',
+  'portal.customer_contact_visible',
+]
 // Table names unquoted: regclass quotes keywords such as position.
 const TENANT_ID_TABLES = `
   SELECT c.oid, replace(c.oid::regclass::text, '"', '') AS name, c.relrowsecurity AS enabled, c.relforcerowsecurity AS forced
@@ -72,7 +77,7 @@ const TENANT_ID_TABLES = `
   WHERE c.relkind IN ('r', 'p') AND c.relnamespace IN ('public'::regnamespace, 'audit'::regnamespace)`
 
 // The complete policy set: [table, policy, command, USING, WITH CHECK]. Commands: * all, r select, a insert,
-// w update. Adding or widening a policy must change this list.
+// w update; a trailing ! marks a RESTRICTIVE policy. Adding, widening or dropping a policy must change this list.
 type Policy = [table: string, name: string, command: string, using: string | null, check: string | null]
 const OWN_TENANT = "((app_realm() = 'tenant'::text) AND (tenant_id = app_tenant_id()))"
 const VENDOR = "(app_realm() = 'vendor'::text)"
@@ -81,6 +86,10 @@ const VENDOR_OWNED = "((app_realm() = 'vendor'::text) AND (tenant_id IS NULL))"
 const PLATFORM_READ = "(app_realm() = ANY (ARRAY['tenant'::text, 'vendor'::text, 'system'::text]))"
 const actingUser = (table: string) =>
   `((user_id = app_user_id()) AND (EXISTS ( SELECT 1 FROM user_account u WHERE (u.id = ${table}.user_id))))`
+function portalSelf(table: string, own: string): Policy {
+  const expression = `((app_participant_id() IS NULL) OR ${own})`
+  return [table, 'portal_self', '*!', expression, expression]
+}
 const POLICIES_BEYOND_TENANT_ISOLATION: Policy[] = [
   ['tenant', 'tenant_self_read', 'r', "((app_realm() = 'tenant'::text) AND (id = app_tenant_id()))", null],
   ['tenant', 'vendor_manage', '*', VENDOR, VENDOR],
@@ -114,6 +123,26 @@ const POLICIES_BEYOND_TENANT_ISOLATION: Policy[] = [
   // FR-CPL-012 (0101): every realm reads the platform market-pack rules; nobody writes them at runtime.
   ['guardrail_rule', 'platform_read', 'r', PLATFORM_READ, null],
   ['tax_rule', 'platform_read', 'r', PLATFORM_READ, null],
+  // D-B5-02 (2): inside a portal transaction (app.participant_id set) only the session participant's rows; no-ops otherwise.
+  ...([
+    ['result_line', 'payee_participant_id'], ['run_settlement', 'payee_participant_id'],
+    ['payout_instruction', 'payee_participant_id'], ['ledger_account', 'payee_participant_id'],
+    ['bank_detail_request', 'participant_id'], ['bank_detail_version', 'participant_id'], ['tax_profile', 'participant_id'],
+    ['notification', 'recipient_participant_id'], ['notification_preference', 'participant_id'],
+    ['privacy_request', 'subject_participant_id'], ['user_account', 'participant_id'], ['payout_batch_line', 'participant_id'],
+  ] as const).map(([table, column]): Policy => portalSelf(table, `(${column} = app_participant_id())`)),
+  // 0506: the portal session's own sessions and sign-in codes, the origins of its own lines, the evidence of its own cases.
+  portalSelf('session', '(user_id = app_user_id())'),
+  portalSelf('portal_sign_in_code', '(user_id = app_user_id())'),
+  portalSelf('adjustment_origin', '(EXISTS ( SELECT 1 FROM result_line l WHERE ((l.origin_id = adjustment_origin.id) AND (l.payee_participant_id = app_participant_id()))))'),
+  portalSelf('case_evidence', "(EXISTS ( SELECT 1 FROM case_file c WHERE ((c.id = case_evidence.case_id) AND ((c.payload ->> 'participant_id'::text) = (app_participant_id())::text))))"),
+  // 0506: never in a portal transaction (staff hold text, other payees' exclusion reasons).
+  ...['payout_hold', 'payout_batch'].map((table): Policy => [table, 'portal_hidden', '*!', '(app_participant_id() IS NULL)', '(app_participant_id() IS NULL)']),
+  portalSelf('case_file', "((payload ->> 'participant_id'::text) = (app_participant_id())::text)"),
+  portalSelf('case_event', "(EXISTS ( SELECT 1 FROM case_file c WHERE ((c.id = case_event.case_id) AND ((c.payload ->> 'participant_id'::text) = (app_participant_id())::text))))"),
+  portalSelf('posting', '(EXISTS ( SELECT 1 FROM ledger_account a WHERE ((a.id = posting.account_id) AND (a.payee_participant_id = app_participant_id()))))'),
+  portalSelf('privacy_export', '(EXISTS ( SELECT 1 FROM privacy_request r WHERE ((r.id = privacy_export.request_id) AND (r.subject_participant_id = app_participant_id()))))'),
+  ['approval', 'portal_never_approves', 'a!', null, '(app_participant_id() IS NULL)'],
 ]
 // Foreign keys to a tenant-scoped table that do not carry tenant_id, each kept in its tenant by other means.
 const KEYS_WITHOUT_TENANT_ID = [
@@ -138,14 +167,15 @@ describe('migrations', () => {
     expect(again).toEqual([])
   })
 
-  test('create every release A table, the engineering additions and the B1, B2, B3 and B4 tables', async () => {
+  test('create every release A table, the engineering additions and the B1..B5 tables', async () => {
     const { rows } = await getOwnerPool().query<{ name: string }>(
       `SELECT CASE schemaname WHEN 'public' THEN tablename ELSE schemaname || '.' || tablename END AS name
        FROM pg_tables WHERE schemaname IN ('public', 'audit')`,
     )
 
     expect(rows.map((row) => row.name).sort()).toEqual(
-      [...RELEASE_A_TABLES, ...ENGINEERING_TABLES, ...B1_TABLES, ...B2_TABLES, ...B3_TABLES, ...B4_TABLES, 'schema_migration'].sort(),
+      [...RELEASE_A_TABLES, ...ENGINEERING_TABLES, ...B1_TABLES, ...B2_TABLES, ...B3_TABLES, ...B4_TABLES, ...B5_TABLES, 'schema_migration']
+        .sort(),
     )
   })
 
@@ -199,10 +229,11 @@ describe('row-level security coverage', () => {
     const owner = getOwnerPool()
     const tenantIdTables = await owner.query<{ name: string }>(TENANT_ID_TABLES)
     const actual = await owner.query<{ policy: Policy }>(
-      `SELECT ARRAY[replace(p.polrelid::regclass::text, '"', ''), p.polname::text, p.polcmd::text,
+      `SELECT ARRAY[replace(p.polrelid::regclass::text, '"', ''), p.polname::text,
+                    p.polcmd::text || CASE WHEN p.polpermissive THEN '' ELSE '!' END,
                     regexp_replace(pg_get_expr(p.polqual, p.polrelid), '\\s+', ' ', 'g'),
                     regexp_replace(pg_get_expr(p.polwithcheck, p.polrelid), '\\s+', ' ', 'g')] AS policy
-       FROM pg_policy p WHERE p.polpermissive AND p.polroles = '{0}'`,
+       FROM pg_policy p WHERE p.polroles = '{0}'`,
     )
     const everyPolicy = await owner.query<{ n: number }>('SELECT count(*)::int AS n FROM pg_policy')
     const expected: Policy[] = [
@@ -212,7 +243,7 @@ describe('row-level security coverage', () => {
     const byTableAndName = (left: Policy, right: Policy) => `${left[0]} ${left[1]}`.localeCompare(`${right[0]} ${right[1]}`)
 
     expect(actual.rows.map((row) => row.policy).sort(byTableAndName)).toEqual([...expected].sort(byTableAndName))
-    // No restrictive or role-specific policy hides outside the comparison above.
+    // No role-specific policy hides outside the comparison above.
     expect(everyPolicy.rows).toEqual([{ n: expected.length }])
   })
 

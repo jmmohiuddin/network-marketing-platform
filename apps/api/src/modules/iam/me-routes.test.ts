@@ -31,4 +31,10 @@ describe('GET /v1/me navigation (PLAN B4 section 2.6)', () => {
     expect(await keys(['Support agent'])).not.toContain('ledger')
     expect(await keys(['Plan administrator'])).not.toContain('ledger')
   })
+
+  test('B5: privacy requests and cases (privacy type) open for the DPO, not for read-only roles', async () => {
+    expect(await keys(['DPO'])).toEqual(expect.arrayContaining(['privacy', 'cases']))
+    expect(await keys(['Executive read-only'])).not.toContain('privacy')
+    expect(await keys(['Executive read-only'])).not.toContain('cases')
+  })
 })

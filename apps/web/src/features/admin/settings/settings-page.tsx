@@ -68,6 +68,12 @@ const B4_ROWS: readonly { readonly key: PolicyKey; readonly title: string; reado
   { key: 'adjustments.policy', title: 'Adjustment policy', description: 'When a manual adjustment needs a second approver, which accounts count as new, and what happens for a related or new account.', whenUnset: 'Manual adjustments are refused until set.' },
   { key: 'write_offs.policy', title: 'Write-off policy', description: 'When a receivable is eligible for write-off and above which amount a second approver decides.', whenUnset: 'Write-offs are refused until set.' },
 ]
+/** PLAN B5 §5 SC-29: the D-B5-20 keys, each with what holds while unset (no default is shipped). */
+const B5_ROWS: readonly { readonly key: PolicyKey; readonly title: string; readonly description: string; readonly whenUnset: string }[] = [
+  { key: 'disputes.policy', title: 'Dispute policy', description: 'How long after a commit a distributor may dispute a statement line, and per market the days to respond.', whenUnset: 'No dispute window and no response time: disputes are taken at any time and get no due date.' },
+  { key: 'privacy.policy', title: 'Privacy request deadlines', description: 'Per market the days to answer a data-subject request, and how many days before the deadline it escalates. Changes wait for the DPO.', whenUnset: 'Privacy requests get no deadline and are never escalated; the privacy queue says "No deadline configured".' },
+  { key: 'portal.customer_contact_visible', title: 'Customer contact in the portal', description: 'Whether distributors see the masked contact details of the customers they service. Changes wait for the DPO.', whenUnset: 'Distributors do not see their customers’ contact details.' },
+]
 /** Keys the API refuses to write (SETTING_RETIRED): shown, never offered for a new version. */
 const RETIRED_KEYS: readonly string[] = [...B2_ROWS.filter((row) => row.retired === true).map((row) => row.key), 'money.clawback_policy']
 
@@ -137,14 +143,13 @@ function PolicySettings({ children }: { readonly children: ReactNode }) {
   const clawback = entry('money.clawback_policy')
   const notice = entry('plan.activation_notice_days')
   const visibility = entry('genealogy.visibility_policy')
-  const b2Rows = B2_ROWS.flatMap((row) => {
+  const rowsOf = <R extends { readonly key: PolicyKey }>(rows: readonly R[]) => rows.flatMap((row) => {
     const found = entry(row.key)
     return found === undefined ? [] : [{ ...row, entry: found }]
   })
-  const b4Rows = B4_ROWS.flatMap((row) => {
-    const found = entry(row.key)
-    return found === undefined ? [] : [{ ...row, entry: found }]
-  })
+  const b2Rows = rowsOf(B2_ROWS)
+  const b4Rows = rowsOf(B4_ROWS)
+  const b5Rows = rowsOf(B5_ROWS)
   const values = Object.fromEntries(Object.entries(view?.values ?? {}).map(([key, setting]) => [key, setting?.value]))
   return (
     <>
@@ -324,6 +329,19 @@ function PolicySettings({ children }: { readonly children: ReactNode }) {
           <p className={NOTE}>Rules for paying out earnings balances, manual adjustments and write-offs. The product ships no default value; each change waits for a Finance approver where marked.</p>
           <ul className="flex flex-col gap-space-md">
             {b4Rows.map((row) => (
+              <SettingRow key={row.key} title={row.title} description={row.description} whenUnset={row.whenUnset} entry={row.entry}
+                show={(value: unknown) => <PolicyValue name={row.key} value={value} />}
+                onChange={versionOf(row.key)} />
+            ))}
+          </ul>
+        </section>
+      )}
+      {b5Rows.length > 0 && (
+        <section className={SECTION_CARD} aria-labelledby="portal-policies-title" data-testid="portal-policies">
+          <SectionTitle id="portal-policies-title" icon="policy" title="Disputes, privacy requests and the portal" />
+          <p className={NOTE}>Deadlines for commission disputes and data-subject requests, and what distributors see of their customers. The product ships no default value for any of them.</p>
+          <ul className="flex flex-col gap-space-md">
+            {b5Rows.map((row) => (
               <SettingRow key={row.key} title={row.title} description={row.description} whenUnset={row.whenUnset} entry={row.entry}
                 show={(value: unknown) => <PolicyValue name={row.key} value={value} />}
                 onChange={versionOf(row.key)} />

@@ -33,6 +33,8 @@ export interface TenantSeed {
   bankDetailVersionId: string
   payoutBatchId: string
   instructionId: string
+  portalUserId: string
+  privacyRequestId: string
 }
 
 /** A platform guardrail rule for the seeded evaluation; pack rules are written by migrations or the owner only. */
@@ -121,9 +123,10 @@ export async function seedTenantRows(ctx: TenantContext, secondUserId: string): 
     const b2 = await seedB2Rows(tx, ctx, secondUserId, marketId, b1.brandId)
     const b3 = await seedB3Rows(tx, ctx, { marketId, calendarId: b1.calendarId, settingsVersionId, ...b2 })
     const b4 = await seedB4Rows(tx, ctx, secondUserId, { marketId, ...b2, ...b3 })
+    const b5 = await seedB5Rows(tx, ctx, secondUserId, b2.participantId)
     return {
       marketId, roleId, approvalId, settingsVersionId, documentId, mappingId, batchId, snapshotId, outboxEventId, ...b1, ...b2,
-      ...b3, ...b4,
+      ...b3, ...b4, ...b5,
     }
   })
 }
@@ -445,6 +448,38 @@ async function seedB4Rows(
     created_by: ctx.userId,
   })
   return { journalEntryId, bankDetailVersionId, payoutBatchId, instructionId }
+}
+
+/**
+ * One row in every B5 tenant table (PLAN B5 section 1): the participant's portal account with a sign-in code, a notice
+ * and an email preference, and an access request (system-opened privacy case submitted by the acting user, approved by
+ * secondUserId) with its export.
+ */
+async function seedB5Rows(tx: Tx, ctx: TenantContext, secondUserId: string, participantId: string) {
+  const tenant_id = ctx.tenantId
+  const portalUserId = await insertRow(tx, 'user_account', {
+    tenant_id, realm: 'portal', idp_subject: randomUUID(), email: `portal-${randomUUID()}@example.test`, state: 'active',
+    participant_id: participantId,
+  })
+  await insertRow(tx, 'portal_sign_in_code', { tenant_id, user_id: portalUserId, code_hash: randomBytes(32), expires_at: inOneHour() })
+  await tx.query(`SELECT notify_participant($1, 'tax_profile.changed', '{}')`, [participantId])
+  await tx.query(`INSERT INTO notification_preference (tenant_id, participant_id, topic, email) VALUES ($1, $2, 'statement', false)`, [
+    tenant_id, participantId,
+  ])
+  const privacyRequestId = randomUUID()
+  const caseId = await insertRow(tx, 'case_file', {
+    tenant_id, type: 'privacy', subject_type: 'privacy_request', subject_id: privacyRequestId, reason_code: 'RECEIVED_BY_STAFF',
+    state: 'open', payload: { request_id: privacyRequestId }, opened_by_kind: 'system',
+  })
+  await insertRow(tx, 'privacy_request', { id: privacyRequestId, tenant_id, case_id: caseId, type: 'access', channel: 'staff' })
+  await tx.query(`UPDATE case_file SET state = 'submitted', submitted_by = $2, submitted_at = now() WHERE id = $1`, [caseId, ctx.userId])
+  const approvalId = await asUser(tx, secondUserId, () => insertRow(tx, 'approval', {
+    tenant_id, object_type: 'case', object_id: caseId, preparer_id: ctx.userId, approver_id: secondUserId, decision: 'approved',
+    decided_at: new Date(),
+  }))
+  await tx.query(`UPDATE case_file SET state = 'approved', approval_id = $2, decided_at = now() WHERE id = $1`, [caseId, approvalId])
+  await insertRow(tx, 'privacy_export', { tenant_id, request_id: privacyRequestId, content: randomBytes(16) })
+  return { portalUserId, privacyRequestId }
 }
 
 export interface VendorSeed {

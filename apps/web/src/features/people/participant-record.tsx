@@ -20,6 +20,8 @@ import { ServicerDialog, StatusDialog, statusChoices, TypeDialog, UnmaskDialog }
 import { PARTICIPANTS_PATH, type ContactField, type OwnedPosition, type ParticipantDetail, type ServicedCustomer, type ServicingEntry } from './types'
 import { BalancesTab, BankingTab, HoldsTab, TaxTab } from './finance-tabs'
 import { Facts, RecordCard } from './ui'
+import { PortalAccess } from './portal-access'
+import { Banner } from '../../components/banner'
 
 const ID_PREFIX = 'participant'
 const TABS = [
@@ -227,6 +229,7 @@ export function ParticipantRecord({ participantId }: { readonly participantId: s
   const detail = record.data
   if (detail === null) return <LoadingState label="Loading the participant" />
   const write = (permission: string) => !readOnly && can(permission)
+  const erased = detail.pseudonymised_at != null
   const available = CONTACT_FIELDS.filter((field) => detail.contact_masked?.[field] !== undefined)
   const type = currentType(detail)
   const owned = detail.positions.filter((position) => position.owned_to === null)
@@ -246,6 +249,7 @@ export function ParticipantRecord({ participantId }: { readonly participantId: s
         state={<span className="flex flex-wrap items-center gap-space-xs">
           <StatusBadge {...participantBadge(detail.status)} />
           {detail.duplicate_hold && <StatusBadge state="under_review" label="Duplicate review" />}
+          {erased && <StatusBadge state="retired" label="Personal data erased" />}
         </span>}
         summary={`${detail.market.code} · ${type === null ? 'No type in force' : `${type.name} (${type.code})`} · enrolled ${formatDateTime(detail.enrolled_at)}`}
         actions={<>
@@ -257,7 +261,17 @@ export function ParticipantRecord({ participantId }: { readonly participantId: s
       <div>
         <Tabs label="Participant record" idPrefix={ID_PREFIX} tabs={tabs} selected={tab} onSelect={selectTab} />
         <TabPanel idPrefix={ID_PREFIX} tabId={tab}>
-          {tab === 'overview' && <Overview detail={detail} onUnmask={write('participant.unmask') && available.length > 0 ? () => setDialog({ kind: 'unmask' }) : undefined} />}
+          {tab === 'overview' && (
+            <div className="flex flex-col gap-space-md">
+              {erased && (
+                <Banner tone="info" title="Personal data erased">
+                  Erased on {formatDateTime(detail.pseudonymised_at)} at the member’s request. Name, contact and identity document are cleared; positions, results and ledger postings are kept without the name.
+                </Banner>
+              )}
+              <Overview detail={detail} onUnmask={write('participant.unmask') && available.length > 0 && !erased ? () => setDialog({ kind: 'unmask' }) : undefined} />
+              <PortalAccess participantId={detail.id} erased={erased} />
+            </div>
+          )}
           {tab === 'positions' && <Positions detail={detail} choicesOf={choicesOf} onStatus={write('participant.manage') || write('participant.terminate') ? (position) => setDialog({ kind: 'status', position }) : undefined} />}
           {tab === 'types' && <Types detail={detail} onChange={write('participant.manage') && detail.status === 'active' ? () => setDialog({ kind: 'type' }) : undefined} />}
           {/* shortcut: "Change servicer" shows for participants without positions (end customers); the API refuses others with NOT_A_CUSTOMER. Upgrade when the record carries the type flags. */}

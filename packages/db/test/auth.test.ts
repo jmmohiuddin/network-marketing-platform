@@ -25,8 +25,8 @@ beforeAll(async () => {
   vendorUserId = (await createUser({ tenantId: null, email: 'ops@example.test', passwordHash: 'hash-ops' })).id
 })
 
-function findUser(slug: string | null, email: string) {
-  return withSystem((tx) => tx.query('SELECT * FROM auth_find_user($1, $2)', [slug, email]))
+function findUser(slug: string | null, email: string, realm = slug === null ? 'vendor' : 'tenant') {
+  return withSystem((tx) => tx.query('SELECT * FROM auth_find_user($1, $2, $3)', [realm, slug, email]))
 }
 
 describe('auth_find_user', () => {
@@ -42,13 +42,16 @@ describe('auth_find_user', () => {
         mfa_enrolled: false,
         password_hash: 'hash-ada',
         tenant_state: 'live',
+        participant_id: null,
+        participant_active: true,
       },
     ])
   })
 
-  test('does not find the user under another tenant slug or as a vendor', async () => {
+  test('does not find the user under another tenant slug, as a vendor or in the portal realm', async () => {
     expect((await findUser('other', 'ada@example.test')).rows).toEqual([])
     expect((await findUser(null, 'ada@example.test')).rows).toEqual([])
+    expect((await findUser('acme', 'ada@example.test', 'portal')).rows).toEqual([])
   })
 
   test('finds a vendor user only without a tenant slug', async () => {
@@ -57,7 +60,7 @@ describe('auth_find_user', () => {
   })
 
   test('refuses to run outside the system realm', async () => {
-    const call = `SELECT * FROM auth_find_user('acme', 'ada@example.test')`
+    const call = `SELECT * FROM auth_find_user('tenant', 'acme', 'ada@example.test')`
 
     await expect(getPool().query(call)).rejects.toThrow(/system realm/)
     await expect(withTenant(otherCtx, (tx) => tx.query(call))).rejects.toThrow(/system realm/)

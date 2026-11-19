@@ -5,6 +5,8 @@ import { Icon } from './icon'
 
 /** sc_01 header search input (bordered), with a visible focus ring and the error state. */
 export const INPUT_CLASS = 'w-full h-8 px-3 rounded bg-surface border border-outline-variant font-body-sm text-body-sm text-on-surface placeholder:text-outline focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary aria-[invalid=true]:border-error aria-[invalid=true]:ring-1 aria-[invalid=true]:ring-error read-only:bg-surface-container-low disabled:opacity-60 transition-colors'
+/** The field at touch size: 16 px text, 44 px tall (portal, guidelines §6.9). */
+export const TOUCH_INPUT_CLASS = INPUT_CLASS.replace('h-8', 'h-11').replace('font-body-sm text-body-sm', 'font-body-lg text-body-lg')
 /** The same field look for a multi-line textarea (sc_39 l.~530). */
 export const TEXTAREA_CLASS = 'w-full px-3 py-2 rounded bg-surface border border-outline-variant font-body-sm text-body-sm text-on-surface placeholder:text-outline focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary aria-[invalid=true]:border-error aria-[invalid=true]:ring-1 aria-[invalid=true]:ring-error disabled:opacity-60 transition-colors'
 /** sc_39 form label. */

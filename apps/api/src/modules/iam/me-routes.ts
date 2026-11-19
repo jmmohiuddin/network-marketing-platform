@@ -33,7 +33,9 @@ const TENANT_NAVIGATION: readonly (NavigationEntry & { readonly anyOf: readonly 
     key: 'cases', path: '/cases', label: 'Cases',
     anyOf: [
       'case.genealogy.read', 'case.duplicate.read', 'case.restatement.read', 'case.adjustment.read', 'case.write_off.read',
-      'case.bank_detail.read', 'case.returned_payment.read',
+      'case.bank_detail.read', 'case.returned_payment.read', 'case.dispute.read',
+      // The privacy case type's read permission (prv/privacy-case.ts).
+      'privacy.manage',
     ],
   },
   { key: 'orders', path: '/orders', label: 'Orders', anyOf: ['order.read', 'product.manage'] },
@@ -44,8 +46,55 @@ const TENANT_NAVIGATION: readonly (NavigationEntry & { readonly anyOf: readonly 
   { key: 'ledger', path: '/ledger', label: 'Ledger and exports', anyOf: ['ledger.read'] },
   { key: 'payouts', path: '/payouts', label: 'Payouts', anyOf: ['payout.read'] },
   { key: 'reconciliation', path: '/payouts/reconciliation', label: 'Payout reconciliation', anyOf: ['payout.read'] },
+  { key: 'privacy', path: '/privacy', label: 'Privacy requests', anyOf: ['privacy.manage'] },
 ]
 const VENDOR_NAVIGATION: readonly NavigationEntry[] = [{ key: 'console', path: '/vendor', label: 'Operations console' }]
+
+interface PortalProfile {
+  positions: unknown[]
+  can_sponsor: boolean
+  has_downline: boolean
+  terminated: boolean
+}
+
+/** UI_UX 4.4 bottom navigation: Team replaces Customers for a sponsor with a downline (Customers then moves to More). */
+function portalNavigation(profile: PortalProfile): NavigationEntry[] {
+  const team = profile.can_sponsor && profile.has_downline
+  return [
+    { key: 'home', path: '/portal', label: 'Home' },
+    { key: 'earnings', path: '/portal/earnings', label: 'Earnings' },
+    { key: 'rank', path: '/portal/rank', label: 'Rank' },
+    team ? { key: 'team', path: '/portal/team', label: 'Team' } : { key: 'customers', path: '/portal/customers', label: 'Customers' },
+    { key: 'more', path: '/portal/more', label: 'More' },
+  ]
+}
+
+/**
+ * FR-IAM-007 portal shape of GET /v1/me (PLAN B5 2.1): the participant from the session only, no roles or permissions.
+ * While MFA is pending only the user, tenant and MFA state are returned: the password alone reveals no member data.
+ */
+async function portalMe(tx: Tx, auth: AuthContext) {
+  const pending = mfaPending(auth)
+  const { rows } = await tx.query<{ user: Profile['user']; tenant: unknown; participant: PortalProfile | null }>(
+    `SELECT jsonb_build_object('id', u.id, 'email', u.email, 'display_name', u.display_name) AS "user",
+            jsonb_build_object('slug', t.slug, 'legal_name', t.legal_name) AS tenant,
+            CASE WHEN $2 THEN NULL ELSE portal_profile(u.participant_id) END AS participant
+     FROM user_account u JOIN tenant t ON t.id = u.tenant_id WHERE u.id = $1`,
+    [auth.userId, pending],
+  )
+  const { user, tenant, participant } = rows[0]!
+  const profile = participant === null
+    ? { participant: null, positions: [] }
+    : {
+        participant, positions: participant.positions, can_sponsor: participant.can_sponsor, has_downline: participant.has_downline,
+        terminated: participant.terminated,
+      }
+  return {
+    realm: 'portal' as const, user, tenant, ...profile, roles: [], permissions: [],
+    mfa: { required: false, enrolled: auth.mfaEnrolled, verified: auth.mfaVerified }, step_up_at: auth.stepUpAt,
+    navigation: participant === null ? [] : portalNavigation(participant),
+  }
+}
 
 function mfaPending(auth: AuthContext): boolean {
   return (auth.mfaRequired && !auth.mfaEnrolled) || (auth.mfaEnrolled && !auth.mfaVerified)
@@ -99,6 +148,7 @@ async function loadSupportProfile(request: FastifyRequest, auth: AuthContext, se
 export function registerMeRoutes(app: FastifyInstance): void {
   app.get('/v1/me', { preHandler: [requireAuth()], config: { allowPendingMfa: true } }, async (request) => {
     const auth = currentAuth(request)
+    if (auth.realm === 'portal') return envelope(await inOwnRealm(request, (tx) => portalMe(tx, auth)))
     const profile = auth.supportSessionId === null
       ? await inOwnRealm(request, (tx) => loadProfile(tx, auth))
       : await loadSupportProfile(request, auth, auth.supportSessionId)

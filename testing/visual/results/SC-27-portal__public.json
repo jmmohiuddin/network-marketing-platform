@@ -1,0 +1,686 @@
+{
+  "when": "2026-11-19T16:42:23.928Z",
+  "screenId": "SC-27-portal",
+  "stitch": "sc_27_sign_in_and_second_factor",
+  "module": "auth",
+  "screen": "portal-sign-in",
+  "route": "/portal/signin?tenant=acme",
+  "role": "public",
+  "url": "http://127.0.0.1:3100/portal/signin?tenant=acme",
+  "self": false,
+  "patched": [],
+  "viewports": [
+    {
+      "viewport": "1440x900",
+      "screenshot": "testing/ui-screenshots/app/auth/portal-sign-in/public/1440x900.png",
+      "reference": "testing/ui-screenshots/reference/sc_27_sign_in_and_second_factor/1440x900.png",
+      "diffImage": "testing/ui-screenshots/app/auth/portal-sign-in/public/1440x900.diff.png",
+      "mismatchPercent": 4.26,
+      "diffPixels": 89780,
+      "referenceSize": "1440x1462",
+      "actualSize": "1440x900",
+      "landmarks": [
+        {
+          "landmark": "page",
+          "stitchText": "Acrobex Global (TEN-842) public US-East-1 lock Authenticatio",
+          "appText": "lockDistributor sign-inSign in to your portalEnter your emai",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "background",
+              "stitch": "rgb(248, 249, 255)",
+              "app": "rgb(248, 249, 255)",
+              "match": true
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "16px",
+              "app": "16px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "title",
+          "stitchText": "Secure Staff Authentication",
+          "appText": "Sign in to your portal",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "24px",
+              "app": "24px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            },
+            {
+              "prop": "line-height",
+              "stitch": "32px",
+              "app": "32px",
+              "match": true
+            },
+            {
+              "prop": "letter-spacing",
+              "stitch": "-0.6px",
+              "app": "-0.6px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "primaryButton",
+          "stitchText": "usb Use Security Key (FIDO2 / WebAuthn)",
+          "appText": "mailEmail me a code",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "background-color",
+              "stitch": "rgb(0, 56, 131)",
+              "app": "rgb(0, 56, 131)",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            },
+            {
+              "prop": "border-radius",
+              "stitch": "2px",
+              "app": "2px",
+              "match": true
+            },
+            {
+              "prop": "height",
+              "stitch": "44px",
+              "app": "44px",
+              "match": true
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "16px",
+              "app": "16px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "card",
+          "stitchText": "lock Authentication Clearance Step 2 / 2 Secure Staff Authen",
+          "appText": "lockDistributor sign-inSign in to your portalEnter your emai",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "border-radius",
+              "stitch": "8px",
+              "app": "8px",
+              "match": true
+            },
+            {
+              "prop": "box-shadow",
+              "stitch": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.1) 0px 4px 6px -1px, rgba(0, 0, 0, 0.1) 0px 2px 4px -2px",
+              "app": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.1) 0px 4px 6px -1px, rgba(0, 0, 0, 0.1) 0px 2px 4px -2px",
+              "match": true
+            },
+            {
+              "prop": "background-color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "viewport": "1280x800",
+      "screenshot": "testing/ui-screenshots/app/auth/portal-sign-in/public/1280x800.png",
+      "reference": "testing/ui-screenshots/reference/sc_27_sign_in_and_second_factor/1280x800.png",
+      "diffImage": "testing/ui-screenshots/app/auth/portal-sign-in/public/1280x800.diff.png",
+      "mismatchPercent": 4.59,
+      "diffPixels": 85979,
+      "referenceSize": "1280x1462",
+      "actualSize": "1280x800",
+      "landmarks": [
+        {
+          "landmark": "page",
+          "stitchText": "Acrobex Global (TEN-842) public US-East-1 lock Authenticatio",
+          "appText": "lockDistributor sign-inSign in to your portalEnter your emai",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "background",
+              "stitch": "rgb(248, 249, 255)",
+              "app": "rgb(248, 249, 255)",
+              "match": true
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "16px",
+              "app": "16px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "title",
+          "stitchText": "Secure Staff Authentication",
+          "appText": "Sign in to your portal",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "24px",
+              "app": "24px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            },
+            {
+              "prop": "line-height",
+              "stitch": "32px",
+              "app": "32px",
+              "match": true
+            },
+            {
+              "prop": "letter-spacing",
+              "stitch": "-0.6px",
+              "app": "-0.6px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "primaryButton",
+          "stitchText": "usb Use Security Key (FIDO2 / WebAuthn)",
+          "appText": "mailEmail me a code",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "background-color",
+              "stitch": "rgb(0, 56, 131)",
+              "app": "rgb(0, 56, 131)",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            },
+            {
+              "prop": "border-radius",
+              "stitch": "2px",
+              "app": "2px",
+              "match": true
+            },
+            {
+              "prop": "height",
+              "stitch": "44px",
+              "app": "44px",
+              "match": true
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "16px",
+              "app": "16px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "card",
+          "stitchText": "lock Authentication Clearance Step 2 / 2 Secure Staff Authen",
+          "appText": "lockDistributor sign-inSign in to your portalEnter your emai",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "border-radius",
+              "stitch": "8px",
+              "app": "8px",
+              "match": true
+            },
+            {
+              "prop": "box-shadow",
+              "stitch": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.1) 0px 4px 6px -1px, rgba(0, 0, 0, 0.1) 0px 2px 4px -2px",
+              "app": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.1) 0px 4px 6px -1px, rgba(0, 0, 0, 0.1) 0px 2px 4px -2px",
+              "match": true
+            },
+            {
+              "prop": "background-color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "viewport": "768x1024",
+      "screenshot": "testing/ui-screenshots/app/auth/portal-sign-in/public/768x1024.png",
+      "reference": "testing/ui-screenshots/reference/sc_27_sign_in_and_second_factor/768x1024.png",
+      "diffImage": "testing/ui-screenshots/app/auth/portal-sign-in/public/768x1024.diff.png",
+      "mismatchPercent": 7.8,
+      "diffPixels": 88495,
+      "referenceSize": "768x1478",
+      "actualSize": "768x1024",
+      "landmarks": [
+        {
+          "landmark": "page",
+          "stitchText": "Acrobex Global (TEN-842) public US-East-1 lock Authenticatio",
+          "appText": "lockDistributor sign-inSign in to your portalEnter your emai",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "background",
+              "stitch": "rgb(248, 249, 255)",
+              "app": "rgb(248, 249, 255)",
+              "match": true
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "16px",
+              "app": "16px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "title",
+          "stitchText": "Secure Staff Authentication",
+          "appText": "Sign in to your portal",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "24px",
+              "app": "24px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            },
+            {
+              "prop": "line-height",
+              "stitch": "32px",
+              "app": "32px",
+              "match": true
+            },
+            {
+              "prop": "letter-spacing",
+              "stitch": "-0.6px",
+              "app": "-0.6px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "primaryButton",
+          "stitchText": "usb Use Security Key (FIDO2 / WebAuthn)",
+          "appText": "mailEmail me a code",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "background-color",
+              "stitch": "rgb(0, 56, 131)",
+              "app": "rgb(0, 56, 131)",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            },
+            {
+              "prop": "border-radius",
+              "stitch": "2px",
+              "app": "2px",
+              "match": true
+            },
+            {
+              "prop": "height",
+              "stitch": "44px",
+              "app": "44px",
+              "match": true
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "16px",
+              "app": "16px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "card",
+          "stitchText": "lock Authentication Clearance Step 2 / 2 Secure Staff Authen",
+          "appText": "lockDistributor sign-inSign in to your portalEnter your emai",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "border-radius",
+              "stitch": "8px",
+              "app": "8px",
+              "match": true
+            },
+            {
+              "prop": "box-shadow",
+              "stitch": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.1) 0px 4px 6px -1px, rgba(0, 0, 0, 0.1) 0px 2px 4px -2px",
+              "app": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.1) 0px 4px 6px -1px, rgba(0, 0, 0, 0.1) 0px 2px 4px -2px",
+              "match": true
+            },
+            {
+              "prop": "background-color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "viewport": "390x844",
+      "screenshot": "testing/ui-screenshots/app/auth/portal-sign-in/public/390x844.png",
+      "reference": "testing/ui-screenshots/reference/sc_27_sign_in_and_second_factor/390x844.png",
+      "diffImage": "testing/ui-screenshots/app/auth/portal-sign-in/public/390x844.diff.png",
+      "mismatchPercent": 10.37,
+      "diffPixels": 70216,
+      "referenceSize": "390x1737",
+      "actualSize": "390x844",
+      "landmarks": [
+        {
+          "landmark": "page",
+          "stitchText": "Acrobex Global (TEN-842) public US-East-1 lock Authenticatio",
+          "appText": "lockDistributor sign-inSign in to your portalEnter your emai",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "background",
+              "stitch": "rgb(248, 249, 255)",
+              "app": "rgb(248, 249, 255)",
+              "match": true
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "16px",
+              "app": "16px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "title",
+          "stitchText": "Secure Staff Authentication",
+          "appText": "Sign in to your portal",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "24px",
+              "app": "24px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            },
+            {
+              "prop": "line-height",
+              "stitch": "32px",
+              "app": "32px",
+              "match": true
+            },
+            {
+              "prop": "letter-spacing",
+              "stitch": "-0.6px",
+              "app": "-0.6px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "primaryButton",
+          "stitchText": "usb Use Security Key (FIDO2 / WebAuthn)",
+          "appText": "mailEmail me a code",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "background-color",
+              "stitch": "rgb(0, 56, 131)",
+              "app": "rgb(0, 56, 131)",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            },
+            {
+              "prop": "border-radius",
+              "stitch": "2px",
+              "app": "2px",
+              "match": true
+            },
+            {
+              "prop": "height",
+              "stitch": "44px",
+              "app": "44px",
+              "match": true
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "16px",
+              "app": "16px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "card",
+          "stitchText": "lock Authentication Clearance Step 2 / 2 Secure Staff Authen",
+          "appText": "lockDistributor sign-inSign in to your portalEnter your emai",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "border-radius",
+              "stitch": "8px",
+              "app": "8px",
+              "match": true
+            },
+            {
+              "prop": "box-shadow",
+              "stitch": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.1) 0px 4px 6px -1px, rgba(0, 0, 0, 0.1) 0px 2px 4px -2px",
+              "app": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.1) 0px 4px 6px -1px, rgba(0, 0, 0, 0.1) 0px 2px 4px -2px",
+              "match": true
+            },
+            {
+              "prop": "background-color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

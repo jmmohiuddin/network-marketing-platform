@@ -3,6 +3,7 @@ import { recordAudit } from '../../lib/audit.js'
 import type { CaseRecord, CaseState } from './types.js'
 
 type EventKind = 'opened' | 'evidence_added' | 'assigned' | 'submitted' | 'first_approved' | 'approved' | 'rejected' | 'withdrawn' | 'updated'
+  | 'escalated'
 
 const COLUMNS = `c.id, c.type, c.subject_type, c.subject_id, c.reason_code, c.state, c.payload, c.effect_preview, c.due_at,
   c.market_id, c.opened_by, c.opened_by_kind, c.assigned_to, c.submitted_by, c.submitted_at, c.decided_at, c.approval_id,
@@ -53,6 +54,40 @@ export async function getCase(tx: Tx, id: string, lock: boolean): Promise<CaseRe
     [id],
   )
   return rows[0] ?? null
+}
+
+type ParticipantRef = { readonly id: string; readonly external_ref: string; readonly display_name: unknown }
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+const isParticipantRef = (value: object): value is ParticipantRef =>
+  'id' in value && 'external_ref' in value && 'display_name' in value && typeof value.id === 'string' && UUID.test(value.id)
+  && typeof value.external_ref === 'string'
+
+function participantIds(value: unknown): string[] {
+  if (typeof value !== 'object' || value === null) return []
+  if (Array.isArray(value)) return value.flatMap(participantIds)
+  return [...(isParticipantRef(value) ? [value.id] : []), ...Object.values(value).flatMap(participantIds)]
+}
+
+function withNames(value: unknown, names: ReadonlyMap<string, string | null>): unknown {
+  if (typeof value !== 'object' || value === null) return value
+  if (Array.isArray(value)) return value.map((item) => withNames(item, names))
+  const mapped = Object.fromEntries(Object.entries(value).map(([key, item]) => [key, withNames(item, names)]))
+  return isParticipantRef(value) && names.has(value.id) ? { ...mapped, display_name: names.get(value.id) ?? null } : mapped
+}
+
+/**
+ * BUG-109 (D-B5-19): effect previews are immutable history that erasure cannot clear, so their participant refs store
+ * {id, external_ref, display_name: null}; views put each ref's current display name there (null once erased). Refs
+ * without the display_name key (the privacy subject) stay as stored. Names stored by previews before the fix are
+ * replaced in views too.
+ */
+export async function withCurrentNames<T extends { readonly effect_preview: unknown }>(tx: Tx, records: readonly T[]): Promise<T[]> {
+  const ids = [...new Set(records.flatMap((record) => participantIds(record.effect_preview)))]
+  if (ids.length === 0) return [...records]
+  const { rows } = await tx.query<{ participant_id: string; display_name: string | null }>(
+    'SELECT participant_id, display_name FROM par_display($1::uuid[])', [ids])
+  const names = new Map(rows.map((row) => [row.participant_id, row.display_name]))
+  return records.map((record) => ({ ...record, effect_preview: withNames(record.effect_preview, names) }))
 }
 
 export interface CaseFilter {

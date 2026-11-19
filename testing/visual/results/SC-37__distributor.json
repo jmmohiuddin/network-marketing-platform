@@ -1,0 +1,863 @@
+{
+  "when": "2026-11-19T16:39:59.698Z",
+  "screenId": "SC-37",
+  "stitch": "sc_37_distributor_home",
+  "module": "portal",
+  "screen": "home",
+  "route": "/portal",
+  "role": "distributor",
+  "url": "http://127.0.0.1:3100/portal",
+  "self": false,
+  "patched": [],
+  "viewports": [
+    {
+      "viewport": "1440x900",
+      "screenshot": "testing/ui-screenshots/app/portal/home/distributor/1440x900.png",
+      "reference": "testing/ui-screenshots/reference/sc_37_distributor_home/1440x900.png",
+      "diffImage": "testing/ui-screenshots/app/portal/home/distributor/1440x900.diff.png",
+      "mismatchPercent": 6.21,
+      "diffPixels": 121302,
+      "referenceSize": "1440x1357",
+      "actualSize": "1440x900",
+      "landmarks": [
+        {
+          "landmark": "page",
+          "stitchText": "POS-01948 • US - USD Welcome back, Elena military_tech Diamo",
+          "appText": "P-2•DE · EURWelcome back, DE-Bmilitary_techNo paid-as rankNe",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "background",
+              "stitch": "rgb(248, 249, 255)",
+              "app": "rgb(248, 249, 255)",
+              "match": true
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "16px",
+              "app": "16px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "title",
+          "stitchText": "Welcome back, Elena",
+          "appText": "Welcome back, DE-B",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "20px",
+              "app": "20px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            },
+            {
+              "prop": "line-height",
+              "stitch": "28px",
+              "app": "28px",
+              "match": true
+            },
+            {
+              "prop": "letter-spacing",
+              "stitch": "-0.5px",
+              "app": "-0.5px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "sectionHeading",
+          "stitchText": "Rank & Qualifications",
+          "appText": "Rank",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "16px",
+              "app": "16px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            },
+            {
+              "prop": "line-height",
+              "stitch": "24px",
+              "app": "24px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "primaryButton",
+          "stitchText": "View Statement & Audit Breakdown arrow_forward",
+          "appText": "Open statement",
+          "status": "mismatch",
+          "severity": "high",
+          "props": [
+            {
+              "prop": "background-color",
+              "stitch": "rgb(30, 79, 163)",
+              "app": "rgb(0, 56, 131)",
+              "match": false
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            },
+            {
+              "prop": "border-radius",
+              "stitch": "2px",
+              "app": "2px",
+              "match": true
+            },
+            {
+              "prop": "height",
+              "stitch": "40px",
+              "app": "44px",
+              "match": false
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "14px",
+              "app": "16px",
+              "match": false
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "400",
+              "app": "600",
+              "match": false
+            }
+          ]
+        },
+        {
+          "landmark": "card",
+          "stitchText": "POS-01948 • US - USD Welcome back, Elena military_tech Diamo",
+          "appText": "Net amount · Oct 1, 2026 – Oct 31, 2026checkNo payout due0.0",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "border-radius",
+              "stitch": "8px",
+              "app": "8px",
+              "match": true
+            },
+            {
+              "prop": "box-shadow",
+              "stitch": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+              "app": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+              "match": true
+            },
+            {
+              "prop": "background-color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "viewport": "1280x800",
+      "screenshot": "testing/ui-screenshots/app/portal/home/distributor/1280x800.png",
+      "reference": "testing/ui-screenshots/reference/sc_37_distributor_home/1280x800.png",
+      "diffImage": "testing/ui-screenshots/app/portal/home/distributor/1280x800.diff.png",
+      "mismatchPercent": 6.45,
+      "diffPixels": 113592,
+      "referenceSize": "1280x1376",
+      "actualSize": "1280x800",
+      "landmarks": [
+        {
+          "landmark": "page",
+          "stitchText": "POS-01948 • US - USD Welcome back, Elena military_tech Diamo",
+          "appText": "P-2•DE · EURWelcome back, DE-Bmilitary_techNo paid-as rankNe",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "background",
+              "stitch": "rgb(248, 249, 255)",
+              "app": "rgb(248, 249, 255)",
+              "match": true
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "16px",
+              "app": "16px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "title",
+          "stitchText": "Welcome back, Elena",
+          "appText": "Welcome back, DE-B",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "20px",
+              "app": "20px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            },
+            {
+              "prop": "line-height",
+              "stitch": "28px",
+              "app": "28px",
+              "match": true
+            },
+            {
+              "prop": "letter-spacing",
+              "stitch": "-0.5px",
+              "app": "-0.5px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "sectionHeading",
+          "stitchText": "Rank & Qualifications",
+          "appText": "Rank",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "16px",
+              "app": "16px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            },
+            {
+              "prop": "line-height",
+              "stitch": "24px",
+              "app": "24px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "primaryButton",
+          "stitchText": "View Statement & Audit Breakdown arrow_forward",
+          "appText": "Open statement",
+          "status": "mismatch",
+          "severity": "high",
+          "props": [
+            {
+              "prop": "background-color",
+              "stitch": "rgb(30, 79, 163)",
+              "app": "rgb(0, 56, 131)",
+              "match": false
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            },
+            {
+              "prop": "border-radius",
+              "stitch": "2px",
+              "app": "2px",
+              "match": true
+            },
+            {
+              "prop": "height",
+              "stitch": "40px",
+              "app": "44px",
+              "match": false
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "14px",
+              "app": "16px",
+              "match": false
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "400",
+              "app": "600",
+              "match": false
+            }
+          ]
+        },
+        {
+          "landmark": "card",
+          "stitchText": "POS-01948 • US - USD Welcome back, Elena military_tech Diamo",
+          "appText": "Net amount · Oct 1, 2026 – Oct 31, 2026checkNo payout due0.0",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "border-radius",
+              "stitch": "8px",
+              "app": "8px",
+              "match": true
+            },
+            {
+              "prop": "box-shadow",
+              "stitch": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+              "app": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+              "match": true
+            },
+            {
+              "prop": "background-color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "viewport": "768x1024",
+      "screenshot": "testing/ui-screenshots/app/portal/home/distributor/768x1024.png",
+      "reference": "testing/ui-screenshots/reference/sc_37_distributor_home/768x1024.png",
+      "diffImage": "testing/ui-screenshots/app/portal/home/distributor/768x1024.diff.png",
+      "mismatchPercent": 8.41,
+      "diffPixels": 89932,
+      "referenceSize": "768x1393",
+      "actualSize": "768x1024",
+      "landmarks": [
+        {
+          "landmark": "page",
+          "stitchText": "POS-01948 • US - USD Welcome back, Elena military_tech Diamo",
+          "appText": "P-2•DE · EURWelcome back, DE-Bmilitary_techNo paid-as rankNe",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "background",
+              "stitch": "rgb(248, 249, 255)",
+              "app": "rgb(248, 249, 255)",
+              "match": true
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "16px",
+              "app": "16px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "title",
+          "stitchText": "Welcome back, Elena",
+          "appText": "Welcome back, DE-B",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "20px",
+              "app": "20px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            },
+            {
+              "prop": "line-height",
+              "stitch": "28px",
+              "app": "28px",
+              "match": true
+            },
+            {
+              "prop": "letter-spacing",
+              "stitch": "-0.5px",
+              "app": "-0.5px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "sectionHeading",
+          "stitchText": "Rank & Qualifications",
+          "appText": "Rank",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "16px",
+              "app": "16px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            },
+            {
+              "prop": "line-height",
+              "stitch": "24px",
+              "app": "24px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "primaryButton",
+          "stitchText": "View Statement & Audit Breakdown arrow_forward",
+          "appText": "Open statement",
+          "status": "mismatch",
+          "severity": "high",
+          "props": [
+            {
+              "prop": "background-color",
+              "stitch": "rgb(30, 79, 163)",
+              "app": "rgb(0, 56, 131)",
+              "match": false
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            },
+            {
+              "prop": "border-radius",
+              "stitch": "2px",
+              "app": "2px",
+              "match": true
+            },
+            {
+              "prop": "height",
+              "stitch": "40px",
+              "app": "44px",
+              "match": false
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "14px",
+              "app": "16px",
+              "match": false
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "400",
+              "app": "600",
+              "match": false
+            }
+          ]
+        },
+        {
+          "landmark": "card",
+          "stitchText": "POS-01948 • US - USD Welcome back, Elena military_tech Diamo",
+          "appText": "Net amount · Oct 1, 2026 – Oct 31, 2026checkNo payout due0.0",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "border-radius",
+              "stitch": "8px",
+              "app": "8px",
+              "match": true
+            },
+            {
+              "prop": "box-shadow",
+              "stitch": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+              "app": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+              "match": true
+            },
+            {
+              "prop": "background-color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "viewport": "390x844",
+      "screenshot": "testing/ui-screenshots/app/portal/home/distributor/390x844.png",
+      "reference": "testing/ui-screenshots/reference/sc_37_distributor_home/390x844.png",
+      "diffImage": "testing/ui-screenshots/app/portal/home/distributor/390x844.diff.png",
+      "mismatchPercent": 9.46,
+      "diffPixels": 58859,
+      "referenceSize": "390x1596",
+      "actualSize": "390x924",
+      "landmarks": [
+        {
+          "landmark": "header",
+          "stitchText": "AuditLedger•Apex HealthDistributor Homenotificationsperson",
+          "appText": "Acme Direct LtdHomedashboardHomereceipt_longEarningsmilitary",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "height",
+              "stitch": "64px",
+              "app": "64px",
+              "match": true
+            },
+            {
+              "prop": "background",
+              "stitch": "rgba(248, 249, 255, 0.9)",
+              "app": "rgba(248, 249, 255, 0.9)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "page",
+          "stitchText": "POS-01948 • US - USD Welcome back, Elena military_tech Diamo",
+          "appText": "P-2•DE · EURWelcome back, DE-Bmilitary_techNo paid-as rankNe",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "background",
+              "stitch": "rgb(248, 249, 255)",
+              "app": "rgb(248, 249, 255)",
+              "match": true
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "16px",
+              "app": "16px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "title",
+          "stitchText": "Welcome back, Elena",
+          "appText": "Welcome back, DE-B",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "20px",
+              "app": "20px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            },
+            {
+              "prop": "line-height",
+              "stitch": "28px",
+              "app": "28px",
+              "match": true
+            },
+            {
+              "prop": "letter-spacing",
+              "stitch": "-0.5px",
+              "app": "-0.5px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "sectionHeading",
+          "stitchText": "Rank & Qualifications",
+          "appText": "Rank",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "16px",
+              "app": "16px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            },
+            {
+              "prop": "line-height",
+              "stitch": "24px",
+              "app": "24px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "primaryButton",
+          "stitchText": "View Statement & Audit Breakdown arrow_forward",
+          "appText": "Open statement",
+          "status": "mismatch",
+          "severity": "high",
+          "props": [
+            {
+              "prop": "background-color",
+              "stitch": "rgb(30, 79, 163)",
+              "app": "rgb(0, 56, 131)",
+              "match": false
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            },
+            {
+              "prop": "border-radius",
+              "stitch": "2px",
+              "app": "2px",
+              "match": true
+            },
+            {
+              "prop": "height",
+              "stitch": "40px",
+              "app": "44px",
+              "match": false
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "14px",
+              "app": "16px",
+              "match": false
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "400",
+              "app": "600",
+              "match": false
+            }
+          ]
+        },
+        {
+          "landmark": "card",
+          "stitchText": "POS-01948 • US - USD Welcome back, Elena military_tech Diamo",
+          "appText": "Net amount · Oct 1, 2026 – Oct 31, 2026checkNo payout due0.0",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "border-radius",
+              "stitch": "8px",
+              "app": "8px",
+              "match": true
+            },
+            {
+              "prop": "box-shadow",
+              "stitch": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+              "app": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+              "match": true
+            },
+            {
+              "prop": "background-color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

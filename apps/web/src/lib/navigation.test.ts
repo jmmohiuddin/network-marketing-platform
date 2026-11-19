@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { ApiError } from './api'
 import { errorMessage, fieldErrors, isNotAvailable } from './messages'
-import { activeEntry, afterSignInPath, authRedirectPath, safeNext, withNext } from './navigation'
+import { activeEntry, afterSignInPath, authRedirectPath, defaultHome, realmOf, safeNext, signedOutPath, withNext } from './navigation'
 import { homePath, pendingMfaPath, shellRedirect, type Me } from './me'
 import { codeError, digitsOnly, emailError, passwordError } from './validation'
 
@@ -10,7 +10,7 @@ describe('safeNext', () => {
     expect(safeNext('/settings/users?tab=roles')).toBe('/settings/users?tab=roles')
   })
 
-  it.each([null, '', 'https://evil.example/', '//evil.example/x', '/\\evil.example', 'javascript:alert(1)', '/signin', '/signin/mfa?next=/x', '/invitation', '/.//evil.com', '/%2e//evil.com/x'])(
+  it.each([null, '', 'https://evil.example/', '//evil.example/x', '/\\evil.example', 'javascript:alert(1)', '/signin', '/signin/mfa?next=/x', '/invitation', '/portal/signin', '/portal/signin/code?next=/portal', '/.//evil.com', '/%2e//evil.com/x'])(
     'refuses %s',
     (value) => expect(safeNext(value)).toBeNull(),
   )
@@ -22,6 +22,17 @@ describe('redirect paths', () => {
     expect(authRedirectPath('UNAUTHENTICATED', '/signin/mfa?next=%2Fvendor')).toBe('/signin/vendor?next=%2Fvendor')
     expect(authRedirectPath('UNAUTHENTICATED', '/')).toBe('/signin')
     expect(authRedirectPath('PERMISSION_DENIED', '/imports')).toBeNull()
+  })
+
+  it('knows the portal realm: its pages, sign-in, home and signed-out page with the company', () => {
+    expect(realmOf('/portal/earnings?x=1')).toBe('portal')
+    expect(realmOf('/portalx')).toBe('tenant')
+    expect(defaultHome('portal')).toBe('/portal')
+    expect(authRedirectPath('UNAUTHENTICATED', '/portal/earnings')).toBe('/portal/signin?next=%2Fportal%2Fearnings')
+    expect(authRedirectPath('UNAUTHENTICATED', '/signin/mfa?next=%2Fportal')).toBe('/portal/signin?next=%2Fportal')
+    expect(signedOutPath('portal', 'acme-co')).toBe('/portal/signin?tenant=acme-co&reason=signed_out')
+    expect(signedOutPath('portal')).toBe('/portal/signin?reason=signed_out')
+    expect(signedOutPath('tenant', 'acme-co')).toBe('/signin?reason=signed_out')
   })
 
   it('routes a sign-in to the step the server asks for', () => {
@@ -73,6 +84,8 @@ describe('session routing', () => {
   it('sends users of the other realm out of a shell', () => {
     expect(shellRedirect(me({ realm: 'vendor' }), 'tenant')).toBe('/')
     expect(shellRedirect(me({}), 'tenant')).toBeNull()
+    expect(shellRedirect(me({ realm: 'portal' }), 'tenant')).toBe('/portal')
+    expect(shellRedirect(me({}), 'portal')).toBe('/')
   })
 })
 

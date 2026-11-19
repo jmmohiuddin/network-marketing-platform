@@ -3,6 +3,7 @@
 import { Icon } from '../../components/icon'
 import { StatusBadge } from '../../components/status-badge'
 import { periodText } from '../periods/format'
+import { DisputeEffect, PrivacyEffect } from './b5-effects'
 import { isLive, OUTCOME_LABELS, structuralText } from './format'
 import { MONEY_CASE_TYPES, MoneyEffect } from './money-effects'
 import { PositionLink } from './refs'
@@ -107,6 +108,10 @@ export function EffectPreview({ record }: { readonly record: CaseRecord }) {
     body = <p className="font-body-sm text-body-sm text-secondary">The effect preview is calculated when the case is submitted for a decision.</p>
   } else if (MONEY_CASE_TYPES.includes(record.type)) {
     body = <MoneyEffect record={record} live={live} />
+  } else if (record.type === 'dispute') {
+    body = <DisputeEffect record={record} />
+  } else if (record.type === 'privacy') {
+    body = <PrivacyEffect record={record} />
   } else if (record.type === 'transfer') {
     body = <TransferEffect preview={preview as TransferPreview} live={live} />
   } else if (record.type === 'restatement') {

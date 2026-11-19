@@ -29,10 +29,13 @@ export interface SignInSession {
 }
 
 export const FIREBASE_CONFIG_PATH = '/v1/auth/firebase-config'
-const ENDPOINT: Readonly<Record<Realm, string>> = { tenant: '/v1/auth/firebase-sessions', vendor: '/v1/auth/vendor-firebase-sessions' }
+const ENDPOINT: Readonly<Record<Realm, string>> = {
+  tenant: '/v1/auth/firebase-sessions', vendor: '/v1/auth/vendor-firebase-sessions', portal: '/v1/auth/portal-firebase-sessions',
+}
 const NO_ACCOUNT: Readonly<Record<Realm, string>> = {
   tenant: 'No staff account in this company matches that Google/Firebase account.',
   vendor: 'No operations staff account matches that Google/Firebase account.',
+  portal: 'No portal account in this company matches that Google/Firebase account.',
 }
 const SIGN_IN_FAILED = 'The sign-in could not be completed. Try again.'
 // Firebase's own errors; null: the person stopped the sign-in themselves, nothing to report.
@@ -88,7 +91,7 @@ interface PendingLink {
 
 export interface FirebaseSignInProps {
   readonly realm: Realm
-  /** Tenant realm: the company sign-in name, or null once the form shows why it is missing. Checked before Firebase. */
+  /** Tenant and portal realms: the company sign-in name, or null once the form shows why it is missing. Checked before Firebase. */
   readonly company?: () => string | null
   /** Follows next_step like the password sign-in. */
   readonly onSignedIn: (session: SignInSession) => void

@@ -37,11 +37,13 @@ B3 (2026-11-18, `increments/B3/HANDOFF.md`): T = module, isolation and role-matr
 
 B4 (2026-11-19, `increments/B4/HANDOFF.md`): FR-FIN-001..005, FR-PAY-001..007, FR-TAX-001, FR-CAS-002 set to I T V. T = module, isolation and role-matrix tests green in the records full run (nmp_test_4 at 0412, 198 files, 3857 tests, 0 failed/skipped; LED route tests live in comp/ledger-routes and comp/posting); V = browser workflows W-B4-0..8 passed in QA round 2 (fresh seed, money as PLAN §7: M-3 entry 52.00, clawbacks A −10.00/B −16.00, write-off 7.00 by two approvers, GL export 144.00 = 144.00). Limits of V: FR-FIN-002 as-of time and FR-FIN-005 automatic export on commit are deferred (PLAN §8), the FR-FIN-005 API-key export path is tested only; FR-FIN-001 immutability (AC-14.3) by DB tests only; FR-PAY-003 signature verification and status-query-before-resend by tests only; FR-PAY-004 daily reconciliation deferred (§8); FR-PAY-006 review-reminder mail job by tests only; FR-PAY-007 dormant-balance report not exercised in the browser; FR-CAS-002 escalated two-approver adjustment by tests only (browser: one approval and the related-account block); W-B4-9 vendor read-only session passed in round 1 only (round 2 executive denial only); W-B4-10 regression partial. Open: SEC-B4-1..6 fixes in tree, not re-reviewed; SEC-B4-7 and BUG-108 LOW open.
 
+B5 (2026-11-19, `increments/B5/HANDOFF.md`): FR-IAM-007, FR-DIST-001..006, FR-DIST-008, FR-CAS-003, FR-PRV-001/002 set to I T V. T = module, isolation (incl. the T-B5-40 portal-session sweep over every non-portal route) and role-matrix tests green in the records full run (nmp_test_3 at 0512, 220 files, 4763 tests, 0 failed/skipped); V = browser workflows W-B5-0..9 in QA rounds 1–2 (round 2 on a fresh seed:e2e at 0510: money as PLAN §7, Aug 23.00 returned then paid, Sep −10.00 carried, Oct +3.00 recovered, dispute upheld, export holds DE-B only, erasure deferred for 5.00 owed and fulfilled for DE-A with the M-3 replay hash unchanged). Limits of V: FR-IAM-007 lockout and unknown-email refusal passed in round 1 only; FR-DIST-003 requirements list not exercised; FR-DIST-004 W-B5-5 checked before the PLAN §7 C → A correction (data conflict); FR-DIST-006 "payout held" to an includable payee not executable with the PLAN data (held notice seen for DE-C); FR-DIST-002/004 API text still uses UTC days and engine wording (BUG-112/119 API parts); FR-PRV-002 TS-28 automated replay assertion missing; W-B5-10 regression partial (no globex portal user, B4 not-exercised paths, BUG-093/095..098). Security fixes SEC-B5-1..6 (0511, 0512, TOTP enrolment re-auth, code cooldown, contact_match refused for erasure/correction) landed after round 2: tested, not re-reviewed and not browser-checked. Deferred parts: PLAN §8.
+
 | FR | Title | Stories | ACs | Rules | Tests | Screens | APIs | Tables | Status |
 |---|---|---|---|---|---|---|---|---|---|
 | FR-IAM-004 | Separation of duties | US-07 | AC-07.1 AC-07.2 | BR-ADJ-02 BR-SEC-06 | TS-35 TS-42 | SC-02 SC-03 | API-20 API-25 | approval | I T V |
 | FR-IAM-006 | API keys and service accounts | US-22 | AC-22.1 AC-22.2 AC-22.3 | BR-SEC-03 | TS-13 TS-15 TS-34 TS-59 | SC-13 | API-10 | api_key audit_event | I T V |
-| FR-IAM-007 | Distributor sign-in | US-12 | AC-12.1 | BR-PAY-08 | TS-17 TS-53 | SC-27 SC-37 | API-07 | user_account participant | - |
+| FR-IAM-007 | Distributor sign-in | US-12 | AC-12.1 | BR-PAY-08 | TS-17 TS-53 | SC-27 SC-37 | API-07 | user_account participant | I T V |
 | FR-TEN-002 | Markets, brands, currencies and calendars | US-37 | AC-37.1 | BR-PER-01 | TS-59 TS-62 | SC-29 | API-39 | market brand calendar period | I T V |
 | FR-TEN-003 | Versioned tenant settings | US-37 | AC-37.1 | BR-MNY-02 | TS-06 TS-59 | SC-29 | API-39 | tenant_setting_version approval | I T V |
 | FR-TEN-004 | Market launch checklist | US-38 | AC-38.1 AC-38.2 | BR-PAY-11 BR-REG-04 | TS-50 | SC-17 | API-39 | market document provider_config approval | I T V |
@@ -103,16 +105,16 @@ B4 (2026-11-19, `increments/B4/HANDOFF.md`): FR-FIN-001..005, FR-PAY-001..007, F
 | FR-TAX-001 | Payee tax profile | US-48 | AC-48.1 | BR-TAX-01 BR-TAX-03 | TS-18 TS-19 TS-56 | SC-22 SC-09 | API-27 | tax_profile | I T V |
 | FR-CAS-001 | Case framework | US-02 | AC-02.1 AC-02.2 | BR-ADJ-01 | TS-42 TS-45 | SC-06 SC-08 | API-30 | case case_event approval document | I T V |
 | FR-CAS-002 | Manual adjustments with thresholds and second approver | US-49 | AC-49.1 AC-49.2 | BR-ADJ-01 BR-ADJ-02 BR-ADJ-03 | TS-42 TS-59 | SC-06 | API-30 | case approval | I T V |
-| FR-CAS-003 | Commission dispute from a statement line | US-50 | AC-50.1 | BR-ADJ-04 | TS-59 TS-68 | SC-18 SC-06 | API-30 | case result_line | - |
-| FR-DIST-001 | Distributor statement | US-04 | AC-04.1 AC-04.2 | BR-PAY-06 BR-HON-01 | TS-22 TS-53 | SC-18 SC-37 | API-28 | statement result_line tax_line | - |
-| FR-DIST-002 | Line explanation | US-12 | AC-12.1 | BR-PAY-06 BR-DAT-03 | TS-20 TS-53 | SC-18 | API-29 | result_line | - |
-| FR-DIST-003 | Rank status, factual | US-51 | AC-51.1 | BR-HON-01 BR-RNK-05 | TS-53 TS-63 | SC-19 | API-28 | qualification_state | - |
-| FR-DIST-004 | Team view, privacy-limited | US-05 | AC-05.1 AC-05.2 | BR-DAT-03 | TS-20 | SC-20 | API-34 | path_node | - |
-| FR-DIST-005 | My customers | US-52 | AC-52.1 | BR-ATT-01 | TS-49 | SC-21 | API-28 | customer_servicing order | - |
-| FR-DIST-006 | Bank details and tax profile self-service | US-17 | AC-17.1 AC-17.2 | BR-PAY-08 | TS-17 TS-59 | SC-22 | API-27 | bank_detail_version tax_profile | - |
-| FR-DIST-008 | Notifications | US-17 | AC-17.1 AC-17.2 | BR-PAY-08 BR-PLN-04 | TS-17 TS-59 TS-68 | SC-38 | API-28 | notification outbox_event | - |
-| FR-PRV-001 | Data-subject requests | US-30 | AC-30.1 | BR-DAT-06 | TS-28 | SC-15 SC-41 | API-31 | privacy_request case | - |
-| FR-PRV-002 | Erasure by pseudonymisation | US-30 | AC-30.1 | BR-DAT-06 | TS-28 | SC-15 | API-31 | participant privacy_request | - |
+| FR-CAS-003 | Commission dispute from a statement line | US-50 | AC-50.1 | BR-ADJ-04 | TS-59 TS-68 | SC-18 SC-06 | API-30 | case result_line | I T V |
+| FR-DIST-001 | Distributor statement | US-04 | AC-04.1 AC-04.2 | BR-PAY-06 BR-HON-01 | TS-22 TS-53 | SC-18 SC-37 | API-28 | statement result_line tax_line | I T V |
+| FR-DIST-002 | Line explanation | US-12 | AC-12.1 | BR-PAY-06 BR-DAT-03 | TS-20 TS-53 | SC-18 | API-29 | result_line | I T V (API explanation text: UTC dates and engine wording open, BUG-112/119) |
+| FR-DIST-003 | Rank status, factual | US-51 | AC-51.1 | BR-HON-01 BR-RNK-05 | TS-53 TS-63 | SC-19 | API-28 | qualification_state | I T V (partial V: requirements with measured values tested only; no rank in the latest browser period) |
+| FR-DIST-004 | Team view, privacy-limited | US-05 | AC-05.1 AC-05.2 | BR-DAT-03 | TS-20 | SC-20 | API-34 | path_node | I T V |
+| FR-DIST-005 | My customers | US-52 | AC-52.1 | BR-ATT-01 | TS-49 | SC-21 | API-28 | customer_servicing order | I T V |
+| FR-DIST-006 | Bank details and tax profile self-service | US-17 | AC-17.1 AC-17.2 | BR-PAY-08 | TS-17 TS-59 | SC-22 | API-27 | bank_detail_version tax_profile | I T V |
+| FR-DIST-008 | Notifications | US-17 | AC-17.1 AC-17.2 | BR-PAY-08 BR-PLN-04 | TS-17 TS-59 TS-68 | SC-38 | API-28 | notification outbox_event | I T V |
+| FR-PRV-001 | Data-subject requests | US-30 | AC-30.1 | BR-DAT-06 | TS-28 | SC-15 SC-41 | API-31 | privacy_request case | I T V |
+| FR-PRV-002 | Erasure by pseudonymisation | US-30 | AC-30.1 | BR-DAT-06 | TS-28 | SC-15 | API-31 | participant privacy_request | I T V (TS-28 replay-after-erasure checked in the browser only; automated test missing) |
 | FR-INT-001 | Public API and webhooks | US-22 | AC-22.1 AC-22.2 AC-22.3 | BR-SEC-03 | TS-13 TS-15 TS-34 TS-59 | SC-13 | API-10 API-33 | api_key webhook_endpoint webhook_delivery | I T V |
 | FR-INT-002 | Integration and sync health | US-55 | AC-55.1 | BR-ORD-05 | TS-58 | SC-13 SC-01 | API-37 | provider_config inbound_event | I T V |
 | FR-INT-003 | Scheduled export of the full tenant data model | US-32 | AC-32.1 | BR-DAT-12 | TS-58 | SC-13 | API-32 | export_job | - |

@@ -3,14 +3,18 @@ import type { Config } from '../../config.js'
 import { auditInRealm } from '../../lib/audit.js'
 import type { Realm } from '../../lib/auth.js'
 import { verifyPassword } from '../../lib/passwords.js'
+import { runInTenant, SYSTEM_ACTOR_ID } from '../../lib/db.js'
+import { unauthenticated } from '../../lib/errors.js'
+import { enqueue } from '../../lib/jobs.js'
 import { insertSession, type IssuedSession } from '../../lib/session.js'
 import { recordSuccess, reserveAttempt } from './attempts.js'
 import type { FirebaseIdentity } from './firebase.js'
 import { asUser, type KnownUser } from './realm.js'
+import { sendSignInCodeJob, useSignInCode } from './sign-in-codes.js'
 
 interface SignInRequest {
   readonly realm: Realm
-  /** Tenant realm: the tenant's slug (the sign-in hostname, FR-IAM-001). Vendor realm: null. */
+  /** Tenant and portal realms: the tenant's slug (the sign-in hostname, FR-IAM-001). Vendor realm: null. */
   readonly tenantSlug: string | null
   readonly ip: string
   readonly userAgent: string | undefined
@@ -46,24 +50,29 @@ interface FoundUser {
   mfa_enrolled: boolean
   password_hash: string | null
   tenant_state: string | null
+  participant_id: string | null
+  /** A portal account's participant is active (not merged) and not pseudonymised; true for other accounts. */
+  participant_active: boolean
 }
 
 // Tenants that are being provisioned or are archived have no staff sign-in.
 const CLOSED_TENANT_STATES = new Set(['provisioning', 'archived'])
 
-const accountKeyOf = (tenantSlug: string | null, email: string) => `${tenantSlug ?? 'vendor'}:${email}`
+// A portal account's key is separate from a staff account with the same email (D-B5-03): its lockout never locks the other.
+const accountKeyOf = (realm: Realm, tenantSlug: string | null, email: string) =>
+  realm === 'portal' ? `portal:${tenantSlug}:${email}` : `${tenantSlug ?? 'vendor'}:${email}`
 
 // Reserves the attempt (or finds the key locked) and looks the account up, in one system transaction.
 async function lookUp(config: Config, input: SignInRequest, email: string, accountKey: string) {
   return withSystem(async (tx) => {
     const failures = await reserveAttempt(tx, config, accountKey, input.ip)
-    const users = await tx.query<FoundUser>('SELECT * FROM auth_find_user($1, $2)', [input.tenantSlug, email])
+    const users = await tx.query<FoundUser>('SELECT * FROM auth_find_user($1, $2, $3)', [input.realm, input.tenantSlug, email])
     return { failures, user: users.rows[0] }
   })
 }
 
 function known(user: FoundUser): KnownUser {
-  return { userId: user.user_id, tenantId: user.tenant_id, realm: user.realm }
+  return { userId: user.user_id, tenantId: user.tenant_id, realm: user.realm, participantId: user.participant_id }
 }
 
 // Failures are audited only for accounts that exist, in their own tenant's log; unknown accounts leave
@@ -79,6 +88,7 @@ async function auditFailure(user: FoundUser | undefined, requestId: string, reas
 
 async function mfaRequiredByRoles(tx: Tx, user: FoundUser): Promise<boolean> {
   if (user.realm === 'vendor') return true
+  if (user.realm === 'portal') return false // optional for distributors (SDD-10 section 9): enrolled users verify
   const { rows } = await tx.query<{ required: boolean }>(
     `SELECT coalesce(bool_or(r.mfa_required), false) AS required
      FROM role_assignment ra JOIN role r ON r.id = ra.role_id
@@ -111,7 +121,7 @@ function openSession(config: Config, input: SignInRequest, user: FoundUser) {
 }
 
 function usable(user: FoundUser | undefined, realm: Realm): user is FoundUser {
-  if (user === undefined || user.realm !== realm || user.state !== 'active') return false
+  if (user === undefined || user.realm !== realm || user.state !== 'active' || !user.participant_active) return false
   return user.tenant_state === null || !CLOSED_TENANT_STATES.has(user.tenant_state)
 }
 
@@ -122,7 +132,7 @@ function usable(user: FoundUser | undefined, realm: Realm): user is FoundUser {
  * lockoutMaxFailures failures inside the window the account key is locked until the window passes.
  */
 export async function signIn(config: Config, input: SignInInput): Promise<SignInResult> {
-  const accountKey = accountKeyOf(input.tenantSlug, input.email)
+  const accountKey = accountKeyOf(input.realm, input.tenantSlug, input.email)
   const { failures, user } = await lookUp(config, input, input.email, accountKey)
   if (failures === null) return locked(user, input.requestId)
   const passwordMatches = await verifyPassword(user?.password_hash ?? null, input.password)
@@ -201,7 +211,7 @@ const BIND_FAILURES: Readonly<Record<BindFailure, { reason: string; failure: 'in
  */
 export async function firebaseSignIn(config: Config, input: FirebaseSignInInput): Promise<SignInResult> {
   const { identity, requestId } = input
-  const accountKey = accountKeyOf(input.tenantSlug, identity.email)
+  const accountKey = accountKeyOf(input.realm, input.tenantSlug, identity.email)
   const { failures, user } = await lookUp(config, input, identity.email, accountKey)
   if (failures === null) return locked(user, requestId)
   if (!usable(user, input.realm)) return refused(config, user, requestId, 'invalid_credentials', failures)
@@ -215,4 +225,87 @@ export async function firebaseSignIn(config: Config, input: FirebaseSignInInput)
   const { reason, failure } = BIND_FAILURES[result.failure]
   await auditFailure(user, requestId, reason, failures >= config.lockoutMaxFailures, identityRef(identity))
   return { ok: false, failure }
+}
+
+export interface CodeSignInInput extends SignInRequest {
+  readonly email: string
+  readonly code: string
+}
+
+/**
+ * Portal sign-in with an emailed one-time code (D-B5-03 (b)): the password path's lockout and usable() checks, then the
+ * code check and the session in one transaction. Unknown accounts, wrong, expired, used or exhausted codes are all the
+ * same refusal.
+ */
+export async function codeSignIn(config: Config, input: CodeSignInInput): Promise<SignInResult> {
+  const accountKey = accountKeyOf(input.realm, input.tenantSlug, input.email)
+  const { failures, user } = await lookUp(config, input, input.email, accountKey)
+  if (failures === null) return locked(user, input.requestId)
+  if (!usable(user, input.realm)) return refused(config, user, input.requestId, 'invalid_credentials', failures)
+  const opened = await asUser(known(user), input.requestId, async (tx) =>
+    (await useSignInCode(tx, user.user_id, input.code)) ? startSession(tx, config, input, user) : null)
+  if (opened === null) return refused(config, user, input.requestId, 'invalid_code', failures)
+  await recordSuccess(accountKey, input.ip)
+  return { ok: true, ...opened }
+}
+
+export interface ReauthInput {
+  readonly user: KnownUser
+  readonly sessionId: string
+  readonly password: string
+  readonly ip: string
+  readonly requestId: string
+}
+
+export type ReauthResult = { readonly ok: true; readonly stepUpAt: Date } | { readonly ok: false; readonly failure: 'locked' | 'invalid' }
+
+/**
+ * D-B5-04: a portal user proves its password again for a sensitive change. The attempt counts against the portal account
+ * key like a sign-in; success sets the session's step_up_at through auth_reauth_session (assurance unchanged).
+ */
+export async function reauthenticate(config: Config, input: ReauthInput): Promise<ReauthResult> {
+  const own = await asUser(input.user, input.requestId, (tx) =>
+    tx.query<{ email: string; slug: string }>(
+      'SELECT u.email, t.slug FROM user_account u JOIN tenant t ON t.id = u.tenant_id WHERE u.id = $1', [input.user.userId]))
+  const { email, slug } = own.rows[0]!
+  const request = { realm: 'portal' as const, tenantSlug: slug, ip: input.ip, userAgent: undefined, requestId: input.requestId }
+  const accountKey = accountKeyOf('portal', slug, email)
+  const { failures, user } = await lookUp(config, request, email, accountKey)
+  if (failures === null) {
+    await locked(user, input.requestId)
+    return { ok: false, failure: 'locked' }
+  }
+  const matches = await verifyPassword(user?.password_hash ?? null, input.password)
+  if (!matches || !usable(user, 'portal') || user.user_id !== input.user.userId) {
+    await refused(config, user, input.requestId, 'reauth_failed', failures)
+    return { ok: false, failure: 'invalid' }
+  }
+  await recordSuccess(accountKey, input.ip)
+  return asUser(input.user, input.requestId, async (tx) => {
+    let stepUpAt: Date
+    try {
+      const { rows } = await tx.query<{ at: Date }>('SELECT auth_reauth_session($1) AS at', [input.sessionId])
+      stepUpAt = rows[0]!.at
+    } catch (error) {
+      // The session ended since this request resolved it.
+      if ((error as { code?: string }).code === '42501') throw unauthenticated()
+      throw error
+    }
+    await auditInRealm(tx, 'portal', { action: 'AUTH.REAUTHENTICATED', objectType: 'session', objectId: input.sessionId })
+    return { ok: true as const, stepUpAt }
+  })
+}
+
+/**
+ * D-B5-03 (b): queues a sign-in code mail for a usable portal account; for anything else nothing happens. The caller
+ * answers 202 either way, so the answer says nothing about the address.
+ */
+export async function requestSignInCode(tenantSlug: string, email: string, requestId: string): Promise<void> {
+  const { rows } = await withSystem((tx) =>
+    tx.query<FoundUser>('SELECT * FROM auth_find_user($1, $2, $3)', ['portal', tenantSlug, email]))
+  const user = rows[0]
+  if (!usable(user, 'portal') || user.tenant_id === null) return
+  const actor = { actorType: 'system' as const, requestId, supportSessionId: null }
+  await runInTenant({ tenantId: user.tenant_id, userId: SYSTEM_ACTOR_ID }, actor, (tx) =>
+    enqueue(tx, sendSignInCodeJob, { user_id: user.user_id }))
 }

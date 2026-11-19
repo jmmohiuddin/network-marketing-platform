@@ -102,16 +102,24 @@ describe('bank-detail requests and the bank_detail case (AC-17.1, AC-17.2, AC-PA
     expect(read.body).not.toContain('sealed')
     expect(read.body).not.toContain('fingerprint')
 
+    // D-B5-14: the contact on record gets the mandatory notice rows; the job mails only the request's contact.
+    const notices = await ownerRows<{ channel: string; state: string; params: Record<string, unknown> }>(
+      `SELECT channel, state, params FROM notification WHERE recipient_participant_id = $1 AND template = 'bank_detail.changed' ORDER BY channel`, [payee])
+    expect(notices).toEqual([
+      { channel: 'email', state: 'queued', params: expect.objectContaining({ masked: '•••• 3000', previous_masked: '•••• 5432' }) },
+      { channel: 'in_app', state: 'delivered', params: expect.objectContaining({ masked: '•••• 3000', previous_masked: '•••• 5432' }) },
+    ])
+    expect(new Date(notices[0]!.params.cooling_off_until as string).getTime()).toBe(new Date(current.cooling_off_until).getTime())
     await runQueuedJobs(noticeJob as never)
-    expect(await mailsTo(CONTACT)).toHaveLength(1)
+    expect(await mailsTo(CONTACT)).toHaveLength(0)
     expect(await mailsTo(REQUEST_CONTACT)).toHaveLength(1)
-    const mail = (await mailsTo(CONTACT))[0]!
+    const mail = (await mailsTo(REQUEST_CONTACT))[0]!
     expect(mail).toContain('•••• 3000')
     // BUG-100: the cooling-off end reads as the UI shows it, in the market's zone (Europe/London), not a raw ISO instant
     const shown = new Intl.DateTimeFormat('en-US', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Europe/London' }).format(new Date(current.cooling_off_until))
     expect(mail).toContain(`Payouts to the new account start after ${shown} (Europe/London).`)
     expect(mail).not.toContain(current.cooling_off_until)
-    expect((await auditActions(w.tenant.id)).filter((a) => a === 'NOTICE.SENT')).toHaveLength(2)
+    expect((await auditActions(w.tenant.id)).filter((a) => a === 'NOTICE.SENT')).toHaveLength(1)
     expect(await auditActions(w.tenant.id)).toEqual(expect.arrayContaining(['BANK_DETAIL.REQUESTED', 'BANK_DETAIL.VERSION_CREATED']))
 
     // TS-17: a batch prepared inside the window excludes the payee

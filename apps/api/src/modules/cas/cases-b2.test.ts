@@ -98,14 +98,14 @@ describe('GET /v1/cases/counts', () => {
   test('per readable type within the market scope; no readable type 403', async () => {
     await openFixtureCase(app, admin, my)
     const all = await call(app, { method: 'GET', url: '/v1/cases/counts', as: analyst })
-    const scoped = await call(app, { method: 'GET', url: '/v1/cases/counts?type=adjustment', as: analystMy })
-    const open = (await ownerRows<{ n: number }>(`SELECT count(*)::int AS n FROM case_file WHERE tenant_id = $1 AND type = 'adjustment' AND state = 'open'`, [acme.id]))[0]!.n
+    const scoped = await call(app, { method: 'GET', url: '/v1/cases/counts?type=grievance', as: analystMy })
+    const open = (await ownerRows<{ n: number }>(`SELECT count(*)::int AS n FROM case_file WHERE tenant_id = $1 AND type = 'grievance' AND state = 'open'`, [acme.id]))[0]!.n
 
     expect(all.json().data).toEqual([
-      { type: 'adjustment', open, submitted: expect.any(Number), overdue: 0, decided_30d: 0 },
       { type: 'duplicate', open: 0, submitted: 0, overdue: 0, decided_30d: 0 },
+      { type: 'grievance', open, submitted: expect.any(Number), overdue: 0, decided_30d: 0 },
     ])
-    expect(scoped.json().data).toEqual([{ type: 'adjustment', open: 1, submitted: 0, overdue: 0, decided_30d: 0 }])
+    expect(scoped.json().data).toEqual([{ type: 'grievance', open: 1, submitted: 0, overdue: 0, decided_30d: 0 }])
     expect((await call(app, { method: 'GET', url: '/v1/cases/counts', as: support })).statusCode).toBe(403)
     expect((await call(app, { method: 'GET', url: '/v1/cases/counts?type=transfer', as: analyst })).statusCode).toBe(403)
     const globex = (await call(app, { method: 'GET', url: '/v1/cases/counts', as: globexAdmin })).json().data

@@ -7,6 +7,8 @@ export interface TenantContext {
   tenantId: string
   userId: string
   sessionId?: string
+  /** A portal session's participant (D-B5-02): app.participant_id, read by the RESTRICTIVE self policies. */
+  participantId?: string
 }
 
 export interface VendorContext {
@@ -17,7 +19,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 // Every helper starts from this, so a transaction never inherits a setting it did not define itself
 // (for example a session-level app.tenant_id left on a pooled connection).
-const NO_CONTEXT = { 'app.realm': '', 'app.tenant_id': '', 'app.user_id': '', 'app.session_id': '' }
+const NO_CONTEXT = { 'app.realm': '', 'app.tenant_id': '', 'app.user_id': '', 'app.session_id': '', 'app.participant_id': '' }
 
 let pool: pg.Pool | undefined
 
@@ -71,6 +73,7 @@ export function withTenant<T>(ctx: TenantContext, fn: (tx: Tx) => Promise<T>): P
   assertUuid(ctx.tenantId, 'tenantId')
   assertUuid(ctx.userId, 'userId')
   if (ctx.sessionId !== undefined) assertUuid(ctx.sessionId, 'sessionId')
+  if (ctx.participantId !== undefined) assertUuid(ctx.participantId, 'participantId')
   return inTransaction(
     {
       ...NO_CONTEXT,
@@ -78,6 +81,7 @@ export function withTenant<T>(ctx: TenantContext, fn: (tx: Tx) => Promise<T>): P
       'app.tenant_id': ctx.tenantId,
       'app.user_id': ctx.userId,
       'app.session_id': ctx.sessionId ?? '',
+      'app.participant_id': ctx.participantId ?? '',
     },
     fn,
   )

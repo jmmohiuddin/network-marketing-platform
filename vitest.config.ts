@@ -9,6 +9,8 @@ export default defineConfig({
     include: ['packages/*/test/**/*.test.ts', 'packages/*/src/**/*.test.ts', 'apps/api/src/**/*.test.ts', 'apps/api/test/**/*.test.ts',
       // Web tests run in node unless the file starts with `// @vitest-environment jsdom`.
       'apps/web/src/**/*.test.{ts,tsx}'],
+    // Explicit, so the DIST module's tests (apps/api/src/modules/dist) are not caught by the default '**/dist/**' exclude.
+    exclude: ['**/node_modules/**', 'packages/*/dist/**', 'apps/*/dist/**', '**/.next/**'],
     pool: 'forks', poolOptions: { forks: { singleFork: true } },
     fileParallelism: false, testTimeout: 30000,
     env: { NODE_ENV: 'test', DATABASE_URL: `postgres://nmp_app:nmp_app_local@127.0.0.1:5432/${TEST_DB}`, MIGRATE_DATABASE_URL: `postgres://127.0.0.1:5432/${TEST_DB}` },

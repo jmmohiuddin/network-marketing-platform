@@ -22,6 +22,8 @@ const listQuery = z.strictObject({
 })
 const unmaskBody = z.strictObject({ fields: z.array(z.enum(CONTACT_FIELDS)).min(1).max(3).refine((f) => new Set(f).size === f.length, 'unique') })
 const cursorSchema = z.tuple([z.iso.datetime({ offset: true }), z.uuid()])
+/** D-B5-18: a pseudonymised participant reads as "Erased participant <external_ref>" (its name is gone). */
+const DISPLAY_NAME = `CASE WHEN p.pseudonymised_at IS NULL THEN p.display_name ELSE 'Erased participant ' || p.external_ref END AS display_name`
 
 interface ListRow {
   id: string
@@ -32,7 +34,7 @@ interface ListRow {
 async function listParticipants(tx: Tx, scope: readonly string[] | null, query: z.infer<typeof listQuery>) {
   const after = decodeCursor(query.cursor, cursorSchema)
   const { rows } = await tx.query<ListRow>(
-    `SELECT p.id, p.external_ref, p.display_name, jsonb_build_object('id', m.id, 'code', m.code) AS market,
+    `SELECT p.id, p.external_ref, ${DISPLAY_NAME}, p.pseudonymised_at, jsonb_build_object('id', m.id, 'code', m.code) AS market,
             CASE WHEN t.id IS NULL THEN NULL ELSE jsonb_build_object('code', t.code, 'name', t.name) END AS current_type,
             p.status, p.enrolled_at,
             (SELECT jsonb_build_object('count', count(*)::int, 'active', (count(*) FILTER (WHERE o.status = 'active'))::int)
@@ -56,8 +58,8 @@ async function listParticipants(tx: Tx, scope: readonly string[] | null, query: 
 // duplicate_hold: a review is open and holds new positions (hold_activation) or a position is still pending (SC-09).
 async function participantDetail(tx: Tx, id: string) {
   const { rows } = await tx.query<{ contact: Contact | null } & Record<string, unknown>>(
-    `SELECT p.id, p.external_ref, p.account_type, jsonb_build_object('id', m.id, 'code', m.code) AS market, p.display_name,
-            p.contact, p.status,
+    `SELECT p.id, p.external_ref, p.account_type, jsonb_build_object('id', m.id, 'code', m.code) AS market, ${DISPLAY_NAME},
+            p.pseudonymised_at, p.contact, p.status,
             CASE WHEN x.id IS NULL THEN NULL ELSE jsonb_build_object('id', x.id, 'external_ref', x.external_ref) END AS merged_into,
             p.enrolled_at,
             coalesce((SELECT jsonb_agg(jsonb_build_object('type', jsonb_build_object('id', t.id, 'code', t.code, 'name', t.name),

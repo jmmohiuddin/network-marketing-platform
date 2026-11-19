@@ -11,12 +11,13 @@ import { DRAFT_MARKET_CODE, DRAFT_VERSION, PACK, PASSWORD, RECORDABLE_ITEM, RULE
 /**
  * Who the route is for. public: no session (sign-in, invitation); self: the caller's own session or account;
  * tenant: tenant realm; vendor: vendor realm only; either: vendor users, or tenant users with vendor_access.decide;
- * key: API keys only, every session is refused (PLAN B2 2.6).
+ * key: API keys only, every session is refused (PLAN B2 2.6); portal: portal sessions only, staff and vendor sessions are refused
+ * (PLAN B5 D-B5-02).
  */
-export type Access = 'public' | 'self' | 'tenant' | 'vendor' | 'either' | 'key'
+export type Access = 'public' | 'self' | 'tenant' | 'vendor' | 'either' | 'key' | 'portal'
 
 /**
- * What a tenant-B caller reaches with tenant A's targets. object: an A object by id (404, as an unknown id);
+ * What a tenant-B caller reaches with tenant A's targets (for portal routes: a tenant-B portal session). object: an A object by id (404, as an unknown id);
  * collection: a list or a per-tenant singleton (200, only B's rows); own: B's own account or new object (status `own`).
  */
 export type Shape = 'object' | 'collection' | 'own'
@@ -67,6 +68,8 @@ const own = (access: Access, status: number, request: (t: Targets) => CaseReques
 const named = (status: number, code: string, request: (t: Targets) => CaseRequest): RouteCase =>
   ({ access: 'tenant', shape: 'object', refusedAs: [status, code], request })
 const vendor = (request: (t: Targets) => CaseRequest): RouteCase => ({ access: 'vendor', shape: 'object', request })
+const portal = (shape: Shape, request: (t: Targets) => CaseRequest, status?: number): RouteCase =>
+  ({ access: 'portal', shape, ...(status === undefined ? {} : { own: status }), request })
 
 const withReason = (body: Record<string, unknown> = {}) => ({ ...body, reason: 'isolation' })
 /** integration.manage is a tenant-own decision no support session may hold (support/sessions.ts). */
@@ -472,6 +475,58 @@ export const ROUTE_CASES: Readonly<Record<string, RouteCase>> = {
   'GET /v1/participants/:id/tax-profile': object('tenant', (t) => get(`/v1/participants/${t.payoutPayee}/tax-profile`)),
   'PUT /v1/participants/:id/tax-profile': object('tenant', (t) => json('PUT', `/v1/participants/${t.payoutPayee}/tax-profile`, { residency: 'NL' }, true)),
   'POST /v1/participants/:id/tax-profile/unmask': object('tenant', (t) => json('POST', `/v1/participants/${t.payoutPayee}/tax-profile/unmask`)),
+  // IAM B5 (PLAN B5 2.1): tenant A's portal email at tenant B; staff portal-account management of tenant A's participant.
+  'POST /v1/auth/portal-sessions': object('public', (t) => json('POST', '/v1/auth/portal-sessions', { tenant: t.otherSlug, email: t.portalEmail, password: PASSWORD })),
+  // Always accepted, whether or not the account exists (no enumeration).
+  'POST /v1/auth/portal-codes': { ...object('public', (t) => json('POST', '/v1/auth/portal-codes', { tenant: t.otherSlug, email: t.portalEmail })), anonymous: 202 },
+  'POST /v1/auth/portal-firebase-sessions': object('public', (t) => json('POST', '/v1/auth/portal-firebase-sessions', { tenant: t.otherSlug, id_token: t.user })),
+  // A tenant-B portal account without a password.
+  'POST /v1/auth/sessions/current/reauth': portal('own', () => json('POST', '/v1/auth/sessions/current/reauth', { password: PASSWORD }), 401),
+  'GET /v1/participants/:id/portal-account': object('tenant', (t) => get(`/v1/participants/${t.portalParticipant}/portal-account`)),
+  'POST /v1/participants/:id/portal-account': object('tenant', (t) => json('POST', `/v1/participants/${t.participant}/portal-account`, undefined, true)),
+  'POST /v1/participants/:id/portal-account/invitation': object('tenant', (t) => json('POST', `/v1/participants/${t.portalParticipant}/portal-account/invitation`)),
+  'POST /v1/participants/:id/portal-account/deactivate': object('tenant', (t) =>
+    json('POST', `/v1/participants/${t.portalParticipant}/portal-account/deactivate`, withReason())),
+  // COMP B5 (PLAN B5 2.2): tenant A's run, line, position and dispute are unknown to a tenant-B member.
+  'GET /v1/me/statements': portal('collection', () => get('/v1/me/statements')),
+  'GET /v1/me/statements/:runId': portal('object', (t) => get(`/v1/me/statements/${t.run}`)),
+  'GET /v1/me/statements/:runId/download': portal('object', (t) => get(`/v1/me/statements/${t.run}/download`)),
+  'GET /v1/me/statement-lines/:id/explanation': portal('object', (t) => get(`/v1/me/statement-lines/${t.resultLine}/explanation`)),
+  'GET /v1/me/rank': portal('object', (t) => get(`/v1/me/rank?position_id=${t.payee}`)),
+  'POST /v1/me/disputes': portal('object', (t) => json('POST', '/v1/me/disputes', { line_id: t.resultLine, message: 'isolation' }, true)),
+  'GET /v1/me/disputes': portal('collection', () => get('/v1/me/disputes')),
+  'GET /v1/me/disputes/:id': portal('object', (t) => get(`/v1/me/disputes/${t.dispute}`)),
+  // GEN, CRM, PAY, TAX, DIST B5 (PLAN B5 2.3-2.5): a tenant-B member's own (invalid) writes are B's own 422.
+  'GET /v1/me/team': portal('object', (t) => get(`/v1/me/team?position_id=${t.payee}`)),
+  'GET /v1/me/customers': portal('collection', () => get('/v1/me/customers')),
+  'GET /v1/me/customers/:id': portal('object', (t) => get(`/v1/me/customers/${t.customer}`)),
+  'GET /v1/me/bank-details': portal('collection', () => get('/v1/me/bank-details')),
+  'PUT /v1/me/bank-details': portal('own', () => json('PUT', '/v1/me/bank-details', {}, true), 422),
+  'GET /v1/me/tax-profile': portal('collection', () => get('/v1/me/tax-profile')),
+  'PUT /v1/me/tax-profile': portal('own', () => json('PUT', '/v1/me/tax-profile', {}, true), 400),
+  'GET /v1/me/notifications': portal('collection', () => get('/v1/me/notifications')),
+  'POST /v1/me/notifications/:id/read': portal('object', (t) => json('POST', `/v1/me/notifications/${t.notification}/read`)),
+  'POST /v1/me/notifications/read-all': portal('own', () => json('POST', '/v1/me/notifications/read-all'), 200),
+  'GET /v1/me/notification-preferences': portal('collection', () => get('/v1/me/notification-preferences')),
+  'PUT /v1/me/notification-preferences': portal('own', () => json('PUT', '/v1/me/notification-preferences', { topic: 'statement', email: false }), 200),
+  // PRV B5 (PLAN B5 2.6): the public form answers anyone alike; privacy.manage is excluded from support sessions.
+  'POST /v1/public/privacy-requests': {
+    ...object('public', (t) => json('POST', '/v1/public/privacy-requests', { tenant: t.otherSlug, type: 'access', full_name: 'Isolation', email: t.portalEmail }, true)),
+    anonymous: 202,
+  },
+  'POST /v1/me/privacy-requests': portal('own', () => json('POST', '/v1/me/privacy-requests', { type: 'access' }, true), 201),
+  'GET /v1/me/privacy-requests': portal('collection', () => get('/v1/me/privacy-requests')),
+  'GET /v1/me/privacy-requests/:id/export': portal('object', (t) => get(`/v1/me/privacy-requests/${t.privacyRequest}/export`)),
+  'GET /v1/privacy-requests': { ...collection('tenant', () => get('/v1/privacy-requests?limit=50')), inSession: 403 },
+  'GET /v1/privacy-requests/:id': { ...object('tenant', (t) => get(`/v1/privacy-requests/${t.privacyRequest}`)), inSession: 403 },
+  'GET /v1/privacy-requests/:id/export': { ...object('tenant', (t) => get(`/v1/privacy-requests/${t.privacyRequest}/export`)), inSession: 403 },
+  'POST /v1/privacy-requests': own('tenant', 201, (t) =>
+    json('POST', '/v1/privacy-requests', { type: 'access', email: t.portalEmail, received_via: 'isolation' }, true)),
+  'POST /v1/privacy-requests/:id/verify': object('tenant', (t) => json('POST', `/v1/privacy-requests/${t.privacyRequest}/verify`, {
+    method: 'contact_match', subject_participant_id: t.portalParticipant, note: 'isolation',
+  })),
+  'PUT /v1/privacy-requests/:id/corrections': object('tenant', (t) =>
+    json('PUT', `/v1/privacy-requests/${t.privacyRequest}/corrections`, { display_name: 'Isolation' })),
 }
 
 /** The case of a route; Fastify's HEAD routes run their GET handler, so they take the GET case with method HEAD. */

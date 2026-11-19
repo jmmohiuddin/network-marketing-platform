@@ -64,6 +64,17 @@ const declareRelated = (w: World, u: TestUser, participantId: string, relation =
 const commitAs = (runId: string, as: TestUser) =>
   call(app, { method: 'POST', url: `/v1/runs/${runId}/commit`, as, idempotencyKey: true, body: { acknowledged_exceptions: [] } })
 
+/** Waits until `count` other backends wait on a lock. */
+async function lockWaiters(count: number): Promise<void> {
+  for (let i = 0; i < 200; i++) {
+    const rows = await ownerRows<{ n: number }>(
+      `SELECT count(*)::int AS n FROM pg_stat_activity WHERE datname = current_database() AND wait_event_type = 'Lock' AND pid <> pg_backend_pid()`)
+    if (rows[0]!.n >= count) return
+    await new Promise((resolve) => setTimeout(resolve, 25))
+  }
+  throw new Error(`fewer than ${count} lock waiters`)
+}
+
 describe('adjustment case (FR-CAS-002, D-B4-09)', () => {
   test('T-B4-27 / AC-CAS2-1: amount 0, missing evidence, a period of another market, a committed period and an unset policy are refused', async () => {
     const { w, a } = await adjusting('escalate')
@@ -108,6 +119,11 @@ describe('adjustment case (FR-CAS-002, D-B4-09)', () => {
       period: { id: w.periods[0]!.id, state: 'open' }, amount_minor: '-20000', approvals_required: 2,
       escalations: ['related_party', 'above_threshold'], included_in: 'next calculation of this period',
     })
+    // BUG-109: the stored preview names no one (erasure cannot clear it); the view carries the current name.
+    const [stored] = await ownerRows<{ names: string; name: string | null }>(
+      `SELECT jsonb_path_query_array(f.effect_preview, 'strict $.**.display_name')::text AS names, p.display_name AS name FROM case_file f, participant p WHERE f.id = $1 AND p.id = $2`, [submitted.id, a.participantId])
+    expect(stored!.names).toBe('[null]')
+    expect(submitted.effect_preview).toMatchObject({ payee: { participant: { display_name: stored!.name } } })
     const hooks = await withTenant({ tenantId: w.tenantId, userId: w.finance.id }, async (tx) => ({
       approvals: await ADJUSTMENT_CASE_TYPE.approvalsRequired!(tx, submitted),
       excluded: await ADJUSTMENT_CASE_TYPE.excludedApprovers!(tx, submitted),
@@ -122,10 +138,48 @@ describe('adjustment case (FR-CAS-002, D-B4-09)', () => {
     expect(second.json().data).toMatchObject({ state: 'approved' })
     expect(await ownerRows('SELECT amount_minor::text AS amount FROM adjustment_origin WHERE case_id = $1', [submitted.id])).toEqual([{ amount: '-20000' }])
     const small = await proposed(w, a.positionId, w.periods[0]!.id, '100', await user(w.tenantId, ['Commission analyst']))
-    expect(small.effect_preview).toMatchObject({ approvals_required: 1, escalations: [] })
+    // SEC-B4-7 (D-B5-21): the approved -200.00 of the same position and period counts towards the threshold.
+    expect(small.effect_preview).toMatchObject({ approvals_required: 2, escalations: ['above_threshold'] })
     const proposer = await user(w.tenantId, ['Commission analyst', 'Finance approver'])
     const own = await proposed(w, a.positionId, w.periods[0]!.id, '100', proposer)
     expect((await decide(own.id, proposer)).json().error.code).toBe('SOD_SELF_APPROVAL')
+  })
+
+  test('SEC-B4-7 / D-B5-21: adjustments of one position and period add up towards the second-approver threshold', async () => {
+    const { w, a } = await adjusting('escalate')
+    expect((await proposed(w, a.positionId, w.periods[0]!.id, '6000')).effect_preview).toMatchObject({ approvals_required: 1, escalations: [] })
+    // Another period of the same position, and a withdrawn case, do not count.
+    expect((await proposed(w, a.positionId, w.periods[4]!.id, '6000')).effect_preview).toMatchObject({ approvals_required: 1 })
+    const withdrawn = await proposed(w, a.positionId, w.periods[0]!.id, '-100')
+    expect(withdrawn.effect_preview).toMatchObject({ approvals_required: 1 })
+    await call(app, { method: 'POST', url: `/v1/cases/${withdrawn.id}/withdraw`, as: w.analyst, body: { reason: 'Duplicate' } })
+    const split = await proposed(w, a.positionId, w.periods[0]!.id, '-4500')
+    expect(split.effect_preview).toMatchObject({ approvals_required: 2, escalations: ['above_threshold'] })
+    expect(split.approvals_required).toBe(2)
+  })
+
+  test('SEC-B4-7 / D-B5-21: two submits of one position at the same time are serialised, so the second counts the first', async () => {
+    const { w, a } = await adjusting('escalate')
+    const prepared = async () => {
+      const opened = await open(w, a.positionId, w.periods[0]!.id, '6000')
+      const id = opened.json().data.id as string
+      await call(app, { method: 'POST', url: `/v1/cases/${id}/evidence`, as: w.analyst, idempotencyKey: true, body: { document_id: await evidenceDocument(w.analyst) } })
+      return id
+    }
+    const ids = [await prepared(), await prepared()]
+    const holder = await getOwnerPool().connect()
+    try {
+      // Holding the position's adjustment lock lines both submits up behind it, then releases them together.
+      await holder.query('BEGIN')
+      await holder.query(`SELECT pg_advisory_xact_lock(hashtextextended('adjustment:' || $1 || ':' || $2, 0))`, [w.tenantId, a.positionId])
+      const submits = Promise.all(ids.map((id) => call(app, { method: 'POST', url: `/v1/cases/${id}/submit`, as: w.analyst, body: {} })))
+      await lockWaiters(2)
+      await holder.query('COMMIT')
+      const required = (await submits).map((submitted) => submitted.json().data.approvals_required as number)
+      expect(required.sort()).toEqual([1, 2])
+    } finally {
+      holder.release()
+    }
   })
 
   test('AC-49.1 / BR-ADJ-03: a related assignee who edits, or a related user who submits, is checked like the opener', async () => {
@@ -241,15 +295,6 @@ describe('adjustment case (FR-CAS-002, D-B4-09)', () => {
     await call(app, { method: 'GET', url: `/v1/runs/${runId}/review`, as: w.analyst })
     const adjustment = await proposed(w, a.positionId, w.periods[0]!.id, '700')
     const holder = await getOwnerPool().connect()
-    const lockWaiters = async (count: number) => {
-      for (let i = 0; i < 200; i++) {
-        const { rows } = await holder.query<{ n: number }>(
-          `SELECT count(*)::int AS n FROM pg_stat_activity WHERE datname = current_database() AND wait_event_type = 'Lock' AND pid <> pg_backend_pid()`)
-        if (rows[0]!.n >= count) return
-        await new Promise((resolve) => setTimeout(resolve, 25))
-      }
-      throw new Error(`fewer than ${count} lock waiters`)
-    }
     try {
       // The holder's uncommitted origin of the same case: the approval stops at its own insert (unique case_id), after it
       // took the periods lock shared, and stays in flight while the commit arrives and waits for that lock.

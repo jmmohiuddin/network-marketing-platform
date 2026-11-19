@@ -16,14 +16,14 @@ const fixturePayload = z.strictObject({ amount_minor: z.string().regex(/^-?\d{1,
 type FixturePayload = z.infer<typeof fixturePayload>
 
 /**
- * The 'adjustment' slot with a market row (created through the owner pool) as its subject and existing catalogue
- * permissions: read compliance.read, create import.manage, decide mapping.approve. Its hooks show where they run:
+ * The 'grievance' slot (B5 section B LOW-1: money types must carry approvals_required) with a market row (created
+ * through the owner pool) as its subject and existing catalogue permissions: read compliance.read, create import.manage, decide mapping.approve. Its hooks show where they run:
  * validateCreate refuses amount -999 (409 FIXTURE_REFUSED), effectPreview echoes the amount, dueAt is two days after
  * submission, onDecision writes FIXTURE.CASE_DECIDED in the decision's transaction and throws when the payload asks for
  * it (atomicity test).
  */
 export const FIXTURE_CASE_TYPE: CaseTypeDefinition<FixturePayload> = {
-  type: 'adjustment',
+  type: 'grievance',
   subjectTypes: [FIXTURE_SUBJECT],
   reasonCodes: FIXTURE_REASONS,
   evidenceRequired: true,
@@ -57,7 +57,7 @@ export function openFixtureCase(
 ): Promise<LightMyRequestResponse> {
   return call(app, {
     method: 'POST', url: '/v1/cases', as, idempotencyKey: true,
-    body: { type: 'adjustment', subject_type: FIXTURE_SUBJECT, subject_id: marketId, reason_code: FIXTURE_REASONS[0], payload },
+    body: { type: 'grievance', subject_type: FIXTURE_SUBJECT, subject_id: marketId, reason_code: FIXTURE_REASONS[0], payload },
   })
 }
 

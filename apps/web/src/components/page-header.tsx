@@ -8,18 +8,18 @@ export interface Crumb {
   readonly href?: string
 }
 
-/** sc_09 l.7 breadcrumbs; the last item is the current page, not a link. */
-export function Breadcrumbs({ items }: { readonly items: readonly Crumb[] }) {
+/** sc_09 l.7 breadcrumbs; the last item is the current page, not a link. `touch`: portal size (16 px, 44 px targets). */
+export function Breadcrumbs({ items, touch = false }: { readonly items: readonly Crumb[]; readonly touch?: boolean }) {
   return (
     <nav aria-label="Breadcrumb">
-      <ol className="flex flex-wrap items-center gap-space-xs text-on-surface-variant font-caption text-caption">
+      <ol className={`flex flex-wrap items-center gap-space-xs text-on-surface-variant ${touch ? 'font-body-lg text-body-lg' : 'font-caption text-caption'}`}>
         {items.map((item, index) => {
           const last = index === items.length - 1
           return (
             <li key={`${item.label}-${index}`} className="flex items-center gap-space-xs">
               {last || item.href === undefined
                 ? <span aria-current={last ? 'page' : undefined} className={last ? 'text-on-surface font-semibold' : undefined}>{item.label}</span>
-                : <Link href={item.href} className="hover:text-primary hover:underline transition-colors">{item.label}</Link>}
+                : <Link href={item.href} className={`hover:text-primary hover:underline transition-colors ${touch ? 'min-h-11 inline-flex items-center' : ''}`}>{item.label}</Link>}
               {!last && <Icon name="chevron_right" size={14} />}
             </li>
           )

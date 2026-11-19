@@ -154,3 +154,35 @@ _Agent: backend. Read before every task; update after every task. Keep concise �
 - OpenAPI: PAY/TAX routes are session-only, so they are not in /v1/openapi.json (the document lists key-accessible paths); payout.* webhook topics are already in WEBHOOK_TOPICS.
 - Integrator: ledModule + ledCaseTypes still unmounted; their isolation cases/probes are needed when mounted.
 - W1/W2 (B4 review): case `approvals_required` is `1|2|null` everywhere — null on every open row of GET /v1/cases and on an open case whose hook refuses; the open single-case value is advisory for the reader (PLAN §2). Related-party withdraw of a declaration about the caller -> 422 SOD_SELF_APPROVAL (show the message); withdraw takes no Idempotency-Key (PLAN §2 exception).
+
+## From B5 BE3 (2026-11-19)
+- BLOCKER for merge: PLAN 1.7 lib contract (lib/auth requirePortal/assertPortalActive/AuthContext.participantId+participantTerminated, lib/db inPortal + inTenant refusing portal, lib/session portal resolveAuth, test/helpers createPortalUser) not in tree; BE3 code and tests import those names.
+- `.gitignore` `dist/` ignores apps/api/src/modules/dist; vitest default exclude `**/dist/**` skips its tests. Integrator: add `!apps/api/src/modules/dist/` and set vitest `exclude: ['**/node_modules/**', '**/.next/**', 'packages/*/dist/**', 'apps/*/dist/**']` (or rename the module dir).
+- CAS openSystemCase records `opened` with no actor, which case_event_insert_guard refuses in a portal tx; PAY writes the SHARED_ACCOUNT review case directly (shortcut). Offer a CAS facade (BE2/integrator).
+- Integrator: mount distModule in modules/index.ts; isolation cases + role-matrix rows + T-B5-40 for GET /v1/me/notifications, POST /v1/me/notifications/:id/read, POST /v1/me/notifications/read-all, GET/PUT /v1/me/notification-preferences, GET /v1/me/team, GET /v1/me/customers, GET /v1/me/customers/:id, GET/PUT /v1/me/bank-details, GET/PUT /v1/me/tax-profile.
+
+## From B5 BE3 review fixes (2026-11-19)
+- Still BLOCKING (not BE3-owned): §1.7 lib contract absent from tree (API cannot boot, tsc fails); .gitignore `dist/` + vitest default exclude hide modules/dist; distModule unmounted (integrator). Fixes as listed under "From B5 BE3".
+- PLAN owner: amend §2.3/2.5 page parameter `after` -> house `cursor` + meta.next_cursor (all portal routes of BE2 and BE3 use cursor); §2.4 add 409 BANK_DETAIL_REVIEW_PENDING {case_id} (PUT /v1/me/bank-details) and staff decision 409 BANK_DETAIL_SUPERSEDED; §2.3 team search meta {truncated}; §2.5 audit NOTIFICATION.READ/READ_ALL and delivery NOTIFICATION.* events; staff tax PUT now also sends tax_profile.changed.
+- PLAN owner (D-B5-11): my customers shows every servicing row of a position owned now (incl. rows that ended before a transfer) and order_count per (customer, position) all-time, repeated on each servicing row of the same pair. Code follows D-B5-11 as written; change only if the owner bounds it to the ownership period.
+- CAS owner: SHARED_ACCOUNT review still written by PAY raw SQL; its `opened` event actor is the portal user while opened_by_kind = 'system' (case_event_insert_guard demands the acting portal user). A CAS facade `openPortalSystemCase` would remove the duplication.
+- W1: handle 409 BANK_DETAIL_REVIEW_PENDING on the bank-details form (show pending_review instead of the form).
+- Deploy: drain or mark failed B4 `pay.notice.send` jobs still queued with template 'payout.returned' (now fails strict payload parsing) before deploying B5.
+
+## From B5 BE1 (2026-11-19)
+- Integrator: land the PLAN 1.7 lib contract (patch b5-be1-lib-contract.patch in the BE1 scratchpad); mount prvCaseTypes in modules/index.ts caseTypes; isolation cases + role-matrix probes for every BE1 route (list in the BE1 result); T-B5-40 allowlist.
+- BE2/CAS: openSystemCase should record the acting portal user in a portal tx; then prv/requests.ts openPortalPrivacyCase goes.
+- TS-28 replay-after-erasure not tested in prv (needs comp+pay world fixtures in test/helpers).
+- Portal deferred_reasons cannot see payout_hold (portal_hidden policy): a hold-only deferral lists no reason.
+
+## From B5 BE2 (2026-11-19)
+- comp/portal.ts shims lib §1.7 (requirePortal/assertPortalActive/inPortal); swap to lib exports once lib/auth.ts, lib/db.ts, lib/session.ts carry them (they flickered in and were reverted during BE2).
+- Portal HTTP route tests with a realm 'portal' session (createPortalUser) not in tree: logic tested in portal transactions; HTTP only tested for staff 403 / anon 401. PARTICIPANT_TERMINATED on /v1/me/rank and POST /v1/me/disputes untested.
+- Integrator: isolation cases + role-matrix/T-B5-40 rows for the 8 portal routes; compModule already lists DISPUTE_CASE_TYPE in compCaseTypes and overdueDisputesJob in jobs.
+- (B5 review, IAM/PRV) TS-28/T-B5-39 replay assertion still missing: a cross-module test under apps/api/test/ must build a committed run (comp/pay fixtures), erase its payee through the privacy case, compare row hashes of postings/result lines/relationships/snapshots and replay to the same result hash (integrator/QA; outside iam/prv/par).
+- (B5 review) Erased portal requesters receive no mail confirmation (PLAN D-B5-16 notifies by in-app notice only; the account is deactivated at once). If a mailed confirmation is wanted, it needs a post-commit job with an address sealed under privacy_request:<id> and cleared after send (PLAN change).
+
+## From B5 API integration (2026-11-19)
+- QA: TS-28/T-B5-39 cross-module replay-after-erasure test (committed run, erase payee via privacy case, row hashes + replay result hash) still missing.
+- PLAN owner: §1.7 participantTerminated is true for a portal participant with no current position (vacuous "all terminated"); confirm D-B5-06 intent.
+- Not done here: nmp_test / nmp_e2e migrate+reset+seed:e2e (PLAN §P integrator list); nmp_dev migrated to 0510.

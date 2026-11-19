@@ -24,7 +24,7 @@ import { bankVersion, IBAN, setSettings, WEBHOOK_SECRET, webhook } from '../../s
 import { GOLDEN_EXPECTED, GOLDEN_INPUT, packRules, personal, putRule, revisionOf } from '../../src/modules/pln/test-support.js'
 import { supportScopePermission } from '../../src/modules/support/index.js'
 import {
-  activePlanVersion, baseRoleId, call, createMarket, createSignedInUser, createTenant, ownerRows, runQueuedJobs, type CallOptions, type TestTenant,
+  activePlanVersion, baseRoleId, call, createMarket, createPortalUser, createSignedInUser, createTenant, ownerRows, runQueuedJobs, type CallOptions, type TestTenant,
   type TestUser,
 } from '../helpers/index.js'
 
@@ -148,6 +148,12 @@ export interface Targets {
   readonly ledgerAccount: string
   readonly journalEntry: string
   readonly journalExport: string
+  /** B5: the payee of resultLine, with a portal account (Seeded.portal), a dispute of that line, an access request, a notification. */
+  readonly portalParticipant: string
+  readonly portalEmail: string
+  readonly dispute: string
+  readonly privacyRequest: string
+  readonly notification: string
   /** Tenant B's slug: tenant A's credentials are tried against it. */
   readonly otherSlug: string
 }
@@ -160,6 +166,8 @@ export interface Seeded {
   readonly consultant: TestUser
   /** Requested and holds tenant A's approved support session; work region eu, as tenant A. */
   readonly vendor: TestUser
+  /** The portal session of targets.portalParticipant (step-up fresh). */
+  readonly portal: TestUser
   readonly targets: Targets
 }
 
@@ -569,6 +577,25 @@ async function latestSettingsVersion(tenantId: string): Promise<number> {
   return row!.version
 }
 
+/** PLAN B5: a portal account for the line's payee, who disputes the line and asks for their data; the run's commit notified them. */
+async function seedPortal(app: FastifyInstance, tenantId: string, lineId: string) {
+  const [payee] = await ownerRows<{ id: string }>('SELECT payee_participant_id AS id FROM result_line WHERE id = $1', [lineId])
+  const portal = await createPortalUser({ tenantId, participantId: payee!.id, stepUp: true })
+  const dispute = await send(app, 201, 'dispute', {
+    method: 'POST', url: '/v1/me/disputes', as: portal, body: { line_id: lineId, message: 'isolation' }, idempotencyKey: true,
+  })
+  const request = await send(app, 201, 'privacy request', {
+    method: 'POST', url: '/v1/me/privacy-requests', as: portal, body: { type: 'access' }, idempotencyKey: true,
+  })
+  const [notification] = await ownerRows<{ id: string }>(
+    `SELECT id FROM notification WHERE recipient_participant_id = $1 AND channel = 'in_app' ORDER BY id LIMIT 1`, [payee!.id])
+  if (notification === undefined) throw new Error('seed: the committed run notified no portal participant')
+  return {
+    portal, portalParticipant: payee!.id, portalEmail: portal.email, dispute: dispute.data.case_id as string,
+    privacyRequest: request.data.id as string, notification: notification.id,
+  }
+}
+
 /** Seeds tenant A through the API; the database must have been reset (resetApiDb) and the app built with every module. */
 export async function seedTenants(app: FastifyInstance): Promise<Seeded> {
   const a = await createTenant()
@@ -601,13 +628,14 @@ export async function seedTenants(app: FastifyInstance): Promise<Seeded> {
     body: { participant_id: genealogy.participant, relation: 'relative' },
   })
   const freeDocument = await document(app, owner)
+  const { portal, ...portalTargets } = await seedPortal(app, a.id, compensation.resultLine)
   const targets: Targets = {
     tenant: a.id, email: owner.email, ...people, ...imports, ...snapshot, export: exported.data.id as string, supportSession,
     market: MARKET_CODE, ...structure, changeRequest, ...launch, ...integrations, ...genealogy, ...orders, ...compensation, ...payouts, ...ledger,
-    relatedParty: related.data.id as string, freeDocument,
+    relatedParty: related.data.id as string, freeDocument, ...portalTargets,
     settingsVersion: await latestSettingsVersion(a.id), otherSlug: b.slug,
   }
-  return { a, b, owner, consultant, vendor, targets }
+  return { a, b, owner, consultant, vendor, portal, targets }
 }
 
 /** The same targets with every id, email, name and market replaced by one that exists nowhere (existence probe). */
@@ -624,7 +652,8 @@ export function phantomOf(targets: Targets): Targets {
     heldEvent: id(), lateTransaction: id(), connector: id(), plan: id(), activeVersion: id(), golden: id(), guardrailDecision: id(),
     compMarket: id(), compCalendar: id(), period: id(), run: id(), resultLine: id(), payee: id(), simulation: id(), restatement: id(),
     payoutProvider: id(), payoutBatch: id(), payoutException: id(), payoutPayee: id(), payoutHold: id(), relatedParty: id(),
-    ledgerAccount: id(), journalEntry: id(), journalExport: id(),
+    ledgerAccount: id(), journalEntry: id(), journalExport: id(), portalParticipant: id(), portalEmail: `nobody-${id()}@nowhere.example`,
+    dispute: id(), privacyRequest: id(), notification: id(),
   }
 }
 

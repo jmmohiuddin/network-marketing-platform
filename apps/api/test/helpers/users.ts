@@ -85,13 +85,13 @@ async function grantRoles(user: { id: string; tenantId: string }, roles: readonl
   }
 }
 
-async function openSession(user: { id: string; tenantId: string | null }, mfa: MfaState, stepUp: boolean) {
+async function openSession(user: { id: string; tenantId: string | null }, mfa: MfaState, stepUp: boolean, portal = false) {
   const token = randomBytes(32).toString('base64url')
   const verified = mfa === 'verified' || stepUp
   const { rows } = await getOwnerPool().query<{ id: string }>(
     `INSERT INTO session (token_hash, user_id, tenant_id, realm, assurance_level, mfa_verified_at, step_up_at, expires_at)
      VALUES ($1, $2, $3, $4, $5, $6, $7, now() + make_interval(mins => $8)) RETURNING id`,
-    [hashToken(token), user.id, user.tenantId, user.tenantId === null ? 'vendor' : 'tenant', verified ? 'aal2' : 'aal1',
+    [hashToken(token), user.id, user.tenantId, portal ? 'portal' : user.tenantId === null ? 'vendor' : 'tenant', verified ? 'aal2' : 'aal1',
       verified ? new Date() : null, stepUp ? new Date() : null, SESSION_MINUTES],
   )
   return { token, sessionId: rows[0]!.id }
@@ -137,4 +137,34 @@ export async function ownerRows<T extends Record<string, unknown>>(sql: string, 
 export async function auditActions(tenantId: string): Promise<string[]> {
   const rows = await ownerRows<{ action: string }>('SELECT action FROM audit.audit_event WHERE tenant_id = $1 ORDER BY seq', [tenantId])
   return rows.map((row) => row.action)
+}
+
+export interface PortalUserOptions {
+  readonly tenantId: string
+  readonly participantId: string
+  /** Re-authenticated just now (step_up_at fresh). */
+  readonly stepUp?: boolean
+  /** Default 'none' (MFA is optional for portal accounts). */
+  readonly mfa?: MfaState
+  readonly email?: string
+  readonly passwordHash?: string
+}
+
+/** An active portal account of the participant (owner-inserted) with a live portal session (D-B5-02). */
+export async function createPortalUser(options: PortalUserOptions): Promise<TestUser> {
+  const email = (options.email ?? `portal-${randomBytes(4).toString('hex')}@example.test`).toLowerCase()
+  const owner = getOwnerPool()
+  const { rows } = await owner.query<{ id: string }>(
+    `INSERT INTO user_account (tenant_id, realm, idp_subject, email, state, participant_id)
+     VALUES ($1, 'portal', gen_random_uuid()::text, $2, 'active', $3) RETURNING id`,
+    [options.tenantId, email, options.participantId],
+  )
+  const id = rows[0]!.id
+  if (options.passwordHash !== undefined) {
+    await owner.query('INSERT INTO password_credential (user_id, password_hash) VALUES ($1, $2)', [id, options.passwordHash])
+  }
+  const mfa = options.mfa ?? 'none'
+  const totpSecret = mfa === 'none' ? null : await enrol(id)
+  const { token, sessionId } = await openSession({ id, tenantId: options.tenantId }, mfa, options.stepUp === true, true)
+  return { id, tenantId: options.tenantId, email, sessionId, totpSecret, cookie: `${SESSION_COOKIE}=${token}` }
 }

@@ -59,9 +59,37 @@ async function receivableOf(tx: Tx, accountId: string): Promise<Receivable> {
   }
 }
 
+/**
+ * D-B5-22 (TK-B4-14): a proposer related to the payee (staff_related_users: the acting user, or the case's opener) never
+ * creates or submits its write-off; an unrelated colleague proposes it.
+ */
+async function assertUnrelatedProposer(tx: Tx, receivable: Receivable, openedBy: string | null): Promise<void> {
+  const { rows } = await tx.query<{ related: boolean }>(
+    'SELECT EXISTS (SELECT 1 FROM staff_related_users($1) AS r(id) WHERE r.id = app_user_id() OR r.id = $2::uuid) AS related',
+    [receivable.participantId, openedBy],
+  )
+  if (rows[0]!.related) throw new ApiError(422, 'WRITE_OFF_BLOCKED', 'You are related to this payee: an unrelated colleague proposes this write-off.', { reason: 'related_party' })
+}
+
+/**
+ * SEC-B4-7 (D-B5-21): submitted or approved write-offs of the same receivable since it became outstanding count
+ * towards the second-approver threshold, so splitting one write-off never avoids it.
+ */
+async function otherWriteOffsMinor(tx: Tx, accountId: string, receivable: Receivable, caseId: string): Promise<bigint> {
+  if (receivable.outstandingSince === null) return 0n
+  const { rows } = await tx.query<{ total: string }>(
+    `SELECT coalesce(sum((payload ->> 'amount_minor')::bigint), 0)::text AS total FROM case_file
+     WHERE type = 'write_off' AND subject_id = $1 AND state IN ('submitted', 'approved') AND id <> $2
+       AND coalesce(submitted_at, created_at) >= $3`,
+    [accountId, caseId, receivable.outstandingSince],
+  )
+  return BigInt(rows[0]!.total)
+}
+
 async function validateCreate(tx: Tx, subject: { readonly id: string }, p: Payload, _scope: readonly string[] | null, stored?: CaseRecord<Payload>) {
   await policyOf(tx)
   const receivable = await receivableOf(tx, subject.id)
+  await assertUnrelatedProposer(tx, receivable, stored?.opened_by ?? null)
   // Serialises the one-open-case check per receivable (not the market's ledger lock, which commits and PAY hold while
   // posting); CAS validates before it audits, so this lock is never awaited while holding the audit lock.
   await tx.query(`SELECT pg_advisory_xact_lock(hashtextextended('write_off:' || app_tenant_id() || ':' || $1, 0))`, [subject.id])
@@ -76,26 +104,29 @@ async function validateCreate(tx: Tx, subject: { readonly id: string }, p: Paylo
 }
 
 /** Why two approvals are needed (empty: one). */
-function escalations(policy: Policy, receivable: Receivable, amountMinor: bigint): string[] {
+function escalations(policy: Policy, receivable: Receivable, cumulativeMinor: bigint): string[] {
   return [
     ...(writeOffEligible(policy, receivable.amountMinor, receivable.ageDays) ? [] : ['not_eligible']),
-    ...(amountMinor > BigInt(policy.second_approver_above_minor) ? ['above_threshold'] : []),
+    ...(cumulativeMinor > BigInt(policy.second_approver_above_minor) ? ['above_threshold'] : []),
   ]
 }
 
 async function assess(tx: Tx, c: CaseRecord<Payload>) {
   const policy = await policyOf(tx)
   const receivable = await receivableOf(tx, c.subject_id)
-  const reasons = escalations(policy, receivable, BigInt(c.payload.amount_minor))
+  await assertUnrelatedProposer(tx, receivable, c.opened_by)
+  const cumulative = BigInt(c.payload.amount_minor) + await otherWriteOffsMinor(tx, c.subject_id, receivable, c.id)
+  const reasons = escalations(policy, receivable, cumulative)
   return { receivable, reasons, eligible: writeOffEligible(policy, receivable.amountMinor, receivable.ageDays), approvals: reasons.length > 0 ? 2 as const : 1 as const }
 }
 
 async function effectPreview(tx: Tx, c: CaseRecord<Payload>) {
   const { receivable, reasons, eligible, approvals } = await assess(tx, c)
   const { rows } = await tx.query<{ id: string; code: string }>('SELECT id, code FROM market WHERE id = $1', [receivable.marketId])
-  // Whose receivable it is: the case subject is only the account id (BUG-103).
-  const { rows: payee } = await tx.query<{ id: string; external_ref: string; display_name: string | null }>(
-    'SELECT id, external_ref, display_name FROM participant WHERE id = $1', [receivable.participantId])
+  // Whose receivable it is: the case subject is only the account id (BUG-103). The name stays null here: case views
+  // fill in the current one (BUG-109).
+  const { rows: payee } = await tx.query<{ id: string; external_ref: string; display_name: null }>(
+    'SELECT id, external_ref, NULL::text AS display_name FROM participant WHERE id = $1', [receivable.participantId])
   return {
     market: rows[0], payee: payee[0], receivable_minor: receivable.amountMinor.toString(), amount_minor: c.payload.amount_minor,
     after_minor: (receivable.amountMinor - BigInt(c.payload.amount_minor)).toString(), outstanding_since: receivable.outstandingSince,

@@ -110,3 +110,10 @@ _Agent: compensation. Read before every task; update after every task. Keep conc
 - 2M measured: snapshot load PG→arrays 26.0 s, peak RSS 667 MB (target ≤ 2 min); roll-up 12.7 ms p50; authz p95 0.99 ms; subtree page p95 2.8 ms but ROOT page 388 ms (> 300 ms: page query scans whole subtree — page children via relationship parent index / stored subtree_count instead); move 100k subtree 3.39 s (NFR-PERF-08 ≤ 10 min); full path build 38.6 s.
 - relationship EXCLUDE (DATABASE.md order tenant,kind,child,range): ADD CONSTRAINT 89.8 s at 100k; child-first 19.8 s; at 2M child-first > 900 s (timeout). Per-row GiST probe 3.07 ms vs btree 0.44 ms. Recommend: unique partial btree (tenant,kind,child) WHERE superseded_at IS NULL AND valid_to IS NULL + overlap check in trigger via (tenant,kind,child,valid_from) btree under the existing per-tree advisory lock.
 - Path build MUST run after ANALYZE: without stats it went quadratic (354 s at 100k vs 2.97 s).
+
+## 2026-11-19 — B5 review fixes (COMP/CAS)
+- Adjustment submits lock `pg_advisory_xact_lock(hashtextextended('adjustment:' || tenant || ':' || position, 0))` in effectPreview (submit only; the assign route takes the audit lock before approvals_required, so assess must not take it). It serialises the D-B5-21 threshold sum and the one-settlement-per-dispute check (assertUpheldDispute refuses another open/submitted/approved adjustment citing the dispute).
+- Overdue-dispute mails go out after the tenant tx commits (at-most-once, logged on failure).
+- openPortalCase parses the payload with the type's schema (cas parsePayload).
+- comp/portal.ts shim stays until PLAN §1.7 lands in lib (requirePortal/assertPortalActive(auth)/inPortal, portal resolveAuth, createPortalUser); then switch portal-routes.ts to lib (assertPortalActive takes auth, inPortal fn gets tx only) and delete portal.ts. comp/portal-routes.test.ts (real portal sessions, incl. cross-participant idempotency) is red until then.
+- SQL gotcha: one $n used as both uuid and text → INTERNAL_ERROR (inconsistent types); compare via column::text.

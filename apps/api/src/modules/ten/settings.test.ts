@@ -241,11 +241,11 @@ describe('GET /v1/settings and value_since (BUG-025, T-B1-07)', () => {
 
     expect(Object.keys(response.json().data.values).sort()).toEqual([
       'adjustments.policy', 'compliance.active_pv_minor', 'compliance.late_order_day', 'compliance.personal_share_flag',
-      'compliance.rank_thresholds_pv_minor', 'money.clawback_policy', 'money.rounding_mode', 'orders.attribution_precedence',
+      'compliance.rank_thresholds_pv_minor', 'disputes.policy', 'money.clawback_policy', 'money.rounding_mode', 'orders.attribution_precedence',
       'orders.crediting_event', 'orders.new_buyer_type', 'orders.purpose_required', 'orders.restocking_fee_volume_effect',
       'payouts.bank_detail_cooling_off_hours', 'payouts.dormant_after_days', 'payouts.market_policy',
       'payouts.provider_review_reminder_days', 'payouts.shared_account_threshold', 'plan.activation_notice_days',
-      'runs.exception_thresholds', 'write_offs.policy',
+      'portal.customer_contact_visible', 'privacy.policy', 'runs.exception_thresholds', 'write_offs.policy',
     ])
     expect(refused.statusCode).toBe(403)
     expect(structure.statusCode).toBe(404)

@@ -36,8 +36,11 @@ const STAFF: readonly { local: string; name: string; role: BaseRoleName }[] = [
   { local: 'analyst', name: 'Commission Analyst', role: 'Commission analyst' },
   { local: 'support', name: 'Support Agent', role: 'Support agent' },
   { local: 'dpo', name: 'Data Protection Officer', role: 'DPO' },
+  { local: 'dpo2', name: 'Second Data Protection Officer', role: 'DPO' }, // B5 privacy decisions need a second DPO
   { local: 'planadmin', name: 'Plan Administrator', role: 'Plan administrator' },
   { local: 'payout', name: 'Payout Officer', role: 'Payout officer' },
+  // BUG-111: the result file is imported by someone other than the preparer of its batch or bank file (SOD-01).
+  { local: 'payout2', name: 'Second Payout Officer', role: 'Payout officer' },
   { local: 'consultant', name: 'Implementation Consultant', role: 'Implementation consultant' },
   { local: 'executive', name: 'Executive Read-only', role: 'Executive read-only' },
 ]
@@ -349,7 +352,7 @@ export async function seedFixturePlanMarket(expectedDatabase: string, secretKey:
     for (const [child, parent] of [[b, a], [c, b]]) {
       await tx.query(`SELECT gen_apply_relationship('sponsor', $1, $2, NULL, $3, 'enrolment', NULL, NULL)`, [child, parent, at])
     }
-    const customer = await fixtureParticipant(tx, 'DE-K', setup!.market_id, retail, at)
+    const customer = await fixtureParticipant(tx, 'DE-K', setup!.market_id, retail, at, 'de-k@example.test') // B5: contact visibility
     await tx.query(`SELECT crm_set_servicer($1, $2, 'enrolment', $3, NULL, NULL)`, [customer, c, at])
     await asSelf(tx, ids.admin, () => tx.query(
       `INSERT INTO product_volume_map (tenant_id, market_id, sku, item_class, volumes, valid_from, reason, created_by)

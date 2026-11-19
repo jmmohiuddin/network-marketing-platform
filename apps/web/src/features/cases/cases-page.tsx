@@ -19,9 +19,11 @@ import { useResource, type Query } from '../../lib/use-resource'
 import { shortId } from '../admin/format'
 import { LoadFailure } from '../admin/page-states'
 import { tableError, usePagedList } from '../admin/resource'
-import { caseTypeLabel, readableTypes, reasonLabel, STATE_BADGES, STATE_LABELS, type CaseTypeInfo } from './format'
+import { caseTypeLabel, openerText, readableTypes, reasonLabel, STATE_BADGES, STATE_LABELS, type CaseTypeInfo } from './format'
 import { useRefLabel } from './refs'
-import type { CaseCounts, CaseRecord, CaseState } from './types'
+import type { DisputePreview } from './b5-effects'
+import { referenceOf } from '../privacy/format'
+import type { CaseCounts, CaseRecord, CaseState, WriteOffPreview } from './types'
 
 const ID_PREFIX = 'cases'
 const ALL = 'all'
@@ -43,16 +45,29 @@ function CaseKpis({ counts }: { readonly counts: readonly CaseCounts[] | null })
   )
 }
 
+const SUBJECT_KIND = 'font-caption text-caption text-secondary'
+const sentenceCase = (text: string): string => text.charAt(0).toUpperCase() + text.slice(1)
+
 /**
- * Which position or participant the case is about (BUG-070), with its kind under it.
+ * Which position or participant the case is about (BUG-070), with its kind under it. A write-off names whose
+ * receivable it is and a dispute the disputed position, from the case's preview (BUG-108: the detail's source); a
+ * privacy request links to its SC-15 page.
  * shortcut: one GET per row (case rows carry only subject ids, PLAN B2 GET /v1/cases); add subject refs to the list to drop it.
  */
-function SubjectCell({ subjectType, id }: { readonly subjectType: string; readonly id: string }) {
-  const label = useRefLabel(subjectType, id)
+function SubjectCell({ row }: { readonly row: CaseRecord }) {
+  const payee = row.type === 'write_off' ? (row.effect_preview as WriteOffPreview | null)?.payee : undefined
+  const disputed = row.type === 'dispute' ? (row.effect_preview as DisputePreview | null)?.position : undefined
+  const named = payee !== undefined || disputed !== undefined || row.type === 'privacy'
+  const label = useRefLabel(named ? null : row.subject_type, named ? null : row.subject_id)
+  if (row.type === 'privacy') {
+    return <Link className="text-primary font-semibold hover:underline" href={`/privacy/${row.subject_id}`}>Privacy request {referenceOf(row.subject_id)}</Link>
+  }
   return (
     <div className="flex flex-col">
-      <span className="font-data-mono-sm text-data-mono-sm">{label}</span>
-      <span className="font-caption text-caption text-secondary capitalize">{subjectType.replace(/_/g, ' ')}</span>
+      <span className="font-data-mono-sm text-data-mono-sm">
+        {payee !== undefined ? `${payee.external_ref}${payee.display_name === null ? '' : ` · ${payee.display_name}`}` : disputed?.position_ref ?? label}
+      </span>
+      <span className={SUBJECT_KIND}>{payee !== undefined ? 'Clawback receivable' : disputed !== undefined ? 'Disputed line' : sentenceCase(row.subject_type.replace(/_/g, ' '))}</span>
     </div>
   )
 }
@@ -67,11 +82,11 @@ function caseColumns(myId: string) {
         </div>
       ),
     },
-    { key: 'subject', header: 'Subject', cell: (row: CaseRecord) => <SubjectCell subjectType={row.subject_type} id={row.subject_id} /> },
+    { key: 'subject', header: 'Subject', cell: (row: CaseRecord) => <SubjectCell row={row} /> },
     { key: 'reason', header: 'Reason', cell: (row: CaseRecord) => reasonLabel(row.reason_code) },
     {
       key: 'opened', header: 'Opened', cell: (row: CaseRecord) => (
-        <div className="flex flex-col"><span>{formatDateTime(row.created_at)}</span><span className="font-caption text-caption text-secondary">{row.opened_by_kind === 'system' ? 'By the system' : row.opened_by === myId ? 'By you' : 'By another user'}</span></div>
+        <div className="flex flex-col"><span>{formatDateTime(row.created_at)}</span><span className="font-caption text-caption text-secondary">By {openerText(row, myId)}</span></div>
       ),
     },
     { key: 'assigned', header: 'Assigned', cell: (row: CaseRecord) => (row.assigned_to === null ? '—' : row.assigned_to === myId ? 'You' : 'Another user') },
@@ -151,7 +166,7 @@ export function CasesPage() {
     <>
       <PageHeader
         title="Cases"
-        summary="Genealogy changes, transfers, duplicate reviews, restatements, manual adjustments, write-offs, bank-detail changes and returned payments. Each case keeps its evidence and history and is decided by a second person."
+        summary="Genealogy changes, transfers, duplicate reviews, restatements, manual adjustments, write-offs, bank-detail changes, returned payments, commission disputes and privacy requests. Each case keeps its evidence and history and is decided by a second person."
         actions={(
           <>
             {can('case.duplicate.read') && <LinkButton href="/cases/duplicates" icon="group_remove">Duplicate investigation</LinkButton>}

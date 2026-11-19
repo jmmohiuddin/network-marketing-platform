@@ -75,6 +75,11 @@ describe('tax profile (AC-48.1, AC-TAX1-1, T-B4-25, T-B4-26)', () => {
     expect(JSON.stringify(profile)).not.toContain('sealed')
     const stored = await ownerRows<{ tax_id_sealed: string }>('SELECT tax_id_sealed FROM tax_profile WHERE participant_id = $1', [payee])
     expect(stored.every((row) => !row.tax_id_sealed.includes('123456789'))).toBe(true)
+    // D-B5-14: a staff change is a security notice to the payee too, masked only.
+    const notices = await ownerRows<{ params: Record<string, unknown> }>(
+      `SELECT params FROM notification WHERE recipient_participant_id = $1 AND template = 'tax_profile.changed' AND channel = 'in_app'`, [payee])
+    expect(notices).toHaveLength(2)
+    expect(JSON.stringify(notices)).not.toContain('123456789')
   })
 
   test('unmask needs participant.unmask and step-up, answers no-store and audits without the value', async () => {

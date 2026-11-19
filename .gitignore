@@ -1,6 +1,8 @@
 node_modules/
 .next/
 dist/
+# the DIST feature module is source, not build output
+!apps/api/src/modules/dist/
 coverage/
 .env
 .env.*

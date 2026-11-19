@@ -76,6 +76,10 @@ const SETTING_READERS: Readonly<Record<SettingKey, Needs>> = {
   'payouts.provider_review_reminder_days': any('settings.manage', 'settings.approve', 'payout.prepare'),
   'adjustments.policy': any('settings.manage', 'settings.approve', 'case.adjustment.create'),
   'write_offs.policy': any('settings.manage', 'settings.approve', 'case.write_off.create'),
+  // PLAN B5 D-B5-20.
+  'disputes.policy': any('settings.manage', 'settings.approve', 'case.dispute.read'),
+  'privacy.policy': any('settings.manage', 'settings.approve', 'privacy.manage'),
+  'portal.customer_contact_visible': any('settings.manage', 'settings.approve', 'privacy.manage'),
 }
 const SETTING_KEYS = Object.keys(SETTING_READERS) as SettingKey[]
 const MAPPING_READERS = any('import.manage', 'mapping.edit', 'mapping.approve')
@@ -91,10 +95,12 @@ const INTEGRATION = all('integration.manage')
 const UPLOADERS = any(
   'market.manage', 'market.signoff', 'case.genealogy.create', 'case.duplicate.create', 'restatement.request', 'agreement.publish',
   'case.adjustment.create', 'case.bank_detail.create', 'case.returned_payment.create', 'case.write_off.create',
+  // PLAN B5: the dispute and privacy case types' create permissions.
+  'case.dispute.approve', 'privacy.manage',
 )
 const CASE_READERS = any(
   'case.genealogy.read', 'case.duplicate.read', 'case.restatement.read', 'case.adjustment.read', 'case.bank_detail.read', 'case.returned_payment.read',
-  'case.write_off.read',
+  'case.write_off.read', 'case.dispute.read', 'privacy.manage',
 )
 const PARTICIPANT_READ = all('participant.read')
 const PARTICIPANT_MANAGE = all('participant.manage')
@@ -413,6 +419,46 @@ const PROBES: Readonly<Record<string, readonly Probe[]>> = {
   'GET /v1/participants/:id/tax-profile': [read(PARTICIPANT_READ, `/v1/participants/${NOWHERE}/tax-profile`)],
   'PUT /v1/participants/:id/tax-profile': [probe(all('tax.manage'), 'PUT', `/v1/participants/${NOWHERE}/tax-profile`, {})],
   'POST /v1/participants/:id/tax-profile/unmask': [probe(all('participant.unmask'), 'POST', `/v1/participants/${NOWHERE}/tax-profile/unmask`)],
+  // IAM B5 (PLAN B5 2.1): portal sign-in is public; re-authentication and every /v1/me/** route take portal sessions only.
+  'POST /v1/auth/portal-sessions': [probe(everyone, 'POST', '/v1/auth/portal-sessions', {})],
+  'POST /v1/auth/portal-codes': [probe(everyone, 'POST', '/v1/auth/portal-codes', {})],
+  'POST /v1/auth/portal-firebase-sessions': [probe(everyone, 'POST', '/v1/auth/portal-firebase-sessions', {})],
+  'POST /v1/auth/sessions/current/reauth': [probe(nobody, 'POST', '/v1/auth/sessions/current/reauth', {})],
+  'GET /v1/participants/:id/portal-account': [read(PARTICIPANT_READ, `/v1/participants/${NOWHERE}/portal-account`)],
+  'POST /v1/participants/:id/portal-account': [probe(PARTICIPANT_MANAGE, 'POST', `/v1/participants/${NOWHERE}/portal-account`)],
+  'POST /v1/participants/:id/portal-account/invitation': [probe(PARTICIPANT_MANAGE, 'POST', `/v1/participants/${NOWHERE}/portal-account/invitation`)],
+  'POST /v1/participants/:id/portal-account/deactivate': [probe(PARTICIPANT_MANAGE, 'POST', `/v1/participants/${NOWHERE}/portal-account/deactivate`, {})],
+  'GET /v1/me/statements': [read(nobody, '/v1/me/statements')],
+  'GET /v1/me/statements/:runId': [read(nobody, `/v1/me/statements/${NOWHERE}`)],
+  'GET /v1/me/statements/:runId/download': [read(nobody, `/v1/me/statements/${NOWHERE}/download`)],
+  'GET /v1/me/statement-lines/:id/explanation': [read(nobody, `/v1/me/statement-lines/${NOWHERE}/explanation`)],
+  'GET /v1/me/rank': [read(nobody, '/v1/me/rank')],
+  'POST /v1/me/disputes': [probe(nobody, 'POST', '/v1/me/disputes', {})],
+  'GET /v1/me/disputes': [read(nobody, '/v1/me/disputes')],
+  'GET /v1/me/disputes/:id': [read(nobody, `/v1/me/disputes/${NOWHERE}`)],
+  'GET /v1/me/team': [read(nobody, '/v1/me/team')],
+  'GET /v1/me/customers': [read(nobody, '/v1/me/customers')],
+  'GET /v1/me/customers/:id': [read(nobody, `/v1/me/customers/${NOWHERE}`)],
+  'GET /v1/me/bank-details': [read(nobody, '/v1/me/bank-details')],
+  'PUT /v1/me/bank-details': [probe(nobody, 'PUT', '/v1/me/bank-details', {})],
+  'GET /v1/me/tax-profile': [read(nobody, '/v1/me/tax-profile')],
+  'PUT /v1/me/tax-profile': [probe(nobody, 'PUT', '/v1/me/tax-profile', {})],
+  'GET /v1/me/notifications': [read(nobody, '/v1/me/notifications')],
+  'POST /v1/me/notifications/:id/read': [probe(nobody, 'POST', `/v1/me/notifications/${NOWHERE}/read`)],
+  'POST /v1/me/notifications/read-all': [probe(nobody, 'POST', '/v1/me/notifications/read-all')],
+  'GET /v1/me/notification-preferences': [read(nobody, '/v1/me/notification-preferences')],
+  'PUT /v1/me/notification-preferences': [probe(nobody, 'PUT', '/v1/me/notification-preferences', {})],
+  'POST /v1/me/privacy-requests': [probe(nobody, 'POST', '/v1/me/privacy-requests', {})],
+  'GET /v1/me/privacy-requests': [read(nobody, '/v1/me/privacy-requests')],
+  'GET /v1/me/privacy-requests/:id/export': [read(nobody, `/v1/me/privacy-requests/${NOWHERE}/export`)],
+  // PRV B5 (PLAN B5 2.6): the public form answers anyone; staff privacy requests need privacy.manage.
+  'POST /v1/public/privacy-requests': [probe(everyone, 'POST', '/v1/public/privacy-requests', {})],
+  'GET /v1/privacy-requests': [read(all('privacy.manage'), '/v1/privacy-requests')],
+  'GET /v1/privacy-requests/:id': [read(all('privacy.manage'), `/v1/privacy-requests/${NOWHERE}`)],
+  'GET /v1/privacy-requests/:id/export': [read(all('privacy.manage'), `/v1/privacy-requests/${NOWHERE}/export`)],
+  'POST /v1/privacy-requests': [probe(all('privacy.manage'), 'POST', '/v1/privacy-requests', {})],
+  'POST /v1/privacy-requests/:id/verify': [probe(all('privacy.manage'), 'POST', `/v1/privacy-requests/${NOWHERE}/verify`, {})],
+  'PUT /v1/privacy-requests/:id/corrections': [probe(all('privacy.manage'), 'PUT', `/v1/privacy-requests/${NOWHERE}/corrections`, {})],
 }
 
 /** Fastify's HEAD routes run their GET handler: they take the GET probes with method HEAD. */

@@ -5,13 +5,16 @@ import { registerGrantRoutes, registerRoleRoutes } from './grants-routes.js'
 import { sendInvitationJob } from './invitations.js'
 import { registerMeRoutes } from './me-routes.js'
 import { registerMfaRoutes } from './mfa-routes.js'
+import { registerPortalAccountRoutes } from './portal-accounts.js'
 import { registerRelatedPartyRoutes } from './related-parties.js'
+import { sendSignInCodeJob } from './sign-in-codes.js'
 import { registerUserRoutes } from './users-routes.js'
 import { registerVendorUserRoutes } from './vendor-users-routes.js'
 
 /**
  * Identity and access (FR-IAM-001/002/003/006): sessions, MFA, me, users, vendor users, roles, grants and approvals,
- * invitation mail, service accounts and API keys, related-party declarations (D-B4-11).
+ * invitation mail, service accounts and API keys, related-party declarations (D-B4-11); distributor portal accounts,
+ * sign-in (password, emailed code, Firebase) and re-authentication (FR-IAM-007).
  */
 export const iamModule: ApiModule = {
   name: 'iam',
@@ -25,8 +28,9 @@ export const iamModule: ApiModule = {
     registerGrantRoutes(app)
     registerVendorUserRoutes(app)
     registerApiKeyRoutes(app)
+    registerPortalAccountRoutes(app)
   },
-  jobs: [sendInvitationJob],
+  jobs: [sendInvitationJob, sendSignInCodeJob],
 }
 
 export { acceptInvitation, invitationLink } from './invitations.js'

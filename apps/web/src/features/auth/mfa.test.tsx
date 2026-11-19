@@ -19,25 +19,37 @@ describe('MfaEnrolment', () => {
 
   it('starts on request, shows QR and key, confirms the code and continues', async () => {
     const user = userEvent.setup()
-    const fetchMock = fetchReturning(ok(ENROLMENT, 201), ok({ assurance: 'aal2' }))
+    const fetchMock = fetchReturning(ok(adminMe()), ok(ENROLMENT, 201), ok({ assurance: 'aal2' }))
     renderWithProviders(<MfaEnrolment />, fetchMock)
-    expect(fetchMock).not.toHaveBeenCalled()
+    expect(await screen.findByText(/Your role needs a second factor/)).toBeTruthy()
+    // Only GET /v1/me: enrolment starts on the click, never on render.
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(screen.getByText('Sign out')).toBeTruthy()
     await user.click(screen.getByRole('button', { name: 'Set up authenticator app' }))
     expect(await screen.findByRole('img', { name: /QR code that adds this account/ })).toBeTruthy()
     expect(screen.getByText('JBSW Y3DP EHPK 3PXP')).toBeTruthy()
     await user.type(screen.getByLabelText('Verification code'), '123 456')
     await user.click(screen.getByRole('button', { name: 'Confirm code' }))
     await waitFor(() => expect(navigation.router.replace).toHaveBeenCalledWith('/imports'))
-    expect(fetchMock.mock.calls[1]?.[0]).toBe('/v1/auth/mfa/totp/confirm')
-    expect(requestBody(fetchMock, 1)).toEqual({ code: '123456' })
+    expect(fetchMock.mock.calls[2]?.[0]).toBe('/v1/auth/mfa/totp/confirm')
+    expect(requestBody(fetchMock, 2)).toEqual({ code: '123456' })
     expect(screen.getByText('Your authenticator app is set up.')).toBeTruthy()
   })
 
   it('goes to verification when a factor is already enrolled', async () => {
     const user = userEvent.setup()
-    renderWithProviders(<MfaEnrolment />, fetchReturning(apiError(409, 'MFA_ALREADY_ENROLLED')))
+    renderWithProviders(<MfaEnrolment />, fetchReturning(ok(adminMe()), apiError(409, 'MFA_ALREADY_ENROLLED')))
+    await screen.findByText(/Your role needs a second factor/)
     await user.click(screen.getByRole('button', { name: 'Set up authenticator app' }))
     await waitFor(() => expect(navigation.router.replace).toHaveBeenCalledWith('/signin/mfa?next=%2Fimports'))
+  })
+  it('BUG-110: does not claim the role needs a factor when it is optional, and lets the user go back', async () => {
+    const user = userEvent.setup()
+    renderWithProviders(<MfaEnrolment />, fetchReturning(ok(adminMe({ mfa: { required: false, enrolled: false, verified: false } }))))
+    expect(await screen.findByText(/Some actions, such as deciding a case, ask for a fresh code/)).toBeTruthy()
+    expect(screen.queryByText(/Your role needs a second factor/)).toBeNull()
+    await user.click(screen.getByRole('button', { name: 'Not now' }))
+    expect(navigation.leavePage).toHaveBeenCalledWith('/imports')
   })
 })
 
