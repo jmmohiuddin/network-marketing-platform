@@ -18,15 +18,18 @@ import { shortId } from '../admin/format'
 import { LoadFailure } from '../admin/page-states'
 import { approverNames, noApproverText } from '../admin/settings/labels'
 import { formatMegabytes } from '../../components/file-drop-zone'
-import { AddEvidence, AssignDialog, ReasonDialog, type CaseDialog } from './case-actions'
+import { adjustmentRefusal } from './adjustment-dialog'
+import { AddEvidence, AssignDialog, ReasonDialog, ReturnedSubmitDialog, type CaseDialog } from './case-actions'
 import { EffectPreview } from './effect-preview'
+import { MONEY_CASE_TYPES, payeeLink, useCaseMarket } from './money-effects'
 import {
   caseTypeInfo, contributorsOf, EVENT_LABELS, inSentence, instantText, isLive, KIND_LABELS, openerText, OUTCOME_LABELS, personName, reasonLabel,
   SIGNAL_LABELS, STATE_BADGES, STATE_LABELS, type CaseTypeInfo,
 } from './format'
 import { DocumentLink } from '../markets/gate-inspector'
-import { ParticipantLink, PositionLink, SubjectLink } from './refs'
-import type { CaseDetail, CaseEvent, DuplicatePayload, RelationshipPayload, TransferPayload } from './types'
+import { ParticipantLink, PeriodLink, PositionLink, SubjectLink } from './refs'
+import { marketMoney, signedMoney } from '../periods/format'
+import type { CaseDetail, CaseEvent, DuplicatePayload, RelationshipPayload, TransferPayload, WriteOffPreview } from './types'
 
 const CARD = 'bg-surface-container-lowest rounded shadow-sm p-space-md flex flex-col gap-space-sm'
 const LABEL = 'font-caption text-caption uppercase text-secondary font-semibold'
@@ -37,6 +40,21 @@ function Fact({ label, children }: { readonly label: string; readonly children: 
       <dt className={LABEL}>{label}</dt>
       <dd className="font-body-sm text-body-sm text-on-surface break-words">{children}</dd>
     </div>
+  )
+}
+
+/** The proposal of a B4 money case (PLAN B4 §2.1–2.3 payloads); amounts in the case market's currency. */
+function MoneyPayloadFacts({ record }: { readonly record: CaseDetail }) {
+  const market = useCaseMarket(record)
+  const payload = record.payload as { readonly period_id?: string; readonly amount_minor?: string; readonly note?: string; readonly request_id?: string; readonly instruction_id?: string }
+  return (
+    <>
+      {payload.period_id !== undefined && <Fact label="Period"><PeriodLink id={payload.period_id} /></Fact>}
+      {payload.amount_minor !== undefined && <Fact label="Amount"><span className="font-data-mono-sm text-data-mono-sm font-semibold">{(record.type === 'adjustment' ? signedMoney : marketMoney)(payload.amount_minor, market)}</span></Fact>}
+      {payload.request_id !== undefined && <Fact label="Bank-detail request">{shortId(payload.request_id)} (masked values in the effect preview)</Fact>}
+      {payload.instruction_id !== undefined && <Fact label="Payout instruction">{shortId(payload.instruction_id)}</Fact>}
+      {record.type !== 'bank_detail' && <Fact label="Note">{payload.note ?? 'None yet'}</Fact>}
+    </>
   )
 }
 
@@ -54,6 +72,7 @@ function PayloadFacts({ record }: { readonly record: CaseDetail }) {
   if (record.type === 'restatement') {
     return <Fact label="Note">{(record.payload as { readonly note: string }).note}</Fact>
   }
+  if (MONEY_CASE_TYPES.includes(record.type)) return <MoneyPayloadFacts record={record} />
   if (record.type === 'duplicate') {
     const payload = record.payload as DuplicatePayload
     return (
@@ -131,6 +150,14 @@ function Evidence({ record, canAdd, onAdded, myId }: { readonly record: CaseDeta
   )
 }
 
+/** D-B4-10: "Approval 1 of 2 by Fay Finance on … — awaiting a second approver", or that none is given yet. */
+export function approvalProgress(record: CaseDetail, myId: string): string {
+  const first = record.first_approval
+  if (first === null || first === undefined) return 'Needs two approvals by different people: approval 1 of 2 is not given yet.'
+  const by = first.approver.id === myId ? 'you' : first.approver.display_name ?? 'another user'
+  return `Approval 1 of 2 by ${by} on ${formatDateTime(first.decided_at)} — awaiting a second approver.`
+}
+
 /** sc_06 separation-of-duties panel: who prepared it, who may decide it. */
 function Duties({ record, info, myId, involved }: { readonly record: CaseDetail; readonly info: CaseTypeInfo; readonly myId: string; readonly involved: boolean }) {
   const approvers = record.eligible_approvers
@@ -145,6 +172,9 @@ function Duties({ record, info, myId, involved }: { readonly record: CaseDetail;
         <p className="font-body-sm text-body-sm text-on-surface-variant">
           {approvers.length === 0 ? noApproverText(info.deciderRole) : `Can decide: ${approverNames(approvers)}`}
         </p>
+      )}
+      {record.state === 'submitted' && record.approvals_required === 2 && (
+        <p className="font-body-sm text-body-sm text-on-surface" data-testid="approval-progress">{approvalProgress(record, myId)}</p>
       )}
       {involved && <p className="font-caption text-caption text-error">You prepared or contributed to this case, so someone else must decide it.</p>}
     </section>
@@ -173,7 +203,8 @@ function CaseView({ record, info, reload }: { readonly record: CaseDetail; reado
   const live = isLive(record)
   const canCreate = !readOnly && can(info.create)
   const canDecide = !readOnly && can(info.decide)
-  const involved = contributorsOf(record).has(myId)
+  const firstApprover = record.first_approval?.approver.id === myId
+  const involved = contributorsOf(record).has(myId) || firstApprover
   async function submit() {
     setSubmitting(true)
     setProblem(null)
@@ -182,7 +213,7 @@ function CaseView({ record, info, reload }: { readonly record: CaseDetail; reado
       toast({ message: 'Case submitted. A second person decides it.' })
       reload()
     } catch (error) {
-      setProblem(errorMessage(error))
+      setProblem(errorMessage(adjustmentRefusal(error)))
       setSubmitting(false)
     }
   }
@@ -190,11 +221,13 @@ function CaseView({ record, info, reload }: { readonly record: CaseDetail; reado
     setDialog(null)
     reload()
   }
+  // A write-off's subject is a ledger account: name whose receivable it is from the preview (BUG-103).
+  const receivableOf = record.type === 'write_off' ? (record.effect_preview as WriteOffPreview | null)?.payee : undefined
   const actions = (
     <>
       {live && canDecide && <Button icon="person_add" onClick={() => setDialog('assign')}>Assign</Button>}
       {live && canCreate && record.opened_by === myId && <Button variant="destructive" onClick={() => setDialog('withdraw')}>Withdraw</Button>}
-      {preparing && canCreate && <Button variant="primary" icon="send" loading={submitting} data-testid="primary-action" onClick={submit}>Submit for decision</Button>}
+      {preparing && canCreate && <Button variant="primary" icon="send" loading={submitting} data-testid="primary-action" onClick={record.type === 'returned_payment' ? () => setDialog('submit') : submit}>Submit for decision</Button>}
     </>
   )
   return (
@@ -212,7 +245,9 @@ function CaseView({ record, info, reload }: { readonly record: CaseDetail; reado
           <section className={`${CARD} border-l-4 border-l-primary`} aria-labelledby="proposal-title" data-testid="card">
             <h2 id="proposal-title" className={LABEL}>Subject and proposal</h2>
             <dl className="grid grid-cols-1 sm:grid-cols-2 gap-space-sm">
-              <Fact label={`Subject (${record.subject_type})`}><SubjectLink subjectType={record.subject_type} id={record.subject_id} withOwner={live} /></Fact>
+              <Fact label={`Subject (${record.subject_type.replace(/_/g, ' ')})`}>
+                {receivableOf === undefined ? <SubjectLink subjectType={record.subject_type} id={record.subject_id} withOwner={live} /> : <>Clawback receivable of {payeeLink(receivableOf)}</>}
+              </Fact>
               <Fact label="Reason">{reasonLabel(record.reason_code)}</Fact>
               <PayloadFacts record={record} />
               <Fact label="Assigned to">{record.assigned_to === null ? 'Nobody' : personName(record.assigned_to, myId, record.eligible_approvers)}</Fact>
@@ -224,14 +259,14 @@ function CaseView({ record, info, reload }: { readonly record: CaseDetail; reado
         </div>
         <div className="lg:col-span-5 flex flex-col gap-space-md min-w-0">
           <EffectPreview record={record} />
-          <Duties record={record} info={info} myId={myId} involved={involved && canDecide} />
+          <Duties record={record} info={info} myId={myId} involved={!firstApprover && involved && canDecide} />
         </div>
       </div>
       {record.state === 'submitted' && (
         <ApprovalBar
           preparedBy={`Prepared by ${inSentence(personName(record.opened_by ?? record.submitted_by, myId, record.eligible_approvers))}`}
           preparedAt={formatDateTime(record.submitted_at)}
-          blockedReason={canDecide && involved ? 'You prepared or contributed to this case, so someone else must decide it.' : undefined}
+          blockedReason={canDecide && involved ? (firstApprover ? 'You gave the first approval, so a second approver must decide it.' : 'You prepared or contributed to this case, so someone else must decide it.') : undefined}
           approvers={record.eligible_approvers === null ? undefined : record.eligible_approvers.length === 0 ? noApproverText(info.deciderRole) : `Can decide: ${approverNames(record.eligible_approvers)}`}
           actions={canDecide && !involved ? (
             <>
@@ -241,6 +276,7 @@ function CaseView({ record, info, reload }: { readonly record: CaseDetail; reado
           ) : undefined}
         />
       )}
+      {dialog === 'submit' && <ReturnedSubmitDialog record={record} info={info} onClose={() => setDialog(null)} onDone={done} />}
       {dialog === 'assign' && <AssignDialog record={record} info={info} onClose={() => setDialog(null)} onDone={done} />}
       {(dialog === 'approve' || dialog === 'reject' || dialog === 'withdraw') && (
         <ReasonDialog record={record} info={info} action={dialog} onClose={() => setDialog(null)} onDone={done} />

@@ -50,6 +50,19 @@ describe('SimulationPage (SC-42)', () => {
     expect(screen.queryByText(/projected|potential/i)).toBeNull()
   })
 
+  it('words open guardrail decisions like SC-04, never the raw reason code (BUG-096)', async () => {
+    const base = simulation()
+    const flags = [
+      { decision_id: 'd1', rule_id: 'kit@2026-01-01', outcome: 'warned', reason: 'acknowledgement_required' },
+      { decision_id: 'd2', rule_id: 'pool@2026-01-01', outcome: 'blocked', reason: 'compliance_review_required' },
+    ]
+    renderAs(PLANNER, <SimulationPage planId={PLAN_ID} version={1} simulationId={SIM_ID} />, routes({ ...base, comparison: { ...base.comparison!, guardrail_flags: flags } }))
+    const banner = (await screen.findByText('Open guardrail decisions')).closest('[data-tone]')!
+    expect(within(banner as HTMLElement).getByText('kit@2026-01-01: the warning needs an acknowledgement (Guardrails tab) or a compliance override.')).toBeTruthy()
+    expect(within(banner as HTMLElement).getByText('pool@2026-01-01: the block needs a compliance review: a Compliance officer override.')).toBeTruthy()
+    expect(banner.textContent).not.toMatch(/acknowledgement_required|compliance_review_required/)
+  })
+
   it('shows the distribution buckets from the API and the cap effects', async () => {
     navigation.search = 'tab=distribution'
     const first = renderAs(PLANNER, <SimulationPage planId={PLAN_ID} version={1} simulationId={SIM_ID} />, routes(simulation()))

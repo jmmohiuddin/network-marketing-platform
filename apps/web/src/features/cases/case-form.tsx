@@ -41,6 +41,8 @@ interface CaseFormProps {
   readonly submitLabel: string
   /** false: the type's payload carries its own required note (restatement), so the optional statement is not asked. */
   readonly statement?: boolean
+  /** The type's own refusals at create, in words (adjustment: ADJUSTMENT_BLOCKED). */
+  readonly explain?: (error: unknown) => unknown
   readonly children: ReactNode
 }
 
@@ -55,7 +57,7 @@ function explained(error: unknown): unknown {
  * (POST /v1/documents, class evidence), attach it, then open the case page to submit it. A case opened before a failed
  * evidence step is kept: the retry only attaches the evidence.
  */
-export function CaseForm({ idPrefix, info, prepare, fieldIds, submitLabel, statement = true, children }: CaseFormProps) {
+export function CaseForm({ idPrefix, info, prepare, fieldIds, submitLabel, statement = true, explain = (error) => error, children }: CaseFormProps) {
   const api = useApi()
   const router = useRouter()
   const toast = useToast()
@@ -109,7 +111,7 @@ export function CaseForm({ idPrefix, info, prepare, fieldIds, submitLabel, state
       toast({ message: 'Case opened with its evidence. Submit it for a decision when it is complete.' })
       router.push(`/cases/${caseId}`)
     } catch (error) {
-      setSummary(summaryOf(explained(error), { ...fieldIds, reason_code: ids.reason }))
+      setSummary(summaryOf(explain(explained(error)), { ...fieldIds, reason_code: ids.reason }))
       setBusy(false)
     }
   }

@@ -1,5 +1,5 @@
 {
-  "when": "2026-11-17T15:43:36.397Z",
+  "when": "2026-11-19T11:01:57.658Z",
   "screenId": "SC-29",
   "stitch": "sc_29_tenant_settings",
   "module": "settings",
@@ -15,10 +15,10 @@
       "screenshot": "testing/ui-screenshots/app/settings/tenant-settings/tenant-admin/1440x900.png",
       "reference": "testing/ui-screenshots/reference/sc_29_tenant_settings/1440x900.png",
       "diffImage": "testing/ui-screenshots/app/settings/tenant-settings/tenant-admin/1440x900.diff.png",
-      "mismatchPercent": 3.43,
-      "diffPixels": 218051,
+      "mismatchPercent": 3,
+      "diffPixels": 248599,
       "referenceSize": "1440x1818",
-      "actualSize": "1440x4412",
+      "actualSize": "1440x5746",
       "landmarks": [
         {
           "landmark": "header",
@@ -65,7 +65,7 @@
         {
           "landmark": "page",
           "stitchText": "Tenant Settings & Governed Policies verified Active Settings",
-          "appText": "SettingsVersion 10 in force since Nov 17, 2026, 9:34 PM. Eac",
+          "appText": "SettingsVersion 14 in force since Nov 19, 2026, 4:43 PM. Eac",
           "status": "match",
           "severity": "none",
           "props": [
@@ -315,10 +315,10 @@
       "screenshot": "testing/ui-screenshots/app/settings/tenant-settings/tenant-admin/1280x800.png",
       "reference": "testing/ui-screenshots/reference/sc_29_tenant_settings/1280x800.png",
       "diffImage": "testing/ui-screenshots/app/settings/tenant-settings/tenant-admin/1280x800.diff.png",
-      "mismatchPercent": 3.77,
-      "diffPixels": 215102,
+      "mismatchPercent": 3.29,
+      "diffPixels": 244990,
       "referenceSize": "1280x1992",
-      "actualSize": "1280x4462",
+      "actualSize": "1280x5817",
       "landmarks": [
         {
           "landmark": "header",
@@ -365,7 +365,7 @@
         {
           "landmark": "page",
           "stitchText": "Tenant Settings & Governed Policies verified Active Settings",
-          "appText": "SettingsVersion 10 in force since Nov 17, 2026, 9:34 PM. Eac",
+          "appText": "SettingsVersion 14 in force since Nov 19, 2026, 4:43 PM. Eac",
           "status": "match",
           "severity": "none",
           "props": [
@@ -615,15 +615,15 @@
       "screenshot": "testing/ui-screenshots/app/settings/tenant-settings/tenant-admin/768x1024.png",
       "reference": "testing/ui-screenshots/reference/sc_29_tenant_settings/768x1024.png",
       "diffImage": "testing/ui-screenshots/app/settings/tenant-settings/tenant-admin/768x1024.diff.png",
-      "mismatchPercent": 3.92,
-      "diffPixels": 209069,
+      "mismatchPercent": 3.49,
+      "diffPixels": 235434,
       "referenceSize": "982x3723",
-      "actualSize": "768x5431",
+      "actualSize": "768x6873",
       "landmarks": [
         {
           "landmark": "page",
           "stitchText": "Tenant Settings & Governed Policies verified Active Settings",
-          "appText": "SettingsVersion 10 in force since Nov 17, 2026, 9:34 PM. Eac",
+          "appText": "SettingsVersion 14 in force since Nov 19, 2026, 4:43 PM. Eac",
           "status": "match",
           "severity": "none",
           "props": [
@@ -873,15 +873,15 @@
       "screenshot": "testing/ui-screenshots/app/settings/tenant-settings/tenant-admin/390x844.png",
       "reference": "testing/ui-screenshots/reference/sc_29_tenant_settings/390x844.png",
       "diffImage": "testing/ui-screenshots/app/settings/tenant-settings/tenant-admin/390x844.diff.png",
-      "mismatchPercent": 2.43,
-      "diffPixels": 204686,
+      "mismatchPercent": 2.32,
+      "diffPixels": 228396,
       "referenceSize": "982x8578",
-      "actualSize": "390x7625",
+      "actualSize": "390x10009",
       "landmarks": [
         {
           "landmark": "page",
           "stitchText": "Tenant Settings & Governed Policies verified Active Settings",
-          "appText": "SettingsVersion 10 in force since Nov 17, 2026, 9:34 PM. Eac",
+          "appText": "SettingsVersion 14 in force since Nov 19, 2026, 4:43 PM. Eac",
           "status": "match",
           "severity": "none",
           "props": [

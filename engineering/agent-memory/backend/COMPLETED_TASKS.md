@@ -75,3 +75,9 @@ _Agent: backend. Read before every task; update after every task. Keep concise โ
 
 ## B3 BE2 runs (COMP) (2026-11-18)
 - S-2 bench (write path 100k/600k, e2e 2k/10k/20k), module comp (17 routes, 2 jobs, restatement case type), int topics/exports, iam nav. 53 comp tests + boundaries green on nmp_test_1; iam/support/int 173 green; `pnpm -s typecheck` + `tsc -p apps/api` clean.
+
+## B4 BE1 engine-and-controls (2026-11-18)
+- S-1 compact layout + release (engine 0.2.0 byte-identical), s1-bench.json + SPIKE_REPORT ยง7; BUG-090/092; OI-3a/3b; OI-2; D-B4-10 two approvals; D-B4-11 related-party routes. Tests: engine 331, pln/aud/cas/iam on nmp_test_2.
+
+- 2026-11-18 B4 BE3 payouts-and-tax: PAY batches/dispatcher/settlement/bank files/bank details/holds/dormant/notices/reminders, TAX profiles, INT provider webhook + payout topics. Tests: pay 9 files, tax 1; full apps/api green except isolation + role-matrix coverage (integrator).
+- B4 BE1 review fixes (2026-11-18): CAS views never let approvalsRequired decide readability (list null while open, single views catch ApiError -> null; N+1 gone); excluded approvers pinned at submit in the `submitted` case_event data (hidden from views) and unioned at each decision; IAM.RELATED_PARTY_WITHDRAWN audit carries user/participant/relation before+after. Tests: cas, iam related-parties, comp adjustment green on nmp_test_4; full run only integrator coverage (isolation/role-matrix) red.

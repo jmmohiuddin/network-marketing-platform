@@ -1,5 +1,6 @@
 'use client'
 
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useState } from 'react'
 import { useApi } from '../../../components/api-provider'
 import { useSession } from '../../../lib/session'
@@ -17,6 +18,7 @@ import { tableError, useIdempotencyKey, type PagedList } from '../resource'
 import type { GrantRequest, RoleView, UserRole, UserView } from '../types'
 import { CHIP, MONO, NOTE, ROW_ACTIONS } from '../ui'
 import { GrantDialog } from './grant-dialog'
+import { UserDrawer } from './related-drawer'
 
 type UserAction =
   | { readonly kind: 'grant'; readonly user: UserView }
@@ -122,6 +124,17 @@ export function UsersTable({ users, roles, markets, pending, onChanged, listSele
   const api = useApi()
   const toast = useToast()
   const [action, setAction] = useState<UserAction | null>(null)
+  const params = useSearchParams()
+  const router = useRouter()
+  const pathname = usePathname()
+  // The user drawer is kept in the URL as ?user= (UI_UX §4.7).
+  const inspected = users.rows.find((user) => user.id === params.get('user'))
+  const inspect = (id: string | null) => {
+    const next = new URLSearchParams(params)
+    if (id === null) next.delete('user')
+    else next.set('user', id)
+    router.replace(next.size === 0 ? pathname : `${pathname}?${next.toString()}`)
+  }
   const roleNames = new Map(roles.map((role) => [role.id, role.name]))
   const close = () => setAction(null)
   const done = () => {
@@ -138,13 +151,18 @@ export function UsersTable({ users, roles, markets, pending, onChanged, listSele
       key: 'actions',
       header: 'Actions',
       align: 'end',
-      cell: (user) => readOnly || user.state === 'deactivated' ? null : (
+      cell: (user) => (
         <div className={ROW_ACTIONS}>
-          <Button size="sm" aria-label={`Assign role to ${user.email}`} onClick={() => setAction({ kind: 'grant', user })}>Assign role</Button>
-          {user.state === 'invited' && (
-            <Button variant="tertiary" size="sm" aria-label={`Resend invitation to ${user.email}`} onClick={() => setAction({ kind: 'resend', user })}>Resend invitation</Button>
+          <Button variant="tertiary" size="sm" aria-label={`Related participants of ${user.email}`} onClick={() => inspect(user.id)}>Related participants</Button>
+          {!readOnly && user.state !== 'deactivated' && (
+            <>
+              <Button size="sm" aria-label={`Assign role to ${user.email}`} onClick={() => setAction({ kind: 'grant', user })}>Assign role</Button>
+              {user.state === 'invited' && (
+                <Button variant="tertiary" size="sm" aria-label={`Resend invitation to ${user.email}`} onClick={() => setAction({ kind: 'resend', user })}>Resend invitation</Button>
+              )}
+              <Button variant="destructive" size="sm" aria-label={`Deactivate ${user.email}`} onClick={() => setAction({ kind: 'deactivate', user })}>Deactivate</Button>
+            </>
           )}
-          <Button variant="destructive" size="sm" aria-label={`Deactivate ${user.email}`} onClick={() => setAction({ kind: 'deactivate', user })}>Deactivate</Button>
         </div>
       ),
     },
@@ -162,6 +180,7 @@ export function UsersTable({ users, roles, markets, pending, onChanged, listSele
         empty={{ title: 'No users yet. Invite the people who work with this tenant.' }}
         pagination={users.pagination}
       />
+      {inspected !== undefined && <UserDrawer user={inspected} onClose={() => inspect(null)} />}
       {action?.kind === 'grant' && <GrantDialog user={action.user} roles={roles} markets={markets} onClose={close} onGranted={done} />}
       {action?.kind === 'resend' && <ResendDialog user={action.user} onClose={close} onDone={done} />}
       <ConfirmDialog

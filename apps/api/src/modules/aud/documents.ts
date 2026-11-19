@@ -2,6 +2,7 @@ import type { Tx } from '@nmp/db'
 import { hasPermission, marketScope, type AuthContext } from '../../lib/auth.js'
 import type { Permission } from '../../lib/permissions.js'
 import { canReadCase, casePermissions, holdsFor, type CaseTypeRegistry } from '../cas/index.js'
+import { PLAN_IN_SCOPE } from '../cpl/index.js'
 import type { EvidenceFile } from './evidence-file.js'
 
 /** What the API shows of an evidence document. */
@@ -55,6 +56,17 @@ export async function insertDocument(tx: Tx, id: string, file: EvidenceFile): Pr
   return rows[0]!
 }
 
+/** OI-2: evidence of a guardrail override is read by guardrail.read holders who see the decision (every plan market). */
+async function readsGuardrailDecision(tx: Tx, auth: AuthContext, decisionId: string): Promise<boolean> {
+  if (!hasPermission(auth, 'guardrail.read')) return false
+  const { rows } = await tx.query(
+    `SELECT 1 FROM guardrail_decision d JOIN plan_version v ON v.tenant_id = d.tenant_id AND v.id = d.plan_version_id
+     WHERE d.id = $1 AND ${PLAN_IN_SCOPE('v.plan_id', '$2')}`,
+    [decisionId, marketScope(auth, 'guardrail.read')],
+  )
+  return rows.length > 0
+}
+
 async function readsAReference(tx: Tx, auth: AuthContext, documentId: string, caseTypes: CaseTypeRegistry): Promise<boolean> {
   const { rows } = await tx.query<{ object_type: string; object_id: string; market_id: string | null }>(
     'SELECT object_type, object_id, market_id FROM document_references($1)',
@@ -65,6 +77,7 @@ async function readsAReference(tx: Tx, auth: AuthContext, documentId: string, ca
     const readable = reference.object_type === 'case_file'
       ? await canReadCase(tx, auth, reference.object_id, caseTypes)
       : readers.some((permission) => readsMarketRecord(auth, permission, reference.market_id))
+        || (reference.object_type === 'guardrail_decision' && (await readsGuardrailDecision(tx, auth, reference.object_id)))
     if (readable) return true
   }
   return false

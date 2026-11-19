@@ -1,5 +1,7 @@
 // Words for settings keys and values on SC-29, and the separation-of-duties refusal text shared with SC-17.
 import { ApiError } from '../../../lib/api'
+import type { Market } from '../../../lib/markets'
+import { marketMoney } from '../../periods/format'
 import { personLabel } from '../format'
 import type { EligibleApprover } from './types'
 
@@ -10,8 +12,15 @@ export const B2_KEYS = [
   'orders.attribution_precedence', 'orders.new_buyer_type', 'orders.restocking_fee_volume_effect', 'integrations.sync_health',
   'genealogy.placement_width', 'genealogy.visibility_policy',
 ] as const
+/** PLAN B4 D-B4-18: payouts, adjustments and write-offs; none has a default (DEC-14). */
+export const B4_KEYS = [
+  'payouts.market_policy', 'payouts.bank_detail_cooling_off_hours', 'payouts.shared_account_threshold', 'payouts.dormant_after_days',
+  'payouts.provider_review_reminder_days', 'adjustments.policy', 'write_offs.policy',
+] as const
+/** B4 keys a Finance approver approves (settings.ts approverPermission settings.approve). */
+const B4_APPROVED: readonly string[] = ['payouts.market_policy', 'payouts.bank_detail_cooling_off_hours', 'adjustments.policy', 'write_offs.policy']
 /** Keys changed through "Save new version with effective date". */
-export const POLICY_KEYS = [...MONEY_KEYS, 'plan.activation_notice_days', ...B2_KEYS] as const
+export const POLICY_KEYS = [...MONEY_KEYS, 'plan.activation_notice_days', ...B2_KEYS, ...B4_KEYS] as const
 export type PolicyKey = (typeof POLICY_KEYS)[number]
 
 export interface Approval {
@@ -28,7 +37,7 @@ const DPO: Approval = { permission: 'privacy.manage', role: 'DPO', short: 'DPO' 
 
 /** Who must approve a change of the key (D-B2-08): money keys a Finance approver, the visibility policy the DPO; else null. */
 export function approvalOf(key: string): Approval | null {
-  if ((MONEY_KEYS as readonly string[]).includes(key)) return FINANCE_APPROVAL
+  if ((MONEY_KEYS as readonly string[]).includes(key) || B4_APPROVED.includes(key)) return FINANCE_APPROVAL
   return key === 'genealogy.visibility_policy' ? DPO : null
 }
 
@@ -51,6 +60,13 @@ export const KEY_LABELS: Readonly<Record<string, string>> = {
   'integrations.sync_health': 'Sync health thresholds',
   'genealogy.placement_width': 'Placement width',
   'genealogy.visibility_policy': 'Downline depth masking',
+  'payouts.market_policy': 'Minimum payout and tax profile per market',
+  'payouts.bank_detail_cooling_off_hours': 'Bank-detail cooling-off',
+  'payouts.shared_account_threshold': 'Shared-account threshold',
+  'payouts.dormant_after_days': 'Dormant balance age',
+  'payouts.provider_review_reminder_days': 'Provider review reminder',
+  'adjustments.policy': 'Adjustment policy',
+  'write_offs.policy': 'Write-off policy',
   structure: 'Markets, brands and calendars',
 }
 
@@ -73,6 +89,11 @@ export const SIGNAL_OPTIONS = [
   { value: 'payment_fingerprint', label: 'Payment fingerprint' },
   { value: 'address', label: 'Address' },
   { value: 'device_id', label: 'Device id' },
+] as const
+
+export const RELATED_ACTION_OPTIONS = [
+  { value: 'block', label: 'Block the adjustment' },
+  { value: 'escalate', label: 'Require a second approver' },
 ] as const
 
 export const REASSIGNMENT_OPTIONS = [
@@ -103,16 +124,28 @@ export const RESTOCKING_OPTIONS = [
 ] as const
 
 const OPTION_LABELS: Readonly<Record<string, string>> = Object.fromEntries(
-  [...ROUNDING_OPTIONS, ...CLAWBACK_OPTIONS, ...SIGNAL_OPTIONS, ...REASSIGNMENT_OPTIONS, ...CREDITING_OPTIONS, ...ATTRIBUTION_OPTIONS, ...RESTOCKING_OPTIONS]
+  [...ROUNDING_OPTIONS, ...CLAWBACK_OPTIONS, ...RELATED_ACTION_OPTIONS, ...SIGNAL_OPTIONS, ...REASSIGNMENT_OPTIONS, ...CREDITING_OPTIONS, ...ATTRIBUTION_OPTIONS, ...RESTOCKING_OPTIONS]
     .map((option) => [option.value, option.label]),
 )
 
 const word = (value: unknown): string => OPTION_LABELS[String(value)] ?? String(value)
 const days = (count: number): string => (count === 1 ? '1 day' : `${count} days`)
+/** Tenant-wide amounts are minor units of each market's currency (D-B4-18). */
+const minor = (value: unknown): string => `${BigInt(String(value)).toLocaleString()} minor units`
 const minutes = (count: number): string => (count === 1 ? '1 minute' : `${count} minutes`)
 
+type MarketPolicy = Readonly<Record<string, { readonly minimum_payout_minor: string; readonly tax_profile_required: boolean }>>
+
+/** payouts.market_policy per market: "DE: 10.00 EUR minimum, tax profile required" (minor units while markets load). */
+function marketPolicyText(policy: MarketPolicy, markets: readonly Market[] | undefined): string {
+  return Object.entries(policy).map(([marketId, entry]) => {
+    const market = markets?.find((candidate) => candidate.id === marketId)
+    return `${market?.code ?? 'Market'}: ${marketMoney(entry.minimum_payout_minor, market)} minimum, tax profile ${entry.tax_profile_required ? 'required' : 'not required'}`
+  }).join('; ')
+}
+
 /** The PLAN B2 2.1 values in words; null for another key or a value of another shape. */
-function b2ValueText(key: string, value: unknown): string | null {
+function b2ValueText(key: string, value: unknown, markets: readonly Market[] | undefined): string | null {
   const record = (typeof value === 'object' && value !== null ? value : {}) as Readonly<Record<string, unknown>>
   switch (key) {
     case 'participants.duplicate_matching': {
@@ -132,6 +165,23 @@ function b2ValueText(key: string, value: unknown): string | null {
       return `Behind after ${minutes(Number(record.behind_after_minutes))}, failing after ${minutes(Number(record.failing_after_minutes))}`
     case 'genealogy.placement_width':
       return `${String(value)} legs per position`
+    case 'payouts.market_policy':
+      return marketPolicyText(record as MarketPolicy, markets)
+    case 'payouts.bank_detail_cooling_off_hours':
+      return `${String(value)} ${value === 1 ? 'hour' : 'hours'} without payouts after a change`
+    case 'payouts.shared_account_threshold':
+      return `Warn when ${String(value)} or more payees share one account`
+    case 'payouts.dormant_after_days':
+    case 'payouts.provider_review_reminder_days':
+      return days(Number(value))
+    case 'adjustments.policy':
+      return `Second approver above ${minor(record.second_approver_above_minor)}; new accounts: ${days(Number(record.new_account_days))}; related accounts: ${word(record.related_account_action).toLowerCase()}`
+    case 'write_offs.policy':
+      return [
+        record.eligible_below_minor === undefined ? null : `eligible below ${minor(record.eligible_below_minor)}`,
+        record.eligible_after_days === undefined ? null : `eligible after ${days(Number(record.eligible_after_days))}`,
+        `second approver above ${minor(record.second_approver_above_minor)}`,
+      ].filter((part) => part !== null).join('; ').replace(/^./, (first) => first.toUpperCase())
     case 'genealogy.visibility_policy':
       return `Names ${String(record.named_depth)} ${record.named_depth === 1 ? 'level' : 'levels'} down; contact of personally sponsored ${record.contact_for_personally_sponsored === true ? 'shown' : 'hidden'}`
     default:
@@ -139,8 +189,11 @@ function b2ValueText(key: string, value: unknown): string | null {
   }
 }
 
-/** A policy value in words: "Half even", "Order line", "30 days"; other values as compact JSON. */
-export function valueText(key: string, value: unknown): string {
+/**
+ * A policy value in words: "Half even", "Order line", "30 days"; other values as compact JSON. markets (GET /v1/markets)
+ * names the markets and currencies of payouts.market_policy (BUG-106); PolicyValue passes them.
+ */
+export function valueText(key: string, value: unknown, markets?: readonly Market[]): string {
   if (value === null || value === undefined) return 'Not set'
   if (key === 'money.rounding_mode' && typeof value === 'string') return OPTION_LABELS[value] ?? value
   if (key === 'money.clawback_policy' && typeof value === 'object' && 'default' in value) {
@@ -148,7 +201,7 @@ export function valueText(key: string, value: unknown): string {
     return OPTION_LABELS[choice] ?? choice
   }
   if (key === 'plan.activation_notice_days' && typeof value === 'number') return days(value)
-  return b2ValueText(key, value) ?? (typeof value === 'string' ? value : JSON.stringify(value))
+  return b2ValueText(key, value, markets) ?? (typeof value === 'string' ? value : JSON.stringify(value))
 }
 
 /** "Fay Finance (fay@acme.example), Gil Gold (gil@acme.example)". */

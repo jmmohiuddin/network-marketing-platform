@@ -32,6 +32,7 @@ export interface SettingDefinition<S extends z.ZodType = z.ZodType> {
 const COMPLIANCE_READERS: readonly Permission[] = ['settings.manage', 'compliance.read']
 const POLICY_READERS: readonly Permission[] = ['settings.manage', 'settings.approve']
 const ORDER_READERS: readonly Permission[] = ['settings.manage', 'order.read']
+const PAYOUT_READERS: readonly Permission[] = [...POLICY_READERS, 'payout.prepare']
 const SIGNAL_KINDS = ['identity_ref', 'payment_fingerprint', 'address', 'device_id'] as const
 const unique = (values: readonly string[]): boolean => new Set(values).size === values.length
 
@@ -76,13 +77,13 @@ export const SETTINGS = {
   'money.rounding_mode': {
     schema: z.enum(['half_up', 'half_even']), readPermissions: POLICY_READERS, stepUp: false, approverPermission: 'settings.approve',
   },
-  /** How a refund claws back commission already paid (B4 may add per-bonus-type overrides). */
+  /** D-B4-06, retired: the clawback policy is each bonus's reversal_policy on the plan version. */
   'money.clawback_policy': {
     schema: z.strictObject({ default: z.enum(['order_line', 'restatement']) }),
     readPermissions: POLICY_READERS,
     stepUp: false,
-   
     approverPermission: 'settings.approve',
+    retired: true,
   },
   /** BR-PLN-04: days of notice before a plan version activates. */
   'plan.activation_notice_days': {
@@ -176,6 +177,56 @@ export const SETTINGS = {
     readPermissions: ['run.review', 'settings.manage'],
     stepUp: false,
     approverPermission: null,
+  },
+  // PLAN B4 D-B4-18: none has a default (DEC-14); an unset key refuses the action that needs it (SETTING_NOT_CONFIGURED).
+  /** FR-PAY-007, AC-47.1: per market id, the minimum payable paid (payable >= minimum, MONEY C-13) and whether a payee needs a tax profile. */
+  'payouts.market_policy': {
+    schema: z
+      .record(z.uuid(), z.strictObject({ minimum_payout_minor: bigintString, tax_profile_required: z.boolean() }))
+      .refine((value) => Object.keys(value).length > 0, 'needs at least one market'),
+    readPermissions: PAYOUT_READERS,
+    stepUp: false,
+    approverPermission: 'settings.approve',
+  },
+  /** FR-PAY-005, AC-17.1: hours a new bank-detail version is excluded from batches. */
+  'payouts.bank_detail_cooling_off_hours': {
+    schema: z.number().int().min(0).max(2160), readPermissions: PAYOUT_READERS, stepUp: true, approverPermission: 'settings.approve',
+  },
+  /** AC-PAY5-2: payees sharing one account at which the bank-detail preview warns. */
+  'payouts.shared_account_threshold': {
+    schema: z.number().int().min(1).max(1000), readPermissions: PAYOUT_READERS, stepUp: false, approverPermission: null,
+  },
+  /** AC-PAY7-2: age at which an unpaid payable is listed as dormant. */
+  'payouts.dormant_after_days': {
+    schema: z.number().int().min(1).max(3650), readPermissions: PAYOUT_READERS, stepUp: false, approverPermission: null,
+  },
+  /** D-B4-20: days before a provider's review date at which its market managers are reminded. */
+  'payouts.provider_review_reminder_days': {
+    schema: z.number().int().min(1).max(365), readPermissions: PAYOUT_READERS, stepUp: false, approverPermission: null,
+  },
+  /** FR-CAS-002 (D-B4-09): when an adjustment needs a second approver and what a related or new payee account does. */
+  'adjustments.policy': {
+    schema: z.strictObject({
+      second_approver_above_minor: bigintString,
+      new_account_days: z.number().int().min(0).max(3650),
+      related_account_action: z.enum(['block', 'escalate']),
+    }),
+    readPermissions: [...POLICY_READERS, 'case.adjustment.create'],
+    stepUp: false,
+    approverPermission: 'settings.approve',
+  },
+  /** FR-FIN-004 (D-B4-08): write-off eligibility (at least one rule) and the second-approver threshold. */
+  'write_offs.policy': {
+    schema: z
+      .strictObject({
+        eligible_below_minor: bigintString.optional(),
+        eligible_after_days: z.number().int().min(1).max(3650).optional(),
+        second_approver_above_minor: bigintString,
+      })
+      .refine((value) => value.eligible_below_minor !== undefined || value.eligible_after_days !== undefined, 'needs an eligibility rule'),
+    readPermissions: [...POLICY_READERS, 'case.write_off.create'],
+    stepUp: false,
+    approverPermission: 'settings.approve',
   },
 } as const satisfies Record<string, SettingDefinition>
 

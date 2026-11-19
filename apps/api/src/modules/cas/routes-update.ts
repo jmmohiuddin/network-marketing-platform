@@ -5,7 +5,7 @@ import { inTenant } from '../../lib/db.js'
 import { permissionDenied } from '../../lib/errors.js'
 import { envelope, parse } from '../../lib/http.js'
 import { countCases, recordChange, updateCase } from './cases.js'
-import { assertHolds, assertReasonCode, caseId, parsePayload, readableCase, stateConflict } from './routes.js'
+import { assertHolds, assertReasonCode, caseId, caseView, parsePayload, readableCase, stateConflict } from './routes.js'
 import type { CaseTypeRegistry } from './types.js'
 
 const patchBody = z
@@ -36,7 +36,7 @@ export function registerCaseUpdates(app: FastifyInstance, registry: CaseTypeRegi
       await recordChange(tx, record.id, 'updated', { fields }, {
         before: { reason_code: record.reason_code, payload: record.payload }, after: { reason_code: reasonCode, payload, fields },
       })
-      return updated
+      return caseView(tx, registry, updated)
     }))
   })
 

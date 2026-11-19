@@ -45,7 +45,8 @@ export async function evaluateGuardrails(tx: Tx, versionId: string): Promise<Eva
   const out: Evaluation[] = []
   for (const g of guardrails) {
     for (const match of evaluatePredicate(g.predicate, rules)) {
-      const outcome = match.opaque ? 'warned' : g.outcome
+      // An opaque match of a blocking rule stays blocked and goes to compliance review (D-B4-21 b); any other opaque match warns.
+      const outcome = match.opaque && g.outcome !== 'blocked' ? 'warned' : g.outcome
       const detail = { rule_keys: match.ruleKeys, explanation: match.explanation, opaque: match.opaque }
       out.push(await storeEvaluation(tx, versionId, g, outcome, detail))
     }
@@ -97,15 +98,24 @@ export async function outstandingDecisions(tx: Tx, versionId: string): Promise<O
   return rows
 }
 
-/** plan.edit acknowledges a warned evaluation of the version (FR-CPL-007; 409 NOT_WARNED / ALREADY_ACKNOWLEDGED). */
+/**
+ * D-B4-21 b: an opaque evaluation goes to compliance review when it or its rule (now) is blocked — the rule covers an
+ * opaque match of a blocking rule stored as warned before B4 (0411 mirrors it). SQL over `d` and `g`.
+ */
+export const COMPLIANCE_REVIEW = `((d.detail ->> 'opaque') IS NOT DISTINCT FROM 'true' AND 'blocked' IN (d.outcome, g.outcome))`
+
+/** plan.edit acknowledges a warned evaluation of the version (FR-CPL-007; 409 COMPLIANCE_REVIEW_REQUIRED / NOT_WARNED / ALREADY_ACKNOWLEDGED). */
 export async function acknowledgeDecision(tx: Tx, versionId: string, decisionId: string): Promise<Record<string, unknown>> {
-  const { rows } = await tx.query<{ outcome: string; acknowledged: boolean }>(
-    `SELECT d.outcome, EXISTS (SELECT 1 FROM guardrail_decision a WHERE a.refers_to_decision_id = d.id AND a.kind = 'acknowledgement') AS acknowledged
-     FROM guardrail_decision d WHERE d.id = $1 AND d.plan_version_id = $2 AND d.kind = 'evaluation'`,
+  const { rows } = await tx.query<{ outcome: string; review: boolean; acknowledged: boolean }>(
+    `SELECT d.outcome, ${COMPLIANCE_REVIEW} AS review, EXISTS (SELECT 1 FROM guardrail_decision a WHERE a.refers_to_decision_id = d.id AND a.kind = 'acknowledgement') AS acknowledged
+     FROM guardrail_decision d JOIN guardrail_rule g ON g.id = d.rule_id WHERE d.id = $1 AND d.plan_version_id = $2 AND d.kind = 'evaluation'`,
     [decisionId, versionId],
   )
   const evaluation = rows[0]
   if (evaluation === undefined) throw notFound()
+  if (evaluation.review) {
+    throw new ApiError(409, 'COMPLIANCE_REVIEW_REQUIRED', 'The platform cannot check this rule: a compliance officer must review and override it.')
+  }
   if (evaluation.outcome !== 'warned') throw new ApiError(409, 'NOT_WARNED', 'Only a warning is acknowledged; a blocked rule needs an override.')
   if (evaluation.acknowledged) throw new ApiError(409, 'ALREADY_ACKNOWLEDGED', 'This warning is already acknowledged.')
   // One acknowledgement per evaluation: the unique index decides a concurrent second one (rows are insert-only, no lock).

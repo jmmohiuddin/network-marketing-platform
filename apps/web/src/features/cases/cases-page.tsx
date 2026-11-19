@@ -2,7 +2,9 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
-import { LinkButton } from '../../components/button'
+import { useState } from 'react'
+import { AdjustmentDialog } from './adjustment-dialog'
+import { Button, LinkButton } from '../../components/button'
 import { DataTable } from '../../components/data-table'
 import { FiltersBar, type FilterChip } from '../../components/filters-bar'
 import { Checkbox, Select } from '../../components/form-field'
@@ -50,7 +52,7 @@ function SubjectCell({ subjectType, id }: { readonly subjectType: string; readon
   return (
     <div className="flex flex-col">
       <span className="font-data-mono-sm text-data-mono-sm">{label}</span>
-      <span className="font-caption text-caption text-secondary capitalize">{subjectType}</span>
+      <span className="font-caption text-caption text-secondary capitalize">{subjectType.replace(/_/g, ' ')}</span>
     </div>
   )
 }
@@ -108,6 +110,7 @@ export function CasesPage() {
   const subjectType = params.get('subject_type')
   const subjectId = params.get('subject_id')
   const subjectLabel = useRefLabel(subjectType, subjectId)
+  const [adjusting, setAdjusting] = useState(false)
   if (readable.length === 0) return <NotAvailable />
 
   const update = (changes: Readonly<Record<string, string | null>>) => {
@@ -124,7 +127,7 @@ export function CasesPage() {
   const overdue = params.get('overdue') === 'true'
   const tabCounts = (info: CaseTypeInfo | null) => {
     const rows = (counts.data ?? []).filter((row) => info === null || row.type === info.type)
-    return counts.data === null ? {} : { count: sumOf(rows, 'open') + sumOf(rows, 'submitted') }
+    return counts.data === null ? {} : { count: sumOf(rows, 'open') + sumOf(rows, 'submitted'), countLabel: 'undecided' }
   }
   const tabs = [{ id: ALL, label: 'All cases', ...tabCounts(null) }, ...readable.map((info) => ({ id: info.type, label: info.plural, ...tabCounts(info) }))]
   const chips: FilterChip[] = [
@@ -142,15 +145,17 @@ export function CasesPage() {
     subject_id: subjectId ?? undefined,
   }
   const canFile = !readOnly && can('case.genealogy.create')
+  const canAdjust = !readOnly && can('case.adjustment.create')
   const kpiCounts = counts.data === null ? null : counts.data.filter((row) => tab === ALL || row.type === tab)
   return (
     <>
       <PageHeader
         title="Cases"
-        summary="Genealogy changes, ownership transfers, duplicate reviews and restatements of committed periods. Each case keeps its evidence and history and is decided by a second person."
+        summary="Genealogy changes, transfers, duplicate reviews, restatements, manual adjustments, write-offs, bank-detail changes and returned payments. Each case keeps its evidence and history and is decided by a second person."
         actions={(
           <>
             {can('case.duplicate.read') && <LinkButton href="/cases/duplicates" icon="group_remove">Duplicate investigation</LinkButton>}
+            {canAdjust && <Button variant={canFile ? 'secondary' : 'primary'} icon="exposure" data-testid={canFile ? undefined : 'primary-action'} onClick={() => setAdjusting(true)}>New adjustment</Button>}
             {canFile && <LinkButton variant="primary" icon="add_circle" href="/cases/genealogy/new" data-testid="primary-action">File genealogy case</LinkButton>}
           </>
         )}
@@ -160,6 +165,8 @@ export function CasesPage() {
         <Tabs label="Case types" idPrefix={ID_PREFIX} tabs={tabs} selected={tab} onSelect={(id) => update({ type: id === ALL ? null : id })} />
         <TabPanel idPrefix={ID_PREFIX} tabId={tab}>
           <div className="flex flex-col gap-space-md">
+            {/* BUG-107: the queue lists decided cases too, so the badges say what they count. */}
+            <p className="font-caption text-caption text-secondary">Counts on the tabs are undecided cases: open, or waiting for a decision.</p>
             <FiltersBar label="Filter cases" chips={chips} onClear={() => update(Object.fromEntries(FILTER_KEYS.map((key) => [key, null])))}>
               <Select label="State" value={state} options={STATE_OPTIONS} onChange={(event) => update({ state: event.target.value })} />
               <Checkbox label="Assigned to me" checked={mine} onChange={(event) => update({ assigned: event.target.checked ? 'me' : null })} />
@@ -169,6 +176,7 @@ export function CasesPage() {
           </div>
         </TabPanel>
       </div>
+      {adjusting && <AdjustmentDialog onClose={() => setAdjusting(false)} />}
     </>
   )
 }

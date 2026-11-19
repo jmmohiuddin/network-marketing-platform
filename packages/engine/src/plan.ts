@@ -6,7 +6,7 @@
 import { EngineError } from './errors.js'
 import { checkExpression, expressionRefs, renderExpression, type ExprType, type PlanIssue } from './expression.js'
 import { parseEngineJson } from './json.js'
-import { formatRate, parseDecimal, RATE_SCALE } from './money.js'
+import { formatRate, formatUnits, parseDecimal, RATE_SCALE } from './money.js'
 import { MAX_RANKS } from './primitives/rank.js'
 import { measureUnit } from './primitives/unilevel.js'
 import { compareId } from './tree.js'
@@ -599,13 +599,15 @@ export function compilePlan(
 
 const pct = (d: string): string => `${formatRate(parseDecimal(d) * 100n)} %`
 const rankText = (r: RankRef): string => `${r.ladder} ≥ ${r.rank}`
-const minorText = (v: bigint): string => `${v} minor units`
+/** Volumes and money amounts: in units of the market's minor digits when known (BUG-090), else as minor units. */
+type MinorText = (v: bigint) => string
+const minorTextOf = (digits: number | undefined): MinorText => (digits === undefined ? (v) => `${v} minor units` : (v) => formatUnits(v, digits))
 const levelsText = (n: number): string => (n === 1 ? 'level 1' : `levels 1–${n}`)
 const durationText = (us: bigint): string => (us % DAY_US === 0n ? `${us / DAY_US} days` : `${us} µs`)
 const ratesByRank = (r: { readonly ladder: string; readonly rates: readonly { readonly rank: string; readonly rate: string }[] }): string =>
   `by ${r.ladder} rank (${r.rates.map((x) => `${x.rank} ${pct(x.rate)}`).join(', ')})`
 
-function requirementText(q: Requirement): string {
+function requirementText(q: Requirement, minorText: MinorText): string {
   switch (q.kind) {
     case 'measure': {
       const w = q.window.type === 'rolling' ? ` over ${q.window.periods} periods` : q.window.type === 'per_order' ? ' in one order' : ''
@@ -623,7 +625,7 @@ function requirementText(q: Requirement): string {
   }
 }
 
-function measureText(m: MeasureRule): string {
+function measureText(m: MeasureRule, minorText: MinorText): string {
   switch (m.kind) {
     case 'volume.personal': {
       const source = m.source.from === 'volume' ? `volume "${m.source.name}" per unit` : m.source.from === 'amount' ? 'order amount' : 'order amount less tax'
@@ -644,7 +646,7 @@ function measureText(m: MeasureRule): string {
   }
 }
 
-function bonusText(b: BonusRule): string {
+function bonusText(b: BonusRule, minorText: MinorText): string {
   const body = ((): string => {
     switch (b.kind) {
       case 'pay.retail_margin':
@@ -680,15 +682,15 @@ function bonusText(b: BonusRule): string {
   return `${body}; reversal: ${policy}; paid to ${b.eligibleIf ? `holders of ${rankText(b.eligibleIf)}` : 'every earner'}`
 }
 
-function itemText(item: Item, rule: PlanRuleInput): string {
+function itemText(item: Item, rule: PlanRuleInput, minorText: MinorText): string {
   const p = item.as === 'structure' ? (rule.params as Readonly<Record<string, TreeKind | number>>) : null
   switch (item.as) {
     case 'measure':
-      return measureText(item.m)
+      return measureText(item.m, minorText)
     case 'ladder':
-      return `Ladder ${item.l.ranks.map((r) => `${r.key}: ${r.requires.length === 0 ? 'always held' : r.requires.map(requirementText).join(' and ')}${r.maintenance ? ` (grace ${r.maintenance.gracePeriods} periods)` : ''}`).join('; ')}`
+      return `Ladder ${item.l.ranks.map((r) => `${r.key}: ${r.requires.length === 0 ? 'always held' : r.requires.map((q) => requirementText(q, minorText)).join(' and ')}${r.maintenance ? ` (grace ${r.maintenance.gracePeriods} periods)` : ''}`).join('; ')}`
     case 'bonus':
-      return bonusText(item.b)
+      return bonusText(item.b, minorText)
     case 'constraint':
       return item.c.kind === 'limit.max_per_period'
         ? `Limits ${item.c.scope.join(', ')} to ${minorText(item.c.maxMinor)} per participant per period`
@@ -716,9 +718,9 @@ function itemText(item: Item, rule: PlanRuleInput): string {
   }
 }
 
-/** Plain-language text of one rule row (AC-PLN2-2). */
-export function renderRule(rule: PlanRuleInput): string {
+/** Plain-language text of one rule row (AC-PLN2-2); minorDigits = the market's digits for volumes and amounts (BUG-090). */
+export function renderRule(rule: PlanRuleInput, options: { readonly minorDigits?: number } = {}): string {
   if (validateRule(rule.kind, rule.params).length > 0) return `${rule.kind}: invalid parameters (see the validation errors)`
-  const text = itemText(itemOf(rule), rule)
+  const text = itemText(itemOf(rule), rule, minorTextOf(options.minorDigits))
   return rule.calendarId === null ? text : `${text} (one calendar only)`
 }

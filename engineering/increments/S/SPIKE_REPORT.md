@@ -107,3 +107,42 @@ Laptop in swap; upper bounds. Product engine 0.2.0, not the spike prototype.
 **S-2 write path** (`apps/api/test/bench/write-path.results.json`, one transaction, triggers on, as nmp_app): 100k lines + 100k state rows 128 s (under swap contention); 600k lines + 100k state rows 149 s (lines 142 s, state 4.7 s, flip 1.6 s; result_line 1.56 GB). Within NFR-PERF-04's 5 min → one transaction for write + flip (C-B3-17).
 
 **S-2 end to end** (`apps/api/test/bench/end-to-end.results.json`, TS-10 plan, binary tree, one order per position): 2k 0.9 s, 10k 15.3 s, 20k 40.7 s, dominated by the snapshot store (codec O(n²) on array indexes). The integrator fixed the codec afterwards (`packages/engine/src/json.ts`); **100k end to end not measured, re-run pending** (TK-B3-13).
+
+## 7. B4 S-1 re-measure (2026-11-18, BE1; B4 PLAN §S, D-B4-22)
+
+Engine 0.2.0, same bench (`packages/engine/test/run/bench.ts`, G-E2E-01 + `measure.derived`), laptop in swap. Raw numbers: `packages/engine/results/s1-bench.json`.
+
+**What changed (internal layout only).** Heap profile at 150k binary (forced gc after each pass): the caller's RunInput ~1 KB per position; the RunOutput ~3.85 KB per position (lines with compact traces ~950 B per line, state rows, evaluations, summaries); intermediate pass outputs ~2 KB per position (pass 4-8 RawLines and credited lines kept until the end of the run). Changes: one shared frozen copy of repeated sub-objects (empty arrays, trace tree reference, "nothing omitted", rank references in traces, state rows and summaries; `src/compact.ts`); credited lines released after pass 4 and pass 4-8 lines after pass 10 (`RELEASE_AFTER` in `pipeline.ts`; pass 8 now computes the breakage and the allocation check); the result hash streams its records; the duplicate-line check compares neighbours instead of a set of keys. 150k binary: retained 1,036 → 633 MB at the end of the run, RunOutput 577 → 455 MB, peak RSS 1,563 → 954 MB.
+
+**Byte-identical.** Before the change and after it, resultHash, inputsHash, linesHash and a hash over every RunOutput field are equal for the four shapes at 50k and every golden case (RUN_FIXTURES); all 331 engine tests pass, TS fixtures unchanged. `ENGINE_VERSION` stays 0.2.0, so committed runs keep replaying.
+
+| Shape | Positions | Run 1 / shuffled run 2 | Peak RSS MB | Result hash (shuffled) |
+|---|---|---|---|---|
+| random | 50,000 | 1.0 s / 1.3 s | 821 | equal |
+| binary | 50,000 | 0.9 s / 0.8 s | 895 | equal |
+| wide | 50,000 | 0.6 s / 0.8 s | 499 | equal |
+| deep | 50,000 | 1.0 s / 0.9 s | 815 | equal |
+| random | 500,000 | 13.6 s / 18.3 s | 3,202 | equal |
+| binary | 500,000 | 10.7 s / 17.1 s | 3,185 | equal |
+| wide | 500,000 | 15.3 s / 18.1 s | 2,881 | equal |
+| deep | 500,000 | 13.8 s / 16.8 s | 3,137 | equal |
+| random | 750,000 | 28.7 s / 33.8 s | 4,043 | equal |
+| binary | 750,000 | 30.1 s / 31.1 s | 4,100 | equal |
+| wide | 750,000 | 26.2 s / 30.2 s | 4,059 | equal |
+| deep | 750,000 | 31.5 s / 38.6 s | 3,912 | equal |
+| random | 1,000,000 | OOM after 42 s | 4,419 | — |
+| binary | 1,000,000 | OOM after 34 s | 4,405 | — |
+| wide | 1,000,000 | OOM after 38 s | 4,405 | — |
+| deep | 1,000,000 | OOM after 46 s | 4,395 | — |
+| random | 2,000,000 | OOM after 87 s | 4,346 | — |
+| binary | 2,000,000 | OOM after 57 s | 4,706 | — |
+| wide | 2,000,000 | OOM after 57 s | 4,679 | — |
+| deep | 2,000,000 | OOM after 62 s | 4,506 | — |
+
+**Verdict.** Target (2M within a 4 GB heap) **not met**. Largest passing size: **750k for every shape** (peak 3.9–4.1 GB RSS, ~5.6 KB per position, about 30 s per run); 1M and 2M run out of memory at 4 GB. Before B4 the engine failed at 500k (~16 KB per position at 150k). The floor is not the layout: at the end of a run the caller's input (~1 KB/position) and the unchanged RunOutput (~3 KB/position) are both resident, so 2M needs roughly 8–9 GB of heap with any internal layout.
+
+**E-ADR-34 (engine stays TypeScript): keep.** Time is not the constraint (750k in ~30 s against NFR-PERF-05's 60 min); memory is, and it comes from the output shape, which a JVM/Go engine producing the same objects would also hold. No move-to-JVM/Go trigger.
+
+**E-ADR-35 (calc worker 4 GB, heap ~3 GB): revise.** Proposed: calc worker 8 GB (the NFR ceiling) with `--max-old-space-size=7168`, which covers market runs up to ~1.2M positions (extrapolated from 5.6 KB/position, not measured on this laptop). Above that, the additive streaming output API D-B4-22 allows (lines, state rows and summaries handed to COMP in chunks, input loaded columnar from the snapshot), with COMP adoption as a recorded follow-up; not built in B4. Until then, a tenant above ~700k positions per market needs the 8 GB worker; above ~1.2M it needs the streaming API.
+
+S-2 100k end to end is re-run by the API integrator after BE1 lands (§P).

@@ -1,12 +1,12 @@
 {
-  "when": "2026-11-17T22:01:30.613Z",
+  "when": "2026-11-19T11:02:18.379Z",
   "screenId": "SC-01",
   "stitch": "sc_01_periods_runs_analyst_home",
   "module": "periods",
   "screen": "periods-runs",
   "route": "/periods",
   "role": "commission-analyst",
-  "url": "http://127.0.0.1:3100/periods?calendar=a73e2419-522f-4c5d-85ec-96b360fca159",
+  "url": "http://127.0.0.1:3100/periods",
   "self": false,
   "patched": [],
   "viewports": [
@@ -15,10 +15,10 @@
       "screenshot": "testing/ui-screenshots/app/periods/periods-runs/commission-analyst/1440x900.png",
       "reference": "testing/ui-screenshots/reference/sc_01_periods_runs_analyst_home/1440x900.png",
       "diffImage": "testing/ui-screenshots/app/periods/periods-runs/commission-analyst/1440x900.diff.png",
-      "mismatchPercent": 6.89,
-      "diffPixels": 137197,
+      "mismatchPercent": 6.93,
+      "diffPixels": 138029,
       "referenceSize": "1440x1383",
-      "actualSize": "1440x1342",
+      "actualSize": "1440x1340",
       "landmarks": [
         {
           "landmark": "header",
@@ -315,10 +315,10 @@
       "screenshot": "testing/ui-screenshots/app/periods/periods-runs/commission-analyst/1280x800.png",
       "reference": "testing/ui-screenshots/reference/sc_01_periods_runs_analyst_home/1280x800.png",
       "diffImage": "testing/ui-screenshots/app/periods/periods-runs/commission-analyst/1280x800.diff.png",
-      "mismatchPercent": 6.78,
-      "diffPixels": 136328,
+      "mismatchPercent": 6.8,
+      "diffPixels": 136790,
       "referenceSize": "1280x1571",
-      "actualSize": "1280x1410",
+      "actualSize": "1280x1404",
       "landmarks": [
         {
           "landmark": "header",
@@ -615,10 +615,10 @@
       "screenshot": "testing/ui-screenshots/app/periods/periods-runs/commission-analyst/768x1024.png",
       "reference": "testing/ui-screenshots/reference/sc_01_periods_runs_analyst_home/768x1024.png",
       "diffImage": "testing/ui-screenshots/app/periods/periods-runs/commission-analyst/768x1024.diff.png",
-      "mismatchPercent": 6.38,
-      "diffPixels": 125981,
+      "mismatchPercent": 6.27,
+      "diffPixels": 123788,
       "referenceSize": "768x2572",
-      "actualSize": "768x1708",
+      "actualSize": "768x1624",
       "landmarks": [
         {
           "landmark": "page",
@@ -873,10 +873,10 @@
       "screenshot": "testing/ui-screenshots/app/periods/periods-runs/commission-analyst/390x844.png",
       "reference": "testing/ui-screenshots/reference/sc_01_periods_runs_analyst_home/390x844.png",
       "diffImage": "testing/ui-screenshots/app/periods/periods-runs/commission-analyst/390x844.diff.png",
-      "mismatchPercent": 3.82,
-      "diffPixels": 107941,
+      "mismatchPercent": 3.69,
+      "diffPixels": 104377,
       "referenceSize": "541x5229",
-      "actualSize": "390x3234",
+      "actualSize": "390x2760",
       "landmarks": [
         {
           "landmark": "page",

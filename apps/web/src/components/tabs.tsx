@@ -8,6 +8,8 @@ export interface TabItem {
   readonly label: string
   /** Count suffix from the response meta ("Pending 3"). */
   readonly count?: number
+  /** What the count counts ("undecided"), read after it and shown on hover when the label alone does not say. */
+  readonly countLabel?: string
 }
 
 export interface TabsProps {
@@ -70,7 +72,11 @@ export function Tabs({ label, idPrefix, tabs, selected, onSelect }: TabsProps) {
             {tab.label}
             {tab.count !== undefined && ' '}
             {tab.count !== undefined && (
-              <span className="ml-1 inline-flex items-center px-1.5 rounded-full text-[10px] font-semibold bg-secondary-container text-on-secondary-container">{tab.count}</span>
+              <span className="ml-1 inline-flex items-center px-1.5 rounded-full text-[10px] font-semibold bg-secondary-container text-on-secondary-container" title={tab.countLabel === undefined ? undefined : `${tab.count} ${tab.countLabel}`}>
+                {tab.count}
+                {tab.countLabel !== undefined && ' '}
+                {tab.countLabel !== undefined && <span className="sr-only">{tab.countLabel}</span>}
+              </span>
             )}
           </button>
         )

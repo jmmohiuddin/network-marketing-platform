@@ -22,7 +22,12 @@ export interface ProviderFields {
   readonly description: string
   readonly approved_at: string
   readonly funds_holder: string
+  /** Optional (D-B4-20); '' = none. */
+  readonly review_due_on: string
 }
+
+const reviewError = (value: string, today: string): string | null =>
+  value === '' ? null : !DATE.test(value) ? 'Enter the review date.' : value < today ? 'The review date cannot be in the past.' : null
 
 /** Client checks of a provider approval record (the API checks the document and the date again). */
 export function providerErrors(fields: ProviderFields, hasFile: boolean, today: string): Record<string, string | null> {
@@ -32,6 +37,7 @@ export function providerErrors(fields: ProviderFields, hasFile: boolean, today: 
     'provider-document': hasFile ? null : 'Choose the approval document.',
     'provider-date': !DATE.test(fields.approved_at) ? 'Enter the approval date.' : fields.approved_at > today ? 'The approval date cannot be in the future.' : null,
     'provider-holder': requiredError('who holds the funds', fields.funds_holder),
+    'provider-review': reviewError(fields.review_due_on, today),
   }
 }
 
@@ -52,7 +58,7 @@ export function ProviderDialog({ marketId, kind, limits, onClose, onSaved }: Pro
   const api = useApi()
   const toast = useToast()
   const evidence = useEvidenceFile()
-  const [fields, setFields] = useState<ProviderFields>({ provider: '', description: '', approved_at: '', funds_holder: '' })
+  const [fields, setFields] = useState<ProviderFields>({ provider: '', description: '', approved_at: '', funds_holder: '', review_due_on: '' })
   const [errors, setErrors] = useState<Record<string, string | null>>({})
   const set = (field: keyof ProviderFields) => (value: string) => setFields({ ...fields, [field]: value })
   const noun = kind === 'payout' ? 'payout' : 'payment'
@@ -63,12 +69,13 @@ export function ProviderDialog({ marketId, kind, limits, onClose, onSaved }: Pro
     if (items.length > 0) return { items }
     return {
       items,
-      fieldIds: { provider: 'provider-name', approved_description: 'provider-description', approved_at: 'provider-date', funds_holder: 'provider-holder', approval_document_id: 'provider-document' },
+      fieldIds: { provider: 'provider-name', approved_description: 'provider-description', approved_at: 'provider-date', funds_holder: 'provider-holder', approval_document_id: 'provider-document', review_due_on: 'provider-review' },
       send: async () => {
         const document = await evidence.upload(api)
         await api.post<ProviderRecord>('/v1/provider-configs', {
           market_id: marketId, kind, provider: fields.provider.trim(), approved_description: fields.description.trim(),
           approval_document_id: document.id, approved_at: fields.approved_at, funds_holder: fields.funds_holder.trim(),
+          ...(fields.review_due_on === '' ? {} : { review_due_on: fields.review_due_on }),
         }, { idempotencyKey })
         toast({ message: `${fields.provider.trim()} recorded as an approved ${noun} provider.` })
         onSaved()
@@ -81,6 +88,7 @@ export function ProviderDialog({ marketId, kind, limits, onClose, onSaved }: Pro
         <TextInput id="provider-name" label="Provider" maxLength={100} value={fields.provider} error={errors['provider-name']} onChange={(event) => set('provider')(event.target.value)} data-autofocus />
         <TextInput id="provider-date" type="date" label="Approved on" max={todayLocal()} value={fields.approved_at} error={errors['provider-date']} onChange={(event) => set('approved_at')(event.target.value)} />
         <TextInput id="provider-holder" label="Funds holder" helper="Who holds participants’ money in transit." maxLength={HOLDER_MAX} value={fields.funds_holder} error={errors['provider-holder']} onChange={(event) => set('funds_holder')(event.target.value)} />
+        <TextInput id="provider-review" type="date" label="Review due on" optional min={todayLocal()} helper="When the approval must be reviewed again; market managers are reminded before it." value={fields.review_due_on} error={errors['provider-review']} onChange={(event) => set('review_due_on')(event.target.value)} />
       </div>
       <TextAreaField id="provider-description" label="What the approval covers" maxLength={DESCRIPTION_MAX} value={fields.description} error={errors['provider-description']} onChange={set('description')} />
       <FileDropZone
@@ -119,6 +127,34 @@ export function WithdrawProviderDialog({ record, onClose, onSaved }: { readonly 
     <FormDialog title={`Withdraw ${record.provider} approval`} submitLabel="Withdraw approval" submitVariant="destructive-solid" onClose={onClose} onSubmit={submit}>
       <p>The record stays on file as withdrawn. The checklist item is complete again only with another recorded approval.</p>
       <TextAreaField id="provider-withdraw-reason" label="Reason" value={reason} error={error} onChange={setReason} />
+    </FormDialog>
+  )
+}
+
+/** PATCH /v1/provider-configs/:id (D-B4-20): set the next review date once a review is done, or clear it. */
+export function ReviewDateDialog({ record, onClose, onSaved }: { readonly record: ProviderRecord; readonly onClose: () => void; readonly onSaved: () => void }) {
+  const api = useApi()
+  const toast = useToast()
+  const [value, setValue] = useState(record.review_due_on ?? '')
+  const [error, setError] = useState<string | null>(null)
+  function submit() {
+    const problem = reviewError(value, todayLocal())
+    setError(problem)
+    if (problem !== null) return { items: [{ fieldId: 'provider-review', message: problem }] }
+    return {
+      items: [],
+      fieldIds: { review_due_on: 'provider-review' },
+      send: async () => {
+        await api.patch(`/v1/provider-configs/${record.id}`, { review_due_on: value === '' ? null : value })
+        toast({ message: value === '' ? `${record.provider} has no review date now.` : `${record.provider} review due on ${value}.` })
+        onSaved()
+      },
+    }
+  }
+  return (
+    <FormDialog title={`Set review date of ${record.provider}`} submitLabel="Save review date" onClose={onClose} onSubmit={submit}>
+      <p>Once the approval has been reviewed, set when it is due again. Leave the date empty to clear it.</p>
+      <TextInput id="provider-review" type="date" label="Review due on" optional min={todayLocal()} value={value} error={error} onChange={(event) => setValue(event.target.value)} data-autofocus />
     </FormDialog>
   )
 }

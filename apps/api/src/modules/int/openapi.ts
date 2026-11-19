@@ -163,6 +163,52 @@ function participantPaths() {
   }
 }
 
+const journalExportBody = z.strictObject({ period_id: z.guid().describe('A committed (or paid, closed) period') })
+const journalExport = z.object({
+  id: z.guid(),
+  market: z.object({ id: z.guid(), code: z.string() }),
+  period: z.object({ id: z.guid(), starts_at: z.iso.datetime(), ends_at: z.iso.datetime() }),
+  line_count: z.int(),
+  debit_total_minor: z.string().describe('Minor units, decimal string'),
+  credit_total_minor: z.string().describe('Minor units, decimal string'),
+  content_sha256: z.string().describe('Hex SHA-256 of the stored gzip'),
+  created_by: z.object({ id: z.guid(), type: z.enum(['user', 'service_account', 'system']) }),
+  created_at: z.iso.datetime(),
+})
+
+/** PLAN B4 2.1: GL journal export by a ledger:export key (all markets; a session needs ledger.export). */
+function ledgerPaths() {
+  const scope = { security: [{ bearer: [] }], 'x-required-scope': 'ledger:export' }
+  return {
+    '/v1/ledger/journal-exports': {
+      post: {
+        operationId: 'createJournalExport', summary: 'Export the GL journal of one period (aggregated by GL code, account type and origin)', ...scope,
+        parameters: [IDEMPOTENCY_KEY],
+        requestBody: { required: true, content: json(ref('JournalExportBody')) },
+        responses: {
+          201: { description: 'Exported', content: json({ type: 'object', required: ['data'], properties: { data: ref('JournalExport') } }) },
+          400: errorResponse('VALIDATION_FAILED (body shape) or IDEMPOTENCY_KEY_REQUIRED'),
+          404: errorResponse('NOT_FOUND: no such period'),
+          409: errorResponse('PERIOD_NOT_COMMITTED: only a committed, paid or closed period is exported'),
+          422: errorResponse('NOTHING_TO_EXPORT, GL_MAPPING_MISSING (details.account_types), EXPORT_ROW_CAP_EXCEEDED or IDEMPOTENCY_KEY_REUSED'),
+          ...KEY_ERRORS,
+        },
+      },
+    },
+    '/v1/ledger/journal-exports/{id}/file': {
+      get: {
+        operationId: 'downloadJournalExport', summary: 'The export as CSV (UTF-8; amounts as decimals in the market currency)', ...scope,
+        parameters: [ID_PARAMETER],
+        responses: {
+          200: { description: 'The CSV file', content: { 'text/csv': { schema: { type: 'string' } } } },
+          404: errorResponse('NOT_FOUND: no such export'),
+          ...KEY_ERRORS,
+        },
+      },
+    },
+  }
+}
+
 /**
  * GET /v1/openapi.json (AC-INT1-1): the integration surface — key-accessible paths with the zod schemas that
  * validate them, the bearer scheme, the error envelope, and one webhook per subscribable topic.
@@ -182,7 +228,7 @@ export function openApiDocument(): Record<string, unknown> {
     info: {
       title: 'Platform integration API',
       version: '1',
-      description: 'Integration surface for API keys: compliance reads, order ingestion and participant writes. Cursor pagination: '
+      description: 'Integration surface for API keys: compliance reads, order ingestion, participant writes and GL journal exports. Cursor pagination: '
         + 'pass meta.next_cursor as cursor; limit 1..200.',
     },
     jsonSchemaDialect: 'https://json-schema.org/draft/2020-12/schema',
@@ -203,6 +249,7 @@ export function openApiDocument(): Record<string, unknown> {
       },
       ...ingestPaths(),
       ...participantPaths(),
+      ...ledgerPaths(),
     },
     webhooks: Object.fromEntries(WEBHOOK_TOPICS.map(({ topic, description, payload }) => [topic, webhook(topic, description, payload)])),
     components: {
@@ -227,6 +274,7 @@ export function openApiDocument(): Record<string, unknown> {
         SignalsAdded: schemaOf(publicParticipantSchemas.signalsResponse),
         ServicingBody: schemaOf(publicServicingSchemas.servicingBody, 'input'),
         Servicing: schemaOf(publicServicingSchemas.servicingResponse),
+        JournalExportBody: schemaOf(journalExportBody, 'input'), JournalExport: schemaOf(journalExport),
       },
     },
   }

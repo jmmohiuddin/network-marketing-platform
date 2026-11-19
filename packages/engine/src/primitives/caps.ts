@@ -6,7 +6,7 @@
 
 import { EngineError } from '../errors.js'
 import { largestRemainder, mulRate, parseDecimal, RATE_SCALE, roundRaw, toRaw, type RoundingMode } from '../money.js'
-import type { PassFn, PositionVolumes, RunContext } from '../pipeline.js'
+import type { Done, LimitedLines, PassFn, PositionVolumes, RunContext } from '../pipeline.js'
 import { compareId } from '../tree.js'
 import type { CapApplication, CapBase, CapRule, ConstraintApplication, ParticipantConstraint, RawLine, TraceStep } from '../types.js'
 
@@ -226,7 +226,8 @@ function applyCap(ctx: RunContext, cap: CapRule, lines: readonly RawLine[], volu
 }
 
 /** Pass 8: company caps in plan order (array order = stated precedence). */
-export const capPass: PassFn<'caps'> = (ctx, done) => {
+/** Pass 8 lines and applications; run.ts adds the breakage while the pre-cap lines are still held. */
+export const capPass = (ctx: RunContext, done: Done<'caps'>): LimitedLines<CapApplication> => {
   let lines: readonly RawLine[] = done.constraints.lines
   const applications: CapApplication[] = []
   for (const cap of ctx.input.plan.caps) {

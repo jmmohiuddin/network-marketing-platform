@@ -8,7 +8,7 @@ import { decodeCursor, toPage } from '../../lib/pagination.js'
 import type { Permission } from '../../lib/permissions.js'
 import { CHANGE_REQUEST_COLUMNS, assertEffectiveFrom, type ChangeRequestRow } from './settings-write.js'
 import { approveOrRefuse } from './sod.js'
-import { isSettingKey, SETTINGS } from './settings.js'
+import { isSettingKey, SETTINGS, type SettingDefinition } from './settings.js'
 import { appendVersion } from './versions.js'
 
 const OBJECT_TYPE = 'setting_change_request'
@@ -140,6 +140,10 @@ export async function decideChangeRequest(
   const permission = approverFor(auth, request.key) // before the state: a caller who may not decide learns no state
   assertPending(request)
   const approve = decision.decision === 'approve'
+  // D-B4-06: a request for a key retired after it was filed is never applied (it can still be rejected or withdrawn).
+  if (approve && isSettingKey(request.key) && (SETTINGS[request.key] as SettingDefinition).retired === true) {
+    throw new ApiError(422, 'SETTING_RETIRED', 'This setting is retired: it can no longer be changed.', { key: request.key })
+  }
   const approval = await approveOrRefuse(tx, {
     objectType: OBJECT_TYPE, objectId: request.id, preparerId: request.requested_by, contributorIds: [], excludedIds: [],
     decision: approve ? 'approved' : 'rejected', reason: decision.reason, factorVerifiedAt: decision.factorVerifiedAt,

@@ -33,7 +33,7 @@ import { DocumentLink } from '../markets/gate-inspector'
 import { useEvidenceFile } from '../markets/evidence-forms'
 import type { DocumentLimits } from '../markets/types'
 import { PLANS_PATH, STATE_LABELS, versionPage } from '../plans/format'
-import { basisLabel, resolutionText } from '../plans/guardrails-tab'
+import { basisLabel, needsReview, resolutionText } from '../plans/guardrails-tab'
 import type { Decision, PlanSummary } from '../plans/types'
 
 const DECISIONS_PATH = '/v1/guardrail-decisions'
@@ -71,9 +71,9 @@ function useUrlState(): { filters: Filters; decision: string | null; set: (chang
   return { filters, decision: decision !== null && isUuid(decision) ? decision : null, set }
 }
 
-/** True when an override may be approved on this decision (FR-CPL-008): an overridable warned or blocked evaluation. */
+/** True when an override may be approved (FR-CPL-008): a warned or blocked evaluation of an overridable rule, or one in compliance review (D-B4-21 b). */
 export function overridable(d: Decision): boolean {
-  return d.kind === 'evaluation' && d.outcome !== 'reported' && d.rule.overridable && d.override === null
+  return d.kind === 'evaluation' && d.outcome !== 'reported' && (d.rule.overridable || needsReview(d)) && d.override === null
 }
 
 /** Inline override approval inside the inspector (one dialog at a time): justification, optional evidence, step-up. */
@@ -153,7 +153,7 @@ function Inspector({ id, onClose, onChanged }: { readonly id: string; readonly o
           </Section>
           <Section title="Rule and basis">
             <p className="font-body-sm text-body-sm text-on-surface">{d.rule.basis}</p>
-            <p className="font-caption text-caption text-on-surface-variant">Basis status: {basisLabel(d.rule.basis_status)} · Market pack: {d.rule.market_pack} · {d.rule.overridable ? 'Can be overridden' : 'Cannot be overridden'}{d.rule.mandatory ? ' · Mandatory' : ''}</p>
+            <p className="font-caption text-caption text-on-surface-variant">Basis status: {basisLabel(d.rule.basis_status)} · Market pack: {d.rule.market_pack} · {d.rule.overridable ? 'Can be overridden' : needsReview(d) ? 'Overridable only through compliance review' : 'Cannot be overridden'}{d.rule.mandatory ? ' · Mandatory' : ''}</p>
             {d.rule.source_ref !== null && <p className="font-caption text-caption text-on-surface-variant">Source reference: {d.rule.source_ref}</p>}
           </Section>
           <Section title="Explanation">

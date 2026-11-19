@@ -59,31 +59,43 @@ async function participantType(tenantId: string, code: string, customer: boolean
   )
 }
 
+// Money keys need an approved change request per version (the money guard checks at commit), one key per version.
+const MONEY_KEYS: ReadonlySet<string> = new Set([
+  'money.rounding_mode', 'adjustments.policy', 'write_offs.policy', 'payouts.market_policy', 'payouts.bank_detail_cooling_off_hours',
+])
+
 /**
- * Settings version 1 (2020). money.rounding_mode needs an approved change request (the money guard checks at commit):
- * request, approval and version are written in one owner transaction.
+ * Settings versions from 2020-01-01: the plain settings plus each money key in its own following version (2020-01-02,
+ * ...) with its approved change request, all in one owner transaction. Returns the last version's id.
  */
 async function settingsVersion(tenantId: string, settings: Record<string, unknown>, requester: TestUser, approver: TestUser): Promise<string> {
   const client = await getOwnerPool().connect()
   try {
     await client.query('BEGIN')
-    const requestId = randomUUID()
-    const mode = settings['money.rounding_mode']
-    const approvalId = mode === undefined ? null : (await client.query<{ id: string }>(
-      `INSERT INTO approval (tenant_id, object_type, object_id, preparer_id, approver_id, decision, decided_at, created_by)
-       VALUES ($1, 'setting_change_request', $2, $3, $4, 'approved', now(), $4) RETURNING id`, [tenantId, requestId, requester.id, approver.id])).rows[0]!.id
-    const { rows } = await client.query<{ id: string }>(
-      `INSERT INTO tenant_setting_version (tenant_id, version, effective_from, settings, reason, created_by, approval_id)
-       VALUES ($1, 1, '2020-01-01', $2, 'fixture', $3, $4) RETURNING id`, [tenantId, settings, requester.id, approvalId])
-    if (mode !== undefined) {
-      await client.query(
-        `INSERT INTO setting_change_request (id, tenant_id, key, value, effective_from, reason, base_version, state, requested_by, requested_at,
-           decided_by, decided_at, approval_id, version_id)
-         VALUES ($1, $2, 'money.rounding_mode', to_jsonb($3::text), '2020-01-01', 'fixture', 0, 'approved', $4, now(), $5, now(), $6, $7)`,
-        [requestId, tenantId, mode, requester.id, approver.id, approvalId, rows[0]!.id])
+    const money = Object.keys(settings).filter((key) => MONEY_KEYS.has(key))
+    let values = Object.fromEntries(Object.entries(settings).filter(([key]) => !MONEY_KEYS.has(key)))
+    let versionId = ''
+    for (const [index, key] of [null, ...money].entries()) {
+      const effectiveFrom = `2020-01-0${index + 1}`
+      const requestId = randomUUID()
+      if (key !== null) values = { ...values, [key]: settings[key] }
+      const approvalId = key === null ? null : (await client.query<{ id: string }>(
+        `INSERT INTO approval (tenant_id, object_type, object_id, preparer_id, approver_id, decision, decided_at, created_by)
+         VALUES ($1, 'setting_change_request', $2, $3, $4, 'approved', now(), $4) RETURNING id`, [tenantId, requestId, requester.id, approver.id])).rows[0]!.id
+      const { rows } = await client.query<{ id: string }>(
+        `INSERT INTO tenant_setting_version (tenant_id, version, effective_from, settings, reason, created_by, approval_id)
+         VALUES ($1, $2, $3, $4, 'fixture', $5, $6) RETURNING id`, [tenantId, index + 1, effectiveFrom, values, requester.id, approvalId])
+      versionId = rows[0]!.id
+      if (key !== null) {
+        await client.query(
+          `INSERT INTO setting_change_request (id, tenant_id, key, value, effective_from, reason, base_version, state, requested_by, requested_at,
+             decided_by, decided_at, approval_id, version_id)
+           VALUES ($1, $2, $3, $4::jsonb, $5, 'fixture', $6, 'approved', $7, now(), $8, now(), $9, $10)`,
+          [requestId, tenantId, key, JSON.stringify(settings[key]), effectiveFrom, index, requester.id, approver.id, approvalId, versionId])
+      }
     }
     await client.query('COMMIT')
-    return rows[0]!.id
+    return versionId
   } catch (error) {
     await client.query('ROLLBACK')
     throw error
@@ -94,7 +106,7 @@ async function settingsVersion(tenantId: string, settings: Record<string, unknow
 
 /**
  * A tenant (new, or `tenantId` without settings versions yet) with market DE (or `market`), calendar "<code> monthly"
- * (Europe/Berlin) with `past` ended periods and two future ones, a settings version from 2020 with `settings`,
+ * (Europe/Berlin) with `past` ended periods and two future ones, settings versions from 2020 with `settings`,
  * participant types and the run personas (all markets, step-up fresh).
  */
 export async function createWorld(
@@ -301,14 +313,15 @@ export async function calculate(app: FastifyInstance, w: World, periodId: string
   return response.json().data.run_id
 }
 
-/** Review (opens it), request commit (analyst) and commit (finance, acknowledging every blocking exception). */
-export async function commit(app: FastifyInstance, w: World, runId: string, by: TestUser = w.finance): Promise<void> {
+/** Review (opens it), request commit (analyst) and commit (finance, acknowledging every blocking exception): the commit's data. */
+export async function commit(app: FastifyInstance, w: World, runId: string, by: TestUser = w.finance): Promise<{ journal_entry_id: string | null }> {
   const review = await call(app, { method: 'GET', url: `/v1/runs/${runId}/review`, as: w.analyst })
   expect(review.statusCode, review.body).toBe(200)
   const blocking = (review.json().data.exceptions as { id: string; blocking: boolean }[]).filter((e) => e.blocking).map((e) => e.id)
   await call(app, { method: 'POST', url: `/v1/runs/${runId}/request-commit`, as: w.analyst, idempotencyKey: true })
   const committed = await call(app, { method: 'POST', url: `/v1/runs/${runId}/commit`, as: by, idempotencyKey: true, body: { acknowledged_exceptions: blocking } })
   expect(committed.statusCode, committed.body).toBe(200)
+  return committed.json().data
 }
 
 export async function linesOf(runId: string): Promise<{ position: string; rule: string; amount: string; origin: string | null }[]> {
@@ -330,3 +343,42 @@ export async function evidenceDocument(u: TestUser): Promise<string> {
 
 /** One microsecond-free instant inside a period (an hour after it starts). */
 export const inside = (p: Period, hours = 1): Date => new Date(p.starts_at.getTime() + hours * 3_600_000)
+
+/** Owner writes with triggers off (session_replication_role replica, this transaction only): tampering fixtures. */
+export async function ownerUnchecked(sql: string, params: unknown[]): Promise<void> {
+  const client = await getOwnerPool().connect()
+  try {
+    await client.query('BEGIN')
+    await client.query('SET LOCAL session_replication_role = replica')
+    await client.query(sql, params)
+    await client.query('COMMIT')
+  } catch (error) {
+    await client.query('ROLLBACK')
+    throw error
+  } finally {
+    client.release()
+  }
+}
+
+/** The postings of the run's journal entry: [type, payee | null, debit, credit], sorted. */
+export async function postingsOf(runId: string): Promise<[string, string | null, string, string][]> {
+  const rows = await ownerRows<{ type: string; payee: string | null; debit: string; credit: string }>(
+    `SELECT a.type, a.payee_participant_id AS payee, x.debit_minor::text AS debit, x.credit_minor::text AS credit
+     FROM journal_entry e JOIN posting x ON x.entry_id = e.id JOIN ledger_account a ON a.id = x.account_id
+     WHERE e.origin_type = 'run' AND e.origin_id = $1 ORDER BY a.type, a.payee_participant_id NULLS FIRST, x.debit_minor`,
+    [runId],
+  )
+  return rows.map((r) => [r.type, r.payee, r.debit, r.credit])
+}
+
+/** Normal-side balance of a payee's account in the world's market (led_balance). */
+export async function balance(w: World, participantId: string | null, type: string): Promise<string> {
+  const [row] = await ownerRows<{ amount: string }>(
+    `SELECT coalesce(sum(CASE WHEN $3 IN ('commission_expense', 'clawback_receivable', 'write_off', 'rounding_residue')
+                             THEN x.debit_minor - x.credit_minor ELSE x.credit_minor - x.debit_minor END), 0)::text AS amount
+     FROM ledger_account a JOIN posting x ON x.account_id = a.id
+     WHERE a.market_id = $1 AND a.payee_participant_id IS NOT DISTINCT FROM $2 AND a.type = $3`,
+    [w.marketId, participantId, type],
+  )
+  return row!.amount
+}

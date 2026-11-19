@@ -169,7 +169,7 @@ export function registerLifecycleRoutes(app: FastifyInstance): void {
       const { plan, version } = await planVersionFor(tx, request, 'plan.edit')
       assertDraft(version)
       const rules = await ruleRows(tx, version.id)
-      const validation = validationOf(rules, plan.calendar_ids)
+      const validation = validationOf(rules, plan.calendar_ids, version.placement_width)
       if (!validation.ok || !version.compiled_ok) throw new ApiError(422, 'PLAN_INVALID', 'Fix the validation errors before submitting.', { errors: validationView(validation).errors })
       if (version.crediting_event === null) throw new ApiError(422, 'CREDITING_EVENT_NOT_SET', 'Choose the crediting event before submitting.')
       const uncovered = await uncoveredExtensions(tx, version.id, rules)

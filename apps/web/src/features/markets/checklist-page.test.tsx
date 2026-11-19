@@ -6,6 +6,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { apiError, json } from '../../test/fetch'
 import { adminMe, bodyOf, callsTo, fetchByRoute, headerOf, renderAs } from '../admin/test-support'
 import { ChecklistPage, screeningRules, stateSentence } from './checklist-page'
+import { reviewChip } from './format'
 import { basisText, recordsOf } from './gate-table'
 import type { Checklist, ChecklistItem, GoLiveRequest, ProviderRecord } from './types'
 
@@ -63,7 +64,7 @@ function routes(data: Checklist, extra: Record<string, (query: URLSearchParams) 
 
 const PROVIDER: ProviderRecord = {
   id: 'p1', market_id: MARKET, kind: 'payout', provider: 'Sandbox Payouts Ltd', approved_description: 'Payouts to FR', approval_document: null,
-  approved_at: '2026-11-01', funds_holder: 'Sandbox bank', state: 'recorded', created_by: { id: 'u1', display_name: 'Ada Admin' }, created_at: '2026-11-16T09:00:00.000Z', withdrawn_at: null,
+  approved_at: '2026-11-01', funds_holder: 'Sandbox bank', state: 'recorded', adapter: null, webhook_configured: false, review_due_on: null, created_by: { id: 'u1', display_name: 'Ada Admin' }, created_at: '2026-11-16T09:00:00.000Z', withdrawn_at: null,
 }
 
 const PDF = () => new File(['%PDF-1.7'], 'licence.pdf', { type: 'application/pdf' })
@@ -139,6 +140,78 @@ describe('ChecklistPage', () => {
     const table = await screen.findByRole('table', { name: 'Launch checklist items' })
     const row = within(table).getByRole('button', { name: 'Payout provider eligibility' }).closest('tr')!
     expect(await within(row).findByText(/^Recorded by Ada Admin, /)).toBeTruthy()
+  })
+
+  it('shows the review due or overdue chip on recorded provider approvals (D-B4-20)', async () => {
+    router.params = new URLSearchParams('item=payout_provider')
+    renderAs(ADMIN, <ChecklistPage marketId={MARKET} />, routes(checklist(), {
+      'GET /v1/provider-configs': () => json(200, { data: [{ ...PROVIDER, review_due_on: '2020-01-31' }, { ...PROVIDER, id: 'p2', review_due_on: '2999-12-31' }, { ...PROVIDER, id: 'p3', state: 'withdrawn', review_due_on: '2020-01-31' }], meta: {} }),
+    }))
+    const list = await screen.findByRole('list', { name: 'Provider approvals' })
+    expect(within(list).getAllByText('Review overdue')).toHaveLength(1)
+    expect(within(list).getByText('Review due 2999-12-31')).toBeTruthy()
+    expect(reviewChip(null, '2026-11-18')).toBeNull()
+    expect(reviewChip('2026-11-18', '2026-11-18')).toEqual({ state: 'scheduled', label: 'Review due 2026-11-18' })
+  })
+
+  it('moves or clears the review date of a recorded provider, on a live market too (D-B4-20, AC-PAY6-1)', async () => {
+    const user = userEvent.setup()
+    router.params = new URLSearchParams('item=payout_provider')
+    const live = checklist({ market: { ...checklist().market, state: 'live' } })
+    const fetchMock = routes(live, {
+      'GET /v1/provider-configs': () => json(200, { data: [{ ...PROVIDER, review_due_on: '2020-01-31' }, { ...PROVIDER, id: 'p3', provider: 'Old Payouts', state: 'withdrawn' }], meta: {} }),
+      'PATCH /v1/provider-configs/p1': () => json(200, { data: { ...PROVIDER, review_due_on: '2999-06-30' }, meta: {} }),
+    })
+    renderAs(ADMIN, <ChecklistPage marketId={MARKET} />, fetchMock)
+    const list = await screen.findByRole('list', { name: 'Provider approvals' })
+    expect(within(list).getAllByRole('button', { name: 'Withdraw' })).toHaveLength(1)
+    expect(within(list).queryByRole('button', { name: 'Set review date of Old Payouts' })).toBeNull()
+    await user.click(within(list).getByRole('button', { name: 'Set review date of Sandbox Payouts Ltd' }))
+    const dialog = screen.getByRole('dialog', { name: 'Set review date of Sandbox Payouts Ltd' })
+    await user.click(within(dialog).getByRole('button', { name: 'Save review date' }))
+    expect(within(dialog).getAllByText('The review date cannot be in the past.').length).toBeGreaterThan(0)
+    await user.clear(within(dialog).getByLabelText(/Review due on/))
+    await user.type(within(dialog).getByLabelText(/Review due on/), '2999-06-30')
+    await user.click(within(dialog).getByRole('button', { name: 'Save review date' }))
+    expect(await screen.findByText('Sandbox Payouts Ltd review due on 2999-06-30.')).toBeTruthy()
+    expect(bodyOf(callsTo(fetchMock, 'PATCH', '/v1/provider-configs/p1')[0]![1])).toEqual({ review_due_on: '2999-06-30' })
+  })
+
+  it('BUG-099: records a provider approval on a live market, whose other items stay closed', async () => {
+    const user = userEvent.setup()
+    const live = checklist({ market: { ...checklist().market, state: 'live' } })
+    router.params = new URLSearchParams('item=licence_evidence')
+    const first = renderAs(ADMIN, <ChecklistPage marketId={MARKET} />, routes(live))
+    const evidence = await screen.findByRole('complementary', { name: 'Licence or registration evidence' })
+    expect(within(evidence).getByText('The market is live: its checklist is closed.')).toBeTruthy()
+    expect(within(evidence).queryByRole('button', { name: 'Attach evidence file' })).toBeNull()
+    first.unmount()
+    router.params = new URLSearchParams('item=payout_provider')
+    renderAs(ADMIN, <ChecklistPage marketId={MARKET} />, routes(live))
+    const inspector = await screen.findByRole('complementary', { name: 'Payout provider eligibility' })
+    expect(within(inspector).queryByText('The market is live: its checklist is closed.')).toBeNull()
+    await user.click(await within(inspector).findByRole('button', { name: 'Record provider approval' }))
+    expect(screen.getByRole('dialog', { name: 'Record payout provider approval' })).toBeTruthy()
+  })
+
+  it('clears a review date and offers it to no one without market.manage', async () => {
+    const user = userEvent.setup()
+    router.params = new URLSearchParams('item=payout_provider')
+    const fetchMock = routes(checklist(), {
+      'GET /v1/provider-configs': () => json(200, { data: [{ ...PROVIDER, review_due_on: '2999-01-31' }], meta: {} }),
+      'PATCH /v1/provider-configs/p1': () => json(200, { data: PROVIDER, meta: {} }),
+    })
+    const first = renderAs(ADMIN, <ChecklistPage marketId={MARKET} />, fetchMock)
+    await user.click(await screen.findByRole('button', { name: 'Set review date of Sandbox Payouts Ltd' }))
+    const dialog = screen.getByRole('dialog', { name: 'Set review date of Sandbox Payouts Ltd' })
+    await user.clear(within(dialog).getByLabelText(/Review due on/))
+    await user.click(within(dialog).getByRole('button', { name: 'Save review date' }))
+    expect(await screen.findByText('Sandbox Payouts Ltd has no review date now.')).toBeTruthy()
+    expect(bodyOf(callsTo(fetchMock, 'PATCH', '/v1/provider-configs/p1')[0]![1])).toEqual({ review_due_on: null })
+    first.unmount()
+    renderAs(OFFICER, <ChecklistPage marketId={MARKET} />, routes(checklist(), { 'GET /v1/provider-configs': () => json(200, { data: [PROVIDER], meta: {} }) }))
+    await screen.findByRole('list', { name: 'Provider approvals' })
+    expect(screen.queryByRole('button', { name: /Set review date/ })).toBeNull()
   })
 
   it('shows every item again when go-live is refused under a category filter, so each summary link lands', async () => {
@@ -237,13 +310,14 @@ describe('ChecklistPage', () => {
     await user.type(within(dialog).getByLabelText('Provider'), 'Sandbox Payouts')
     await user.type(within(dialog).getByLabelText('Approved on'), '2026-11-01')
     await user.type(within(dialog).getByLabelText('Funds holder'), 'Sandbox bank')
+    await user.type(within(dialog).getByLabelText(/Review due on/), '2999-01-31')
     await user.type(within(dialog).getByLabelText('What the approval covers'), 'Payouts to FR participants')
     await user.upload(within(dialog).getByLabelText('Approval document'), PDF())
     await user.click(within(dialog).getByRole('button', { name: 'Record approval' }))
     expect(await screen.findByText('Sandbox Payouts recorded as an approved payout provider.')).toBeTruthy()
     expect(bodyOf(callsTo(fetchMock, 'POST', '/v1/provider-configs')[0]![1])).toEqual({
       market_id: MARKET, kind: 'payout', provider: 'Sandbox Payouts', approved_description: 'Payouts to FR participants',
-      approval_document_id: 'doc2', approved_at: '2026-11-01', funds_holder: 'Sandbox bank',
+      approval_document_id: 'doc2', approved_at: '2026-11-01', funds_holder: 'Sandbox bank', review_due_on: '2999-01-31',
     })
   })
 
@@ -345,6 +419,14 @@ describe('ChecklistPage: B2 agreement item and rule lines', () => {
     expect(within(inspector).getByRole('link', { name: 'Settings' }).getAttribute('href')).toBe('/settings#agreements-title')
     expect(within(inspector).queryByRole('button')).toBeNull()
     expect(within(screen.getByRole('table', { name: 'Launch checklist items' })).getByText('Version NL v1')).toBeTruthy()
+  })
+
+  it('BUG-105: names the plan version that runs the market on the plan-variant item', () => {
+    const plan = { plan_id: 'p1', plan_name: 'Global plan', version_id: 'v3', version: 3 }
+    const variant = (state: 'active' | 'scheduled') => item({ item: 'plan_variant', title: 'Plan variant', kind: 'automatic', category: 'plan', detail: { version: { ...plan, state } } })
+    expect(basisText(variant('active'))).toBe('Global plan, version 3')
+    expect(basisText(variant('scheduled'))).toBe('Global plan, version 3 (scheduled)')
+    expect(basisText(item({ item: 'plan_variant', title: 'Plan variant', kind: 'automatic', category: 'plan', detail: { version: null } }))).toBe('No version published')
   })
 
   it('BUG-060: only the rule id may break anywhere, never the word "mandatory"', async () => {

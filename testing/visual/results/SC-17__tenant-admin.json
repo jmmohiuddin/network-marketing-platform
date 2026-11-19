@@ -1,12 +1,12 @@
 {
-  "when": "2026-11-16T22:33:41.214Z",
+  "when": "2026-11-19T11:02:09.227Z",
   "screenId": "SC-17",
   "stitch": "sc_17_market_launch_checklist",
   "module": "settings",
   "screen": "market-launch-checklist",
   "route": "/settings/markets/[id]",
   "role": "tenant-admin",
-  "url": "http://127.0.0.1:3100/settings/markets/5d0b3dd0-2498-43fe-8035-905c30c697cd",
+  "url": "http://127.0.0.1:3100/settings/markets/e5082c07-cc52-4112-bc91-a0958a64ffac?item=payout_provider",
   "self": false,
   "patched": [],
   "viewports": [
@@ -15,10 +15,10 @@
       "screenshot": "testing/ui-screenshots/app/settings/market-launch-checklist/tenant-admin/1440x900.png",
       "reference": "testing/ui-screenshots/reference/sc_17_market_launch_checklist/1440x900.png",
       "diffImage": "testing/ui-screenshots/app/settings/market-launch-checklist/tenant-admin/1440x900.diff.png",
-      "mismatchPercent": 10.24,
-      "diffPixels": 194561,
+      "mismatchPercent": 10.07,
+      "diffPixels": 192114,
       "referenceSize": "1440x1153",
-      "actualSize": "1440x1319",
+      "actualSize": "1440x1325",
       "landmarks": [
         {
           "landmark": "header",
@@ -65,7 +65,7 @@
         {
           "landmark": "page",
           "stitchText": "Market Launch Checklist — United Kingdom (UK-GBR) SC-17 PRE-",
-          "appText": "Settingschevron_rightMarketschevron_rightFRLaunch checklist:",
+          "appText": "Settingschevron_rightMarketschevron_rightDELaunch checklist:",
           "status": "match",
           "severity": "none",
           "props": [
@@ -98,7 +98,7 @@
         {
           "landmark": "title",
           "stitchText": "Market Launch Checklist — United Kingdom (UK-GBR)",
-          "appText": "Launch checklist: France (FR)",
+          "appText": "Launch checklist: Germany (DE)",
           "status": "match",
           "severity": "none",
           "props": [
@@ -284,7 +284,7 @@
         {
           "landmark": "card",
           "stitchText": "Target Market public United Kingdom GBP (£) Locale: en-GB UT",
-          "appText": "Completetask_alt8 of 9Mandatory items",
+          "appText": "Completetask_alt3 of 9Mandatory items",
           "status": "match",
           "severity": "none",
           "props": [
@@ -315,10 +315,10 @@
       "screenshot": "testing/ui-screenshots/app/settings/market-launch-checklist/tenant-admin/1280x800.png",
       "reference": "testing/ui-screenshots/reference/sc_17_market_launch_checklist/1280x800.png",
       "diffImage": "testing/ui-screenshots/app/settings/market-launch-checklist/tenant-admin/1280x800.diff.png",
-      "mismatchPercent": 8.57,
-      "diffPixels": 191299,
+      "mismatchPercent": 8.15,
+      "diffPixels": 183008,
       "referenceSize": "1280x1226",
-      "actualSize": "1280x1743",
+      "actualSize": "1280x1755",
       "landmarks": [
         {
           "landmark": "header",
@@ -365,7 +365,7 @@
         {
           "landmark": "page",
           "stitchText": "Market Launch Checklist — United Kingdom (UK-GBR) SC-17 PRE-",
-          "appText": "Settingschevron_rightMarketschevron_rightFRLaunch checklist:",
+          "appText": "Settingschevron_rightMarketschevron_rightDELaunch checklist:",
           "status": "match",
           "severity": "none",
           "props": [
@@ -398,7 +398,7 @@
         {
           "landmark": "title",
           "stitchText": "Market Launch Checklist — United Kingdom (UK-GBR)",
-          "appText": "Launch checklist: France (FR)",
+          "appText": "Launch checklist: Germany (DE)",
           "status": "match",
           "severity": "none",
           "props": [
@@ -584,7 +584,7 @@
         {
           "landmark": "card",
           "stitchText": "Target Market public United Kingdom GBP (£) Locale: en-GB UT",
-          "appText": "Completetask_alt8 of 9Mandatory items",
+          "appText": "Completetask_alt3 of 9Mandatory items",
           "status": "match",
           "severity": "none",
           "props": [
@@ -615,15 +615,15 @@
       "screenshot": "testing/ui-screenshots/app/settings/market-launch-checklist/tenant-admin/768x1024.png",
       "reference": "testing/ui-screenshots/reference/sc_17_market_launch_checklist/768x1024.png",
       "diffImage": "testing/ui-screenshots/app/settings/market-launch-checklist/tenant-admin/768x1024.diff.png",
-      "mismatchPercent": 7.09,
-      "diffPixels": 176687,
+      "mismatchPercent": 7.01,
+      "diffPixels": 174554,
       "referenceSize": "993x2508",
-      "actualSize": "768x1915",
+      "actualSize": "768x1963",
       "landmarks": [
         {
           "landmark": "page",
           "stitchText": "Market Launch Checklist — United Kingdom (UK-GBR) SC-17 PRE-",
-          "appText": "Settingschevron_rightMarketschevron_rightFRLaunch checklist:",
+          "appText": "Settingschevron_rightMarketschevron_rightDELaunch checklist:",
           "status": "match",
           "severity": "none",
           "props": [
@@ -656,7 +656,7 @@
         {
           "landmark": "title",
           "stitchText": "Market Launch Checklist — United Kingdom (UK-GBR)",
-          "appText": "Launch checklist: France (FR)",
+          "appText": "Launch checklist: Germany (DE)",
           "status": "match",
           "severity": "none",
           "props": [
@@ -842,7 +842,7 @@
         {
           "landmark": "card",
           "stitchText": "Target Market public United Kingdom GBP (£) Locale: en-GB UT",
-          "appText": "Completetask_alt8 of 9Mandatory items",
+          "appText": "Completetask_alt3 of 9Mandatory items",
           "status": "match",
           "severity": "none",
           "props": [
@@ -873,15 +873,15 @@
       "screenshot": "testing/ui-screenshots/app/settings/market-launch-checklist/tenant-admin/390x844.png",
       "reference": "testing/ui-screenshots/reference/sc_17_market_launch_checklist/390x844.png",
       "diffImage": "testing/ui-screenshots/app/settings/market-launch-checklist/tenant-admin/390x844.diff.png",
-      "mismatchPercent": 4.08,
-      "diffPixels": 115244,
+      "mismatchPercent": 4.18,
+      "diffPixels": 117983,
       "referenceSize": "597x4730",
-      "actualSize": "390x2430",
+      "actualSize": "390x2436",
       "landmarks": [
         {
           "landmark": "page",
           "stitchText": "Market Launch Checklist — United Kingdom (UK-GBR) SC-17 PRE-",
-          "appText": "Settingschevron_rightMarketschevron_rightFRLaunch checklist:",
+          "appText": "Settingschevron_rightMarketschevron_rightDELaunch checklist:",
           "status": "match",
           "severity": "none",
           "props": [
@@ -914,7 +914,7 @@
         {
           "landmark": "title",
           "stitchText": "Market Launch Checklist — United Kingdom (UK-GBR)",
-          "appText": "Launch checklist: France (FR)",
+          "appText": "Launch checklist: Germany (DE)",
           "status": "mismatch",
           "severity": "medium",
           "props": [
@@ -1100,7 +1100,7 @@
         {
           "landmark": "card",
           "stitchText": "Target Market public United Kingdom GBP (£) Locale: en-GB UT",
-          "appText": "Completetask_alt8 of 9Mandatory items",
+          "appText": "Completetask_alt3 of 9Mandatory items",
           "status": "match",
           "severity": "none",
           "props": [

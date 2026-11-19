@@ -130,3 +130,27 @@ _Agent: backend. Read before every task; update after every task. Keep concise �
 - Sandbox holds the market periods lock exclusively during the synchronous sandbox calculation: late detection and commits of that market wait for it.
 - PLAN §0.1 says "positions of the market"; snapshot keeps all positions (D-B2-21), state rows per market only: architect to record as deviation.
 
+
+## From B4 BE1 engine-and-controls (2026-11-18)
+- Integrator: isolation cases + role-matrix probes for GET/POST /v1/users/:id/related-participants and POST /v1/users/:id/related-participants/:rid/withdraw (Tenant admin only; user.manage all markets). Isolation/role-matrix tests fail until added.
+- S-1 target (2M in 4 GB) not met: largest passing 750k. E-ADR-35 revision (8 GB worker, ~1.2M) and the streaming output API (D-B4-22 additive, COMP adoption) are architect decisions.
+- W2: guardrail outstanding reason `compliance_review_required` needs words in features/plans/ui.tsx; ack button must hide whenever outstanding reason = `compliance_review_required` (outcome may be `warned` on a pre-B4 row; 409 COMPLIANCE_REVIEW_REQUIRED); PATCH version now returns `validation`.
+- W2 contract (review fix): case LIST shows `approvals_required: null` for open cases (no hook per row); single-case views (detail, create, assign, PATCH) show the hook's answer while open, or null when the hook refuses (e.g. adjustment period committed); submit re-runs it and refuses with the real error.
+- DB agent (CPL review LOW, latent): guardrail evaluation dedupe unique index (0300: plan_version_id, rule_id, content_sha256, md5(detail::text)) has no outcome, so a warned evaluation (opaque or not) acknowledged before its rule's outcome changes to blocked stays satisfied; re-evaluation cannot store the blocked row. Fix: 04xx migration adding `outcome` to the index + `ON CONFLICT` target in cpl/guardrails.ts storeEvaluation (BE1 one-line follow-up) + test (warned opaque acked, rule -> blocked, save again, submit 409 GUARDRAIL_OUTSTANDING). No rows on nmp_dev/nmp_e2e. Opaque rows FIXED in 0411 (review keys on the rule's current outcome; override allowed); still open for NON-opaque warned rows acked before their rule turned blocked.
+
+## B4 BE3 (2026-11-18) — for the integrator
+- modules/index.ts: add `taxModule` to defaultModules; add `...payCaseTypes` to caseTypes. INT already registers the provider webhook.
+- Isolation cases + role-matrix probes for the new routes: PATCH /v1/provider-configs/:id; PUT /v1/provider-configs/:id/adapter; POST/GET /v1/payout-batches; GET /v1/payout-batches/:id, /lines, /instructions; POST /v1/payout-batches/:id/submit, /approve, /cancel, /retry-failed, /bank-file; POST /v1/payout-providers/:id/settlement-reports (text/csv); POST /v1/webhooks/providers/:providerConfigId (signed, unsignedAnswer 401/404); GET /v1/payout-reconciliation/summary, /items; GET /v1/payout-exceptions; POST /v1/payout-exceptions/:id/resolve; GET/POST /v1/payees/:id/holds; POST /v1/payout-holds/:id/release; GET /v1/payouts/dormant; POST /v1/participants/:id/bank-detail-requests; GET /v1/participants/:id/bank-details; GET/PUT /v1/participants/:id/tax-profile; POST /v1/participants/:id/tax-profile/unmask. OpenAPI paths too.
+- GET /v1/provider-configs readers now include integration.manage, integration.read, payout.read (Commission analyst holds integration.read and now reads them).
+
+## B4 BE2 (2026-11-18)
+- Integrator: mount ledModule + ledCaseTypes; isolation cases + role-matrix probes for GET /v1/ledger/summary, /accounts, /accounts/:id/postings, /entries, /entries/:id, /receivables, /gl-mappings, PUT /v1/ledger/gl-mappings/:marketId/:accountType, POST+GET /v1/ledger/journal-exports, GET /v1/ledger/journal-exports/:id/file (key 'ledger:export' too), GET /v1/payees/:id/balances; lib/exports recordExport must set requested_by only for actor type user (key-created export currently fails the FK/CHECK) + key-create test.
+- BE1/CAS: two-approval flow untested end to end for adjustment/write_off (hooks unit-tested); CAS create outside scope answers 422 SUBJECT_NOT_FOUND (AC-FIN4-3 wants 403 SCOPE_NOT_HELD).
+- T-B4-29 (late item of a Paid period consumed) has the code change but no test (needs a Paid period fixture from PAY).
+
+## B4 BE3 review fixes (2026-11-18)
+- Architect (PLAN gap, not built): bank_detail case has no excludedApprovers (a staff member related to the payee can approve the payee's account change) and payout approve does not exclude users related to a line's payee (D-B4-10 covers adjustment/write_off only).
+- Known limit (shortcut comment in settlement.ts): a provider event arriving while an ambiguous submit left provider_ref NULL becomes an unknown_reference exception and is not re-applied when the status query later learns the reference.
+- OpenAPI: PAY/TAX routes are session-only, so they are not in /v1/openapi.json (the document lists key-accessible paths); payout.* webhook topics are already in WEBHOOK_TOPICS.
+- Integrator: ledModule + ledCaseTypes still unmounted; their isolation cases/probes are needed when mounted.
+- W1/W2 (B4 review): case `approvals_required` is `1|2|null` everywhere — null on every open row of GET /v1/cases and on an open case whose hook refuses; the open single-case value is advisory for the reader (PLAN §2). Related-party withdraw of a declaration about the caller -> 422 SOD_SELF_APPROVAL (show the message); withdraw takes no Idempotency-Key (PLAN §2 exception).

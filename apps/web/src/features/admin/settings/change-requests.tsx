@@ -16,7 +16,8 @@ import { FormDialog, TextAreaField } from '../form-dialog'
 import { formatDateTime, shortId } from '../format'
 import { LoadFailure } from '../page-states'
 import { NOTE, SECTION_CARD, SectionTitle } from '../ui'
-import { approvalOf, approverNames, FINANCE_APPROVAL, keyLabel, noApproverText, valueText, withApprovers, type Approval } from './labels'
+import { approvalOf, approverNames, FINANCE_APPROVAL, keyLabel, noApproverText, withApprovers, type Approval } from './labels'
+import { PolicyValue } from './policy-value'
 import type { ChangeRequest } from './types'
 
 const REASON_ID = 'change-request-reason'
@@ -75,7 +76,7 @@ function RequestDialog({ action, onClose, onDone }: { readonly action: Action; r
   return (
     <FormDialog title={label} submitLabel={label} submitVariant={kind === 'approve' ? 'primary' : 'destructive-solid'} onClose={onClose} onSubmit={submit}>
       <p>
-        {valueText(request.key, request.value)} from {formatDateTime(request.effective_from)}.
+        <PolicyValue name={request.key} value={request.value} /> from {formatDateTime(request.effective_from)}.
         {kind === 'approve' && ' Approving saves the new version. You may be asked for a code from your authenticator app.'}
         {kind === 'reject' && ' No version is saved. You may be asked for a code from your authenticator app.'}
       </p>
@@ -112,7 +113,7 @@ function ChangeRequestCard({ request, single, onAction, now }: CardProps) {
         title={keyLabel(request.key)}
         state={<StatusBadge state="pending" label={`Waiting for ${approval.short} approval`} />}
         fields={[
-          { label: 'New value', value: valueText(request.key, request.value) },
+          { label: 'New value', value: <PolicyValue name={request.key} value={request.value} /> },
           { label: 'Effective from', value: formatDateTime(request.effective_from), detail: `Based on version ${request.base_version}` },
           { label: 'Requested by', value: request.requested_by.display_name ?? 'Another user', detail: formatDateTime(request.requested_at) },
           {

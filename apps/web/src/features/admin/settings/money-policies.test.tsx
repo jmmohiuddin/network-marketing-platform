@@ -53,13 +53,15 @@ function routes(requests: readonly ChangeRequest[], extra: Record<string, (query
 }
 
 describe('money policies', () => {
-  it('states the platform rounding rule and "Not set" for the clawback default while unset', async () => {
+  it('states the platform rounding rule and shows the clawback default as retired', async () => {
     renderAs(ADMIN, <SettingsPage />, routes([]))
     const rounding = (await screen.findByRole('heading', { name: 'Rounding mode' })).closest('li')!
     expect(within(rounding).getByText('Platform rule')).toBeTruthy()
     expect(within(rounding).getByText(/platform rule BR-MNY-02 applies, rounding half up/)).toBeTruthy()
     const clawback = screen.getByRole('heading', { name: 'Clawback default' }).closest('li')!
-    expect(within(clawback).getByText('Not set')).toBeTruthy()
+    expect(within(clawback).getAllByText('Retired: set per bonus on the plan version.').length).toBeGreaterThan(0)
+    // D-B4-06: retired, so never offered for change.
+    expect(screen.queryByRole('button', { name: 'Change clawback default' })).toBeNull()
   })
 
   it('sends a money change with its effective date; the 202 change request waits for Finance', async () => {
@@ -86,26 +88,26 @@ describe('money policies', () => {
     const user = userEvent.setup()
     const fetchMock = routes([])
     renderAs(ADMIN, <SettingsPage />, fetchMock)
-    await user.click(await screen.findByRole('button', { name: 'Change clawback default' }))
+    await user.click(await screen.findByRole('button', { name: 'Change rounding mode' }))
     const dialog = screen.getByRole('dialog')
-    await user.selectOptions(within(dialog).getByLabelText('Clawback default'), 'order_line')
+    await user.selectOptions(within(dialog).getByLabelText('Rounding mode'), 'half_even')
     await user.type(within(dialog).getByLabelText('Effective from'), '2020-01-01T00:00')
     await user.type(within(dialog).getByLabelText('Reason for the change'), 'Policy')
     await user.click(within(dialog).getByRole('button', { name: 'Send for approval' }))
     const field = within(dialog).getByLabelText('Effective from')
     expect(field.getAttribute('aria-invalid')).toBe('true')
     expect(within(dialog).getByRole('link', { name: /cannot take effect in the past/ }).getAttribute('href')).toBe('#version-effective')
-    expect(callsTo(fetchMock, 'PUT', '/v1/settings/money.clawback_policy')).toHaveLength(0)
+    expect(callsTo(fetchMock, 'PUT', '/v1/settings/money.rounding_mode')).toHaveLength(0)
   })
 
   it('shows the server’s refusal of the date on the Effective from field, not as a raw message (BUG-055)', async () => {
     const user = userEvent.setup()
     renderAs(ADMIN, <SettingsPage />, routes([], {
-      'PUT /v1/settings/money.clawback_policy': () => apiError(422, 'SETTING_EFFECTIVE_FROM_INVALID', 'effective_from cannot be in the past.'),
+      'PUT /v1/settings/money.rounding_mode': () => apiError(422, 'SETTING_EFFECTIVE_FROM_INVALID', 'effective_from cannot be in the past.'),
     }))
-    await user.click(await screen.findByRole('button', { name: 'Change clawback default' }))
+    await user.click(await screen.findByRole('button', { name: 'Change rounding mode' }))
     const dialog = screen.getByRole('dialog')
-    await user.selectOptions(within(dialog).getByLabelText('Clawback default'), 'order_line')
+    await user.selectOptions(within(dialog).getByLabelText('Rounding mode'), 'half_even')
     await user.type(within(dialog).getByLabelText('Effective from'), '2099-01-01T00:00')
     await user.type(within(dialog).getByLabelText('Reason for the change'), 'Policy')
     await user.click(within(dialog).getByRole('button', { name: 'Send for approval' }))

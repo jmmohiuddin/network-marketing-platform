@@ -62,6 +62,13 @@ export async function lockMarketPeriods(tx: Tx, marketId: string): Promise<void>
   await tx.query(`SELECT pg_advisory_xact_lock(hashtextextended('periods:' || app_tenant_id() || ':' || $1, 0))`, [marketId])
 }
 
+/** D-B4-09: the periods lock shared, without waiting; false while a commit of the market holds or awaits it. */
+export async function tryShareMarketPeriods(tx: Tx, marketId: string): Promise<boolean> {
+  const { rows } = await tx.query<{ held: boolean }>(
+    `SELECT pg_try_advisory_xact_lock_shared(hashtextextended('periods:' || app_tenant_id() || ':' || $1, 0)) AS held`, [marketId])
+  return rows[0]!.held
+}
+
 export interface RunSettingsRow {
   readonly versionId: string
   readonly roundingMode: RoundingMode

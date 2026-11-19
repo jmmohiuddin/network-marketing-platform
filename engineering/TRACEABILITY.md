@@ -35,6 +35,8 @@ B2 (2026-11-17, `increments/B2/HANDOFF.md`): T = module and isolation tests gree
 
 B3 (2026-11-18, `increments/B3/HANDOFF.md`): T = module, isolation and role-matrix tests green in the records full run (nmp_test_4 at 0306, 173 files, 3303 tests); V = browser workflows W-B3-1..8 passed in QA round 2 after the round-1 fixes (round 3 re-checked SC-01; W-B3-9 regression partial). Limits of V: FR-PLN-004 pools form and cap reordering not exercised in the browser; FR-COMP-006 commits without a ledger posting (B4, PLAN §8); FR-COMP-010 covers late transactions and restatements (manual adjustment cases are FR-CAS-002, B4); FR-COMP-012 V = run amounts equal the PLAN §7 worked values. FR-PLN-002 and FR-COMP-004 are partial by PLAN §8. FR-CAS-001 now I T V (mounted, exercised through the B2 case types and B3 restatements; PLAN §B OI-8). Engine scale not met: S-1 runs out of memory at 500k and 2M positions with a 4 GB heap (HANDOFF §4).
 
+B4 (2026-11-19, `increments/B4/HANDOFF.md`): FR-FIN-001..005, FR-PAY-001..007, FR-TAX-001, FR-CAS-002 set to I T V. T = module, isolation and role-matrix tests green in the records full run (nmp_test_4 at 0412, 198 files, 3857 tests, 0 failed/skipped; LED route tests live in comp/ledger-routes and comp/posting); V = browser workflows W-B4-0..8 passed in QA round 2 (fresh seed, money as PLAN §7: M-3 entry 52.00, clawbacks A −10.00/B −16.00, write-off 7.00 by two approvers, GL export 144.00 = 144.00). Limits of V: FR-FIN-002 as-of time and FR-FIN-005 automatic export on commit are deferred (PLAN §8), the FR-FIN-005 API-key export path is tested only; FR-FIN-001 immutability (AC-14.3) by DB tests only; FR-PAY-003 signature verification and status-query-before-resend by tests only; FR-PAY-004 daily reconciliation deferred (§8); FR-PAY-006 review-reminder mail job by tests only; FR-PAY-007 dormant-balance report not exercised in the browser; FR-CAS-002 escalated two-approver adjustment by tests only (browser: one approval and the related-account block); W-B4-9 vendor read-only session passed in round 1 only (round 2 executive denial only); W-B4-10 regression partial. Open: SEC-B4-1..6 fixes in tree, not re-reviewed; SEC-B4-7 and BUG-108 LOW open.
+
 | FR | Title | Stories | ACs | Rules | Tests | Screens | APIs | Tables | Status |
 |---|---|---|---|---|---|---|---|---|---|
 | FR-IAM-004 | Separation of duties | US-07 | AC-07.1 AC-07.2 | BR-ADJ-02 BR-SEC-06 | TS-35 TS-42 | SC-02 SC-03 | API-20 API-25 | approval | I T V |
@@ -86,21 +88,21 @@ B3 (2026-11-18, `increments/B3/HANDOFF.md`): T = module, isolation and role-matr
 | FR-COMP-009 | Restatement of a committed period | US-09 | AC-09.1 | BR-PER-05 | TS-51 | SC-06 | API-22 | restatement result_line case | I T V |
 | FR-COMP-010 | Adjustment lines from late transactions and cases | US-08 | AC-08.1 | BR-PER-04 BR-ADJ-01 | TS-13 TS-42 | SC-02 | API-19 | result_line late_transaction | I T V |
 | FR-COMP-012 | Money arithmetic | US-14 | AC-14.1 AC-14.2 AC-14.3 | BR-MNY-01 BR-MNY-02 BR-MNY-03 BR-MNY-04 BR-MNY-05 | TS-06 TS-07 TS-23 TS-38 TS-39 TS-67 | SC-02 | API-18 | result_line posting | I T V |
-| FR-FIN-001 | Double-entry obligations ledger | US-14 | AC-14.1 AC-14.2 AC-14.3 | BR-LED-01 BR-LED-02 BR-MNY-04 | TS-06 TS-38 TS-39 TS-40 | SC-33 | API-23 | ledger_account journal_entry posting | - |
-| FR-FIN-002 | Derived payee balances | US-14 | AC-14.1 AC-14.2 AC-14.3 | BR-LED-02 | TS-06 TS-38 TS-39 TS-40 | SC-33 SC-18 | API-23 API-28 | posting ledger_account | - |
-| FR-FIN-003 | Clawback policy and receivables | US-20 | AC-20.1 AC-20.2 AC-20.3 | BR-REV-07 BR-REV-09 BR-REV-02 | TS-10 TS-11 | SC-06 SC-33 | API-22 API-23 | posting result_line | - |
-| FR-FIN-004 | Write-off with approval | US-20 | AC-20.1 AC-20.2 AC-20.3 | BR-REV-08 | TS-10 TS-11 | SC-33 | API-30 | posting case | - |
-| FR-FIN-005 | General-ledger journal export | US-15 | AC-15.1 | BR-LED-03 | TS-59 TS-67 | SC-33 | API-24 | export_job ledger_account | - |
-| FR-PAY-001 | Payout batch lifecycle | US-47 | AC-47.1 AC-47.2 | BR-PAY-02 BR-ADJ-02 | TS-17 TS-40 TS-42 | SC-03 | API-25 | payout_batch payout_instruction approval | - |
-| FR-PAY-002 | Provider adapters and bank-file fallback | US-16 | AC-16.1 AC-16.2 AC-16.3 | BR-PAY-11 | TS-16 TS-40 TS-41 TS-50 | SC-03 SC-13 | API-25 | provider_config payout_instruction | - |
-| FR-PAY-003 | Signed, idempotent payout instructions through an outbox | US-16 | AC-16.1 AC-16.2 AC-16.3 | BR-PAY-10 | TS-16 TS-40 TS-41 | SC-03 | API-25 | payout_instruction outbox_event posting | - |
-| FR-PAY-004 | Settlement reconciliation and returned payments | US-16 | AC-16.1 AC-16.2 AC-16.3 | BR-PAY-09 | TS-16 TS-40 TS-41 | SC-34 | API-26 | inbound_event payout_instruction posting case | - |
-| FR-PAY-005 | Bank-detail versions and change controls | US-17 | AC-17.1 AC-17.2 | BR-PAY-08 | TS-17 TS-59 | SC-22 SC-09 | API-27 | bank_detail_version notification | - |
-| FR-PAY-006 | Provider eligibility record | US-38 | AC-38.1 AC-38.2 | BR-PAY-11 | TS-50 | SC-17 SC-13 | API-39 | provider_config document | - |
-| FR-PAY-007 | Minimum payout, holds and dormant balances | US-47 | AC-47.1 AC-47.2 | BR-PAY-12 | TS-17 TS-40 | SC-03 | API-25 | payout_batch case | - |
-| FR-TAX-001 | Payee tax profile | US-48 | AC-48.1 | BR-TAX-01 BR-TAX-03 | TS-18 TS-19 TS-56 | SC-22 SC-09 | API-27 | tax_profile | - |
+| FR-FIN-001 | Double-entry obligations ledger | US-14 | AC-14.1 AC-14.2 AC-14.3 | BR-LED-01 BR-LED-02 BR-MNY-04 | TS-06 TS-38 TS-39 TS-40 | SC-33 | API-23 | ledger_account journal_entry posting | I T V |
+| FR-FIN-002 | Derived payee balances | US-14 | AC-14.1 AC-14.2 AC-14.3 | BR-LED-02 | TS-06 TS-38 TS-39 TS-40 | SC-33 SC-18 | API-23 API-28 | posting ledger_account | I T V |
+| FR-FIN-003 | Clawback policy and receivables | US-20 | AC-20.1 AC-20.2 AC-20.3 | BR-REV-07 BR-REV-09 BR-REV-02 | TS-10 TS-11 | SC-06 SC-33 | API-22 API-23 | posting result_line | I T V |
+| FR-FIN-004 | Write-off with approval | US-20 | AC-20.1 AC-20.2 AC-20.3 | BR-REV-08 | TS-10 TS-11 | SC-33 | API-30 | posting case | I T V |
+| FR-FIN-005 | General-ledger journal export | US-15 | AC-15.1 | BR-LED-03 | TS-59 TS-67 | SC-33 | API-24 | export_job ledger_account | I T V |
+| FR-PAY-001 | Payout batch lifecycle | US-47 | AC-47.1 AC-47.2 | BR-PAY-02 BR-ADJ-02 | TS-17 TS-40 TS-42 | SC-03 | API-25 | payout_batch payout_instruction approval | I T V |
+| FR-PAY-002 | Provider adapters and bank-file fallback | US-16 | AC-16.1 AC-16.2 AC-16.3 | BR-PAY-11 | TS-16 TS-40 TS-41 TS-50 | SC-03 SC-13 | API-25 | provider_config payout_instruction | I T V |
+| FR-PAY-003 | Signed, idempotent payout instructions through an outbox | US-16 | AC-16.1 AC-16.2 AC-16.3 | BR-PAY-10 | TS-16 TS-40 TS-41 | SC-03 | API-25 | payout_instruction outbox_event posting | I T V |
+| FR-PAY-004 | Settlement reconciliation and returned payments | US-16 | AC-16.1 AC-16.2 AC-16.3 | BR-PAY-09 | TS-16 TS-40 TS-41 | SC-34 | API-26 | inbound_event payout_instruction posting case | I T V |
+| FR-PAY-005 | Bank-detail versions and change controls | US-17 | AC-17.1 AC-17.2 | BR-PAY-08 | TS-17 TS-59 | SC-22 SC-09 | API-27 | bank_detail_version notification | I T V |
+| FR-PAY-006 | Provider eligibility record | US-38 | AC-38.1 AC-38.2 | BR-PAY-11 | TS-50 | SC-17 SC-13 | API-39 | provider_config document | I T V |
+| FR-PAY-007 | Minimum payout, holds and dormant balances | US-47 | AC-47.1 AC-47.2 | BR-PAY-12 | TS-17 TS-40 | SC-03 | API-25 | payout_batch case | I T V |
+| FR-TAX-001 | Payee tax profile | US-48 | AC-48.1 | BR-TAX-01 BR-TAX-03 | TS-18 TS-19 TS-56 | SC-22 SC-09 | API-27 | tax_profile | I T V |
 | FR-CAS-001 | Case framework | US-02 | AC-02.1 AC-02.2 | BR-ADJ-01 | TS-42 TS-45 | SC-06 SC-08 | API-30 | case case_event approval document | I T V |
-| FR-CAS-002 | Manual adjustments with thresholds and second approver | US-49 | AC-49.1 AC-49.2 | BR-ADJ-01 BR-ADJ-02 BR-ADJ-03 | TS-42 TS-59 | SC-06 | API-30 | case approval | - |
+| FR-CAS-002 | Manual adjustments with thresholds and second approver | US-49 | AC-49.1 AC-49.2 | BR-ADJ-01 BR-ADJ-02 BR-ADJ-03 | TS-42 TS-59 | SC-06 | API-30 | case approval | I T V |
 | FR-CAS-003 | Commission dispute from a statement line | US-50 | AC-50.1 | BR-ADJ-04 | TS-59 TS-68 | SC-18 SC-06 | API-30 | case result_line | - |
 | FR-DIST-001 | Distributor statement | US-04 | AC-04.1 AC-04.2 | BR-PAY-06 BR-HON-01 | TS-22 TS-53 | SC-18 SC-37 | API-28 | statement result_line tax_line | - |
 | FR-DIST-002 | Line explanation | US-12 | AC-12.1 | BR-PAY-06 BR-DAT-03 | TS-20 TS-53 | SC-18 | API-29 | result_line | - |

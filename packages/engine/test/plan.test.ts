@@ -293,6 +293,13 @@ describe('T-B3-07 plain-language rendering', () => {
     expect(Object.fromEntries(SAMPLE.map((r) => [r.kind === r.ruleKey ? r.kind : `${r.kind} ${r.ruleKey}`, renderRule(r)]))).toMatchSnapshot()
   })
 
+  test('BUG-090: with the market minor digits, volumes and amounts print as units', () => {
+    expect(Object.fromEntries(SAMPLE.map((r) => [r.kind === r.ruleKey ? r.kind : `${r.kind} ${r.ruleKey}`, renderRule(r, { minorDigits: 2 })]))).toMatchSnapshot()
+    expect(renderRule(row('flat', 'pay.flat', bonus('other', { amountMinor: '12345' }, R2)), { minorDigits: 2 })).toMatch(/^Pays 123\.45 each period/)
+    expect(renderRule(row('flat', 'pay.flat', bonus('other', { amountMinor: '12345' }, R2)), { minorDigits: 0 })).toMatch(/^Pays 12345 each period/)
+    expect(renderRule(row('flat', 'pay.flat', bonus('other', { amountMinor: '12345' }, R2)))).toMatch(/^Pays 12345 minor units each period/)
+  })
+
   test('invalid params and calendar scope', () => {
     expect(renderRule(row('x', 'pay.flat', {}))).toBe('pay.flat: invalid parameters (see the validation errors)')
     expect(renderRule({ ...SAMPLE[0]!, calendarId: 'cal-1' })).toMatch(/\(one calendar only\)$/)

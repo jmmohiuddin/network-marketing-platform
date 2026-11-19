@@ -36,3 +36,8 @@ _Agent: database. Read before every task; update after every task. Keep concise 
 - Migrations 0300 (PLN tables + guardrail_decision), 0301 (COMP: run_snapshot, run, period guard, simulation, golden_dataset, restatement, adjustment_origin, result_line, qualification_state, sim_result_line, late_transaction consumed guard), 0302 (PLAN 4.2 functions), 0303 (OI-3, OI-7, market_references +plans, document_references +guardrail_decision, case guard 'updated' actors, par_create_customer OUT (id, created)), 0304 base roles.
 - permissions.ts +14 (4 privileged), B3_UPDATED_BASE_ROLES (B2 list removed); settings registry: runs.exception_thresholds, `retired` field (placement_width), 18-digit minor strings; engine json.ts codec + test; seed: planadmin staff, B3 fixture pack checks, seedFixturePlanMarket (DE).
 - Verified on nmp_test_2: packages 102 files / 2320 tests (db 202), apps/api green, typecheck (api + web) clean.
+
+## B4 schema (2026-11-18)
+- Migrations 0400-0406 (16 tables, guards, PLAN 4.2 functions, base roles, OI-3 b). permissions.ts +19 (5 privileged, case.bank_detail.create MFA), Support agent mfa_required; settings registry D-B4-18 (+clawback retired); cas/types.ts hook fields; api-scopes ledger:export; lib/bank-crypto.ts (+test); seed finance2, DE contacts, DE-A bank version (owner).
+- Tests: packages/db b4-guards.test.ts (17), seed/isolation/migrations catalogues; kept API suites green by updating pins in seed, comp/commit, iam/api-keys, iam/grants, iam/mfa, ten/change-requests (moved off the retired clawback key), ten/settings, test/authz/role-matrix SETTING_READERS.
+- Verified on nmp_test_2: packages/db + apps/api 96 files / 2378 tests, typecheck (api + web) clean.

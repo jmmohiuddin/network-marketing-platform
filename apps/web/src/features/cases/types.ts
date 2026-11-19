@@ -25,6 +25,10 @@ export interface CaseRecord {
   readonly decided_at: string | null
   readonly approval_id: string | null
   readonly created_at: string
+  /** D-B4-10: approvals needed, pinned at submit (null while open and the type cannot tell yet). */
+  readonly approvals_required?: 1 | 2 | null
+  /** The first of two approvals, once given. */
+  readonly first_approval?: { readonly approver: { readonly id: string; readonly display_name: string | null }; readonly decided_at: string } | null
 }
 
 export interface CaseEvidence {
@@ -38,7 +42,7 @@ export interface CaseEvidence {
   readonly added_at: string
 }
 
-export type CaseEventKind = 'opened' | 'evidence_added' | 'assigned' | 'submitted' | 'approved' | 'rejected' | 'withdrawn' | 'updated'
+export type CaseEventKind = 'opened' | 'evidence_added' | 'assigned' | 'submitted' | 'first_approved' | 'approved' | 'rejected' | 'withdrawn' | 'updated'
 
 export interface CaseEvent {
   readonly id: string
@@ -176,4 +180,54 @@ export interface ParticipantRow {
   readonly market: { readonly id: string; readonly code: string }
   readonly current_type: { readonly code: string; readonly name: string } | null
   readonly status: string
+}
+
+export interface PayeeRef {
+  readonly id: string
+  readonly external_ref: string
+  readonly display_name: string | null
+}
+
+/** effect_preview of an adjustment (PLAN B4 §2.2). */
+export interface AdjustmentPreview {
+  readonly payee: { readonly participant: PayeeRef; readonly position: { readonly id: string; readonly position_ref: string } }
+  readonly period: { readonly id: string; readonly starts_at: string; readonly ends_at: string; readonly state: string }
+  readonly amount_minor: string
+  readonly approvals_required: 1 | 2
+  readonly escalations: readonly string[]
+  readonly included_in: string
+}
+
+/** effect_preview of a write-off (PLAN B4 §2.1). */
+export interface WriteOffPreview {
+  readonly market: { readonly id: string; readonly code: string }
+  /** Whose receivable (BUG-103); absent from previews pinned before it was added. */
+  readonly payee?: PayeeRef
+  readonly receivable_minor: string
+  readonly amount_minor: string
+  readonly after_minor: string
+  readonly outstanding_since: string
+  readonly eligible: boolean
+  readonly approvals_required: 1 | 2
+  readonly reasons: readonly string[]
+}
+
+/** effect_preview of a bank-detail change (D-B4-16): masked values only. */
+export interface BankDetailPreview {
+  readonly current_masked: string | null
+  readonly new_masked: string
+  readonly scheme: string
+  readonly cooling_off_hours: number | null
+  readonly shared_with_count: number
+  readonly shared_account_threshold: number | null
+  readonly shared_above_threshold: boolean | null
+}
+
+/** effect_preview of a returned payment. */
+export interface ReturnedPaymentPreview {
+  readonly instruction: { readonly id: string; readonly batch_id: string; readonly bank_detail_masked: string; readonly participant: PayeeRef }
+  readonly amount_minor: string
+  readonly currency: string
+  readonly returned_at: string | null
+  readonly reason: string | null
 }

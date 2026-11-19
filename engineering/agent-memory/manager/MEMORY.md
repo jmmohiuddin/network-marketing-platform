@@ -17,3 +17,8 @@
 - PLAN §B/§S assign extra records-phase duties (bug registration, Release A rows, SPIKE_REPORT §6): read PLAN for "records phase" before starting.
 - Truncated agent summaries: backend MEMORY sections "State after B3 BE1/BE2", "backend-lead integration", "security review fixes"; frontend MEMORY B3 sections; QA reports in testing/. Security fixes recorded as SEC-B3-1..8 "fix in tree, not re-reviewed" in HANDOFF only (security registers).
 - nmp_test carries a foreign row 0250_firebase_identity.sql (applied 2026-11-18 00:12, file not in repo): flagged, not touched.
+
+## B4 records step (2026-11-19)
+- Updated TRACEABILITY (14 B4 FRs I T V + B4 note with V limits), DEVELOPMENT_PROGRESS (8 B4 rows, replaced "FIN/TAX/PAY Not Started"), IMPLEMENTATION_TASKS (TK-B4-00..17; closed/updated T-B2-16, TK-B3-11..17), STITCH_DESIGN_INVENTORY (SC-03/09/13/17/28/33/34 verified with round-2 harness %, B4 notes on SC-01/02/06/29), RELEASE_NOTES, MASTER_PROJECT_MEMORY, BUG_REGISTER (BUG-090..098 fixed in code; SEC-B3-1/2 verified; SEC-B4-1..7 registered), ADL (E-ADR-47, E-ADR-36 superseded), wrote increments/B4/HANDOFF.md.
+- Full run nmp_test_4 reset to 0412: 198 files, 3857 tests, all green (123 s); typecheck clean (logs var/b4-records-*.log).
+- Facts behind truncated summaries: backend MEMORY "B4 …" sections (incl. "B4 security review fixes" = 0412 + SEC fixes), frontend MEMORY "B4 …", security MEMORY "B4 adversarial review", UI_TESTING_REPORT "Increment B4 — round 2". Migration numbers can have gaps (0408/0410 unused); list the dir, do not assume contiguous.

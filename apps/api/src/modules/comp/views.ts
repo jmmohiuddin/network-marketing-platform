@@ -153,7 +153,8 @@ export async function runDetail(tx: Tx, id: string, scope: readonly string[] | n
             r.finished_at, r.committed_at, r.created_at,
             jsonb_build_object('id', v.id, 'plan', jsonb_build_object('id', pl.id, 'name', pl.name), 'version', v.version) AS plan_version,
             (SELECT jsonb_build_object('known_at', s.known_at, 'row_counts', s.row_counts - 'late_item_ids')
-             FROM run_snapshot s WHERE s.id = r.snapshot_id) AS snapshot
+             FROM run_snapshot s WHERE s.id = r.snapshot_id) AS snapshot,
+            (SELECT e.id FROM journal_entry e WHERE e.origin_type = 'run' AND e.origin_id = r.id) AS journal_entry_id
      FROM run r JOIN user_account u ON u.id = r.prepared_by JOIN plan_version v ON v.id = r.plan_version_id JOIN plan pl ON pl.id = v.plan_id
      WHERE r.id = $1`,
     [id],

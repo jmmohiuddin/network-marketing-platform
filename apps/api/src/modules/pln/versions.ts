@@ -83,13 +83,15 @@ export function registerVersionRoutes(app: FastifyInstance): void {
     const expected = ifMatch(request)
     const body = parse(patchBody, request.body)
     return inTenant(request, async (tx) => {
-      const { version } = await planVersionFor(tx, request, 'plan.edit')
+      const { plan, version } = await planVersionFor(tx, request, 'plan.edit')
       assertRevision(version, expected)
       const set = (name: keyof typeof body): unknown => (Object.hasOwn(body, name) ? body[name] : version[name])
       await tx.query(
-        `UPDATE plan_version SET effective_from = $2, justification = $3, crediting_event = $4, placement_width = $5, revision = revision + 1 WHERE id = $1`,
+        `UPDATE plan_version SET effective_from = $2, justification = $3, crediting_event = $4, placement_width = $5 WHERE id = $1`,
         [version.id, set('effective_from'), set('justification'), set('crediting_event'), set('placement_width')],
       )
+      // Recompiled (and the revision moved on) because placement_width takes part in validation (D-B4-21 a).
+      const { validation } = await recompile(tx, { ...version, placement_width: set('placement_width') as number | null }, plan.calendar_ids)
       const fields = Object.keys(body).sort() as (keyof typeof body)[]
       await recordAudit(tx, {
         action: 'PLAN_VERSION.UPDATED', objectType: 'plan_version', objectId: version.id,
@@ -97,7 +99,7 @@ export function registerVersionRoutes(app: FastifyInstance): void {
         after: { fields, values: Object.fromEntries(fields.map((name) => [name, body[name]])) },
       })
       const updated = await loadVersion(tx, version.plan_id, version.version)
-      return withEtag(reply, updated.revision, envelope(versionFields(updated)))
+      return withEtag(reply, updated.revision, envelope({ ...versionFields(updated), validation: validationView(validation) }))
     })
   })
 
@@ -106,7 +108,7 @@ export function registerVersionRoutes(app: FastifyInstance): void {
     const query = parse(diffQuery, request.query)
     return inTenant(request, async (tx) => {
       const plan = await loadPlan(tx, request, params.id, 'plan.read')
-      return envelope(await diffView(tx, await loadVersion(tx, plan.id, params.v), await loadVersion(tx, plan.id, query.against)))
+      return envelope(await diffView(tx, plan, await loadVersion(tx, plan.id, params.v), await loadVersion(tx, plan.id, query.against)))
     })
   })
 
@@ -134,10 +136,12 @@ export function registerVersionRoutes(app: FastifyInstance): void {
       ).catch(calendarError)
       const { validation, revision } = await recompile(tx, version, plan.calendar_ids)
       const evaluations = await evaluateGuardrails(tx, version.id)
-      const blocking = evaluations.find((e) => e.outcome === 'blocked' && !e.overridable && e.detail.rule_keys.includes(ruleKey))
+      // An opaque block is saved and goes to compliance review (D-B4-21 b); only a checked non-overridable block refuses.
+      const refuses = (e: Evaluation): boolean => e.outcome === 'blocked' && !e.overridable && !e.detail.opaque
+      const blocking = evaluations.find((e) => refuses(e) && e.detail.rule_keys.includes(ruleKey))
       if (blocking !== undefined) {
         await tx.query('ROLLBACK TO SAVEPOINT rule_save')
-        await restoreEvaluations(tx, version.id, evaluations.filter((e) => e.outcome === 'blocked' && !e.overridable))
+        await restoreEvaluations(tx, version.id, evaluations.filter(refuses))
         return { blocking } as const
       }
       const rule = rows[0]!
@@ -148,7 +152,7 @@ export function registerVersionRoutes(app: FastifyInstance): void {
           calendar_id: rule.calendar_id, ordinal: rule.ordinal, created: rule.inserted, revision,
         },
       })
-      return { rule, validation, revision, evaluations, blocking: undefined }
+      return { rule, validation, revision, evaluations, minorDigits: plan.minor_digits, blocking: undefined }
     })
     if (outcome.blocking !== undefined) {
       const b = outcome.blocking
@@ -156,7 +160,7 @@ export function registerVersionRoutes(app: FastifyInstance): void {
         decision_id: b.id, rule_id: b.rule_id, title: b.title, explanation: b.detail.explanation, basis_status: b.basis_status,
       })
     }
-    return withEtag(reply, outcome.revision, envelope({ rule: ruleView(outcome.rule), validation: validationView(outcome.validation), guardrails: { new_decisions: newDecisions(outcome.evaluations) } }))
+    return withEtag(reply, outcome.revision, envelope({ rule: ruleView(outcome.rule, outcome.minorDigits), validation: validationView(outcome.validation), guardrails: { new_decisions: newDecisions(outcome.evaluations) } }))
   })
 
   app.delete(`${base}/rules/:ruleKey`, edit, async (request, reply) => {

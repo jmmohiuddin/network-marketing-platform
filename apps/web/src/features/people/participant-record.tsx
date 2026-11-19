@@ -18,6 +18,7 @@ import type { PositionView } from '../genealogy/types'
 import { ACCOUNT_TYPES, parentOrigin, participantBadge, participantName, positionBadge, rangeText, servicingSource } from './format'
 import { ServicerDialog, StatusDialog, statusChoices, TypeDialog, UnmaskDialog } from './record-dialogs'
 import { PARTICIPANTS_PATH, type ContactField, type OwnedPosition, type ParticipantDetail, type ServicedCustomer, type ServicingEntry } from './types'
+import { BalancesTab, BankingTab, HoldsTab, TaxTab } from './finance-tabs'
 import { Facts, RecordCard } from './ui'
 
 const ID_PREFIX = 'participant'
@@ -28,6 +29,10 @@ const TABS = [
   { id: 'servicing', label: 'Customer servicing' },
   { id: 'agreements', label: 'Agreements' },
   { id: 'cases', label: 'Cases' },
+  { id: 'banking', label: 'Banking' },
+  { id: 'tax', label: 'Tax' },
+  { id: 'holds', label: 'Holds' },
+  { id: 'balances', label: 'Balances' },
 ] as const
 
 const CONTACT_FIELDS: readonly ContactField[] = ['email', 'phone', 'address']
@@ -214,7 +219,9 @@ function Cases({ detail }: { readonly detail: ParticipantDetail }) {
 export function ParticipantRecord({ participantId }: { readonly participantId: string }) {
   const { can, readOnly } = useSession()
   const record = useResource<ParticipantDetail>(`${PARTICIPANTS_PATH}/${participantId}`)
-  const [tab, selectTab] = useTabParam(TABS)
+  // Balances only with ledger.read (GET /v1/payees/:id/balances).
+  const tabs = TABS.filter((entry) => entry.id !== 'balances' || can('ledger.read'))
+  const [tab, selectTab] = useTabParam(tabs)
   const [dialog, setDialog] = useState<Dialog | null>(null)
   if (record.error !== null) return <LoadFailure error={record.error} onRetry={record.reload} />
   const detail = record.data
@@ -248,7 +255,7 @@ export function ParticipantRecord({ participantId }: { readonly participantId: s
         </>}
       />
       <div>
-        <Tabs label="Participant record" idPrefix={ID_PREFIX} tabs={TABS} selected={tab} onSelect={selectTab} />
+        <Tabs label="Participant record" idPrefix={ID_PREFIX} tabs={tabs} selected={tab} onSelect={selectTab} />
         <TabPanel idPrefix={ID_PREFIX} tabId={tab}>
           {tab === 'overview' && <Overview detail={detail} onUnmask={write('participant.unmask') && available.length > 0 ? () => setDialog({ kind: 'unmask' }) : undefined} />}
           {tab === 'positions' && <Positions detail={detail} choicesOf={choicesOf} onStatus={write('participant.manage') || write('participant.terminate') ? (position) => setDialog({ kind: 'status', position }) : undefined} />}
@@ -257,6 +264,10 @@ export function ParticipantRecord({ participantId }: { readonly participantId: s
           {tab === 'servicing' && <Servicing detail={detail} onChange={write('servicing.manage') && detail.positions.length === 0 ? () => setDialog({ kind: 'servicer' }) : undefined} />}
           {tab === 'agreements' && <Agreements detail={detail} />}
           {tab === 'cases' && <Cases detail={detail} />}
+          {tab === 'banking' && <BankingTab detail={detail} />}
+          {tab === 'tax' && <TaxTab detail={detail} />}
+          {tab === 'holds' && <HoldsTab detail={detail} />}
+          {tab === 'balances' && <BalancesTab detail={detail} />}
         </TabPanel>
       </div>
       {dialog?.kind === 'unmask' && <UnmaskDialog participantId={detail.id} available={available} onClose={close} />}

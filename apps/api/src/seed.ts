@@ -1,7 +1,7 @@
 // Local development data (nmp_dev) and the browser-test seed (nmp_e2e, `pnpm --filter @nmp/api seed:e2e`): two
 // independent vendor operators with MFA (BUG-031: bootstrap users, no inviter, so either can be the other's second
 // person) and two tenants with staff (no MFA: their forced enrolment is part of the browser test). nmp_e2e also gets the
-// labelled fixture market pack and markets (PLAN B1, B2 and B3 section 6).
+// labelled fixture market pack and markets (PLAN B1, B2, B3 and B4 section 6).
 // Idempotent: existing rows are kept and their passwords are not changed. Refuses production, any database but the
 // local ones, and any database server not on this machine.
 import { randomBytes, randomUUID } from 'node:crypto'
@@ -12,6 +12,7 @@ import { loadConfig, type Config } from './config.js'
 import { recordAudit, recordVendorAudit } from './lib/audit.js'
 import { runInTenant, runInVendor, SYSTEM_ACTOR_ID, type ActorContext } from './lib/db.js'
 import { hashPassword } from './lib/passwords.js'
+import { bankFingerprint, BankDetails, bankVersionContext, maskAccount } from './lib/bank-crypto.js'
 import { BASE_ROLES, isPrivileged, type BaseRoleName } from './lib/permissions.js'
 import { seal } from './lib/secret-box.js'
 import { generateTotpSecret, totpUri } from './lib/totp.js'
@@ -31,6 +32,7 @@ const STAFF: readonly { local: string; name: string; role: BaseRoleName }[] = [
   { local: 'admin2', name: 'Second Admin', role: 'Tenant admin' },
   { local: 'compliance', name: 'Compliance Officer', role: 'Compliance officer' },
   { local: 'finance', name: 'Finance Approver', role: 'Finance approver' },
+  { local: 'finance2', name: 'Second Finance Approver', role: 'Finance approver' }, // B4 second approvals
   { local: 'analyst', name: 'Commission Analyst', role: 'Commission analyst' },
   { local: 'support', name: 'Support Agent', role: 'Support agent' },
   { local: 'dpo', name: 'Data Protection Officer', role: 'DPO' },
@@ -274,12 +276,14 @@ async function fixtureType(tx: Tx, ids: { admin: string; admin2: string }, code:
   return rows[0]?.id ?? approvedType(tx, ids, code, distributor)
 }
 
-/** A participant of the type enrolled at `at`, display name = its reference. */
-async function fixtureParticipant(tx: Tx, ref: string, marketId: string, typeId: string, at: string): Promise<string> {
+/** A participant of the type enrolled at `at`, display name = its reference; contact {email} when given (B4 notices). */
+async function fixtureParticipant(
+  tx: Tx, ref: string, marketId: string, typeId: string, at: string, email: string | null = null,
+): Promise<string> {
   const { rows } = await tx.query<{ id: string }>(
-    `INSERT INTO participant (tenant_id, external_ref, account_type, market_id, display_name, enrolled_at)
-     VALUES (app_tenant_id(), $1, 'individual', $2, $1, $3) RETURNING id`,
-    [ref, marketId, at],
+    `INSERT INTO participant (tenant_id, external_ref, account_type, market_id, display_name, enrolled_at, contact)
+     VALUES (app_tenant_id(), $1, 'individual', $2, $1, $3, $4) RETURNING id`,
+    [ref, marketId, at, email === null ? null : { email }],
   )
   await tx.query(
     `INSERT INTO participant_type_assignment (tenant_id, participant_id, type_id, valid_from) VALUES (app_tenant_id(), $1, $2, $3)`,
@@ -293,9 +297,10 @@ async function fixtureParticipant(tx: Tx, ref: string, marketId: string, typeId:
  * months before this month to three months ahead (all open), approved types FXDIST and FXRETAIL, distributors DE-A <-
  * DE-B <- DE-C (sponsor), customer DE-K serviced by DE-C and SKU FX-1 worth 100.00 pv per unit, written in acme's
  * tenant realm through the shared SQL as the API would. No orders and no plan (the browser workflows make them).
- * Needs the seeded acme staff. Idempotent: skipped once DE-A exists.
+ * Needs the seeded acme staff. Idempotent: skipped once DE-A exists. PLAN B4 section 6: DE-A, DE-B, DE-C carry a contact
+ * email, and DE-A a bank-detail version (fixtureBankDetail).
  */
-export async function seedFixturePlanMarket(expectedDatabase: string): Promise<void> {
+export async function seedFixturePlanMarket(expectedDatabase: string, secretKey: Buffer): Promise<void> {
   const owner = await ownerOn(expectedDatabase, 'plan market')
   await owner.query(
     `INSERT INTO market (tenant_id, code, currency, minor_unit, time_zone, languages, market_pack, state)
@@ -334,7 +339,7 @@ export async function seedFixturePlanMarket(expectedDatabase: string): Promise<v
     const retail = await fixtureType(tx, ids, 'FXRETAIL', false)
     const at = setup!.first_start
     const position = async (ref: string) => {
-      const participant = await fixtureParticipant(tx, ref, setup!.market_id, distributor, at)
+      const participant = await fixtureParticipant(tx, ref, setup!.market_id, distributor, at, `${ref.toLowerCase()}@example.test`)
       const created = await tx.query<{ id: string }>(
         `SELECT gen_create_position($1, $2, NULL, NULL, 'active', $3) AS id`, [participant, setup!.market_id, at],
       )
@@ -360,6 +365,33 @@ export async function seedFixturePlanMarket(expectedDatabase: string): Promise<v
     )
     if (!first!.covered) await asSelf(tx, ids.admin, () => recordStructureChange(tx, `${FIXTURE_DE}: market DE and its calendar`, first!.starts_at))
   })
+  await fixtureBankDetail(owner, secretKey)
+}
+
+/**
+ * PLAN B4 section 6, E2E FIXTURE: DE-A's bank details (the public example IBAN), sealed and fingerprinted as PAY does, as
+ * a migration-created version out of cooling-off from the first DE period. The runtime role creates versions only through
+ * an approved case (0402), so this goes through the owner connection. Skipped when DE-A already has a version.
+ */
+async function fixtureBankDetail(owner: ReturnType<typeof getOwnerPool>, secretKey: Buffer): Promise<void> {
+  const { rows: [target] } = await owner.query<{ tenant_id: string; participant_id: string; first_start: Date }>(
+    `SELECT p.tenant_id, p.id AS participant_id,
+            (SELECT min(d.starts_at) FROM period d JOIN calendar c ON c.id = d.calendar_id WHERE c.tenant_id = p.tenant_id
+               AND c.name = 'DE monthly') AS first_start
+     FROM participant p JOIN tenant t ON t.id = p.tenant_id
+     WHERE t.slug = 'acme' AND p.external_ref = 'DE-A'
+       AND NOT EXISTS (SELECT 1 FROM bank_detail_version v WHERE v.tenant_id = p.tenant_id AND v.participant_id = p.id)`,
+  )
+  if (target === undefined) return
+  const details = BankDetails.parse({ scheme: 'iban', account_holder: 'DE-A E2E', iban: 'DE89370400440532013000' })
+  const id = randomUUID()
+  await owner.query(
+    `INSERT INTO bank_detail_version (id, tenant_id, participant_id, scheme, details_sealed, fingerprint, masked, created_via,
+       cooling_off_until)
+     VALUES ($1, $2, $3, 'iban', $4, $5, $6, 'migration', $7)`,
+    [id, target.tenant_id, target.participant_id, seal(secretKey, JSON.stringify(details), bankVersionContext(id)),
+      bankFingerprint(secretKey, target.tenant_id, details), maskAccount(details), target.first_start],
+  )
 }
 
 // The seed creates known staff accounts: only the local databases of PROJECT_ENGINEERING_CONTEXT may get them.
@@ -422,9 +454,9 @@ export async function seed(config: Config, password: string | undefined, print: 
   if (target.database === E2E_DATABASE) {
     await seedFixturePack(E2E_DATABASE)
     await seedFixtureMarket(E2E_DATABASE)
-    await seedFixturePlanMarket(E2E_DATABASE)
+    await seedFixturePlanMarket(E2E_DATABASE, config.secretKey)
     print(`market pack: ${E2E_FIXTURE_PACK} (fixture), acme market NL live with committed past periods (fixture)`)
-    print('acme market DE live with DE-A, DE-B, DE-C, DE-K and SKU FX-1, no plan yet (fixture)')
+    print('acme market DE live with DE-A, DE-B, DE-C, DE-K and SKU FX-1, DE-A bank details, no plan yet (fixture)')
   }
   if (created && password === undefined) print(`password of the accounts created now: ${effective}`)
 }

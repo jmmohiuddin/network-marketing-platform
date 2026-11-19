@@ -34,11 +34,19 @@ const B3_TABLES = [
   'guardrail_decision', 'run_snapshot', 'run', 'result_line', 'qualification_state', 'simulation', 'sim_result_line',
   'adjustment_origin', 'restatement',
 ]
+// PLAN B4 section 1.
+const B4_TABLES = [
+  'ledger_account', 'journal_entry', 'posting', 'gl_account_map', 'journal_export', 'run_settlement',
+  'user_related_participant', 'bank_detail_request', 'bank_detail_version', 'payout_batch', 'payout_batch_line',
+  'payout_instruction', 'sandbox_provider_payment', 'payout_exception', 'payout_hold', 'tax_profile',
+]
 const INSERT_ONLY_TABLES = [
   'audit.audit_event', 'audit.vendor_event', 'outbox_event', 'approval', 'tenant_setting_version',
   'market_checklist_entry', 'case_event', 'case_evidence', 'document', 'participant_signal', 'agreement_version',
   'agreement_acceptance', 'position_status_history', 'order_line', 'order_event', 'plan_market', 'plan_calendar',
   'guardrail_decision', 'run_snapshot', 'result_line', 'qualification_state', 'sim_result_line',
+  'ledger_account', 'journal_entry', 'posting', 'journal_export', 'run_settlement', 'bank_detail_request',
+  'sandbox_provider_payment',
 ]
 // market_references (0105, 0204, AC-TEN2-3) counts every table with a key to market under these names, plus 'grants'
 // (market_ids arrays carry no key) and 'connectors' (the commerce rows of provider_config).
@@ -47,12 +55,16 @@ const MARKET_REFERENCES: Record<string, string> = {
   cpl_fact_participant: 'fact_participants', provider_config: 'providers', market_checklist_entry: 'checklist_entries',
   market_go_live_request: 'go_live_requests', case_file: 'cases', participant: 'participants', position: 'positions',
   sales_order: 'orders', product_volume_map: 'product_volumes', agreement_version: 'agreement_versions',
-  plan_market: 'plans',
+  plan_market: 'plans', ledger_account: 'ledger_accounts', journal_entry: 'journal_entries', gl_account_map: 'gl_mappings',
+  journal_export: 'journal_exports', payout_batch: 'payout_batches', payout_hold: 'payout_holds',
 }
 // PLAN B1 1.1 (FR-TEN-003). The TEN settings registry pins its money-affecting keys against money_setting_keys().
-const MONEY_SETTING_KEYS = ['money.rounding_mode', 'money.clawback_policy']
+const MONEY_SETTING_KEYS = [
+  'money.rounding_mode', 'money.clawback_policy', 'payouts.market_policy', 'payouts.bank_detail_cooling_off_hours',
+  'adjustments.policy', 'write_offs.policy',
+]
 // PLAN B2 1.7 (D-B2-08): every key whose change needs an approval; the registry pins it against approverPermission.
-const APPROVAL_SETTING_KEYS = [...MONEY_SETTING_KEYS, 'genealogy.visibility_policy']
+const APPROVAL_SETTING_KEYS = [...MONEY_SETTING_KEYS.slice(0, 2), 'genealogy.visibility_policy', ...MONEY_SETTING_KEYS.slice(2)]
 // Table names unquoted: regclass quotes keywords such as position.
 const TENANT_ID_TABLES = `
   SELECT c.oid, replace(c.oid::regclass::text, '"', '') AS name, c.relrowsecurity AS enabled, c.relforcerowsecurity AS forced
@@ -126,14 +138,14 @@ describe('migrations', () => {
     expect(again).toEqual([])
   })
 
-  test('create every release A table, the engineering additions and the B1, B2 and B3 tables', async () => {
+  test('create every release A table, the engineering additions and the B1, B2, B3 and B4 tables', async () => {
     const { rows } = await getOwnerPool().query<{ name: string }>(
       `SELECT CASE schemaname WHEN 'public' THEN tablename ELSE schemaname || '.' || tablename END AS name
        FROM pg_tables WHERE schemaname IN ('public', 'audit')`,
     )
 
     expect(rows.map((row) => row.name).sort()).toEqual(
-      [...RELEASE_A_TABLES, ...ENGINEERING_TABLES, ...B1_TABLES, ...B2_TABLES, ...B3_TABLES, 'schema_migration'].sort(),
+      [...RELEASE_A_TABLES, ...ENGINEERING_TABLES, ...B1_TABLES, ...B2_TABLES, ...B3_TABLES, ...B4_TABLES, 'schema_migration'].sort(),
     )
   })
 

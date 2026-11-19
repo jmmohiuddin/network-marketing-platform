@@ -1,5 +1,5 @@
 // Statement explanation of one result line from its compact trace (FR-COMP-007: trace totals = line amount).
-import { RAW_SCALE, toRaw } from './money.js'
+import { formatUnits as decimal, RAW_SCALE, toRaw } from './money.js'
 import type { ResultLine, Trace, TraceSource } from './types.js'
 
 export interface Explanation {
@@ -30,14 +30,28 @@ export function traceAmountMinor(trace: Trace): bigint | null {
   return minor ?? (raw % RAW_SCALE === 0n ? raw / RAW_SCALE : null)
 }
 
-/** Decimal text of `units` scaled by 10^digits, e.g. (12345n, 2) -> "123.45", (-5n, 2) -> "-0.05". */
-function decimal(units: bigint, digits: number, trim: boolean): string {
-  const negative = units < 0n
-  const magnitude = (negative ? -units : units).toString().padStart(digits + 1, '0')
-  const whole = magnitude.slice(0, magnitude.length - digits)
-  let fraction = magnitude.slice(magnitude.length - digits)
-  if (trim) fraction = fraction.replace(/0+$/, '')
-  return `${negative ? '-' : ''}${whole}${fraction ? `.${fraction}` : ''}`
+const DAY_US = 86_400_000_000n
+const pad = (v: bigint, width: number): string => v.toString().padStart(width, '0')
+
+/** µs since the Unix epoch as an ISO-8601 UTC instant with microseconds (civil-from-days in bigint, no Date: BUG-092). */
+function isoInstant(us: bigint): string {
+  let days = us / DAY_US
+  let inDay = us % DAY_US
+  if (inDay < 0n) {
+    inDay += DAY_US
+    days -= 1n
+  }
+  const z = days + 719468n // days from 0000-03-01
+  const era = (z >= 0n ? z : z - 146096n) / 146097n
+  const doe = z - era * 146097n
+  const yoe = (doe - doe / 1460n + doe / 36524n - doe / 146096n) / 365n
+  const doy = doe - (365n * yoe + yoe / 4n - yoe / 100n)
+  const mp = (5n * doy + 2n) / 153n
+  const day = doy - (153n * mp + 2n) / 5n + 1n
+  const month = mp < 10n ? mp + 3n : mp - 9n
+  const year = yoe + era * 400n + (month <= 2n ? 1n : 0n)
+  const s = inDay / 1_000_000n
+  return `${pad(year, 4)}-${pad(month, 2)}-${pad(day, 2)}T${pad(s / 3600n, 2)}:${pad((s / 60n) % 60n, 2)}:${pad(s % 60n, 2)}.${pad(inDay % 1_000_000n, 6)}Z`
 }
 
 const RAW_DIGITS = RAW_SCALE.toString().length - 1
@@ -66,7 +80,7 @@ export function explain(line: ResultLine, minorDigits: number): Explanation {
   const raw = (r: bigint): string => rawText(r, minorDigits)
   const ranks = t.rankEvaluated.map((r) => `${r.ladder} ${r.rank ?? 'none'}`).join(', ')
   const out: string[] = [
-    `${t.rule} (${t.kind}, pass ${t.pass}) for position ${t.payeePositionId}${ranks ? `; paid-as ${ranks}` : ''}${t.tree ? `; ${t.tree.kind} tree known at ${t.tree.knownAtUs}` : ''}`,
+    `${t.rule} (${t.kind}, pass ${t.pass}) for position ${t.payeePositionId}${ranks ? `; paid-as ${ranks}` : ''}${t.tree ? `; ${t.tree.kind} tree known at ${isoInstant(t.tree.knownAtUs)}` : ''}`,
     ...t.sources.map((s) => sourceText(s, minorDigits)),
   ]
   if (t.omitted.count > 0) out.push(`${t.omitted.count} further sources = ${raw(t.omitted.raw)}`)

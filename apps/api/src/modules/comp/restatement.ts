@@ -54,7 +54,10 @@ async function assertRestatable(tx: Tx, periodId: string, caseId: string | null)
   if (rows[0] !== undefined) throw new ApiError(409, 'RESTATEMENT_OPEN', 'This period already has a restatement in progress.', { case_id: rows[0].id })
 }
 
-/** sandbox lines − (committed regular lines + consumed origins of P), per (payee position, rule). */
+/**
+ * sandbox lines − (committed regular lines + consumed origins of P), per (payee position, rule). Manual origins are left
+ * out (D-B4-09): the sandbox never recomputes them, so they are never a difference.
+ */
 async function diffOf(tx: Tx, simulationId: string, runId: string, periodId: string): Promise<Diff> {
   const { rows } = await tx.query<DiffLine>(
     `WITH s AS (SELECT payee_position_id AS pos, rule_key, max(payee_participant_id::text) AS payee, max(source_kind) AS kind, sum(amount_minor) AS a
@@ -62,7 +65,7 @@ async function diffOf(tx: Tx, simulationId: string, runId: string, periodId: str
           c AS (SELECT payee_position_id AS pos, rule_key, max(payee_participant_id::text) AS payee, max(source_kind) AS kind, sum(amount_minor) AS a
                 FROM result_line WHERE run_id = $2 AND origin_type IS NULL GROUP BY 1, 2),
           o AS (SELECT o.payee_position_id AS pos, o.rule_key, max(o.source_kind) AS kind, sum(o.amount_minor) AS a
-                FROM adjustment_origin o WHERE o.original_period_id = $3 AND o.consumed_run_id IS NOT NULL GROUP BY 1, 2),
+                FROM adjustment_origin o WHERE o.original_period_id = $3 AND o.consumed_run_id IS NOT NULL AND o.origin_type <> 'manual' GROUP BY 1, 2),
           k AS (SELECT pos, rule_key FROM s UNION SELECT pos, rule_key FROM c UNION SELECT pos, rule_key FROM o)
      SELECT k.pos AS payee_position_id,
             coalesce(s.payee, c.payee, (SELECT gen_owner_at(k.pos, p.ends_at - interval '1 microsecond')::text)) AS payee_participant_id,

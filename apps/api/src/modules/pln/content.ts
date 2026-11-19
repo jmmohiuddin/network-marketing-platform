@@ -36,8 +36,17 @@ export const engineRule = (r: RuleRow): PlanRuleInput => ({
 })
 const engineTransition = (t: TransitionRow): PlanTransitionInput => ({ stateItem: t.state_item, rule: t.rule, map: t.map, reason: t.reason })
 
-export function validationOf(rules: readonly RuleRow[], calendarIds: readonly string[]): PlanValidation {
-  return validatePlan(rules.map(engineRule), { calendarIds })
+/**
+ * Engine validation plus D-B4-21 (a): placement re-parenting is refused on a version with legs (placement_width set);
+ * terminated placement positions keep their slot and the engine compresses them.
+ */
+export function validationOf(rules: readonly RuleRow[], calendarIds: readonly string[], placementWidth: number | null): PlanValidation {
+  const engine = validatePlan(rules.map(engineRule), { calendarIds })
+  const legs = placementWidth === null ? [] : rules.filter((r) => r.kind === 'genealogy.reparent_on_termination' && r.params.tree === 'placement').map((r) => ({
+    ruleKey: r.rule_key, path: 'params.tree', code: 'REPARENT_PLACEMENT_WITH_LEGS',
+    message: 'Placement re-parenting is not available in a tree with legs (placement width is set): terminated positions keep their slot and are compressed.',
+  }))
+  return legs.length === 0 ? engine : { ok: false, errors: [...engine.errors, ...legs] }
 }
 
 export const validationView = (v: PlanValidation): { ok: boolean; errors: { rule_key: string | null; code: string; path: string; message: string }[] } => ({
@@ -48,9 +57,9 @@ export const validationView = (v: PlanValidation): { ok: boolean; errors: { rule
  * Validates and compiles the version after a draft write: compiled + content_hash when valid, null while invalid, and
  * the revision moves on (D-B3-02, AC-PLN1-1). Returns the validation and the new revision.
  */
-export async function recompile(tx: Tx, version: { readonly id: string; readonly version: number }, calendarIds: readonly string[]): Promise<{ validation: PlanValidation; revision: number }> {
+export async function recompile(tx: Tx, version: { readonly id: string; readonly version: number; readonly placement_width: number | null }, calendarIds: readonly string[]): Promise<{ validation: PlanValidation; revision: number }> {
   const rules = await ruleRows(tx, version.id)
-  const validation = validationOf(rules, calendarIds)
+  const validation = validationOf(rules, calendarIds, version.placement_width)
   const compiled = validation.ok
     ? stringifyEngineJson(compilePlan(rules.map(engineRule), (await transitionRows(tx, version.id)).map(engineTransition), { planVersionId: version.id, version: version.version }, calendarIds))
     : null
@@ -73,10 +82,11 @@ export function isExtension(r: Pick<RuleRow, 'kind' | 'params'>): boolean {
   return r.kind === 'cap' && (r.params.base as { kind?: unknown } | undefined)?.kind === 'order_structure'
 }
 
-export function ruleView(r: RuleRow): Record<string, unknown> {
+/** minorDigits: the first plan market's digits, so volumes and amounts render as units (BUG-090). */
+export function ruleView(r: RuleRow, minorDigits: number | null): Record<string, unknown> {
   return {
     rule_key: r.rule_key, kind: r.kind, pass: r.pass, params: r.params, depends_on: r.depends_on, reversal_policy: r.reversal_policy,
-    calendar_id: r.calendar_id, ordinal: r.ordinal, extension: isExtension(r), rendering: renderRule(engineRule(r)),
+    calendar_id: r.calendar_id, ordinal: r.ordinal, extension: isExtension(r), rendering: renderRule(engineRule(r), { minorDigits: minorDigits ?? undefined }),
   }
 }
 

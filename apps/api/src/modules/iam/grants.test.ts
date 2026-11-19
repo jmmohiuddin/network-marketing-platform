@@ -157,7 +157,10 @@ describe('POST /v1/users/:id/role-assignments', () => {
     expect(requested.statusCode).toBe(202)
     expect(before).toEqual([])
     expect(approved.statusCode).toBe(200)
-    expect(await permissionsOf(user)).toEqual(['participant.read', 'participant.unmask'])
+    expect(await permissionsOf(user)).toEqual([
+      'case.bank_detail.read', 'case.returned_payment.create', 'case.returned_payment.read', 'ledger.read', 'participant.read',
+      'participant.unmask', 'payout.hold', 'payout.prepare', 'payout.read', 'payout.reconcile',
+    ])
   })
 
   test('another tenant: its users are 404 and its roles are unknown', async () => {

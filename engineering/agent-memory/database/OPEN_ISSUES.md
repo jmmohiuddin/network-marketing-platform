@@ -53,3 +53,16 @@ _Agent: database. Read before every task; update after every task. Keep concise 
 - aud/documents.ts: document_references now returns 'guardrail_decision' (market NULL); readers default to MARKET_READERS — map to guardrail.read (integrator).
 - Not enforced in SQL: rule-author SoD on plan approval, eligible approvers across all plan markets, run commit staleness gates (API), restatement origin consumption by a run of P's calendar is checked, but not that the run is the first after approval.
 - nmp_dev / nmp_e2e / nmp_test not migrated to 0304 (only nmp_test_2 was reset).
+
+## From B4 schema (2026-11-18)
+- BE2: comp/commit.test.ts now asserts no journal entry for the run (shortcut comment); replace with the D-B4-02 entry when commit calls led_post_run (map LD001 -> 409 receivables_changed, DETAIL = JSON participant ids).
+- BE2: AC-14.3 as nmp_app yields 'permission denied' 42501 (no UPDATE/DELETE grant), not the LEDGER_IMMUTABLE text.
+- BE2/integrator: recordExport must set created_by_type explicitly or rely on app.actor_type; export_job CHECK (created_by_type = 'user') = (requested_by IS NOT NULL).
+- Integrator: isolation seed must post via ledger_post and create bank versions via an approved bank_detail case (or owner); e2e helper must enrol TOTP for Support agent (role now mfa_required).
+- Not enforced in SQL: never-committed-with-unconsumed-manual-origin (insert guard + API gate only), batch partially_settled/failed derivation (only settled is checked), retry instructions limited to failed payees, write-off amount <= receivable.
+- nmp_dev / nmp_e2e / nmp_test not migrated to 0406 (only nmp_test_2 was reset); nmp_e2e needs reset + seed:e2e.
+
+## From B4 review (0407, 2026-11-18)
+- PLAN amendment needed (planner): PLAN 1.3 / D-B4-12 "settled only when every instruction is settled" now reads "every instruction no retry replaced"; retry-failed must set payout_instruction.retry_of; API batch-state derivation must use the same rule.
+- Not enforced (blocked on BE1): approvals_required NOT NULL at submit for adjustment/write_off — cas/cases.ts markSubmitted does not pin it yet and the CAS fixture slot is 'adjustment'; add the CHECK once submit pins it. Unconsumed manual origin at period commit still API-gated.
+- Write-off amount <= receivable still API-side (onDecision under the ledger lock).

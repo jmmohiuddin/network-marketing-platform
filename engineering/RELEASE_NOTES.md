@@ -2,6 +2,44 @@
 
 ## Unreleased
 
+### Increment B4 — ledger, balances, clawbacks, write-offs, GL export, payouts (sandbox), bank details, tax profile, manual adjustments (2026-11-19)
+Sandbox only: payouts go to an in-process sandbox provider or to a bank file you download; no real provider is called and no money moves. Withholding is not computed yet (tax rules come with the market packs).
+
+**Ledger**
+- Committing a run now posts one balanced journal entry for its payables and receivables. Entries and postings can never be changed or deleted; corrections are new entries.
+- Ledger and journal export (SC-33): a "debits = credits" check, payables, in transit, receivables and settled clearing per market, journal entries with their postings and approver, accounts with balances, receivables by age.
+- Balances are always summed from postings, never stored. A participant record shows payable, in transit and receivable per market.
+- A clawback first reduces what the payee is still owed; only the rest becomes a receivable, which later earnings recover.
+- Write-offs of a receivable are cases with a policy: eligibility by amount or age, and a second approver above a threshold.
+- GL export: map each account type to a GL code per market, then generate a balanced CSV for a committed or paid period; the stored file has a SHA-256 and downloads the same every time. Also available to API keys with the `ledger:export` scope.
+
+**Manual adjustments**
+- A one-off credit or debit for a payee's position is a case with a reason, a note and evidence. A Finance approver decides; above the policy threshold a second approver is needed. Proposals for a related account (declared relatives) or a new account are blocked or escalated by policy. Approved adjustments appear as lines of the next run of that period.
+- Tenant admins record which staff are related to which participants (Users, SC-28); related staff cannot approve that payee's adjustments, write-offs or payout batches.
+
+**Payouts (sandbox)**
+- Payout batches (SC-03) per market and provider: every payee with a payable, minus those excluded with the reason in words (below the minimum, no bank details, bank-detail cooling-off, open duplicate or returned-payment case, missing tax profile, hold). Submit by the preparer, approval by Finance with a step-up; nobody approves their own batch.
+- Each payout is a signed instruction with an idempotency key; the dispatcher asks the provider for the status before any resend. A bank-file provider produces a CSV you upload yourself (step-up).
+- Reconciliation (SC-34): settlement and returns come from signed sandbox webhooks or an imported result file; unknown items go to an exceptions queue resolved with a note; a returned payment opens a case and puts the amount back in payable. A committed period whose payouts are all final becomes Paid.
+- Payout holds with a reason, released by someone who does not prepare payouts; dormant-balance report.
+- Payout providers (SC-13, SC-17): choose the sandbox or bank-file adapter, record providers on a live market, review dates with reminder mails.
+
+**Bank details and tax profile**
+- Bank-detail changes are requested by Support with a step-up and approved as a case; the new account is masked, has a cooling-off period, and the payee is told by mail. Accounts shared by several payees are flagged. Full account numbers are never shown.
+- Tax profile per participant (residency, entity type, tax id): versions, never back-dated; the tax id is masked and can be shown once with a step-up, which is audited.
+
+**Settings**
+- New policies without defaults: minimum payout and tax-profile requirement per market, cooling-off hours, shared-account threshold, dormant days, reminder days, adjustment policy, write-off policy. The tenant clawback policy is retired: set it per bonus on the plan version.
+
+**Fixed**
+- Engine: plain-language rules print amounts in market units; traces print readable known-at instants. Run review "What changed" on the first run of a version; late queue original period as dates; simulation guardrail reasons in words; periods table amounts and tablet layout.
+- B4 browser findings BUG-099..107 (live-market provider record, notice dates, sign-in console error, double import notice, write-off case subject, exclusion instants, plan variant text, minimum-payout approval text, case tab counts).
+- Security: result files only for bank-file providers and never imported by the batch preparer; related staff excluded from write-off and batch approvals; hold release separated from payout preparation; hold reads scoped to the caller's markets; sandbox webhooks signed over event id, timestamp and body.
+
+**Known issues**
+- The engine handles up to 750,000 positions in a 4 GB worker; larger tenants need a bigger worker or the streaming output (open).
+- The case queue shows a write-off's subject as an account id (the case page names the payee).
+
 ### Increment B3 — plans, runs, commit, replay, restatement, adjustments, guardrails (2026-11-18)
 Sandbox only: a commit records the run and its approval but posts nothing to a ledger and pays nobody (payouts and the ledger are B4); no provider is called and no money moves.
 

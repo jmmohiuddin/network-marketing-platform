@@ -39,9 +39,10 @@ export async function recordExport(tx: Tx, request: ExportRequest): Promise<Expo
     await recordAudit(tx, { action: 'EXPORT.REFUSED', objectType: 'export_job', after: { ...audited, row_cap: request.rowCap } })
     return { refused: true, rowCount: request.rowCount, rowCap: request.rowCap }
   }
+  // requested_by references user_account: a service-account key (or the platform) leaves it NULL (0400 export_job_requester).
   const { rows } = await tx.query<ExportJob>(
     `INSERT INTO export_job (tenant_id, kind, filters, row_count, destination, requested_by, state, created_by)
-     SELECT t.id, $1, $2, $3, t.region, current_setting('app.user_id')::uuid, 'ready', current_setting('app.user_id')::uuid
+     SELECT t.id, $1, $2, $3, t.region, CASE WHEN app_actor_type() = 'user' THEN app_user_id() END, 'ready', app_user_id()
      FROM tenant t WHERE t.id = app_tenant_id()
      RETURNING id, kind, filters, row_count, destination, state, created_at`,
     [request.kind, request.filters, request.rowCount],

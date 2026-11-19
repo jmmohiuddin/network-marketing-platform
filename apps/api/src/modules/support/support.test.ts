@@ -80,10 +80,12 @@ describe('GET /v1/support-sessions/limits', () => {
       'participant_type.approve', 'agreement.publish', 'case.genealogy.approve', 'case.duplicate.approve', 'privacy.manage',
       'participant.manage', 'case.genealogy.create', 'case.duplicate.create', 'servicing.manage', 'product.manage', 'late.manage',
       'plan.edit', 'plan.approve', 'plan.activate', 'plan.simulate', 'run.execute', 'run.commit', 'restatement.request',
-      'restatement.approve', 'override.approve',
+      'restatement.approve', 'override.approve', 'payout.prepare', 'payout.approve', 'payout.reconcile', 'payout.hold', 'ledger.export',
+      'tax.manage', 'case.adjustment.create', 'case.adjustment.approve', 'case.write_off.create', 'case.write_off.approve',
+      'case.bank_detail.create', 'case.bank_detail.approve', 'case.returned_payment.create',
     ]
     expect(limits.json().data).toEqual({ max_minutes: 480, scopes: PERMISSIONS.filter((permission) => !excluded.includes(permission)) })
-    expect(scopes).toContain('market.manage')
+    expect(scopes).toEqual(expect.arrayContaining(['market.manage', 'ledger.read', 'payout.read', 'case.write_off.read']))
     expect(longest.statusCode).toBe(201)
     expect([tooLong.statusCode, outOfScope.statusCode]).toEqual([400, 400])
     expect((await call(app, { method: 'GET', url: '/v1/support-sessions/limits', as: admin })).json().error.code).toBe('REALM_FORBIDDEN')

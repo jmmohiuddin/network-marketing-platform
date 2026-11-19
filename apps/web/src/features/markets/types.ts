@@ -60,6 +60,20 @@ export interface PackRule {
   readonly effective_to: string | null
 }
 
+export interface AgreementVersionRef {
+  readonly id: string
+  readonly label: string
+  readonly published_at: string
+}
+
+export interface PlanVariantRef {
+  readonly plan_id: string
+  readonly plan_name: string
+  readonly version_id: string
+  readonly version: number
+  readonly state: 'scheduled' | 'active'
+}
+
 export interface ChecklistItem {
   readonly item: string
   readonly title: string
@@ -70,8 +84,11 @@ export interface ChecklistItem {
   readonly entry: ChecklistEntry | null
   /** providers / {region} / {contacts} / {rules} / {version}; null for the other items. */
   readonly detail: {
-    /** agreement_versions (D-B2-15): the market's current published version, null while none is published. */
-    readonly version?: { readonly id: string; readonly label: string; readonly published_at: string } | null
+    /**
+     * agreement_versions (D-B2-15): the market's current published version; plan_variant: the plan version that runs
+     * the market (ten/checklist.ts PlanVariantRef). null while none exists.
+     */
+    readonly version?: AgreementVersionRef | PlanVariantRef | null
     readonly providers?: readonly { readonly id: string; readonly provider: string }[]
     readonly region?: string
     readonly contacts?: number
@@ -111,6 +128,11 @@ export interface ProviderRecord {
   readonly approved_at: string | null
   readonly funds_holder: string | null
   readonly state: 'recorded' | 'withdrawn'
+  /** B4 payout adapter (D-B4-14); null until configured in Integrations. */
+  readonly adapter: 'sandbox' | 'bank_file_csv' | null
+  readonly webhook_configured: boolean
+  /** YYYY-MM-DD (D-B4-20) or null. */
+  readonly review_due_on: string | null
   readonly created_by: Person
   readonly created_at: string
   readonly withdrawn_at: string | null

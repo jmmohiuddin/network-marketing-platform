@@ -7,7 +7,13 @@ import { countLabel, formatDateTime } from '../../lib/format'
 import { NOTE } from '../admin/ui'
 import { EvidenceFile } from './gate-inspector'
 import { CATEGORY_TABS, ITEM_STATUS, KIND_LABELS } from './format'
-import type { ChecklistItem, ProviderRecord } from './types'
+import type { AgreementVersionRef, ChecklistItem, PlanVariantRef, ProviderRecord } from './types'
+
+/** "Version 2026-1" for an agreement; "Global plan, version 3 (scheduled)" for the plan variant (BUG-105). */
+export function versionText(version: AgreementVersionRef | PlanVariantRef): string {
+  if ('label' in version) return `Version ${version.label}`
+  return `${version.plan_name}, version ${version.version}${version.state === 'scheduled' ? ' (scheduled)' : ''}`
+}
 
 /** The "basis / status" cell: what the item rests on besides an evidence file. */
 export function basisText(item: ChecklistItem): string {
@@ -19,7 +25,7 @@ export function basisText(item: ChecklistItem): string {
   if (detail?.providers !== undefined) return detail.providers.length === 0 ? 'No approval recorded' : detail.providers.map((provider) => provider.provider).join(', ')
   if (detail?.contacts !== undefined) return countLabel(detail.contacts, 'contact')
   if (detail?.region !== undefined) return `Region ${detail.region}`
-  if (detail?.version !== undefined) return detail.version === null ? 'No version published' : `Version ${detail.version.label}`
+  if (detail?.version !== undefined) return detail.version === null ? 'No version published' : versionText(detail.version)
   return item.entry?.note ?? (item.kind === 'evidence' ? 'Evidence document' : '—')
 }
 

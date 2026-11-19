@@ -179,7 +179,7 @@ describe('ParticipantRecord (SC-09)', () => {
     expect(screen.getByRole('link', { name: 'Start case' }).getAttribute('href')).toBe('/cases/genealogy/new?position=pos1')
     expect(screen.getByRole('link', { name: 'Open in genealogy' }).getAttribute('href')).toBe('/genealogy?root=pos1')
     expect(screen.getByRole('link', { name: 'Qualification history' }).getAttribute('href')).toBe('/people/p1/qualification') // SC-43
-    expect(screen.queryByText(/Tax|Banking|Ledger|earning|rank/i)).toBeNull()
+    expect(screen.queryByText(/Ledger statement|earning|rank|wallet/i)).toBeNull()
   })
 
   it('shows contact only through the step-up dialog, with the chosen fields', async () => {

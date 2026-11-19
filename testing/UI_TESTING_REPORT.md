@@ -691,3 +691,207 @@ Environment: `nmp_e2e` in its round-2 end state (no reseed: DE core v1 active, v
 - On a test driver, a click that first scrolls the trigger into view closes the menu again (it closes on any scroll); not reproducible by a user scrolling then clicking.
 - 390: blocker chips are right-aligned when one and left-aligned when two; open rows show an "Actions" label with no value.
 - Evidence: `var/qa-b3/r3/R3-*.png`, harness logs `var/qa-b3/r3/R3-visual-*.log`, server logs `var/qa-b3/r3/{api,web}.log`.
+
+## Increment B4 — round 1 (2026-11-18)
+
+Environment: `nmp_e2e` freshly seeded (`seed:e2e` with finance2@, DE-A bank-detail fixture `•••• 3000`, DE contacts `de-a/b/c@example.test`), API on :4000 (`pnpm start`, workers in-process) and web `next start -p 3100` (build 08:07, newer than every `apps/web/src` file), Playwright MCP (one browser, one context per user, TZ Asia/Dhaka), TOTP by the in-page helper `var/qa-b4/helper.js`. B3 chain W-B3-1..3, 6, 7 were driven through the API fast path in each user's own session (plan "DE core": pv, gv, ladder main R1 pv ≥ 100.00, unilevel 0.08/0.05 eligible R1, reparent; simulation; compliance approve; finance schedule M-3 start; orders A/B/C 1×FX-1 and K 2×FX-1 in Aug, B 1×FX-1 in Sep; K refund; correction C → A; restatement). Every B4 step below ran in the UI as the named user unless marked "API".
+
+### Workflows (PLAN §7)
+
+| Workflow | Result | Evidence and notes |
+|---|---|---|
+| W-B4-0 Settings, providers, declarations | pass (defect) | admin@ requested in SC-29: DE minimum 1000 minor units / tax not required, cooling-off 72 h, adjustment policy (10000, 0 days, block), write-off policy (below 1000, second above 500) → "Waiting for Finance approval"; shared-account 3, dormant 90, reminder 30 saved directly; finance@ approved the four (reason required). Clawback card "Retired: set per bonus on the plan version"; PUT money.clawback_policy → 422 SETTING_RETIRED (API). **Providers could not be recorded in SC-17: DE is live, the page says "The market is live: its checklist is closed" and SC-13 has no record action (BUG-099)** → recorded by API (POST /v1/provider-configs, review due 2026-12-08); SC-17 then lists both with "Review due 2026-12-08". SC-13: Configure → Sandbox + write-only secret (secret field hidden for Bank file), "Only sandbox adapters exist in this build", webhook URL with Copy. SC-28: analyst@ → Related participants → DE-B "A relative's account" declared (`R1-W0-*.png`) |
+| W-B4-1 Manual adjustment | pass | analyst@ New adjustment: DE-B → "Refused: this payee is a related account…" (AC-49.1); DE-C (P-3), Aug, +5.00, Commission error, note, PDF → case opened, submit → preview "Approvals needed: 1"; finance@ approved with the StepUp dialog. M-3 calculated: gross 52.00, Adjustments tab "MANUAL ADJUSTMENT · 1 +5.00 EUR", DE-C line with "Adjustment case" link; Re-run → still one manual line; commit dialog says "Committing posts one journal entry for this run's payables and receivables"; after commit "Open the journal entry" → SC-33 drawer: Commission expense Dr 52.00 = payable A 23.00 + B 24.00 + C 5.00, key `run:<run id>`, approved by Finance Approver (AC-14.2) |
+| W-B4-2 Bank-detail change | pass (defect) | support@ (TOTP enrolled at sign-in) DE-B Banking → Request change: IBAN with a wrong check digit → inline "Enter a valid IBAN: its check digits do not match."; valid IBAN → StepUp dialog → "New account •••• 5432 recorded", "No other payee uses this account" → case with reason + PDF → submit; support has no Approve (API decision 403); compliance@ approved (StepUp) → Banking "•••• 5432 … Cooling off until Nov 21, 2026, 8:31 AM" (+72 h). Two mails in MAIL_DIR (de-b@example.test, de-b-change@example.test), audit NOTICE.SENT ×2 (contact_on_record, request_contact). The mail prints the cooling-off end as a raw UTC ISO instant (BUG-100) |
+| W-B4-3 Sandbox payout | pass | payout@ Prepare batch (DE, Sandbox) → Draft, Included DE-A 23.00 EUR •••• 3000; Exclusions: DE-B "Bank details changed: cooling off until Nov 21, 2026, 8:31 AM", DE-C "Below the market minimum of 10.00 EUR" + "No bank details on record" (AC-47.1); submit → payout sees no Approve, "Can approve: Finance Approver, Second Finance Approver"; finance@ Approve 23.00 EUR (dialog: signed instruction, payable → in transit, "Sandbox provider — no real money moves") → Instructing; instruction Accepted by provider within the first poll, attempts 1, `sbx_…`; SC-33 payable A 0.00, in transit 23.00, batch total = Σ instructions (AC-47.2) |
+| W-B4-4 Return, re-instruct by bank file, settle | pass (defect) | signed `payout.returned` posted twice with one event id → 200 both, one `payout_returned` entry (AC-16.3); wrong secret → 401 SIGNATURE_INVALID; `amount_minor` as JSON number → 422 PAYLOAD_INVALID. SC-34 Returned 23.00 "back in payable", inspector with events, ledger postings and "Open the returned-payment case"; batch 1 **Partially settled**; M-3 **Paid** on SC-01; returned-payment mail to de-a@. A new batch while the case is open excludes DE-A `returned_payment_open` (API, cancelled). payout@ submitted the case with a note; finance@ approved. Bank-file batch → finance approved → payout "Generate bank file" → StepUp dialog → `payouts-<batch>.csv`, one row `DE89370400440532013000, 23.00, EUR`, instruction `instructed`; no IBAN in the API log. "Import result file" with A settled + unknown reference → "1 settled … 1 exception"; same file again (API) → `unchanged 2`, no new exception; exception Resolve without note → "Enter how the exception was resolved.", with note → resolved. SC-33: in transit 0.00, settled clearing 23.00, batch 2 Settled (TS-40). Import shows two toasts for one import (BUG-102) |
+| W-B4-5 Clawback after payout | pass | after the K refund and the Sep commit (API): SC-33 Receivables DE-A 10.00 (0–30 days, Eligible); SC-09 DE-B Balances: payable 8.00, in transit 0.00, receivable 0.00, market link to SC-33 (AC-FIN3-1); the late refund of the Paid M-3 was consumed by the Sep run (clawbacks A −10.00, B −16.00, AC-FIN3-4) |
+| W-B4-6 Netting and write-off with two approvers | pass (defect) | after the Oct commit (restatement A +3.00, B −8.00; diff preview "−5.00", C's manual line not restated, AC-CAS2-2): A receivable 7.00, payable 0.00; B payable 0.00 (AC-20.3). analyst@ Receivables → select DE-A → Propose write-off (1 payee, 7.00) → one case submitted, approvals 2 ("above the second-approver threshold"); finance@ approved → "Approval 1 of 2 by you … awaiting a second approver", no Approve left, API repeat → 422 SOD_SELF_APPROVAL; finance2@ approved (StepUp) → A receivable 0.00, write_off 7.00, ledger balanced (TS-11). Case subject shows the raw account id (BUG-103) |
+| W-B4-7 GL export | pass | finance@ mapped commission_expense 6100 and payee_payable 2100 → Generate Aug → "Map these account types to a GL code first: Payouts in transit, Settled clearing."; mapped 2150/1190 → export 7 lines, 144.00 = 144.00; CSV run lines name run `5008c68b…`, payout lines roll up to their batch ids; two downloads byte-identical (sha256 158dacf1…). Key path (API): finance cannot create a service account (403); admin minted a `ledger:export` key (after step-up) → export 201 `created_by {type: service_account}`, download 200; an `orders:write` key → 403 SCOPE_MISSING |
+| W-B4-8 Tax profile and holds | pass | finance@ Edit tax profile: `DE12345678!` → "Enter 4 to 32 letters, digits or hyphens."; DE / Individual / DE123456789 → "•••• 6789", valid from now; payout@ Show tax id → dialog "shown once" → DE123456789 → Hide and close removes it, focus back on "Show tax id"; SC-30 (compliance) lists TAX_ID.UNMASKED, audit row holds only participant_id; no tax id or IBAN in audit rows or the API log. compliance@ placed and released holds on DE-C (empty reason → "Enter the reason."), second release 409 HOLD_RELEASED |
+| W-B4-9 Read-only and denial | pass (setup) | no base role may approve vendor access to Ledger/Payouts ("No base role can approve this"): QA created tenant role "Vendor access (money views)" (vendor_access.decide, ledger.read, payout.read, case read permissions), granted it to compliance@ (admin@ request, admin2@ approval) — by API. operator@vendor requested Ledger + Payouts for 60 min; compliance approved (outside-region checkbox); in the read-only frame SC-33 (all tabs), SC-03 list/detail/tabs, SC-34 show no action control (no Prepare, Approve, Propose write-off, Edit mapping, Generate, Import, Resolve); POST /v1/payout-batches → 403 SUPPORT_SESSION_READ_ONLY. executive@: no Ledger/Payouts navigation, `/ledger`, `/payouts`, `/payouts/reconciliation`, `/payouts/<id>` → "Not found or not available to you", API 403 |
+| W-B4-10 Regression | partial | see below; not executed: W-B3-4/5/8 UI paths beyond B4 needs, W-B2-1/3/7/8 key paths, WooCommerce webhook, duplicate merge/terminate, BUG-081..083/093/095..098 re-checks, SC-05 pools, row Calculate after reseed, support session on B3 pages, globex isolation |
+
+Additional API checks: adapter `razorpayx` → 422 ADAPTER_NOT_AVAILABLE; second open batch → 409 BATCH_OPEN; empty batch submit → 422 BATCH_EMPTY; payout@ approve → 403; dormant list 200 `[]` (no payable older than 90 days).
+
+### MVP-A regression (quick)
+
+| Area | Result | Notes |
+|---|---|---|
+| Sign-in / MFA | pass | 10 acme users + vendor operator; forced enrolment for admin, finance, finance2, compliance, support (new MFA need), payout; StepUp dialog seen on adjustment approval, bank-detail request, bank file, write-off second approval |
+| Import | pass | DEMO 2025-01…12: 1,466 / 4,775 / 7,442; 53,195,001 / 53,195,001 / 2,600,070 / 9,225,679; mapping v1 by admin approved by compliance; loaded (breach contact recorded first) |
+| Snapshot | pass | R1 DEMO 2025-01 Ready, 16.61 % of 1,517,950 |
+| Audit | pass | chain Intact over 279 events |
+
+### Per screen
+
+| Screen | Stitch Reference | Functional Testing | Visual Fidelity | Responsive Testing | Accessibility | Impeccable Review | Defects | Final Status |
+|---|---|---|---|---|---|---|---|---|
+| SC-33 Ledger and journal export | `sc_33_ledger_journal_export` | pass (W-B4-1,3..7, 9) | pass with notes (canonical tokens) | pass (390/768/1280/1440, no overflow) | tabs `role=tab` in a `tablist`, `aria-selected`; no unnamed control / unlabelled input | – | BUG-103 (case subject) | pass with defects |
+| SC-03 Payout batches + detail | `sc_03_payout_batches_approvals` | pass (W-B4-3/4/9) | pass with notes | pass | Prepare dialog: focus in, Tab trapped, Escape returns focus to "Prepare batch" | side-tab border on the sandbox banner (Stitch banner anatomy, note) | – | pass |
+| SC-34 Payout reconciliation | `sc_34_payout_reconciliation_returned_payments` | pass (W-B4-4) | pass with notes | pass (tables scroll inside the card at 768) | Resolve buttons named "Resolve exception <reference>" | – | BUG-102 | pass with defects |
+| SC-06 Cases (adjustment, write-off, bank detail, returned payment) | `sc_06_cases_exceptions` | pass | pass with notes | pass | dialogs labelled | informational threshold line uses the red `error` icon | BUG-103 | pass with defects |
+| SC-09 Banking / Tax / Holds / Balances | `sc_09_participant_deep_fact_record` | pass (W-B4-2/5/8) | pass with notes | pass | unmask dialog returns focus to its trigger | – | – | pass |
+| SC-13 Payout providers | `sc_13_integrations_and_sync_health` | pass (adapter configure) | pass with notes | pass | – | – | BUG-099 (no record path for a live market) | pass with defects |
+| SC-17 Market checklist | `sc_17_market_launch_checklist` | fail for a live market (no record action) | as B1 | as B1 | – | – | BUG-099 | fail |
+| SC-29 Settings | `sc_29_tenant_settings` | pass (7 new cards, retired clawback card) | pass with notes | pass | – | amounts entered as "minor units" (by design, D-B4-18) | – | pass |
+| SC-28 Users (related participants) | `sc_28_users_and_roles` | pass | as B1 | – | dialog labelled | search "exact reference" also lists DE-A/C/K for "DE-B" (note) | – | pass |
+| SC-01 / SC-02 (touch) | existing | pass (Paid state, commit copy, entry link, manual lines) | pass with notes | pass | – | – | – | pass |
+
+### Impeccable audit (audit only) and accessibility pass
+
+- Detector (`impeccable detect --json`, regex mode, from `apps/web`) on `features/ledger` and `features/payouts` (11 files): 1 finding, `side-tab` `border-l-4` in `payouts/batch-page.tsx:90` = the sandbox banner, which is the Stitch banner anatomy (note, not a defect). Source scan: no hard-coded colour, no inline width style, no `alert(`/`window.confirm`/`console.log`, no "wallet". No PRODUCT.md/DESIGN.md (launcher: SCOPED_EXISTING_ALLOWED).
+- Scripted pass on 17 B4 routes at 1440 and 390 plus 8 at 1280/768 (finance): no horizontal overflow, no unnamed button/link/tab, no unlabelled input/select/textarea, one `h1`, no heading skip, every visible table has headers and a name.
+- Scores (0–4): Accessibility 3 (contrast not measured), Performance not scored, Theming 4, Responsive 4, Implementation integrity 3 (BUG-099 blocks a UI path; small copy defects).
+
+### Console and network
+
+- No 5xx in the API log; no page error. Console errors: 24 × "Failed to load resource" for `GET /v1/auth/firebase-config` 404 on every `/signin` load (BUG-101); all others are intended 4xx: step-up 403s before the StepUp dialog, refusal probes (422 related account, 422 IBAN/tax format, 409 HOLD_RELEASED, 401/422 webhook probes, 403 SCOPE_MISSING, 403 READ_ONLY), 401 after idle session expiry.
+
+### Notes (not registered)
+
+- SC-03 KPI "Open batch total 0" shows no currency when nothing is open.
+- Payout exclusion detail `until` comes from the API with the server offset (`…+06:00`, microseconds) while other instants are UTC `Z`; the UI formats it correctly.
+- Hold dialog defaults to the first market of the list, not the participant's market.
+- Bank-file batches show no sandbox banner (correct: a bank file is uploaded by people).
+- Not exercised: retry-failed and NOTHING_TO_RETRY (no failed instruction), BATCH_RECALCULATED, provider withdrawal with in-flight instructions, review-reminder job mail, sandbox submit timeout (TS-16), tax-profile-required exclusion, AC-FIN4-3 cross-market scope, the approval/commit race, escalate action of the adjustment policy.
+- Evidence: `var/qa-b4/R1-*.png`, bank file and GL exports `var/qa-b4/*.csv`, harness logs `var/qa-b4/R1-visual-*.log`, server logs `var/qa-b4/{api,web}.log`.
+
+## Increment B4 — round 1, run 2 (2026-11-19, after the B4 fix packages)
+
+Environment: web build 2026-11-19 15:19 (no `apps/web/src` file newer), migrations through 0411; `nmp_e2e` freshly seeded (`seed:e2e`); API on :4000 (`pnpm start`, workers in-process), web `next start -p 3100`; the previous run's servers (started before this build) were stopped by PID first. Playwright MCP, one browser, one context per user (TZ Asia/Dhaka), helper `var/qa-b4/run2/helper.js` (TOTP, sign-in with enrolment, sessions saved to `state-<user>.json` and restored when a page closes). B3 chain W-B3-1/2/3/6/7 by the API fast path in each user's own session (plan "DE core" pv/gv/main R1/unilevel 0.08·0.05/reparent/capped_pv, guardrail acknowledged + overridden, golden from the M-3 simulation, approved, scheduled from Aug 1; W-B2-1 settings by API; orders A/B/C 1×FX-1 and K 2×FX-1 in Aug, B 1×FX-1 in Sep, one 409 ORDER_CONFLICT probe; K refund; C → A correction; restatement). W-B3-4 (M-3) ran in the UI. Every B4 step ran in the UI as the named user unless marked "API".
+
+### Workflows (PLAN §7)
+
+| Workflow | Result | Evidence and notes |
+|---|---|---|
+| W-B4-0 Settings, providers, declarations | pass (defects) | admin@ in SC-29: DE minimum 1000 / tax not required, cooling-off 72 h (step-up), adjustment policy (10000, 0 days, block), write-off policy (below 1000, second above 500) → "Waiting for Finance approval"; shared-account 3, dormant 90, reminder 30 saved directly. finance@ approved the four. The minimum-payout request shows only "Set for 1 market" in the queue and the Approve dialog (BUG-106). Clawback card "Retired: set per bonus on the plan version". **SC-17 still has no record action for a live market and SC-13 points back to it (BUG-099 still open)** → providers recorded by API (review due 2026-12-09); SC-17 then lists both, "Review due 2026-12-09", item Complete. SC-13 Configure: Sandbox + write-only secret, Bank file hides the secret, "Only sandbox adapters exist in this build", webhook URL + Copy. SC-28: analyst@ → DE-B "Relative" declared. SC-17 "Plan variant" reads "Version undefined" (BUG-105) |
+| W-B4-1 Manual adjustment | pass | before the policy was in force: "Set the adjustment policy before proposing adjustments."; DE-B → "Refused: this payee is a related account…" (AC-49.1); DE-C P-3, Aug, +5.00, Commission error, note, PDF → case → submit → "Approvals needed: 1"; finance@ approved (StepUp dialog). M-3 calculated 52.00; Adjustments tab "MANUAL ADJUSTMENT · 1 +5.00 EUR"; Re-run → still one manual line, 52.00; commit dialog "Committing posts one journal entry for this run's payables and receivables"; "Open the journal entry" → SC-33: Commission expense Dr 52.00; payables A 23.00, B 24.00, C 5.00; key `run:e0d15a47…`, approved by Finance Approver (AC-14.2) |
+| W-B4-2 Bank-detail change | pass (defect) | support@ DE-B Banking → wrong check digit → "IBAN: its check digits do not match."; valid IBAN → StepUp → "New account •••• 5432 recorded", not shared → case + PDF → submit; support has no Approve, API decision 403; compliance@ approved (StepUp) → "•••• 5432 … Cooling off until Nov 22, 2026, 3:44 PM". Two mails (de-b@, de-b-change@), NOTICE.SENT ×2 (contact_on_record, request_contact). Mail still prints a raw UTC ISO instant (BUG-100 still open) |
+| W-B4-3 Sandbox payout | pass (defect) | payout@ Prepare batch DE / Sandbox → Draft, Included DE-A 23.00 •••• 3000, sandbox banner; Exclusions: DE-C "Below the market minimum of 10.00 EUR" + "No bank details on record", DE-B "Bank details changed: cooling off until Nov 22, 2026, 3:44 PM" (AC-47.1); API `until` still `…+06:00` with microseconds (BUG-104 still open); submit → payout has no Approve, "Can approve: Finance Approver, Second Finance Approver"; finance@ Approve 23.00 EUR → Instructing, instruction "Accepted by provider", attempts 1, `sbx_…`; SC-33 payable A 0.00, in transit 23.00 (AC-47.2) |
+| W-B4-4 Return, re-instruct by bank file, settle | pass (defect) | signed `payout.returned` twice with one event id → 200 both, one return posting (AC-16.3); wrong secret 401 SIGNATURE_INVALID; numeric amount 422 PAYLOAD_INVALID. SC-34 Returned 23.00 "back in payable", inspector events + postings + "Open the returned-payment case"; batch 1 Partially settled; M-3 **Paid** on SC-01 (Restate in the row menu, review shows no Re-run); returned-payment mail to de-a@. payout@ submitted the case (note); finance@ approved. Bank-file batch → finance@ approved → payout@ Generate bank file → StepUp → `payouts-dde71bc0….csv` one row `DE89370400440532013000,23.00,EUR`; no IBAN in API log. Import result file (A settled + unknown) → 1 settled, 1 exception, again two toasts (BUG-102 still open); same file again → "0 settled … 2 unchanged, 0 exceptions"; Resolve without note → "Enter how the exception was resolved.", with note → resolved. SC-33: in transit 0.00, settled clearing 23.00; batch 2 Settled (TS-40) |
+| W-B4-5 Clawback after payout | pass | K refund (API) → Sep run (API): clawbacks A −10.00, B −16.00 linked to M-3; finance commit. SC-33 Receivables DE-A 10.00, 0–30 days, Eligible; SC-09 DE-B Balances payable 8.00 / in transit 0.00 / receivable 0.00, market link to SC-33 (AC-FIN3-1) |
+| W-B4-6 Netting and write-off with two approvers | pass (defect) | after the Oct commit (restatement A +3.00, B −8.00; preview diff −5.00): A receivable 7.00, payable 0.00; B payable 0.00 (AC-20.3). analyst@ Receivables → select DE-A → Propose write-off (1 payee, 7.00, reason, note) → one case, "Approvals needed: 2"; finance@ approved (StepUp) → "Approval 1 of 2 by you … awaiting a second approver", no Approve left, API repeat 422 SOD_SELF_APPROVAL; finance2@ approved (StepUp) → receivable 0.00, write_off 7.00, ledger balanced (TS-11). Subject still "(LEDGER ACCOUNT) 2a34406a" and the threshold line still uses the red `error` icon (BUG-103 still open) |
+| W-B4-7 GL export | pass | finance@ mapped 6100/2100 → Generate Aug → "Map these account types to a GL code first: Payouts in transit, Settled clearing."; mapped 2150/1190 → 7 lines, 144.00 = 144.00; CSV run lines name run `e0d15a47…`, payout lines name their batches; two downloads byte-identical (sha256 cba3c103…) |
+| W-B4-8 Tax profile and holds | pass | finance@ `DE12345678!` → "Enter 4 to 32 letters, digits or hyphens."; DE / Individual / DE123456789 → "•••• 6789"; payout@ Show tax id → confirm dialog → value shown once → "Hide and close" returns focus to "Show tax id", value gone from the DOM; SC-30 lists TAX_ID.UNMASKED (participant id only); no tax id/IBAN in audit rows, outbox or API log. compliance@ hold on DE-C: empty reason → "Enter the reason."; "E2E hold" placed, released with a reason |
+| W-B4-9 Read-only and denial | pass (setup) | as in run 1 a tenant role "Vendor access (money views)" was needed (no base role may approve Ledger/Payouts access) — created by admin@, granted to compliance@ (admin2@ approved), by API. operator@vendor requested Ledger + Payouts 60 min in the UI; compliance@ approved (outside-region checkbox, StepUp); in the read-only frame SC-33 tabs, SC-03 list/detail, SC-34 show no action control; POST /v1/payout-batches → 403 SUPPORT_SESSION_READ_ONLY. executive@: nav Compliance / Periods / Plans only; `/ledger`, `/payouts`, `/payouts/reconciliation`, `/payouts/<id>` → "Not found or not available to you"; API 403 |
+| W-B4-10 Regression | partial | B3 chain pass (M-3 52.00 incl. manual; Sep clawbacks; restatement −5.00; replay M-3 after the correction → Match). Not executed: W-B3-8 structural rules, W-B2-1/3/7/8 key paths beyond the settings precondition, WooCommerce webhook, duplicate merge/terminate, BUG-081..083/095..098 re-checks, SC-05 pools, support session on B3 pages, globex isolation |
+
+### Re-test of open B4 defects
+
+BUG-099 (no SC-17/SC-13 record path for a live market), BUG-100 (raw ISO instant in the bank-detail notice), BUG-101 (firebase-config 404 on every sign-in load), BUG-102 (two toasts per result import), BUG-103 (write-off subject = raw account id; red icon for an informational line) and BUG-104 (`until` with server offset) were all reproduced unchanged.
+
+### MVP-A regression (quick)
+
+| Area | Result | Notes |
+|---|---|---|
+| Sign-in / MFA | pass | 11 acme users + operator@vendor; forced enrolment for admin, compliance, finance, finance2, support, payout; StepUp dialog seen on adjustment approval, bank-detail request and approval, bank file, write-off second approval, vendor access approval |
+| Import | pass | DEMO 2025-01…12: 1,466 / 4,775 / 7,442; 53,195,001 / 53,195,001 / 2,600,070 / 9,225,679; mapping v1 by admin@ approved by compliance@; loaded after a breach contact was recorded |
+| Snapshot | pass | R1 DEMO 2025-01 Ready, 16.61 % of 1,517,950 |
+| Audit | pass | chain Intact, 264 events |
+
+### Per screen
+
+| Screen | Stitch Reference | Functional Testing | Visual Fidelity | Responsive Testing | Accessibility | Impeccable Review | Defects | Final Status |
+|---|---|---|---|---|---|---|---|---|
+| SC-33 Ledger and journal export | `sc_33_ledger_journal_export` | pass | pass with notes (canonical tokens) | pass (4 viewports, no page overflow) | tabs `role=tab` + `aria-selected`; tables named; no unnamed control | – | – | pass |
+| SC-03 Payout batches + detail | `sc_03_payout_batches_approvals` | pass | pass with notes | pass | dialogs labelled | side-tab border on the sandbox banner (Stitch anatomy, note) | BUG-104 (API) | pass |
+| SC-34 Payout reconciliation | `sc_34_payout_reconciliation_returned_payments` | pass | pass with notes | pass | "Resolve exception <reference>" names | – | BUG-102 | pass with defects |
+| SC-06 Cases (adjustment, write-off, bank detail, returned payment) | `sc_06_cases_exceptions` | pass | pass with notes | pass | dialogs labelled | red `error` icon for an informational line | BUG-103, BUG-107 | pass with defects |
+| SC-09 Banking / Tax / Holds / Balances | `sc_09_participant_deep_fact_record` | pass | pass with notes | pass | unmask dialog returns focus | – | BUG-100 (mail) | pass |
+| SC-13 Payout providers | `sc_13_integrations_and_sync_health` | pass (configure) | pass with notes | pass | – | – | BUG-099 | pass with defects |
+| SC-17 Market checklist | `sc_17_market_launch_checklist` | fail for a live market (no record action) | as B1 | pass | – | – | BUG-099, BUG-105 | fail |
+| SC-29 Settings | `sc_29_tenant_settings` | pass | pass with notes | pass | four "Approve" buttons share one name in the queue (note) | – | BUG-106 | pass with defects |
+| SC-28 Users (related participants) | `sc_28_users_and_roles` | pass | as B1 | pass | dialog labelled | search "DE-B" lists all four DE participants (note) | – | pass |
+| SC-01 / SC-02 (touch) | existing | pass (Paid, commit copy, journal link, manual lines, Restate on Paid, no Re-run) | pass with notes | pass | – | – | – | pass |
+
+### Impeccable audit (audit only) and accessibility pass
+
+- Launcher `context` (cwd `apps/web`): no PRODUCT.md/DESIGN.md (NO_PRODUCT_MD; audit runs on the incumbent system). Detector (`detect --json`, regex on source) over `features/ledger`, `features/payouts`, `features/people`, `features/cases`, `features/integrations`: 2 findings, both `side-tab` `border-l-4` (`payouts/batch-page.tsx:90` sandbox banner, `cases/case-detail.tsx:243`) = Stitch banner anatomy (notes). Source scan: no inline width style, no `alert(`/`window.confirm`/`console.log`, no "wallet"; `cases/effect-preview.tsx:53,55` hard-codes `#7A4900` (pre-B4, note).
+- Scripted pass (finance, admin): 19 B4 routes at 1440 and 390, 10 + 4 routes at 1280 and 768, 4 admin routes at 1440/390 — no horizontal page overflow, no unnamed button/link/tab, no unlabelled field, one `h1`, no heading skip, every visible table has headers and a name, no "wallet"; only finding "Version undefined" on SC-17 (BUG-105).
+- Scores (0–4): Accessibility 3 (contrast not measured), Performance not scored, Theming 4, Responsive 4, Implementation integrity 3 (BUG-099 blocks a UI path; BUG-105/106 copy/data gaps).
+
+### Console and network
+
+- No 5xx in the API log, no page error. Console errors: 20 × firebase-config 404 on `/signin` loads (BUG-101); all other 4xx intended — 403 before StepUp dialogs, refusal probes (422 adjustment policy unset / related account, 409 ORDER_CONFLICT, 401/422 webhook probes, 422 SOD_SELF_APPROVAL, 422 GL mapping missing, 403 READ_ONLY, executive 403/404) and four from QA script mistakes (missing Run-Request-Id, `runs/undefined`, commit before opening the review).
+
+### Notes (not registered)
+
+- Review Adjustments KPI says "1 lines from late items…"; the line's "Adjustment case" link opens the filtered case list, not the case.
+- SC-03 "Open batch total 0" has no currency when nothing is open; the hold dialog preselects the first market of the list (DE here by coincidence).
+- Full-page captures end the white sidebar at the viewport height (sticky sidebar; not visible in normal use).
+- Not exercised: retry-failed/NOTHING_TO_RETRY, BATCH_RECALCULATED, provider withdrawal in flight, sandbox timeout (TS-16), tax-profile-required exclusion, AC-FIN4-3 cross-market scope, approve/commit race, adjustment escalate action, the M-3 sync-failing blocker state (the Sep order cleared it before the UI was opened).
+- Evidence: `var/qa-b4/run2/R1-*.png`, `payouts-*.csv`, `result.csv`, `gl-*.csv`, harness logs `var/qa-b4/run2/visual-*.log`, server logs `var/qa-b4/run2/{api,web}.log`.
+
+## Increment B4 — round 2 (2026-11-19, retest after the fixes of BUG-099..107)
+
+Environment: web build 2026-11-19 16:20 (no `apps/web/src` file newer), API from source (`pnpm start`, workers in-process) on a freshly seeded `nmp_e2e` (`seed:e2e`); web `next start -p 3100`; both started with PID files in `var/qa-b4/run3/` and stopped by PID. Playwright MCP, one browser, one context per user (TZ Asia/Dhaka), helper `var/qa-b4/run3/helper.js`. Fix checks ran in the UI as the named user; the B3 chain (plan "DE core" pv/gv/main R1/unilevel 0.08·0.05/reparent/capped_pv, golden from the M-3 simulation, compliance approval, finance schedule from Aug 1; orders A/B/C 1×FX-1 and K 2×FX-1 in Aug, B in Sep, one 409 ORDER_CONFLICT probe; K refund; C → A correction; restatement; Sep and Oct runs) and the W-B2-1 settings ran by API in each user's own session. Steps marked "API" below were not driven through the UI.
+
+### Fix verification (first step)
+
+| Defect | Result | Evidence |
+|---|---|---|
+| BUG-099 HIGH (no UI path to record a payout provider on a live market) | verified fixed | admin@ `/settings/markets/<DE>` (Live): "Payout provider eligibility" inspector now has "Record provider approval"; dialog (provider, approved on, funds holder, review due, scope, document) recorded "E2E Sandbox Payouts" and "E2E Bank File" (review due 2026-12-09, evidence.pdf) → item Complete, each card with "Set review date" and "Withdraw"; the Licence evidence item still reads "The market is live: its checklist is closed." SC-13 lists both, "Approvals are recorded per market in the market launch checklist", Configure set Sandbox + webhook secret and Bank file (CSV). No API workaround needed. `R2-F099-0[1-3]-*.png`, `R2-W0-01-sc13-configured.png` |
+| BUG-100 LOW (raw ISO instant in the bank-detail notice) | verified fixed | both mails (de-b@, de-b-change@): "Payouts to the new account start after Nov 22, 2026, 11:46 AM (Europe/Berlin)." = UI "Cooling off until Nov 22, 2026, 4:46 PM" (Asia/Dhaka) |
+| BUG-101 LOW (firebase-config 404 on every sign-in load) | verified fixed | `/signin` and `/signin/vendor` loaded in a fresh context: no request to `firebase-config`, no console error; no firebase 404 in the whole round |
+| BUG-102 LOW (two toasts per result import) | verified fixed | import with 1 settled + 1 unknown row: one notice only (banner "Result file imported: 2 rows · 1 settled, 0 returned, 0 failed, 0 unchanged, 1 exception."), no toast element; repeat import → one banner "0 settled … 2 unchanged, 0 exceptions". `R2-F102-01-import-result.png` |
+| BUG-103 LOW (write-off subject raw id; red icon on an informational line) | verified fixed on the case detail | `/cases/<write-off>`: "SUBJECT (LEDGER ACCOUNT) Clawback receivable of DE-A · DE-A" (link to `/people/<DE-A>`); "The amount is above the second-approver threshold of the policy." uses `info` in `text-primary` with neutral text. Residual in the queue → BUG-108. `R2-F103-01-writeoff-case.png` |
+| BUG-104 LOW (exclusion `until` with server offset and µs) | verified fixed | GET `/v1/payout-batches/<id>` → `"until":"2026-11-22T10:46:35.809Z"` (UTC, ms) |
+| BUG-105 LOW (SC-17 "Version undefined") | verified fixed | Plan variant row "DE core, version 1", Complete; no "Version undefined" at 1440/1280/768/390. `R2-F105-01-sc17-plan-variant.png` |
+| BUG-106 MEDIUM (minimum-payout approval hides the value) | verified fixed | queue NEW VALUE "DE: 10.00 EUR minimum, tax profile not required"; Approve dialog "DE: 10.00 EUR minimum, tax profile not required from Nov 19, 2026, 4:43 PM."; version 11 diff Before "Not set" / After the same text; card after 4:43 PM "In force since … (version 11). DE: 10.00 EUR minimum, tax profile not required". `R2-F106-0[1-2]-*.png` |
+| BUG-107 LOW (case tab counts read as totals) | verified fixed | tabs read "All cases 0 undecided" etc. (`title` "0 undecided"), caption "Counts on the tabs are undecided cases: open, or waiting for a decision." above five decided cases. `R2-F107-01-cases-tabs.png` |
+
+### Workflows (PLAN §7, quick repeat)
+
+| Workflow | Result | Evidence and notes |
+|---|---|---|
+| W-B4-0 Settings, providers, declarations | pass | minimum payout by admin@ in SC-29 (UI); cooling-off 72 h, adjustment and write-off policies by API (202, approval-gated); shared-account 3, dormant 90, reminder 30 by API (200); finance@ approved all four in the UI ("Changes waiting for approval" empty after). Providers recorded in SC-17 and configured in SC-13 in the UI (BUG-099 above). SC-28: admin@ declared analyst@ "relative" of DE-B in the Users drawer → "DE-B declared related." |
+| W-B4-1 Manual adjustment | pass | before the policy was in force: "Set the adjustment policy before proposing adjustments."; DE-B → "Refused: this payee is a related account …"; DE-C P-3 Aug +5.00 Commission error, note, PDF → case → submit → preview "Approvals needed: 1"; finance@ approved (StepUp dialog). M-3 calculated in the UI: 52.00 EUR, Adjustments tab "MANUAL ADJUSTMENT · 1 +5.00 EUR"; request commit; finance@ commit dialog "Committing posts one journal entry …" → Committed → "Open the journal entry" → SC-33 entry 52.00 = 52.00, key `run:2fa539c5…`, approved by Finance Approver. Re-run before commit not repeated this round |
+| W-B4-2 Bank-detail change | pass | support@ DE-B Banking: wrong check digits → "IBAN: its check digits do not match."; valid IBAN → StepUp → "New account •••• 2051 recorded", not shared → case + PDF → submit; support has only Withdraw, API decision 403; compliance@ approved (StepUp) → "•••• 2051 … Cooling off until Nov 22, 2026, 4:46 PM"; two mails, NOTICE.SENT rows |
+| W-B4-3 Sandbox payout | pass | payout@ Prepare DE / Sandbox → Draft, Included DE-A 23.00 •••• 3000, sandbox banner; Exclusions DE-B cooling off, DE-C below minimum 10.00 EUR + no bank details; submit → payout has no Approve, "Can approve: Finance Approver, Second Finance Approver"; finance@ Approve (StepUp) → Instructing, "Accepted by provider", attempts 1, `sbx_…` |
+| W-B4-4 Return, re-instruct by bank file, settle | pass | signed `payout.returned` twice with one event id → 200 both, one return; wrong secret 401 SIGNATURE_INVALID; numeric amount 422 PAYLOAD_INVALID. SC-34 Returned 23.00 "back in payable"; inspector events + postings + returned-payment case link; batch 1 `partially_settled`; M-3 Paid on SC-01. payout@ submitted the case with a note; finance@ approved. Bank-file batch → finance@ approved → Generate bank file → StepUp → `payouts-7ac28021….csv` one row DE-A `DE89370400440532013000` 23.00 EUR; no IBAN in API log, audit or outbox. Result import (BUG-102 above); Resolve without note → "Enter how the exception was resolved.", with note → resolved; batch 2 `settled` |
+| W-B4-5 Clawback after payout | pass | K refund (API) → Sep run (API): clawbacks A −10.00, B −16.00 linked to M-3; committed by finance@ (API). SC-33 Receivables DE-A 10.00, 0–30 days, Eligible; DE-B Balances payable 8.00 / in transit 0.00 / receivable 0.00 |
+| W-B4-6 Netting and write-off with two approvers | pass (defect) | C → A correction and M-3 restatement (API): preview diff −5.00; Oct run lines A +3.00, B −8.00 (restatement). analyst@ Receivables DE-A 7.00 → Propose write-off (1 payee, 7.00, reason, note) → one case; finance@ approved → "Approval 1 of 2 by you … awaiting a second approver", no Approve left, API repeat 422 SOD_SELF_APPROVAL; finance2@ approved (StepUp) → Approved; ledger balanced 191.00 = 191.00, payables 5.00 (C), receivables 0.00, settled clearing 23.00. Queue row subject still a raw id (BUG-108) |
+| W-B4-7 GL export | pass | finance@ mapped 6100/2100 → Generate Aug → "Map these account types to a GL code first: Payouts in transit, Settled clearing."; mapped 2150/1190 → 7 lines, 144.00 = 144.00; run lines name run `2fa539c5…`, payout lines their batches; two downloads byte-identical |
+| W-B4-8 Tax profile and holds | pass | finance@ `DE12345678!` → "Enter 4 to 32 letters, digits or hyphens."; DE / Individual / DE123456789 (StepUp) → "•••• 6789"; payout@ Show tax id → confirm → shown once → "Hide and close" returns focus to "Show tax id", value gone from the DOM; TAX_ID.UNMASKED ×1 in the audit log; no tax id/IBAN in audit rows, outbox or API log. compliance@ hold on DE-C: empty → "Enter the reason."; placed, released with a reason |
+| W-B4-9 Read-only and denial | partial | executive@: nav Compliance / Periods and runs / Plans only; `/ledger`, `/payouts`, `/payouts/reconciliation`, `/payouts/<id>` → "Not found or not available to you"; API 403. **Not executed this round:** vendor support session (needs the custom vendor-access role set-up of round 1) |
+| W-B4-10 Regression | partial | B3 chain pass (M-3 52.00 incl. manual; Sep clawbacks; restatement −5.00; replay M-3 after the correction → `match`); MVP-A below. Not executed: W-B3-8, W-B2-3/7/8 beyond the settings precondition, WooCommerce webhook, duplicate merge/terminate, SC-05 pools, support session on B3/B4 pages, globex isolation |
+
+### MVP-A regression (quick)
+
+| Area | Result | Notes |
+|---|---|---|
+| Sign-in / MFA | pass | 10 acme users incl. forced enrolment (admin, admin2, compliance, finance, finance2, support, payout); StepUp dialogs seen on adjustment approval, bank-detail request, bank file, write-off second approval, tax profile save |
+| Import | pass | DEMO 2025-01…12: 1,466 / 4,775 / 7,442; 53,195,001 / 53,195,001 / 2,600,070 / 9,225,679; mapping v1 by admin@ approved by compliance@ at `/compliance/mappings`; attached and Loaded (breach contact recorded first) |
+| Snapshot | pass | R1 DEMO 2025-01 Ready, 252,178 of 1,517,950 = 16.61 % |
+| Audit | pass | "The audit chain is intact", 102 events checked |
+
+### Per screen
+
+| Screen | Stitch Reference | Functional Testing | Visual Fidelity | Responsive Testing | Accessibility | Impeccable Review | Defects | Final Status |
+|---|---|---|---|---|---|---|---|---|
+| SC-17 Market launch checklist (live market) | `sc_17_market_launch_checklist` | pass (provider record on a live market; plan variant text) | pass with notes | pass (4 viewports, no page overflow) | inspector buttons named; dialog labelled; no unnamed control | – | – | pass |
+| SC-29 Tenant settings | `sc_29_tenant_settings` | pass | pass with notes (canonical tokens) | pass | form fields labelled | – | – | pass |
+| SC-13 Payout providers | `sc_13_integrations_and_sync_health` | pass | pass with notes | pass | radios labelled with descriptions | – | – | pass |
+| SC-33 Ledger and journal export | `sc_33_ledger_journal_export` | pass | pass with notes | pass | tabs and tables named | – | – | pass |
+| SC-03 Payout batches + detail | `sc_03_payout_batches_approvals` | pass | pass with notes | pass | dialogs labelled | side-tab border on the sandbox banner (Stitch anatomy, note) | – | pass |
+| SC-34 Payout reconciliation | `sc_34_payout_reconciliation_returned_payments` | pass | pass with notes | pass | "Resolve exception <reference>" names | – | – | pass |
+| SC-06 Cases queue + money case detail | `sc_06_cases_exceptions` | pass | pass with notes | pass | tabs carry "N undecided" | side-tab border on the proposal card (Stitch anatomy, note) | BUG-108 | pass with defects |
+| SC-09 Banking / Tax / Holds / Balances | `sc_09_participant_deep_fact_record` | pass | pass with notes | pass | unmask dialog returns focus | – | – | pass |
+| SC-01 Periods | `sc_01_periods_runs_analyst_home` | pass (Paid row) | pass with notes | pass | – | – | – | pass |
+
+### Impeccable audit (audit only) and accessibility pass
+
+- `impeccable detect` (regex on source, 78 files in features/markets, admin/settings, cases, payouts, ledger, auth): 2 findings, both `side-tab` `border-l-4` (`cases/case-detail.tsx:245`, `payouts/batch-page.tsx:90`) = Stitch anatomy → original-design notes, not defects. Parsed-page rules did not run (launcher has no app target configured: no PRODUCT.md/DESIGN.md).
+- Scripted pass on 10 routes (SC-29, SC-17, SC-13, SC-06 queue + write-off detail, SC-34, SC-03 detail, SC-33 receivables + exports, SC-09 tax) at 1440: 0 unnamed buttons/links/tabs, 0 unlabelled visible fields, 0 duplicate ids, one `h1` each, no horizontal overflow, no "wallet" text.
+- No new finding against round 1, run 2; scores were not re-derived this round (performance not scored).
+- Evidence: `var/qa-b4/run3/R2-*.png`, `payouts-*.csv`, `result.csv`, `gl-*.csv`, harness logs `var/qa-b4/run3/visual-*.log`, server logs `var/qa-b4/run3/{api,web}.log`.
+
+### Console and network
+
+No 5xx and no page errors in the round. Console errors are only "Failed to load resource" for intended responses: step-up 403s before the StepUp dialog (bank-detail request, bank file, tax profile, case decisions), validation 422s (adjustment before the policy, related payee, GL mapping missing, write-off self-approval probe), the QA 409 ORDER_CONFLICT probe, the QA 401/422 webhook probes, and executive 403s. One `GET /v1/runs/undefined` 400 came from a QA script, not the app. No firebase-config request (BUG-101 fixed).
+
+### Notes (not registered)
+
+- SC-17 on a live market still shows "MISSING 5 · Block a go-live request" in the KPI strip although no go-live request is possible any more (original Stitch copy; note).
+- The bank-detail case shows "BANK-DETAIL REQUEST 0a7dd46f (masked values in the effect preview)" and the returned-payment case "PAYOUT INSTRUCTION b239e522" as short ids; both state where the readable values are (by design).

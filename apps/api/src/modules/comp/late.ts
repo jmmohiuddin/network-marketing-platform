@@ -39,10 +39,10 @@ export interface LateConsumption {
   readonly itemIds: readonly string[]
 }
 
-/** Late items of committed periods of the calendar ending at or before `period` starts, in a given handling. */
+/** Late items of committed (also paid or closed, D-B4-24) periods of the calendar ending at or before `period` starts, in a given handling. */
 export const LATE_ITEMS_OF_CALENDAR = `
   FROM late_transaction lt JOIN period op ON op.id = lt.original_period_id
-  WHERE op.calendar_id = $1 AND op.state = 'committed' AND op.ends_at <= (SELECT starts_at FROM period WHERE id = $2)
+  WHERE op.calendar_id = $1 AND op.state IN ('committed', 'paid', 'closed') AND op.ends_at <= (SELECT starts_at FROM period WHERE id = $2)
     AND lt.handling = $3 AND lt.state IN ('pending', 'decided')`
 
 async function consumable(tx: Tx, period: PeriodRow): Promise<LateItem[]> {

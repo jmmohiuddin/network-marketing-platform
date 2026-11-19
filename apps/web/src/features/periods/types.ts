@@ -105,6 +105,8 @@ export interface RunDetail {
   readonly commit_requested_by: string | null
   readonly finished_at: string | null
   readonly committed_at: string | null
+  /** B4: the journal entry posted at commit (null without lines or before commit). */
+  readonly journal_entry_id?: string | null
   readonly plan_version: PlanVersionRef
   readonly snapshot: { readonly known_at: string; readonly row_counts: Readonly<Record<string, number>> } | null
 }

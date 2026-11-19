@@ -45,6 +45,21 @@ export const WEBHOOK_TOPICS = [
     description: 'A compensation plan version became active.',
     payload: z.object({ plan_id: id, plan_version_id: id, effective_from: z.string() }),
   },
+  {
+    topic: 'payout.batch.approved',
+    description: 'A payout batch was approved: its signed instructions are written and the amounts are in transit.',
+    payload: z.object({ batch_id: id, market_id: id, total_minor: z.string() }),
+  },
+  {
+    topic: 'payout.settled',
+    description: 'The provider reported a payout instruction as settled.',
+    payload: z.object({ instruction_id: id, batch_id: id, participant_id: id, amount_minor: z.string() }),
+  },
+  {
+    topic: 'payout.returned',
+    description: 'A payout was returned by the bank: the amount is owed again and a returned-payment case is open.',
+    payload: z.object({ instruction_id: id, batch_id: id, participant_id: id, amount_minor: z.string(), case_id: id }),
+  },
 ] as const
 
 export type WebhookTopic = (typeof WEBHOOK_TOPICS)[number]['topic']

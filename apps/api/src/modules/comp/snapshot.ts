@@ -3,7 +3,7 @@ import { gunzipSync, gzipSync } from 'node:zlib'
 import type { Tx } from '@nmp/db'
 import {
   parseEngineJson, stringifyEngineJson, type AdjustmentOrigin, type Order, type OrderEvent, type OrderEventType,
-  type PeriodSummary, type PlanVersion, type Position, type PriorState, type QualificationStateRow, type Relationship,
+  type PeriodSummary, type PlanVersion, type Position, type PriorState, type QualificationStateRow, type Receivable, type Relationship,
   type Snapshot,
 } from '@nmp/engine'
 import { ApiError } from '../../lib/errors.js'
@@ -290,7 +290,11 @@ async function participants(tx: Tx, period: PeriodRow, ids: readonly string[]): 
  */
 export async function buildSnapshot(
   tx: Tx, period: PeriodRow,
-  input: { snapshotId: string; chain: ChainInputs; adjustments: readonly AdjustmentOrigin[]; extraOrderIds?: readonly string[] },
+  input: {
+    snapshotId: string; chain: ChainInputs; adjustments: readonly AdjustmentOrigin[]; extraOrderIds?: readonly string[]
+    /** D-B4-07: runs only; simulations and the restatement sandbox net against nothing. */
+    receivables?: readonly Receivable[]
+  },
 ): Promise<LoadedSnapshot> {
   const { rows: known } = await tx.query<{ known_us: string }>(`SELECT ${us('now()')} AS known_us`)
   const { orders, events, orderIds } = await orderInputs(tx, period, input.extraOrderIds ?? [])
@@ -317,7 +321,7 @@ export async function buildSnapshot(
     history: input.chain.history,
     priorState: input.chain.priorState,
     adjustments: input.adjustments,
-    receivables: [], // B4
+    receivables: input.receivables ?? [],
     withholding: [], // B4 (the engine warns NO_WITHHOLDING_RULE)
   }
   return { snapshot, orderIds, eventIds: [...new Set(events.map((event) => event.id))] }

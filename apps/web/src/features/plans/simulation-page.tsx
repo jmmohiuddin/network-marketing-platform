@@ -24,7 +24,7 @@ import { FreezeDialog, GoldenTable, RunSuiteButton } from './goldens-tab'
 import type { DraftScope } from './rules-tab'
 import { RunSimulationDialog, SIMULATIONS_PATH, simulationPeriod } from './simulations'
 import type { CapEffect, Comparison, PayeeImpact, PlanDetail, SimulationDetail, VersionView } from './types'
-import { CARD, CardHead, MONO, NOTE, usePlanData, type PlanData } from './ui'
+import { CARD, CardHead, MONO, NOTE, outstandingText, usePlanData, type PlanData } from './ui'
 
 const TABS = [
   { id: 'payees', label: 'Payee impact' },
@@ -150,7 +150,7 @@ function SimulationScreen({ plan, version, data, detail, onRerun }: {
       {warnings.length > 0 && <Banner tone="warning" title="Warnings"><ul className="list-disc pl-space-md">{warnings.map((w) => <li key={`${w.code}-${w.message}`}>{w.message}</li>)}</ul></Banner>}
       {done && comparison.guardrail_flags.length > 0 && (
         <Banner tone="warning" title="Open guardrail decisions">
-          <ul className="list-disc pl-space-md">{comparison.guardrail_flags.map((f) => <li key={f.decision_id}>{f.rule_id}: {f.reason}</li>)}</ul>
+          <ul className="list-disc pl-space-md">{comparison.guardrail_flags.map((f) => <li key={f.decision_id}>{outstandingText(f)}</li>)}</ul>
         </Banner>
       )}
       {done && (

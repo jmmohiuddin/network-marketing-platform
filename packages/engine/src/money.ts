@@ -44,6 +44,16 @@ export function formatRate(rate: bigint): string {
   return fraction === '' ? whole : `${whole}.${fraction}`
 }
 
+/** Decimal text of `units` scaled by 10^digits, e.g. (12345n, 2) -> "123.45", (-5n, 2) -> "-0.05"; trim drops trailing zeros. */
+export function formatUnits(units: bigint, digits: number, trim = false): string {
+  const negative = units < 0n
+  const magnitude = (negative ? -units : units).toString().padStart(digits + 1, '0')
+  const whole = magnitude.slice(0, magnitude.length - digits)
+  let fraction = magnitude.slice(magnitude.length - digits)
+  if (trim) fraction = fraction.replace(/0+$/, '')
+  return `${negative ? '-' : ''}${whole}${fraction ? `.${fraction}` : ''}`
+}
+
 /** Minor units -> raw. */
 export function toRaw(minor: bigint): bigint {
   return minor * RAW_SCALE

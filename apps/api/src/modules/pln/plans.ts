@@ -156,7 +156,7 @@ export function registerPlanRoutes(app: FastifyInstance): void {
          SELECT tenant_id, $2, state_item, rule, map, reason, app_user_id() FROM plan_transition WHERE to_version_id = $1`,
         [base.id, versionId],
       )
-      await recompile(tx, { id: versionId, version: base.next }, plan.calendar_ids)
+      await recompile(tx, { id: versionId, version: base.next, placement_width: base.placement_width }, plan.calendar_ids)
       await evaluateGuardrails(tx, versionId)
       await recordAudit(tx, { action: 'PLAN_VERSION.CREATED', objectType: 'plan_version', objectId: versionId, after: { plan_id: plan.id, version: base.next, based_on_version_id: base.id } })
       return { statusCode: 201, body: envelope(versionFields(await loadVersion(tx, plan.id, base.next))) }

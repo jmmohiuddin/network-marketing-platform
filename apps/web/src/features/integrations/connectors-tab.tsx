@@ -110,7 +110,7 @@ function RotateSecretDialog({ connector, onClose, onDone }: { readonly connector
   )
 }
 
-function WebhookUrl({ url }: { readonly url: string }) {
+export function WebhookUrl({ url }: { readonly url: string }) {
   const [status, copy] = useCopy(url)
   return (
     <div className="flex flex-col gap-space-xs">

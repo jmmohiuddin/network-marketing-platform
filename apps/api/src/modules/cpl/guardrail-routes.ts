@@ -9,7 +9,7 @@ import { ApiError, notFound } from '../../lib/errors.js'
 import { envelope, parse } from '../../lib/http.js'
 import { sendIdempotent } from '../../lib/idempotency.js'
 import { decodeCursor, pageQuery, toPage } from '../../lib/pagination.js'
-import { DECISION_VIEW, decisionViews, PLAN_IN_SCOPE } from './guardrails.js'
+import { COMPLIANCE_REVIEW, DECISION_VIEW, decisionViews, PLAN_IN_SCOPE } from './guardrails.js'
 import { approveAcrossMarkets, decideAcrossMarkets } from './sod.js'
 
 const JUSTIFICATION = { min: 20, max: 2000 }
@@ -75,7 +75,8 @@ export function registerGuardrailRoutes(app: FastifyInstance): void {
     })
   })
 
-  // FR-CPL-008: a Compliance officer overrides a warned or blocked evaluation of an overridable rule (SoD vs its decider).
+  // FR-CPL-008: a Compliance officer overrides a warned or blocked evaluation of an overridable rule, or an opaque blocked
+  // one of any rule (compliance review, D-B4-21 b); SoD vs its decider and the matched rules' authors.
   app.post('/v1/guardrail-decisions/:id/override', { preHandler: [requireRealm('tenant'), requirePermission('override.approve')] }, async (request, reply) => {
     assertStepUp(request)
     const { id } = parse(idParams, request.params)
@@ -87,8 +88,8 @@ export function registerGuardrailRoutes(app: FastifyInstance): void {
     const scope = marketScope(currentAuth(request), 'override.approve')
     const result = await decideAcrossMarkets(request, async (tx) => {
       const decision = await visibleDecision(tx, id, scope)
-      const { rows } = await tx.query<{ kind: string; outcome: string; overridable: boolean; decided_by: string; overridden: boolean; market_ids: string[] }>(
-        `SELECT d.kind, d.outcome, g.overridable, d.decided_by,
+      const { rows } = await tx.query<{ kind: string; outcome: string; overridable: boolean; review: boolean; decided_by: string; overridden: boolean; market_ids: string[] }>(
+        `SELECT d.kind, d.outcome, g.overridable, ${COMPLIANCE_REVIEW} AS review, d.decided_by,
                 EXISTS (SELECT 1 FROM guardrail_decision o WHERE o.refers_to_decision_id = d.id AND o.kind = 'override') AS overridden,
                 array(SELECT pm.market_id FROM plan_version v JOIN plan_market pm ON pm.tenant_id = v.tenant_id AND pm.plan_id = v.plan_id
                       WHERE v.id = d.plan_version_id ORDER BY pm.market_id) AS market_ids
@@ -96,7 +97,7 @@ export function registerGuardrailRoutes(app: FastifyInstance): void {
         [id],
       )
       const evaluation = rows[0]!
-      if (evaluation.kind !== 'evaluation' || evaluation.outcome === 'reported' || !evaluation.overridable) {
+      if (evaluation.kind !== 'evaluation' || evaluation.outcome === 'reported' || !(evaluation.overridable || evaluation.review)) {
         throw new ApiError(422, 'NOT_OVERRIDABLE', 'This guardrail decision cannot be overridden.')
       }
       if (evaluation.overridden) throw new ApiError(409, 'ALREADY_OVERRIDDEN', 'This decision is already overridden.')

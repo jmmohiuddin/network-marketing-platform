@@ -4,7 +4,6 @@ _Agent: compensation. Read before every task; update after every task. Keep conc
 
 ## B3 review fixes (2026-11-18)
 - ESCALATED (architect + records): S-1 engine OOM at 500k/2M positions with 4 GB heap (~16 KB RSS/position, packages/engine/results/s1-bench.json); TS-29 / NFR-PERF-04/05 not met; re-plan engine memory (per-line trace objects, input graph) and D-B3-21 worker sizing before COMP relies on in-process runs.
-- Architect decision needed: an opaque match of a non-overridable guardrail (enrolment_only_pay) is 'warned' and plan.edit may acknowledge it (D-B3-17 text); BR-GRD-01 suggests compliance (override.approve) instead.
 - Architect decision needed: new versions copy the base version's incoming transitions (PLAN 2.1); they satisfy TRANSITION_MISSING silently.
 - Contract deviation for UI: SOD_SELF_APPROVAL eligible_approvers items are the platform EligibleApprover {user_id, display_name, email} (cpl/sod.ts, ten/sod.ts), not PLAN section 2 {id, display_name}.
 - A superseded due version stays 'scheduled' (DB has no scheduled -> retired); DB agent may add that transition.

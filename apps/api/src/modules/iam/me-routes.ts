@@ -29,12 +29,21 @@ const TENANT_NAVIGATION: readonly (NavigationEntry & { readonly anyOf: readonly 
   { key: 'integrations', path: '/settings/integrations', label: 'Integrations', anyOf: ['integration.manage', 'integration.read'], allMarkets: true },
   { key: 'people', path: '/people', label: 'People', anyOf: ['participant.read'] },
   { key: 'genealogy', path: '/genealogy', label: 'Genealogy', anyOf: ['genealogy.read'], allMarkets: true },
-  { key: 'cases', path: '/cases', label: 'Cases', anyOf: ['case.genealogy.read', 'case.duplicate.read', 'case.restatement.read'] },
+  {
+    key: 'cases', path: '/cases', label: 'Cases',
+    anyOf: [
+      'case.genealogy.read', 'case.duplicate.read', 'case.restatement.read', 'case.adjustment.read', 'case.write_off.read',
+      'case.bank_detail.read', 'case.returned_payment.read',
+    ],
+  },
   { key: 'orders', path: '/orders', label: 'Orders', anyOf: ['order.read', 'product.manage'] },
   { key: 'late', path: '/periods/late', label: 'Late transactions', anyOf: ['late.manage'] },
   { key: 'periods', path: '/periods', label: 'Periods and runs', anyOf: ['period.read'] },
   { key: 'plans', path: '/plans', label: 'Plans', anyOf: ['plan.read'] },
   { key: 'guardrails', path: '/compliance/guardrails', label: 'Guardrails', anyOf: ['guardrail.read'] },
+  { key: 'ledger', path: '/ledger', label: 'Ledger and exports', anyOf: ['ledger.read'] },
+  { key: 'payouts', path: '/payouts', label: 'Payouts', anyOf: ['payout.read'] },
+  { key: 'reconciliation', path: '/payouts/reconciliation', label: 'Payout reconciliation', anyOf: ['payout.read'] },
 ]
 const VENDOR_NAVIGATION: readonly NavigationEntry[] = [{ key: 'console', path: '/vendor', label: 'Operations console' }]
 

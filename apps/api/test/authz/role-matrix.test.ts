@@ -68,6 +68,14 @@ const SETTING_READERS: Readonly<Record<SettingKey, Needs>> = {
   'genealogy.placement_width': any('settings.manage', 'genealogy.read'),
   // PLAN B3 section 1.5.
   'runs.exception_thresholds': any('settings.manage', 'run.review'),
+  // PLAN B4 D-B4-18.
+  'payouts.market_policy': any('settings.manage', 'settings.approve', 'payout.prepare'),
+  'payouts.bank_detail_cooling_off_hours': any('settings.manage', 'settings.approve', 'payout.prepare'),
+  'payouts.shared_account_threshold': any('settings.manage', 'settings.approve', 'payout.prepare'),
+  'payouts.dormant_after_days': any('settings.manage', 'settings.approve', 'payout.prepare'),
+  'payouts.provider_review_reminder_days': any('settings.manage', 'settings.approve', 'payout.prepare'),
+  'adjustments.policy': any('settings.manage', 'settings.approve', 'case.adjustment.create'),
+  'write_offs.policy': any('settings.manage', 'settings.approve', 'case.write_off.create'),
 }
 const SETTING_KEYS = Object.keys(SETTING_READERS) as SettingKey[]
 const MAPPING_READERS = any('import.manage', 'mapping.edit', 'mapping.approve')
@@ -80,8 +88,14 @@ const MARKET_MANAGE = all('market.manage')
 const INTEGRATION = all('integration.manage')
 // Evidence uploaders: launch preparers and signers, and the create permission of a registered case type; agreement
 // publishers upload agreement documents (PLAN B2 2.2).
-const UPLOADERS = any('market.manage', 'market.signoff', 'case.genealogy.create', 'case.duplicate.create', 'restatement.request', 'agreement.publish')
-const CASE_READERS = any('case.genealogy.read', 'case.duplicate.read', 'case.restatement.read')
+const UPLOADERS = any(
+  'market.manage', 'market.signoff', 'case.genealogy.create', 'case.duplicate.create', 'restatement.request', 'agreement.publish',
+  'case.adjustment.create', 'case.bank_detail.create', 'case.returned_payment.create', 'case.write_off.create',
+)
+const CASE_READERS = any(
+  'case.genealogy.read', 'case.duplicate.read', 'case.restatement.read', 'case.adjustment.read', 'case.bank_detail.read', 'case.returned_payment.read',
+  'case.write_off.read',
+)
 const PARTICIPANT_READ = all('participant.read')
 const PARTICIPANT_MANAGE = all('participant.manage')
 const GENEALOGY_READ = all('genealogy.read')
@@ -95,6 +109,10 @@ const PLAN_READ = all('plan.read')
 const PLAN_EDIT = all('plan.edit')
 const VERSION = `/v1/plans/${NOWHERE}/versions/1`
 const RUN = `/v1/runs/${NOWHERE}`
+const PAYOUT_READ = all('payout.read')
+const BATCH = `/v1/payout-batches/${NOWHERE}`
+const LEDGER_READ = all('ledger.read')
+const LEDGER_EXPORT = all('ledger.export')
 
 const PROBES: Readonly<Record<string, readonly Probe[]>> = {
   'POST /v1/auth/sessions': [probe(everyone, 'POST', '/v1/auth/sessions', {})],
@@ -193,7 +211,8 @@ const PROBES: Readonly<Record<string, readonly Probe[]>> = {
   'GET /v1/markets/:id/go-live-requests': [read(LAUNCH_READERS, `/v1/markets/${NOWHERE}/go-live-requests`)],
   'POST /v1/market-go-live-requests/:id/withdraw': [probe(MARKET_MANAGE, 'POST', `/v1/market-go-live-requests/${NOWHERE}/withdraw`, {})],
   'POST /v1/market-go-live-requests/:id/decision': [probe(all('market.signoff'), 'POST', `/v1/market-go-live-requests/${NOWHERE}/decision`, {})],
-  'GET /v1/provider-configs': [read(LAUNCH_READERS, '/v1/provider-configs')],
+  // PLAN B4 2.3: integration and payout readers see the provider records too.
+  'GET /v1/provider-configs': [read(any('market.manage', 'market.signoff', 'integration.manage', 'integration.read', 'payout.read'), '/v1/provider-configs')],
   'POST /v1/provider-configs': [probe(MARKET_MANAGE, 'POST', '/v1/provider-configs', {})],
   'POST /v1/provider-configs/:id/withdraw': [probe(MARKET_MANAGE, 'POST', `/v1/provider-configs/${NOWHERE}/withdraw`, {})],
   'GET /v1/market-packs/:pack/rules': [read(any('market.manage', 'market.signoff', 'compliance.read'), `/v1/market-packs/${PACK}/rules`)],
@@ -230,6 +249,13 @@ const PROBES: Readonly<Record<string, readonly Probe[]>> = {
     }),
     probe(all('restatement.request'), 'POST', '/v1/cases', {
       type: 'restatement', subject_type: 'period', subject_id: NOWHERE, reason_code: 'INPUT_CORRECTION', payload: { note: 'probe' },
+    }),
+    probe(all('case.bank_detail.create'), 'POST', '/v1/cases', {
+      type: 'bank_detail', subject_type: 'participant', subject_id: NOWHERE, reason_code: 'PAYEE_REQUEST', payload: { request_id: NOWHERE },
+    }),
+    // Only the system opens it (RETURNED_BY_BANK is a system reason): past the permission, 422.
+    probe(all('case.returned_payment.create'), 'POST', '/v1/cases', {
+      type: 'returned_payment', subject_type: 'payout_instruction', subject_id: NOWHERE, reason_code: 'RETURNED_BY_BANK', payload: { instruction_id: NOWHERE },
     }),
   ],
   'GET /v1/cases': [read(CASE_READERS, '/v1/cases')],
@@ -339,6 +365,54 @@ const PROBES: Readonly<Record<string, readonly Probe[]>> = {
   'GET /v1/simulations/:id/payees': [read(all('plan.simulate'), `/v1/simulations/${NOWHERE}/payees`)],
   'GET /v1/restatements/:id': [read(all('case.restatement.read'), `/v1/restatements/${NOWHERE}`)],
   'GET /v1/restatements/:id/lines': [read(all('case.restatement.read'), `/v1/restatements/${NOWHERE}/lines`)],
+  // IAM related parties (D-B4-11): user.manage over all markets.
+  'GET /v1/users/:id/related-participants': [read(all('user.manage'), `/v1/users/${NOWHERE}/related-participants`)],
+  'POST /v1/users/:id/related-participants': [probe(all('user.manage'), 'POST', `/v1/users/${NOWHERE}/related-participants`, {})],
+  'POST /v1/users/:id/related-participants/:rid/withdraw': [
+    probe(all('user.manage'), 'POST', `/v1/users/${NOWHERE}/related-participants/${NOWHERE}/withdraw`, {}),
+  ],
+  // LED (PLAN B4 2.1): reads need ledger.read, GL mappings and journal exports ledger.export.
+  'GET /v1/ledger/summary': [read(LEDGER_READ, `/v1/ledger/summary?market_id=${NOWHERE}`)],
+  'GET /v1/ledger/accounts': [read(LEDGER_READ, '/v1/ledger/accounts')],
+  'GET /v1/ledger/accounts/:id/postings': [read(LEDGER_READ, `/v1/ledger/accounts/${NOWHERE}/postings`)],
+  'GET /v1/ledger/entries': [read(LEDGER_READ, '/v1/ledger/entries')],
+  'GET /v1/ledger/entries/:id': [read(LEDGER_READ, `/v1/ledger/entries/${NOWHERE}`)],
+  'GET /v1/payees/:id/balances': [read(LEDGER_READ, `/v1/payees/${NOWHERE}/balances`)],
+  'GET /v1/ledger/receivables': [read(LEDGER_READ, '/v1/ledger/receivables')],
+  'GET /v1/ledger/gl-mappings': [read(LEDGER_READ, `/v1/ledger/gl-mappings?market_id=${NOWHERE}`)],
+  'PUT /v1/ledger/gl-mappings/:marketId/:accountType': [probe(LEDGER_EXPORT, 'PUT', `/v1/ledger/gl-mappings/${NOWHERE}/breakage`, {})],
+  'POST /v1/ledger/journal-exports': [probe(LEDGER_EXPORT, 'POST', '/v1/ledger/journal-exports', {})],
+  'GET /v1/ledger/journal-exports': [read(LEDGER_EXPORT, '/v1/ledger/journal-exports')],
+  'GET /v1/ledger/journal-exports/:id/file': [read(LEDGER_EXPORT, `/v1/ledger/journal-exports/${NOWHERE}/file`)],
+  // PAY / TAX (PLAN B4 2.3, D-B4-17)
+  'PATCH /v1/provider-configs/:id': [probe(MARKET_MANAGE, 'PATCH', `/v1/provider-configs/${NOWHERE}`, {})],
+  'PUT /v1/provider-configs/:id/adapter': [probe(INTEGRATION, 'PUT', `/v1/provider-configs/${NOWHERE}/adapter`, {})],
+  'POST /v1/payout-batches': [probe(all('payout.prepare'), 'POST', '/v1/payout-batches', {})],
+  'GET /v1/payout-batches': [read(PAYOUT_READ, '/v1/payout-batches')],
+  'GET /v1/payout-batches/:id': [read(PAYOUT_READ, BATCH)],
+  'GET /v1/payout-batches/:id/lines': [read(PAYOUT_READ, `${BATCH}/lines`)],
+  'GET /v1/payout-batches/:id/instructions': [read(PAYOUT_READ, `${BATCH}/instructions`)],
+  'POST /v1/payout-batches/:id/submit': [probe(all('payout.prepare'), 'POST', `${BATCH}/submit`)],
+  'POST /v1/payout-batches/:id/approve': [probe(all('payout.approve'), 'POST', `${BATCH}/approve`)],
+  'POST /v1/payout-batches/:id/retry-failed': [probe(all('payout.approve'), 'POST', `${BATCH}/retry-failed`)],
+  'POST /v1/payout-batches/:id/cancel': [probe(any('payout.prepare', 'payout.approve'), 'POST', `${BATCH}/cancel`, {})],
+  'POST /v1/payout-batches/:id/bank-file': [probe(all('payout.prepare'), 'POST', `${BATCH}/bank-file`)],
+  // A JSON body: 415 once past the permission.
+  'POST /v1/payout-providers/:id/settlement-reports': [probe(all('payout.reconcile'), 'POST', `/v1/payout-providers/${NOWHERE}/settlement-reports`, {})],
+  'POST /v1/webhooks/providers/:providerConfigId': [probe(everyone, 'POST', `/v1/webhooks/providers/${NOWHERE}`, {})],
+  'GET /v1/payout-reconciliation/summary': [read(PAYOUT_READ, '/v1/payout-reconciliation/summary')],
+  'GET /v1/payout-reconciliation/items': [read(PAYOUT_READ, '/v1/payout-reconciliation/items')],
+  'GET /v1/payout-exceptions': [read(PAYOUT_READ, '/v1/payout-exceptions')],
+  'POST /v1/payout-exceptions/:id/resolve': [probe(all('payout.reconcile'), 'POST', `/v1/payout-exceptions/${NOWHERE}/resolve`, {})],
+  'GET /v1/payees/:id/holds': [read(any('payout.read', 'participant.read'), `/v1/payees/${NOWHERE}/holds`)],
+  'POST /v1/payees/:id/holds': [probe(all('payout.hold'), 'POST', `/v1/payees/${NOWHERE}/holds`, {})],
+  'POST /v1/payout-holds/:id/release': [probe(all('payout.hold'), 'POST', `/v1/payout-holds/${NOWHERE}/release`, {})],
+  'GET /v1/payouts/dormant': [read(any('payout.read', 'ledger.read'), '/v1/payouts/dormant')],
+  'POST /v1/participants/:id/bank-detail-requests': [probe(all('case.bank_detail.create'), 'POST', `/v1/participants/${NOWHERE}/bank-detail-requests`, {})],
+  'GET /v1/participants/:id/bank-details': [read(PARTICIPANT_READ, `/v1/participants/${NOWHERE}/bank-details`)],
+  'GET /v1/participants/:id/tax-profile': [read(PARTICIPANT_READ, `/v1/participants/${NOWHERE}/tax-profile`)],
+  'PUT /v1/participants/:id/tax-profile': [probe(all('tax.manage'), 'PUT', `/v1/participants/${NOWHERE}/tax-profile`, {})],
+  'POST /v1/participants/:id/tax-profile/unmask': [probe(all('participant.unmask'), 'POST', `/v1/participants/${NOWHERE}/tax-profile/unmask`)],
 }
 
 /** Fastify's HEAD routes run their GET handler: they take the GET probes with method HEAD. */

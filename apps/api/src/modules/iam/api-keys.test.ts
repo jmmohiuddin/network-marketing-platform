@@ -78,6 +78,7 @@ describe('GET /v1/api-keys/options', () => {
           personal_data: true, permissions: ['integration.manage', 'participant.manage', 'servicing.manage'],
         },
         { scope: 'orders:write', description: 'Send orders and order events', personal_data: false, permissions: ['integration.manage'] },
+        { scope: 'ledger:export', description: 'Create and download GL journal exports', personal_data: false, permissions: ['ledger.export'] },
       ],
       rate_tiers: [{ tier: 'standard', requests_per_minute: 120 }, { tier: 'high', requests_per_minute: 1200 }],
       max_grace_minutes: 10_080,
@@ -172,8 +173,8 @@ describe('T-B1-15/17 POST /v1/service-accounts/:id/keys', () => {
     const mint = (body: Record<string, unknown>, as: TestUser = admin) =>
       call(app, { method: 'POST', url: `/v1/service-accounts/${accountId}/keys`, as, body: keyBody(body), idempotencyKey: true })
 
-    const unknownScope = await mint({ scopes: ['compliance:read', 'ledger:export'] })
-    expect(unknownScope.json().error).toMatchObject({ code: 'SCOPE_UNKNOWN', details: { scopes: ['ledger:export'] } })
+    const unknownScope = await mint({ scopes: ['compliance:read', 'payouts:write'] })
+    expect(unknownScope.json().error).toMatchObject({ code: 'SCOPE_UNKNOWN', details: { scopes: ['payouts:write'] } })
     expect((await mint({ ip_allow: ['not-an-ip'] })).json().error.code).toBe('VALIDATION_FAILED')
     expect((await mint({ ip_allow: ['10.0.0.0/33'] })).json().error.code).toBe('VALIDATION_FAILED')
     expect((await mint({ ip_allow: ['fe80::1%eth0'] })).json().error.code).toBe('VALIDATION_FAILED')
@@ -226,7 +227,10 @@ describe('keys are tenant-wide: minting and rotating need all-markets scope', ()
     const minted = await mint(integrator, ['orders:write', 'participants:write'])
 
     expect(API_SCOPES.filter((entry) => entry.scope !== 'compliance:read').map(({ scope, permissions }) => [scope, permissions]))
-      .toEqual([['participants:write', ['integration.manage', 'participant.manage', 'servicing.manage']], ['orders:write', ['integration.manage']]])
+      .toEqual([
+        ['participants:write', ['integration.manage', 'participant.manage', 'servicing.manage']], ['orders:write', ['integration.manage']],
+        ['ledger:export', ['ledger.export']],
+      ])
     expect(refused.json().error).toMatchObject({ code: 'SCOPE_NOT_HELD', details: { permission: 'integration.manage' } })
     expect(ordersOnly.statusCode).toBe(201)
     expect(escalation.json().error).toMatchObject({ code: 'SCOPE_NOT_HELD', details: { permission: 'participant.manage' } })

@@ -21,13 +21,32 @@ import { useResource } from '../../lib/use-resource'
 import { isUuid } from '../admin/format'
 import { LoadFailure } from '../admin/page-states'
 import { RestatementDialog, type RestatementPeriod } from '../cases/restatement-dialog'
-import { blockerLabel, canCalculate, cutOffText, hasResults, isRunning, marketMoney, PERIOD_STATE_LABELS, periodName, reviewPath, RUN_STATE_LABELS, listedBlockers, targetPeriod } from './format'
+import { blockerLabel, canCalculate, cutOffText, hasResults, isFinished, isRunning, marketAmount, PERIOD_STATE_LABELS, periodName, reviewPath, RUN_STATE_LABELS, listedBlockers, targetPeriod } from './format'
 import { blockerChip, Diagnostics, PeriodKpis, ReplayBanner, StateTimeline } from './period-panels'
 import { useRunRequest } from './run-request'
 import type { Calendar, PeriodDetail, PeriodList, PeriodRow, ReplayResult, RunDetail } from './types'
 
 const ID_PREFIX = 'calendars'
 const MONO = 'font-data-mono-sm text-data-mono-sm'
+
+const LARGE = '(min-width: 1024px)'
+
+/**
+ * Whether the viewport is lg or wider: below it the period table keeps Period, State, Gross and Actions and folds the
+ * rest under the period, so it never scrolls sideways at 768 (BUG-098). Wide until mounted and where matchMedia is missing.
+ */
+function useLargeScreen(): boolean {
+  const [large, setLarge] = useState(true)
+  useEffect(() => {
+    if (typeof window.matchMedia !== 'function') return
+    const query = window.matchMedia(LARGE)
+    const update = () => setLarge(query.matches)
+    update()
+    query.addEventListener('change', update)
+    return () => query.removeEventListener('change', update)
+  }, [])
+  return large
+}
 
 const busyPeriods = (list: PeriodList) => list.periods.some((period) => period.state === 'calculating' || (period.latest_run !== null && isRunning(period.latest_run.state)))
 
@@ -50,6 +69,7 @@ function CalendarView({ calendarId }: { readonly calendarId: string | null }) {
   const list = useResource<PeriodList>('/v1/periods', { calendar_id: calendarId ?? undefined, cursor: pages.cursor }, busyPeriods)
   const markets = useResource<Market[]>(MARKETS_PATH)
   const runs = useRunRequest()
+  const large = useLargeScreen()
   const [replay, setReplay] = useState<{ readonly period: string; readonly result: ReplayResult } | null>(null)
   const [replaying, setReplaying] = useState<string | null>(null)
   const [problem, setProblem] = useState<string | null>(null)
@@ -102,6 +122,9 @@ function CalendarView({ calendarId }: { readonly calendarId: string | null }) {
       setReplaying(null)
     }
   }
+  const blockers = (period: PeriodRow) => (listedBlockers(period).length === 0 ? null : (
+    <ul className="flex flex-wrap gap-1">{listedBlockers(period).map((b) => <li key={b.code} className={`${blockerChip(b)} font-caption text-caption`}>{blockerLabel(b)}</li>)}</ul>
+  ))
   const reviewable = (period: PeriodRow) => can('run.review') && period.latest_run !== null && hasResults(period.latest_run.state)
 
   const primary = (() => {
@@ -128,7 +151,7 @@ function CalendarView({ calendarId }: { readonly calendarId: string | null }) {
         ? [{ label: verb, ariaLabel: `${verb} ${name}`, icon: period.state === 'open' ? 'calculate' : 'restart_alt', busy: runs.busy === period.id, onSelect: () => calculate(period) }] : []),
       ...(period.committed_run_id !== null && write('run.execute')
         ? [{ label: 'Replay', ariaLabel: `Replay ${name}`, icon: 'history', busy: replaying === period.id, onSelect: () => replayRun(period, period.committed_run_id!) }] : []),
-      ...(period.state === 'committed' && write('restatement.request')
+      ...(isFinished(period.state) && write('restatement.request')
         ? [{ label: 'Request restatement', ariaLabel: `Request restatement of ${name}`, icon: 'history_edu', onSelect: () => setRestating({ id: period.id, label: name }) }] : []),
     ]
     const review = reviewable(period) && latest !== null
@@ -176,13 +199,21 @@ function CalendarView({ calendarId }: { readonly calendarId: string | null }) {
                   <span className="flex flex-col sm:whitespace-nowrap">
                     <span className={`${MONO} font-semibold text-on-surface`}>{label(row)}</span>
                     <span className="font-caption text-caption text-secondary font-normal">Cut-off {cutOffText(row.ends_at, calendar.cutoff_time_zone)}</span>
+                    {!large && row.latest_run !== null && <span className="font-caption text-caption text-secondary font-normal">Latest run: {RUN_STATE_LABELS[row.latest_run.state]}</span>}
+                    {!large && row.late.pending > 0 && <span className="font-caption text-caption text-secondary font-normal">Late pending: {row.late.pending}</span>}
+                    {!large && blockers(row)}
                   </span>
                 ) },
                 { key: 'state', header: 'State', cell: (row) => <StatusBadge state={row.state} label={PERIOD_STATE_LABELS[row.state]} /> },
-                { key: 'run', header: 'Latest run', cell: (row) => (row.latest_run === null ? '—' : <span className="flex flex-col sm:whitespace-nowrap"><span>{RUN_STATE_LABELS[row.latest_run.state]}</span><span className="font-caption text-caption text-secondary">{formatDateTime(row.latest_run.finished_at)}</span></span>) },
-                { key: 'gross', header: `Gross${market === undefined ? '' : ` (${market.currency})`}`, align: 'end', cell: (row) => marketMoney(row.latest_run?.gross_minor, market) },
-                { key: 'late', header: 'Late pending', align: 'end', cell: (row) => (row.late.pending === 0 || !can('late.manage') ? row.late.pending : <Link className="text-primary font-semibold hover:underline" href={`/periods/late?state=pending&market_id=${calendar.market.id}`}>{row.late.pending}</Link>) },
-                { key: 'blockers', header: 'Blockers', cell: (row) => (listedBlockers(row).length === 0 ? '—' : <ul className="flex flex-wrap gap-1">{listedBlockers(row).map((b) => <li key={b.code} className={`${blockerChip(b)} font-caption text-caption`}>{blockerLabel(b)}</li>)}</ul>) },
+                ...(large ? [
+                  { key: 'run', header: 'Latest run', cell: (row: PeriodRow) => (row.latest_run === null ? '—' : <span className="flex flex-col sm:whitespace-nowrap"><span>{RUN_STATE_LABELS[row.latest_run.state]}</span><span className="font-caption text-caption text-secondary">{formatDateTime(row.latest_run.finished_at)}</span></span>) },
+                ] : []),
+                // The currency is in the header only, so the amount stays on one line (BUG-097).
+                { key: 'gross', header: `Gross${market === undefined ? '' : ` (${market.currency})`}`, align: 'end' as const, cell: (row: PeriodRow) => <span className="whitespace-nowrap">{marketAmount(row.latest_run?.gross_minor, market)}</span> },
+                ...(large ? [
+                  { key: 'late', header: 'Late pending', align: 'end' as const, cell: (row: PeriodRow) => (row.late.pending === 0 || !can('late.manage') ? row.late.pending : <Link className="text-primary font-semibold hover:underline" href={`/periods/late?state=pending&market_id=${calendar.market.id}`}>{row.late.pending}</Link>) },
+                  { key: 'blockers', header: 'Blockers', cell: (row: PeriodRow) => blockers(row) ?? '—' },
+                ] : []),
                 { key: 'actions', header: 'Actions', align: 'end', cell: actions },
               ]}
               rows={periods}

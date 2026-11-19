@@ -9,9 +9,9 @@ import { marketSync } from './preflight.js'
 import { runExceptions } from './review.js'
 import { runInScope, type RunView } from './views.js'
 
-// D-B3-12: commit without ledger (B4 posts from committed lines). One transaction: the run lock, then the market's
-// periods lock (late detection waits), staleness gates, SoD approval, then run, period, origins, late items,
-// restatements, the late catch-up and the outbox event.
+// D-B3-12 / D-B4-02: one transaction: the run lock, then the market's periods lock (late detection and adjustment
+// approvals wait), staleness gates, SoD approval, then run, period, origins, late items, restatements, the late
+// catch-up, the run's journal entry (led_post_run, under the ledger lock) and the outbox event.
 
 const superseded = (reason: string, details: Record<string, unknown> = {}) =>
   new ApiError(409, 'RUN_SUPERSEDED', 'A newer calculation or input applies to this period: run it again.', { reason, ...details })
@@ -49,11 +49,45 @@ async function stalenessGates(tx: Tx, run: RunView): Promise<string[]> {
   )
   const changed = late.filter((item) => item.handling !== 'adjust' || item.state === 'consumed').map((item) => item.id)
   if (changed.length > 0) throw superseded('late_items_changed', { late_ids: changed })
+  await originGates(tx, run)
   return late.map((item) => item.id)
 }
 
-/** Postgres check violations raised by the commit's guards: an invariant broke, nothing was committed. */
+/**
+ * OI-1 and D-B4-09: an origin the run carries that another commit consumed meanwhile, or an approved manual origin of
+ * the period the run does not carry; D-B4-02: a pre-B4 run with lines but no settlement. All before any write.
+ */
+async function originGates(tx: Tx, run: RunView): Promise<void> {
+  const { rows: consumed } = await tx.query<{ id: string }>(
+    `SELECT DISTINCT o.id FROM result_line l JOIN adjustment_origin o ON o.id = l.origin_id
+     WHERE l.run_id = $1 AND o.consumed_run_id IS NOT NULL ORDER BY o.id`,
+    [run.id],
+  )
+  if (consumed.length > 0) throw superseded('origins_consumed', { origin_ids: consumed.map((o) => o.id) })
+  const { rows: missing } = await tx.query<{ case_id: string }>(
+    `SELECT o.case_id FROM adjustment_origin o
+     WHERE o.case_id IS NOT NULL AND o.original_period_id = $2 AND o.consumed_run_id IS NULL
+       AND NOT EXISTS (SELECT 1 FROM result_line l WHERE l.run_id = $1 AND l.origin_id = o.id)
+     ORDER BY o.case_id`,
+    [run.id, run.period_id],
+  )
+  if (missing.length > 0) throw superseded('adjustments_changed', { case_ids: missing.map((o) => o.case_id) })
+  const { rows: settlement } = await tx.query<{ missing: boolean }>(
+    `SELECT EXISTS (SELECT 1 FROM result_line WHERE run_id = $1) AND NOT EXISTS (SELECT 1 FROM run_settlement WHERE run_id = $1) AS missing`,
+    [run.id],
+  )
+  if (settlement[0]!.missing) throw superseded('settlement_missing')
+}
+
+/**
+ * Postgres errors of the commit's guards and posting: LD001 = a payee's receivable moved since the snapshot (DETAIL =
+ * the participant ids), a check violation = an invariant broke. Nothing was committed either way.
+ */
 function invariant(error: unknown): never {
+  if (typeof error === 'object' && error !== null && 'code' in error && error.code === 'LD001') {
+    const detail = 'detail' in error && typeof error.detail === 'string' ? error.detail : '[]'
+    throw superseded('receivables_changed', { participant_ids: JSON.parse(detail) as unknown })
+  }
   if (typeof error === 'object' && error !== null && 'code' in error && error.code === '23514') {
     throw new ApiError(500, 'INVARIANT_FAILED', 'The commit broke a ledger invariant and was rolled back.')
   }
@@ -84,7 +118,7 @@ export async function commitRun(tx: Tx, auth: AuthContext, id: string, acknowled
     action: 'RUN.COMMITTED', objectType: 'run', objectId: id,
     after: { approval_id: approval.approvalId, period_id: run.period_id, period_state: 'committed', acknowledged_exceptions: acknowledged, ...effects },
   })
-  return { run_id: id, state: 'committed', period_id: run.period_id, totals: run.totals }
+  return { run_id: id, state: 'committed', period_id: run.period_id, totals: run.totals, journal_entry_id: effects.journal_entry_id }
 }
 
 async function applyCommit(tx: Tx, run: RunView, approvalId: string, lateIds: readonly string[]) {
@@ -109,5 +143,9 @@ async function applyCommit(tx: Tx, run: RunView, approvalId: string, lateIds: re
     [run.id],
   )
   const { rows: caughtUp } = await tx.query<{ id: string }>('SELECT id FROM comp_late_catch_up($1) AS id', [run.id])
-  return { consumed_late_ids: lateIds, applied_restatement_ids: applied.map((r) => r.id), late_catch_up_ids: caughtUp.map((r) => r.id) }
+  const { rows: entry } = await tx.query<{ id: string | null }>('SELECT led_post_run($1) AS id', [run.id])
+  return {
+    consumed_late_ids: lateIds, applied_restatement_ids: applied.map((r) => r.id), late_catch_up_ids: caughtUp.map((r) => r.id),
+    journal_entry_id: entry[0]!.id,
+  }
 }

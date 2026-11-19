@@ -5,7 +5,7 @@ import { useState } from 'react'
 import { useApi } from '../../components/api-provider'
 import { ApprovalBar } from '../../components/approval-bar'
 import { Banner } from '../../components/banner'
-import { Button } from '../../components/button'
+import { Button, LinkButton } from '../../components/button'
 import { KpiCard } from '../../components/kpi-card'
 import { PageHeader } from '../../components/page-header'
 import { StatusBadge } from '../../components/status-badge'
@@ -23,7 +23,8 @@ import { useIdempotencyKey } from '../admin/resource'
 import { approverNames, noApproverText } from '../admin/settings/labels'
 import { downloadCsv, saveFile } from '../data/transfer'
 import { CommitDialog } from './commit-dialog'
-import { hasResults, isRunning, marketMoney, periodText, reviewPath, RUN_STATE_LABELS, signedMoney } from './format'
+import { ledgerPath } from '../ledger/format'
+import { hasResults, isFinished, isRunning, marketMoney, periodText, reviewPath, RUN_STATE_LABELS, signedMoney } from './format'
 import { LinesTable } from './lines-tab'
 import { AdjustmentsTab, ChangesTab, ExceptionsTab, MoversTab, VarianceTab } from './review-tabs'
 import { useRunRequest } from './run-request'
@@ -144,13 +145,18 @@ function Review({ run, period, label, zone, market, review, reload }: ReviewProp
         summary={`${run.plan_version.plan.name} v${run.plan_version.version} · prepared by ${run.prepared_by.display_name ?? 'another user'} · ${formatDateTime(run.finished_at)}`}
         actions={<>
           {!readOnly && review !== null && <Button icon="download" loading={busy === 'export'} onClick={exportLines}>Export lines CSV</Button>}
-          {(calculated || run.state === 'failed') && period.state !== 'committed' && write('run.execute') && <Button icon="restart_alt" loading={runs.busy === period.id} onClick={rerun}>Re-run</Button>}
+          {(calculated || run.state === 'failed') && !isFinished(period.state) && write('run.execute') && <Button icon="restart_alt" loading={runs.busy === period.id} onClick={rerun}>Re-run</Button>}
         </>}
       />
       {run.state === 'failed' && <Banner tone="danger" title="The run failed">{run.error?.message ?? 'The calculation did not finish.'} {run.error === null ? '' : `(${run.error.code})`} Re-run the period after fixing the cause.</Banner>}
       {isRunning(run.state) && <Banner tone="info" title="Calculating">{run.progress ?? 'Waiting for a worker'}. This page updates when the run finishes.</Banner>}
       {run.state === 'discarded' && <Banner tone="warning" title="Superseded">A newer run of this period replaced this one; its results stay for reference.</Banner>}
-      {run.state === 'committed' && <Banner tone="success" title="Committed">Committed {formatDateTime(run.committed_at)}. The results of this period are fixed; corrections go through a restatement.</Banner>}
+      {run.state === 'committed' && (
+        <Banner tone="success" title="Committed"
+          action={run.journal_entry_id != null && can('ledger.read') ? <LinkButton icon="receipt_long" href={ledgerPath(period.market_id, undefined, { entry: run.journal_entry_id })}>Open the journal entry</LinkButton> : undefined}>
+          Committed {formatDateTime(run.committed_at)}. The results of this period are fixed; corrections go through a restatement.{run.journal_entry_id === null ? ' No journal entry was posted for this run: either no payee had a non-zero amount, or the run was committed before the ledger existed.' : ''}
+        </Banner>
+      )}
       {syncStale && <Banner tone="warning" title="Order sync is not current">Orders may be missing from this run. Acknowledge it in Exceptions before committing, or re-run once the sync recovers.</Banner>}
       {runs.error !== null && <Banner tone="danger" title="The re-run was refused">{errorMessage(runs.error)}</Banner>}
       {problem !== null && <Banner tone="danger">{problem}</Banner>}
@@ -163,7 +169,7 @@ function Review({ run, period, label, zone, market, review, reload }: ReviewProp
             <KpiCard label="Lines" icon="reorder" value={totals!.current.line_count.toLocaleString()} detail={totals!.previous === null ? undefined : `${totals!.previous.line_count.toLocaleString()} previously`} />
             <KpiCard label="Payees" icon="groups" value={totals!.current.payee_count.toLocaleString()} detail={totals!.previous === null ? undefined : `${totals!.previous.payee_count.toLocaleString()} previously`} />
             <KpiCard label="Adjustments" icon="rule" value={marketMoney(adjustments.reduce((sum, row) => sum + BigInt(row.amount_minor), 0n).toString(), market)}
-              detail={`${adjustments.reduce((sum, row) => sum + row.count, 0)} lines from late items and restatements`} />
+              detail={`${adjustments.reduce((sum, row) => sum + row.count, 0)} lines from late items, clawbacks, restatements and manual adjustments`} />
           </div>
           <div>
             <Tabs label="Run review" idPrefix={ID_PREFIX} tabs={tabs} selected={tab} onSelect={selectTab} />
@@ -172,7 +178,7 @@ function Review({ run, period, label, zone, market, review, reload }: ReviewProp
               {tab === 'movers' && <MoversTab review={review} market={market} zone={zone} onLines={(id) => router.replace(`${pathname}?tab=lines&payee=${id}`)} />}
               {tab === 'exceptions' && <ExceptionsTab review={review} acknowledged={acknowledged} onAcknowledge={calculated && write('run.commit') ? acknowledge : null} />}
               {tab === 'lines' && <LinesTable runId={run.id} market={market} ruleKeys={ruleKeys} />}
-              {tab === 'changes' && <ChangesTab review={review} runId={run.id} />}
+              {tab === 'changes' && <ChangesTab review={review} runId={run.id} version={run.plan_version.version} />}
               {tab === 'adjustments' && <AdjustmentsTab review={review} market={market} runId={run.id} ruleKeys={ruleKeys} />}
             </TabPanel>
           </div>

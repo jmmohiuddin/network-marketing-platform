@@ -14,7 +14,7 @@ import { LoadFailure } from '../admin/page-states'
 import { MONO, NOTE } from '../admin/ui'
 import { saveFile } from '../data/transfer'
 import { AttestationForm, EvidenceForm } from './evidence-forms'
-import { BASIS_STATUS, documentHref, fetchDocument, ITEM_STATUS, KIND_LABELS } from './format'
+import { BASIS_STATUS, documentHref, fetchDocument, ITEM_STATUS, KIND_LABELS, reviewChip, todayLocal } from './format'
 import type { ChecklistEntry, ChecklistItem, DocumentLimits, DocumentSummary, PackRule, ProviderRecord } from './types'
 
 const LABEL = 'font-caption text-caption text-secondary uppercase font-semibold'
@@ -83,7 +83,21 @@ export function RuleList({ rules }: { readonly rules: readonly PackRule[] }) {
   )
 }
 
-function ProviderList({ records, canWithdraw, onWithdraw }: { readonly records: readonly ProviderRecord[]; readonly canWithdraw: boolean; readonly onWithdraw: (record: ProviderRecord) => void }) {
+/** D-B4-20 due/overdue chip of a recorded provider approval (also on SC-13). */
+export function ReviewChip({ record }: { readonly record: Pick<ProviderRecord, 'state' | 'review_due_on'> }) {
+  const chip = record.state === 'recorded' ? reviewChip(record.review_due_on, todayLocal()) : null
+  return chip === null ? null : <StatusBadge state={chip.state} label={chip.label} />
+}
+
+interface ProviderListProps {
+  readonly records: readonly ProviderRecord[]
+  readonly canWithdraw: boolean
+  readonly onWithdraw: (record: ProviderRecord) => void
+  /** null when the user cannot set review dates (not market.manage, or read-only); live markets included. */
+  readonly onSetReview: ((record: ProviderRecord) => void) | null
+}
+
+function ProviderList({ records, canWithdraw, onWithdraw, onSetReview }: ProviderListProps) {
   if (records.length === 0) return <p className={NOTE}>No provider approval is recorded for this market.</p>
   return (
     <ul aria-label="Provider approvals" className="flex flex-col gap-space-xs">
@@ -91,7 +105,10 @@ function ProviderList({ records, canWithdraw, onWithdraw }: { readonly records: 
         <li key={record.id} className="p-space-sm bg-surface-container rounded border border-outline-variant flex flex-col gap-1">
           <div className="flex flex-wrap items-center justify-between gap-space-xs">
             <span className="font-body-sm text-body-sm font-semibold text-on-surface">{record.provider}</span>
-            <StatusBadge state={record.state === 'recorded' ? 'accepted' : 'retired'} label={record.state === 'recorded' ? 'Recorded' : 'Withdrawn'} />
+            <span className="flex flex-wrap gap-space-xs">
+              <ReviewChip record={record} />
+              <StatusBadge state={record.state === 'recorded' ? 'accepted' : 'retired'} label={record.state === 'recorded' ? 'Recorded' : 'Withdrawn'} />
+            </span>
           </div>
           {record.approved_description !== null && <span className="font-caption text-caption text-on-surface-variant">{record.approved_description}</span>}
           <span className="font-caption text-caption text-on-surface-variant">Approved on {record.approved_at ?? '—'} · funds held by {record.funds_holder ?? '—'}</span>
@@ -99,8 +116,11 @@ function ProviderList({ records, canWithdraw, onWithdraw }: { readonly records: 
             <DocumentLink className={`${MONO} text-primary underline`} document={record.approval_document} fallback="Approval document" />
           )}
           <span className="font-caption text-caption text-secondary">Recorded by {record.created_by.display_name ?? 'another user'}, {formatDateTime(record.created_at)}</span>
-          {canWithdraw && record.state === 'recorded' && (
-            <div><Button size="sm" variant="destructive" onClick={() => onWithdraw(record)}>Withdraw</Button></div>
+          {record.state === 'recorded' && (onSetReview !== null || canWithdraw) && (
+            <div className="flex flex-wrap gap-space-xs">
+              {onSetReview !== null && <Button size="sm" icon="event" aria-label={`Set review date of ${record.provider}`} onClick={() => onSetReview(record)}>Set review date</Button>}
+              {canWithdraw && <Button size="sm" variant="destructive" onClick={() => onWithdraw(record)}>Withdraw</Button>}
+            </div>
           )}
         </li>
       ))}
@@ -119,6 +139,8 @@ export interface GateInspectorProps {
   readonly onRecorded: () => void
   readonly onRecordProvider: (kind: 'payout' | 'payment') => void
   readonly onWithdrawProvider: (record: ProviderRecord) => void
+  /** null when the user cannot set review dates (D-B4-20); unlike entries, allowed on a live market. */
+  readonly onSetProviderReview: ((record: ProviderRecord) => void) | null
 }
 
 function Section({ label, children }: { readonly label: string; readonly children: ReactNode }) {
@@ -146,7 +168,7 @@ function Loaded<T>({ resource, label, children }: LoadedProps<T>) {
 const LIMITS_LABEL = 'Loading the allowed file types'
 
 /** sc_17 gate inspector: what completes the item, what is recorded, and how to record it. */
-export function GateInspector({ marketId, item, locked, limits, providers, onRecorded, onRecordProvider, onWithdrawProvider }: GateInspectorProps) {
+export function GateInspector({ marketId, item, locked, limits, providers, onRecorded, onRecordProvider, onWithdrawProvider, onSetProviderReview }: GateInspectorProps) {
   const status = ITEM_STATUS[item.status]
   const providerKind = item.item === 'payout_provider' ? 'payout' : 'payment'
   return (
@@ -171,7 +193,7 @@ export function GateInspector({ marketId, item, locked, limits, providers, onRec
             <Loaded resource={providers} label="Loading the provider approvals">
               {(all) => (
                 <>
-                  <ProviderList records={all.filter((record) => record.kind === providerKind)} canWithdraw={locked === null} onWithdraw={onWithdrawProvider} />
+                  <ProviderList records={all.filter((record) => record.kind === providerKind)} canWithdraw={locked === null} onWithdraw={onWithdrawProvider} onSetReview={onSetProviderReview} />
                   {locked === null && (
                     <Loaded resource={limits} label={LIMITS_LABEL}>
                       {() => <Button icon="add" onClick={() => onRecordProvider(providerKind)}>Record provider approval</Button>}
@@ -190,7 +212,7 @@ export function GateInspector({ marketId, item, locked, limits, providers, onRec
         )}
         {item.item === 'agreement_versions' && (
           <p className={NOTE}>
-            {item.detail?.version == null
+            {item.detail?.version == null || !('label' in item.detail.version)
               ? 'No participant agreement version is published for this market yet. '
               : `Current version ${item.detail.version.label}, published ${formatDateTime(item.detail.version.published_at)}. `}
             Versions are published in <Link className="text-primary underline" href="/settings#agreements-title">Settings</Link>; this item completes itself once one is.

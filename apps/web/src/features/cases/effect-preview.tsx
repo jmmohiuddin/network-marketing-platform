@@ -4,6 +4,7 @@ import { Icon } from '../../components/icon'
 import { StatusBadge } from '../../components/status-badge'
 import { periodText } from '../periods/format'
 import { isLive, OUTCOME_LABELS, structuralText } from './format'
+import { MONEY_CASE_TYPES, MoneyEffect } from './money-effects'
 import { PositionLink } from './refs'
 import { RestatementEffect, type RestatementPreview } from './restatement-effect'
 import type { CaseRecord, DuplicatePreview, RelationshipPreview, TransferPreview } from './types'
@@ -13,7 +14,7 @@ const BOX = 'flex-1 flex flex-col p-space-xs rounded bg-surface-container-lowest
 const MONO = 'font-data-mono-sm text-data-mono-sm'
 
 /** sc_08 transfer path: current -> proposed. */
-function PathVector({ from, to, fromLabel, toLabel }: { readonly from: string; readonly to: string; readonly fromLabel: string; readonly toLabel: string }) {
+export function PathVector({ from, to, fromLabel, toLabel }: { readonly from: string; readonly to: string; readonly fromLabel: string; readonly toLabel: string }) {
   return (
     <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-space-sm p-space-sm bg-surface rounded border border-outline-variant">
       <div className={BOX}>
@@ -29,7 +30,7 @@ function PathVector({ from, to, fromLabel, toLabel }: { readonly from: string; r
   )
 }
 
-function CheckLine({ ok, children }: { readonly ok: boolean; readonly children: string }) {
+export function CheckLine({ ok, children }: { readonly ok: boolean; readonly children: string }) {
   return (
     <p className={`flex items-start gap-space-xs font-body-sm text-body-sm ${ok ? 'text-tertiary' : 'text-error font-semibold'}`}>
       <Icon name={ok ? 'check_circle' : 'error'} size={16} className="mt-0.5 shrink-0" />
@@ -104,6 +105,8 @@ export function EffectPreview({ record }: { readonly record: CaseRecord }) {
   let body
   if (preview === null) {
     body = <p className="font-body-sm text-body-sm text-secondary">The effect preview is calculated when the case is submitted for a decision.</p>
+  } else if (MONEY_CASE_TYPES.includes(record.type)) {
+    body = <MoneyEffect record={record} live={live} />
   } else if (record.type === 'transfer') {
     body = <TransferEffect preview={preview as TransferPreview} live={live} />
   } else if (record.type === 'restatement') {

@@ -100,7 +100,12 @@ export function ExceptionsTab({ review, acknowledged, onAcknowledge }: { readonl
   )
 }
 
-function Transitions({ runId }: { readonly runId: string }) {
+/** BUG-093: the first run under a plan version (none compared, or the version changed) says so, including v1. */
+export function isFirstUnderVersion(review: RunReview): boolean {
+  return review.comparison === null || review.changes.plan_version_changed
+}
+
+function Transitions({ runId, empty }: { readonly runId: string; readonly empty: string }) {
   const list = usePagedList<TransitionRow>(`/v1/runs/${runId}/transitions`)
   return (
     <DataTable
@@ -114,22 +119,23 @@ function Transitions({ runId }: { readonly runId: string }) {
       rowKey={(row) => row.position_id}
       loading={list.loading}
       error={tableError(list)}
-      empty={{ title: 'No state transition: this run is not the first under a new plan version' }}
+      empty={{ title: empty }}
       pagination={list.pagination}
     />
   )
 }
 
 /** What changed against the comparison run, and the pass-0 transition report (AC-27.2). */
-export function ChangesTab({ review, runId }: { readonly review: RunReview; readonly runId: string }) {
+export function ChangesTab({ review, runId, version }: { readonly review: RunReview; readonly runId: string; readonly version: number }) {
   const changes = review.changes
+  const first = isFirstUnderVersion(review)
   const inputs = Object.keys(changes.inputs.current ?? {})
   return (
     <div className="flex flex-col gap-space-md">
       <section className={CARD} aria-labelledby="changes-title">
         <h2 id="changes-title" className={HEADING}>What changed</h2>
         <dl className="grid grid-cols-1 sm:grid-cols-2 gap-space-sm font-body-sm text-body-sm">
-          <div><dt className="text-secondary">Plan version</dt><dd>{changes.plan_version_changed ? `Changed (previous ${shortId(changes.previous_plan_version ?? '')})` : 'Unchanged'}</dd></div>
+          <div><dt className="text-secondary">Plan version</dt><dd>{first ? `First run under plan version ${version}` : 'Unchanged'}{changes.plan_version_changed && changes.previous_plan_version !== null ? ` (previous ${shortId(changes.previous_plan_version)})` : ''}</dd></div>
           <div><dt className="text-secondary">Settings version</dt><dd>{changes.settings_version_changed ? 'Changed' : 'Unchanged'}</dd></div>
           <div><dt className="text-secondary">State transitions</dt><dd>{changes.transition_changes}</dd></div>
           <div><dt className="text-secondary">Cap applications</dt><dd>{changes.cap_applications.length === 0 ? 'None' : changes.cap_applications.map((cap) => `${cap.capKey} (${cap.bound ? 'bound' : 'not bound'}, ${cap.affected.length} lines)`).join(', ')}</dd></div>
@@ -152,7 +158,7 @@ export function ChangesTab({ review, runId }: { readonly review: RunReview; read
       </section>
       <section className={CARD} aria-labelledby="transitions-title">
         <h2 id="transitions-title" className={HEADING}>Transition report</h2>
-        <Transitions runId={runId} />
+        <Transitions runId={runId} empty={first ? `No position changed state in this first run under plan version ${version}.` : 'No state transition: this run is not the first under a new plan version.'} />
       </section>
     </div>
   )

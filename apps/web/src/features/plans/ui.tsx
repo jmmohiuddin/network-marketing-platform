@@ -45,7 +45,7 @@ export interface PlanData {
 }
 
 /** The last answer stays shown while a reload runs, so a page keeps its open forms and messages after a save. */
-function useKeptData<T>(resource: Resource<T>): Resource<T> {
+export function useKeptData<T>(resource: Resource<T>): Resource<T> {
   const [kept, setKept] = useState<T | null>(null)
   if (resource.data !== null && resource.data !== kept) setKept(resource.data)
   return resource.data !== null || resource.error !== null ? resource : { ...resource, data: kept }
@@ -110,7 +110,11 @@ const OUTSTANDING_REASONS: Readonly<Record<string, string>> = {
   acknowledgement_required: 'the warning needs an acknowledgement (Guardrails tab) or a compliance override.',
   override_required: 'the block needs a compliance override.',
   not_overridable: 'the block cannot be overridden: change the rules it matched.',
+  compliance_review_required: 'the block needs a compliance review: a Compliance officer override.',
 }
+
+/** One open guardrail decision as a sentence (SC-04 refusals and SC-42 banner, BUG-096). */
+export const outstandingText = (o: { readonly rule_id: string; readonly reason: string }): string => `${o.rule_id}: ${OUTSTANDING_REASONS[o.reason] ?? o.reason}`
 
 /** The details of a lifecycle or rule refusal as sentences (the message says what failed; these say where). */
 export function refusalLines(error: unknown, names: RefusalNames = {}): string[] {
@@ -126,8 +130,7 @@ export function refusalLines(error: unknown, names: RefusalNames = {}): string[]
       return listOf(d, 'rule_keys').map((key) => `${String(key)} has no golden case.`)
     case 'GUARDRAIL_OUTSTANDING':
       return listOf(d, 'decisions').map((x) => {
-        const o = x as { rule_id: string; reason: string }
-        return `${o.rule_id}: ${OUTSTANDING_REASONS[o.reason] ?? o.reason}`
+        return outstandingText(x as { rule_id: string; reason: string })
       })
     case 'GOLDEN_FAILED':
       return listOf(d, 'datasets').map((x) => {

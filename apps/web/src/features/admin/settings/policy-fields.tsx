@@ -1,10 +1,12 @@
 'use client'
 
 import { Checkbox, FieldError, Select, TextInput } from '../../../components/form-field'
+import { MARKETS_PATH, type Market } from '../../../lib/markets'
 import { useResource } from '../../../lib/use-resource'
+import { minorToDecimal } from '../../orders/format'
 import { FIELDSET, LEGEND, PAIR } from '../ui'
 import {
-  ATTRIBUTION_OPTIONS, CLAWBACK_OPTIONS, CREDITING_OPTIONS, keyLabel, PURPOSE_OPTIONS, REASSIGNMENT_OPTIONS, RESTOCKING_OPTIONS,
+  ATTRIBUTION_OPTIONS, CLAWBACK_OPTIONS, CREDITING_OPTIONS, keyLabel, PURPOSE_OPTIONS, REASSIGNMENT_OPTIONS, RELATED_ACTION_OPTIONS, RESTOCKING_OPTIONS,
   ROUNDING_OPTIONS, SIGNAL_OPTIONS, type PolicyKey,
 } from './labels'
 import { PARTICIPANT_TYPES_PATH, type ParticipantType } from './types'
@@ -27,6 +29,14 @@ const WIDTH_MAX = 20
 const TYPE_CODE = /^[A-Z][A-Z0-9_]{0,31}$/
 const WHOLE = /^\d{1,6}$/
 const PRECEDENCE_FIELDS = ['first', 'second', 'third'] as const
+const COOLING_OFF_MAX_HOURS = 2160
+const SHARED_MAX = 1000
+const DAYS_MAX = 3650
+const REMINDER_MAX_DAYS = 365
+/** Whole minor units, as the API's bigint strings. */
+const MINOR = /^(0|[1-9]\d{0,17})$/
+const MIN_PREFIX = 'min_'
+const TAX_PREFIX = 'tax_'
 
 const yes = (flag: unknown): string => (flag === true ? 'true' : '')
 const text = (value: unknown): string => (value === null || value === undefined ? '' : String(value))
@@ -45,6 +55,15 @@ export function draftOf(key: PolicyKey, value: unknown): Draft {
     case 'orders.attribution_precedence': return Object.fromEntries((value as readonly unknown[]).map((entry, index) => [PRECEDENCE_FIELDS[index], text(entry)]))
     case 'integrations.sync_health': return { behind: text(record.behind_after_minutes), failing: text(record.failing_after_minutes) }
     case 'genealogy.visibility_policy': return { named_depth: text(record.named_depth), contact: yes(record.contact_for_personally_sponsored) }
+    case 'payouts.market_policy':
+      return Object.fromEntries(Object.entries(record).flatMap(([marketId, policy]) => {
+        const entry = (policy ?? {}) as Readonly<Record<string, unknown>>
+        return [[`${MIN_PREFIX}${marketId}`, text(entry.minimum_payout_minor)], [`${TAX_PREFIX}${marketId}`, yes(entry.tax_profile_required)]]
+      }))
+    case 'adjustments.policy':
+      return { above: text(record.second_approver_above_minor), new_days: text(record.new_account_days), related: text(record.related_account_action) }
+    case 'write_offs.policy':
+      return { below: text(record.eligible_below_minor), after_days: text(record.eligible_after_days), above: text(record.second_approver_above_minor) }
     default: return { value: text(value) }
   }
 }
@@ -68,6 +87,26 @@ function built(value: unknown, errors: readonly (readonly [string, string] | und
 
 function choice(draft: Draft, key: PolicyKey): readonly [string, string] | undefined {
   return (draft.value ?? '') === '' ? ['value', `Choose the ${keyLabel(key).toLowerCase()}.`] : undefined
+}
+
+/** Whole minor units (a bigint string), or the error for the field; '' is allowed when optional. */
+function minorField(draft: Draft, field: string, what: string, optional = false): { readonly value?: string; readonly error?: readonly [string, string] } {
+  const raw = (draft[field] ?? '').trim()
+  if (raw === '' && optional) return {}
+  return MINOR.test(raw) ? { value: raw } : { error: [field, `Enter ${what} as a whole number of minor units.`] }
+}
+
+/** payouts.market_policy from the min_<market>/tax_<market> fields: markets without a minimum are left out. */
+function marketPolicy(draft: Draft): Built {
+  const markets = Object.keys(draft).filter((field) => field.startsWith(MIN_PREFIX) && (draft[field] ?? '').trim() !== '').map((field) => field.slice(MIN_PREFIX.length))
+  const minimums = markets.map((id) => minorField(draft, `${MIN_PREFIX}${id}`, 'the minimum payout'))
+  const taxOnly = Object.keys(draft).find((field) => field.startsWith(TAX_PREFIX) && draft[field] === 'true' && !markets.includes(field.slice(TAX_PREFIX.length)))
+  const value = Object.fromEntries(markets.map((id, index) => [id, { minimum_payout_minor: minimums[index]!.value, tax_profile_required: draft[`${TAX_PREFIX}${id}`] === 'true' }]))
+  return built(value, [
+    ...minimums.map((minimum) => minimum.error),
+    taxOnly === undefined ? undefined : [`${MIN_PREFIX}${taxOnly.slice(TAX_PREFIX.length)}`, 'Enter the minimum payout of this market too.'] as const,
+    markets.length === 0 ? ['markets', 'Enter the minimum payout of at least one market.'] as const : undefined,
+  ])
 }
 
 /** The value to PUT for a key from its form text, or the errors by field (the API validates again). */
@@ -120,8 +159,72 @@ export function policyValue(key: PolicyKey, draft: Draft): Built {
       const depth = whole(draft, 'named_depth', 1, DEPTH_MAX, 'the named levels')
       return built({ named_depth: depth.number, contact_for_personally_sponsored: draft.contact === 'true' }, [depth.error])
     }
+    case 'payouts.market_policy': return marketPolicy(draft)
+    case 'payouts.bank_detail_cooling_off_hours': {
+      const hours = whole(draft, 'value', 0, COOLING_OFF_MAX_HOURS, 'the cooling-off hours')
+      return built(hours.number, [hours.error])
+    }
+    case 'payouts.shared_account_threshold': {
+      const payees = whole(draft, 'value', 1, SHARED_MAX, 'the number of payees')
+      return built(payees.number, [payees.error])
+    }
+    case 'payouts.dormant_after_days': {
+      const age = whole(draft, 'value', 1, DAYS_MAX, 'the days')
+      return built(age.number, [age.error])
+    }
+    case 'payouts.provider_review_reminder_days': {
+      const ahead = whole(draft, 'value', 1, REMINDER_MAX_DAYS, 'the days')
+      return built(ahead.number, [ahead.error])
+    }
+    case 'adjustments.policy': {
+      const above = minorField(draft, 'above', 'the second-approver threshold')
+      const days = whole(draft, 'new_days', 0, DAYS_MAX, 'the new-account days')
+      return built(
+        { second_approver_above_minor: above.value, new_account_days: days.number, related_account_action: draft.related },
+        [above.error, days.error, (draft.related ?? '') === '' ? ['related', 'Choose what happens for a related or new account.'] : undefined],
+      )
+    }
+    case 'write_offs.policy': {
+      const below = minorField(draft, 'below', 'the eligibility amount', true)
+      const afterRaw = (draft.after_days ?? '').trim()
+      const after = afterRaw === '' ? { number: undefined, error: undefined } : whole(draft, 'after_days', 1, DAYS_MAX, 'the eligibility age')
+      const above = minorField(draft, 'above', 'the second-approver threshold')
+      const none = below.value === undefined && below.error === undefined && afterRaw === '' ? ['below', 'Enter an eligibility amount, an eligibility age, or both.'] as const : undefined
+      return built({
+        ...(below.value === undefined ? {} : { eligible_below_minor: below.value }),
+        ...(after.number === undefined ? {} : { eligible_after_days: after.number }),
+        second_approver_above_minor: above.value,
+      }, [below.error ?? none, after.error, above.error])
+    }
     default: return built(value, [choice(draft, key)])
   }
+}
+
+const MINOR_HELP = 'Whole minor units of each market’s currency: 10000 is 100.00 in a currency with two decimals.'
+
+/** payouts.market_policy: a minimum (minor units, shown in the currency) and the tax-profile flag per market. */
+function MarketPolicyFields({ draft, errors, onChange }: Omit<PolicyFieldsProps, 'policyKey'>) {
+  const markets = useResource<Market[]>(MARKETS_PATH)
+  return (
+    <fieldset className={FIELDSET} id={fieldId('markets')} tabIndex={-1}>
+      <legend className={LEGEND}>Per market (leave the minimum empty to leave a market out)</legend>
+      {markets.data === null && <p>Loading markets…</p>}
+      {(markets.data ?? []).map((market) => {
+        const minimum = (draft[`${MIN_PREFIX}${market.id}`] ?? '').trim()
+        const shown = MINOR.test(minimum) ? ` = ${minorToDecimal(minimum, market.minor_unit)} ${market.currency}` : ''
+        return (
+          <div key={market.id} className={PAIR}>
+            <TextInput id={fieldId(`${MIN_PREFIX}${market.id}`)} label={`Minimum payout ${market.code} (minor units)`} inputMode="numeric" optional
+              helper={`Payables of at least this amount are paid${shown}.`} value={draft[`${MIN_PREFIX}${market.id}`] ?? ''} error={errors[`${MIN_PREFIX}${market.id}`]}
+              onChange={(event) => onChange(`${MIN_PREFIX}${market.id}`, event.target.value)} />
+            <Checkbox id={fieldId(`${TAX_PREFIX}${market.id}`)} label={`${market.code}: tax profile required`} checked={draft[`${TAX_PREFIX}${market.id}`] === 'true'}
+              onChange={(event) => onChange(`${TAX_PREFIX}${market.id}`, event.target.checked ? 'true' : '')} />
+          </div>
+        )
+      })}
+      {errors.markets !== undefined && <FieldError message={errors.markets} />}
+    </fieldset>
+  )
 }
 
 export interface PolicyFieldsProps {
@@ -197,6 +300,27 @@ export function PolicyFields({ policyKey, draft, errors, onChange }: PolicyField
         </div>
       )
     case 'genealogy.placement_width': return input('value', 'Legs per position', `${WIDTH_MIN} to ${WIDTH_MAX}.`)
+    case 'payouts.market_policy': return <MarketPolicyFields draft={draft} errors={errors} onChange={onChange} />
+    case 'payouts.bank_detail_cooling_off_hours': return input('value', 'Cooling-off hours', `0 to ${COOLING_OFF_MAX_HOURS}. A new bank account is left out of payout batches for this long after its approval.`)
+    case 'payouts.shared_account_threshold': return input('value', 'Payees sharing one account', `1 to ${SHARED_MAX}. A bank-detail change shared by this many payees is flagged to its approver.`)
+    case 'payouts.dormant_after_days': return input('value', 'Days unpaid', `1 to ${DAYS_MAX}. Payables unpaid this long are listed as dormant.`)
+    case 'payouts.provider_review_reminder_days': return input('value', 'Days before the review date', `1 to ${REMINDER_MAX_DAYS}. Market managers are reminded this long before a payout provider's review is due.`)
+    case 'adjustments.policy':
+      return (
+        <>
+          {input('above', 'Second approver above (minor units)', MINOR_HELP)}
+          {input('new_days', 'New-account days', `0 to ${DAYS_MAX}. A payee enrolled within this many days counts as a new account.`)}
+          {select('related', 'Related or new account', RELATED_ACTION_OPTIONS)}
+        </>
+      )
+    case 'write_offs.policy':
+      return (
+        <>
+          {input('below', 'Eligible below (minor units, optional)', MINOR_HELP)}
+          {input('after_days', 'Eligible after days outstanding (optional)', `1 to ${DAYS_MAX}. At least one eligibility rule is needed.`)}
+          {input('above', 'Second approver above (minor units)', MINOR_HELP)}
+        </>
+      )
     case 'genealogy.visibility_policy':
       return (
         <>

@@ -5,6 +5,7 @@
 // root has 50,000 direct children, the rest attach anywhere), deep (one leg 5,000 deep, the rest attach anywhere).
 // The second run gets the same input shuffled; its result hash must equal the first. Prints one JSON line; every number
 // in it is measured.
+import { createHash } from 'node:crypto'
 import { run } from '../../src/run.js'
 import type { Order, Participant, Position, Relationship, RunInput } from '../../src/types.js'
 import { loadFixture, type RunFixture } from '../fixtures/load.js'
@@ -92,7 +93,10 @@ const [input, generateMs] = timed(() => generate(positions, seed))
 const rssAfterGenerate = rss()
 const [first, run1Ms] = timed(() => {
   const o = run(input)
-  return { resultHash: o.resultHash, inputsHash: o.inputsHash, lines: o.lines.length, payees: o.payees.length, grossMinor: o.controlTotals.grossMinor.toString(), breakageMinor: o.controlTotals.breakageMinor.toString(), capBound: o.capApplications[0]?.bound ?? null }
+  // COMP-style line hash: [payee, pass, rule, origin type, origin id, amount] per line, output order.
+  const linesHash = createHash('sha256')
+  for (const l of o.lines) linesHash.update(`${JSON.stringify([l.payeePositionId, l.pass, l.ruleKey, l.origin?.originType ?? null, l.origin?.originId ?? null, l.amountMinor.toString()])}\n`)
+  return { resultHash: o.resultHash, inputsHash: o.inputsHash, linesHash: linesHash.digest('hex'), lines: o.lines.length, payees: o.payees.length, grossMinor: o.controlTotals.grossMinor.toString(), breakageMinor: o.controlTotals.breakageMinor.toString(), capBound: o.capApplications[0]?.bound ?? null }
 })
 const rssAfterRun1 = rss()
 const mix = rng(seed + 1)

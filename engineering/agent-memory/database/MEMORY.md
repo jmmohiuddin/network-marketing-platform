@@ -74,3 +74,22 @@ _Agent: database. Read before every task; update after every task. Keep concise 
 - restatement: calculated->approved|applied need case `approved`, ->rejected case `rejected`; calculated->applied only with no origins; approved->applied needs ≥1 origin consumed by applied_in_run_id and none consumed elsewhere/unconsumed. COMP must insert origins after markDecided (CAS already flips the case before onDecision).
 - run: started_at only on queued->running, finished_at on ->calculated|failed, error on ->failed, progress only while queued/running. plan_version: based_on same plan (INSERT), activated_at on ->active, retired_at on ->retired.
 - `race(ctx, first, second)` two-connection helper now lives in test/support.ts. Next free B3 number: 0306.
+
+## State after B4 schema (0400-0406, 2026-11-18)
+- 0400 LED (ledger_account, journal_entry, posting, gl_account_map, journal_export, export_job created_by_type), 0401 COMP/CAS/IAM (run_settlement, manual adjustment origins, case second approval, user_related_participant, provider inbound source), 0402 PAY (+ period committed->paid guard), 0403 tax_profile, 0404 functions (ledger_post, led_post_run, led_balance, led_receivable_balances, led_receivables, led_attribution_period, period_mark_paid, staff_related_users, pay_* system lookups, money/approval key lists, market_references), 0405 base roles + Support agent MFA, 0406 opaque guardrail override. Next free B4 number: 0407.
+- Ledger lock key (every payable/receivable writer): pg_advisory_xact_lock(hashtextextended('ledger:' || tenant_id || ':' || market_id, 0)); ledger_post and led_post_run take it.
+- An entry's postings must arrive in ONE INSERT statement (statement trigger posting_balance); isolation/test seeds must post through ledger_post, never row by row.
+- journal_entry runtime guard: origin must exist (committed run with its approval; instruction of a batch with a 'payout_batch' approval when instructed; approved write_off case with its final approval), period of the entry's market. approval_id required exactly for run_committed, payout_instructed, write_off.
+- nmp_app UPDATE/DELETE on journal_entry/posting fails with 'permission denied' (42501, no grant); the LEDGER_IMMUTABLE trigger message is only seen by roles holding the privilege (owner).
+- bank_detail_version: nmp_app inserts only created_via 'case' (approved bank_detail case whose payload.request_id = request); 'migration'/'self' go through the owner (seed fixtureBankDetail).
+- case_file: approvals_required set only on open->submitted; first_approval_id only while submitted with 2; helper case_approval_eligible(case_file, approval, decision). GRANT UPDATE (first_approval_id, approvals_required).
+- money_setting_keys() now also has the 4 B4 settings.approve keys (ten change-requests test pins it against approverPermission 'settings.approve').
+- permissions.ts: renderBaseRoleMfaUpdate (line uses `name IN (...)` so the last-update regex ignores it); B4_UPDATED_BASE_ROLES, B4_MFA_CHANGED_BASE_ROLES.
+
+## State after B4 review fixes (0407, 2026-11-18)
+- journal_entry CHECK `journal_entry_key_is_origin`: key = run:<id> | writeoff:<case> | instr:<id>:instructed|settled|returned (failed shares :returned). One entry per origin+event via the unique key.
+- Origin guard: instruction state must fit the event (pending for instructed, settled, returned, failed) -> PAY updates the instruction state BEFORE posting settled/returned/failed. Deferred journal_entry_balanced also binds instruction/write-off entries to exactly the two PLAN 4.3 lines for the origin's amount and payee (write-off amount = case payload.amount_minor, credit = the subject receivable account's payee).
+- market.currency frozen (23514) once a ledger_account or payout_batch of the market exists; ledger account insert takes the market row FOR SHARE.
+- bank_detail_version (nmp_app) must copy scheme/fingerprint/masked from its request.
+- payout_instruction.retry_of (composite FK, unique; one first instruction per (batch, payee) where retry_of IS NULL). Insert: version current; batch approved -> exact line (payee, amount, version), retry_of NULL; batch failed -> retry_of = a failed instruction of the same batch/payee, amount <= it. approved->instructing: instructions = lines exactly. settled: every instruction without a retry is settled. total/exclusions change only when OLD or NEW state is draft.
+- tax_profile: nmp_app sets valid_to >= now() (ms-truncated), never retroactive. Next free B4 number: 0408.

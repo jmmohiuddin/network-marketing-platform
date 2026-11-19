@@ -28,6 +28,11 @@ export interface TenantSeed {
   positionId: string
   planVersionId: string
   runId: string
+  periodId: string
+  journalEntryId: string
+  bankDetailVersionId: string
+  payoutBatchId: string
+  instructionId: string
 }
 
 /** A platform guardrail rule for the seeded evaluation; pack rules are written by migrations or the owner only. */
@@ -100,7 +105,7 @@ export async function seedTenantRows(ctx: TenantContext, secondUserId: string): 
     })
     await insertRow(tx, 'compliance_figure', { tenant_id, snapshot_id: snapshotId, report: 'R1', key: 'k' })
     await insertRow(tx, 'export_job', {
-      tenant_id, kind: 'audit', document_id: documentId, requested_by: ctx.userId, state: 'done',
+      tenant_id, kind: 'audit', document_id: documentId, requested_by: ctx.userId, state: 'done', created_by_type: 'user',
     })
     await openSession(tx)
     await insertRow(tx, 'mfa_credential', { user_id: ctx.userId, type: 'totp', secret_encrypted: 'seed' })
@@ -115,9 +120,10 @@ export async function seedTenantRows(ctx: TenantContext, secondUserId: string): 
     const b1 = await seedB1Rows(tx, ctx, marketId, outboxEventId)
     const b2 = await seedB2Rows(tx, ctx, secondUserId, marketId, b1.brandId)
     const b3 = await seedB3Rows(tx, ctx, { marketId, calendarId: b1.calendarId, settingsVersionId, ...b2 })
+    const b4 = await seedB4Rows(tx, ctx, secondUserId, { marketId, ...b2, ...b3 })
     return {
       marketId, roleId, approvalId, settingsVersionId, documentId, mappingId, batchId, snapshotId, outboxEventId, ...b1, ...b2,
-      ...b3,
+      ...b3, ...b4,
     }
   })
 }
@@ -303,6 +309,11 @@ async function seedB3Rows(
   const line = { ...payee, bonus_type: 'pay.flat', source_kind: 'other', pass: 4, amount_minor: 100, currency: 'GBP', trace: {} }
   await insertRow(tx, 'result_line', { ...line, run_id: runId })
   await tx.query(
+    `INSERT INTO run_settlement (tenant_id, run_id, payee_participant_id, gross_minor, receivable_before_minor, netted_minor,
+       withheld_minor, net_payable_minor) VALUES ($1, $2, $3, 100, 0, 0, 0, 100)`,
+    [tenant_id, runId, ids.participantId],
+  )
+  await tx.query(
     `INSERT INTO qualification_state (tenant_id, run_id, position_id, paid_as_rank, highest_titles, grace_used, counters, carry,
        one_time_flags, banked, measures) VALUES ($1, $2, $3, '[]', '[]', '[]', '[]', '[]', '{}', '[]', '[]')`,
     [tenant_id, runId, ids.positionId],
@@ -334,7 +345,106 @@ async function seedB3Rows(
   await insertRow(tx, 'restatement', {
     tenant_id, period_id: periodId, case_id: caseId, simulation_id: simulationId, state: 'calculated', diff: {},
   })
-  return { planVersionId, runId }
+  return { planVersionId, runId, periodId }
+}
+
+/**
+ * One row in every B4 tenant table (PLAN B4 section 1), through the shared SQL where one exists: the seeded run committed
+ * by secondUserId and posted, a GL mapping and export, a related-party declaration, a bank-detail request approved
+ * through its case into a version, a sandbox provider with a batch (line, instruction posted as instructed), its
+ * payment, an exception, a hold and a tax profile.
+ */
+async function seedB4Rows(
+  tx: Tx, ctx: TenantContext, secondUserId: string,
+  ids: { marketId: string; participantId: string; runId: string; periodId: string },
+) {
+  const tenant_id = ctx.tenantId
+  const one = async (sql: string, params: unknown[]): Promise<string> => Object.values((await tx.query(sql, params)).rows[0]!)[0] as string
+  const approve = (objectType: string, objectId: string) => asUser(tx, secondUserId, () => insertRow(tx, 'approval', {
+    tenant_id, object_type: objectType, object_id: objectId, preparer_id: ctx.userId, approver_id: secondUserId,
+    decision: 'approved', decided_at: new Date(),
+  }))
+  await tx.query(`UPDATE run SET review_opened_at = now(), review_opened_by = $2 WHERE id = $1`, [ids.runId, ctx.userId])
+  const runApproval = await approve('run', ids.runId)
+  await asUser(tx, secondUserId, async () => {
+    await tx.query(`UPDATE run SET state = 'committed', approval_id = $2, committed_at = now() WHERE id = $1`, [ids.runId, runApproval])
+    for (const state of ['calculating', 'calculated']) await tx.query('UPDATE period SET state = $2 WHERE id = $1', [ids.periodId, state])
+    await tx.query(`UPDATE period SET state = 'committed', committed_run_id = $2 WHERE id = $1`, [ids.periodId, ids.runId])
+  })
+  const journalEntryId = await one('SELECT led_post_run($1)', [ids.runId])
+  await insertRow(tx, 'user_related_participant', {
+    tenant_id, user_id: secondUserId, participant_id: ids.participantId, relation: 'relative', declared_by: ctx.userId,
+  })
+  await tx.query(
+    `INSERT INTO gl_account_map (tenant_id, market_id, account_type, gl_code, updated_by) VALUES ($1, $2, 'payee_payable', '2100', $3)`,
+    [tenant_id, ids.marketId, ctx.userId],
+  )
+  const exportJobId = await insertRow(tx, 'export_job', {
+    tenant_id, kind: 'gl_journal', requested_by: ctx.userId, state: 'done', created_by_type: 'user',
+  })
+  const content = randomBytes(16)
+  await insertRow(tx, 'journal_export', {
+    tenant_id, market_id: ids.marketId, period_id: ids.periodId, export_job_id: exportJobId, content,
+    content_sha256: createHash('sha256').update(content).digest(), line_count: 2, debit_total_minor: 100, credit_total_minor: 100,
+  })
+  const fingerprint = randomBytes(32)
+  const requestId = await insertRow(tx, 'bank_detail_request', {
+    tenant_id, participant_id: ids.participantId, scheme: 'iban', details_sealed: 'sealed', fingerprint,
+    masked: '•••• 3000', created_by: ctx.userId,
+  })
+  const caseId = await insertRow(tx, 'case_file', {
+    tenant_id, type: 'bank_detail', subject_type: 'participant', subject_id: ids.participantId, reason_code: 'PAYEE_REQUEST',
+    state: 'open', payload: { request_id: requestId }, market_id: ids.marketId, opened_by: ctx.userId,
+  })
+  await tx.query(`UPDATE case_file SET state = 'submitted', submitted_by = $2, submitted_at = now(), approvals_required = 1 WHERE id = $1`, [
+    caseId, ctx.userId,
+  ])
+  const caseApproval = await approve('case', caseId)
+  await tx.query(`UPDATE case_file SET state = 'approved', approval_id = $2, decided_at = now() WHERE id = $1`, [caseId, caseApproval])
+  const bankDetailVersionId = await insertRow(tx, 'bank_detail_version', {
+    tenant_id, participant_id: ids.participantId, scheme: 'iban', details_sealed: 'sealed', fingerprint,
+    masked: '•••• 3000', created_via: 'case', request_id: requestId, case_id: caseId, cooling_off_until: new Date(),
+  })
+  const providerId = await one(`SELECT id FROM provider_config WHERE kind = 'payout'`, [])
+  await tx.query(`UPDATE provider_config SET adapter = 'sandbox', webhook_secret_sealed = 'sealed' WHERE id = $1`, [providerId])
+  const payoutBatchId = await insertRow(tx, 'payout_batch', {
+    tenant_id, market_id: ids.marketId, provider_config_id: providerId, period_id: ids.periodId, total_minor: 100, currency: 'GBP',
+    prepared_by: ctx.userId,
+  })
+  await tx.query(
+    `INSERT INTO payout_batch_line (tenant_id, batch_id, participant_id, amount_minor, bank_detail_version_id) VALUES ($1, $2, $3, 100, $4)`,
+    [tenant_id, payoutBatchId, ids.participantId, bankDetailVersionId],
+  )
+  await tx.query(`UPDATE payout_batch SET state = 'reviewed', submitted_by = $2, submitted_at = now() WHERE id = $1`, [payoutBatchId, ctx.userId])
+  const batchApproval = await approve('payout_batch', payoutBatchId)
+  await tx.query(`UPDATE payout_batch SET state = 'approved', approval_id = $2, approved_at = now() WHERE id = $1`, [payoutBatchId, batchApproval])
+  const instructionId = randomUUID()
+  await insertRow(tx, 'payout_instruction', {
+    id: instructionId, tenant_id, batch_id: payoutBatchId, payee_participant_id: ids.participantId,
+    bank_detail_version_id: bankDetailVersionId, amount_minor: 100, currency: 'GBP', idempotency_key: instructionId,
+    signature: randomBytes(32), next_attempt_at: new Date(),
+  })
+  await tx.query(
+    `SELECT ledger_post($1, $2, 'payout_instructed', 'payout_instruction', $3, $4, $5, $6)`,
+    [ids.marketId, ids.periodId, instructionId, `instr:${instructionId}:instructed`, batchApproval, JSON.stringify([
+      { type: 'payee_payable', payee_participant_id: ids.participantId, debit_minor: '100', credit_minor: '0' },
+      { type: 'payout_in_transit', payee_participant_id: null, debit_minor: '0', credit_minor: '100' },
+    ])],
+  )
+  await tx.query(`UPDATE payout_batch SET state = 'instructing' WHERE id = $1`, [payoutBatchId])
+  await insertRow(tx, 'sandbox_provider_payment', {
+    tenant_id, provider_config_id: providerId, idempotency_key: instructionId, amount_minor: 100, currency: 'GBP',
+    provider_ref: `sbx_${instructionId}`,
+  })
+  await insertRow(tx, 'payout_exception', { tenant_id, provider_config_id: providerId, kind: 'unknown_reference', reference: 'sbx_unknown' })
+  await insertRow(tx, 'payout_hold', {
+    tenant_id, participant_id: ids.participantId, market_id: ids.marketId, reason: 'seed', placed_by: ctx.userId,
+  })
+  await insertRow(tx, 'tax_profile', {
+    tenant_id, participant_id: ids.participantId, residency: 'GB', entity_type: 'individual', valid_from: new Date(),
+    created_by: ctx.userId,
+  })
+  return { journalEntryId, bankDetailVersionId, payoutBatchId, instructionId }
 }
 
 export interface VendorSeed {

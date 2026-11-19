@@ -133,6 +133,12 @@ export function inScope(scope: MarketScope, marketId: string): boolean {
   return scope === 'all' || scope.has(marketId)
 }
 
+/** D-B4-20 review chip of a recorded provider: overdue once the date has passed, else due on the date; none without a date. */
+export function reviewChip(reviewDueOn: string | null, today: string): { readonly state: string; readonly label: string } | null {
+  if (reviewDueOn === null) return null
+  return reviewDueOn < today ? { state: 'lapsed', label: 'Review overdue' } : { state: 'scheduled', label: `Review due ${reviewDueOn}` }
+}
+
 /** Today's date in the browser (YYYY-MM-DD), for dates that cannot be in the future. */
 export function todayLocal(now: Date = new Date()): string {
   const pad = (value: number) => String(value).padStart(2, '0')

@@ -191,3 +191,85 @@ describe('UsersPage roles tab (SC-28 permission matrix)', () => {
     expect(within(dialog).getByRole('status').textContent).toBe('Changes from Tenant admin: adds Read compliance reports. removes Change tenant settings.')
   })
 })
+
+describe('UsersPage user drawer (D-B4-11)', () => {
+  const declaration = { id: 'd1', participant: { id: 'p-b', external_ref: 'DE-B', display_name: null }, relation: 'relative', declared_by: ME.user.id, declared_at: created, withdrawn_at: null }
+
+  beforeEach(() => {
+    navigation.search = ''
+    navigation.router.replace.mockReset()
+  })
+
+  it('opens the drawer by ?user= and lists declared related participants with withdraw', async () => {
+    const user = userEvent.setup()
+    navigation.search = 'user=u2'
+    const fetchMock = routes({
+      'GET /v1/users/u2/related-participants': () => ok([declaration]),
+      'POST /v1/users/u2/related-participants/d1/withdraw': () => ok({ ...declaration, withdrawn_at: created }),
+    })
+    renderAs(ME, <UsersPage />, fetchMock)
+    const drawer = await screen.findByRole('dialog', { name: 'Bob Builder' })
+    const section = within(drawer).getByTestId('related-participants')
+    expect(within(section).getByRole('heading', { name: 'Declared related participants' })).toBeTruthy()
+    expect(await within(section).findByText('DE-B')).toBeTruthy()
+    await user.click(within(section).getByRole('button', { name: 'Withdraw the declaration of DE-B' }))
+    await user.click(within(section).getByRole('button', { name: 'Withdraw declaration' }))
+    expect(callsTo(fetchMock, 'POST', '/v1/users/u2/related-participants/d1/withdraw')).toHaveLength(0)
+    await user.type(within(section).getByLabelText('Reason for withdrawing'), 'Not related')
+    await user.click(within(section).getByRole('button', { name: 'Withdraw declaration' }))
+    expect(await screen.findByText('Declaration of DE-B withdrawn.')).toBeTruthy()
+    expect(bodyOf(callsTo(fetchMock, 'POST', '/v1/users/u2/related-participants/d1/withdraw')[0]![1])).toEqual({ reason: 'Not related' })
+  })
+
+  it('declares a participant as a relative with an Idempotency-Key', async () => {
+    const user = userEvent.setup()
+    navigation.search = 'user=u2'
+    const fetchMock = routes({
+      'GET /v1/users/u2/related-participants': () => ok([]),
+      'GET /v1/participants': () => ok([{ id: 'p-b', external_ref: 'DE-B', display_name: null, market: { id: MARKET, code: 'DE' }, current_type: null, status: 'active' }]),
+      'POST /v1/users/u2/related-participants': () => ok(declaration, 201),
+    })
+    renderAs(ME, <UsersPage />, fetchMock)
+    const drawer = await screen.findByRole('dialog', { name: 'Bob Builder' })
+    expect(await within(drawer).findByText('No related participant declared.')).toBeTruthy()
+    await user.type(within(drawer).getByLabelText('Participant'), 'DE-B{Enter}')
+    await user.click(await within(drawer).findByRole('button', { name: /Choose DE-B/ }))
+    await user.selectOptions(within(drawer).getByLabelText('Relation'), 'relative')
+    await user.click(within(drawer).getByRole('button', { name: 'Declare' }))
+    expect(await screen.findByText('DE-B declared related.')).toBeTruthy()
+    const [, init] = callsTo(fetchMock, 'POST', '/v1/users/u2/related-participants')[0]!
+    expect(bodyOf(init)).toEqual({ participant_id: 'p-b', relation: 'relative' })
+    expect(headerOf(init, 'idempotency-key')).not.toBeNull()
+  })
+
+  it('shows no Withdraw on the signed-in user’s own declarations (the API refuses them)', async () => {
+    const own: UserView = { ...USERS[0]!, id: ME.user.id, email: ME.user.email, display_name: 'Ada Admin' }
+    navigation.search = `user=${ME.user.id}`
+    renderAs(ME, <UsersPage />, routes({ 'GET /v1/users': () => ok([own]), [`GET /v1/users/${ME.user.id}/related-participants`]: () => ok([declaration]) }))
+    const drawer = await screen.findByRole('dialog', { name: 'Ada Admin' })
+    expect(await within(drawer).findByText('DE-B')).toBeTruthy()
+    expect(within(drawer).queryByRole('button', { name: /Withdraw/ })).toBeNull()
+    expect(within(drawer).getByText('Declared')).toBeTruthy()
+    expect(within(drawer).getByText('Another user manager must withdraw your own declarations.')).toBeTruthy()
+  })
+
+  it('announces missing Declare fields in a focused error summary', async () => {
+    const user = userEvent.setup()
+    navigation.search = 'user=u2'
+    renderAs(ME, <UsersPage />, routes({ 'GET /v1/users/u2/related-participants': () => ok([]) }))
+    const drawer = await screen.findByRole('dialog', { name: 'Bob Builder' })
+    await within(drawer).findByText('No related participant declared.')
+    await user.click(within(drawer).getByRole('button', { name: 'Declare' }))
+    const summary = await within(drawer).findByRole('alert')
+    expect(within(summary).getByRole('link', { name: 'Choose the participant.' })).toBeTruthy()
+    expect(within(summary).getByRole('link', { name: 'Choose the relation.' })).toBeTruthy()
+    expect(document.activeElement).toBe(summary)
+  })
+
+  it('opens the drawer from the row action', async () => {
+    const user = userEvent.setup()
+    renderAs(ME, <UsersPage />, routes())
+    await user.click(await screen.findByRole('button', { name: 'Related participants of bob@acme.example' }))
+    expect(navigation.router.replace).toHaveBeenCalledWith('/settings/users?user=u2')
+  })
+})

@@ -1,5 +1,7 @@
 import { beforeAll, describe, expect, test } from 'vitest'
 import { closePoolsAfterAll, ownerRows, resetApiDb, testConfig } from '../test/helpers/index.js'
+import { bankVersionContext } from './lib/bank-crypto.js'
+import { open } from './lib/secret-box.js'
 import { assertSeedable, E2E_FIXTURE_PACK, seed, seedFixtureMarket, seedFixturePack, seedFixturePlanMarket } from './seed.js'
 
 closePoolsAfterAll()
@@ -31,8 +33,8 @@ describe('seed', () => {
 
     const markets = await ownerRows('SELECT code, state FROM market ORDER BY code')
 
-    expect(users).toHaveLength(24)
-    expect(credentials).toEqual([{ passwords: 24, factors: 2 }]) // written as their own users; only vendors have a factor
+    expect(users).toHaveLength(26)
+    expect(credentials).toEqual([{ passwords: 26, factors: 2 }]) // written as their own users; only vendors have a factor
     expect(users.filter((user) => user.realm === 'vendor')).toEqual([
       { email: 'operator@vendor.example', realm: 'vendor', mfa_enrolled: true },
       { email: 'operator2@vendor.example', realm: 'vendor', mfa_enrolled: true },
@@ -47,6 +49,7 @@ describe('seed', () => {
       { name: 'DPO', approved: true }, // privileged since B2 (privacy.manage): a second admin's approval
       { name: 'Executive read-only', approved: false },
       { name: 'Finance approver', approved: true },
+      { name: 'Finance approver', approved: true }, // finance2: B4 second approvals
       { name: 'Implementation consultant', approved: false },
       { name: 'Payout officer', approved: false }, // MFA required, but no privileged permission: no approval
       { name: 'Plan administrator', approved: false },
@@ -144,8 +147,9 @@ describe('seed', () => {
     const database = (await ownerRows<{ name: string }>('SELECT current_database() AS name'))[0]!.name
     await seed(testConfig({ NODE_ENV: 'test' }), undefined, () => undefined)
 
-    await seedFixturePlanMarket(database)
-    await seedFixturePlanMarket(database)
+    const { secretKey } = testConfig({ NODE_ENV: 'test' })
+    await seedFixturePlanMarket(database, secretKey)
+    await seedFixturePlanMarket(database, secretKey)
     const periods = await ownerRows<{ state: string; starts_at: Date; first: Date }>(
       `SELECT p.state, p.starts_at,
               (date_trunc('month', now() AT TIME ZONE 'Europe/Berlin') - interval '3 months') AT TIME ZONE 'Europe/Berlin' AS first
@@ -180,7 +184,18 @@ describe('seed', () => {
       `SELECT v.settings -> 'structure' -> 'markets' @> '[{"code": "DE"}]' AS has_de FROM tenant_setting_version v JOIN tenant t ON t.id = v.tenant_id
        WHERE t.slug = 'acme' AND v.effective_from <= $1`, [periods[0]!.starts_at],
     )).toEqual([{ has_de: true }])
-    await expect(seedFixturePlanMarket('nmp_e2e')).rejects.toThrow('not nmp_e2e')
+    // PLAN B4 section 6: contacts for notices and DE-A's labelled bank details, sealed for its version row.
+    expect(await ownerRows(`SELECT external_ref, contact FROM participant WHERE external_ref LIKE 'DE-%' ORDER BY 1`)).toEqual([
+      { external_ref: 'DE-A', contact: { email: 'de-a@example.test' } }, { external_ref: 'DE-B', contact: { email: 'de-b@example.test' } },
+      { external_ref: 'DE-C', contact: { email: 'de-c@example.test' } }, { external_ref: 'DE-K', contact: null },
+    ])
+    const [version] = await ownerRows<{ id: string; details_sealed: string; masked: string; created_via: string; cooling_off_until: Date }>(
+      'SELECT id, details_sealed, masked, created_via, cooling_off_until FROM bank_detail_version')
+    expect(version).toMatchObject({ masked: '•••• 3000', created_via: 'migration', cooling_off_until: periods[0]!.starts_at })
+    expect(JSON.parse(open(secretKey, version!.details_sealed, bankVersionContext(version!.id)))).toEqual({
+      scheme: 'iban', account_holder: 'DE-A E2E', iban: 'DE89370400440532013000',
+    })
+    await expect(seedFixturePlanMarket('nmp_e2e', secretKey)).rejects.toThrow('not nmp_e2e')
   })
 
   test('seeds only the local databases, with a fixed password only in nmp_dev and nmp_e2e', () => {
@@ -211,7 +226,7 @@ describe('seed', () => {
 
     expect(lines.filter((line) => line.startsWith('vendor TOTP: otpauth://'))).toHaveLength(2)
     expect(lines.some((line) => line.startsWith('password of the accounts created now: '))).toBe(true)
-    expect(lines.filter((line) => line.startsWith('acme: '))).toHaveLength(11)
+    expect(lines.filter((line) => line.startsWith('acme: '))).toHaveLength(12)
   })
 
   test('seeds only a server on this machine: Unix socket or loopback, never a remote host named like a local database', () => {

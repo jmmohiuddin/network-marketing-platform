@@ -1,7 +1,9 @@
 // Words and exact formatting of SC-01 / SC-02 / SC-43. Money stays a minor-unit string (orders/format moneyText).
+import { ApiError } from '../../lib/api'
 import { formatDateTime, formatDateTimeIn } from '../../lib/format'
 import type { Market } from '../../lib/markets'
-import { moneyText } from '../orders/format'
+import { decimal } from '../data/format'
+import { minorToDecimal, moneyText } from '../orders/format'
 import type { Blocker, PeriodRow, PeriodState, RunException, RunState } from './types'
 
 /** "Oct 1, 2026 – Oct 31, 2026" in the calendar's zone ([starts_at, ends_at): the end day is the one before ends_at). */
@@ -29,6 +31,12 @@ export function periodText(period: { readonly starts_at: string; readonly ends_a
 export function marketMoney(minor: string | null | undefined, market: Pick<Market, 'currency' | 'minor_unit'> | undefined): string {
   if (minor === null || minor === undefined) return '—'
   return market === undefined ? `${BigInt(minor).toLocaleString()} minor units` : moneyText(minor, market.currency, market.minor_unit)
+}
+
+/** The amount alone ("-26.00"), for a column whose header names the currency (BUG-097); minor units while unknown. */
+export function marketAmount(minor: string | null | undefined, market: Pick<Market, 'minor_unit'> | undefined): string {
+  if (minor === null || minor === undefined) return '—'
+  return market === undefined ? `${BigInt(minor).toLocaleString()} minor units` : decimal(minorToDecimal(minor, market.minor_unit))
 }
 
 /** A signed delta with an explicit "+" (never a judgement colour). */
@@ -82,6 +90,9 @@ export function canCalculate(period: Pick<PeriodRow, 'state' | 'blockers'>): boo
 
 const FINISHED = new Set<PeriodState>(['committed', 'paid', 'closed'])
 
+/** D-B4-24: Paid (and Closed) is finished like Committed everywhere a finished period is meant. */
+export const isFinished = (state: PeriodState): boolean => FINISHED.has(state)
+
 /**
  * The period whose next action the page offers: the oldest period past its cut-off that is not committed and is
  * covered by a plan version (the head of the calendar's chain; uncovered periods before a plan's start never block);
@@ -109,3 +120,19 @@ export const originLabel = (origin: string | null): string => (origin === null ?
 
 /** "/periods/<id>/runs/<run>/review": the SC-02 route of a run. */
 export const reviewPath = (periodId: string, runId: string): string => `/periods/${periodId}/runs/${runId}/review`
+
+// The RUN_SUPERSEDED reasons B4 added (commit gate, D-B4-02/09, OI-1); the older reasons keep the API's sentence.
+const SUPERSEDED_CAUSES: Readonly<Record<string, string>> = {
+  receivables_changed: 'A payee’s clawback receivable changed after this run was calculated, for example by a write-off',
+  adjustments_changed: 'A manual adjustment for this period was approved after this run was calculated',
+  origins_consumed: 'A restatement this run carries was already committed with another run',
+  settlement_missing: 'This run was calculated before the ledger existed',
+}
+
+/** 409 RUN_SUPERSEDED with its reason in words; any other error is returned unchanged. */
+export function supersededText(error: unknown): unknown {
+  if (!(error instanceof ApiError) || error.code !== 'RUN_SUPERSEDED') return error
+  const reason = (error.details as { reason?: unknown } | null)?.reason
+  const cause = typeof reason === 'string' && Object.hasOwn(SUPERSEDED_CAUSES, reason) ? SUPERSEDED_CAUSES[reason] : undefined
+  return cause === undefined ? error : new ApiError(error.status, error.code, `${cause}: run it again.`, error.details, error.requestId)
+}

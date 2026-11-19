@@ -95,8 +95,9 @@ describe('CasesPage (SC-06)', () => {
     expect(kpis.textContent).toContain('Open3') // 2 + 1 + 0
     expect(kpis.textContent).toContain('Waiting for decision3') // 1 + 0 + 2
     expect(kpis.textContent).toContain('Decided in 30 days5') // 4 + 0 + 1
-    expect((screen.getByRole('tab', { name: 'All cases 6' })).getAttribute('aria-selected')).toBe('true')
-    expect(screen.getByRole('tab', { name: 'Genealogy changes 3' })).toBeTruthy()
+    expect((screen.getByRole('tab', { name: 'All cases 6 undecided' })).getAttribute('aria-selected')).toBe('true')
+    expect(screen.getByRole('tab', { name: 'Genealogy changes 3 undecided' })).toBeTruthy() // BUG-107: says what it counts
+    expect(screen.getByText('Counts on the tabs are undecided cases: open, or waiting for a decision.')).toBeTruthy()
     expect(screen.queryByRole('tab', { name: /Duplicates/ })).toBeNull()
     expect(screen.queryByTestId('primary-action')).toBeNull()
   })

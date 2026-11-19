@@ -12,7 +12,8 @@ import { formatDateTime } from '../format'
 import { LoadFailure } from '../page-states'
 import { tableError, usePagedList } from '../resource'
 import { NOTE, SectionTitle } from '../ui'
-import { approvalOf, keyLabel, valueText } from './labels'
+import { approvalOf, keyLabel } from './labels'
+import { PolicyValue } from './policy-value'
 import type { StructureEntry, StructurePart, VersionChange, VersionDetail, VersionSummary } from './types'
 
 export const VERSIONS_PATH = '/v1/settings/versions'
@@ -91,10 +92,10 @@ function DiffItem({ change }: { readonly change: VersionChange }) {
       {'before' in change && (
         <div className="grid grid-cols-2 gap-space-sm pt-1">
           <div className="p-2 rounded bg-surface-container-lowest text-secondary line-through font-data-mono-sm text-data-mono-sm break-words">
-            <span className="sr-only">Before: </span>{valueText(change.key, change.before)}
+            <span className="sr-only">Before: </span><PolicyValue name={change.key} value={change.before} />
           </div>
           <div className="p-2 rounded bg-tertiary-container/15 text-tertiary font-data-mono-sm text-data-mono-sm font-semibold break-words">
-            <span className="sr-only">After: </span>{valueText(change.key, change.after)}
+            <span className="sr-only">After: </span><PolicyValue name={change.key} value={change.after} />
           </div>
         </div>
       )}

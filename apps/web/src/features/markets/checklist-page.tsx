@@ -19,13 +19,14 @@ import { useResource } from '../../lib/use-resource'
 import { LoadFailure } from '../admin/page-states'
 import { GateInspector } from './gate-inspector'
 import { GateTable } from './gate-table'
-import { ProviderDialog, WithdrawProviderDialog } from './provider-dialogs'
+import { ProviderDialog, ReviewDateDialog, WithdrawProviderDialog } from './provider-dialogs'
 import { DecisionDialog, RequestHistory, SignOffBar } from './sign-off'
-import type { Checklist, DocumentLimits, GoLiveRequest, ProviderRecord } from './types'
+import type { Checklist, ChecklistItem, DocumentLimits, GoLiveRequest, ProviderRecord } from './types'
 
 type Open =
   | { readonly kind: 'provider'; readonly providerKind: 'payout' | 'payment' }
   | { readonly kind: 'withdraw-provider'; readonly record: ProviderRecord }
+  | { readonly kind: 'review-provider'; readonly record: ProviderRecord }
   | { readonly kind: 'decision'; readonly decision: 'approve' | 'reject' | 'withdraw' }
 
 interface StripCardProps {
@@ -89,10 +90,13 @@ export function screeningRules(checklist: Checklist): string[] {
     .map((rule) => rule.title)
 }
 
-/** Why the user cannot record entries now, or null when they can. */
-function lockedReason(checklist: Checklist, canPrepare: boolean): string | null {
+/**
+ * Why the user cannot record the item now, or null when they can. Provider approvals stay open on a live market:
+ * its payouts need one recorded there (BUG-099, PLAN B4 W-B4-0), and the API takes them until a go-live request waits.
+ */
+function lockedReason(checklist: Checklist, canPrepare: boolean, item: ChecklistItem): string | null {
   if (!canPrepare) return 'Only users who prepare market launches record entries.'
-  if (checklist.market.state !== 'draft') return 'The market is live: its checklist is closed.'
+  if (checklist.market.state !== 'draft' && item.kind !== 'provider') return 'The market is live: its checklist is closed.'
   if (checklist.pending_request !== null) return 'Entries are locked while a go-live request waits for sign-off. Withdraw it to change them.'
   return null
 }
@@ -172,18 +176,20 @@ export function ChecklistPage({ marketId }: { readonly marketId: string }) {
         <GateInspector
           marketId={marketId}
           item={selected}
-          locked={lockedReason(data, canPrepare)}
+          locked={lockedReason(data, canPrepare, selected)}
           limits={limits}
           providers={providers}
           onRecorded={reload}
           onRecordProvider={(providerKind) => setOpen({ kind: 'provider', providerKind })}
           onWithdrawProvider={(record) => setOpen({ kind: 'withdraw-provider', record })}
+          onSetProviderReview={canPrepare ? (record) => setOpen({ kind: 'review-provider', record }) : null}
         />
       </div>
       <RequestHistory requests={history} />
       {pending !== null && <SignOffBar checklist={data} request={pending} onDecide={(decision) => setOpen({ kind: 'decision', decision })} />}
       {open?.kind === 'provider' && limits.data !== null && <ProviderDialog marketId={marketId} kind={open.providerKind} limits={limits.data} onClose={() => setOpen(null)} onSaved={reload} />}
       {open?.kind === 'withdraw-provider' && <WithdrawProviderDialog record={open.record} onClose={() => setOpen(null)} onSaved={reload} />}
+      {open?.kind === 'review-provider' && <ReviewDateDialog record={open.record} onClose={() => setOpen(null)} onSaved={reload} />}
       {open?.kind === 'decision' && pending !== null && (
         <DecisionDialog request={pending} decision={open.decision} marketCode={market.code} riskRules={screeningRules(data)} onClose={() => setOpen(null)} onDone={reload} />
       )}

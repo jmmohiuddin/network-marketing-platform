@@ -346,7 +346,8 @@ Source: S1 (sc_01) icons; keys that S1 does not draw take the S3/S6 icon.
 | orders | `receipt_long` |
 | cases | `rule_folder` |
 | payouts | `payments` |
-| finance | `account_balance` |
+| ledger (SC-33; S1 "Finance & Ledger" draws `account_balance_wallet`, a refused word, so the S1 header icon is used) | `account_balance` |
+| reconciliation (SC-34, under payouts; S1 draws one Payouts entry, B4 integrator choice) | `fact_check` |
 | compliance | `verified_user` |
 | imports (data) | `sync_alt` |
 | settings | `tune` |

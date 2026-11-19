@@ -112,6 +112,18 @@ describe('RunReviewPage (SC-02)', () => {
     expect(await within(dialog).findByText(/Who can decide it: Gil Gold \(gil@acme.example\)/)).toBeTruthy()
   })
 
+  it('words the B4 RUN_SUPERSEDED reasons in the commit dialog', async () => {
+    const fetchMock = routes(RUN, {
+      'POST /v1/runs/run-m2/commit': () => apiError(409, 'RUN_SUPERSEDED', 'A newer calculation or input applies to this period: run it again.', { reason: 'adjustments_changed', case_ids: ['c1'] }),
+    })
+    renderAs(FINANCE, <RunReviewPage periodId="per-m2" runId="run-m2" />, fetchMock)
+    await userEvent.click(await screen.findByRole('button', { name: 'Commit run' }))
+    const dialog = await screen.findByRole('dialog', { name: 'Commit run' })
+    await userEvent.click(within(dialog).getByRole('checkbox', { name: /Line amount 2400/ }))
+    await userEvent.click(within(dialog).getByRole('button', { name: /^Commit run/ }))
+    expect(await within(dialog).findByText('A manual adjustment for this period was approved after this run was calculated: run it again.')).toBeTruthy()
+  })
+
   it('gives the preparer Request commit (not Commit), then names who may commit', async () => {
     const preparer = adminMe({ ...ANALYST, permissions: [...ANALYST.permissions, 'run.commit'] })
     const fetchMock = routes(RUN, {
@@ -198,5 +210,64 @@ describe('RunReviewPage (SC-02)', () => {
   it('is not available without run.review', () => {
     renderAs(adminMe({ permissions: ['period.read'] }), <RunReviewPage periodId="per-m2" runId="run-m2" />, fetchByRoute({}))
     expect(screen.getByText(/Not found or not available/)).toBeTruthy()
+  })
+})
+
+describe('RunReviewPage B4 (D-B4-24, BUG-093)', () => {
+  const transitions = { 'GET /v1/runs/run-m2/transitions': () => json(200, { data: [], meta: { next_cursor: null } }) }
+
+  it('says "first run under plan version N" for the first run of version 1 (BUG-093)', async () => {
+    navigation.search = 'tab=changes'
+    renderAs(ANALYST, <RunReviewPage periodId="per-m2" runId="run-m2" />, routes(RUN, transitions))
+    expect(await screen.findByText('First run under plan version 1')).toBeTruthy()
+    expect(await screen.findByText('No position changed state in this first run under plan version 1.')).toBeTruthy()
+    expect(screen.queryByText(/not the first under a new plan version/)).toBeNull()
+  })
+
+  it('keeps "not the first" for a later run of the same version', async () => {
+    navigation.search = 'tab=changes'
+    const later = { ...REVIEW, comparison: { run_id: 'run-m3', period: { id: 'per-m3', starts_at: '2026-08-01T00:00:00.000Z', ends_at: '2026-09-01T00:00:00.000Z' } } }
+    renderAs(ANALYST, <RunReviewPage periodId="per-m2" runId="run-m2" />, routes(RUN, { ...transitions, 'GET /v1/runs/run-m2/review': () => ok(later) }))
+    expect((await screen.findAllByText('Unchanged')).length).toBeGreaterThan(0)
+    expect(screen.queryByText(/First run under plan version/)).toBeNull()
+    expect(await screen.findByText(/not the first under a new plan version/)).toBeTruthy()
+  })
+
+  it('hides Re-run for a Paid period and links the committed run to its journal entry', async () => {
+    const committed = { ...RUN, state: 'committed' as const, committed_at: '2026-10-03T10:00:00.000Z', journal_entry_id: 'je-1' }
+    renderAs(adminMe({ permissions: ['period.read', 'run.execute', 'run.review', 'ledger.read'] }), <RunReviewPage periodId="per-m2" runId="run-m2" />, routes(committed, {
+      'GET /v1/periods/per-m2': () => ok({ id: 'per-m2', calendar_id: 'cal1', market_id: 'm1', starts_at: '2026-09-01T00:00:00.000Z', ends_at: '2026-10-01T00:00:00.000Z', state: 'paid' }),
+    }))
+    const link = await screen.findByRole('link', { name: /Open the journal entry/ })
+    expect(link.getAttribute('href')).toBe('/ledger?market=m1&entry=je-1')
+    expect(screen.queryByRole('button', { name: 'Re-run' })).toBeNull()
+  })
+
+  it('does not claim a committed run without a journal entry had no lines', async () => {
+    const committed = { ...RUN, state: 'committed' as const, committed_at: '2026-10-03T10:00:00.000Z', journal_entry_id: null }
+    renderAs(adminMe({ permissions: ['period.read', 'run.review', 'ledger.read'] }), <RunReviewPage periodId="per-m2" runId="run-m2" />, routes(committed))
+    expect(await screen.findByText(/No journal entry was posted for this run: either no payee had a non-zero amount, or the run was committed before the ledger existed\./)).toBeTruthy()
+    expect(screen.queryByText(/had no lines/)).toBeNull()
+    expect(screen.queryByRole('link', { name: /Open the journal entry/ })).toBeNull()
+  })
+
+  it('says in the commit dialog that committing posts one journal entry', async () => {
+    renderAs(FINANCE, <RunReviewPage periodId="per-m2" runId="run-m2" />, routes(RUN))
+    await userEvent.click(await screen.findByRole('button', { name: 'Commit run' }))
+    const dialog = await screen.findByRole('dialog', { name: 'Commit run' })
+    expect(dialog.textContent).toContain('Committing posts one journal entry for this run’s payables and receivables.')
+  })
+
+  it('lists manual adjustment lines with a link to the adjustment cases of the payee position', async () => {
+    navigation.search = 'tab=adjustments'
+    const manual = { ...LINE, origin_type: 'manual', origin_id: 'orig-1', rule_key: 'manual_adjustment', amount_minor: '500' }
+    renderAs(adminMe({ permissions: ['period.read', 'run.review', 'case.adjustment.read'] }), <RunReviewPage periodId="per-m2" runId="run-m2" />, routes(RUN, {
+      'GET /v1/runs/run-m2/review': () => ok({ ...REVIEW, adjustments: [{ origin_type: 'manual', count: 1, amount_minor: '500' }] }),
+      'GET /v1/runs/run-m2/lines': () => json(200, { data: [manual], meta: { next_cursor: null } }),
+      'GET /v1/participants/par-b': () => ok({ id: 'par-b', external_ref: 'DE-B', display_name: null }),
+    }))
+    const link = await screen.findByRole('link', { name: 'Adjustment case' })
+    expect(link.getAttribute('href')).toBe('/cases?type=adjustment&subject_type=position&subject_id=pos-b')
+    expect(screen.getAllByText('Manual adjustment').length).toBeGreaterThan(0)
   })
 })

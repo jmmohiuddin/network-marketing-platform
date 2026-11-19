@@ -14,10 +14,13 @@ import {
 import { computeSnapshotJob } from '../../src/modules/cpl/index.js'
 import { PROTOTYPE_SETTINGS } from '../../src/modules/cpl/test-fixtures.js'
 import { rebuildNow } from '../../src/modules/gen/test-support.js'
+import { ACCOUNT_TYPES } from '../../src/modules/led/ledger.js'
 import { approvedMappingId, TINY_MAPPING, tinyFiles, upload } from '../../src/modules/imp/test-support.js'
 import { defaultModules } from '../../src/modules/index.js'
 import { apiKey, asKey, committedPeriod } from '../../src/modules/ord/test-support.js'
 import { activeType, CUSTOMER, DISTRIBUTOR, enrolled } from '../../src/modules/par/test-support.js'
+import { batchDispatchJob, sandboxAdapter } from '../../src/modules/pay/dispatch.js'
+import { bankVersion, IBAN, setSettings, WEBHOOK_SECRET, webhook } from '../../src/modules/pay/test-support.js'
 import { GOLDEN_EXPECTED, GOLDEN_INPUT, packRules, personal, putRule, revisionOf } from '../../src/modules/pln/test-support.js'
 import { supportScopePermission } from '../../src/modules/support/index.js'
 import {
@@ -58,6 +61,8 @@ const B2_SETTINGS = {
   'orders.attribution_precedence': ['link', 'code', 'servicing'],
   'orders.new_buyer_type': CUSTOMER_TYPE,
 }
+/** B4 settings without an approver (D-B4-18). */
+const B4_SETTINGS = { 'payouts.dormant_after_days': 30 }
 
 /** Tenant A's objects, by the names the route cases use. */
 export interface Targets {
@@ -130,6 +135,19 @@ export interface Targets {
   readonly simulation: string
   /** The restatement of the committed period (its case is submitted). */
   readonly restatement: string
+  /** B4: the run market's sandbox payout provider, its approved and dispatched batch, an open exception (unknown reference). */
+  readonly payoutProvider: string
+  readonly payoutBatch: string
+  readonly payoutException: string
+  /** A payee of the batch with a bank-detail version and request, a tax profile and an active hold. */
+  readonly payoutPayee: string
+  readonly payoutHold: string
+  /** B4 (D-B4-11): the invited user's declared relative, the root participant. */
+  readonly relatedParty: string
+  /** B4 LED: a ledger account and journal entry of the run market, and a journal export of the first committed period. */
+  readonly ledgerAccount: string
+  readonly journalEntry: string
+  readonly journalExport: string
   /** Tenant B's slug: tenant A's credentials are tried against it. */
   readonly otherSlug: string
 }
@@ -158,7 +176,7 @@ async function send(app: FastifyInstance, status: number, what: string, options:
 }
 
 async function saveSettings(app: FastifyInstance, owner: TestUser): Promise<void> {
-  const values = { ...PROTOTYPE_SETTINGS, 'privacy.breach_contacts': [BREACH_CONTACT], ...B2_SETTINGS }
+  const values = { ...PROTOTYPE_SETTINGS, 'privacy.breach_contacts': [BREACH_CONTACT], ...B2_SETTINGS, ...B4_SETTINGS }
   let version = await latestSettingsVersion(owner.tenantId!)
   for (const [key, value] of Object.entries(values)) {
     const headers = { 'if-match': `"${version}"` }
@@ -481,6 +499,71 @@ async function seedCompensation(app: FastifyInstance, w: World, owner: TestUser)
   }
 }
 
+/**
+ * PLAN B4 6: payout settings of the run market (approved versions in force now: an API change request cannot be dated
+ * before its approval), bank details for its payees, a sandbox payout provider, a batch prepared
+ * and submitted by the owner, approved by a Finance approver and dispatched, an exception (an event for an unknown
+ * reference), and on a paid payee a hold, a tax profile and a bank-detail request.
+ */
+async function seedPayouts(app: FastifyInstance, a: TestTenant, owner: TestUser, w: World) {
+  const tenantId = a.id
+  const finance = await createSignedInUser({ tenantId, roles: ['Finance approver'], stepUp: true })
+  await setSettings({ tenant: a, admin: owner, finance }, {
+    'payouts.market_policy': { [w.marketId]: { minimum_payout_minor: '1', tax_profile_required: false } },
+    'payouts.bank_detail_cooling_off_hours': 0,
+  })
+  for (const { id } of await ownerRows<{ id: string }>('SELECT id FROM participant WHERE market_id = $1', [w.marketId])) await bankVersion(tenantId, id)
+  const provider = await send(app, 201, 'payout provider', {
+    method: 'POST', url: '/v1/provider-configs', as: owner, idempotencyKey: true,
+    body: {
+      market_id: w.marketId, kind: 'payout', provider: 'Sandbox payouts', approved_description: 'Approved for the run market', approved_at: '2026-10-01',
+      approval_document_id: await document(app, owner), funds_holder: 'Sandbox bank',
+    },
+  })
+  const providerId = provider.data.id as string
+  await send(app, 200, 'adapter', {
+    method: 'PUT', url: `/v1/provider-configs/${providerId}/adapter`, as: owner, body: { adapter: 'sandbox', webhook_secret: WEBHOOK_SECRET },
+  })
+  const batch = await send(app, 201, 'payout batch', {
+    method: 'POST', url: '/v1/payout-batches', as: owner, body: { market_id: w.marketId, provider_config_id: providerId }, idempotencyKey: true,
+  })
+  const batchId = batch.data.id as string
+  await send(app, 200, 'batch submit', { method: 'POST', url: `/v1/payout-batches/${batchId}/submit`, as: owner, body: {}, idempotencyKey: true })
+  await send(app, 200, 'batch approve', { method: 'POST', url: `/v1/payout-batches/${batchId}/approve`, as: finance, body: {}, idempotencyKey: true })
+  await runQueuedJobs(batchDispatchJob({ adapter: sandboxAdapter }))
+  expectStatus(await webhook(app, providerId, { type: 'payout.settled', provider_ref: 'canary-unknown', amount_minor: '1', currency: 'EUR' }), 200, 'webhook')
+  const [exception] = await ownerRows<{ id: string }>('SELECT id FROM payout_exception WHERE provider_config_id = $1', [providerId])
+  const [line] = await ownerRows<{ participant_id: string }>('SELECT participant_id FROM payout_batch_line WHERE batch_id = $1 LIMIT 1', [batchId])
+  if (exception === undefined || line === undefined) throw new Error('seed: the payout batch has no line or the webhook made no exception')
+  const payee = line.participant_id
+  const hold = await send(app, 201, 'hold', {
+    method: 'POST', url: `/v1/payees/${payee}/holds`, as: owner, body: { market_id: w.marketId, reason }, idempotencyKey: true,
+  })
+  await send(app, 200, 'tax profile', {
+    method: 'PUT', url: `/v1/participants/${payee}/tax-profile`, as: owner, body: { residency: 'NL', tax_id: 'NL123456789B01' }, idempotencyKey: true,
+  })
+  await send(app, 201, 'bank-detail request', {
+    method: 'POST', url: `/v1/participants/${payee}/bank-detail-requests`, as: owner,
+    body: { scheme: 'iban', account_holder: 'Canary Holder', iban: IBAN }, idempotencyKey: true,
+  })
+  return { payoutProvider: providerId, payoutBatch: batchId, payoutException: exception.id, payoutPayee: payee, payoutHold: hold.data.id as string }
+}
+
+/** PLAN B4 6 (LED): every account type of the run market mapped to a GL code, and the first period exported. */
+async function seedLedger(app: FastifyInstance, owner: TestUser, marketId: string, periodId: string) {
+  for (const type of ACCOUNT_TYPES) {
+    await send(app, 200, `gl mapping ${type}`, { method: 'PUT', url: `/v1/ledger/gl-mappings/${marketId}/${type}`, as: owner, body: { gl_code: `GL-${type}` } })
+  }
+  const exported = await send(app, 201, 'journal export', {
+    method: 'POST', url: '/v1/ledger/journal-exports', as: owner, body: { period_id: periodId }, idempotencyKey: true,
+  })
+  const [entry] = await ownerRows<{ id: string; account_id: string }>(
+    'SELECT e.id, x.account_id FROM journal_entry e JOIN posting x ON x.entry_id = e.id WHERE e.market_id = $1 LIMIT 1', [marketId],
+  )
+  if (entry === undefined) throw new Error('seed: the run market has no journal entry')
+  return { ledgerAccount: entry.account_id, journalEntry: entry.id, journalExport: exported.data.id as string }
+}
+
 async function latestSettingsVersion(tenantId: string): Promise<number> {
   const [row] = await ownerRows<{ version: number }>('SELECT max(version) AS version FROM tenant_setting_version WHERE tenant_id = $1', [tenantId])
   return row!.version
@@ -511,10 +594,17 @@ export async function seedTenants(app: FastifyInstance): Promise<Seeded> {
   const genealogy = await seedPeopleAndGenealogy(app, a, owner, world)
   const orders = await seedOrders(app, a, owner, genealogy.peopleMarket)
   const compensation = await seedCompensation(app, world, owner)
+  const payouts = await seedPayouts(app, a, owner, world)
+  const ledger = await seedLedger(app, owner, world.marketId, compensation.period)
+  const related = await send(app, 201, 'related party', {
+    method: 'POST', url: `/v1/users/${people.user}/related-participants`, as: owner, idempotencyKey: true,
+    body: { participant_id: genealogy.participant, relation: 'relative' },
+  })
   const freeDocument = await document(app, owner)
   const targets: Targets = {
     tenant: a.id, email: owner.email, ...people, ...imports, ...snapshot, export: exported.data.id as string, supportSession,
-    market: MARKET_CODE, ...structure, changeRequest, ...launch, ...integrations, ...genealogy, ...orders, ...compensation, freeDocument,
+    market: MARKET_CODE, ...structure, changeRequest, ...launch, ...integrations, ...genealogy, ...orders, ...compensation, ...payouts, ...ledger,
+    relatedParty: related.data.id as string, freeDocument,
     settingsVersion: await latestSettingsVersion(a.id), otherSlug: b.slug,
   }
   return { a, b, owner, consultant, vendor, targets }
@@ -533,6 +623,8 @@ export function phantomOf(targets: Targets): Targets {
     positionRef: `phantom-${id()}`, childPosition: id(), customer: id(), agreementVersion: id(), duplicateCase: id(), order: id(),
     heldEvent: id(), lateTransaction: id(), connector: id(), plan: id(), activeVersion: id(), golden: id(), guardrailDecision: id(),
     compMarket: id(), compCalendar: id(), period: id(), run: id(), resultLine: id(), payee: id(), simulation: id(), restatement: id(),
+    payoutProvider: id(), payoutBatch: id(), payoutException: id(), payoutPayee: id(), payoutHold: id(), relatedParty: id(),
+    ledgerAccount: id(), journalEntry: id(), journalExport: id(),
   }
 }
 

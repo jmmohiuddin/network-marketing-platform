@@ -1,16 +1,17 @@
 import { randomUUID } from 'node:crypto'
 import type { Tx } from '@nmp/db'
-import { ENGINE_VERSION, EngineError, run as calculate, type RunInput, type RunOutput } from '@nmp/engine'
+import { ENGINE_VERSION, EngineError, run as calculate, type Receivable, type RunInput, type RunOutput } from '@nmp/engine'
 import { z } from 'zod'
 import { recordAudit } from '../../lib/audit.js'
 import { runInTenant, SYSTEM_ACTOR_ID } from '../../lib/db.js'
 import { ApiError } from '../../lib/errors.js'
 import { defineTenantJob, enqueue, type JobContext, type TenantJob } from '../../lib/jobs.js'
+import { manualOrigins } from './adjustment.js'
 import { engineSettings, storedInput } from './inputs.js'
 import { consumeLate, LATE_ITEMS_OF_CALENDAR, restatementOrigins } from './late.js'
 import { loadPeriod, lockRunKey, periodInScope, settingsVersionAt } from './period.js'
 import { assertRunnable } from './preflight.js'
-import { insertLines, insertState, linesHash, outputsOf, RUN_LINES, totalsOf } from './results.js'
+import { insertLines, insertSettlement, insertState, linesHash, outputsOf, RUN_LINES, totalsOf } from './results.js'
 import { buildSnapshot, chainInputs, planFor, rowCounts, SnapshotCorrupt, storeSnapshot } from './snapshot.js'
 
 // D-B3-09: a run request inserts a queued run under the period's run lock; the worker loads and stores the snapshot
@@ -111,8 +112,15 @@ async function lockedRun(tx: Tx, runId: string): Promise<RunRow> {
   return rows[0]!
 }
 
+/** D-B4-07: the market's positive clawback receivables now; the engine nets the run's positive gross against them. */
+async function receivablesOf(tx: Tx, marketId: string): Promise<Receivable[]> {
+  const { rows } = await tx.query<{ participant_id: string; amount_minor: string }>(
+    'SELECT participant_id, amount_minor::text FROM led_receivable_balances($1)', [marketId])
+  return rows.map((row) => ({ participantId: row.participant_id, amountMinor: BigInt(row.amount_minor) }))
+}
+
 /**
- * tx A: the run's input. A queued run gets its snapshot (late and restatement origins included) stored and turns
+ * tx A: the run's input. A queued run gets its snapshot (late, restatement and manual origins, receivables) stored and turns
  * running; a running run (a retried job) resumes from its stored snapshot. null when the run is no longer pending.
  */
 export async function prepareRun(tx: Tx, runId: string): Promise<RunInput | null> {
@@ -124,8 +132,9 @@ export async function prepareRun(tx: Tx, runId: string): Promise<RunInput | null
   const settings = await engineSettings(tx, row.settings_version_id)
   const chain = await chainInputs(tx, period, plan)
   const late = await consumeLate(tx, runId, period, settings.roundingMode)
-  const adjustments = [...late.origins, ...(await restatementOrigins(tx, period))]
-  const loaded = await buildSnapshot(tx, period, { snapshotId: randomUUID(), chain, adjustments })
+  const adjustments = [...late.origins, ...(await restatementOrigins(tx, period)), ...(await manualOrigins(tx, period.id))]
+  const receivables = await receivablesOf(tx, period.market_id)
+  const loaded = await buildSnapshot(tx, period, { snapshotId: randomUUID(), chain, adjustments, receivables })
   await storeSnapshot(tx, loaded, { periodId: period.id, priorRunId: chain.priorRunId, rowCounts: rowCounts(loaded, late.itemIds) })
   await tx.query(
     `UPDATE run SET state = 'running', snapshot_id = $2, started_at = now(), progress = 'Calculating' WHERE id = $1`,
@@ -135,13 +144,17 @@ export async function prepareRun(tx: Tx, runId: string): Promise<RunInput | null
   return { plan, settings, snapshot: loaded.snapshot }
 }
 
-/** tx B: lines, state rows and the flip (Σ lines = totals.gross_minor, checked by the run guard); older calculated run discarded. */
+/**
+ * tx B: lines, state rows, the per-payee settlement (D-B4-07) and the flip (Σ lines = totals.gross_minor, checked by the
+ * run guard); older calculated run discarded.
+ */
 export async function finishRun(tx: Tx, runId: string, output: RunOutput): Promise<void> {
   const row = await lockedRun(tx, runId)
   if (row.state !== 'running') return
   const period = await loadPeriod(tx, row.period_id)
   await insertLines(tx, RUN_LINES, runId, output.lines)
   await insertState(tx, runId, output, period.market_id)
+  await insertSettlement(tx, runId, output.payees)
   // Restatement items not yet covered: a restatement submitted after the item's decision counted its order or event
   // (the sandbox refuses undecided items), so once approved or applied the item needs no reviewer attention.
   const { rows: skipped } = await tx.query<{ id: string }>(

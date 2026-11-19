@@ -14,7 +14,9 @@ import { usePagedList, type PagedList } from '../admin/resource'
 import { NOTE } from '../admin/ui'
 import { ApiKeysTab } from './api-keys-tab'
 import { ConnectorsTab } from './connectors-tab'
+import type { ProviderRecord } from '../markets/types'
 import { HealthTab } from './health-tab'
+import { PayoutProvidersTab } from './payout-providers-tab'
 import { failingEndpointCount, usableKeyCount } from './format'
 import { CreateServiceAccountDialog } from './key-dialogs'
 import { CONNECTORS_PATH, SERVICE_ACCOUNTS_PATH, WEBHOOK_ENDPOINTS_PATH, type Connector, type IssuedSecret, type ServiceAccount, type WebhookEndpoint } from './types'
@@ -48,14 +50,26 @@ function IntegrationKpis({ accounts, endpoints }: { readonly accounts: PagedList
   )
 }
 
-const HEADER_SUMMARY = 'API keys for the systems that read your data, webhooks that tell your systems when something happens, and the storefronts that send orders.'
+const HEADER_SUMMARY = 'API keys for the systems that read your data, webhooks that tell your systems when something happens, the storefronts that send orders and the payout providers that pay participants.'
 
-/** integration.read without integration.manage (Commission analyst): the sync health tab only (PLAN B2 2.7). */
+/** integration.read without integration.manage (Commission analyst): sync health (PLAN B2 2.7) and the payout providers, read-only (PLAN B4 2.3). */
 function HealthOnlyPage() {
+  const payoutProviders = useResource<readonly ProviderRecord[]>('/v1/provider-configs', { kind: 'payout' })
+  const tabs = [
+    { id: 'health', label: 'Sync health' },
+    { id: 'payout-providers', label: 'Payout providers', ...(payoutProviders.data === null ? {} : { count: payoutProviders.data.length }) },
+  ]
+  const [tab, selectTab] = useTabParam(tabs)
   return (
     <>
-      <PageHeader title="Integrations" summary="How current the orders from each storefront and API source are." />
-      <HealthTab />
+      <PageHeader title="Integrations" summary="How current the orders from each storefront and API source are, and the payout providers that pay participants." />
+      <div>
+        <Tabs label="Integrations" idPrefix={ID_PREFIX} tabs={tabs} selected={tab} onSelect={selectTab} />
+        <TabPanel idPrefix={ID_PREFIX} tabId={tab}>
+          {tab === 'health' && <HealthTab />}
+          {tab === 'payout-providers' && <PayoutProvidersTab providers={payoutProviders} />}
+        </TabPanel>
+      </div>
     </>
   )
 }
@@ -63,7 +77,7 @@ function HealthOnlyPage() {
 /**
  * SC-13 Integrations (FR-IAM-006, FR-INT-001, FR-ORD-002, FR-INT-002; PLAN B1 5, B2 5): public API keys of service
  * accounts, webhook subscriptions with their deliveries, storefront connectors and sync health. integration.manage;
- * minting, rotating and revoking ask for step-up. Holders of integration.read alone see sync health only.
+ * minting, rotating and revoking ask for step-up. Holders of integration.read alone see sync health and payout providers.
  */
 export function IntegrationsPage() {
   const { can } = useSession()
@@ -76,12 +90,14 @@ function ManagedIntegrationsPage() {
   const accounts = usePagedList<ServiceAccount>(SERVICE_ACCOUNTS_PATH)
   const endpoints = usePagedList<WebhookEndpoint>(WEBHOOK_ENDPOINTS_PATH)
   const connectors = useResource<readonly Connector[]>(CONNECTORS_PATH)
+  const payoutProviders = useResource<readonly ProviderRecord[]>('/v1/provider-configs', { kind: 'payout' })
   const [dialog, setDialog] = useState<PageDialog | null>(null)
   const known = (list: PagedList<unknown>) => !list.loading && list.error === null && !paged(list)
   const tabs = [
     { id: 'api-keys', label: 'Public API keys', ...(known(accounts) ? { count: accounts.rows.length } : {}) },
     { id: 'webhooks', label: 'Webhook subscriptions', ...(known(endpoints) ? { count: endpoints.rows.length } : {}) },
     { id: 'connectors', label: 'Storefront connectors', ...(connectors.data === null ? {} : { count: connectors.data.length }) },
+    { id: 'payout-providers', label: 'Payout providers', ...(payoutProviders.data === null ? {} : { count: payoutProviders.data.length }) },
     { id: 'health', label: 'Sync health' },
   ]
   const [tab, selectTab] = useTabParam(tabs)
@@ -110,6 +126,7 @@ function ManagedIntegrationsPage() {
           {tab === 'api-keys' && <ApiKeysTab accounts={accounts} onChanged={accounts.reload} />}
           {tab === 'webhooks' && <WebhooksTab endpoints={endpoints} onChanged={endpoints.reload} />}
           {tab === 'connectors' && <ConnectorsTab connectors={connectors} adding={dialog?.kind === 'connector'} onAddClosed={close} />}
+          {tab === 'payout-providers' && <PayoutProvidersTab providers={payoutProviders} />}
           {tab === 'health' && <HealthTab />}
         </TabPanel>
       </div>

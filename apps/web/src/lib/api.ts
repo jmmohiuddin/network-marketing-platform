@@ -49,8 +49,12 @@ export function newIdempotencyKey(): string {
 export type Method = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
 
 export interface RequestOptions {
-  /** Sent as JSON; a FormData body (multipart upload) is sent as is. */
+  /** Sent as JSON; a FormData body (multipart upload), or a string body with `contentType`, is sent as is. */
   readonly body?: unknown
+  /** Content-Type of a string body sent as is (a CSV upload), instead of JSON. */
+  readonly contentType?: string
+  /** 'blob': a 2xx body is returned in `data` as a Blob (a CSV download), not read as the JSON envelope. */
+  readonly responseType?: 'blob'
   readonly query?: Readonly<Record<string, string | number | boolean | null | undefined>>
   /**
    * Creating POSTs: one key per user action (newIdempotencyKey() when the action starts), kept in the
@@ -101,13 +105,13 @@ function headersFor(method: Method, options: RequestOptions): Headers {
   const headers = new Headers({ Accept: 'application/json', ...options.headers })
   if (!SAFE_METHODS.has(method)) headers.set(CSRF_HEADER, CSRF_VALUE)
   if (options.idempotencyKey !== undefined) headers.set('Idempotency-Key', options.idempotencyKey)
-  if (options.body !== undefined && !(options.body instanceof FormData)) headers.set('Content-Type', 'application/json')
+  if (options.body !== undefined && !(options.body instanceof FormData)) headers.set('Content-Type', options.contentType ?? 'application/json')
   return headers
 }
 
-function bodyOf(body: unknown): BodyInit | undefined {
+function bodyOf({ body, contentType }: RequestOptions): BodyInit | undefined {
   if (body === undefined) return undefined
-  return body instanceof FormData ? body : JSON.stringify(body)
+  return body instanceof FormData || contentType !== undefined ? (body as BodyInit) : JSON.stringify(body)
 }
 
 // null: empty body (204); undefined: not JSON (a proxy error page, for example).
@@ -141,12 +145,15 @@ async function send<T>(fetchImpl: typeof fetch, method: Method, path: string, op
   let response: Response
   try {
     response = await fetchImpl(urlOf(path, options.query), {
-      method, headers: headersFor(method, options), body: bodyOf(options.body),
+      method, headers: headersFor(method, options), body: bodyOf(options),
       credentials: 'same-origin', signal: options.signal,
     })
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') throw error
     throw new ApiError(0, 'NETWORK_ERROR', 'The request did not reach the service.')
+  }
+  if (response.ok && options.responseType === 'blob') {
+    return { data: (await response.blob()) as T, meta: {}, status: response.status, headers: response.headers }
   }
   const body = await readJson(response)
   if (!response.ok) throw errorOf(response, body)

@@ -220,7 +220,7 @@ describe('POST /v1/runs/:id/request-commit and /commit (FR-COMP-006)', () => {
     }))
   })
 
-  test('AC-COMP6-1 / T-B3-23: effects of a commit, idempotent replay, a never-decided late item, no journal entry', async () => {
+  test('AC-COMP6-1 / T-B3-23: effects of a commit, idempotent replay, a never-decided late item, the run\'s journal entry', async () => {
     const { w, orders } = await ts10World()
     const first = await calculate(app, w, w.periods[0]!.id)
     await commit(app, w, first)
@@ -232,7 +232,9 @@ describe('POST /v1/runs/:id/request-commit and /commit (FR-COMP-006)', () => {
     const committed = await commitAs(runId, w.finance, [], key)
 
     expect(committed.statusCode).toBe(200)
-    expect(committed.json().data).toMatchObject({ run_id: runId, state: 'committed', period_id: w.periods[1]!.id, totals: { gross_minor: expect.any(String) } })
+    expect(committed.json().data).toMatchObject({
+      run_id: runId, state: 'committed', period_id: w.periods[1]!.id, totals: { gross_minor: expect.any(String) }, journal_entry_id: expect.any(String),
+    })
     expect((await commitAs(runId, w.finance, [], key)).headers['idempotent-replayed']).toBe('true')
     expect((await commitAs(runId, w.finance)).json().error.code).toBe('RUN_NOT_CALCULATED')
     expect(await ownerRows(`SELECT 1 FROM period WHERE id = $1 AND state = 'committed' AND committed_run_id = $2`, [w.periods[1]!.id, runId])).toHaveLength(1)
@@ -244,7 +246,8 @@ describe('POST /v1/runs/:id/request-commit and /commit (FR-COMP-006)', () => {
     expect(consumed.json().data).toEqual([expect.objectContaining({ id: late, consumed_by_run_id: runId, consumed_by_period_id: w.periods[1]!.id })])
     expect(await ownerRows(`SELECT 1 FROM adjustment_origin WHERE run_id = $1 AND consumed_run_id = $1`, [runId])).toHaveLength(1)
     expect(await ownerRows(`SELECT payload FROM outbox_event WHERE topic = 'run.committed' AND tenant_id = $1 AND key = $2`, [w.tenantId, runId])).toHaveLength(1)
-    expect(await ownerRows(`SELECT 1 FROM pg_tables WHERE tablename = 'journal_entry'`)).toHaveLength(0)
+    // D-B4-02: one entry per committed run (posting details in posting.test.ts).
+    expect(await ownerRows('SELECT id FROM journal_entry WHERE origin_id = $1', [runId])).toEqual([{ id: committed.json().data.journal_entry_id }])
     // The next period's run does not adjust the consumed item again (AC-COMP10-1).
     const next = await calculate(app, w, w.periods[2]!.id)
     expect((await linesOf(next)).filter((l) => l.origin !== null)).toEqual([])

@@ -75,17 +75,16 @@ describe('admin format helpers', () => {
     for (const writeOnly of ['participant.manage', 'servicing.manage', 'late.manage', 'privacy.manage']) expect(supportScopeLabel(writeOnly)).toBe(writeOnly)
   })
 
-  it('carries the B2 base-role permissions (permissions.ts BASE_ROLES)', () => {
-    expect(BASE_ROLE_PERMISSIONS['Support agent']).toEqual([
-      'participant.read', 'participant.manage', 'genealogy.read', 'case.genealogy.read', 'case.genealogy.create',
-      'case.duplicate.read', 'case.duplicate.create', 'servicing.manage', 'order.read',
-    ])
-    expect(BASE_ROLE_PERMISSIONS.DPO).toEqual(['compliance.read', 'audit.read', 'participant.unmask', 'participant.read', 'privacy.manage'])
-    expect(BASE_ROLE_PERMISSIONS['Compliance officer']).toContain('participant.terminate')
-    expect(BASE_ROLE_PERMISSIONS['Tenant admin']).toEqual(expect.arrayContaining(['participant.read', 'order.read', 'product.manage', 'integration.read']))
-    expect(BASE_ROLE_PERMISSIONS['Commission analyst']).toContain('late.manage')
-    expect(BASE_ROLE_PERMISSIONS['Payout officer']).toEqual(['participant.unmask', 'participant.read'])
-    expect(BASE_ROLE_PERMISSIONS['Finance approver']).toEqual(expect.arrayContaining(['participant.read', 'order.read']))
+  it('carries the API base roles and labels every permission (apps/api/src/lib/permissions.ts)', async () => {
+    const { BASE_ROLES, PERMISSIONS } = await import('../../../../api/src/lib/permissions')
+    expect(BASE_ROLE_PERMISSIONS).toEqual(Object.fromEntries(BASE_ROLES.map((role) => [role.name, role.permissions])))
+    expect(PERMISSIONS.filter((permission) => permissionLabel(permission) === permission)).toEqual([])
+  })
+
+  it('names the read-only B4 support areas (PLAN B4 section 2.6)', () => {
+    expect(['ledger.read', 'payout.read', 'case.adjustment.read', 'case.write_off.read', 'case.bank_detail.read', 'case.returned_payment.read'].map(supportScopeLabel))
+      .toEqual(['Ledger', 'Payout batches and reconciliation', 'Adjustment cases', 'Write-off cases', 'Bank-detail cases', 'Returned-payment cases'])
+    expect(supportScopeLabel('payout.approve')).toBe('payout.approve')
   })
 
   it('BUG-048: never offers compensation plans as a support area', () => {

@@ -59,6 +59,19 @@ describe('api client requests', () => {
     expect(requestHeaders(fetchMock).get('Idempotency-Key')).toBe('k-1')
   })
 
+  it('sends a string body with its content type and returns a blob answer as data; errors stay JSON', async () => {
+    const csv = new Response('end_to_end_id\ni1\n', { status: 200, headers: { 'content-type': 'text/csv' } })
+    const fetchMock = fetchReturning(ok({ applied: 1 }), csv, apiError(422, 'REPORT_INVALID'))
+    const { api } = client(fetchMock)
+    await api.post('/v1/reports', 'a,b\n1,2\n', { contentType: 'text/csv' })
+    expect(requestInit(fetchMock).body).toBe('a,b\n1,2\n')
+    expect(requestHeaders(fetchMock).get('Content-Type')).toBe('text/csv')
+    const file = await api.post<Blob>('/v1/files', undefined, { responseType: 'blob', headers: { Accept: 'text/csv' } })
+    expect(await file.data.text()).toBe('end_to_end_id\ni1\n')
+    expect(requestHeaders(fetchMock, 1).get('Accept')).toBe('text/csv')
+    expect((await caught(api.post('/v1/files', undefined, { responseType: 'blob' }))).code).toBe('REPORT_INVALID')
+  })
+
   it('returns data null for 204 No Content', async () => {
     const { api } = client(fetchReturning(noContent()))
     const result = await api.delete('/v1/auth/sessions/current')

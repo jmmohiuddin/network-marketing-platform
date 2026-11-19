@@ -3,6 +3,7 @@
 import { documentBody } from '../../src/modules/aud/test-support.js'
 import { multipartBody, TINY_MAPPING, tinyFiles } from '../../src/modules/imp/test-support.js'
 import { PROTOTYPE_SETTINGS } from '../../src/modules/cpl/test-fixtures.js'
+import { IBAN } from '../../src/modules/pay/test-support.js'
 import { GOLDEN_EXPECTED, GOLDEN_INPUT, personal } from '../../src/modules/pln/test-support.js'
 import type { CallOptions } from '../helpers/index.js'
 import { DRAFT_MARKET_CODE, DRAFT_VERSION, PACK, PASSWORD, RECORDABLE_ITEM, RULE_KEY, STATE_ITEM, SUPPORT_SCOPE, type Targets } from './seed.js'
@@ -410,6 +411,67 @@ export const ROUTE_CASES: Readonly<Record<string, RouteCase>> = {
   'GET /v1/simulations/:id/payees': { ...object('tenant', (t) => get(`/v1/simulations/${t.simulation}/payees`)), inSession: 403 },
   'GET /v1/restatements/:id': object('tenant', (t) => get(`/v1/restatements/${t.restatement}`)),
   'GET /v1/restatements/:id/lines': object('tenant', (t) => get(`/v1/restatements/${t.restatement}/lines`)),
+  // IAM B4 (D-B4-11): tenant A's user names no user in tenant B.
+  'GET /v1/users/:id/related-participants': object('tenant', (t) => get(`/v1/users/${t.user}/related-participants`)),
+  'POST /v1/users/:id/related-participants': object('tenant', (t) =>
+    json('POST', `/v1/users/${t.user}/related-participants`, { participant_id: t.participant, relation: 'relative' }, true)),
+  'POST /v1/users/:id/related-participants/:rid/withdraw': object('tenant', (t) =>
+    json('POST', `/v1/users/${t.user}/related-participants/${t.relatedParty}/withdraw`, withReason())),
+  // PAY B4 (PLAN B4 2.3): tenant A's run market, provider, batch, exception, hold and payee name nothing in tenant B.
+  'PATCH /v1/provider-configs/:id': object('tenant', (t) => json('PATCH', `/v1/provider-configs/${t.payoutProvider}`, { review_due_on: null })),
+  'PUT /v1/provider-configs/:id/adapter': object('tenant', (t) =>
+    json('PUT', `/v1/provider-configs/${t.payoutProvider}/adapter`, { adapter: 'bank_file_csv' })),
+  'POST /v1/payout-batches': named(422, 'VALIDATION_FAILED', (t) =>
+    json('POST', '/v1/payout-batches', { market_id: t.compMarket, provider_config_id: t.payoutProvider }, true)),
+  'GET /v1/payout-batches': collection('tenant', () => get('/v1/payout-batches?limit=200')),
+  'GET /v1/payout-batches/:id': object('tenant', (t) => get(`/v1/payout-batches/${t.payoutBatch}`)),
+  'GET /v1/payout-batches/:id/lines': object('tenant', (t) => get(`/v1/payout-batches/${t.payoutBatch}/lines`)),
+  'GET /v1/payout-batches/:id/instructions': object('tenant', (t) => get(`/v1/payout-batches/${t.payoutBatch}/instructions`)),
+  'POST /v1/payout-batches/:id/submit': object('tenant', (t) => json('POST', `/v1/payout-batches/${t.payoutBatch}/submit`, {}, true)),
+  'POST /v1/payout-batches/:id/approve': object('tenant', (t) => json('POST', `/v1/payout-batches/${t.payoutBatch}/approve`, {}, true)),
+  'POST /v1/payout-batches/:id/retry-failed': object('tenant', (t) => json('POST', `/v1/payout-batches/${t.payoutBatch}/retry-failed`, {}, true)),
+  'POST /v1/payout-batches/:id/cancel': object('tenant', (t) => json('POST', `/v1/payout-batches/${t.payoutBatch}/cancel`, withReason(), true)),
+  'POST /v1/payout-batches/:id/bank-file': object('tenant', (t) => json('POST', `/v1/payout-batches/${t.payoutBatch}/bank-file`)),
+  'POST /v1/payout-providers/:id/settlement-reports': object('tenant', (t) => ({
+    method: 'POST', url: `/v1/payout-providers/${t.payoutProvider}/settlement-reports`, body: 'end_to_end_id,status,amount_minor,reason\r\n',
+    headers: { 'content-type': 'text/csv' }, idempotencyKey: true,
+  })),
+  'POST /v1/webhooks/providers/:providerConfigId': {
+    ...object('public', (t) => json('POST', `/v1/webhooks/providers/${t.payoutProvider}`, { type: 'payout.settled' })),
+    unsignedAnswer: [401, 'SIGNATURE_INVALID'],
+  },
+  'GET /v1/payout-reconciliation/summary': collection('tenant', () => get('/v1/payout-reconciliation/summary')),
+  'GET /v1/payout-reconciliation/items': collection('tenant', () => get('/v1/payout-reconciliation/items?limit=200')),
+  'GET /v1/payout-exceptions': collection('tenant', () => get('/v1/payout-exceptions?limit=200')),
+  'POST /v1/payout-exceptions/:id/resolve': object('tenant', (t) =>
+    json('POST', `/v1/payout-exceptions/${t.payoutException}/resolve`, { note: 'isolation' }, true)),
+  'GET /v1/payees/:id/holds': object('tenant', (t) => get(`/v1/payees/${t.payoutPayee}/holds`)),
+  'POST /v1/payees/:id/holds': object('tenant', (t) => json('POST', `/v1/payees/${t.payoutPayee}/holds`, withReason({ market_id: t.compMarket }), true)),
+  'POST /v1/payout-holds/:id/release': object('tenant', (t) => json('POST', `/v1/payout-holds/${t.payoutHold}/release`, withReason(), true)),
+  // Tenant B never set payouts.dormant_after_days: its own refusal.
+  'GET /v1/payouts/dormant': own('tenant', 422, () => get('/v1/payouts/dormant?limit=200')),
+  'POST /v1/participants/:id/bank-detail-requests': object('tenant', (t) =>
+    json('POST', `/v1/participants/${t.payoutPayee}/bank-detail-requests`, { scheme: 'iban', account_holder: 'Isolation', iban: IBAN }, true)),
+  'GET /v1/participants/:id/bank-details': object('tenant', (t) => get(`/v1/participants/${t.payoutPayee}/bank-details`)),
+  // LED B4 (PLAN B4 2.1): tenant A's market, account, entry, payee, period and export name nothing in tenant B.
+  'GET /v1/ledger/summary': object('tenant', (t) => get(`/v1/ledger/summary?market_id=${t.compMarket}`)),
+  'GET /v1/ledger/accounts': collection('tenant', () => get('/v1/ledger/accounts?limit=200')),
+  'GET /v1/ledger/accounts/:id/postings': object('tenant', (t) => get(`/v1/ledger/accounts/${t.ledgerAccount}/postings`)),
+  'GET /v1/ledger/entries': collection('tenant', () => get('/v1/ledger/entries?limit=200')),
+  'GET /v1/ledger/entries/:id': object('tenant', (t) => get(`/v1/ledger/entries/${t.journalEntry}`)),
+  'GET /v1/payees/:id/balances': object('tenant', (t) => get(`/v1/payees/${t.payoutPayee}/balances`)),
+  'GET /v1/ledger/receivables': collection('tenant', () => get('/v1/ledger/receivables?limit=200')),
+  'GET /v1/ledger/gl-mappings': object('tenant', (t) => get(`/v1/ledger/gl-mappings?market_id=${t.compMarket}`)),
+  'PUT /v1/ledger/gl-mappings/:marketId/:accountType': object('tenant', (t) =>
+    json('PUT', `/v1/ledger/gl-mappings/${t.compMarket}/breakage`, { gl_code: 'GL-ISOLATION' })),
+  'POST /v1/ledger/journal-exports': object('tenant', (t) => json('POST', '/v1/ledger/journal-exports', { period_id: t.period }, true)),
+  // ledger.export is excluded from support sessions (support/sessions.ts).
+  'GET /v1/ledger/journal-exports': { ...collection('tenant', () => get('/v1/ledger/journal-exports?limit=200')), inSession: 403 },
+  'GET /v1/ledger/journal-exports/:id/file': { ...object('tenant', (t) => get(`/v1/ledger/journal-exports/${t.journalExport}/file`)), inSession: 403 },
+  // TAX B4 (D-B4-17)
+  'GET /v1/participants/:id/tax-profile': object('tenant', (t) => get(`/v1/participants/${t.payoutPayee}/tax-profile`)),
+  'PUT /v1/participants/:id/tax-profile': object('tenant', (t) => json('PUT', `/v1/participants/${t.payoutPayee}/tax-profile`, { residency: 'NL' }, true)),
+  'POST /v1/participants/:id/tax-profile/unmask': object('tenant', (t) => json('POST', `/v1/participants/${t.payoutPayee}/tax-profile/unmask`)),
 }
 
 /** The case of a route; Fastify's HEAD routes run their GET handler, so they take the GET case with method HEAD. */

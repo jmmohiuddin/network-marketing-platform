@@ -17,6 +17,7 @@ export interface PlanRow {
   readonly created_by: string
   readonly created_at: Date
   readonly market_ids: string[]
+  readonly minor_digits: number | null // of the first plan market (market id order): rule renderings use it
   readonly calendar_ids: string[]
 }
 
@@ -48,6 +49,8 @@ export interface VersionRow {
 
 export const PLAN_COLUMNS = `p.id, p.name, p.brand_id, p.created_by, p.created_at,
   array(SELECT pm.market_id FROM plan_market pm WHERE pm.plan_id = p.id ORDER BY pm.market_id) AS market_ids,
+  (SELECT m.minor_unit::int FROM plan_market pm JOIN market m ON m.tenant_id = pm.tenant_id AND m.id = pm.market_id
+   WHERE pm.plan_id = p.id ORDER BY pm.market_id LIMIT 1) AS minor_digits,
   array(SELECT pc.calendar_id FROM plan_calendar pc WHERE pc.plan_id = p.id ORDER BY pc.calendar_id) AS calendar_ids`
 
 export const VERSION_COLUMNS = `v.id, v.plan_id, v.version, v.state, v.revision, v.effective_from, v.justification, v.engine_version,

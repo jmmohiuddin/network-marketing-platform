@@ -40,7 +40,7 @@ beforeAll(async () => {
   admin = await createSignedInUser({ tenantId: acme.id, roles: ['Tenant admin'] })
   scopedAdmin = await createSignedInUser({ tenantId: acme.id, roles: ['Tenant admin'], marketIds: [in_] })
   signer = await createSignedInUser({ tenantId: acme.id, roles: ['Compliance officer'], marketIds: [gb] })
-  reader = await createSignedInUser({ tenantId: acme.id, roles: ['Commission analyst'] })
+  reader = await createSignedInUser({ tenantId: acme.id, roles: ['Support agent'] }) // no provider reader permission (B4 adds integration.* and payout.read)
   globexAdmin = await createSignedInUser({ tenantId: globex.id, roles: ['Tenant admin'] })
   app = await buildTestApp({ modules: [payModule] })
 })

@@ -8,6 +8,10 @@ import {
 import { getEffectiveSettings, tenModule } from './index.js'
 import { committedPeriod } from './test-support.js'
 
+// A money key approved by settings.approve (money.clawback_policy is retired, D-B4-06).
+const BLOCKING = { second_approver_above_minor: '10000', new_account_days: 0, related_account_action: 'block' }
+const ESCALATING = { second_approver_above_minor: '10000', new_account_days: 0, related_account_action: 'escalate' }
+
 let app: FastifyInstance
 let acme: TestTenant
 let preparer: TestUser
@@ -70,8 +74,8 @@ describe('PUT /v1/settings/:key on a money-affecting key (AC-TEN3-1)', () => {
   })
 
   test('a money key needs an effective date; a past date is refused (AC-TEN3-3)', async () => {
-    const missing = await requestChange(admin, 'money.clawback_policy', { default: 'order_line' })
-    const past = await requestChange(admin, 'money.clawback_policy', { default: 'order_line' }, '2020-01-01T00:00:00Z')
+    const missing = await requestChange(admin, 'adjustments.policy', BLOCKING)
+    const past = await requestChange(admin, 'adjustments.policy', BLOCKING, '2020-01-01T00:00:00Z')
 
     expect(missing.statusCode).toBe(400)
     expect(past.json().error.code).toBe('SETTING_EFFECTIVE_FROM_INVALID')
@@ -80,7 +84,7 @@ describe('PUT /v1/settings/:key on a money-affecting key (AC-TEN3-1)', () => {
 
 describe('POST /v1/setting-change-requests/:id/decision (AC-TEN3-2, TS-42 settings part)', () => {
   test('the requester is refused SOD-01 with the eligible approvers; the refusal is audited and survives the 422', async () => {
-    const created = await requestChange(preparer, 'money.clawback_policy', { default: 'restatement' }, inDays(20))
+    const created = await requestChange(preparer, 'adjustments.policy', ESCALATING, inDays(20))
     const id = created.json().data.change_request.id as string
 
     const refused = await decide(preparer, id, 'approve')
@@ -103,7 +107,7 @@ describe('POST /v1/setting-change-requests/:id/decision (AC-TEN3-2, TS-42 settin
     expect(approved.statusCode).toBe(200)
     expect(approved.json().data.change_request).toMatchObject({ state: 'approved', decided_by: { id: finance.id }, version })
     expect(replay.headers['idempotent-replayed']).toBe('true')
-    expect(history.json().data).toMatchObject({ approval: { approver: { id: finance.id } }, changes: [{ key: 'money.clawback_policy', after: { default: 'restatement' } }] })
+    expect(history.json().data).toMatchObject({ approval: { approver: { id: finance.id } }, changes: [{ key: 'adjustments.policy', after: ESCALATING }] })
     expect(await auditActions(acme.id)).toContain('SETTINGS.CHANGE_APPROVED')
   })
 
@@ -120,6 +124,22 @@ describe('POST /v1/setting-change-requests/:id/decision (AC-TEN3-2, TS-42 settin
     expect(again.json().error.code).toBe('CHANGE_NOT_PENDING')
   })
 
+  test('T-B4-31 / AC-FIN3-3: a pending request for a key retired since (money.clawback_policy) is refused 422 SETTING_RETIRED, nothing applied', async () => {
+    // Filed before D-B4-06 retired the key (the PUT refuses it now).
+    const [{ id }] = await ownerRows<{ id: string }>(
+      `INSERT INTO setting_change_request (tenant_id, key, value, effective_from, reason, base_version, state, requested_by, requested_at)
+       SELECT $1, 'money.clawback_policy', '{"order_line": "clawback"}', $2, 'filed before B4', max(version), 'pending', $3, now()
+       FROM tenant_setting_version WHERE tenant_id = $1 RETURNING id`, [acme.id, inDays(35), admin.id]) as [{ id: string }]
+    const before = await versionCount()
+
+    const refused = await decide(finance, id, 'approve')
+
+    expect(refused.json().error).toMatchObject({ code: 'SETTING_RETIRED', details: { key: 'money.clawback_policy' } })
+    expect(await versionCount()).toBe(before)
+    expect(await ownerRows('SELECT state FROM setting_change_request WHERE id = $1', [id])).toEqual([{ state: 'pending' }])
+    expect((await withdraw(admin, id)).statusCode).toBe(200)
+  })
+
   test('needs settings.approve and a fresh second factor; another tenant sees 404', async () => {
     const created = await requestChange(admin, 'money.rounding_mode', 'half_even', inDays(40))
     const id = created.json().data.change_request.id as string
@@ -134,7 +154,7 @@ describe('POST /v1/setting-change-requests/:id/decision (AC-TEN3-2, TS-42 settin
   test('AC-TEN3-3: a request whose date has passed is refused at approval and stays pending', async () => {
     const [request] = await ownerRows<{ id: string }>(
       `INSERT INTO setting_change_request (tenant_id, key, value, effective_from, reason, base_version, state, requested_by)
-       VALUES ($1, 'money.clawback_policy', '{"default": "order_line"}', now() - interval '1 hour', 'FIXTURE: date passed while pending', 0, 'pending', $2)
+       VALUES ($1, 'adjustments.policy', '{"second_approver_above_minor": "10000", "new_account_days": 0, "related_account_action": "block"}', now() - interval '1 hour', 'FIXTURE: date passed while pending', 0, 'pending', $2)
        RETURNING id`,
       [acme.id, admin.id],
     )
@@ -173,7 +193,7 @@ describe('AC-37.1 / TS-59: committed periods and the next boundary', () => {
 
 describe('POST /v1/setting-change-requests/:id/withdraw (T-B1-06)', () => {
   test('only the requester withdraws; decided_by stays NULL; others see 404', async () => {
-    const created = await requestChange(admin, 'money.clawback_policy', { default: 'order_line' }, inDays(50))
+    const created = await requestChange(admin, 'adjustments.policy', BLOCKING, inDays(50))
     const id = created.json().data.change_request.id as string
 
     const foreign = await withdraw(preparer, id)

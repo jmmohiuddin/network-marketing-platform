@@ -4,8 +4,8 @@ import { auditActions, buildTestApp, call, closePoolsAfterAll, ownerRows, resetA
 import { createCasModule } from '../cas/index.js'
 import { compCaseTypes, compModule } from './index.js'
 import {
-  activePlan, calculate, commit, createWorld, evidenceDocument, inside, lateItem, linesOf, member, order, orderEvent, ts10Plan, user,
-  type Member, type Policy, type World,
+  activePlan, calculate, commit, createWorld, evidenceDocument, inside, lateItem, linesOf, member, order, orderEvent, ownerUnchecked, ts10Plan,
+  user, type Member, type Policy, type World,
 } from './test-support.js'
 
 // T-B3-26: restatement case lifecycle (FR-COMP-009, D-B3-14).
@@ -102,6 +102,23 @@ describe('restatement case (FR-COMP-009)', () => {
     expect((await ownerRows<{ lines_hash: string }>('SELECT lines_hash FROM run WHERE id = $1', [firstRun]))[0]!.lines_hash).toBe(hash)
     const replay = await call(app, { method: 'POST', url: `/v1/runs/${firstRun}/replay`, as: w.analyst })
     expect(replay.json().data).toMatchObject({ status: 'match', lines_hash: hash })
+  })
+
+  test('OI-1: a calculated run carrying restatement origins another commit consumed meanwhile is superseded (409 origins_consumed), not a 500', async () => {
+    const { w, o2, firstRun } = await committedTs10('restatement')
+    const late = await lateItem(w, { eventId: await orderEvent(w, o2, inside(w.periods[1]!)) }, w.periods[0]!.id, 'restatement')
+    await ownerRows(`UPDATE late_transaction SET state = 'decided', decided_by = $2, decided_at = now() WHERE id = $1`, [late, w.compliance.id])
+    const restatementCase = await submitted(w, w.periods[0]!.id)
+    expect((await decide(restatementCase.id, w.finance)).statusCode).toBe(200)
+    const origins = await ownerRows<{ id: string }>('SELECT id FROM adjustment_origin WHERE restatement_id = $1 ORDER BY id', [restatementCase.effect_preview.restatement_id])
+    const carrying = await calculate(app, w, w.periods[1]!.id)
+    expect((await linesOf(carrying)).filter((l) => l.origin === 'restatement')).toHaveLength(2)
+    // The other calculated run's commit, as B3 saw it: the origins are consumed before this run commits.
+    await ownerUnchecked('UPDATE adjustment_origin SET consumed_run_id = $2 WHERE restatement_id = $1', [restatementCase.effect_preview.restatement_id, firstRun])
+    await call(app, { method: 'GET', url: `/v1/runs/${carrying}/review`, as: w.analyst })
+    const refused = await call(app, { method: 'POST', url: `/v1/runs/${carrying}/commit`, as: w.finance, idempotencyKey: true, body: { acknowledged_exceptions: [] } })
+    expect(refused.json().error).toMatchObject({ code: 'RUN_SUPERSEDED', details: { reason: 'origins_consumed', origin_ids: origins.map((o) => o.id) } })
+    expect(await ownerRows(`SELECT state FROM run WHERE id = $1`, [carrying])).toEqual([{ state: 'calculated' }])
   })
 
   test('AC-RST-2 / AC-RST-3: a pending adjust refund blocks submit; after its clawback (A -50.00) the restatement adds only A -15.00, C -13.00', async () => {

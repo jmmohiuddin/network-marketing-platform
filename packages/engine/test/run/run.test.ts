@@ -123,6 +123,15 @@ describe('G-E2E-01 detail', () => {
     expect(e.lines.some((t) => t.startsWith('cap cap_leaders (priority)'))).toBe(true)
     expect(e.lines.at(-1)).toBe('amount 121.36 XXX')
   })
+
+  test('BUG-092: the tree instant prints as an ISO-8601 UTC instant with microseconds', () => {
+    const line = out.lines.find((l) => l.trace.tree !== null)!
+    const at = (knownAtUs: bigint): string => explain({ ...line, trace: { ...line.trace, tree: { kind: 'sponsor', knownAtUs } } }, 2).lines[0]!
+    expect(at(1_700_000_000_123_456n)).toContain('sponsor tree known at 2023-11-14T22:13:20.123456Z')
+    expect(at(0n)).toContain('known at 1970-01-01T00:00:00.000000Z')
+    expect(at(951_782_400_000_001n)).toContain('known at 2000-02-29T00:00:00.000001Z')
+    expect(at(-1n)).toContain('known at 1969-12-31T23:59:59.999999Z')
+  })
 })
 
 describe('pass 9 adjustments and pass 11 settlement', () => {

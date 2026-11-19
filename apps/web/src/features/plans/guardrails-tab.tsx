@@ -19,11 +19,16 @@ import type { DraftScope } from './rules-tab'
 import type { Decision } from './types'
 import { CARD, MONO, NOTE } from './ui'
 
-/** Who resolved a decision, or what it still needs (D-B3-17). */
-export function resolutionText(d: Pick<Decision, 'outcome' | 'acknowledgement' | 'override' | 'rule'>): string {
+/** D-B4-21 b: an opaque match where the evaluation or its rule blocks is resolved only by a Compliance officer override. */
+export const needsReview = (d: Pick<Decision, 'outcome' | 'detail' | 'rule'>): boolean =>
+  d.detail.opaque && (d.outcome === 'blocked' || d.rule.outcome === 'blocked')
+
+/** Who resolved a decision, or what it still needs (D-B3-17, D-B4-21 b). */
+export function resolutionText(d: Pick<Decision, 'outcome' | 'acknowledgement' | 'override' | 'rule' | 'detail'>): string {
   if (d.override !== null) return `Overridden by ${d.override.approved_by.display_name ?? 'another user'} on ${formatDateTime(d.override.decided_at)}`
   if (d.acknowledgement !== null) return `Acknowledged by ${d.acknowledgement.decided_by.display_name ?? 'another user'} on ${formatDateTime(d.acknowledgement.decided_at)}`
   if (d.outcome === 'reported') return 'Reported; no action needed'
+  if (needsReview(d)) return 'Needs a compliance review: a Compliance officer override'
   if (d.outcome === 'blocked') return d.rule.overridable ? 'Needs an override by a compliance officer' : 'Blocked; change the rule'
   return 'Needs an acknowledgement or an override'
 }
@@ -42,7 +47,7 @@ function DecisionCard({ decision, canAcknowledge, onAcknowledge, busy }: { reado
           <StatusBadge state={decision.outcome} />
         </div>
         <p className="font-body-sm text-body-sm text-on-surface">{decision.detail.explanation}</p>
-        {decision.detail.opaque && <p className={NOTE}>An expression or module hides what this rule pays on, so it goes to compliance review.</p>}
+        {decision.detail.opaque && <p className={NOTE}>An expression or module hides what this rule pays on{needsReview(decision) ? ', so it goes to compliance review.' : ', so it is flagged as a warning.'}</p>}
         <p className={NOTE}>Rules matched: <span className={MONO}>{decision.detail.rule_keys.join(', ')}</span> · Basis status: {basisLabel(decision.rule.basis_status)}</p>
         <div className="pt-1 flex flex-wrap items-center justify-between gap-space-sm">
           <span className="font-caption text-caption text-secondary">{resolutionText(decision)}</span>
@@ -77,7 +82,7 @@ export function GuardrailsTab({ scope }: { readonly scope: DraftScope }) {
     }
   }
   // Acknowledging is authoring: the API refuses it once the version left draft (scope.canEdit).
-  const mayAcknowledge = (d: Decision) => scope.canEdit && d.outcome === 'warned' && d.acknowledgement === null && d.override === null
+  const mayAcknowledge = (d: Decision) => scope.canEdit && d.outcome === 'warned' && !needsReview(d) && d.acknowledgement === null && d.override === null
   return (
     <div className="flex flex-col gap-space-md">
       <p className={`${CARD} ${NOTE}`}>

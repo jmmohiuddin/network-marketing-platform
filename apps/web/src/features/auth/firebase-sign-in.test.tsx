@@ -57,9 +57,16 @@ describe('FirebaseSignIn', () => {
     firebase.signInWithPopup.mockImplementation(async () => ({ user: firebase.user }))
   })
 
-  it('adds nothing to the page when Firebase is disabled', async () => {
+  it('BUG-101: asks the API for nothing when the web server has no Firebase auth domain', () => {
+    const fetchMock = fetchReturning()
+    renderWithProviders(<SignInForm realm="tenant" firebase={false} />, fetchMock)
+    expect(fetchMock).not.toHaveBeenCalled()
+    expect(screen.queryByRole('button', { name: 'Continue with Google' })).toBeNull()
+  })
+
+  it('adds nothing to the page when the API has Firebase disabled', async () => {
     const fetchMock = fetchReturning(apiError(404, 'FIREBASE_DISABLED'))
-    renderWithProviders(<SignInForm realm="tenant" />, fetchMock)
+    renderWithProviders(<SignInForm realm="tenant" firebase />, fetchMock)
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/v1/auth/firebase-config', expect.anything()))
     expect(screen.queryByRole('button', { name: 'Continue with Google' })).toBeNull()
     expect(screen.queryByText('or')).toBeNull()
@@ -69,7 +76,7 @@ describe('FirebaseSignIn', () => {
   it('asks for the company before opening the Google popup', async () => {
     const user = userEvent.setup()
     const fetchMock = fetchReturning(ok(CONFIG))
-    renderWithProviders(<SignInForm realm="tenant" />, fetchMock)
+    renderWithProviders(<SignInForm realm="tenant" firebase />, fetchMock)
     await user.click(await screen.findByRole('button', { name: 'Continue with Google' }))
     expect(screen.getByRole('alert').textContent).toContain('Enter your company sign-in name.')
     expect(screen.getByLabelText('Company').getAttribute('aria-invalid')).toBe('true')
@@ -81,7 +88,7 @@ describe('FirebaseSignIn', () => {
     const user = userEvent.setup()
     navigation.search = 'next=%2Fsettings%2Faudit'
     const fetchMock = fetchReturning(ok(CONFIG), session('mfa_verification'))
-    renderWithProviders(<SignInForm realm="tenant" />, fetchMock)
+    renderWithProviders(<SignInForm realm="tenant" firebase />, fetchMock)
     await user.type(screen.getByLabelText('Company'), ' Acme ')
     await user.click(await screen.findByRole('button', { name: 'Continue with Google' }))
     await waitFor(() => expect(navigation.leavePage).toHaveBeenCalledWith('/signin/mfa?next=%2Fsettings%2Faudit'))
@@ -96,7 +103,7 @@ describe('FirebaseSignIn', () => {
   it('uses the vendor endpoint without a company', async () => {
     const user = userEvent.setup()
     const fetchMock = fetchReturning(ok(CONFIG), session('none'))
-    renderWithProviders(<SignInForm realm="vendor" />, fetchMock)
+    renderWithProviders(<SignInForm realm="vendor" firebase />, fetchMock)
     await user.click(await screen.findByRole('button', { name: 'Continue with Google' }))
     await waitFor(() => expect(navigation.leavePage).toHaveBeenCalledWith('/vendor'))
     expect(fetchMock.mock.calls[1]?.[0]).toBe('/v1/auth/vendor-firebase-sessions')
@@ -108,7 +115,7 @@ describe('FirebaseSignIn', () => {
     const fetchMock = fetchReturning(
       ok(CONFIG), apiError(401, 'FIREBASE_LINK_REQUIRED'), apiError(401, 'INVALID_CREDENTIALS', 'The sign-in could not be completed.'), session('none'),
     )
-    renderWithProviders(<SignInForm realm="vendor" />, fetchMock)
+    renderWithProviders(<SignInForm realm="vendor" firebase />, fetchMock)
     await user.click(await screen.findByRole('button', { name: 'Continue with Google' }))
     const link = within(await screen.findByRole('form', { name: 'Link your account' }))
     expect(document.activeElement).toBe(link.getByLabelText('Account password'))
@@ -127,7 +134,7 @@ describe('FirebaseSignIn', () => {
 
   it('maps INVALID_CREDENTIALS to the no-account message and still signs out of Firebase', async () => {
     const user = userEvent.setup()
-    renderWithProviders(<SignInForm realm="tenant" />, fetchReturning(ok(CONFIG), apiError(401, 'INVALID_CREDENTIALS', 'The sign-in could not be completed.')))
+    renderWithProviders(<SignInForm realm="tenant" firebase />, fetchReturning(ok(CONFIG), apiError(401, 'INVALID_CREDENTIALS', 'The sign-in could not be completed.')))
     await user.type(screen.getByLabelText('Company'), 'acme')
     await user.click(await screen.findByRole('button', { name: 'Continue with Google' }))
     expect((await screen.findByRole('alert')).textContent).toContain('No staff account in this company matches that Google/Firebase account.')
@@ -139,7 +146,7 @@ describe('FirebaseSignIn', () => {
     const user = userEvent.setup()
     firebase.signInWithPopup.mockRejectedValueOnce(Object.assign(new Error('closed'), { code: 'auth/popup-closed-by-user' }))
     const fetchMock = fetchReturning(ok(CONFIG))
-    renderWithProviders(<SignInForm realm="vendor" />, fetchMock)
+    renderWithProviders(<SignInForm realm="vendor" firebase />, fetchMock)
     await user.click(await screen.findByRole('button', { name: 'Continue with Google' }))
     await waitFor(() => expect(firebase.signOut).toHaveBeenCalledTimes(1))
     expect(screen.queryByRole('alert')).toBeNull()
@@ -149,7 +156,7 @@ describe('FirebaseSignIn', () => {
 
   it('creates a Firebase email account and sends the verification link', async () => {
     const user = userEvent.setup()
-    renderWithProviders(<SignInForm realm="tenant" />, fetchReturning(ok(CONFIG)))
+    renderWithProviders(<SignInForm realm="tenant" firebase />, fetchReturning(ok(CONFIG)))
     const form = await openEmailForm(user)
     await user.click(form.getByRole('button', { name: 'Create account' }))
     expect((await screen.findByText('We sent a verification link to ada@acme.example. Open it, then sign in.')).closest('[role="status"]')).not.toBeNull()
@@ -161,7 +168,7 @@ describe('FirebaseSignIn', () => {
   it('offers to send the link again when the API says the email is not verified', async () => {
     const user = userEvent.setup()
     const fetchMock = fetchReturning(ok(CONFIG), apiError(401, 'EMAIL_NOT_VERIFIED'))
-    renderWithProviders(<SignInForm realm="tenant" />, fetchMock)
+    renderWithProviders(<SignInForm realm="tenant" firebase />, fetchMock)
     await user.type(screen.getByLabelText('Company'), 'acme')
     const form = await openEmailForm(user)
     await user.click(form.getByRole('button', { name: 'Sign in' }))

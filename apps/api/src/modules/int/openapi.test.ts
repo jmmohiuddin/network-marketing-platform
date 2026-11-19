@@ -40,7 +40,7 @@ describe('T-B1-21 GET /v1/openapi.json (AC-INT1-1)', () => {
     expect(Object.keys(document.paths)).toEqual([
       '/v1/compliance/snapshots', '/v1/compliance/snapshots/{id}', '/v1/orders', '/v1/order-events', '/v1/participants',
       '/v1/participants/{id}/type', '/v1/participants/{id}/positions', '/v1/participants/{id}/agreement-acceptances',
-      '/v1/participants/{id}/signals', '/v1/customers/{id}/servicing',
+      '/v1/participants/{id}/signals', '/v1/customers/{id}/servicing', '/v1/ledger/journal-exports', '/v1/ledger/journal-exports/{id}/file',
     ])
     expect(document.components.securitySchemes.bearer).toEqual(expect.objectContaining({ type: 'http', scheme: 'bearer' }))
     for (const url of ['/v1/compliance/snapshots', '/v1/compliance/snapshots/{id}']) {
@@ -75,6 +75,17 @@ describe('T-B1-21 GET /v1/openapi.json (AC-INT1-1)', () => {
       expect(Object.keys(operation.responses)).toContain(status)
     }
     expect(document.components.schemas.EnrolmentBody.required).toEqual(expect.arrayContaining(['external_ref', 'market', 'type_code']))
+  })
+
+  test('PLAN B4 2.1: journal export create and download take a ledger:export key; create needs an Idempotency-Key', () => {
+    const create = document.paths['/v1/ledger/journal-exports'].post
+    const file = document.paths['/v1/ledger/journal-exports/{id}/file'].get
+
+    for (const operation of [create, file]) expect(operation).toMatchObject({ security: [{ bearer: [] }], 'x-required-scope': 'ledger:export' })
+    expect(create.parameters.map((parameter: { name: string }) => parameter.name)).toEqual(['Idempotency-Key'])
+    expect(Object.keys(create.responses)).toEqual(expect.arrayContaining(['201', '409', '422']))
+    expect(Object.keys(file.responses['200'].content)).toEqual(['text/csv'])
+    expect(document.components.schemas.JournalExportBody.required).toEqual(['period_id'])
   })
 
   test('takes its schemas from the validating zod schemas: query, list item, detail and the error envelope', () => {

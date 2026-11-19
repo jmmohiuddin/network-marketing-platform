@@ -1,6 +1,7 @@
 import type { ApiModule } from '../../lib/module.js'
 import { registerConnectorRoutes } from './connector-routes.js'
 import { dispatchJob } from './dispatch.js'
+import { registerProviderWebhook } from './provider-webhook.js'
 import { registerIntRoutes } from './routes.js'
 import { httpsTransport, systemResolver, type WebhookResolver, type WebhookTransport } from './transport.js'
 
@@ -23,6 +24,7 @@ export function createIntModule(options: IntModuleOptions = {}): ApiModule {
     register(app) {
       registerIntRoutes(app)
       registerConnectorRoutes(app)
+      registerProviderWebhook(app)
     },
     jobs: [dispatchJob(deps)],
   }

@@ -13,7 +13,7 @@ import { formatDateTime } from '../../lib/format'
 import type { Market } from '../../lib/markets'
 import { summaryOf } from '../admin/form-dialog'
 import { withApprovers } from '../admin/settings/labels'
-import { exceptionText, marketMoney } from './format'
+import { exceptionText, marketMoney, supersededText } from './format'
 import type { RunDetail, RunReview } from './types'
 
 const TILE = 'bg-surface-container-lowest p-space-sm rounded shadow-sm min-w-0'
@@ -66,7 +66,7 @@ export function CommitDialog({ run, review, period, market, acknowledged, onAckn
       toast({ message: `Run committed: ${period} is now committed.` })
       onDone()
     } catch (error) {
-      setSummary(summaryOf(withApprovers(error, 'Finance approver')))
+      setSummary(summaryOf(withApprovers(supersededText(error), 'Finance approver')))
       setBusy(false)
     }
   }
@@ -108,7 +108,7 @@ export function CommitDialog({ run, review, period, market, acknowledged, onAckn
         <div className="p-space-md rounded-lg bg-error-container/30 flex items-start gap-space-md">
           <Icon name="warning" size={24} className="text-error shrink-0 mt-0.5" />
           <p className="font-body-sm text-body-sm text-on-surface-variant">
-            Committing locks the results of <strong className="text-on-surface font-semibold">{period}</strong>: they are never edited afterwards, and corrections go through a restatement. You are asked for a code from your authenticator app if your last verification is not recent.
+            Committing locks the results of <strong className="text-on-surface font-semibold">{period}</strong>: they are never edited afterwards, and corrections go through a restatement. Committing posts one journal entry for this run’s payables and receivables. You are asked for a code from your authenticator app if your last verification is not recent.
           </p>
         </div>
       </form>

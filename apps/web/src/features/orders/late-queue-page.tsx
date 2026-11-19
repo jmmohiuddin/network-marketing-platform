@@ -31,6 +31,15 @@ import { periodText, reviewPath } from '../periods/format'
 import { HANDLING_LABELS, LATE_STATE_LABELS, moneyText, volumesText } from './format'
 import type { LateItem, LatePreview, LateState, OrderRow } from './types'
 
+/**
+ * The original period as calendar dates (BUG-095), like SC-01.
+ * shortcut: the item's market zone stands in for its calendar's cut-off zone (late items carry no calendar); use the
+ * calendar zone once GET /v1/late-transactions names the calendar.
+ */
+export function originalPeriodText(item: Pick<LateItem, 'original_period'>, market: Pick<Market, 'time_zone'> | undefined): string {
+  return periodText(item.original_period, market?.time_zone)
+}
+
 const STATES = (Object.keys(LATE_STATE_LABELS) as LateState[]).map((value) => ({ value, label: LATE_STATE_LABELS[value] }))
 const MONO = 'font-data-mono-sm text-data-mono-sm'
 const REASON_ID = 'late-reason'
@@ -155,7 +164,7 @@ function AcceptDialog({ ids: chosen, market, onClose, onDone }: { readonly ids: 
 }
 
 /** One item raised as a restatement instead of the proposed adjustment. */
-function RestatementDialog({ item, onClose, onDone }: { readonly item: LateItem; readonly onClose: () => void; readonly onDone: () => void }) {
+function RestatementDialog({ item, market, onClose, onDone }: { readonly item: LateItem; readonly market: Market | undefined; readonly onClose: () => void; readonly onDone: () => void }) {
   const api = useApi()
   const toast = useToast()
   const [reason, setReason] = useState('')
@@ -176,7 +185,7 @@ function RestatementDialog({ item, onClose, onDone }: { readonly item: LateItem;
   }
   return (
     <FormDialog title="Raise restatement instead" submitLabel="Raise restatement" submitVariant="destructive-solid" onClose={onClose} onSubmit={submit}>
-      <p>The item is decided for restatement of {periodText(item.original_period, undefined)} instead of an adjustment in an open period.</p>
+      <p>The item is decided for restatement of {originalPeriodText(item, market)} instead of an adjustment in an open period.</p>
       <TextAreaField id={REASON_ID} label="Reason" value={reason} error={error} onChange={setReason} />
     </FormDialog>
   )
@@ -215,7 +224,7 @@ function Diagnostic({ item, market, onRestate, onRaiseCase }: DiagnosticProps) {
             <div className="flex flex-col gap-space-xs p-space-sm rounded bg-surface-container-low">
               <span className="font-caption text-caption text-secondary uppercase font-semibold">Original period</span>
               <Facts items={[
-                ['Period', periodText(item.original_period, undefined)],
+                ['Period', originalPeriodText(item, market)],
                 ['Period state', <StatusBadge state={item.original_period.state} />],
                 ['Origin', item.origin_type === 'order' ? 'The order' : 'An order event'],
                 ['Queued', formatDateTime(item.created_at)],
@@ -263,7 +272,7 @@ function Queue({ state, marketId, markets }: { readonly state: LateState; readon
   const [dialog, setDialog] = useState<'accept' | 'restate' | null>(null)
   // The period is kept, not the item: once decided the item may leave the filtered page.
   const [casePeriod, setCasePeriod] = useState<RestatementPeriod | null>(null)
-  const raiseCase = (item: LateItem) => setCasePeriod({ id: item.original_period.id, label: periodText(item.original_period, undefined) })
+  const raiseCase = (item: LateItem) => setCasePeriod({ id: item.original_period.id, label: originalPeriodText(item, marketOf(item)) })
   const pending = list.rows.filter((row) => row.state === 'pending')
   const chosenRows = pending.filter((row) => selected.has(row.id))
   const chosen = chosenRows.map((row) => row.id)
@@ -317,7 +326,7 @@ function Queue({ state, marketId, markets }: { readonly state: LateState; readon
                   </div>
                 ),
               },
-              { key: 'period', header: 'Original period', cell: (row) => <div className="flex flex-col"><span className={MONO}>{periodText(row.original_period, undefined)}</span><StatusBadge state={row.original_period.state} /></div> },
+              { key: 'period', header: 'Original period', cell: (row) => <div className="flex flex-col"><span className={MONO}>{originalPeriodText(row, marketOf(row))}</span><StatusBadge state={row.original_period.state} /></div> },
               { key: 'effect', header: 'Effect estimate', align: 'end', cell: (row) => <div className="flex flex-col items-end"><span className={`${MONO} font-semibold`}>{amountText(row.effect_estimate.amount_minor, marketOf(row))}</span><span className="font-caption text-caption text-secondary">{volumesText(row.effect_estimate.volumes, marketOf(row)?.minor_unit)}</span></div> },
               { key: 'handling', header: 'Handling', cell: (row) => HANDLING_LABELS[row.handling] },
               { key: 'state', header: 'State', cell: (row) => <span className="flex flex-col items-start gap-0.5"><StatusBadge state={row.state === 'pending' ? 'held' : 'closed'} label={LATE_STATE_LABELS[row.state]} /><ConsumedBy item={row} /></span> },
@@ -338,7 +347,7 @@ function Queue({ state, marketId, markets }: { readonly state: LateState; readon
         </div>
       </div>
       {dialog === 'accept' && <AcceptDialog ids={chosen} market={selectionMarket(chosenRows, marketOf)} onClose={() => setDialog(null)} onDone={decided} />}
-      {dialog === 'restate' && focused !== null && <RestatementDialog item={focused} onClose={() => setDialog(null)} onDone={() => {
+      {dialog === 'restate' && focused !== null && <RestatementDialog item={focused} market={marketOf(focused)} onClose={() => setDialog(null)} onDone={() => {
         decided()
         // The item now waits for a restatement of its period: offer to open that case straight away.
         if (canRequest) raiseCase(focused)

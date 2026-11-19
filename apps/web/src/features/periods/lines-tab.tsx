@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useState, type ReactNode } from 'react'
 import { Button } from '../../components/button'
@@ -137,6 +138,16 @@ export function LinesTable({ runId, market, ruleKeys, origins }: LinesTableProps
   )
 }
 
+/**
+ * A manual adjustment line links to the adjustment cases of its payee position.
+ * shortcut: result lines carry the adjustment origin id, not its case id; link the one case once lines carry case_id.
+ */
+function ManualCaseLink({ line }: { readonly line: ResultLine }) {
+  const { can } = useSession()
+  if (!can('case.adjustment.read')) return null
+  return <Link className="font-caption text-caption text-primary hover:underline" href={`/cases?type=adjustment&subject_type=position&subject_id=${line.payee_position_id}`}>Adjustment case</Link>
+}
+
 function Lines({ runId, query, market, onTrace }: { readonly runId: string; readonly query: Readonly<Record<string, string | undefined>>; readonly market: Market | undefined; readonly onTrace: ((id: string) => void) | null }) {
   const list = usePagedList<ResultLine>(`/v1/runs/${runId}/lines`, query)
   return (
@@ -145,7 +156,7 @@ function Lines({ runId, query, market, onTrace }: { readonly runId: string; read
       columns={[
         { key: 'payee', header: 'Payee', cell: (row) => <ParticipantLink id={row.payee_participant_id} /> },
         { key: 'rule', header: 'Bonus', cell: (row) => <span className="flex flex-col"><span className={MONO}>{row.rule_key}</span><span className="font-caption text-caption text-secondary">{row.bonus_type} · pass {row.pass}</span></span> },
-        { key: 'origin', header: 'Origin', cell: (row) => <span className="flex flex-col"><span>{originLabel(row.origin_type)}</span>{row.original_period_id !== null && <span className="font-caption text-caption">for <PeriodLink id={row.original_period_id} /></span>}</span> },
+        { key: 'origin', header: 'Origin', cell: (row) => <span className="flex flex-col"><span>{originLabel(row.origin_type)}</span>{row.original_period_id !== null && <span className="font-caption text-caption">for <PeriodLink id={row.original_period_id} /></span>}{row.origin_type === 'manual' && <ManualCaseLink line={row} />}</span> },
         { key: 'amount', header: `Amount${market === undefined ? '' : ` (${market.currency})`}`, align: 'end', cell: (row) => <span className={`${MONO} font-semibold`}>{marketMoney(row.amount_minor, market)}</span> },
         ...(onTrace === null ? [] : [{
           key: 'trace', header: 'Trace', cell: (row: ResultLine) => <Button size="sm" icon="account_tree" aria-label={`Trace line ${shortId(row.id)} (${row.rule_key})`} onClick={() => onTrace(row.id)}>Trace</Button>,

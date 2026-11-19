@@ -113,4 +113,15 @@ describe('GuardrailsPage (SC-11)', () => {
     expect(overridable(decision({ override: { id: 'o', justification: 'j', approved_by: { id: 'x', display_name: 'X' }, evidence_document_id: null, decided_at: '2026-11-17T09:00:00.000Z' } }))).toBe(false)
     expect(overridable(decision({ outcome: 'reported' }))).toBe(false)
   })
+
+  it('offers the compliance-review override on an opaque blocked decision of a non-overridable rule (D-B4-21 b)', async () => {
+    const opaque = { ...BLOCKED, detail: { ...BLOCKED.detail, opaque: true } }
+    expect(overridable(opaque)).toBe(true)
+    navigation.search = `decision=${opaque.id}`
+    renderAs(OFFICER, <GuardrailsPage />, routes([opaque]))
+    const drawer = await screen.findByRole('dialog')
+    expect(within(drawer).getByText(/Needs a compliance review: a Compliance officer override/)).toBeTruthy()
+    expect(within(drawer).getByText(/Overridable only through compliance review/)).toBeTruthy()
+    expect(within(drawer).getByRole('button', { name: 'Approve override' })).toBeTruthy()
+  })
 })

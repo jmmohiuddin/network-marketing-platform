@@ -101,3 +101,12 @@ _Agent: qa. Read before every task; update after every task. Keep concise — fa
 ## 2026-11-18 — B3 browser round 3 (retest of BUG-094, quick repeat on round-2 data, regression, harness 9 screens, Impeccable + a11y)
 - BUG-094 verified fixed (1440: table 1169 in 1169 box; 1280: 1009/1009; all row actions visible; row menu keyboard-correct; Replay via menu → Match). Restatement dialog via menu ok (not submitted). Row Calculate not executed (no calculable period). Regression: fresh sign-in, imports 1466/4775/7442 (read), R1 16.61 %, audit chain intact. No 5xx; no console errors except intended 401.
 - New: BUG-097 LOW (Gross amount wraps from currency), BUG-098 LOW (768 table still scrolls, chips break per word). Impeccable 13/16. Evidence var/qa-b3/r3/.
+
+## 2026-11-19 — B4 browser round 1, run 2 (fresh seed, build 15:19; W-B4-0..9 + regression, harness 11 screens, Impeccable + a11y)
+- W-B4-1..8 pass, W-B4-0 pass with BUG-099 workaround (providers by API), W-B4-9 pass with custom-role setup, W-B4-10 partial. Money = PLAN (M-3 52.00 incl. C 5.00 manual; clawbacks A −10/B −16; restatement −5.00; A receivable 7.00 written off by two approvers; GL 144.00 = 144.00, identical downloads). Regression import 1466/4775/7442 + sums, R1 16.61 %, audit chain intact 264. No 5xx.
+- BUG-099..104 reproduced unchanged. New: BUG-105 LOW (SC-17 "Version undefined"), BUG-106 MEDIUM (minimum-payout approval hides the value), BUG-107 LOW (case tab counts 0 beside decided cases). Impeccable 14/16-equivalent scores as run 1. Evidence var/qa-b4/run2/.
+
+## 2026-11-19 — B4 browser round 2 (retest of BUG-099..107, quick W-B4-0..10, MVP-A regression, harness 12 screens, Impeccable + a11y)
+- BUG-099..107 all verified fixed in the browser (099 SC-17 record on a live market + SC-13 configure; 100 mail "Nov 22, 2026, 11:46 AM (Europe/Berlin)"; 101 no firebase request; 102 one banner; 103 detail subject + info icon; 104 `…Z` ms; 105 "DE core, version 1"; 106 value in queue/dialog/diff/card; 107 "N undecided" + caption).
+- W-B4-0..8 pass (money = PLAN: M-3 52.00 incl. C 5.00; clawbacks A −10/B −16; restatement A +3/B −8; write-off 7.00 by two approvers; GL 144.00 = 144.00, identical downloads). W-B4-9 partial (executive only; vendor session not executed), W-B4-10 partial. Regression import 1466/4775/7442 + sums, R1 16.61 %, audit chain intact 102. No 5xx.
+- New: BUG-108 LOW (SC-06 queue write-off subject still raw ledger-account id). Evidence var/qa-b4/run3/.

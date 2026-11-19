@@ -357,8 +357,20 @@ describe('LateQueuePage (SC-32)', () => {
     await userEvent.type(within(decision).getByLabelText('Reason'), 'Material change')
     await userEvent.click(within(decision).getByRole('button', { name: 'Raise restatement' }))
     const caseDialog = await screen.findByRole('dialog', { name: 'Request restatement' })
-    expect(caseDialog.textContent).toContain(periodText(item('l1', 'ORD-1').original_period, undefined))
+    expect(caseDialog.textContent).toContain(periodText(item('l1', 'ORD-1').original_period, MARKET.time_zone))
     expect(within(caseDialog).getByLabelText('Reason')).toBeTruthy()
+  })
+
+  it('names the original period by calendar dates in the market zone, like SC-01 (BUG-095)', async () => {
+    navigation.search = 'market_id=m1'
+    renderAs(adminMe({ permissions: ['order.read', 'late.manage'] }), <LateQueuePage />, fetchByRoute({
+      'GET /v1/markets': () => ok([MARKET]),
+      'GET /v1/late-transactions': () => json(200, { data: [item('l1', 'ORD-1')], meta: { next_cursor: null, counts: { pending: 1, decided_30d: 0 } } }),
+    }))
+    const name = periodText(item('l1', 'ORD-1').original_period, 'Europe/Amsterdam')
+    expect(name).not.toMatch(/GMT|AM|PM/) // dates only, no instants
+    const cell = await screen.findByRole('cell', { name: new RegExp(name) })
+    expect(cell.textContent).not.toMatch(/GMT|AM|PM/)
   })
 
   it('is not available without late.manage', () => {

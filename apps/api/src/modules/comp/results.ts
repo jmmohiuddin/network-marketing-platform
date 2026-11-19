@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto'
 import type { Tx } from '@nmp/db'
-import type { ResultLine, RunOutput } from '@nmp/engine'
+import type { PayeeSettlement, ResultLine, RunOutput } from '@nmp/engine'
 
 // Writes engine output rows with multi-row INSERT ... SELECT unnest(...) in batches inside the caller's transaction
 // (§S-2: one transaction for write + flip, measured in bench/write-path.ts).
@@ -62,6 +62,21 @@ export async function insertState(tx: Tx, runId: string, output: RunOutput, mark
         json((r) => r.counters), json((r) => r.carry), json((r) => r.oneTimeFlags), json((r) => r.banked),
         json((r) => measures.get(r.positionId) ?? []), marketId,
       ],
+    )
+  }
+}
+
+/** run_settlement: the engine's pass-11 result per payee, what the commit posts (D-B4-02). */
+export async function insertSettlement(tx: Tx, runId: string, payees: readonly PayeeSettlement[]): Promise<void> {
+  for (let start = 0; start < payees.length; start += BATCH) {
+    const batch = payees.slice(start, start + BATCH)
+    const minor = (pick: (p: PayeeSettlement) => bigint) => batch.map((p) => pick(p).toString())
+    await tx.query(
+      `INSERT INTO run_settlement (tenant_id, run_id, payee_participant_id, gross_minor, receivable_before_minor, netted_minor, withheld_minor,
+         net_payable_minor)
+       SELECT app_tenant_id(), $1, * FROM unnest($2::uuid[], $3::bigint[], $4::bigint[], $5::bigint[], $6::bigint[], $7::bigint[])`,
+      [runId, batch.map((p) => p.participantId), minor((p) => p.grossMinor), minor((p) => p.receivableBeforeMinor), minor((p) => p.nettedMinor),
+        minor((p) => p.withheldMinor), minor((p) => p.netPayableMinor)],
     )
   }
 }

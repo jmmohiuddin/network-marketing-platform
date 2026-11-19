@@ -1,10 +1,11 @@
 // run(): builds the RunContext, registers every pass in SDD-07 §4 order and implements passes 9-12:
 // adjustments, rounding, settlement (netting then withholding), invariants + control totals + hashes.
 import { createHash } from 'node:crypto'
+import { interner } from './compact.js'
 import { EngineError } from './errors.js'
 import { traceAmountMinor } from './explain.js'
 import { assertInt64, formatRate, mulRate, parseDecimal, RATE_SCALE, roundRaw, toRaw } from './money.js'
-import { BONUS_PASS, ENGINE_VERSION, PASS_NUMBER, runPipeline, type Done, type PassFn, type PassRegistry, type PayoutFn, type PayoutPass, type RunContext } from './pipeline.js'
+import { BONUS_PASS, ENGINE_VERSION, PASS_NUMBER, runPipeline, type CapOutput, type Done, type PassFn, type PassRegistry, type PayoutFn, type PayoutPass, type RunContext } from './pipeline.js'
 import { capAmountMinor, capPass, constraintPass, lineValue } from './primitives/caps.js'
 import { differential } from './primitives/differential.js'
 import { fastStart } from './primitives/fast-start.js'
@@ -186,15 +187,16 @@ function invariant(ok: boolean, message: string, details: Record<string, string>
 }
 
 function checkInvariants(ctx: RunContext, done: Done<'totals'>): void {
-  const keys = new Set<string>()
-  for (const l of done.rounding) {
+  // Lines are sorted by (payee, pass, rule, origin) and a rule has one pass, so a duplicate is the line before.
+  done.rounding.forEach((l, i) => {
     const ref = { positionId: l.payeePositionId, ruleKey: l.ruleKey }
-    const key = JSON.stringify([l.payeePositionId, l.ruleKey, l.origin?.originType ?? null, l.origin?.originId ?? null])
-    invariant(!keys.has(key), 'more than one line per (payee position, rule, origin)', ref)
-    keys.add(key)
+    const prev = done.rounding[i - 1]
+    const same = prev !== undefined && prev.payeePositionId === l.payeePositionId && prev.ruleKey === l.ruleKey
+      && (prev.origin?.originType ?? null) === (l.origin?.originType ?? null) && (prev.origin?.originId ?? null) === (l.origin?.originId ?? null)
+    invariant(!same, 'more than one line per (payee position, rule, origin)', ref)
     invariant(l.origin !== null || ctx.earner[ctx.trees.sponsor.index.get(l.payeePositionId)!] === 1, 'payout to a position that may not earn', ref)
     invariant(traceAmountMinor(l.trace) === l.amountMinor, 'line trace does not reconcile to its amount', ref)
-  }
+  })
   checkLimits(ctx, done)
   const byParticipant = new Map<string, bigint>()
   for (const l of done.rounding) byParticipant.set(l.payeeParticipantId, (byParticipant.get(l.payeeParticipantId) ?? 0n) + l.amountMinor)
@@ -214,7 +216,7 @@ function totalsBy<T>(items: readonly T[], key: (t: T) => string, amount: (t: T) 
   return sums
 }
 
-/** After rounding: every cap (bound or not, per payee for per_person), every max_per_period, every allocation sums to its total. */
+/** After rounding: every cap (bound or not, per payee for per_person) and every max_per_period holds. */
 function checkLimits(ctx: RunContext, done: Done<'totals'>): void {
   const { plan, settings } = ctx.input
   const paid = done.rounding.filter((l) => l.origin === null)
@@ -237,8 +239,12 @@ function checkLimits(ctx: RunContext, done: Done<'totals'>): void {
       invariant(amount <= c.maxMinor, 'participant limit exceeded', { key: c.key, participantId })
     }
   }
+}
+
+/** Every allocation's parts sum to its total (FR-COMP-012). */
+function checkAllocations(lines: readonly RawLine[]): void {
   const allocations = new Map<string, { total: bigint; sum: bigint }>()
-  for (const l of done.caps.lines) {
+  for (const l of lines) {
     for (const s of l.trace.steps) {
       if (s.step !== 'allocation') continue
       const a = allocations.get(s.key) ?? { total: s.totalMinor, sum: 0n }
@@ -249,16 +255,23 @@ function checkLimits(ctx: RunContext, done: Done<'totals'>): void {
 }
 
 /** Not earned: what the pass 4-6 lines would have paid minus what they pay after passes 7-8, plus pool parts without a holder. */
-function breakageMinor(ctx: RunContext, done: Done<'totals'>): bigint {
+function breakageMinor(ctx: RunContext, done: Done<'caps'>, capped: readonly RawLine[]): bigint {
   const mode = ctx.input.settings.roundingMode
   const before = [...done.individual, ...done.matching, ...done.pools]
-  invariant(before.length === done.caps.lines.length, 'passes 7-8 must keep every line in place')
+  invariant(before.length === capped.length, 'passes 7-8 must keep every line in place')
   const amount = (l: RawLine): bigint => l.allocatedMinor ?? roundRaw(l.raw, mode)
   let removed = unpaidPoolMinor(ctx, done)
-  done.caps.lines.forEach((after, i) => {
+  capped.forEach((after, i) => {
     if (after !== before[i]) removed += amount(before[i]!) - amount(after)
   })
   return removed
+}
+
+/** Pass 8 plus what pass 12 needs from the pass 4-8 lines, so those lines can be released after pass 10 (S-1). */
+const capsPass: PassFn<'caps'> = (ctx, done): CapOutput => {
+  const out = capPass(ctx, done)
+  checkAllocations(out.lines)
+  return { ...out, breakageMinor: breakageMinor(ctx, done, out.lines) }
 }
 
 function sumBy<T, K extends string>(items: readonly T[], key: (t: T) => K | null, amount: (t: T) => bigint): { key: K; amount: bigint }[] {
@@ -281,7 +294,7 @@ function controlTotals(ctx: RunContext, done: Done<'totals'>): ControlTotals {
     nettedMinor: total((p) => p.nettedMinor),
     withheldMinor: total((p) => p.withheldMinor),
     netPayableMinor: total((p) => p.netPayableMinor),
-    breakageMinor: assertInt64(breakageMinor(ctx, done), 'breakage'),
+    breakageMinor: assertInt64(done.caps.breakageMinor, 'breakage'),
     // Every line is rounded once, every split is exact (largestRemainder) and points pools convert before they
     // split, so no residue arises; removed and unallocated amounts are breakage.
     residueMinor: 0n,
@@ -313,15 +326,18 @@ function sortedState(rows: readonly QualificationStateRow[]): QualificationState
 export function resultHash(lines: readonly ResultLine[], taxLines: readonly TaxLine[], state: readonly QualificationStateRow[], summaries: readonly PositionSummary[]): string {
   const h = createHash('sha256')
   const byKey = <T>(items: readonly T[], key: (t: T) => string): T[] => [...items].sort((a, b) => compareId(key(a), key(b)))
-  const records = [
-    ...lines.map((l) => ['L', l.payeePositionId, l.pass, l.ruleKey, l.origin?.originType ?? null, l.origin?.originId ?? null, l.amountMinor.toString(), l.currency]),
-    ...[...taxLines].sort((a, b) => compareId(a.participantId, b.participantId)).map((t) => ['T', t.participantId, t.ruleId, t.taxableMinor.toString(), t.withheldMinor.toString()]),
-    ...sortedState(state).map((s) => ['S', s.positionId, canonicalState(s)]),
-    ...byKey(summaries, (s) => s.positionId).map((s) => [
-      'V', s.positionId, byKey(s.measures, (m) => m.measure).map((m) => [m.measure, m.valueMinor.toString()]), byKey(s.paidAs, (p) => p.ladder).map((p) => [p.ladder, p.rank]),
-    ]),
-  ]
-  records.forEach((r, i) => h.update(i === 0 ? JSON.stringify(r) : `\n${JSON.stringify(r)}`))
+  // Records are hashed as they are made (no array of every record: S-1 memory).
+  let first = true
+  const record = (r: unknown): void => {
+    h.update(first ? JSON.stringify(r) : `\n${JSON.stringify(r)}`)
+    first = false
+  }
+  for (const l of lines) record(['L', l.payeePositionId, l.pass, l.ruleKey, l.origin?.originType ?? null, l.origin?.originId ?? null, l.amountMinor.toString(), l.currency])
+  for (const t of [...taxLines].sort((a, b) => compareId(a.participantId, b.participantId))) record(['T', t.participantId, t.ruleId, t.taxableMinor.toString(), t.withheldMinor.toString()])
+  for (const s of sortedState(state)) record(['S', s.positionId, canonicalState(s)])
+  for (const s of byKey(summaries, (s) => s.positionId)) {
+    record(['V', s.positionId, byKey(s.measures, (m) => m.measure).map((m) => [m.measure, m.valueMinor.toString()]), byKey(s.paidAs, (p) => p.ladder).map((p) => [p.ladder, p.rank])])
+  }
   return h.digest('hex')
 }
 
@@ -341,14 +357,15 @@ function committedState(ctx: RunContext, done: Done<'totals'>): QualificationSta
 
 function summaries(ctx: RunContext, done: Done<'totals'>): PositionSummary[] {
   const { plan } = ctx.input
-  return ctx.positions.map((p, k) => ({
-    positionId: p.positionId,
-    measures: plan.measures.map((m) => ({ measure: m.key, valueMinor: done.volumes.byMeasure.get(m.key)![k]! })),
-    paidAs: plan.ladders.map((l) => {
-      const r = done.qualification.paidAs.get(l.key)![k]!
-      return { ladder: l.key, rank: r < 0 ? null : l.ranks[r]!.key }
-    }),
-  }))
+  const paidAs = interner<readonly LadderRank[]>() // one shared copy per rank combination (S-1 memory)
+  return ctx.positions.map((p, k) => {
+    const at = plan.ladders.map((l) => done.qualification.paidAs.get(l.key)![k]!)
+    return {
+      positionId: p.positionId,
+      measures: plan.measures.map((m) => ({ measure: m.key, valueMinor: done.volumes.byMeasure.get(m.key)![k]! })),
+      paidAs: paidAs(at.join(), () => plan.ladders.map((l, i) => ({ ladder: l.key, rank: at[i]! < 0 ? null : l.ranks[at[i]!]!.key }))),
+    }
+  })
 }
 
 const totalsPass: PassFn<'totals'> = (ctx, done) => {
@@ -475,7 +492,7 @@ export function inputsHash(input: RunInput): string {
 export const PASSES: PassRegistry = {
   transition: transitionPass, lineVolumes: lineVolumePass, volumes: positionVolumePass, qualification: qualificationPass,
   individual: payoutPass('individual'), matching: payoutPass('matching'), pools: payoutPass('pools'),
-  constraints: constraintPass, caps: capPass, adjustments: adjustmentPass, rounding: roundingPass, settlement: settlementPass, totals: totalsPass,
+  constraints: constraintPass, caps: capsPass, adjustments: adjustmentPass, rounding: roundingPass, settlement: settlementPass, totals: totalsPass,
 }
 
 export function run(input: RunInput, options: RunOptions = { fullTraceFor: [] }): RunOutput {

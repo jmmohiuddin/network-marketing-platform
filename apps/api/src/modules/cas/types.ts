@@ -33,6 +33,10 @@ export interface CaseRecord<P = unknown> {
   readonly submitted_at: Date | null
   readonly decided_at: Date | null
   readonly approval_id: string | null
+  /** D-B4-10: the first of two approvals, recorded while the case stays submitted. */
+  readonly first_approval_id: string | null
+  /** D-B4-10: the approvals the case needs, pinned at submit (null before submit and for cases submitted before B4: 1). */
+  readonly approvals_required: 1 | 2 | null
   readonly created_at: Date
 }
 
@@ -71,6 +75,10 @@ export interface CaseTypeDefinition<P = unknown> {
   ): Promise<void>
   effectPreview?(tx: Tx, c: CaseRecord<P>): Promise<unknown>
   dueAt?(tx: Tx, c: CaseRecord<P>): Promise<Date | null>
+  /** D-B4-10: approvals needed, evaluated at submit and pinned on the case (1 when absent). */
+  approvalsRequired?(tx: Tx, c: CaseRecord<P>): Promise<1 | 2>
+  /** D-B4-10: users who may not approve this case besides the SoD exclusions, evaluated at each decision. */
+  excludedApprovers?(tx: Tx, c: CaseRecord<P>): Promise<string[]>
   /** Runs in the decision's transaction, after the case is approved or rejected. */
   onDecision?(tx: Tx, c: CaseRecord<P>, decision: 'approved' | 'rejected'): Promise<void>
 }

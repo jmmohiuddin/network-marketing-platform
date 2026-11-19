@@ -24,6 +24,10 @@ const SUPPORT_EXCLUDED_PERMISSIONS = [
   // PLAN B3 section 2.7: authoring, approving, running, committing and overriding stay with the tenant.
   'plan.edit', 'plan.approve', 'plan.activate', 'plan.simulate', 'run.execute', 'run.commit', 'restatement.request',
   'restatement.approve', 'override.approve',
+  // PLAN B4 section 2.6: preparing, approving and reconciling money stays with the tenant (reads stay possible).
+  'payout.prepare', 'payout.approve', 'payout.reconcile', 'payout.hold', 'ledger.export', 'tax.manage', 'case.adjustment.create',
+  'case.adjustment.approve', 'case.write_off.create', 'case.write_off.approve', 'case.bank_detail.create', 'case.bank_detail.approve',
+  'case.returned_payment.create',
 ] as const satisfies readonly Permission[]
 export const scopePermission = z.enum(PERMISSIONS).exclude(SUPPORT_EXCLUDED_PERMISSIONS)
 export type ScopePermission = z.infer<typeof scopePermission>

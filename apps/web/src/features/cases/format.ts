@@ -19,7 +19,9 @@ export interface CaseTypeInfo {
 
 const GENEALOGY = { read: 'case.genealogy.read', create: 'case.genealogy.create', decide: 'case.genealogy.approve', deciderRole: 'Compliance officer' }
 
-/** The registered case types (B2, B3 restatement), in tab order. */
+const FINANCE = { deciderRole: 'Finance approver' }
+
+/** The registered case types (B2, B3 restatement, B4 money cases), in tab order. */
 export const CASE_TYPES: readonly CaseTypeInfo[] = [
   { type: 'genealogy_change', label: 'Genealogy change', plural: 'Genealogy changes', ...GENEALOGY, reasonCodes: ['PARTICIPANT_REQUEST', 'ENROLMENT_ERROR', 'COMPANY_DECISION'] },
   { type: 'genealogy_correction', label: 'Genealogy correction', plural: 'Corrections', ...GENEALOGY, reasonCodes: ['DATA_ENTRY_ERROR', 'MIGRATION_ERROR', 'DISPUTE_RESOLUTION'] },
@@ -32,6 +34,23 @@ export const CASE_TYPES: readonly CaseTypeInfo[] = [
   {
     type: 'duplicate', label: 'Duplicate review', plural: 'Duplicates', read: 'case.duplicate.read', create: 'case.duplicate.create',
     decide: 'case.duplicate.approve', deciderRole: 'Compliance officer',
+  },
+  {
+    type: 'adjustment', label: 'Manual adjustment', plural: 'Adjustments', read: 'case.adjustment.read', create: 'case.adjustment.create',
+    decide: 'case.adjustment.approve', ...FINANCE, reasonCodes: ['COMMISSION_ERROR', 'DATA_CORRECTION', 'DISPUTE_UPHELD', 'GOODWILL', 'OTHER'],
+  },
+  {
+    type: 'write_off', label: 'Write-off', plural: 'Write-offs', read: 'case.write_off.read', create: 'case.write_off.create',
+    decide: 'case.write_off.approve', ...FINANCE, reasonCodes: ['UNRECOVERABLE', 'NO_FUTURE_EARNINGS', 'BELOW_THRESHOLD', 'OTHER'],
+  },
+  {
+    type: 'bank_detail', label: 'Bank-detail change', plural: 'Bank details', read: 'case.bank_detail.read', create: 'case.bank_detail.create',
+    decide: 'case.bank_detail.approve', deciderRole: 'Compliance officer', reasonCodes: ['PAYEE_REQUEST', 'CORRECTION'],
+  },
+  {
+    // Opened by the system for a returned payout (RETURNED_BY_BANK); the payout officer adds a note and submits it.
+    type: 'returned_payment', label: 'Returned payment', plural: 'Returned payments', read: 'case.returned_payment.read',
+    create: 'case.returned_payment.create', decide: 'payout.approve', ...FINANCE,
   },
 ]
 
@@ -50,6 +69,9 @@ const REASON_LABELS: Readonly<Record<string, string>> = {
   SIGNAL_MATCH: 'Matching signals at enrolment', STAFF_SUSPICION: 'Staff suspicion',
   ENGINE_DEFECT: 'Engine defect', INPUT_CORRECTION: 'Input correction', GENEALOGY_CORRECTION: 'Genealogy correction',
   LATE_TRANSACTION: 'Late transaction', DISPUTE_UPHELD: 'Dispute upheld',
+  COMMISSION_ERROR: 'Commission error', DATA_CORRECTION: 'Data correction', GOODWILL: 'Goodwill', OTHER: 'Other',
+  UNRECOVERABLE: 'Unrecoverable', NO_FUTURE_EARNINGS: 'No future earnings expected', BELOW_THRESHOLD: 'Below the write-off threshold',
+  PAYEE_REQUEST: 'Payee request', CORRECTION: 'Correction', RETURNED_BY_BANK: 'Returned by the bank',
 }
 
 export function reasonLabel(code: string): string {
@@ -70,7 +92,7 @@ export const STATE_BADGES: Readonly<Record<CaseState, string>> = {
 
 export const EVENT_LABELS: Readonly<Record<CaseEventKind, string>> = {
   opened: 'Opened', evidence_added: 'Evidence added', assigned: 'Assignment changed', submitted: 'Submitted for decision',
-  approved: 'Approved', rejected: 'Rejected', withdrawn: 'Withdrawn', updated: 'Updated',
+  first_approved: 'First approval', approved: 'Approved', rejected: 'Rejected', withdrawn: 'Withdrawn', updated: 'Updated',
 }
 
 export const KIND_LABELS: Readonly<Record<TreeKind, string>> = { sponsor: 'Sponsor tree', placement: 'Placement tree' }
@@ -85,6 +107,16 @@ export const OUTCOME_LABELS: Readonly<Record<DuplicateOutcome, string>> = {
   allow: 'Allow both participants',
   terminate: "Terminate the subject's positions",
 }
+
+/** Why a case needs a second approver (D-B4-08/09 escalations), in words. */
+const ESCALATION_TEXT: Readonly<Record<string, string>> = {
+  related_party: 'The payee is declared related to a person preparing this case.',
+  new_account: 'The payee enrolled within the new-account days of the adjustment policy.',
+  above_threshold: 'The amount is above the second-approver threshold of the policy.',
+  not_eligible: 'The receivable is not eligible for write-off under the policy.',
+}
+
+export const escalationText = (code: string): string => ESCALATION_TEXT[code] ?? code
 
 /** Structural refusals of a genealogy change (PLAN B2 4.3), in plain words. */
 const STRUCTURAL_TEXT: Readonly<Record<string, string>> = {

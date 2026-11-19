@@ -42,7 +42,7 @@ export async function uncoveredExtensions(tx: Tx, versionId: string, rules: read
 export async function versionView(tx: Tx, plan: PlanRow, version: VersionRow): Promise<Record<string, unknown>> {
   const rules = await ruleRows(tx, version.id)
   const transitions = await transitionRows(tx, version.id)
-  const validation = validationOf(rules, plan.calendar_ids)
+  const validation = validationOf(rules, plan.calendar_ids, version.placement_width)
   const outstanding = await outstandingDecisions(tx, version.id)
   const { rows: goldens } = await tx.query<{ id: string; name: string; covers: string[]; last_result: { status: string; content_hash: string } | null }>(
     'SELECT id, name, calendar_id, covers, last_result, last_run_at FROM golden_dataset WHERE plan_version_id = $1 ORDER BY name, id', [version.id],
@@ -58,7 +58,7 @@ export async function versionView(tx: Tx, plan: PlanRow, version: VersionRow): P
   const missing = await missingTransitions(tx, plan, version, transitions)
   return {
     ...versionFields(version),
-    rules: rules.map(ruleView),
+    rules: rules.map((r) => ruleView(r, plan.minor_digits)),
     transitions,
     validation: validationView(validation),
     guardrails: { decisions: await latestDecisions(tx, version.id), outstanding },
@@ -81,7 +81,8 @@ export async function versionView(tx: Tx, plan: PlanRow, version: VersionRow): P
 const canonical = (value: unknown): string => stringifyEngineJson(value)
 
 /** AC-PLN1-5: fields, rules and transitions of `version` against `against` (before = against, after = version). */
-export async function diffView(tx: Tx, version: VersionRow, against: VersionRow): Promise<Record<string, unknown>> {
+export async function diffView(tx: Tx, plan: PlanRow, version: VersionRow, against: VersionRow): Promise<Record<string, unknown>> {
+  const view = (r: RuleRow): Record<string, unknown> => ruleView(r, plan.minor_digits)
   const fieldNames = ['crediting_event', 'placement_width', 'effective_from', 'justification', 'engine_version'] as const
   const fields = fieldNames
     .filter((name) => canonical(version[name]) !== canonical(against[name]))
@@ -92,12 +93,12 @@ export async function diffView(tx: Tx, version: VersionRow, against: VersionRow)
   return {
     fields,
     rules: {
-      added: after.filter((r) => !before.some((b) => b.rule_key === r.rule_key)).map(ruleView),
-      removed: before.filter((r) => !after.some((a) => a.rule_key === r.rule_key)).map(ruleView),
+      added: after.filter((r) => !before.some((b) => b.rule_key === r.rule_key)).map(view),
+      removed: before.filter((r) => !after.some((a) => a.rule_key === r.rule_key)).map(view),
       changed: after.flatMap((r) => {
         const b = before.find((x) => x.rule_key === r.rule_key)
         if (b === undefined || content(b) === content(r)) return []
-        const [viewBefore, viewAfter] = [ruleView(b), ruleView(r)]
+        const [viewBefore, viewAfter] = [view(b), view(r)]
         return [{ rule_key: r.rule_key, before: viewBefore, after: viewAfter, rendering_before: viewBefore.rendering, rendering_after: viewAfter.rendering }]
       }),
     },

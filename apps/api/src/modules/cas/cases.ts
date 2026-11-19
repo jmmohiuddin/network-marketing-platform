@@ -2,11 +2,11 @@ import type { Tx } from '@nmp/db'
 import { recordAudit } from '../../lib/audit.js'
 import type { CaseRecord, CaseState } from './types.js'
 
-type EventKind = 'opened' | 'evidence_added' | 'assigned' | 'submitted' | 'approved' | 'rejected' | 'withdrawn' | 'updated'
+type EventKind = 'opened' | 'evidence_added' | 'assigned' | 'submitted' | 'first_approved' | 'approved' | 'rejected' | 'withdrawn' | 'updated'
 
 const COLUMNS = `c.id, c.type, c.subject_type, c.subject_id, c.reason_code, c.state, c.payload, c.effect_preview, c.due_at,
   c.market_id, c.opened_by, c.opened_by_kind, c.assigned_to, c.submitted_by, c.submitted_at, c.decided_at, c.approval_id,
-  c.created_at`
+  c.first_approval_id, c.approvals_required, c.created_at`
 
 // node-postgres sends JS arrays as Postgres arrays: JSON values go as text and are cast.
 const json = (value: unknown): string | null => (value === undefined || value === null ? null : JSON.stringify(value))
@@ -165,10 +165,20 @@ export interface EventView {
 
 export async function caseEvents(tx: Tx, caseId: string): Promise<EventView[]> {
   const { rows } = await tx.query<EventView>(
-    'SELECT id, occurred_at, actor_id, kind, data FROM case_event WHERE case_id = $1 ORDER BY occurred_at, id',
+    // The approvers excluded at submit stay out of the view: they name staff related to the case's subject (D-B4-11).
+    `SELECT id, occurred_at, actor_id, kind, NULLIF(data - 'excluded_approvers', '{}') AS data FROM case_event WHERE case_id = $1 ORDER BY occurred_at, id`,
     [caseId],
   )
   return rows
+}
+
+/** The type's excluded approvers pinned at submit (D-B4-10), which a decision adds to the current ones. */
+export async function pinnedExclusions(tx: Tx, caseId: string): Promise<string[]> {
+  const { rows } = await tx.query<{ id: string }>(
+    `SELECT jsonb_array_elements_text(data -> 'excluded_approvers') AS id FROM case_event WHERE case_id = $1 AND kind = 'submitted'`,
+    [caseId],
+  )
+  return rows.map((row) => row.id)
 }
 
 /**
@@ -231,14 +241,33 @@ export async function setAssignee(tx: Tx, caseId: string, userId: string | null)
   return rows[0]!
 }
 
-export async function markSubmitted(tx: Tx, caseId: string, preview: unknown, dueAt: Date | null): Promise<CaseRecord> {
+export async function markSubmitted(tx: Tx, caseId: string, preview: unknown, dueAt: Date | null, approvalsRequired: 1 | 2): Promise<CaseRecord> {
   const { rows } = await tx.query<CaseRecord>(
     `UPDATE case_file c SET state = 'submitted', submitted_by = app_user_id(), submitted_at = now(),
-       effect_preview = $2::jsonb, due_at = $3
+       effect_preview = $2::jsonb, due_at = $3, approvals_required = $4
      WHERE c.id = $1 RETURNING ${COLUMNS}`,
-    [caseId, json(preview), dueAt],
+    [caseId, json(preview), dueAt, approvalsRequired],
   )
   return rows[0]!
+}
+
+/** D-B4-10: the first of two approvals; the case stays submitted. */
+export async function markFirstApproved(tx: Tx, caseId: string, approvalId: string): Promise<CaseRecord> {
+  const { rows } = await tx.query<CaseRecord>(`UPDATE case_file c SET first_approval_id = $2 WHERE c.id = $1 RETURNING ${COLUMNS}`, [caseId, approvalId])
+  return rows[0]!
+}
+
+export interface FirstApproval { readonly approver: { readonly id: string; readonly display_name: string | null }; readonly decided_at: Date }
+
+/** The first approvals of cases, by approval id. */
+export async function firstApprovals(tx: Tx, approvalIds: readonly string[]): Promise<Map<string, FirstApproval>> {
+  if (approvalIds.length === 0) return new Map()
+  const { rows } = await tx.query<{ id: string; approver_id: string; display_name: string | null; decided_at: Date }>(
+    `SELECT a.id, a.approver_id, u.display_name, a.decided_at
+     FROM approval a JOIN user_account u ON u.tenant_id = a.tenant_id AND u.id = a.approver_id WHERE a.id = ANY ($1::uuid[])`,
+    [approvalIds],
+  )
+  return new Map(rows.map((r) => [r.id, { approver: { id: r.approver_id, display_name: r.display_name }, decided_at: r.decided_at }]))
 }
 
 export async function markDecided(tx: Tx, caseId: string, state: 'approved' | 'rejected', approvalId: string): Promise<CaseRecord> {

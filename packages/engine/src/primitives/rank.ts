@@ -14,6 +14,7 @@
 // - legs: direct children in `tree` whose subtree (child included) holds paid-as >= rank. A ladder may count its own
 //   ranks in one tree (positions evaluated bottom-up in it); other references must name an earlier ladder.
 // - Counter: prior + 1 when incrementIf holds, else 0. Carry: min(prev + new, cap) when keepIf holds, else 0.
+import { EMPTY, interner, orEmpty } from '../compact.js'
 import { EngineError } from '../errors.js'
 import { conditionOf } from '../expression.js'
 import { assertInt64, mulRate, parseDecimal, RAW_SCALE, toRaw } from '../money.js'
@@ -323,19 +324,27 @@ export const qualificationPass: PassFn<'qualification'> = (ctx, done) => {
   const ladders = plan.ladders.map((l, i) => ({ l, r: results[i]! })).sort((a, b) => compareId(a.l.key, b.l.key))
   const rankKey = (l: Ladder, r: number): string | null => (r >= 0 ? l.ranks[r]!.key : null)
 
+  // Rank and grace arrays repeat across positions: one shared copy per combination (S-1 memory, compact.ts).
+  const rankRefs = interner<readonly LadderRank[]>()
+  const graceRefs = interner<QualificationStateRow['graceUsed']>()
+  const refs = (at: (r: LadderResult) => Int16Array, k: number): readonly LadderRank[] => {
+    const idx = ladders.map(({ r }) => at(r)[k]!)
+    return rankRefs(idx.join(), () => ladders.map(({ l }, i) => ({ ladder: l.key, rank: rankKey(l, idx[i]!) })))
+  }
   const state: QualificationStateRow[] = []
   const evaluations: QualificationEvaluation[] = []
   for (let k = 0; k < n; k++) {
     const row = done.transition.prior[k] ?? null
+    const grace = ladders.map(({ r }) => r.grace[k]!)
     state.push({
       positionId: ctx.positions[k]!.positionId,
-      paidAs: ladders.map(({ l, r }) => ({ ladder: l.key, rank: rankKey(l, r.paid[k]!) })),
-      titles: ladders.map(({ l, r }) => ({ ladder: l.key, rank: rankKey(l, r.title[k]!) })),
-      graceUsed: ladders.map(({ l, r }) => ({ ladder: l.key, periods: r.grace[k]! })),
-      counters: counters.map((c) => ({ key: c.key, value: c.holds(k) ? (row?.counters.find((p) => p.key === c.key)?.value ?? 0) + 1 : 0 })),
-      carry: carries.map((c) => ({ key: c.rule.key, ...carryForward(c.rule, row?.carry.find((p) => p.key === c.rule.key) ?? null, c.values[k]!, c.holds(k)) })),
-      oneTimeFlags: row?.oneTimeFlags ?? [], // added by one_time lines after pass 4 (run owner)
-      banked: row?.banked ?? [],
+      paidAs: refs((r) => r.paid, k),
+      titles: refs((r) => r.title, k),
+      graceUsed: graceRefs(grace.join(), () => ladders.map(({ l }, i) => ({ ladder: l.key, periods: grace[i]! }))),
+      counters: orEmpty(counters.map((c) => ({ key: c.key, value: c.holds(k) ? (row?.counters.find((p) => p.key === c.key)?.value ?? 0) + 1 : 0 }))),
+      carry: orEmpty(carries.map((c) => ({ key: c.rule.key, ...carryForward(c.rule, row?.carry.find((p) => p.key === c.rule.key) ?? null, c.values[k]!, c.holds(k)) }))),
+      oneTimeFlags: orEmpty(row?.oneTimeFlags ?? EMPTY), // added by one_time lines after pass 4 (run owner)
+      banked: orEmpty(row?.banked ?? EMPTY),
     })
     for (const r of results) evaluations.push(r.evaluations[k]!)
   }

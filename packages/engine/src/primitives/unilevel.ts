@@ -1,5 +1,6 @@
 // pay.percent_by_level (TS-01, TS-02) plus the line builder shared by the payout primitives of this owner
 // (unilevel, generations, differential, override, matching, fast-start, one-time, pools).
+import { EMPTY, interner, orEmpty } from '../compact.js'
 import { EngineError } from '../errors.js'
 import { expressionRefs } from '../expression.js'
 import { largestRemainder, mulRate, parseDecimal, toRaw } from '../money.js'
@@ -83,8 +84,8 @@ function creditedOrders(a: OrderAttribution, need: ReadonlySet<number>): Map<num
 }
 
 /** Source raw split over its orders by their value (largest remainder, ties order id asc): parts sum to raw. */
-function splitOrders(raw: bigint, parts: readonly { orderId: string; value: bigint }[]): TraceOrder[] {
-  if (parts.length === 0) return []
+function splitOrders(raw: bigint, parts: readonly { orderId: string; value: bigint }[]): readonly TraceOrder[] {
+  if (parts.length === 0) return EMPTY
   const magnitude = raw < 0n ? -raw : raw
   const split = largestRemainder(magnitude, parts.map((p) => p.value))
   return parts.map((p, i) => ({ orderId: p.orderId, raw: raw < 0n ? -split[i]! : split[i]! }))
@@ -106,11 +107,18 @@ export function payoutLines(ctx: RunContext, rule: BonusRule, q: Pick<Qualificat
     acc.omittedCount++
     acc.omittedRaw += e.c.raw
   }
-  const rankEvaluated = (k: number): LadderRank[] =>
-    spec.ladders.map((ladder) => {
-      const r = q.paidAs.get(ladder)?.[k] ?? -1
-      return { ladder, rank: r >= 0 ? (ctx.input.plan.ladders.find((l) => l.key === ladder)?.ranks[r]?.key ?? null) : null }
-    })
+  // One shared copy per rank combination, per tree kind and for "nothing omitted" (S-1 memory, compact.ts).
+  const ranks = interner<readonly LadderRank[]>()
+  const rankEvaluated = (k: number): readonly LadderRank[] => {
+    const at = spec.ladders.map((ladder) => q.paidAs.get(ladder)?.[k] ?? -1)
+    return ranks(at.join(), () =>
+      spec.ladders.map((ladder, i) => {
+        const r = at[i]!
+        return { ladder, rank: r >= 0 ? (ctx.input.plan.ladders.find((l) => l.key === ladder)?.ranks[r]?.key ?? null) : null }
+      }))
+  }
+  const tree = spec.tree === null ? null : Object.freeze({ kind: spec.tree, knownAtUs: ctx.evaluation.knownAtUs })
+  const nothingOmitted = Object.freeze({ count: 0, raw: 0n })
 
   return {
     add(payee: number, c: Contribution): void {
@@ -156,8 +164,8 @@ export function payoutLines(ctx: RunContext, rule: BonusRule, q: Pick<Qualificat
           share: c.share ?? null,
           capMinor: c.capMinor ?? null,
           raw: c.raw,
-          orders: c.orders ?? (cites(acc, c) ? splitOrders(c.raw, orders.get(c.k) ?? []) : []),
-          compressedOver: detail.compressedOver?.(c, k) ?? [],
+          orders: orEmpty(c.orders ?? (cites(acc, c) ? splitOrders(c.raw, orders.get(c.k) ?? []) : EMPTY)),
+          compressedOver: orEmpty(detail.compressedOver?.(c, k) ?? EMPTY),
         }))
         out.push({
           payeePositionId: ids[k]!,
@@ -170,7 +178,7 @@ export function payoutLines(ctx: RunContext, rule: BonusRule, q: Pick<Qualificat
           origin: null,
           raw: acc.raw,
           allocatedMinor: null,
-          purposeRaw: purposes.map((purpose, i) => ({ purpose, raw: acc.purpose[i]! })),
+          purposeRaw: orEmpty(purposes.map((purpose, i) => ({ purpose, raw: acc.purpose[i]! }))),
           trace: {
             rule: rule.key,
             kind: rule.kind,
@@ -179,11 +187,11 @@ export function payoutLines(ctx: RunContext, rule: BonusRule, q: Pick<Qualificat
             engineVersion: ENGINE_VERSION,
             payeePositionId: ids[k]!,
             rankEvaluated: rankEvaluated(k),
-            tree: spec.tree === null ? null : { kind: spec.tree, knownAtUs: ctx.evaluation.knownAtUs },
+            tree,
             sources,
-            omitted: { count: acc.omittedCount, raw: acc.omittedRaw },
+            omitted: acc.omittedCount === 0 ? nothingOmitted : { count: acc.omittedCount, raw: acc.omittedRaw },
             raw: acc.raw,
-            steps: [],
+            steps: EMPTY,
           },
         })
       }

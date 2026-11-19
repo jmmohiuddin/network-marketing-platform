@@ -146,6 +146,20 @@ describe('AppShell', () => {
     expect(links.map((link) => link.getAttribute('aria-current'))).toEqual([null, null, null, null, 'page'])
   })
 
+  it('shows the B4 entries the API grants with their icons; reconciliation is not under payouts', async () => {
+    navigation.pathname = '/payouts/reconciliation'
+    const entries = [
+      { key: 'ledger', path: '/ledger', label: 'Ledger and exports' },
+      { key: 'payouts', path: '/payouts', label: 'Payouts' },
+      { key: 'reconciliation', path: '/payouts/reconciliation', label: 'Payout reconciliation' },
+    ]
+    renderWithProviders(<AppShell realm="tenant"><Page /></AppShell>, fetchReturning(ok(me({ navigation: entries }))))
+    await screen.findByText('May invite users')
+    const links = entries.map((entry) => screen.getByRole('link', { name: entry.label }))
+    expect(links.map((link) => link.querySelector('.material-symbols-outlined')?.textContent)).toEqual(['account_balance', 'payments', 'fact_check'])
+    expect(links.map((link) => link.getAttribute('aria-current'))).toEqual([null, null, 'page'])
+  })
+
   it('opens the navigation as an overlay from Menu and closes it with Escape', async () => {
     const user = userEvent.setup()
     renderWithProviders(<AppShell realm="tenant"><Page /></AppShell>, fetchReturning(ok(me())))

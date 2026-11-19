@@ -68,3 +68,11 @@ _Agent: security. Read before every task; update after every task. Keep concise 
 - MEDIUM: guardrail override SoD only excludes the evaluation's decided_by (whoever's save/evaluate/submit triggered it), not the authors of the matched rules: author of pv overrode its starter-kit warning (201) after another editor's evaluate.
 - LOW: golden GET returns the frozen simulation snapshot (all tenant positions/relationships, market orders) to plan.read (Executive read-only); acknowledge/evaluate have no assertDraft; scopeOfAny union satisfies "every plan market"; PLAN_RULE.SAVED / PLAN_VERSION.UPDATED audit without values; review-opened gate set by a GET.
 - Repro: scratchpad b3sec/{clawback,override}.test.ts, config with hookTimeout 180000 (resetApiDb is slow on first run).
+
+## B4 adversarial review (2026-11-19, read-only, nmp_test_3): findings
+- HIGH R1: POST /v1/payout-providers/:id/settlement-reports accepts rows for a SANDBOX provider (spec: only the bank-file adapter takes a result file; web SC-34 filters to bank_file_csv, API does not). Payout officer (holds payout.prepare + payout.reconcile) marks an accepted sbx_ instruction `failed` -> posting #4 restores payable -> retry-failed -> sandbox_provider_payment has 2 x 9800 for one payable. Same SoD hole exists for bank_file_csv (officer generates the file and imports its results).
+- MEDIUM R2: write_off has no excludedApprovers: a Finance approver declared `self` for the payee approved the write-off of that receivable (200, receivable 0). Payout batch approve also ignores related-party declarations (excludedIds []).
+- MEDIUM R3: payout.hold release has no SoD: Payout officer released a Compliance officer's hold (200), then can prepare the payee's batch.
+- LOW: GET /v1/payees/:id/holds checks participant existence without scope (other-market id 200 [], random 404); bank-detail request/preview shared_with_count is a tenant-wide fingerprint oracle (plan-sanctioned); sandbox webhook event id is not signed (replays only create deduped exceptions); write-off/adjustment threshold can be split across cases.
+- Verified fixed: SEC-B3-1 (clawback denominator) and SEC-B3-2 (rule author override) repros pass on 0411.
+- Repro: scratchpad b4sec/b4sec.test.ts and b3rerun/ (vitest.config with DATABASE_URL/MIGRATE_DATABASE_URL of the slot, node_modules/vitest symlink), via scripts/heavy.sh.

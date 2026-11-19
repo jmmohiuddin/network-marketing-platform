@@ -43,8 +43,14 @@ function bodyFor(realm: Realm, values: Values) {
 
 const fieldId = (field: Field) => `signin-${field}`
 
+export interface SignInFormProps {
+  readonly realm: Realm
+  /** The web server has FIREBASE_AUTH_DOMAIN (the CSP admits Firebase): only then is Firebase sign-in offered. */
+  readonly firebase: boolean
+}
+
 /** SC-27 password step for the tenant realm (company + email + password) or the vendor realm. */
-export function SignInForm({ realm }: { readonly realm: Realm }) {
+export function SignInForm({ realm, firebase }: SignInFormProps) {
   const api = useApi()
   const params = useSearchParams()
   const fields = FIELDS[realm]
@@ -125,8 +131,10 @@ export function SignInForm({ realm }: { readonly realm: Realm }) {
         {field('password', 'Password', { type: 'password', autoComplete: 'current-password' })}
         <Button type="submit" variant="primary" size="lg" icon="login" loading={busy} className="w-full" data-testid="primary-action">Sign in</Button>
       </form>
-      <FirebaseSignIn realm={realm} company={realm === 'tenant' ? requireCompany : undefined} onSignedIn={finish}
-        onError={(message) => setSummary(message === null ? [] : [{ message }])} />
+      {firebase && (
+        <FirebaseSignIn realm={realm} company={realm === 'tenant' ? requireCompany : undefined} onSignedIn={finish}
+          onError={(message) => setSummary(message === null ? [] : [{ message }])} />
+      )}
     </>
   )
 }

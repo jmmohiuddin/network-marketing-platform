@@ -86,6 +86,7 @@ describe('plan formatting', () => {
     expect(refusalLines(new ApiError(422, 'CREDITING_EVENT_CONFLICT', 'm', { market_id: MARKET.id, reason: 'other_plan' }), { market: () => 'TM' })[0]).toContain('Another plan covering TM')
     // BUG-092: outstanding guardrail reasons in words, not codes.
     expect(refusalLines(new ApiError(422, 'GUARDRAIL_OUTSTANDING', 'm', { decisions: [{ rule_id: 'kit@2026-01-01', reason: 'acknowledgement_required' }] }))).toEqual(['kit@2026-01-01: the warning needs an acknowledgement (Guardrails tab) or a compliance override.'])
+    expect(refusalLines(new ApiError(422, 'GUARDRAIL_OUTSTANDING', 'm', { decisions: [{ rule_id: 'pool@2026-01-01', reason: 'compliance_review_required' }] }))).toEqual(['pool@2026-01-01: the block needs a compliance review: a Compliance officer override.'])
     expect(refusalLines(new ApiError(422, 'GOLDEN_FAILED', 'm', { datasets: [{ name: 'g1', mismatches: [{}], error: null }] }))).toEqual(['g1: 1 line differ.'])
   })
 })
@@ -233,6 +234,14 @@ describe('VersionPage (SC-04)', () => {
     renderAs(PLANNER, <VersionPage planId={PLAN_ID} version={1} />, routes(view))
     expect(await screen.findByText(decision().rule.id, { exact: false })).toBeTruthy()
     expect(screen.queryByRole('button', { name: `Acknowledge ${decision().rule.id}` })).toBeNull()
+  })
+
+  it('offers no acknowledgement for an opaque match of a blocking rule: it needs a compliance review (D-B4-21 b)', async () => {
+    navigation.search = 'tab=guardrails'
+    const opaque = decision({ detail: { ...decision().detail, opaque: true }, rule: { ...decision().rule, outcome: 'blocked' } })
+    renderAs(PLANNER, <VersionPage planId={PLAN_ID} version={1} />, routes(version({ guardrails: { decisions: [opaque], outstanding: [] } })))
+    expect(await screen.findByText('Needs a compliance review: a Compliance officer override')).toBeTruthy()
+    expect(screen.queryByRole('button', { name: `Acknowledge ${opaque.rule.id}` })).toBeNull()
   })
 
   it('hides Approve from a plan editor without plan.approve and from the submitter', async () => {

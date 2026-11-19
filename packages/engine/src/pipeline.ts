@@ -79,6 +79,8 @@ export interface QualificationOutput {
   readonly warnings: readonly EngineWarning[]
 }
 export interface LimitedLines<A> { readonly lines: readonly RawLine[]; readonly applications: readonly A[] }
+/** breakageMinor: computed in pass 8 while the pass 4-6 lines are held (they are released after pass 10, S-1). */
+export interface CapOutput extends LimitedLines<CapApplication> { readonly breakageMinor: bigint }
 export interface Settlement { readonly payees: readonly PayeeSettlement[]; readonly taxLines: readonly TaxLine[]; readonly warnings: readonly EngineWarning[] }
 /** state = rows to commit: pass-3 candidates plus the onceKey of every pay.one_time line paid in this run (TS-25). */
 export interface Totals { readonly controlTotals: ControlTotals; readonly resultHash: string; readonly state: readonly QualificationStateRow[]; readonly volumeSummaries: readonly PositionSummary[] }
@@ -92,7 +94,7 @@ export interface PassOutputs {
   readonly matching: readonly RawLine[]
   readonly pools: readonly RawLine[]
   readonly constraints: LimitedLines<ConstraintApplication> // every pass 4-6 line after per-participant limits
-  readonly caps: LimitedLines<CapApplication> // every line after company caps
+  readonly caps: CapOutput // every line after company caps
   readonly adjustments: readonly RawLine[]
   readonly rounding: readonly ResultLine[] // final, sorted (see RESULT_HASH)
   readonly settlement: Settlement
@@ -107,11 +109,21 @@ export type Done<K extends PassName> = Pick<PassOutputs, Earlier<K>>
 export type PassFn<K extends PassName> = (ctx: RunContext, done: Done<K>) => PassOutputs[K]
 export type PassRegistry = { readonly [K in PassName]: PassFn<K> }
 
+/**
+ * S-1 memory (D-B4-22): after the last pass reading an output's lines, the runner drops those lines (keys and the
+ * other fields stay). Credited lines are read up to pass 4; pass 4-8 lines up to pass 10 (pass 8 sums the breakage).
+ */
+export const RELEASE_AFTER: { readonly [K in PassName]?: (done: Partial<PassOutputs>) => Partial<PassOutputs> } = {
+  individual: (d) => ({ lineVolumes: { ...d.lineVolumes!, lines: [] } }),
+  rounding: (d) => ({ individual: [], matching: [], pools: [], constraints: { ...d.constraints!, lines: [] }, caps: { ...d.caps!, lines: [] } }),
+}
+
 export function runPipeline(ctx: RunContext, passes: PassRegistry): PassOutputs {
   let done: Partial<PassOutputs> = {}
   for (const name of PASS_ORDER) {
     const pass = passes[name] as (c: RunContext, d: Partial<PassOutputs>) => PassOutputs[typeof name]
     done = { ...done, [name]: pass(ctx, done) }
+    done = { ...done, ...RELEASE_AFTER[name]?.(done) }
   }
   return done as PassOutputs
 }

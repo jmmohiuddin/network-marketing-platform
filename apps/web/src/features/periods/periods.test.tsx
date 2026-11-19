@@ -137,7 +137,39 @@ describe('PeriodsPage (SC-01)', () => {
     await userEvent.click(await rowMenuItem(M3, 'Request restatement of'))
     const dialog = await screen.findByRole('dialog', { name: 'Request restatement' })
     expect(dialog.textContent).toContain(name)
-    expect(screen.getByRole('cell', { name: moneyText('4700', 'EUR', 2) })).toBeTruthy()
+    expect(screen.getByRole('cell', { name: '47.00' })).toBeTruthy()
+  })
+
+  it('treats a Paid period like a committed one: restatement offered, no re-run (D-B4-24)', async () => {
+    const paid = { ...M3, state: 'paid' as const }
+    renderAs(ANALYST, <PeriodsPage />, routes([NOW, paid]))
+    expect(await rowMenuItem(paid, 'Request restatement of')).toBeTruthy()
+    expect(screen.queryByRole('menuitem', { name: /^Re-run/ })).toBeNull()
+    expect(screen.getAllByText('Paid').length).toBeGreaterThan(0)
+  })
+
+  it('keeps the gross on one line with the currency only in the header (BUG-097)', async () => {
+    renderAs(ANALYST, <PeriodsPage />, routes([NOW, { ...M3, latest_run: { ...M3.latest_run!, gross_minor: '-2600' } }]))
+    expect(await screen.findByRole('columnheader', { name: 'Gross (EUR)' })).toBeTruthy()
+    const cell = screen.getByRole('cell', { name: '-26.00' })
+    expect(cell.querySelector('.whitespace-nowrap')?.textContent).toBe('-26.00')
+    expect(cell.textContent).not.toContain('EUR')
+  })
+
+  it('below the large breakpoint keeps Period, State, Gross and Actions with blockers under the period (BUG-098)', async () => {
+    const matchMedia = vi.fn(() => ({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() }))
+    vi.stubGlobal('matchMedia', matchMedia)
+    try {
+      renderAs(ANALYST, <PeriodsPage />, routes([NOW, M1, M3]))
+      const table = await screen.findByRole('table', { name: 'Periods of DE monthly' })
+      const headers = within(table).getAllByRole('columnheader').map((header) => header.textContent)
+      expect(headers).toEqual(['Period · cut-off', 'State', 'Gross (EUR)', 'Actions'])
+      const row = within(table).getByRole('rowheader', { name: new RegExp(periodName(M1.starts_at, M1.ends_at, ZONE)) })
+      expect(within(row).getByText('Previous period not committed')).toBeTruthy()
+      expect(matchMedia).toHaveBeenCalledWith('(min-width: 1024px)')
+    } finally {
+      vi.unstubAllGlobals()
+    }
   })
 
   it('opens the review of a calculated target as the one primary action', async () => {

@@ -39,3 +39,9 @@ _Agent: database. Read before every task; update after every task. Keep concise 
 - Extra uniques beyond PLAN: one acknowledgement per evaluation, one late origin per (run, late item, position, rule), one calculated run per period (deferred EXCLUDE).
 - Acknowledgements/overrides must repeat their evaluation's rule, version, outcome and content hash (guardrail queries need no join to find the content).
 - guardrail_outstanding reasons: acknowledgement_required, override_required, not_overridable.
+
+## B4 schema
+- Balance check = statement-level trigger on posting (all of an entry's postings in one statement, balanced, >= 2) + deferred per-entry constraint trigger; avoids O(n^2) per-posting deferred checks on large run entries and forbids appending to old entries.
+- led_post_run aggregates commission_expense into one debit and one credit line (not one per payee); withholding aggregated; payee lines per payee.
+- Added beyond PLAN: journal_entry origin/approval guard, ledger_account currency = market currency, composite FKs (tenant, participant, version/request) so lines/instructions/versions name the payee's own bank version/request, unique request per version, period_mark_paid locks the period row first (race of last two settlements), Paid needs >= 1 instruction, bank-detail versions by nmp_app only from a case.
+- Opaque override limited to blocked evaluations; NULL-safe comparison on detail->>'opaque'.

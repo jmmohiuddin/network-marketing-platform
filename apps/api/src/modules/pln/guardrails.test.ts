@@ -5,6 +5,7 @@ import { withTenant } from '@nmp/db'
 import type { FastifyInstance } from 'fastify'
 import { afterAll, beforeAll, describe, expect, test } from 'vitest'
 import { buildTestApp, call, closePoolsAfterAll, createSignedInUser, ownerRows, resetApiDb, type TestUser } from '../../../test/helpers/index.js'
+import { audModule } from '../aud/index.js'
 import { cplModule } from '../cpl/index.js'
 import { plnModule } from './index.js'
 import { CAPPED, customRoleUser, newPlan, personal, putRule, revisionOf, world, type NewPlan, type World } from './test-support.js'
@@ -17,7 +18,7 @@ closePoolsAfterAll()
 
 beforeAll(async () => {
   await resetApiDb()
-  app = await buildTestApp({ modules: [plnModule, cplModule], env: { LOG_LEVEL: 'error' } })
+  app = await buildTestApp({ modules: [plnModule, cplModule, audModule], env: { LOG_LEVEL: 'error' } })
   w = await world()
   other = await world()
 }, 120_000)
@@ -106,7 +107,8 @@ describe('TS-26 / AC-26.2, AC-CPL7-1/2/3: warnings, acknowledgements and current
     expect(edited.json().data.guardrails.new_decisions).toMatchObject([{ outcome: 'warned' }])
     expect(edited.json().data.guardrails.new_decisions[0].id).not.toBe(warned)
     const opaque = await putRule(app, w.planadmin, plan.planId, 'capped_pay', { kind: 'pay.percent_of_measure', reversal_policy: 'restatement', params: { ...SIGNUP.params, measure: 'capped' } })
-    expect(opaque.json().data.guardrails.new_decisions).toMatchObject([{ outcome: 'warned', detail: { opaque: true, rule_keys: ['capped', 'capped_pay', 'pv'] } }])
+    // D-B4-21 b: an opaque match of the blocking enrolment rule is saved, stays blocked and goes to compliance review.
+    expect(opaque.json().data.guardrails.new_decisions).toMatchObject([{ outcome: 'blocked', overridable: false, detail: { opaque: true, rule_keys: ['capped', 'capped_pay', 'pv'] } }])
   })
 
   test('a guardrail rule whose outcome changed keeps the stored evaluation of the same content (no 500)', async () => {
@@ -228,5 +230,137 @@ describe('the version page shows decisions and gates', () => {
     expect(view.guardrails.decisions).toMatchObject([{ outcome: 'warned', acknowledgement: null, override: null }])
     expect(view.guardrails.outstanding).toHaveLength(1)
     expect(view.gates).toEqual({ validation: true, crediting_event: false, goldens: true, coverage: true, guardrails: false, simulation: false, transitions: true })
+  })
+})
+
+describe('D-B4-21 b (OI-3): an opaque evaluation of a blocked rule goes to compliance review; OI-2 its evidence', () => {
+  let plan: NewPlan
+  let review: string
+  let memo: string
+  beforeAll(async () => {
+    plan = await newPlan(app, w)
+    await putRule(app, w.planadmin, plan.planId, 'pv', { kind: 'volume.personal', params: personal() })
+    await putRule(app, w.planadmin, plan.planId, 'capped', CAPPED)
+    const saved = await putRule(app, w.planadmin, plan.planId, 'capped_pay', { kind: 'pay.percent_of_measure', reversal_policy: 'restatement', params: { ...SIGNUP.params, measure: 'capped' } })
+    expect(saved.statusCode).toBe(200)
+    review = saved.json().data.guardrails.new_decisions[0].id
+  }, 60_000)
+
+  test('the editor cannot acknowledge it (409 COMPLIANCE_REVIEW_REQUIRED); it is outstanding as compliance_review_required', async () => {
+    expect((await ack(w.planadmin, plan.planId, review)).json().error.code).toBe('COMPLIANCE_REVIEW_REQUIRED')
+    const view = (await call(app, { method: 'GET', url: `/v1/plans/${plan.planId}/versions/1`, as: w.planadmin })).json().data
+    expect(view.guardrails.outstanding).toMatchObject([{ decision_id: review, outcome: 'blocked', reason: 'compliance_review_required' }])
+  })
+
+  test('a compliance officer overrides it although the rule is not overridable; refusals and cross-tenant denial', async () => {
+    expect((await override(w.planadmin, review)).statusCode).toBe(403)
+    expect((await override(other.compliance, review)).statusCode).toBe(404)
+    memo = await evidence(w.compliance.id)
+    const done = await override(w.compliance, review, { evidence_document_id: memo })
+    expect(done.statusCode).toBe(201)
+    expect(done.json().data).toMatchObject({ kind: 'override', refers_to_decision_id: review, outcome: 'blocked' })
+    expect((await ownerRows('SELECT * FROM guardrail_outstanding((SELECT id FROM plan_version WHERE plan_id = $1))', [plan.planId]))).toEqual([])
+  })
+
+  test('OI-2: guardrail.read holders over every plan market read the override evidence; others get 404', async () => {
+    const get = (as: TestUser) => call(app, { method: 'GET', url: `/v1/documents/${memo}`, as })
+    const reader = await customRoleUser(w.tenantId, ['guardrail.read'])
+    expect((await get(reader)).statusCode).toBe(200)
+    expect((await get(reader)).json().data).toMatchObject({ id: memo, file_name: 'memo.pdf' })
+    expect((await get(await customRoleUser(w.tenantId, ['plan.read']))).statusCode).toBe(404)
+    expect((await get(await createSignedInUser({ tenantId: w.tenantId, roles: ['Compliance officer'], marketIds: [w.marketA] }))).statusCode).toBe(404)
+    expect((await get(other.compliance)).statusCode).toBe(404)
+  })
+
+  test('an opaque match of a warned rule keeps the acknowledgement', async () => {
+    const plan2 = await newPlan(app, w)
+    await putRule(app, w.planadmin, plan2.planId, 'pv', { kind: 'volume.personal', params: personal() })
+    await putRule(app, w.planadmin, plan2.planId, 'capped', CAPPED)
+    const ruleId = `${w.pack}-enrolment@2026-01-01`
+    await ownerRows("UPDATE guardrail_rule SET outcome = 'warned' WHERE id = $1", [ruleId])
+    try {
+      const saved = await putRule(app, w.planadmin, plan2.planId, 'capped_pay', { kind: 'pay.percent_of_measure', reversal_policy: 'restatement', params: { ...SIGNUP.params, measure: 'capped' } })
+      const warned = saved.json().data.guardrails.new_decisions.find((d: { rule_id: string }) => d.rule_id === ruleId)
+      expect(warned).toMatchObject({ outcome: 'warned', detail: { opaque: true } })
+      expect((await ack(w.planadmin, plan2.planId, warned.id)).statusCode).toBe(201)
+    } finally {
+      await ownerRows("UPDATE guardrail_rule SET outcome = 'blocked' WHERE id = $1", [ruleId])
+    }
+  })
+
+  test('a pre-B4 style warned opaque evaluation of a blocking, non-overridable rule: no acknowledgement (API or DB), override 201', async () => {
+    const plan3 = await newPlan(app, w)
+    await putRule(app, w.planadmin, plan3.planId, 'pv', { kind: 'volume.personal', params: personal() })
+    await putRule(app, w.planadmin, plan3.planId, 'capped', CAPPED)
+    const ruleId = `${w.pack}-enrolment@2026-01-01`
+    await ownerRows("UPDATE guardrail_rule SET outcome = 'warned' WHERE id = $1", [ruleId])
+    let stored: string
+    try {
+      const saved = await putRule(app, w.planadmin, plan3.planId, 'capped_pay', { kind: 'pay.percent_of_measure', reversal_policy: 'restatement', params: { ...SIGNUP.params, measure: 'capped' } })
+      stored = saved.json().data.guardrails.new_decisions.find((d: { rule_id: string }) => d.rule_id === ruleId).id
+    } finally {
+      await ownerRows("UPDATE guardrail_rule SET outcome = 'blocked' WHERE id = $1", [ruleId])
+    }
+    const outstanding = () => ownerRows<{ decision_id: string; outcome: string; reason: string }>(
+      'SELECT decision_id, outcome, reason FROM guardrail_outstanding((SELECT id FROM plan_version WHERE plan_id = $1))', [plan3.planId])
+    expect(await outstanding()).toEqual([{ decision_id: stored, outcome: 'warned', reason: 'compliance_review_required' }])
+    expect((await ack(w.planadmin, plan3.planId, stored)).json().error.code).toBe('COMPLIANCE_REVIEW_REQUIRED')
+    await expect(ownerRows(
+      `INSERT INTO guardrail_decision (tenant_id, rule_id, plan_version_id, kind, outcome, content_sha256, detail, refers_to_decision_id, decided_by)
+       SELECT tenant_id, rule_id, plan_version_id, 'acknowledgement', outcome, content_sha256, detail, id, decided_by FROM guardrail_decision WHERE id = $1`,
+      [stored],
+    )).rejects.toMatchObject({ code: '23514' })
+    const done = await override(w.compliance, stored)
+    expect(done.statusCode).toBe(201)
+    expect(done.json().data).toMatchObject({ kind: 'override', refers_to_decision_id: stored, outcome: 'warned' })
+    expect(await outstanding()).toEqual([])
+  })
+})
+
+describe('D-B4-21 a (OI-3): placement re-parenting is refused by validation on a version with legs', () => {
+  const REPARENT = { kind: 'genealogy.reparent_on_termination', params: { tree: 'placement' } }
+  const patch = async (planId: string, body: Record<string, unknown>) =>
+    call(app, { method: 'PATCH', url: `/v1/plans/${planId}/versions/1`, as: w.planadmin, body, headers: { 'if-match': `"${await revisionOf(app, w.planadmin, planId)}"` } })
+  const codes = (validation: { errors: { code: string; rule_key: string | null }[] }) => validation.errors.map((e) => `${e.rule_key}:${e.code}`)
+
+  test('on rule save, on PATCH placement_width and at submit', async () => {
+    const plan = await newPlan(app, w)
+    expect((await patch(plan.planId, { placement_width: 2, crediting_event: 'paid' })).json().data.validation.ok).toBe(true)
+    const saved = await putRule(app, w.planadmin, plan.planId, 'reparent', REPARENT)
+    expect(saved.statusCode).toBe(200)
+    expect(codes(saved.json().data.validation)).toEqual(['reparent:REPARENT_PLACEMENT_WITH_LEGS'])
+    const view = (await call(app, { method: 'GET', url: `/v1/plans/${plan.planId}/versions/1`, as: w.planadmin })).json().data
+    expect([view.gates.validation, view.content_hash]).toEqual([false, null])
+    const submit = await post(w.planadmin, `/v1/plans/${plan.planId}/versions/1/submit`)
+    expect(submit.json().error).toMatchObject({ code: 'PLAN_INVALID', details: { errors: [{ rule_key: 'reparent', code: 'REPARENT_PLACEMENT_WITH_LEGS', path: 'params.tree' }] } })
+    const cleared = await patch(plan.planId, { placement_width: null })
+    expect([cleared.statusCode, cleared.json().data.validation.ok, cleared.json().data.content_hash]).toEqual([200, true, expect.any(String)])
+    const legs = await patch(plan.planId, { placement_width: 3 })
+    expect([legs.json().data.placement_width, codes(legs.json().data.validation), legs.json().data.content_hash]).toEqual([3, ['reparent:REPARENT_PLACEMENT_WITH_LEGS'], null])
+  })
+
+  test('sponsor re-parenting stays valid with legs', async () => {
+    const plan = await newPlan(app, w)
+    await patch(plan.planId, { placement_width: 2 })
+    expect((await putRule(app, w.planadmin, plan.planId, 'reparent', { ...REPARENT, params: { tree: 'sponsor' } })).json().data.validation.ok).toBe(true)
+  })
+
+  test('PATCH: missing permission and cross-tenant denial', async () => {
+    const plan = await newPlan(app, w)
+    const revision = await revisionOf(app, w.planadmin, plan.planId)
+    const as = (user: TestUser) => call(app, { method: 'PATCH', url: `/v1/plans/${plan.planId}/versions/1`, as: user, body: { placement_width: 2 }, headers: { 'if-match': `"${revision}"` } })
+    expect((await as(w.compliance)).statusCode).toBe(403)
+    expect((await as(other.planadmin)).statusCode).toBe(404)
+  })
+})
+
+describe('BUG-090: rule renderings use the first plan market minor digits', () => {
+  test('pv threshold in units', async () => {
+    const plan = await newPlan(app, w)
+    await putRule(app, w.planadmin, plan.planId, 'pv', { kind: 'volume.personal', params: personal() })
+    const saved = await putRule(app, w.planadmin, plan.planId, 'main', LADDER)
+    expect(saved.json().data.rule.rendering).toBe('Ladder R1: pv ≥ 100.00')
+    const view = (await call(app, { method: 'GET', url: `/v1/plans/${plan.planId}/versions/1`, as: w.planadmin })).json().data
+    expect(view.rules.find((r: { rule_key: string }) => r.rule_key === 'main').rendering).toBe('Ladder R1: pv ≥ 100.00')
   })
 })

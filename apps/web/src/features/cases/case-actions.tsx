@@ -7,7 +7,7 @@ import { Button } from '../../components/button'
 import { FileDropZone } from '../../components/file-drop-zone'
 import { Select } from '../../components/form-field'
 import { useToast } from '../../components/toast'
-import { newIdempotencyKey } from '../../lib/api'
+import { ApiError, newIdempotencyKey } from '../../lib/api'
 import { errorMessage } from '../../lib/messages'
 import { useSession } from '../../lib/session'
 import { useResource } from '../../lib/use-resource'
@@ -20,18 +20,29 @@ import { extensionsOf } from '../markets/format'
 import { useEvidenceFile } from '../markets/evidence-forms'
 import type { DocumentLimits } from '../markets/types'
 import { caseTypeLabel, personName, type CaseTypeInfo } from './format'
-import type { CaseDetail } from './types'
+import type { CaseDetail, CaseRecord } from './types'
 
 const NOTE_MAX = 2000
 const REASON_FIELD = 'case-reason'
 
-export type CaseDialog = 'approve' | 'reject' | 'withdraw' | 'assign'
+export type CaseDialog = 'approve' | 'reject' | 'withdraw' | 'assign' | 'submit'
 
 interface DialogProps {
   readonly record: CaseDetail
   readonly info: CaseTypeInfo
   readonly onClose: () => void
   readonly onDone: () => void
+}
+
+/**
+ * Decision refusals that leave the case submitted and can simply be tried again (D-B4-08/09): another posting or
+ * commit holds the market's ledger or periods.
+ */
+export function decisionRefusal(error: unknown): unknown {
+  if (!(error instanceof ApiError)) return error
+  const busy = error.code === 'LEDGER_BUSY' || (error.code === 'PERIOD_NOT_OPEN' && (error.details as { state?: string } | null)?.state === 'busy')
+  if (!busy) return error
+  return new ApiError(error.status, error.code, 'Another posting or commit is using this market right now, so nothing was decided. Decide the case again in a moment.', error.details, error.requestId)
 }
 
 /** Approve or reject (type.decide, step-up through ApiProvider with the dialog's Idempotency-Key), or withdraw (opener). */
@@ -50,12 +61,18 @@ export function ReasonDialog({ record, info, action, onClose, onDone }: DialogPr
       fieldIds: { reason: REASON_FIELD },
       send: async () => {
         try {
-          if (action === 'withdraw') await api.post(`/v1/cases/${record.id}/withdraw`, { reason: reason.trim() })
-          else await api.post(`/v1/cases/${record.id}/decision`, { decision: action, reason: reason.trim() }, { idempotencyKey })
+          if (action === 'withdraw') {
+            await api.post(`/v1/cases/${record.id}/withdraw`, { reason: reason.trim() })
+            toast({ message: 'Case withdrawn.' })
+          } else {
+            const { data } = await api.post<CaseRecord>(`/v1/cases/${record.id}/decision`, { decision: action, reason: reason.trim() }, { idempotencyKey })
+            // D-B4-10: a case that needs two approvals stays submitted after the first.
+            const first = action === 'approve' && data.state === 'submitted'
+            toast({ message: first ? 'First approval recorded. A second approver decides next.' : action === 'approve' ? 'Case approved. Its change is applied.' : 'Case rejected.' })
+          }
         } catch (failure) {
-          throw withApprovers(failure, info.deciderRole)
+          throw withApprovers(decisionRefusal(failure), info.deciderRole)
         }
-        toast({ message: action === 'approve' ? 'Case approved. Its change is applied.' : action === 'reject' ? 'Case rejected.' : 'Case withdrawn.' })
         onDone()
       },
     }
@@ -68,6 +85,36 @@ export function ReasonDialog({ record, info, action, onClose, onDone }: DialogPr
       {action === 'reject' && <p>The case is closed and nothing changes. You may be asked for a code from your authenticator app.</p>}
       {action === 'withdraw' && <p>The case is closed without a decision and nothing changes.</p>}
       <TextAreaField id={REASON_FIELD} label="Reason" value={reason} error={error} onChange={setReason} />
+    </FormDialog>
+  )
+}
+
+/** A returned payment is submitted with the payout officer's note (PATCH the payload, then submit). */
+export function ReturnedSubmitDialog({ record, onClose, onDone }: DialogProps) {
+  const api = useApi()
+  const toast = useToast()
+  const current = record.payload as { readonly instruction_id: string; readonly note?: string }
+  const [note, setNote] = useState(current.note ?? '')
+  const [error, setError] = useState<string | null>(null)
+  function submit() {
+    const missing = requiredError('the note', note)
+    setError(missing)
+    if (missing !== null) return { items: [{ fieldId: REASON_FIELD, message: missing }] }
+    return {
+      items: [],
+      fieldIds: { 'payload.note': REASON_FIELD },
+      send: async () => {
+        if (note.trim() !== current.note) await api.patch(`/v1/cases/${record.id}`, { payload: { instruction_id: current.instruction_id, note: note.trim() } })
+        await api.post(`/v1/cases/${record.id}/submit`, {})
+        toast({ message: 'Case submitted. A Finance approver decides it.' })
+        onDone()
+      },
+    }
+  }
+  return (
+    <FormDialog title="Submit the returned payment" submitLabel="Submit for decision" onClose={onClose} onSubmit={submit}>
+      <p>The returned amount is already back in the payee’s payable. Say what was found and what happens next; a Finance approver decides.</p>
+      <TextAreaField id={REASON_FIELD} label="Note" maxLength={NOTE_MAX} value={note} error={error} onChange={setNote} />
     </FormDialog>
   )
 }

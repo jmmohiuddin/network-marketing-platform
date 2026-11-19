@@ -13,6 +13,8 @@ import { IntegrationsPage } from './integrations-page'
 import { graceError } from './key-dialogs'
 import type { ApiKey, Connector, ServiceAccount, SyncSource, WebhookDelivery, WebhookEndpoint } from './types'
 import { nounOf } from './ui'
+import type { ProviderRecord } from '../markets/types'
+import { adapterSecretError } from './payout-providers-tab'
 import { EditEndpointDialog, endpointChange } from './webhook-dialogs'
 
 const navigation = vi.hoisted(() => ({ search: '', router: { replace: vi.fn(), push: vi.fn() } }))
@@ -63,6 +65,14 @@ function source(overrides: Partial<SyncSource> = {}): SyncSource {
   }
 }
 
+function payoutProvider(overrides: Partial<ProviderRecord> = {}): ProviderRecord {
+  return {
+    id: 'p1', market_id: 'm1', kind: 'payout', provider: 'Sandbox payouts', approved_description: 'Payouts to DE', approval_document: null, approved_at: '2026-11-01',
+    funds_holder: 'Sandbox bank', state: 'recorded', adapter: 'sandbox', webhook_configured: true, review_due_on: '2020-01-31',
+    created_by: { id: 'u1', display_name: 'Ada Admin' }, created_at: CREATED, withdrawn_at: null, ...overrides,
+  }
+}
+
 const DELIVERY: WebhookDelivery = {
   id: 'd1', event: { id: 'ev1', type: 'webhook.test', occurred_at: CREATED }, attempt: 1, outcome: 'failed', status: null, error: 'DNS_FAILED',
   attempted_at: CREATED, next_attempt_at: '2026-11-10T10:02:00.000Z', duration_ms: 12,
@@ -83,6 +93,8 @@ function routes(extra: Record<string, (query: URLSearchParams) => Response> = {}
     'GET /v1/api-keys/options': () => ok(OPTIONS),
     'GET /v1/webhook-topics': () => ok(TOPICS),
     'GET /v1/connectors': () => ok([connector()]),
+    'GET /v1/provider-configs': () => ok([payoutProvider()]),
+    'GET /v1/markets': () => ok([{ id: 'm1', code: 'DE', name: 'Germany', currency: 'EUR', state: 'live', market_pack: 'de', time_zone: 'Europe/Berlin', languages: ['de'], minor_unit: 2 }]),
     ...extra,
   })
 }
@@ -511,14 +523,97 @@ describe('IntegrationsPage: storefront connectors and sync health (PLAN B2 5)', 
     expect(screen.queryByRole('button', { name: /Add|Create/ })).toBeNull()
   })
 
-  it('integration.read alone shows sync health only, without asking for keys or connectors', async () => {
+  it('integration.read alone shows sync health and payout providers, without asking for keys or connectors', async () => {
     const fetchMock = routes({ 'GET /v1/integrations/health': () => ok({ sources: [source()], thresholds: { behind_after_minutes: 60, failing_after_minutes: 240 } }) })
     renderAs(adminMe({ permissions: ['integration.read'] }), <IntegrationsPage />, fetchMock)
     expect(await screen.findByText('NL store')).toBeTruthy()
     expect(screen.getByText(/Behind after 1 h without an accepted event; failing after 4 h/)).toBeTruthy()
-    expect(screen.queryByRole('tab')).toBeNull()
+    expect(screen.getAllByRole('tab').map((tab) => tab.textContent?.replace(/\s*\d+$/, ''))).toEqual(['Sync health', 'Payout providers'])
     expect(callsTo(fetchMock, 'GET', '/v1/service-accounts')).toHaveLength(0)
     expect(callsTo(fetchMock, 'GET', '/v1/connectors')).toHaveLength(0)
+  })
+
+  it('integration.read alone sees the payout provider cards without Configure', async () => {
+    navigation.search = 'tab=payout-providers'
+    renderAs(adminMe({ permissions: ['integration.read'] }), <IntegrationsPage />, routes())
+    const [card] = await screen.findAllByTestId('payout-provider')
+    expect(within(card!).getByText('Sandbox')).toBeTruthy()
+    expect(within(card!).getByRole('button', { name: 'Copy webhook URL' })).toBeTruthy()
+    expect(screen.queryByRole('button', { name: /Configure/ })).toBeNull()
+  })
+})
+
+describe('IntegrationsPage: payout providers (PLAN B4 5 SC-13)', () => {
+  const ALL_MARKETS = adminMe({ permissions: ['integration.manage'], roles: [{ assignment_id: 'a1', role_id: 'r1', name: 'Integration lead', market_ids: null }] })
+
+  beforeEach(() => {
+    navigation.search = 'tab=payout-providers'
+  })
+
+  it('shows each payout provider with its adapter, review chip and webhook URL to copy, and no real provider', async () => {
+    renderAs(ALL_MARKETS, <IntegrationsPage />, routes({ 'GET /v1/provider-configs': () => ok([payoutProvider(), payoutProvider({ id: 'p2', provider: 'Bank file', adapter: null, webhook_configured: false, review_due_on: null })]) }))
+    const [sandbox, bank] = await screen.findAllByTestId('payout-provider')
+    expect(within(sandbox!).getByText('Review overdue')).toBeTruthy()
+    expect(within(sandbox!).getByText('DE')).toBeTruthy()
+    expect(within(sandbox!).getByText('Sandbox')).toBeTruthy()
+    expect(within(sandbox!).getByText(`${window.location.origin}/v1/webhooks/providers/p1`)).toBeTruthy()
+    expect(within(sandbox!).getByRole('button', { name: 'Copy webhook URL' })).toBeTruthy()
+    expect(within(bank!).getByText('Not configured')).toBeTruthy()
+    expect(within(bank!).queryByRole('button', { name: 'Copy webhook URL' })).toBeNull()
+    expect(screen.getAllByText(/Only sandbox adapters exist in this build/).length).toBeGreaterThan(0)
+    expect(screen.queryByText(/Wells Fargo|Hyperwallet|Re-authenticate|wallet/i)).toBeNull()
+  })
+
+  it('configures a sandbox adapter with a write-only secret after step-up', async () => {
+    const user = userEvent.setup()
+    let calls = 0
+    const fetchMock = routes({
+      'PUT /v1/provider-configs/p1/adapter': () => {
+        calls += 1
+        return calls === 1 ? apiError(403, 'STEP_UP_REQUIRED') : ok(payoutProvider())
+      },
+      'POST /v1/auth/sessions/current/step-up': () => ok({ assurance: 'aal2' }),
+    })
+    renderAs(ALL_MARKETS, <IntegrationsPage />, fetchMock)
+    await user.click(await screen.findByRole('button', { name: 'Configure Sandbox payouts' }))
+    const dialog = screen.getByRole('dialog', { name: 'Configure Sandbox payouts' })
+    expect(within(dialog).getByText(/Only sandbox adapters exist in this build/)).toBeTruthy()
+    await user.type(within(dialog).getByLabelText('Webhook secret'), 'short')
+    await user.click(within(dialog).getByRole('button', { name: 'Save adapter' }))
+    expect(within(dialog).getAllByText('Use 24 to 128 characters.').length).toBeGreaterThan(0)
+    await user.clear(within(dialog).getByLabelText('Webhook secret'))
+    await user.type(within(dialog).getByLabelText('Webhook secret'), 'x'.repeat(32))
+    await user.click(within(dialog).getByRole('button', { name: 'Save adapter' }))
+    await user.type(await screen.findByLabelText('Verification code'), '123456')
+    await user.click(screen.getByRole('button', { name: 'Confirm and continue' }))
+    expect(await screen.findByText('Sandbox payouts now pays through the sandbox adapter.')).toBeTruthy()
+    const puts = callsTo(fetchMock, 'PUT', '/v1/provider-configs/p1/adapter')
+    expect(puts).toHaveLength(2)
+    expect(bodyOf(puts[1]![1])).toEqual({ adapter: 'sandbox', webhook_secret: 'x'.repeat(32) })
+  })
+
+  it('sends no secret for a bank file adapter and hides Configure from market-scoped or read-only users', async () => {
+    const user = userEvent.setup()
+    const fetchMock = routes({ 'PUT /v1/provider-configs/p1/adapter': () => ok(payoutProvider({ adapter: 'bank_file_csv' })) })
+    const view = renderAs(ALL_MARKETS, <IntegrationsPage />, fetchMock)
+    await user.click(await screen.findByRole('button', { name: 'Configure Sandbox payouts' }))
+    const dialog = screen.getByRole('dialog', { name: 'Configure Sandbox payouts' })
+    await user.click(within(dialog).getByRole('radio', { name: /Bank file \(CSV\)/ }))
+    expect(within(dialog).queryByLabelText('Webhook secret')).toBeNull()
+    await user.click(within(dialog).getByRole('button', { name: 'Save adapter' }))
+    expect(await screen.findByText('Sandbox payouts now pays through the bank file (csv) adapter.')).toBeTruthy()
+    expect(bodyOf(callsTo(fetchMock, 'PUT', '/v1/provider-configs/p1/adapter')[0]![1])).toEqual({ adapter: 'bank_file_csv' })
+    view.unmount()
+    renderAs(adminMe({ permissions: ['integration.manage'], roles: [{ assignment_id: 'a1', role_id: 'r1', name: 'Integration lead', market_ids: ['m1'] }] }), <IntegrationsPage />, routes())
+    await screen.findByTestId('payout-provider')
+    expect(screen.queryByRole('button', { name: 'Configure Sandbox payouts' })).toBeNull()
+  })
+
+  it('checks the sandbox secret length the API enforces', () => {
+    expect(adapterSecretError('')).toContain('Enter the webhook secret')
+    expect(adapterSecretError('x'.repeat(23))).toBe('Use 24 to 128 characters.')
+    expect(adapterSecretError('x'.repeat(24))).toBeNull()
+    expect(adapterSecretError('x'.repeat(129))).toBe('Use 24 to 128 characters.')
   })
 })
 

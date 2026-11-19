@@ -13,6 +13,8 @@ export interface PagedList<T> {
   readonly error: unknown
   readonly reload: () => void
   readonly pagination: Pagination
+  /** The current page's meta (totals some lists send beside next_cursor). */
+  readonly meta: Readonly<Record<string, unknown>>
 }
 
 /**
@@ -28,6 +30,7 @@ export function usePagedList<T>(path: string, query: Query = {}): PagedList<T> {
     loading: resource.loading,
     error: resource.error,
     reload: resource.reload,
+    meta: resource.meta,
     pagination: {
       hasPrevious: pages.hasPrevious,
       hasNext: nextCursor !== null,

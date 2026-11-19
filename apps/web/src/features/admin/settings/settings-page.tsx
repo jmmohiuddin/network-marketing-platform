@@ -18,6 +18,7 @@ import { BreachContactsDialog } from './breach-contacts-dialog'
 import { ChangeRequestsSection } from './change-requests'
 import { POLICY_KEYS, valueText, type PolicyKey } from './labels'
 import { ParticipantTypesSection } from './participant-types'
+import { PolicyValue } from './policy-value'
 import type { SettingKey } from './setting-dialog'
 import { ContactCard, SettingRow } from './setting-row'
 import { ActivePvDialog, LateOrderDayDialog, PersonalShareDialog, RankThresholdsDialog, type PersonalShare } from './threshold-dialogs'
@@ -57,8 +58,18 @@ const B2_ROWS: readonly { readonly key: PolicyKey; readonly title: string; reado
   { key: 'genealogy.placement_width', title: 'Placement width', description: 'Retired: set on the plan version. A value kept here applies only to markets without a plan version.', whenUnset: 'Retired: set on the plan version.', retired: true },
   { key: 'integrations.sync_health', title: 'Sync health thresholds', description: 'How long a storefront or API source may go without an accepted event before it is behind, then failing.', whenUnset: 'Sources are only marked failing; behind is not measured.' },
 ]
+/** PLAN B4 §5 SC-29: the D-B4-18 keys, each with what holds while unset (no default is shipped). */
+const B4_ROWS: readonly { readonly key: PolicyKey; readonly title: string; readonly description: string; readonly whenUnset: string }[] = [
+  { key: 'payouts.market_policy', title: 'Minimum payout and tax profile', description: 'Per market: the smallest payable that is paid, and whether a payee needs a tax profile to be paid.', whenUnset: 'Payout batches cannot be prepared until set.' },
+  { key: 'payouts.bank_detail_cooling_off_hours', title: 'Bank-detail cooling-off', description: 'Hours a new bank account is left out of payout batches after its approval.', whenUnset: 'Bank-detail changes and payout batches are refused until set.' },
+  { key: 'payouts.shared_account_threshold', title: 'Shared-account threshold', description: 'Payees sharing one bank account at which a bank-detail change is flagged to its approver.', whenUnset: 'Shared accounts are counted but not flagged.' },
+  { key: 'payouts.dormant_after_days', title: 'Dormant balance age', description: 'Days a payable stays unpaid before it is listed as dormant.', whenUnset: 'The dormant balances list is not available.' },
+  { key: 'payouts.provider_review_reminder_days', title: 'Provider review reminder', description: 'Days before a payout provider’s review date at which its market managers are reminded.', whenUnset: 'No reminder is sent; the review chips still show.' },
+  { key: 'adjustments.policy', title: 'Adjustment policy', description: 'When a manual adjustment needs a second approver, which accounts count as new, and what happens for a related or new account.', whenUnset: 'Manual adjustments are refused until set.' },
+  { key: 'write_offs.policy', title: 'Write-off policy', description: 'When a receivable is eligible for write-off and above which amount a second approver decides.', whenUnset: 'Write-offs are refused until set.' },
+]
 /** Keys the API refuses to write (SETTING_RETIRED): shown, never offered for a new version. */
-const RETIRED_KEYS: readonly string[] = B2_ROWS.filter((row) => row.retired === true).map((row) => row.key)
+const RETIRED_KEYS: readonly string[] = [...B2_ROWS.filter((row) => row.retired === true).map((row) => row.key), 'money.clawback_policy']
 
 /**
  * SC-29 Tenant settings: the settings readers (settings.manage, settings.approve, privacy.manage) see the policy
@@ -130,6 +141,10 @@ function PolicySettings({ children }: { readonly children: ReactNode }) {
     const found = entry(row.key)
     return found === undefined ? [] : [{ ...row, entry: found }]
   })
+  const b4Rows = B4_ROWS.flatMap((row) => {
+    const found = entry(row.key)
+    return found === undefined ? [] : [{ ...row, entry: found }]
+  })
   const values = Object.fromEntries(Object.entries(view?.values ?? {}).map(([key, setting]) => [key, setting?.value]))
   return (
     <>
@@ -166,13 +181,13 @@ function PolicySettings({ children }: { readonly children: ReactNode }) {
                     />
                   )}
                   {clawback !== undefined && (
+                    // D-B4-06: retired; each bonus's reversal policy on the plan version decides. Shown, never changed.
                     <SettingRow
                       title="Clawback default"
-                      description="How a refund recovers commission already paid: from the refunded order line, or by restating the period."
-                      whenUnset="No clawback method is recorded. The product ships none."
+                      description="Retired: set per bonus on the plan version."
+                      whenUnset="Retired: set per bonus on the plan version."
                       entry={clawback}
-                      show={(value: unknown) => valueText('money.clawback_policy', value)}
-                      onChange={versionOf('money.clawback_policy')}
+                      show={(value: unknown) => `Retired (last value: ${valueText('money.clawback_policy', value)})`}
                     />
                   )}
                   {notice !== undefined && (
@@ -299,6 +314,19 @@ function PolicySettings({ children }: { readonly children: ReactNode }) {
             {b2Rows.map((row) => (
               <SettingRow key={row.key} title={row.title} description={row.description} whenUnset={row.whenUnset} entry={row.entry}
                 show={(value: unknown) => valueText(row.key, value)} onChange={row.retired ? undefined : versionOf(row.key)} />
+            ))}
+          </ul>
+        </section>
+      )}
+      {b4Rows.length > 0 && (
+        <section className={SECTION_CARD} aria-labelledby="payouts-title" data-testid="payout-policies">
+          <SectionTitle id="payouts-title" icon="payments" title="Payouts, adjustments and write-offs" />
+          <p className={NOTE}>Rules for paying out earnings balances, manual adjustments and write-offs. The product ships no default value; each change waits for a Finance approver where marked.</p>
+          <ul className="flex flex-col gap-space-md">
+            {b4Rows.map((row) => (
+              <SettingRow key={row.key} title={row.title} description={row.description} whenUnset={row.whenUnset} entry={row.entry}
+                show={(value: unknown) => <PolicyValue name={row.key} value={value} />}
+                onChange={versionOf(row.key)} />
             ))}
           </ul>
         </section>
