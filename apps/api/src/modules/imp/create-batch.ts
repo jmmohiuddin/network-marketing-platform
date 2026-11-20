@@ -18,13 +18,17 @@ export interface NewBatch {
   readonly scope: MarketScope
 }
 
-async function marketIdOf(tx: Tx, code: string, scope: MarketScope): Promise<string> {
-  const { rows } = await tx.query<{ id: string }>('SELECT id FROM market WHERE code = $1', [code])
-  const id = rows[0]?.id
-  if (id === undefined || (scope !== null && !scope.includes(id))) {
+async function marketIdOf(tx: Tx, upload: Upload, scope: MarketScope): Promise<string> {
+  const { rows } = await tx.query<{ id: string; state: string }>('SELECT id, state FROM market WHERE code = $1', [upload.market])
+  const market = rows[0]
+  if (market === undefined || (scope !== null && !scope.includes(market.id))) {
     throw new ApiError(422, 'MARKET_UNKNOWN', 'No market with this code is available to you.')
   }
-  return id
+  // D-B6-09: history is imported into a market in implementation only.
+  if (upload.kind === 'migration' && market.state !== 'draft') {
+    throw new ApiError(422, 'MARKET_NOT_IN_IMPLEMENTATION', 'A migration imports into a market that is still in implementation.')
+  }
+  return market.id
 }
 
 const fileDigests = (upload: Upload) =>
@@ -43,10 +47,10 @@ async function insertBatch(tx: Tx, batch: NewBatch, marketId: string, result: Va
   await tx.query(
     `INSERT INTO import_batch (id, tenant_id, market_id, kind, period_from, period_to, state, row_counts, control_totals,
        files, source_values, report, uploaded_by, created_by)
-     VALUES ($1, app_tenant_id(), $2, 'overlay', $3::date, ($4::date + interval '1 month' - interval '1 day')::date,
+     VALUES ($1, app_tenant_id(), $2, $10, $3::date, ($4::date + interval '1 month' - interval '1 day')::date,
        'uploaded', $5, $6, $7, $8, $9, current_setting('app.user_id')::uuid, current_setting('app.user_id')::uuid)`,
     [batch.batchId, marketId, `${batch.upload.period.from}-01`, `${batch.upload.period.to}-01`, result.rowCounts,
-      result.controlTotals, batchFiles(batch.upload, result.storedFiles), result.sourceValues, report],
+      result.controlTotals, batchFiles(batch.upload, result.storedFiles), result.sourceValues, report, batch.upload.kind],
   )
 }
 
@@ -73,14 +77,14 @@ async function storeFiles(store: FileStore, batch: NewBatch, files: Readonly<Rec
  * never stored, TRD-05 2.1).
  */
 export async function createBatch(tx: Tx, store: FileStore, batch: NewBatch): Promise<StoredResponse> {
-  const marketId = await marketIdOf(tx, batch.upload.market, batch.scope)
+  const marketId = await marketIdOf(tx, batch.upload, batch.scope)
   const files = Object.fromEntries(IMPORT_FILES.map((file) => [file, batch.upload.files[file].data])) as Record<ImportFile, Buffer>
-  const result = validateImport(files, batch.upload.period)
+  const result = validateImport(files, batch.upload.period, batch.upload.kind)
   await insertBatch(tx, batch, marketId, result)
   const audited = { objectType: 'import_batch', objectId: batch.batchId }
   await recordAudit(tx, {
     action: 'IMPORT.UPLOADED', ...audited,
-    after: { state: 'uploaded', market_id: marketId, period_from: batch.upload.period.from, period_to: batch.upload.period.to, files: fileDigests(batch.upload) },
+    after: { state: 'uploaded', kind: batch.upload.kind, market_id: marketId, period_from: batch.upload.period.from, period_to: batch.upload.period.to, files: fileDigests(batch.upload) },
   })
   await insertFindings(tx, batch.batchId, result.findings)
   const state: BatchState = result.errorCount === 0 ? 'validated' : 'rejected'

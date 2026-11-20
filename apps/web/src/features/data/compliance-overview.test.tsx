@@ -41,6 +41,9 @@ const detail = {
   ],
 }
 
+// SC-46 touch (B6): the overview also reads the compliance dashboard counts.
+const DASHBOARD = ['GET', /^\/v1\/dashboards\/compliance$/, () => json(200, { data: { guardrail_warnings: 0, open_cases: [], overdue_cases: 0 }, meta: { definitions: [] } })] as const
+
 const list = (rows: readonly Snapshot[]) => () => json(200, { data: rows, meta: { next_cursor: null } })
 
 describe('latestPerMarket', () => {
@@ -59,6 +62,7 @@ describe('ComplianceOverview (SC-46)', () => {
       snapshot('s9', MARKET_FR, 'failed', { failure_reason: 'Inputs changed while computing.' }),
     ]
     const fetchMock = fetchRoutes(
+      DASHBOARD,
       ['GET', /^\/v1\/compliance\/snapshots\?/, list(rows)],
       ['GET', /^\/v1\/compliance\/snapshots\/s2$/, () => json(200, { data: detail, meta: { notice: 'Indicator figures computed from loaded historical data.' } })],
     )
@@ -89,7 +93,7 @@ describe('ComplianceOverview (SC-46)', () => {
   })
 
   it('starts from the imports when there is no snapshot yet', async () => {
-    renderWithProviders(withSession(<ComplianceOverview />, ['compliance.read', 'import.manage']), fetchRoutes(['GET', /^\/v1\/compliance\/snapshots\?/, list([])]))
+    renderWithProviders(withSession(<ComplianceOverview />, ['compliance.read', 'import.manage']), fetchRoutes(DASHBOARD, ['GET', /^\/v1\/compliance\/snapshots\?/, list([])]))
     expect(await screen.findByText(/Upload an export to begin/)).toBeTruthy()
     expect(screen.queryByRole('button', { name: 'Create snapshot' })).toBeNull()
   })
@@ -97,6 +101,7 @@ describe('ComplianceOverview (SC-46)', () => {
   it('offers a new snapshot for an outdated one, filled in with its market and months', async () => {
     const user = userEvent.setup()
     const fetchMock = fetchRoutes(
+      DASHBOARD,
       ['GET', /^\/v1\/compliance\/snapshots\?/, list([snapshot('s2', MARKET_DE, 'outdated')])],
       ['GET', /^\/v1\/compliance\/snapshots\/s2$/, () => json(200, { data: { ...detail, state: 'outdated' }, meta: {} })],
       ['GET', /^\/v1\/markets$/, () => ok([{ id: MARKET_DE, code: 'DE', name: 'Germany', currency: 'EUR' }])],

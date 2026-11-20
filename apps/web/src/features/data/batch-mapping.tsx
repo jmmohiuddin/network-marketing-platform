@@ -24,6 +24,10 @@ function uncoveredCodes(error: unknown): string | null {
   return codes.length === 0 ? null : codes.join(', ')
 }
 
+/** The mapping editor for a batch's partner codes, listing only mappings of the batch's kind. */
+export const mappingPath = (batch: Pick<Batch, 'id' | 'kind'>): string =>
+  `/imports/mappings?batch=${batch.id}${batch.kind === 'migration' ? '&kind=migration' : ''}`
+
 export interface BatchMappingProps {
   readonly batch: Batch
   /** One primary action per view: primary while the batch still needs a mapping. */
@@ -35,12 +39,13 @@ export interface BatchMappingProps {
 export function BatchMapping({ batch, primary, onAttached }: BatchMappingProps) {
   const api = useApi()
   const toast = useToast()
-  const versions = useResource<MappingVersion[]>('/v1/import-mappings', { limit: VERSIONS_LIMIT })
+  // D-B6-09: a batch attaches only a mapping of its own kind.
+  const versions = useResource<MappingVersion[]>('/v1/import-mappings', { limit: VERSIONS_LIMIT, kind: batch.kind })
   const approved = (versions.data ?? []).filter((version) => version.state === 'approved')
   const [chosen, setChosen] = useState('')
   const [busy, setBusy] = useState(false)
   const [failure, setFailure] = useState<unknown>(null)
-  const mappingLink = <LinkButton href={`/imports/mappings?batch=${batch.id}`} icon="route">Open mapping</LinkButton>
+  const mappingLink = <LinkButton href={mappingPath(batch)} icon="route">Open mapping</LinkButton>
 
   if (versions.loading) return <LoadingState label="Loading mapping versions" />
   if (versions.error !== null) return <Banner tone="danger" action={<Button onClick={versions.reload}>Try again</Button>}>{errorMessage(versions.error)}</Banner>

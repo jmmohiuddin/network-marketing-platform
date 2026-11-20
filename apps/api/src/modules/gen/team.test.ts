@@ -78,6 +78,14 @@ describe('GET /v1/me/team', () => {
     expect(audit!.after).toMatchObject({ viewer: ids.V, target: ids.L1, policy_version: null })
   })
 
+  test('BUG-112: enrolled_on is the calendar day in the market\'s zone, not in UTC', async () => {
+    // 23:30 UTC on 30 June is 00:30 on 1 July in Europe/London (summer time).
+    await ownerRows(`BEGIN; SET LOCAL session_replication_role = replica;
+      UPDATE position_status_history SET effective_from = '2025-06-30T23:30:00Z' WHERE position_id = '${ids.L1}' AND from_status IS NULL; COMMIT`)
+
+    expect((await team()).json().data.children[0].enrolled_on).toBe('2025-07-01')
+  })
+
   test('TS-20 / AC-05.2: upline, a sibling, another tenant or an unknown id as node is 404, the same body', async () => {
     const unknown = await team(`?node=${randomUUID()}`)
     expect(unknown.statusCode).toBe(404)

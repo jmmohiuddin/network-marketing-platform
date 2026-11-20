@@ -102,7 +102,7 @@ describe('ledger reads (FR-FIN-001/002/003)', () => {
   test('T-B4-04 / AC-FIN2-2: summary by type balances; accounts with balances; postings and entries newest first; entry detail', async () => {
     const summary = (await get(`/v1/ledger/summary?market_id=${w.marketId}`)).json().data
     expect(summary).toMatchObject({ market: { id: w.marketId, code: 'DE', currency: 'EUR', minor_digits: 2 }, balanced: true, entry_count: 2 })
-    expect(summary.by_type).toHaveLength(10)
+    expect(summary.by_type).toHaveLength(11) // B6: migration_clearing
     expect(summary.by_type.filter((t: { debit_minor: string; credit_minor: string }) => t.debit_minor !== '0' || t.credit_minor !== '0')).toEqual([
       { type: 'commission_expense', normal: 'debit', debit_minor: '9600', credit_minor: '3000', balance_minor: '6600' },
       { type: 'payee_payable', normal: 'credit', debit_minor: '0', credit_minor: '9600', balance_minor: '9600' },
@@ -150,6 +150,66 @@ describe('ledger reads (FR-FIN-001/002/003)', () => {
     ])
     expect((await get(`/v1/payees/${c.participantId}/balances`, frScoped)).statusCode).toBe(404)
     expect((await get(`/v1/payees/${randomUUID()}/balances`)).statusCode).toBe(404)
+  })
+})
+
+describe('T-B6-32 ledger entries sort and CSV export (D-B6-08)', () => {
+  /** Every id of the list in `sort`, one entry per page. */
+  async function pages(sort: string): Promise<string[]> {
+    const ids: string[] = []
+    let cursor: string | null = null
+    do {
+      const page: { data: { id: string }[]; meta: { next_cursor: string | null } } = (await get(`/v1/ledger/entries?sort=${sort}&limit=1${cursor === null ? '' : `&cursor=${cursor}`}`)).json()
+      ids.push(...page.data.map((e) => e.id))
+      cursor = page.meta.next_cursor
+    } while (cursor !== null)
+    return ids
+  }
+
+  test('AC-RPT2-4: posted_at_desc (default) and posted_at_asc page by (posted_at, id); a cursor of the other sort is 422', async () => {
+    const newestFirst = (await get('/v1/ledger/entries')).json().data.map((e: { id: string }) => e.id)
+
+    expect(newestFirst).toHaveLength(2)
+    expect(newestFirst[1]).toBe(entryId) // P0's commit was posted first
+    expect(await pages('posted_at_desc')).toEqual(newestFirst)
+    expect(await pages('posted_at_asc')).toEqual([...newestFirst].reverse())
+    const ascCursor = (await get('/v1/ledger/entries?sort=posted_at_asc&limit=1')).json().meta.next_cursor
+    expect((await get(`/v1/ledger/entries?sort=posted_at_desc&cursor=${ascCursor}`)).json().error).toMatchObject({ code: 'VALIDATION_FAILED', details: { path: 'cursor' } })
+    expect((await get('/v1/ledger/entries?sort=amount_desc')).json().error.code).toBe('VALIDATION_FAILED')
+  })
+
+  test('AC-RPT2-5: the filter in its sort as CSV with the chosen columns, no-store, audited; every column by default', async () => {
+    const response = await get(`/v1/ledger/entries/export?market_id=${w.marketId}&sort=posted_at_asc&columns=entry_id,event_type,debit_total`)
+    const [audit] = await ownerRows<{ after_ref: string }>(
+      `SELECT after_ref FROM audit.audit_event WHERE tenant_id = $1 AND action = 'EXPORT.CREATED' ORDER BY seq DESC LIMIT 1`, [w.tenantId])
+
+    expect(response.statusCode, response.body).toBe(200)
+    expect(response.headers['content-type']).toBe('text/csv; charset=utf-8')
+    expect(response.headers['cache-control']).toBe('no-store')
+    const newest = (await get('/v1/ledger/entries?limit=1')).json().data[0].id
+    expect(response.body).toBe(`entry_id,event_type,debit_total\r\n${entryId},run_committed,96.00\r\n${newest},run_committed,30.00\r\n`)
+    expect(JSON.parse(audit!.after_ref).after).toEqual({
+      kind: 'ledger_entries', row_count: 2, filters: { market_id: w.marketId, sort: 'posted_at_asc', columns: ['entry_id', 'event_type', 'debit_total'] },
+    })
+    const all = await get(`/v1/ledger/entries/export?origin_type=run&origin_id=${firstRun}`)
+    expect(all.body.split('\r\n')[0]).toBe('posted_at,entry_id,market,period,event_type,origin_type,origin_id,debit_total,credit_total,approval_id')
+    expect(all.body.split('\r\n')[1]).toContain(`,${entryId},DE,${w.periods[0]!.id},run_committed,run,${firstRun},96.00,96.00,`)
+    expect((await get('/v1/ledger/entries/export?columns=entry_id,payee')).statusCode).toBe(400)
+    expect((await get('/v1/ledger/entries/export?columns=entry_id,entry_id')).statusCode).toBe(400)
+  })
+
+  test('AC-RPT2-5: ledger.export required (a Commission analyst 403); above the cap 422 and EXPORT.REFUSED; other tenants and markets export nothing', async () => {
+    const capped = await buildTestApp({ modules: [ledModule], env: { EXPORT_ROW_CAP: '1' } })
+    try {
+      const refused = await call(capped, { method: 'GET', url: '/v1/ledger/entries/export', as: w.finance })
+      expect([refused.statusCode, refused.json().error.code, refused.json().error.details]).toEqual([422, 'EXPORT_ROW_CAP_EXCEEDED', { row_count: 2, row_cap: 1 }])
+      expect(refused.headers['cache-control']).toBe('no-store')
+    } finally {
+      await capped.close()
+    }
+    expect(await auditActions(w.tenantId)).toContain('EXPORT.REFUSED')
+    expect((await get('/v1/ledger/entries/export', w.analyst)).statusCode).toBe(403)
+    for (const as of [stranger, frScoped]) expect((await get('/v1/ledger/entries/export', as)).body.trimEnd().split('\r\n'), 'header only').toHaveLength(1)
   })
 })
 

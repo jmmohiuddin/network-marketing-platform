@@ -19,12 +19,14 @@ export const B4_KEYS = [
 ] as const
 /** PLAN B5 D-B5-20: dispute window and response times, privacy-request deadlines, customers' contact in the portal; none has a default (DEC-14). */
 export const B5_KEYS = ['disputes.policy', 'privacy.policy', 'portal.customer_contact_visible'] as const
+/** PLAN B6 D-B6-17: filing requirements and the full export schedule; none has a default (DEC-14). */
+export const B6_KEYS = ['plan.filing_requirements', 'exports.full_schedule'] as const
 /** Keys the DPO approves (settings.ts approverPermission privacy.manage). */
 const DPO_APPROVED: readonly string[] = ['genealogy.visibility_policy', 'privacy.policy', 'portal.customer_contact_visible']
 /** B4 keys a Finance approver approves (settings.ts approverPermission settings.approve). */
 const B4_APPROVED: readonly string[] = ['payouts.market_policy', 'payouts.bank_detail_cooling_off_hours', 'adjustments.policy', 'write_offs.policy']
 /** Keys changed through "Save new version with effective date". */
-export const POLICY_KEYS = [...MONEY_KEYS, 'plan.activation_notice_days', ...B2_KEYS, ...B4_KEYS, ...B5_KEYS] as const
+export const POLICY_KEYS = [...MONEY_KEYS, 'plan.activation_notice_days', ...B2_KEYS, ...B4_KEYS, ...B5_KEYS, ...B6_KEYS] as const
 export type PolicyKey = (typeof POLICY_KEYS)[number]
 
 export interface Approval {
@@ -38,10 +40,13 @@ export interface Approval {
 
 export const FINANCE_APPROVAL: Approval = { permission: 'settings.approve', role: 'Finance approver', short: 'Finance' }
 const DPO: Approval = { permission: 'privacy.manage', role: 'DPO', short: 'DPO' }
+/** plan.filing_requirements: a holder of market.signoff for all markets (settings.ts approverPermission). */
+const MARKET_SIGNOFF: Approval = { permission: 'market.signoff', role: 'Market sign-off holder', short: 'market sign-off' }
 
 /** Who must approve a change of the key (D-B2-08, D-B5-20): money keys a Finance approver, privacy keys the DPO; else null. */
 export function approvalOf(key: string): Approval | null {
   if ((MONEY_KEYS as readonly string[]).includes(key) || B4_APPROVED.includes(key)) return FINANCE_APPROVAL
+  if (key === 'plan.filing_requirements') return MARKET_SIGNOFF
   return DPO_APPROVED.includes(key) ? DPO : null
 }
 
@@ -74,6 +79,8 @@ export const KEY_LABELS: Readonly<Record<string, string>> = {
   'disputes.policy': 'Dispute policy',
   'privacy.policy': 'Privacy request deadlines',
   'portal.customer_contact_visible': 'Customer contact in the portal',
+  'plan.filing_requirements': 'Plan filing requirements',
+  'exports.full_schedule': 'Full data export schedule',
   structure: 'Markets, brands and calendars',
 }
 
@@ -135,8 +142,14 @@ export const RESTOCKING_OPTIONS = [
   { value: 'proportional', label: 'Proportional' },
 ] as const
 
+export const CADENCE_OPTIONS = [
+  { value: 'daily', label: 'Daily' },
+  { value: 'weekly', label: 'Weekly, on Mondays' },
+  { value: 'monthly', label: 'Monthly, on the 1st' },
+] as const
+
 const OPTION_LABELS: Readonly<Record<string, string>> = Object.fromEntries(
-  [...ROUNDING_OPTIONS, ...CLAWBACK_OPTIONS, ...RELATED_ACTION_OPTIONS, ...SIGNAL_OPTIONS, ...REASSIGNMENT_OPTIONS, ...CREDITING_OPTIONS, ...ATTRIBUTION_OPTIONS, ...RESTOCKING_OPTIONS]
+  [...ROUNDING_OPTIONS, ...CLAWBACK_OPTIONS, ...CADENCE_OPTIONS, ...RELATED_ACTION_OPTIONS, ...SIGNAL_OPTIONS, ...REASSIGNMENT_OPTIONS, ...CREDITING_OPTIONS, ...ATTRIBUTION_OPTIONS, ...RESTOCKING_OPTIONS]
     .map((option) => [option.value, option.label]),
 )
 
@@ -207,6 +220,12 @@ function b2ValueText(key: string, value: unknown, markets: readonly Market[] | u
       return `Answer within ${marketDaysText(record.response_days, markets)}; escalate ${days(Number(record.escalate_before_days))} before the deadline`
     case 'portal.customer_contact_visible':
       return value === true ? 'Shown, masked' : 'Hidden'
+    case 'plan.filing_requirements': {
+      const ids = Array.isArray(record.market_ids) ? record.market_ids : []
+      return `A filing is recorded before scheduling in ${ids.map((id) => markets?.find((market) => market.id === id)?.code ?? 'a market').join(', ')}`
+    }
+    case 'exports.full_schedule':
+      return `${word(record.cadence)} at ${String(record.hour_utc).padStart(2, '0')}:00 UTC`
     case 'genealogy.visibility_policy':
       return `Names ${String(record.named_depth)} ${record.named_depth === 1 ? 'level' : 'levels'} down; contact of personally sponsored ${record.contact_for_personally_sponsored === true ? 'shown' : 'hidden'}`
     default:

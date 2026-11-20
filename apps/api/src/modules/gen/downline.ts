@@ -101,7 +101,7 @@ interface DownlineRow {
 // adds one.
 const DOWNLINE_SQL = `
   SELECT p.id AS position_id, p.position_ref, p.status, m.code AS market_code,
-    (SELECT to_char(h.effective_from AT TIME ZONE 'UTC', 'YYYY-MM-DD') FROM position_status_history h
+    (SELECT to_char(h.effective_from AT TIME ZONE m.time_zone, 'YYYY-MM-DD') FROM position_status_history h
      WHERE h.position_id = p.id AND h.from_status IS NULL ORDER BY h.effective_from LIMIT 1) AS enrolled_on,
     d.external_ref, d.display_name, pa.contact
   FROM unnest($1::uuid[]) WITH ORDINALITY AS u (id, ord)

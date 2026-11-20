@@ -82,7 +82,7 @@ async function stateRows(tx: Tx, runId: string): Promise<StateRowText[]> {
   return rows
 }
 
-function priorRow(row: StateRowText): QualificationStateRow {
+function priorRow(row: Omit<StateRowText, 'measures'>): QualificationStateRow {
   return {
     positionId: row.position_id,
     paidAs: parseEngineJson(row.paid_as_rank),
@@ -103,11 +103,11 @@ async function covered(tx: Tx, periodId: string): Promise<boolean> {
 /**
  * Prior state and history (§0.1): the committed run of the previous period, then contiguous committed periods back
  * as far as the plan's longest rolling window needs. A period whose previous period has no plan version is a chain
- * start (§2.4): no prior state, no history.
+ * start (§2.4): no history, and no prior state unless it is a migration cutover (chainStart).
  */
 export async function chainInputs(tx: Tx, period: PeriodRow, plan: PlanVersion): Promise<ChainInputs> {
   const previous = await previousPeriod(tx, period)
-  if (previous === null || !(await covered(tx, previous.id))) return { priorState: null, priorRunId: null, history: [] }
+  if (previous === null || !(await covered(tx, previous.id))) return chainStart(tx, period, previous, plan)
   if (previous.committed_run_id === null) {
     throw new ApiError(422, 'PRIOR_STATE_MISSING', 'The previous period was committed without a run.', { period_id: previous.id })
   }
@@ -128,6 +128,22 @@ export async function chainInputs(tx: Tx, period: PeriodRow, plan: PlanVersion):
     at = await previousPeriod(tx, at)
   }
   return { priorState, priorRunId: previous.committed_run_id, history }
+}
+
+/**
+ * D-B6-10: a chain start that is a migration's cutover period starts from the migration's approved opening state (SQL
+ * mig_opening_state_for), as the prior state of the plan version in force, so no transition applies; otherwise nothing.
+ */
+async function chainStart(tx: Tx, period: PeriodRow, previous: PeriodRow | null, plan: PlanVersion): Promise<ChainInputs> {
+  const { rows } = await tx.query<Omit<StateRowText, 'measures'>>(
+    `SELECT position_id, paid_as_rank::text, highest_titles::text, grace_used::text, counters::text, carry::text, one_time_flags, banked::text
+     FROM mig_opening_state_for($1)`,
+    [period.id],
+  )
+  if (rows.length === 0) return { priorState: null, priorRunId: null, history: [] }
+  // The opening state holds as of C's start: the end of the previous period (C itself when it is the calendar's first).
+  const priorState: PriorState = { planVersionId: plan.planVersionId, periodId: previous?.id ?? period.id, positions: rows.map(priorRow) }
+  return { priorState, priorRunId: null, history: [] }
 }
 
 interface OrderRow {

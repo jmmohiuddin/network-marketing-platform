@@ -116,9 +116,10 @@ export const SETTINGS = {
     approverPermission: null,
   },
   /** D-B2-12: the event whose time credits an order. */
+  /** Retired by D-B6-05: the crediting event lives on the plan version (plan_crediting_event); stored values still parse. */
   'orders.crediting_event': {
     schema: z.enum(['paid', 'fulfilled']), readPermissions: ORDER_READERS, stepUp: false,
-    approverPermission: null,
+    approverPermission: null, retired: true,
   },
   /** FR-ORD-003: an order without a purpose is flagged purpose_missing. */
   'orders.purpose_required': {
@@ -252,6 +253,21 @@ export const SETTINGS = {
   /** FR-DIST-005 (D-B5-11): whether a distributor sees its customers' (masked) contact details. */
   'portal.customer_contact_visible': {
     schema: z.boolean(), readPermissions: [...POLICY_READERS, 'privacy.manage'], stepUp: false, approverPermission: 'privacy.manage',
+  },
+  // PLAN B6 D-B6-17: none has a default (DEC-14); unset = no market requires a filing, manual full exports only.
+  /** FR-PLN-007 (D-B6-02): the markets whose plan amendments need a filing record before a version is scheduled. */
+  'plan.filing_requirements': {
+    schema: z.strictObject({ market_ids: z.array(z.uuid()).min(1).max(50).refine(unique, 'market ids must be unique') }),
+    readPermissions: ['settings.manage', 'plan.read'],
+    stepUp: false,
+    approverPermission: 'market.signoff',
+  },
+  /** FR-INT-003 (D-B6-06): the full export schedule, UTC; weekly = Mondays, monthly = the 1st. */
+  'exports.full_schedule': {
+    schema: z.strictObject({ cadence: z.enum(['daily', 'weekly', 'monthly']), hour_utc: z.number().int().min(0).max(23) }),
+    readPermissions: ['settings.manage', 'export.full'],
+    stepUp: true,
+    approverPermission: null,
   },
 } as const satisfies Record<string, SettingDefinition>
 

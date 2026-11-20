@@ -28,8 +28,9 @@ export interface OrderRow {
   readonly volumes: Volumes
 }
 
-/** GET /v1/orders rows: the order plus its event count and late flag. */
+/** GET /v1/orders rows: the order plus its order time, event count and late flag. */
 export interface OrderListRow extends OrderRow {
+  readonly ordered_at: string
   readonly events: number
   readonly late: boolean
 }

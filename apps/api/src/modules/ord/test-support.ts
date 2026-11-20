@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { withTenant } from '@nmp/db'
 import type { FastifyInstance } from 'fastify'
-import { call, ownerRows, type TestUser } from '../../../test/helpers/index.js'
+import { activePlanVersion, call, ownerRows, type TestUser } from '../../../test/helpers/index.js'
 
 // Test fixtures for orders and connectors. Participants, types, positions and settings are written directly (owner pool
 // or the shared SQL functions): ORD never imports PAR, GEN or TEN code (D-B2-02).
@@ -48,7 +48,6 @@ export async function setSettings(tenantId: string, userId: string, values: Reco
 
 /** The order settings every ingestion needs (values chosen by the test, not defaults). */
 export const ORDER_SETTINGS = {
-  'orders.crediting_event': 'paid',
   'orders.attribution_precedence': ['link', 'code', 'servicing'],
   'orders.new_buyer_type': 'RETAIL',
 }
@@ -142,11 +141,12 @@ export interface OrdersTenant {
   readonly token: string
 }
 
-/** A tenant with live market GB, types DIST and RETAIL, the order settings, SKU-A {qv 150, bv 7} and SKU-B {qv 100}. */
+/** A tenant with live market GB, types DIST and RETAIL, the order settings, a plan crediting at payment, SKU-A {qv 150, bv 7} and SKU-B {qv 100}. */
 export async function ordersTenant(app: FastifyInstance, tenantId: string, marketId: string, admin: TestUser, approver: TestUser): Promise<OrdersTenant> {
   const distributorType = await activeType(tenantId, 'DIST', DISTRIBUTOR, admin.id, approver.id)
   const retailType = await activeType(tenantId, 'RETAIL', RETAIL, admin.id, approver.id)
   await setSettings(tenantId, admin.id, ORDER_SETTINGS)
+  await activePlanVersion(tenantId, marketId, { submitterId: admin.id, approverId: approver.id, creditingEvent: 'paid' })
   await volumes(app, admin, marketId, 'SKU-A', { qv: '150', bv: '7' })
   await volumes(app, admin, marketId, 'SKU-B', { qv: '100' })
   return { tenantId, marketId, admin, distributorType, retailType, token: await apiKey(app, admin, ['orders:write']) }

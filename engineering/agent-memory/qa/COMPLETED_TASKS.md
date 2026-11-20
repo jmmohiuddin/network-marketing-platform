@@ -44,3 +44,5 @@ _Agent: qa. Read before every task; update after every task. Keep concise — fa
 - Re-seeded nmp_e2e, verified BUG-049..059 in the browser, repeated W-B1-1..5 + MVP-A regression, harness SC-29/13/17 x4, Impeccable detect + scripted a11y; register statuses updated, BUG-060 added; reports appended; servers stopped by PID. No code changed.
 - 2026-11-17 B2 round 1: browser QA W-B2-1..11 + MVP-A regression, harness SC-06/06-detail/07/08/09/13-connectors/29/31/32, Impeccable audit, a11y; reports appended under "Increment B2 — round 1"; BUG-069..080 registered.
 - 2026-11-18 B3 browser round 1 (QA): workflows, harness 9 screens, audit; reports + BUG-084..093.
+- 2026-11-20 B6 browser round 1: W-B6-1..9 + regression, harness 10 screens, Impeccable audit, a11y; reports + BUG-121..127.
+- 2026-11-20 B6 browser round 2: BUG-121..127 verified fixed; quick W-B6-1..9 + MVP-A regression; harness 10 screens; new BUG-128/129 LOW. Reports: testing/UI_TESTING_REPORT.md, testing/VISUAL_REGRESSION_REPORT.md (B6 round 2 sections).

@@ -76,3 +76,6 @@ _Agent: compensation. Read before every task; update after every task. Keep conc
 - lib/idempotency.ts: per-user route key for portal sessions (PLAN §R) — integrator; covered by comp/portal-routes.test.ts.
 - Staging check for committed runs with result_line but no run_settlement (pre-B4) — needs operator/DB agent; would 500 INVARIANT_FAILED on statement detail.
 - dispute due_at stored up to 999 µs before submitted_at + days (JS Date in CaseTypeDefinition.dueAt, cas/types.ts); exact at API ms precision.
+- 2026-11-20 D-B6-12 AC-S1-2: 2M positions OOM at 7 GB heap; engine rework (columnar input, traces on chunk exit, pass 10 per payee range) or architect amends AC-S1-2 (E-ADR-49). Unmeasured at 1M: S-2 end to end, simulation, parallel run.
+- 2026-11-20 TS-28 erasure-replay settles A's payable with a hand-made entry; real PAY batch → sandbox settle → erasure → replay needs an apps/api/test cross-module test (integrator/QA).
+- 2026-11-20 close-check / close / ledger entries export lack isolation cases + role-matrix rows (apps/api/test, integrator).

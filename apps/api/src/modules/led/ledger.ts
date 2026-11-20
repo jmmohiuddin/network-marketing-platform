@@ -6,11 +6,12 @@ import { notFound } from '../../lib/errors.js'
 
 export const ACCOUNT_TYPES = [
   'commission_expense', 'payee_payable', 'withholding_payable', 'payout_in_transit', 'clawback_receivable', 'rounding_residue',
-  'write_off', 'credit_liability', 'breakage', 'settled_clearing',
+  'write_off', 'credit_liability', 'breakage', 'settled_clearing', 'migration_clearing',
 ] as const
 export type AccountType = (typeof ACCOUNT_TYPES)[number]
 
-const DEBIT_NORMAL: ReadonlySet<string> = new Set(['commission_expense', 'clawback_receivable', 'write_off', 'rounding_residue'])
+// migration_clearing carries the legacy payables taken over at a cutover (Dr clearing / Cr payee_payable, D-B6-10).
+const DEBIT_NORMAL: ReadonlySet<string> = new Set(['commission_expense', 'clawback_receivable', 'write_off', 'rounding_residue', 'migration_clearing'])
 
 export const normalSide = (type: string): 'debit' | 'credit' => (DEBIT_NORMAL.has(type) ? 'debit' : 'credit')
 
@@ -18,6 +19,11 @@ export const normalSide = (type: string): 'debit' | 'credit' => (DEBIT_NORMAL.ha
 export function balanceOf(type: string, debitMinor: string, creditMinor: string): string {
   const net = BigInt(debitMinor) - BigInt(creditMinor)
   return (normalSide(type) === 'debit' ? net : -net).toString()
+}
+
+/** D-B4-07 market ledger lock, waiting: for a writer that has not audited yet in its transaction (ledger before audit). */
+export async function lockLedger(tx: Tx, marketId: string): Promise<void> {
+  await tx.query(`SELECT pg_advisory_xact_lock(hashtextextended('ledger:' || app_tenant_id() || ':' || $1, 0))`, [marketId])
 }
 
 /**

@@ -117,6 +117,11 @@ const PERMISSION_LABELS: Readonly<Record<string, string>> = {
   'case.returned_payment.create': 'Handle returned payments',
   'case.dispute.read': 'View commission disputes',
   'case.dispute.approve': 'Decide commission disputes',
+  'dashboard.exec': 'View the executive dashboard',
+  'export.full': 'Export all tenant data',
+  'migration.manage': 'Run data migrations',
+  'migration.signoff': 'Sign off data migrations',
+  'period.close': 'Close periods',
 }
 
 export function permissionLabel(permission: string): string {
@@ -158,6 +163,7 @@ const SUPPORT_SCOPE_LABELS: Readonly<Record<string, string>> = {
   'case.bank_detail.read': 'Bank-detail cases',
   'case.returned_payment.read': 'Returned-payment cases',
   'case.dispute.read': 'Commission dispute cases',
+  'dashboard.exec': 'Executive dashboard',
 }
 
 // BUG-048: areas with no screen to view yet (plans arrive in B3); never offered in a session request.
@@ -209,12 +215,12 @@ export function jobHealthLabel(health: { readonly queued: number; readonly runni
   return `${health.queued} queued · ${health.running} running · ${health.failed} failed`
 }
 
-/** The tenant base roles and their permissions (apps/api/src/lib/permissions.ts BASE_ROLES, PLAN B1 to B5 section 3). */
+/** The tenant base roles and their permissions (apps/api/src/lib/permissions.ts BASE_ROLES, PLAN B1 to B6 section 3). */
 export const BASE_ROLE_PERMISSIONS: Readonly<Record<string, readonly string[]>> = {
   'Tenant admin': [
     'user.manage', 'settings.manage', 'import.manage', 'mapping.edit', 'mapping.approve', 'compliance.read',
     'audit.read', 'vendor_access.decide', 'market.manage', 'integration.manage', 'participant.read', 'order.read',
-    'product.manage', 'integration.read', 'ledger.export',
+    'product.manage', 'integration.read', 'ledger.export', 'export.full',
   ],
   'Commission analyst': [
     'compliance.read', 'participant.read', 'genealogy.read', 'case.genealogy.read', 'order.read', 'late.manage',
@@ -228,7 +234,7 @@ export const BASE_ROLE_PERMISSIONS: Readonly<Record<string, readonly string[]>> 
     'plan.read', 'period.read', 'run.review', 'run.commit', 'trace.read', 'restatement.approve', 'case.restatement.read',
     'ledger.read', 'ledger.export', 'payout.read', 'payout.approve', 'tax.manage', 'case.adjustment.read',
     'case.adjustment.approve', 'case.write_off.read', 'case.write_off.create', 'case.write_off.approve',
-    'case.returned_payment.read', 'case.dispute.read',
+    'case.returned_payment.read', 'case.dispute.read', 'migration.signoff', 'period.close',
   ],
   'Payout officer': [
     'participant.unmask', 'participant.read', 'ledger.read', 'payout.read', 'payout.prepare', 'payout.reconcile',
@@ -248,8 +254,8 @@ export const BASE_ROLE_PERMISSIONS: Readonly<Record<string, readonly string[]>> 
     'trace.read', 'case.bank_detail.read', 'case.bank_detail.create', 'case.dispute.read',
   ],
   DPO: ['compliance.read', 'audit.read', 'participant.unmask', 'participant.read', 'privacy.manage'],
-  'Implementation consultant': ['import.manage', 'mapping.edit', 'plan.read', 'plan.edit', 'plan.simulate', 'period.read'],
-  'Executive read-only': ['compliance.read', 'plan.read', 'period.read'],
+  'Implementation consultant': ['import.manage', 'mapping.edit', 'plan.read', 'plan.edit', 'plan.simulate', 'period.read', 'migration.manage'],
+  'Executive read-only': ['compliance.read', 'plan.read', 'period.read', 'dashboard.exec'],
   Integration: [],
 }
 

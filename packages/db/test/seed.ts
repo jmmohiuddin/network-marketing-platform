@@ -35,6 +35,11 @@ export interface TenantSeed {
   instructionId: string
   portalUserId: string
   privacyRequestId: string
+  migrationId: string
+  /** The migration's cutover: the open period after periodId (a calculated period takes no migration). */
+  migrationPeriodId: string
+  parallelRunId: string
+  dataExportId: string
 }
 
 /** A platform guardrail rule for the seeded evaluation; pack rules are written by migrations or the owner only. */
@@ -124,9 +129,10 @@ export async function seedTenantRows(ctx: TenantContext, secondUserId: string): 
     const b3 = await seedB3Rows(tx, ctx, { marketId, calendarId: b1.calendarId, settingsVersionId, ...b2 })
     const b4 = await seedB4Rows(tx, ctx, secondUserId, { marketId, ...b2, ...b3 })
     const b5 = await seedB5Rows(tx, ctx, secondUserId, b2.participantId)
+    const b6 = await seedB6Rows(tx, ctx, secondUserId, { marketId, roleId, ...b3 })
     return {
       marketId, roleId, approvalId, settingsVersionId, documentId, mappingId, batchId, snapshotId, outboxEventId, ...b1, ...b2,
-      ...b3, ...b4, ...b5,
+      ...b3, ...b4, ...b5, ...b6,
     }
   })
 }
@@ -480,6 +486,132 @@ async function seedB5Rows(tx: Tx, ctx: TenantContext, secondUserId: string, part
   await tx.query(`UPDATE case_file SET state = 'approved', approval_id = $2, decided_at = now() WHERE id = $1`, [caseId, approvalId])
   await insertRow(tx, 'privacy_export', { tenant_id, request_id: privacyRequestId, content: randomBytes(16) })
   return { portalUserId, privacyRequestId }
+}
+
+/**
+ * One row in every B6 tenant table (PLAN B6 section 1): a filing on a second plan's version in review, a completed full
+ * export with one file, a saved view, and a migration of a migration batch applied by mig_apply_batch, with an opening
+ * balance and state row, its opening posted (approved by secondUserId), and a parallel run compared by mig_compare.
+ */
+async function seedB6Rows(
+  tx: Tx, ctx: TenantContext, secondUserId: string,
+  ids: { marketId: string; roleId: string; periodId: string; planVersionId: string },
+) {
+  const tenant_id = ctx.tenantId
+  const one = async (sql: string, params: unknown[]): Promise<string> => Object.values((await tx.query(sql, params)).rows[0]!)[0] as string
+  const planId = await insertRow(tx, 'plan', { tenant_id, name: 'Seed plan B6', created_by: ctx.userId })
+  await tx.query('INSERT INTO plan_market (tenant_id, plan_id, market_id) VALUES ($1, $2, $3)', [tenant_id, planId, ids.marketId])
+  const versionId = await insertRow(tx, 'plan_version', {
+    tenant_id, plan_id: planId, version: 1, engine_version: 'seed', compiled: {}, created_by: ctx.userId,
+  })
+  await tx.query(
+    `UPDATE plan_version SET state = 'in_review', crediting_event = 'paid', content_hash = digest(compiled::text, 'sha256'),
+       submitted_by = $2, submitted_at = now() WHERE id = $1`,
+    [versionId, ctx.userId],
+  )
+  await insertRow(tx, 'plan_version_filing', {
+    tenant_id, plan_version_id: versionId, market_id: ids.marketId, status: 'filed', reference: 'SEED-1', filed_on: '2026-01-02',
+    document_id: await insertEvidence(tx, tenant_id, ctx.userId),
+  })
+  const dataExportId = await insertRow(tx, 'data_export', { tenant_id, trigger: 'manual', model_version: 1, requested_by: ctx.userId })
+  await tx.query(`UPDATE data_export SET state = 'running', snapshot_at = now() WHERE id = $1`, [dataExportId])
+  await tx.query(
+    `INSERT INTO data_export_file (tenant_id, export_id, table_name, row_count, content) VALUES ($1, $2, 'tenant', 1, $3)`,
+    [tenant_id, dataExportId, randomBytes(16)],
+  )
+  const exportJobId = await insertRow(tx, 'export_job', {
+    tenant_id, kind: 'full_data', requested_by: ctx.userId, state: 'done', created_by_type: 'user',
+  })
+  await tx.query(
+    `UPDATE data_export SET state = 'completed', export_job_id = $2, manifest = '{}', signature = $3, finished_at = now() WHERE id = $1`,
+    [dataExportId, exportJobId, randomBytes(64)],
+  )
+  await insertRow(tx, 'saved_view', {
+    tenant_id, user_id: ctx.userId, list: 'orders', name: 'Seed view', filters: {}, columns: ['order_id'], sort: 'credited_at_desc',
+    shared_role_id: ids.roleId,
+  })
+  const { migrationId, migrationPeriodId } = await seedMigration(tx, ctx, secondUserId, ids)
+  const simulationId = await insertRow(tx, 'simulation', {
+    tenant_id, plan_version_id: ids.planVersionId, period_id: migrationPeriodId, kind: 'parallel_run', requested_by: ctx.userId,
+    content_hash: await one(`SELECT digest(compiled::text, 'sha256') FROM plan_version WHERE id = $1`, [ids.planVersionId]),
+  })
+  const parallelRunId = await insertRow(tx, 'parallel_run', {
+    tenant_id, migration_id: migrationId, simulation_id: simulationId, bonus_map: {},
+  })
+  await tx.query(`UPDATE simulation SET state = 'running', snapshot_id = (SELECT id FROM run_snapshot LIMIT 1) WHERE id = $1`, [simulationId])
+  await tx.query(
+    `INSERT INTO sim_result_line (tenant_id, simulation_id, payee_position_id, payee_participant_id, rule_key, bonus_type, source_kind,
+       pass, amount_minor, currency, trace)
+     SELECT tenant_id, $1, payee_position_id, payee_participant_id, rule_key, bonus_type, source_kind, pass, amount_minor, currency, trace
+     FROM result_line LIMIT 1`,
+    [simulationId],
+  )
+  await tx.query(`UPDATE simulation SET state = 'completed', totals = '{}', comparison = '{}', finished_at = now() WHERE id = $1`, [simulationId])
+  await tx.query('SELECT mig_compare($1)', [parallelRunId])
+  return { migrationId, migrationPeriodId, parallelRunId, dataExportId }
+}
+
+/**
+ * A migration batch (participant mig-a of type SEED with an order refunded in part, a payout line of the cutover month) applied
+ * by mig_apply_batch, cutting over in the open period after periodId, an opening balance and state row, the opening submitted
+ * by the acting user and posted with secondUserId's approval.
+ */
+async function seedMigration(
+  tx: Tx, ctx: TenantContext, secondUserId: string, ids: { marketId: string; periodId: string },
+): Promise<{ migrationId: string; migrationPeriodId: string }> {
+  const tenant_id = ctx.tenantId
+  const fact = { tenant_id, source: 'import' }
+  const { rows: cutover } = await tx.query<{ id: string }>(
+    `INSERT INTO period (tenant_id, calendar_id, starts_at, ends_at)
+     SELECT tenant_id, calendar_id, ends_at, ends_at + interval '1 month' FROM period WHERE id = $1 RETURNING id`, [ids.periodId])
+  const migrationPeriodId = cutover[0]!.id
+  const mappingId = await insertRow(tx, 'import_mapping', { tenant_id, version: 2, kind: 'migration', mappings: {}, state: 'draft' })
+  const batchId = await insertRow(tx, 'import_batch', {
+    tenant_id, market_id: ids.marketId, kind: 'migration', period_from: '2026-01-01', period_to: '2026-02-28', state: 'mapped',
+    mapping_id: mappingId, uploaded_by: ctx.userId,
+  })
+  await insertRow(tx, 'cpl_fact_participant', {
+    ...fact, batch_id: batchId, participant_ref: 'mig-a', type_code: 'SEED', counts_as_end_customer: false, can_earn: true,
+    enrolled_month: '2026-01-01', market_id: ids.marketId,
+  })
+  await insertRow(tx, 'cpl_fact_order', {
+    ...fact, batch_id: batchId, order_ref: 'mo1', order_date: '2026-01-05', buyer_ref: 'mig-a', amount_minor: 10000,
+    volume_minor: 8000, purpose: 'personal', is_starter_kit: false, refunded_minor: 1000, refund_month: '2026-01-01',
+  })
+  await insertRow(tx, 'cpl_fact_payout_line', {
+    ...fact, batch_id: batchId, line_ref: 'ml1', pay_month: '2026-02-01', payee_ref: 'mig-a', bonus_type: 'retail',
+    source_kind: 'retail_sale', amount_minor: 500,
+  })
+  await tx.query(`UPDATE import_batch SET state = 'loaded' WHERE id = $1`, [batchId])
+  const migrationId = await insertRow(tx, 'migration', {
+    tenant_id, market_id: ids.marketId, import_batch_id: batchId, cutover_period_id: migrationPeriodId, volume_key: 'qv',
+  })
+  await tx.query('SELECT mig_apply_batch($1)', [migrationId])
+  const { rows } = await tx.query<{ participant_id: string; position_id: string }>(
+    `SELECT o.participant_id, o.position_id FROM position_ownership o JOIN participant p ON p.id = o.participant_id
+     WHERE p.external_ref = 'mig-a'`,
+  )
+  const { participant_id, position_id } = rows[0]!
+  await tx.query('INSERT INTO migration_opening_balance (tenant_id, migration_id, participant_id, amount_minor) VALUES ($1, $2, $3, 250)', [
+    tenant_id, migrationId, participant_id,
+  ])
+  await tx.query(
+    `INSERT INTO migration_opening_state (tenant_id, migration_id, position_id, paid_as_rank, highest_titles, counters, carry, one_time_flags)
+     VALUES ($1, $2, $3, '[]', '[]', '[]', '[]', '{}')`,
+    [tenant_id, migrationId, position_id],
+  )
+  await tx.query(`UPDATE migration SET state = 'opening_submitted', opening_submitted_by = $2, opening_submitted_at = now() WHERE id = $1`, [
+    migrationId, ctx.userId,
+  ])
+  const approvalId = await asUser(tx, secondUserId, () => insertRow(tx, 'approval', {
+    tenant_id, object_type: 'migration', object_id: migrationId, preparer_id: ctx.userId, approver_id: secondUserId,
+    decision: 'approved', decided_at: new Date(),
+  }))
+  const entry = await tx.query<{ id: string }>('SELECT led_post_migration_opening($1, $2) AS id', [migrationId, approvalId])
+  await tx.query(`UPDATE migration SET state = 'opening_posted', opening_approval_id = $2, opening_entry_id = $3 WHERE id = $1`, [
+    migrationId, approvalId, entry.rows[0]!.id,
+  ])
+  return { migrationId, migrationPeriodId }
 }
 
 export interface VendorSeed {

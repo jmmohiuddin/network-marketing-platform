@@ -73,7 +73,9 @@ describe('SC-29 B2 policy cards', () => {
   it('states what holds while each B2 key is unset, and the platform safe default for visibility', async () => {
     renderAs(ADMIN, <SettingsPage />, routes())
     const crediting = (await screen.findByRole('heading', { name: 'Crediting event' })).closest('li')!
-    expect(within(crediting).getByText('Orders are refused until set.')).toBeTruthy()
+    // D-B6-05: retired, shown read-only.
+    expect(within(crediting).getAllByText('Retired: the crediting event is set on each plan version.').length).toBeGreaterThan(0)
+    expect(within(crediting).queryByRole('button')).toBeNull()
     expect(within(screen.getByRole('heading', { name: 'Customer reassignment rule' }).closest('li')!).getByText('Positions that service customers cannot be terminated until set.')).toBeTruthy()
     expect(within(screen.getByRole('heading', { name: 'Restocking-fee volume effect' }).closest('li')!).getByText('Events with a restocking fee are refused until set.')).toBeTruthy()
     expect(within(screen.getByRole('heading', { name: 'Duplicate matching' }).closest('li')!).getByText('No duplicate matching.')).toBeTruthy()

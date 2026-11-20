@@ -1,11 +1,11 @@
 // Permission catalogue and base roles (E-ADR-09). One typed source: migration 0007 seeded the release A base roles
-// (RELEASE_A_BASE_ROLES_SEED, frozen), migrations 0106 (B1), 0206 (B2), 0304 (B3), 0405 (B4) and 0505 (B5) bring the roles each increment
+// (RELEASE_A_BASE_ROLES_SEED, frozen), migrations 0106 (B1), 0206 (B2), 0304 (B3), 0405 (B4), 0505 (B5) and 0606 (B6) bring the roles each increment
 // changed to BASE_ROLES (renderBaseRoleUpdate, renderBaseRoleMfaUpdate), and permissions.test.ts pins the files, the
 // catalogue and the TS-36 role matrix.
 
 /**
  * Every role permission in release A (SECURITY_IAM_TENANCY 4.3, API 7) plus participant.unmask and plan.activate, and
- * the B1, B2, B3, B4 and B5 additions (PLAN B1, B2, B3, B4 and B5 section 3). Portal accounts hold none (D-B5-02).
+ * the B1..B6 additions (PLAN B1..B5 section 3, PLAN B6 section 3). Portal accounts hold none (D-B5-02).
  */
 export const PERMISSIONS = [
   'import.manage',
@@ -77,6 +77,11 @@ export const PERMISSIONS = [
   'case.returned_payment.create',
   'case.dispute.read',
   'case.dispute.approve',
+  'dashboard.exec',
+  'export.full',
+  'migration.manage',
+  'migration.signoff',
+  'period.close',
 ] as const
 
 export type Permission = (typeof PERMISSIONS)[number]
@@ -112,6 +117,9 @@ export const PRIVILEGED_PERMISSIONS: readonly Permission[] = [
   'case.write_off.approve',
   'case.bank_detail.approve',
   'tax.manage',
+  'export.full',
+  'migration.signoff',
+  'period.close',
 ]
 
 // SEC-03: privileged roles and anyone who can unmask sensitive fields use MFA; a bank-detail change request needs a
@@ -148,7 +156,7 @@ export const BASE_ROLES: readonly BaseRole[] = [
     permissions: [
       'user.manage', 'settings.manage', 'import.manage', 'mapping.edit', 'mapping.approve', 'compliance.read',
       'audit.read', 'vendor_access.decide', 'market.manage', 'integration.manage', 'participant.read', 'order.read',
-      'product.manage', 'integration.read', 'ledger.export',
+      'product.manage', 'integration.read', 'ledger.export', 'export.full',
     ],
     mfaRequired: true,
   },
@@ -174,7 +182,7 @@ export const BASE_ROLES: readonly BaseRole[] = [
       'plan.read', 'period.read', 'run.review', 'run.commit', 'trace.read', 'restatement.approve', 'case.restatement.read',
       'ledger.read', 'ledger.export', 'payout.read', 'payout.approve', 'tax.manage', 'case.adjustment.read',
       'case.adjustment.approve', 'case.write_off.read', 'case.write_off.create', 'case.write_off.approve',
-      'case.returned_payment.read', 'case.dispute.read',
+      'case.returned_payment.read', 'case.dispute.read', 'migration.signoff', 'period.close',
     ],
     mfaRequired: true,
   },
@@ -214,10 +222,12 @@ export const BASE_ROLES: readonly BaseRole[] = [
   },
   {
     name: 'Implementation consultant',
-    permissions: ['import.manage', 'mapping.edit', 'plan.read', 'plan.edit', 'plan.simulate', 'period.read'],
+    permissions: ['import.manage', 'mapping.edit', 'plan.read', 'plan.edit', 'plan.simulate', 'period.read', 'migration.manage'],
     mfaRequired: false,
   },
-  { name: 'Executive read-only', permissions: ['compliance.read', 'plan.read', 'period.read'], mfaRequired: false },
+  {
+    name: 'Executive read-only', permissions: ['compliance.read', 'plan.read', 'period.read', 'dashboard.exec'], mfaRequired: false,
+  },
   { name: 'Integration', permissions: [], mfaRequired: false },
 ]
 
@@ -255,6 +265,11 @@ export const B4_MFA_CHANGED_BASE_ROLES: readonly BaseRoleName[] = ['Support agen
 /** The base roles whose permissions B5 changed (PLAN B5 section 3: disputes); migration 0505 updates exactly these. */
 export const B5_UPDATED_BASE_ROLES: readonly BaseRoleName[] = [
   'Commission analyst', 'Finance approver', 'Compliance officer', 'Support agent',
+]
+
+/** The base roles whose permissions B6 changed (PLAN B6 section 3); migration 0606 updates exactly these. */
+export const B6_UPDATED_BASE_ROLES: readonly BaseRoleName[] = [
+  'Executive read-only', 'Tenant admin', 'Implementation consultant', 'Finance approver',
 ]
 
 /** The SQL that brings the named base roles to their BASE_ROLES permissions. */

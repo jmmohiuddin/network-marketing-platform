@@ -10,12 +10,14 @@ import { iamModule } from './iam/index.js'
 import { impModule } from './imp/index.js'
 import { intModule } from './int/index.js'
 import { ledCaseTypes, ledModule } from './led/index.js'
+import { migModule } from './mig/index.js'
 import { opsModule } from './ops/index.js'
 import { ordModule } from './ord/index.js'
 import { parCaseTypes, parModule } from './par/index.js'
 import { payCaseTypes, payModule } from './pay/index.js'
 import { plnModule } from './pln/index.js'
 import { prvCaseTypes, prvModule } from './prv/index.js'
+import { rptModule } from './rpt/index.js'
 import { supportModule } from './support/index.js'
 import { taxModule } from './tax/index.js'
 import { tenModule } from './ten/index.js'
@@ -26,5 +28,5 @@ export const caseTypes: readonly CaseTypeDefinition[] = [...genCaseTypes, ...par
 /** Every feature module, in mount order. A new module adds itself here. */
 export const defaultModules: readonly ApiModule[] = [
   iamModule, tenModule, payModule, audModule, supportModule, prvModule, opsModule, impModule, cplModule, intModule,
-  parModule, crmModule, genModule, ordModule, plnModule, compModule, ledModule, taxModule, distModule, createCasModule({ types: caseTypes }),
+  parModule, crmModule, genModule, ordModule, plnModule, compModule, ledModule, taxModule, distModule, migModule, rptModule, createCasModule({ types: caseTypes }),
 ]

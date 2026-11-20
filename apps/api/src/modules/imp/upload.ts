@@ -5,12 +5,12 @@ import { z } from 'zod'
 import { ApiError } from '../../lib/errors.js'
 import { parse } from '../../lib/http.js'
 import type { Period } from './validate-rows.js'
-import { IMPORT_FILES, type ImportFile } from './vocabulary.js'
+import { IMPORT_FILES, IMPORT_KINDS, type ImportFile, type ImportKind } from './vocabulary.js'
 
 const MONTH = /^\d{4}-(0[1-9]|1[0-2])$/
 // Browsers send text/csv; Excel on Windows sends application/vnd.ms-excel. The content is checked anyway.
 const ACCEPTED_TYPES: ReadonlySet<string> = new Set(['text/csv', 'application/csv', 'text/plain', 'application/vnd.ms-excel'])
-const FIELD_COUNT = 3
+const FIELD_COUNT = 4
 const MAX_FIELD_BYTES = 100
 
 const fieldsSchema = z
@@ -18,6 +18,7 @@ const fieldsSchema = z
     market: z.string().trim().min(1).max(20),
     period_from: z.string().regex(MONTH, 'must be YYYY-MM'),
     period_to: z.string().regex(MONTH, 'must be YYYY-MM'),
+    kind: z.enum(IMPORT_KINDS).default('overlay'),
   })
   .refine((fields) => fields.period_from <= fields.period_to, {
     message: 'must not be before period_from', path: ['period_to'],
@@ -33,6 +34,7 @@ export interface UploadedFile {
 export interface Upload {
   /** Market code (resolved against the tenant's markets later). */
   readonly market: string
+  readonly kind: ImportKind
   readonly period: Period
   readonly files: Readonly<Record<ImportFile, UploadedFile>>
 }
@@ -77,7 +79,7 @@ async function readPartsOrRefuse(request: FastifyRequest, maxFileBytes: number) 
 
 export const sha256Hex = (data: Buffer): string => createHash('sha256').update(data).digest('hex')
 
-/** Reads the multipart form of POST /v1/imports: market, period_from, period_to and the three CSV files. */
+/** Reads the multipart form of POST /v1/imports: market, period_from, period_to, kind and the three CSV files. */
 export async function readUpload(request: FastifyRequest, maxFileBytes: number): Promise<Upload> {
   if (!request.isMultipart()) {
     throw new ApiError(415, 'UNSUPPORTED_MEDIA_TYPE', 'Send the export files as multipart/form-data.')
@@ -91,13 +93,13 @@ export async function readUpload(request: FastifyRequest, maxFileBytes: number):
   const uploaded = Object.fromEntries(
     IMPORT_FILES.map((file) => { const data = files.get(file)!; return [file, { data, sha256: sha256Hex(data) }] }),
   ) as Record<ImportFile, UploadedFile>
-  return { market: form.market, period: { from: form.period_from, to: form.period_to }, files: uploaded }
+  return { market: form.market, kind: form.kind, period: { from: form.period_from, to: form.period_to }, files: uploaded }
 }
 
 /** What the Idempotency-Key's request hash covers for an upload: the form fields and each file's digest. */
 export function idempotencyMaterial(upload: Upload): Record<string, unknown> {
   return {
-    market: upload.market, period_from: upload.period.from, period_to: upload.period.to,
+    market: upload.market, kind: upload.kind, period_from: upload.period.from, period_to: upload.period.to,
     files: Object.fromEntries(IMPORT_FILES.map((file) => [file, upload.files[file].sha256])),
   }
 }

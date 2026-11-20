@@ -1,10 +1,10 @@
 import type { Tx } from '@nmp/db'
-import { formatUnits, renderRule, type ReversalPolicy } from '@nmp/engine'
+import { formatUnits } from '@nmp/engine'
 import type { FastifyBaseLogger } from 'fastify'
 import { recordAudit } from '../../lib/audit.js'
 import { toCsv } from '../../lib/csv.js'
 import { ApiError, notFound } from '../../lib/errors.js'
-import { explainLine, traceFromJson } from './explanation.js'
+import { explainLine, marketDay, ruleName, traceFromJson } from './explanation.js'
 
 // FR-DIST-001 (D-B5-07): a statement is derived on read from one committed run and the session participant's
 // result_line and run_settlement rows; no statement table. Every query also names the participant (the self-scope
@@ -46,14 +46,14 @@ const sum = (values: readonly bigint[]): bigint => values.reduce((a, b) => a + b
  * `invariant` is false when net <> gross - withheld - clawback + adjustment, or the settlement does not pay the lines.
  */
 export function buildStatement(
-  lines: readonly StatementLine[], settlement: Settlement | null, ruleNames: ReadonlyMap<string, string>, paidAs: ReadonlyMap<string, readonly LadderRank[]>,
+  lines: readonly StatementLine[], settlement: Settlement | null, paidAs: ReadonlyMap<string, readonly LadderRank[]>,
 ) {
   const positions = [...new Set(lines.map((l) => l.position_id))].map((positionId) => {
     const own = lines.filter((l) => l.position_id === positionId)
     const bonuses = [...new Set(own.map((l) => l.rule_key))].sort().map((ruleKey) => {
       const ofRule = own.filter((l) => l.rule_key === ruleKey)
       return {
-        rule_key: ruleKey, rule_name: ruleNames.get(ruleKey) ?? null, total_minor: sum(ofRule.map((l) => BigInt(l.amount_minor))).toString(),
+        rule_key: ruleKey, rule_name: ruleName(ruleKey), total_minor: sum(ofRule.map((l) => BigInt(l.amount_minor))).toString(),
         lines: ofRule.map((l) => ({
           id: l.id, amount_minor: l.amount_minor, origin_kind: originKind(l.origin_type, BigInt(l.amount_minor)), original_period_id: l.original_period_id,
         })),
@@ -102,18 +102,18 @@ interface StatementRow {
   readonly code: string
   readonly currency: string
   readonly minor_unit: number
+  readonly time_zone: string
   readonly committed_at: Date
-  readonly plan_version_id: string
 }
 
 const RUN_COLUMNS = `r.id AS run_id, p.id AS period_id, p.starts_at, p.ends_at, p.state AS period_state, m.id AS market_id, m.code, m.currency,
-  m.minor_unit, r.committed_at, r.plan_version_id`
+  m.minor_unit, m.time_zone, r.committed_at`
 const RUN_FROM = `FROM run r JOIN period p ON p.id = r.period_id JOIN calendar c ON c.id = p.calendar_id JOIN market m ON m.id = c.market_id`
 
 const head = (row: StatementRow) => ({
   run_id: row.run_id,
   period: { id: row.period_id, starts_at: row.starts_at, ends_at: row.ends_at, state: row.period_state },
-  market: { code: row.code, currency: row.currency, minor_unit: row.minor_unit },
+  market: { code: row.code, currency: row.currency, minor_unit: row.minor_unit, time_zone: row.time_zone },
   committed_at: row.committed_at,
 })
 
@@ -138,17 +138,6 @@ async function committedRun(tx: Tx, participantId: string, runId: string): Promi
   const { rows } = await tx.query<StatementRow>(`SELECT ${RUN_COLUMNS} ${RUN_FROM} WHERE r.id = $2 AND r.state = 'committed' AND ${HAS_STATEMENT}`, [participantId, runId])
   if (rows[0] === undefined) throw notFound()
   return rows[0]
-}
-
-/** Plain-language names of the run's plan rules (renderRule with the market's digits). */
-export async function ruleNames(tx: Tx, planVersionId: string, ruleKeys: readonly string[], minorDigits: number): Promise<Map<string, string>> {
-  const { rows } = await tx.query<{ rule_key: string; kind: string; params: unknown; reversal_policy: ReversalPolicy | null; calendar_id: string | null; ordinal: number }>(
-    'SELECT rule_key, kind, params, reversal_policy, calendar_id, ordinal FROM plan_rule WHERE plan_version_id = $1 AND rule_key = ANY ($2::text[])',
-    [planVersionId, ruleKeys],
-  )
-  return new Map(rows.map((r) => [r.rule_key, renderRule(
-    { ruleKey: r.rule_key, kind: r.kind, params: r.params, reversalPolicy: r.reversal_policy, calendarId: r.calendar_id, ordinal: r.ordinal }, { minorDigits },
-  )]))
 }
 
 interface Blocker { readonly reason: string; readonly detail: { readonly until?: string; readonly case_id?: string } }
@@ -188,8 +177,7 @@ export async function statementDetail(tx: Tx, participantId: string, runId: stri
   const positionIds = [...new Set(lines.map((l) => l.position_id))]
   const { rows: states } = await tx.query<{ position_id: string; paid_as: LadderRank[] }>(
     'SELECT position_id, paid_as_rank AS paid_as FROM qualification_state WHERE run_id = $1 AND position_id = ANY ($2::uuid[])', [runId, positionIds])
-  const names = await ruleNames(tx, run.plan_version_id, [...new Set(lines.map((l) => l.rule_key))], run.minor_unit)
-  const { invariant, ...body } = buildStatement(lines, settlement[0] ?? null, names, new Map(states.map((s) => [s.position_id, s.paid_as])))
+  const { invariant, ...body } = buildStatement(lines, settlement[0] ?? null, new Map(states.map((s) => [s.position_id, s.paid_as])))
   if (!invariant) {
     log.error({ runId, participantId, summary: body.summary }, 'statement invariant failed: net <> gross - withheld - clawback + adjustment')
     throw new ApiError(500, 'INVARIANT_FAILED', 'This statement does not add up; it has been reported.')
@@ -219,7 +207,7 @@ export async function statementCsv(tx: Tx, participantId: string, runId: string,
     rows.push([record, null, null, null, null, null, amount(minor), currency])
   }
   await recordAudit(tx, { action: 'STATEMENT.DOWNLOADED', objectType: 'run', objectId: runId, after: { run_id: runId } })
-  return { csv: toCsv(CSV_HEADER, rows), name: `statement-${statement.period.starts_at.toISOString().slice(0, 10)}.csv` }
+  return { csv: toCsv(CSV_HEADER, rows), name: `statement-${marketDay(statement.period.starts_at, statement.market.time_zone)}.csv` }
 }
 
 interface ExplainedLine {
@@ -230,10 +218,10 @@ interface ExplainedLine {
   readonly currency: string
   readonly origin_type: string | null
   readonly trace: string
-  readonly plan_version_id: string
   readonly starts_at: Date
   readonly ends_at: Date
   readonly minor_unit: number
+  readonly time_zone: string
   readonly original_period: { id: string; starts_at: string; ends_at: string } | null
 }
 
@@ -243,8 +231,8 @@ interface ExplainedLine {
  */
 export async function lineExplanation(tx: Tx, participantId: string, lineId: string, log: FastifyBaseLogger) {
   const { rows } = await tx.query<ExplainedLine>(
-    `SELECT l.id, l.run_id, l.rule_key, l.amount_minor::text, l.currency, l.origin_type, l.trace::text AS trace, r.plan_version_id, p.starts_at,
-            p.ends_at, m.minor_unit,
+    `SELECT l.id, l.run_id, l.rule_key, l.amount_minor::text, l.currency, l.origin_type, l.trace::text AS trace, p.starts_at,
+            p.ends_at, m.minor_unit, m.time_zone,
             (SELECT jsonb_build_object('id', o.id, 'starts_at', json_instant(o.starts_at), 'ends_at', json_instant(o.ends_at))
              FROM period o WHERE o.id = l.original_period_id) AS original_period
      FROM result_line l JOIN run r ON r.id = l.run_id AND r.state = 'committed' JOIN period p ON p.id = r.period_id
@@ -255,10 +243,9 @@ export async function lineExplanation(tx: Tx, participantId: string, lineId: str
   const line = rows[0]
   if (line === undefined) throw notFound()
   const trace = traceFromJson(line.trace)
-  const names = await ruleNames(tx, line.plan_version_id, [line.rule_key], line.minor_unit)
   const original = line.original_period
   const body = explainLine({
-    line, trace, rule: { key: line.rule_key, name: names.get(line.rule_key) ?? null }, period: line, minorDigits: line.minor_unit,
+    line, trace, rule: { key: line.rule_key, name: ruleName(line.rule_key) }, period: line, timeZone: line.time_zone, minorDigits: line.minor_unit,
     origin: line.origin_type === null ? null : {
       kind: originKind(line.origin_type, BigInt(line.amount_minor)),
       original_period: original === null ? null : { id: original.id, starts_at: new Date(original.starts_at), ends_at: new Date(original.ends_at) },

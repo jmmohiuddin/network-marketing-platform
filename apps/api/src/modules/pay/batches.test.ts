@@ -83,6 +83,9 @@ describe('prepare, exclusions, approval (AC-47.1, AC-47.2, TS-17, TS-42)', () =>
 
     expect(prepared.statusCode).toBe(201)
     expect(prepared.json().data).toMatchObject({ state: 'draft', total_minor: '2300', currency: 'GBP', line_count: 1, period: { id: w.period } })
+    // BUG-120: the period's instants are UTC Z with milliseconds like every other instant.
+    const [period] = await ownerRows<{ starts_at: Date; ends_at: Date }>('SELECT starts_at, ends_at FROM period WHERE id = $1', [w.period])
+    expect(prepared.json().data.period).toMatchObject({ starts_at: period!.starts_at.toISOString(), ends_at: period!.ends_at.toISOString() })
     const exclusions = prepared.json().data.exclusions as { participant: { id: string }; reasons: { reason: string }[] }[]
     expect(Object.fromEntries(exclusions.map((e) => [e.participant.id, e.reasons.map((r) => r.reason)]))).toEqual({
       [b]: ['bank_detail_cooling_off'], [c]: ['below_minimum', 'no_bank_details'],

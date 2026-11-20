@@ -1,7 +1,7 @@
 'use client'
 
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Icon } from '../../components/icon'
 import { KpiCard } from '../../components/kpi-card'
 import { PageHeader } from '../../components/page-header'
@@ -14,16 +14,23 @@ import { useResource } from '../../lib/use-resource'
 import { isUuid } from '../admin/format'
 import { LoadFailure } from '../admin/page-states'
 import { inScope, marketScope } from '../markets/format'
+import { DefinitionPopover, definitionsOf } from '../overview/definition'
+import type { FinanceDashboard } from '../overview/types'
 import { marketMoney, periodName } from '../periods/format'
 import type { PeriodList, PeriodState } from '../periods/types'
 import { sumMinor } from './format'
 import { MappingTab, ExportsTab } from './gl-tabs'
 import { AccountsTab, JournalTab } from './ledger-tabs'
 import { ReceivablesTab } from './receivables-tab'
-import type { AccountType, LedgerSummary } from './types'
+import type { LedgerSummary } from './types'
 
 const ID_PREFIX = 'ledger'
 const PERIOD_LIMIT = 200
+/**
+ * URL keys of the journal list's state: an opening without any of them gets the user's default view. A link naming a
+ * market or an entry (SC-02 review, SC-16 opening) is list state too, so the default never moves it or closes the drawer.
+ */
+const JOURNAL_PARAMS = ['market', 'entry', 'period', 'origin', 'sort', 'columns', 'view'] as const
 const MONO = 'font-data-mono-md text-data-mono-md'
 
 /** Currency and minor unit of the market shown. */
@@ -42,6 +49,8 @@ export interface LedgerTabProps {
   readonly periods: readonly PeriodChoice[]
   readonly params: URLSearchParams
   readonly update: (changes: Readonly<Record<string, string | null>>) => void
+  /** The page opened without journal state in the URL: the journal applies the user's default view. */
+  readonly opening: boolean
 }
 
 /**
@@ -54,7 +63,9 @@ function useMarketPeriods(marketId: string | null): readonly PeriodChoice[] {
   const calendars = (list.data?.calendars ?? []).filter((calendar) => calendar.market.id === marketId)
   return (list.data?.periods ?? []).flatMap((period) => {
     const calendar = calendars.find((candidate) => candidate.id === period.calendar_id)
-    return calendar === undefined ? [] : [{ id: period.id, state: period.state, label: periodName(period.starts_at, period.ends_at, calendar.cutoff_time_zone) }]
+    if (calendar === undefined) return []
+    const name = periodName(period.starts_at, period.ends_at, calendar.cutoff_time_zone)
+    return [{ id: period.id, state: period.state, label: period.state === 'closed' ? `${name} · Closed` : name }]
   })
 }
 
@@ -92,14 +103,25 @@ function InvariantBanner({ summary, money }: { readonly summary: LedgerSummary; 
   )
 }
 
-function LedgerKpis({ summary, money }: { readonly summary: LedgerSummary; readonly money: Money }) {
-  const balance = (type: AccountType) => marketMoney(summary.by_type.find((row) => row.type === type)?.balance_minor ?? '0', money)
+/** SC-33 KPI row from GET /v1/dashboards/finance (FR-RPT-001), each figure with its definition. */
+function FinanceKpis({ marketId, money }: { readonly marketId: string; readonly money: Money }) {
+  const finance = useResource<FinanceDashboard>('/v1/dashboards/finance', { market_id: marketId })
+  if (finance.error !== null) return <LoadFailure error={finance.error} onRetry={finance.reload} section />
+  const data = finance.data
+  const definitions = definitionsOf(finance.meta)
+  const card = (label: string, icon: string, key: string, minor: string | undefined, detail?: string) => (
+    <KpiCard label={label} icon={icon} value={minor === undefined ? null : marketMoney(minor, money)} detail={detail}>
+      <DefinitionPopover definition={definitions.get(key)} />
+    </KpiCard>
+  )
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-space-md" data-testid="kpis">
-      <KpiCard label="Payables" icon="payments" value={balance('payee_payable')} detail="Earnings balance owed by the tenant" />
-      <KpiCard label="In transit" icon="local_shipping" value={balance('payout_in_transit')} detail="Instructed payouts not settled yet" />
-      <KpiCard label="Receivables" icon="trending_down" value={balance('clawback_receivable')} detail="Clawbacks recovered from future earnings" />
-      <KpiCard label="Settled clearing" icon="task_alt" value={balance('settled_clearing')} detail="Payouts the provider confirmed" />
+    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-space-md" data-testid="kpis" aria-busy={data === null || undefined}>
+      {card('Payables', 'payments', 'payables_minor', data?.payables_minor)}
+      {card('In transit', 'local_shipping', 'in_transit_minor', data?.in_transit_minor)}
+      {card('Receivables', 'trending_down', 'receivables_minor', data?.receivables_minor)}
+      {card('Withholding', 'account_balance', 'withholding_minor', data?.withholding_minor)}
+      {card('Failed payouts', 'error', 'failed_payouts', data?.failed_payouts.amount_minor,
+        data === null ? undefined : `${data.failed_payouts.count.toLocaleString()} ${data.failed_payouts.count === 1 ? 'payout' : 'payouts'} not retried`)}
     </div>
   )
 }
@@ -127,6 +149,7 @@ export function LedgerPage() {
   const marketId = market?.id ?? null
   const summary = useResource<LedgerSummary>(marketId === null ? null : '/v1/ledger/summary', { market_id: marketId ?? undefined })
   const periods = useMarketPeriods(marketId)
+  const [opening, setOpening] = useState(() => !JOURNAL_PARAMS.some((key) => params.has(key)))
   if (!can('ledger.read')) return <NotAvailable />
   if (markets.error !== null) return <LoadFailure error={markets.error} onRetry={markets.reload} />
   if (readable === undefined || (market === undefined && first !== undefined)) return <LoadingState label="Loading the ledger" />
@@ -142,6 +165,7 @@ export function LedgerPage() {
   }
 
   const update = (changes: Readonly<Record<string, string | null>>) => {
+    setOpening(false)
     const next = new URLSearchParams(params)
     for (const [key, value] of Object.entries(changes)) {
       if (value === null || value === '') next.delete(key)
@@ -158,7 +182,7 @@ export function LedgerPage() {
   ]
   const tab = tabs.find((candidate) => candidate.id === params.get('tab'))?.id ?? 'journal'
   const money: Money = market
-  const props: LedgerTabProps = { marketId: market.id, money, periods, params, update }
+  const props: LedgerTabProps = { marketId: market.id, money, periods, params, update, opening }
   const valid = (key: string) => {
     const value = params.get(key)
     return value !== null && isUuid(value) ? value : null
@@ -178,7 +202,7 @@ export function LedgerPage() {
       {summary.error !== null && <LoadFailure error={summary.error} onRetry={summary.reload} section />}
       {summary.data === null && summary.error === null && <LoadingState label="Loading the balances" />}
       {summary.data !== null && <InvariantBanner summary={summary.data} money={money} />}
-      {summary.data !== null && <LedgerKpis summary={summary.data} money={money} />}
+      <FinanceKpis key={market.id} marketId={market.id} money={money} />
       <div className="bg-surface-container-lowest rounded-xl shadow-sm min-w-0">
         <Tabs label="Ledger views" idPrefix={ID_PREFIX} tabs={tabs} selected={tab} onSelect={(id) => update({ tab: id === 'journal' ? null : id, entry: null, account: null })} />
         <TabPanel idPrefix={ID_PREFIX} tabId={tab}>

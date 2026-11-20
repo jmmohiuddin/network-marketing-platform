@@ -339,3 +339,26 @@ describe('genealogy.visibility_policy is approved by the DPO (D-B2-08, PLAN B2 2
     expect(changed).not.toContain('money.rounding_mode')
   })
 })
+
+describe('plan.filing_requirements is decided by a market sign-off holder (D-B6-02, BUG-121)', () => {
+  test('a Compliance officer lists the pending request and reads the settings it may see, then decides it', async () => {
+    const tenant = await createTenant()
+    const market = await createMarket(tenant.id, 'DE')
+    const requester = await createSignedInUser({ tenantId: tenant.id, roles: ['Tenant admin'], stepUp: true })
+    const officer = await createSignedInUser({ tenantId: tenant.id, roles: ['Compliance officer'], stepUp: true })
+
+    const filing = await requestChange(requester, 'plan.filing_requirements', { market_ids: [market] }, inDays(5))
+    const money = await requestChange(requester, 'money.rounding_mode', 'half_even', inDays(6))
+    const filingId = filing.json().data.change_request.id as string
+    const list = await call(app, { method: 'GET', url: '/v1/setting-change-requests', as: officer })
+    const settings = await call(app, { method: 'GET', url: '/v1/settings', as: officer })
+    const decided = await decide(officer, filingId, 'approve')
+
+    expect(list.statusCode).toBe(200)
+    expect(list.json().data.map((r: { id: string }) => r.id)).toEqual([filingId])
+    expect(settings.json().data.values).toHaveProperty('plan.filing_requirements')
+    expect(settings.json().data.values).not.toHaveProperty('money.rounding_mode')
+    expect(decided.json().data.change_request).toMatchObject({ state: 'approved', decided_by: { id: officer.id } })
+    await withdraw(requester, money.json().data.change_request.id as string)
+  })
+})

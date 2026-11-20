@@ -2,6 +2,42 @@
 
 ## Unreleased
 
+### Increment B6 — plan-change governance, full data export, dashboards, saved views, history import, parallel runs, period close (2026-11-20)
+Sandbox only: no real provider is called and no money moves. Exports stay in the platform (no upload to external storage). English only.
+
+**Plan-change governance (SC-44)**
+- Each plan version has a change workflow page: draft, simulation, compliance review, filing, notice and scheduled, with a checklist that says what is missing and why.
+- Where a market requires a filing (new setting "Plan filing requirements", approved by a market sign-off holder), Compliance records the filing status with reference, date and evidence before Finance can schedule the version. A filing applies to the exact content it was recorded for.
+- When a version is scheduled, the notice sent to distributors and the number of recipients are recorded. The transition report of the first run shows which rank and carry items reset or carry over.
+
+**Period close**
+- Finance closes a Paid period after a step-up (SC-01). The close is refused while anything is still open: late items, payout exceptions, payouts in transit, open restatements, returned-payment cases or open payout batches; the dialog also lists GL accounts that still need a mapping. Closing creates the GL journal export and sends the `period.closed` webhook. Nothing can be posted into a closed period.
+
+**Full data export (SC-13 Exports tab)**
+- Tenant admins run a full export of the tenant data model on request or on a schedule (new setting "Full export schedule"). Each table is one gzipped JSON Lines file from a single consistent snapshot, with a manifest signed with Ed25519; the public key is published. Credentials and sessions are never exported. Also available to API keys with the `exports:full` scope.
+
+**Dashboards and lists**
+- Executive overview (SC-35): net sales, commission paid, payout share of sales, retail share and active earners per market and finished period, each with its definition, plus a 12-period trend. No projections, targets or rankings.
+- Finance KPIs on the ledger (SC-33) and Compliance KPIs (SC-46: guardrail warnings, open cases).
+- Orders (SC-31) and ledger entries (SC-33): sort, choose columns, save views (default, shared with a role) and export CSV; every export is recorded in the audit log.
+
+**Migration from a legacy system (SC-16, SC-24)**
+- Implementation consultants import a market's history as a migration batch (participants, positions, current sponsor, servicing, orders and refunds, legacy payout lines); sponsor cycles and orphan sponsors are reported per member.
+- Opening balances and opening rank/carry state are uploaded with a control total and posted after Finance approval.
+- A parallel run compares the platform's result for the cutover period with the legacy payout per payee; each difference is classified and accepted by a second person, and a sign-off is required before go-live and before the cutover period can be committed.
+- Not imported yet: bank and tax profiles, placement relationships, per-period rank history (waiting for product confirmation).
+
+**Settings**
+- New settings without defaults: plan filing requirements per market, full export schedule. The order crediting event setting is retired: each plan version sets it.
+
+**Fixed**
+- B5 carry-over: team enrolment dates and statement explanation wording, payout batch period times (API parts of BUG-112/119/120); erasure now waits for a case being opened for the same person.
+- B6 browser findings BUG-121..127 (Compliance can approve filing requirements, migration mappings listed for the approver, keyboard definition popover, plan dates in the plan's time zone, legacy bonus types listed in the parallel run, "Migration clearing" label, executive overview layout).
+
+**Known limits**
+- Market size: a run of 2 million positions does not fit in memory yet. The calculation engine alone handles 1 million positions with a 7 GB heap; the full commit path has been measured only up to 100,000 positions (55 s).
+- BUG-128 (a checklist date in ISO form) and BUG-129 (the notice-days setting cannot be removed once set) are open.
+
 ### Increment B5 — distributor portal: sign-in, statements, line explanation, rank, team, customers, self-service bank/tax, notifications, disputes, data-subject requests, erasure (2026-11-19)
 Sandbox only: payouts still go to the sandbox provider or a downloaded bank file, mails are written to the local mail folder, and no real provider is called. English only.
 

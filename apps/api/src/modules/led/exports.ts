@@ -6,6 +6,7 @@ import { toCsv } from '../../lib/csv.js'
 import { ApiError, notFound } from '../../lib/errors.js'
 import { recordExport, type ExportDecision } from '../../lib/exports.js'
 import { decimalOf, marketInScope, type MarketRow } from './ledger.js'
+import { countEntries, listEntries, type EntryFilter, type EntrySort } from './reads.js'
 
 // D-B4-19 GL export: one period's postings of one market aggregated by (gl_code, account type, origin), instruction
 // entries rolled up to their batch; a gzip CSV stored with its sha256 and verified on every download.
@@ -50,19 +51,20 @@ interface ExportRow {
   readonly created_by: string
   readonly created_by_type: string
   readonly created_at: Date
+  readonly created_at_close: boolean
   readonly at: string
 }
 
 const EXPORT_SELECT = `
   SELECT j.id, j.market_id, m.code AS market_code, j.period_id, p.starts_at, p.ends_at, j.line_count, j.debit_total_minor::text,
          j.credit_total_minor::text, encode(j.content_sha256, 'hex') AS content_sha256, j.created_by, j.created_by_type, j.created_at,
-         j.created_at::text AS at
+         EXISTS (SELECT 1 FROM period cp WHERE cp.close_journal_export_id = j.id) AS created_at_close, j.created_at::text AS at
   FROM journal_export j JOIN market m ON m.id = j.market_id JOIN period p ON p.id = j.period_id`
 
 export const exportView = (e: ExportRow) => ({
   id: e.id, market: { id: e.market_id, code: e.market_code }, period: { id: e.period_id, starts_at: e.starts_at, ends_at: e.ends_at },
   line_count: e.line_count, debit_total_minor: e.debit_total_minor, credit_total_minor: e.credit_total_minor, content_sha256: e.content_sha256,
-  created_by: { id: e.created_by, type: e.created_by_type }, created_at: e.created_at,
+  created_by: { id: e.created_by, type: e.created_by_type }, created_at: e.created_at, created_at_close: e.created_at_close,
 })
 
 interface Aggregate {
@@ -87,6 +89,17 @@ async function aggregate(tx: Tx, periodId: string): Promise<Aggregate[]> {
     [periodId],
   )
   return rows
+}
+
+/** Account types with postings in the period and no GL code in its market (what createJournalExport would refuse). */
+export async function unmappedAccountTypes(tx: Tx, periodId: string): Promise<string[]> {
+  const { rows } = await tx.query<{ type: string }>(
+    `SELECT DISTINCT a.type FROM journal_entry e JOIN posting x ON x.entry_id = e.id JOIN ledger_account a ON a.id = x.account_id
+     WHERE e.period_id = $1 AND NOT EXISTS (SELECT 1 FROM gl_account_map g WHERE g.market_id = e.market_id AND g.account_type = a.type)
+     ORDER BY 1`,
+    [periodId],
+  )
+  return rows.map((row) => row.type)
 }
 
 export type CreatedExport = { readonly refused: Extract<ExportDecision, { refused: true }> } | { readonly refused?: never; readonly view: ReturnType<typeof exportView> }
@@ -162,4 +175,28 @@ export async function journalExportFile(tx: Tx, id: string, scope: Scope): Promi
   if (!file.intact) throw new ApiError(500, 'EXPORT_CORRUPT', 'The stored export does not match its checksum.')
   await recordAudit(tx, { action: 'EXPORT.DOWNLOADED', objectType: 'journal_export', objectId: id, after: { journal_export_id: id } })
   return { name: `gl-${file.code}-${file.starts_on}-${id}.csv`, csv: gunzipSync(file.content) }
+}
+
+/** D-B6-08 ledger entries export columns (the RPT saved-view registry names the same keys). */
+export const ENTRY_COLUMNS = ['posted_at', 'entry_id', 'market', 'period', 'event_type', 'origin_type', 'origin_id', 'debit_total', 'credit_total', 'approval_id'] as const
+export type EntryColumn = (typeof ENTRY_COLUMNS)[number]
+type EntryListRow = Awaited<ReturnType<typeof listEntries>>[number]
+const ENTRY_CELL: { readonly [C in EntryColumn]: (r: EntryListRow) => unknown } = {
+  posted_at: (r) => r.posted_at, entry_id: (r) => r.id, market: (r) => r.market.code, period: (r) => r.period.id, event_type: (r) => r.event_type,
+  origin_type: (r) => r.origin_type, origin_id: (r) => r.origin_id, debit_total: (r) => decimalOf(r.debit_total_minor, r.market.minor_digits),
+  credit_total: (r) => decimalOf(r.credit_total_minor, r.market.minor_digits), approval_id: (r) => r.approval_id,
+}
+
+/**
+ * GET /v1/ledger/entries/export: every entry of the list's filter in its sort as CSV, capped and audited by recordExport
+ * (the refusal is committed with EXPORT.REFUSED, so it is returned, not thrown).
+ */
+export async function entriesCsv(
+  tx: Tx, scope: Scope, filter: EntryFilter, sort: EntrySort, columns: readonly EntryColumn[], rowCap: number,
+): Promise<{ refused: Extract<ExportDecision, { refused: true }> } | { refused?: never; csv: string }> {
+  const rows = await listEntries(tx, scope, filter, sort, undefined, rowCap) // at most rowCap + 1: enough to know the cap is passed
+  const rowCount = rows.length > rowCap ? await countEntries(tx, scope, filter) : rows.length
+  const decision = await recordExport(tx, { kind: 'ledger_entries', filters: { ...filter, sort, columns }, rowCount, rowCap })
+  if (decision.refused) return { refused: decision }
+  return { csv: toCsv(columns, rows.map((r) => columns.map((c) => ENTRY_CELL[c](r)))) }
 }

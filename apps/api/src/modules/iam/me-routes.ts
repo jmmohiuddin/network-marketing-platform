@@ -16,8 +16,11 @@ export interface NavigationEntry {
 // endpoint behind a screen checks again (SECURITY_IAM_TENANCY 4.1).
 // allMarkets: the screen manages tenant-wide objects, so the permission must be held for all markets.
 const TENANT_NAVIGATION: readonly (NavigationEntry & { readonly anyOf: readonly Permission[]; readonly allMarkets?: true })[] = [
+  // PLAN B6 section 1.9: first, so the Executive lands on the overview.
+  { key: 'overview', path: '/overview', label: 'Overview', anyOf: ['dashboard.exec'] },
   { key: 'compliance', path: '/compliance', label: 'Compliance', anyOf: ['compliance.read'] },
   { key: 'imports', path: '/imports', label: 'Data imports', anyOf: ['import.manage'] },
+  { key: 'migration', path: '/imports/migration', label: 'Migration', anyOf: ['migration.manage', 'migration.signoff'] },
   { key: 'users', path: '/settings/users', label: 'Users and roles', anyOf: ['user.manage'] },
   { key: 'vendor_access', path: '/settings/vendor-access', label: 'Vendor access', anyOf: ['vendor_access.decide'] },
   { key: 'audit', path: '/settings/audit', label: 'Audit log', anyOf: ['audit.read'], allMarkets: true },

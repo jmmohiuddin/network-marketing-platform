@@ -6,7 +6,7 @@ import { useResource } from '../../../lib/use-resource'
 import { minorToDecimal } from '../../orders/format'
 import { FIELDSET, LEGEND, PAIR } from '../ui'
 import {
-  ATTRIBUTION_OPTIONS, CLAWBACK_OPTIONS, CONTACT_VISIBLE_OPTIONS, CREDITING_OPTIONS, keyLabel, PURPOSE_OPTIONS, REASSIGNMENT_OPTIONS, RELATED_ACTION_OPTIONS, RESTOCKING_OPTIONS,
+  ATTRIBUTION_OPTIONS, CADENCE_OPTIONS, CLAWBACK_OPTIONS, CONTACT_VISIBLE_OPTIONS, CREDITING_OPTIONS, keyLabel, PURPOSE_OPTIONS, REASSIGNMENT_OPTIONS, RELATED_ACTION_OPTIONS, RESTOCKING_OPTIONS,
   ROUNDING_OPTIONS, SIGNAL_OPTIONS, type PolicyKey,
 } from './labels'
 import { PARTICIPANT_TYPES_PATH, type ParticipantType } from './types'
@@ -41,6 +41,9 @@ const TAX_PREFIX = 'tax_'
 const DAYS_PREFIX = 'days_'
 const RESPONSE_MAX_DAYS = 365
 const ESCALATE_MAX_DAYS = 60
+/** plan.filing_requirements: one checkbox per market (market_<id>). */
+const MARKET_PREFIX = 'market_'
+const HOUR_MAX = 23
 
 const yes = (flag: unknown): string => (flag === true ? 'true' : '')
 const text = (value: unknown): string => (value === null || value === undefined ? '' : String(value))
@@ -64,6 +67,9 @@ export function draftOf(key: PolicyKey, value: unknown): Draft {
         const entry = (policy ?? {}) as Readonly<Record<string, unknown>>
         return [[`${MIN_PREFIX}${marketId}`, text(entry.minimum_payout_minor)], [`${TAX_PREFIX}${marketId}`, yes(entry.tax_profile_required)]]
       }))
+    case 'plan.filing_requirements':
+      return Object.fromEntries((Array.isArray(record.market_ids) ? record.market_ids : []).map((id) => [`${MARKET_PREFIX}${String(id)}`, 'true']))
+    case 'exports.full_schedule': return { cadence: text(record.cadence), hour: text(record.hour_utc) }
     case 'disputes.policy': return { window: text(record.window_days), ...marketDaysDraft(record.response_days) }
     case 'privacy.policy': return { escalate: text(record.escalate_before_days), ...marketDaysDraft(record.response_days) }
     case 'adjustments.policy':
@@ -212,6 +218,15 @@ export function policyValue(key: PolicyKey, draft: Draft): Built {
       return built({ response_days: response.value, escalate_before_days: escalate.number }, [...response.errors, escalate.error])
     }
     case 'portal.customer_contact_visible': return built(value === 'true', [choice(draft, key)])
+    case 'plan.filing_requirements': {
+      const ids = Object.keys(draft).filter((field) => field.startsWith(MARKET_PREFIX) && draft[field] === 'true').map((field) => field.slice(MARKET_PREFIX.length))
+      return built({ market_ids: ids }, [ids.length === 0 ? ['markets', 'Choose at least one market.'] : undefined])
+    }
+    case 'exports.full_schedule': {
+      const hour = whole(draft, 'hour', 0, HOUR_MAX, 'the hour (UTC)')
+      const cadence = (draft.cadence ?? '') === '' ? ['cadence', 'Choose how often the export runs.'] as const : undefined
+      return built({ cadence: draft.cadence, hour_utc: hour.number }, [cadence, hour.error])
+    }
     case 'write_offs.policy': {
       const below = minorField(draft, 'below', 'the eligibility amount', true)
       const afterRaw = (draft.after_days ?? '').trim()
@@ -276,6 +291,22 @@ export interface PolicyFieldsProps {
   readonly draft: Draft
   readonly errors: FieldErrors
   readonly onChange: (field: string, value: string) => void
+}
+
+/** plan.filing_requirements: the markets whose plan changes need a recorded filing. */
+function FilingMarketsFields({ draft, errors, onChange }: Omit<PolicyFieldsProps, 'policyKey'>) {
+  const markets = useResource<Market[]>(MARKETS_PATH)
+  return (
+    <fieldset className={FIELDSET} id={fieldId('markets')} tabIndex={-1}>
+      <legend className={LEGEND}>Markets that require a filing before a plan version is scheduled</legend>
+      {markets.data === null && <p>Loading markets…</p>}
+      {(markets.data ?? []).map((market) => (
+        <Checkbox key={market.id} id={fieldId(`${MARKET_PREFIX}${market.id}`)} label={`${market.name} (${market.code})`} checked={draft[`${MARKET_PREFIX}${market.id}`] === 'true'}
+          onChange={(event) => onChange(`${MARKET_PREFIX}${market.id}`, event.target.checked ? 'true' : '')} />
+      ))}
+      {errors.markets !== undefined && <FieldError message={errors.markets} />}
+    </fieldset>
+  )
 }
 
 /** Active types whose members count as end customers: the choices for new buyers (BUYER_TYPE_INVALID otherwise). */
@@ -381,6 +412,14 @@ export function PolicyFields({ policyKey, draft, errors, onChange }: PolicyField
         </>
       )
     case 'portal.customer_contact_visible': return select('value', 'Customers’ contact in the portal', CONTACT_VISIBLE_OPTIONS)
+    case 'plan.filing_requirements': return <FilingMarketsFields draft={draft} errors={errors} onChange={onChange} />
+    case 'exports.full_schedule':
+      return (
+        <div className={PAIR}>
+          {select('cadence', 'How often', CADENCE_OPTIONS)}
+          {input('hour', 'Hour (UTC)', `0 to ${HOUR_MAX}. The export starts at this hour or soon after.`)}
+        </div>
+      )
     case 'genealogy.visibility_policy':
       return (
         <>

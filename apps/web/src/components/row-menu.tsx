@@ -22,8 +22,17 @@ type Place = { readonly right: number } & ({ readonly top: number } | { readonly
 /**
  * sc_01 l.~296 "More actions" (`more_vert`): a row's further actions in a menu laid over the page (portal, fixed),
  * so a table's sideways scroll box never clips it. Arrow keys, Home and End move; Escape closes and refocuses.
+ * With `text` the trigger is sc_31's labelled menu button ("Saved views": icon, text, expand_more), named by its text.
  */
-export function RowMenu({ label, items, busy = false }: { readonly label: string; readonly items: readonly RowMenuItem[]; readonly busy?: boolean }) {
+export function RowMenu({ label, items, busy = false, text, icon }: {
+  readonly label: string
+  readonly items: readonly RowMenuItem[]
+  readonly busy?: boolean
+  /** Visible trigger text; the menu keeps `label` as its name. */
+  readonly text?: string
+  /** Icon before `text`. */
+  readonly icon?: string
+}) {
   const [place, setPlace] = useState<Place | null>(null)
   const trigger = useRef<HTMLButtonElement>(null)
   const menu = useRef<HTMLDivElement>(null)
@@ -79,15 +88,24 @@ export function RowMenu({ label, items, busy = false }: { readonly label: string
 
   return (
     <>
-      <button ref={trigger} type="button" title="More actions" aria-label={label} aria-haspopup="menu" aria-expanded={place !== null} aria-controls={place === null ? undefined : id} aria-busy={busy || undefined}
-        className={`relative h-7 w-7 shrink-0 text-secondary hover:text-on-surface hover:bg-surface-container rounded inline-flex items-center justify-center ${FOCUS_RING}`} onClick={toggle}>
-        <Icon name={busy ? 'sync' : 'more_vert'} size={16} className={busy ? 'motion-safe:animate-spin' : undefined} />
-      </button>
+      {text === undefined ? (
+        <button ref={trigger} type="button" title="More actions" aria-label={label} aria-haspopup="menu" aria-expanded={place !== null} aria-controls={place === null ? undefined : id} aria-busy={busy || undefined}
+          className={`relative h-7 w-7 shrink-0 text-secondary hover:text-on-surface hover:bg-surface-container rounded inline-flex items-center justify-center ${FOCUS_RING}`} onClick={toggle}>
+          <Icon name={busy ? 'sync' : 'more_vert'} size={16} className={busy ? 'motion-safe:animate-spin' : undefined} />
+        </button>
+      ) : (
+        <button ref={trigger} type="button" aria-haspopup="menu" aria-expanded={place !== null} aria-controls={place === null ? undefined : id} aria-busy={busy || undefined}
+          className={`inline-flex items-center gap-1 px-3 py-1.5 bg-surface-container text-on-surface hover:bg-surface-container-high rounded font-body-sm text-body-sm font-medium transition-colors ${FOCUS_RING}`} onClick={toggle}>
+          <Icon name={busy ? 'sync' : icon ?? 'more_vert'} size={16} className={busy ? 'text-secondary motion-safe:animate-spin' : 'text-secondary'} />
+          {text}
+          <Icon name="expand_more" size={16} />
+        </button>
+      )}
       {place !== null && createPortal(
         <div ref={menu} id={id} role="menu" aria-label={label} onKeyDown={onKeyDown} style={place}
-          className="fixed z-50 min-w-48 py-1 bg-surface-container-lowest border border-outline-variant rounded-lg shadow-lg">
+          className="fixed z-50 min-w-48 max-h-[60vh] overflow-y-auto py-1 bg-surface-container-lowest border border-outline-variant rounded-lg shadow-lg">
           {items.map((item) => (
-            <button key={item.label} type="button" role="menuitem" tabIndex={-1} aria-label={item.ariaLabel}
+            <button key={item.ariaLabel} type="button" role="menuitem" tabIndex={-1} aria-label={item.ariaLabel}
               className="w-full h-8 px-3 flex items-center gap-space-sm text-left font-body-sm text-body-sm text-on-surface whitespace-nowrap hover:bg-surface-container focus-visible:bg-surface-container focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary"
               onClick={() => { close(); item.onSelect() }}>
               <Icon name={item.icon} size={16} className="text-secondary" />

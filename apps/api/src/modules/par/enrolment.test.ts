@@ -7,7 +7,7 @@ import { iamModule } from '../iam/index.js'
 import { parModule } from './index.js'
 import { servicerCall } from './sql-errors.js'
 import {
-  activeType, apiKey, committedPeriod, CUSTOMER, DISTRIBUTOR, enrolled, enrolment, enrolRequest, publishAgreement, setSettings,
+  activeType, apiKey, committedPeriod, CUSTOMER, DISTRIBUTOR, enrolled, enrolment, enrolRequest, publishAgreement,
 } from './test-support.js'
 
 // FR-PAR-002: T-B2-04 happy paths, T-B2-05 refusals, T-B2-06 concurrent slot, T-B2-07 key callers, AC-42.1, AC-42.2.
@@ -53,7 +53,8 @@ beforeAll(async () => {
   await activeType(app, admin, compliance, 'HOLDER', { ...DISTRIBUTOR, can_sponsor: false })
   await activeType(app, admin, compliance, 'LEAD', { ...CUSTOMER, counts_as_end_customer: false })
   await activeType(app, globexAdmin, globexCompliance, 'DIST', DISTRIBUTOR)
-  await setSettings(acme.id, admin.id, { 'genealogy.placement_width': 2 })
+  // D-B6-05: the placement width is the plan version's (the genealogy.placement_width setting is retired).
+  await activePlanVersion(acme.id, gb, { submitterId: admin.id, approverId: compliance.id, creditingEvent: 'paid', placementWidth: 2 })
   root = (await enrolled(app, support, enrolment('DIST', { position_ref: 'ROOT' }))).position!.id
 })
 
@@ -151,7 +152,7 @@ describe('refusals store nothing (T-B2-05, AC-PAR1-4, AC-PAR2-1)', () => {
     expect(later.statusCode).toBe(201)
   })
 
-  test('a leg without genealogy.placement_width is 422 PLACEMENT_NOT_CONFIGURED; a leg above the width 422', async () => {
+  test('a leg without a plan version placement width is 422 PLACEMENT_NOT_CONFIGURED; a leg above the width 422', async () => {
     const tenant = await createTenant()
     await createMarket(tenant.id, 'GB')
     const tAdmin = await createSignedInUser({ tenantId: tenant.id, roles: ['Tenant admin', 'Support agent'] })

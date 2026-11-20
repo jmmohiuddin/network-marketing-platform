@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { withTenant } from '@nmp/db'
-import { ownerRows } from '../../../test/helpers/index.js'
+import { activePlanVersion, ownerRows } from '../../../test/helpers/index.js'
 
 // shortcut: a module test may not import another module's test-support (boundaries.test), so the order fixtures the
 // connector tests need repeat ord/test-support.ts in brief; move both into test/helpers when the integrator next touches it.
@@ -34,13 +34,14 @@ export async function setSettings(tenantId: string, userId: string, values: Reco
   )
 }
 
-/** Types DIST and RETAIL, the order settings, and volumes for SKU-A and SKU-B in the market; returns the DIST type. */
+/** Types DIST and RETAIL, the order settings, a plan crediting at payment, and volumes for SKU-A and SKU-B in the market; returns the DIST type. */
 export async function commerceTenant(tenantId: string, marketId: string, adminId: string, approverId: string): Promise<string> {
   const distributorType = await activeType(tenantId, 'DIST', false, adminId, approverId)
   await activeType(tenantId, 'RETAIL', true, adminId, approverId)
   await setSettings(tenantId, adminId, {
-    'orders.crediting_event': 'paid', 'orders.attribution_precedence': ['link', 'code', 'servicing'], 'orders.new_buyer_type': 'RETAIL',
+    'orders.attribution_precedence': ['link', 'code', 'servicing'], 'orders.new_buyer_type': 'RETAIL',
   })
+  await activePlanVersion(tenantId, marketId, { submitterId: adminId, approverId, creditingEvent: 'paid' })
   for (const [sku, volumes] of [['SKU-A', { qv: '150' }], ['SKU-B', { qv: '100' }]] as const) {
     await ownerRows(
       `INSERT INTO product_volume_map (tenant_id, market_id, sku, item_class, volumes, valid_from, reason, created_by)

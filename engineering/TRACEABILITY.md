@@ -39,6 +39,8 @@ B4 (2026-11-19, `increments/B4/HANDOFF.md`): FR-FIN-001..005, FR-PAY-001..007, F
 
 B5 (2026-11-19, `increments/B5/HANDOFF.md`): FR-IAM-007, FR-DIST-001..006, FR-DIST-008, FR-CAS-003, FR-PRV-001/002 set to I T V. T = module, isolation (incl. the T-B5-40 portal-session sweep over every non-portal route) and role-matrix tests green in the records full run (nmp_test_3 at 0512, 220 files, 4763 tests, 0 failed/skipped); V = browser workflows W-B5-0..9 in QA rounds 1–2 (round 2 on a fresh seed:e2e at 0510: money as PLAN §7, Aug 23.00 returned then paid, Sep −10.00 carried, Oct +3.00 recovered, dispute upheld, export holds DE-B only, erasure deferred for 5.00 owed and fulfilled for DE-A with the M-3 replay hash unchanged). Limits of V: FR-IAM-007 lockout and unknown-email refusal passed in round 1 only; FR-DIST-003 requirements list not exercised; FR-DIST-004 W-B5-5 checked before the PLAN §7 C → A correction (data conflict); FR-DIST-006 "payout held" to an includable payee not executable with the PLAN data (held notice seen for DE-C); FR-DIST-002/004 API text still uses UTC days and engine wording (BUG-112/119 API parts); FR-PRV-002 TS-28 automated replay assertion missing; W-B5-10 regression partial (no globex portal user, B4 not-exercised paths, BUG-093/095..098). Security fixes SEC-B5-1..6 (0511, 0512, TOTP enrolment re-auth, code cooldown, contact_match refused for erasure/correction) landed after round 2: tested, not re-reviewed and not browser-checked. Deferred parts: PLAN §8.
 
+B6 (2026-11-20, `increments/B6/HANDOFF.md`): FR-PLN-007, FR-PLN-008, FR-INT-003, FR-RPT-001, FR-RPT-002, FR-MIG-001, FR-MIG-002 set to I T V (PLN-008, RPT-002 and MIG-001 with the limits in their status). T = module (pln, mig, imp, int, rpt, ord, comp, led, pay), packages/db b6-guards, isolation (all 54 B6 routes) and role-matrix tests green in the records full run (nmp_test_4 reset to 0606, 243 files, 5241 tests, 0 failed/skipped); api + web typecheck clean. V = `testing/UI_TESTING_REPORT.md` "Increment B6 — round 2": W-B6-1..8 pass (W-B6-4 orders part repeated, ledger part from round 1; W-B6-8 quick repeat, offline signature check in round 1), W-B6-9 partial. Limits of V: round 2 seeded nmp_e2e at 15:12; the security round-3 fixes then edited 0600/0604/0606 in place (15:54–15:56) and changed MIG/PLN/PRV/RPT/IMP/INT code, so they are covered by tests only. Scale: AC-S1-2 (2M positions) not met (SPIKE_REPORT §8).
+
 | FR | Title | Stories | ACs | Rules | Tests | Screens | APIs | Tables | Status |
 |---|---|---|---|---|---|---|---|---|---|
 | FR-IAM-004 | Separation of duties | US-07 | AC-07.1 AC-07.2 | BR-ADJ-02 BR-SEC-06 | TS-35 TS-42 | SC-02 SC-03 | API-20 API-25 | approval | I T V |
@@ -77,8 +79,8 @@ B5 (2026-11-19, `increments/B5/HANDOFF.md`): FR-IAM-007, FR-DIST-001..006, FR-DI
 | FR-PLN-004 | Caps and pools configuration | US-11 | AC-11.1 AC-11.2 | BR-CAP-01 BR-CAP-02 BR-CAP-03 BR-MNY-03 | TS-06 TS-07 TS-08 TS-09 TS-12 | SC-05 | API-16 API-17 | plan_rule simulation | I T V |
 | FR-PLN-005 | Simulation and version comparison | US-10 | AC-10.1 AC-10.2 AC-10.3 | BR-PLN-02 | TS-46 TS-59 | SC-04 SC-42 | API-17 | simulation result_line | I T V |
 | FR-PLN-006 | Golden datasets | US-10 | AC-10.1 AC-10.2 AC-10.3 | BR-PLN-06 | TS-43 TS-44 TS-46 TS-59 TS-60 | SC-42 | API-17 | golden_dataset | I T V |
-| FR-PLN-007 | Plan-change governance | US-27 | AC-27.1 AC-27.2 | BR-PLN-02 BR-PLN-03 BR-PLN-04 | TS-24 TS-46 TS-68 | SC-44 | API-16 | plan_version approval document | - |
-| FR-PLN-008 | Transition rules between versions | US-27 | AC-27.1 AC-27.2 | BR-PLN-01 BR-RNK-07 | TS-24 TS-25 TS-46 | SC-44 | API-16 | plan_transition qualification_state | - |
+| FR-PLN-007 | Plan-change governance | US-27 | AC-27.1 AC-27.2 | BR-PLN-02 BR-PLN-03 BR-PLN-04 | TS-24 TS-46 TS-68 | SC-44 | API-16 | plan_version approval document | | I T V |
+| FR-PLN-008 | Transition rules between versions | US-27 | AC-27.1 AC-27.2 | BR-PLN-01 BR-RNK-07 | TS-24 TS-25 TS-46 | SC-44 | API-16 | plan_transition qualification_state | | I T V (partial V: the transition report after the first run of the new version not seen in the browser; T-B6-04 covers it) |
 | FR-COMP-001 | Calendars and period lifecycle | US-06 | AC-06.1 AC-06.2 AC-06.3 | BR-PER-01 BR-PER-02 BR-PER-03 BR-PER-04 | TS-03 TS-13 TS-14 TS-58 TS-59 TS-60 TS-62 | SC-01 | API-18 | calendar period | I T V |
 | FR-COMP-002 | Run execution with snapshot, lock and idempotency | US-06 | AC-06.1 AC-06.2 AC-06.3 | BR-PER-06 BR-CMP-01 | TS-01 TS-14 TS-29 TS-58 TS-59 | SC-01 | API-18 | run run_snapshot result_line | I T V |
 | FR-COMP-003 | Multi-pass calculation order | US-14 | AC-14.1 AC-14.2 AC-14.3 | BR-CAP-02 BR-MNY-02 BR-TAX-02 | TS-06 TS-09 TS-38 TS-39 | SC-02 | API-18 | result_line | I T V |
@@ -117,11 +119,11 @@ B5 (2026-11-19, `increments/B5/HANDOFF.md`): FR-IAM-007, FR-DIST-001..006, FR-DI
 | FR-PRV-002 | Erasure by pseudonymisation | US-30 | AC-30.1 | BR-DAT-06 | TS-28 | SC-15 | API-31 | participant privacy_request | I T V (TS-28 replay-after-erasure checked in the browser only; automated test missing) |
 | FR-INT-001 | Public API and webhooks | US-22 | AC-22.1 AC-22.2 AC-22.3 | BR-SEC-03 | TS-13 TS-15 TS-34 TS-59 | SC-13 | API-10 API-33 | api_key webhook_endpoint webhook_delivery | I T V |
 | FR-INT-002 | Integration and sync health | US-55 | AC-55.1 | BR-ORD-05 | TS-58 | SC-13 SC-01 | API-37 | provider_config inbound_event | I T V |
-| FR-INT-003 | Scheduled export of the full tenant data model | US-32 | AC-32.1 | BR-DAT-12 | TS-58 | SC-13 | API-32 | export_job | - |
-| FR-RPT-001 | Role dashboards | US-56 | AC-56.1 | BR-CPL-01 | TS-31 TS-58 | SC-35 SC-46 SC-01 | API-05 API-19 | compliance_report_snapshot run | - |
-| FR-RPT-002 | Operational lists with saved views | US-56 | AC-56.1 | BR-SEC-03 | TS-34 TS-58 | SC-31 SC-33 SC-36 | API-23 | user_account | - |
-| FR-MIG-001 | History import | US-28 | AC-28.1 AC-28.2 | BR-MIG-01 | TS-52 | SC-16 | API-38 | import_batch relationship qualification_state journal_entry | - |
-| FR-MIG-002 | Parallel-run reconciliation | US-28 | AC-28.1 AC-28.2 | BR-MIG-02 | TS-52 | SC-16 | API-38 | simulation approval | - |
+| FR-INT-003 | Scheduled export of the full tenant data model | US-32 | AC-32.1 | BR-DAT-12 | TS-58 | SC-13 | API-32 | export_job | | I T V |
+| FR-RPT-001 | Role dashboards | US-56 | AC-56.1 | BR-CPL-01 | TS-31 TS-58 | SC-35 SC-46 SC-01 | API-05 API-19 | compliance_report_snapshot run | | I T V |
+| FR-RPT-002 | Operational lists with saved views | US-56 | AC-56.1 | BR-SEC-03 | TS-34 TS-58 | SC-31 SC-33 SC-36 | API-23 | user_account | | I T V (partial: saved views on SC-31 orders and SC-33 ledger entries only; SC-36 global search deferred, PLAN §8) |
+| FR-MIG-001 | History import | US-28 | AC-28.1 AC-28.2 | BR-MIG-01 | TS-52 | SC-16 | API-38 | import_batch relationship qualification_state journal_entry | | I T V (reduced scope D-B6-18: no bank/tax profile, placement or per-period history import; product confirmation open) |
+| FR-MIG-002 | Parallel-run reconciliation | US-28 | AC-28.1 AC-28.2 | BR-MIG-02 | TS-52 | SC-16 | API-38 | simulation approval | | I T V |
 
 ## Release B-MKT (4)
 

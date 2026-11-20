@@ -41,6 +41,7 @@ describe('T-B1-21 GET /v1/openapi.json (AC-INT1-1)', () => {
       '/v1/compliance/snapshots', '/v1/compliance/snapshots/{id}', '/v1/orders', '/v1/order-events', '/v1/participants',
       '/v1/participants/{id}/type', '/v1/participants/{id}/positions', '/v1/participants/{id}/agreement-acceptances',
       '/v1/participants/{id}/signals', '/v1/customers/{id}/servicing', '/v1/ledger/journal-exports', '/v1/ledger/journal-exports/{id}/file',
+      '/v1/exports/model', '/v1/exports/signing-key', '/v1/exports', '/v1/exports/{id}', '/v1/exports/{id}/files/{table}',
     ])
     expect(document.components.securitySchemes.bearer).toEqual(expect.objectContaining({ type: 'http', scheme: 'bearer' }))
     for (const url of ['/v1/compliance/snapshots', '/v1/compliance/snapshots/{id}']) {
@@ -86,6 +87,15 @@ describe('T-B1-21 GET /v1/openapi.json (AC-INT1-1)', () => {
     expect(Object.keys(create.responses)).toEqual(expect.arrayContaining(['201', '409', '422']))
     expect(Object.keys(file.responses['200'].content)).toEqual(['text/csv'])
     expect(document.components.schemas.JournalExportBody.required).toEqual(['period_id'])
+  })
+
+  test('PLAN B6 2.3: every full export operation takes an exports:full key; create needs an Idempotency-Key', () => {
+    const operations = ['/v1/exports/model', '/v1/exports/signing-key', '/v1/exports', '/v1/exports/{id}', '/v1/exports/{id}/files/{table}']
+      .flatMap((url) => Object.values(document.paths[url] as Record<string, unknown>))
+
+    for (const operation of operations) expect(operation).toMatchObject({ security: [{ bearer: [] }], 'x-required-scope': 'exports:full' })
+    expect(document.paths['/v1/exports'].post.parameters.map((parameter: { name: string }) => parameter.name)).toEqual(['Idempotency-Key'])
+    expect(Object.keys(document.paths['/v1/exports/{id}/files/{table}'].get.responses['200'].content)).toEqual(['application/gzip'])
   })
 
   test('takes its schemas from the validating zod schemas: query, list item, detail and the error envelope', () => {

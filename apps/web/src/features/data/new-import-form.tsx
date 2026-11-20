@@ -1,23 +1,24 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useState, type FormEvent } from 'react'
 import { Banner } from '../../components/banner'
 import { Button, LinkButton } from '../../components/button'
 import { ErrorSummary, type SummaryItem } from '../../components/error-summary'
 import { FileDropZone, formatMegabytes } from '../../components/file-drop-zone'
-import { Select } from '../../components/form-field'
+import { RadioGroup, Select } from '../../components/form-field'
 import { PageHeader } from '../../components/page-header'
 import { useToast } from '../../components/toast'
 import { isApiError, newIdempotencyKey } from '../../lib/api'
 import { errorMessage, fieldErrors } from '../../lib/messages'
 import { MARKETS_PATH, marketName, type Market } from '../../lib/markets'
+import { useSession } from '../../lib/session'
 import { useResource } from '../../lib/use-resource'
 import { MonthField } from './month-field'
 import { periodErrors } from './period'
 import { uploadForm, type UploadProgress } from './transfer'
-import { IMPORT_FILES, type Batch, type ImportFile } from './types'
-import { CODE, FactRow, FactRows, Panel } from './ui'
+import { IMPORT_FILES, type Batch, type ImportFile, type ImportKind } from './types'
+import { CODE, FactRow, FactRows, NOTE, Panel } from './ui'
 
 
 const FILE_LABELS: Readonly<Record<ImportFile, string>> = {
@@ -66,8 +67,9 @@ function serverErrors(error: unknown): Errors {
   return (IMPORT_FILES as readonly unknown[]).includes(file) ? { [file as ImportFile]: errorMessage(error) } : {}
 }
 
-function formOf(values: Values, files: Files): FormData {
+function formOf(values: Values, files: Files, kind: ImportKind): FormData {
   const form = new FormData()
+  form.append('kind', kind)
   for (const name of ['market', 'period_from', 'period_to'] as const) form.append(name, values[name].trim())
   // The extension is already checked; some systems label CSV files application/octet-stream, which the API refuses.
   for (const file of IMPORT_FILES) form.append(file, new Blob([files[file]!], { type: 'text/csv' }), `${file}.csv`)
@@ -91,10 +93,20 @@ function Progress({ progress }: { readonly progress: UploadProgress }) {
   )
 }
 
+const KIND_OPTIONS = [
+  { value: 'overlay', label: 'Compliance overlay', helper: 'Partner exports of a live market, for the compliance reports.' },
+  { value: 'migration', label: 'Migration', helper: 'The legacy history of a market still in implementation, applied once as its starting data.' },
+] as const
+
 /** SC-24 upload: three export files, the market and the period range; validated before anything is stored. */
 export function NewImportForm() {
   const router = useRouter()
   const toast = useToast()
+  const params = useSearchParams()
+  const { can } = useSession()
+  // D-B6-09: a migration batch needs migration.manage and a market in implementation (draft).
+  const mayMigrate = can('migration.manage')
+  const [kind, setKind] = useState<ImportKind>(mayMigrate && params.get('kind') === 'migration' ? 'migration' : 'overlay')
   const markets = useResource<readonly Market[]>(MARKETS_PATH)
   const limits = useResource<ImportLimits>('/v1/imports/limits')
   const [values, setValues] = useState<Values>({ market: '', period_from: '', period_to: '' })
@@ -128,7 +140,7 @@ export function NewImportForm() {
     setBusy(true)
     setSummary([])
     try {
-      const batch = await uploadForm<Batch>('/v1/imports', formOf(values, files), key, setProgress)
+      const batch = await uploadForm<Batch>('/v1/imports', formOf(values, files, kind), key, setProgress)
       toast({ message: batch.state === 'rejected' ? 'The files were rejected. Nothing was stored.' : 'The files passed validation.', tone: batch.state === 'rejected' ? 'info' : 'success' })
       router.push(`/imports/${batch.id}`)
     } catch (error) {
@@ -163,11 +175,16 @@ export function NewImportForm() {
         </Panel>
         <div className="xl:col-span-5 flex flex-col gap-space-md">
           <Panel title="Market and period" icon="calendar_month">
+            {mayMigrate && (
+              <RadioGroup legend="Kind of import" name="kind" options={KIND_OPTIONS} value={kind} disabled={busy}
+                onChange={(value) => { setKind(value as ImportKind); setValue('market', '') }} />
+            )}
+            {kind === 'migration' && <p className={NOTE}>Only markets still in implementation are listed.</p>}
             <Select
               id={fieldId('market')} label="Market"
               placeholder={markets.loading ? 'Loading markets…' : 'Choose a market'}
               helper={markets.error === null ? undefined : errorMessage(markets.error)}
-              options={(markets.data ?? []).map((market) => ({ value: market.code, label: marketName(market) }))}
+              options={(markets.data ?? []).filter((market) => kind === 'overlay' || market.state === 'draft').map((market) => ({ value: market.code, label: marketName(market) }))}
               value={values.market} error={errors.market} disabled={busy} onChange={(event) => setValue('market', event.target.value)}
             />
             {month('period_from', 'First month')}

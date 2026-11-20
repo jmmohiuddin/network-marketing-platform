@@ -105,16 +105,19 @@ export function BatchDetail({ batchId }: { readonly batchId: string }) {
   }
 
   const period = periodRange(batch.period_from, batch.period_to)
+  const migration = batch.kind === 'migration'
   const errorCount = batch.report?.error_count ?? 0
   const actions = batch.state === 'rejected'
-    ? (readOnly ? undefined : <LinkButton href="/imports/new" variant="primary" icon="cloud_upload" data-testid="primary-action">Upload corrected files</LinkButton>)
+    ? (readOnly ? undefined : <LinkButton href={migration ? '/imports/new?kind=migration' : '/imports/new'} variant="primary" icon="cloud_upload" data-testid="primary-action">Upload corrected files</LinkButton>)
     : batch.state === 'mapped'
       ? (readOnly ? undefined : <Button variant="primary" onClick={() => setConfirmLoad(true)} data-testid="primary-action">Load batch</Button>)
-      : (batch.state === 'loaded' && can('compliance.read')) ? <LinkButton href="/compliance" icon="verified_user">Compliance reports</LinkButton> : undefined
+      : batch.state !== 'loaded' ? undefined
+        : migration ? (can('migration.manage') || can('migration.signoff') ? <LinkButton href="/imports/migration" icon="move_up">Migrations</LinkButton> : undefined)
+          : can('compliance.read') ? <LinkButton href="/compliance" icon="verified_user">Compliance reports</LinkButton> : undefined
   return (
     <>
       <PageHeader
-        title={`Import ${batch.market} · ${period}`} state={<StatusBadge state={batch.state} />} summary={SUMMARY[batch.state]} actions={actions}
+        title={`${migration ? 'Migration import' : 'Import'} ${batch.market} · ${period}`} state={<StatusBadge state={batch.state} />} summary={SUMMARY[batch.state]} actions={actions}
         eyebrow={batch.id} breadcrumbs={[{ label: 'Data imports', href: '/imports' }, { label: `${batch.market} · ${period}` }]}
       />
       {batch.state === 'rejected' && (
@@ -155,7 +158,9 @@ export function BatchDetail({ batchId }: { readonly batchId: string }) {
       <ConfirmDialog
         open={confirmLoad}
         title="Load batch"
-        consequence={`Loads ${batch.market} ${period} with mapping version ${batch.mapping_version ?? '—'} into the compliance data. Loaded batches of this market within the same months become superseded (kept, read-only), and snapshots made with them are marked Outdated.`}
+        consequence={migration
+          ? `Loads ${batch.market} ${period} with migration mapping version ${batch.mapping_version ?? '—'} as staged history. Compliance snapshots are not affected; a migration then applies it to the market.`
+          : `Loads ${batch.market} ${period} with mapping version ${batch.mapping_version ?? '—'} into the compliance data. Loaded batches of this market within the same months become superseded (kept, read-only), and snapshots made with them are marked Outdated.`}
         confirmLabel="Load batch"
         onConfirm={load}
         onCancel={() => setConfirmLoad(false)}

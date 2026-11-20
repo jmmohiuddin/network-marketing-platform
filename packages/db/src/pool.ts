@@ -42,12 +42,17 @@ function assertUuid(value: string, name: string): void {
   if (!UUID.test(value)) throw new Error(`${name} must be a UUID`)
 }
 
+export interface TransactionOptions {
+  /** D-B6-06: a full export reads one snapshot of the tenant (BEGIN ISOLATION LEVEL REPEATABLE READ). */
+  isolation?: 'repeatable read'
+}
+
 // Settings are bound parameters of set_config(..., true): transaction-local, never interpolated.
-async function inTransaction<T>(settings: Record<string, string>, fn: (tx: Tx) => Promise<T>): Promise<T> {
+async function inTransaction<T>(settings: Record<string, string>, fn: (tx: Tx) => Promise<T>, options: TransactionOptions = {}): Promise<T> {
   const client = await getPool().connect()
   let connectionError: Error | undefined
   try {
-    await client.query('BEGIN')
+    await client.query(options.isolation === 'repeatable read' ? 'BEGIN ISOLATION LEVEL REPEATABLE READ' : 'BEGIN')
     await client.query(
       'SELECT set_config(s.name, s.value, true) FROM unnest($1::text[], $2::text[]) AS s(name, value)',
       [Object.keys(settings), Object.values(settings)],
@@ -69,7 +74,7 @@ async function inTransaction<T>(settings: Record<string, string>, fn: (tx: Tx) =
 }
 
 /** Runs fn in one transaction scoped to a tenant. tenantId must come from the authenticated session. */
-export function withTenant<T>(ctx: TenantContext, fn: (tx: Tx) => Promise<T>): Promise<T> {
+export function withTenant<T>(ctx: TenantContext, fn: (tx: Tx) => Promise<T>, options?: TransactionOptions): Promise<T> {
   assertUuid(ctx.tenantId, 'tenantId')
   assertUuid(ctx.userId, 'userId')
   if (ctx.sessionId !== undefined) assertUuid(ctx.sessionId, 'sessionId')
@@ -84,6 +89,7 @@ export function withTenant<T>(ctx: TenantContext, fn: (tx: Tx) => Promise<T>): P
       'app.participant_id': ctx.participantId ?? '',
     },
     fn,
+    options,
   )
 }
 

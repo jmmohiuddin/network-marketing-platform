@@ -153,10 +153,12 @@ export interface GovernanceProps {
   readonly markets: readonly Market[] | null
   /** A refused submit or new version, shown on the page under the header. */
   readonly onRefused: (error: unknown) => void
+  /** SC-44: why scheduling would be refused now (open governance items); shown, the server still decides. */
+  readonly scheduleNote?: string
 }
 
 /** sc_04 sticky governance bar: who acted, the gate checklist, and the next lifecycle action the user may take. */
-export function GovernanceBar({ scope, names, markets, onRefused }: GovernanceProps) {
+export function GovernanceBar({ scope, names, markets, onRefused, scheduleNote }: GovernanceProps) {
   const api = useApi()
   const router = useRouter()
   const toast = useToast()
@@ -200,7 +202,8 @@ export function GovernanceBar({ scope, names, markets, onRefused }: GovernancePr
       preparedBy = `Submitted by ${who(version.submitted_by)}`
       preparedAt = formatDateTime(version.submitted_at)
       if (writable && can('plan.approve')) {
-        if (version.submitted_by === myId) blockedReason = 'You submitted this version, so a compliance officer who did not write it must decide it.'
+        // Authors never decide their own version (SoD): no Approve for the submitter or the version's creator.
+        if (version.submitted_by === myId || version.created_by === myId) blockedReason = 'You wrote or submitted this version, so a compliance officer who did not write it must decide it.'
         else actions = (
           <>
             <Button variant="destructive" onClick={() => setDialog('reject')}>Reject</Button>
@@ -214,7 +217,10 @@ export function GovernanceBar({ scope, names, markets, onRefused }: GovernancePr
       preparedAt = undefined
       if (writable && can('plan.activate')) {
         if (version.submitted_by === myId || version.approved_by === myId) blockedReason = 'You submitted or approved this version, so a second approver must schedule it.'
-        else actions = <Button variant="primary" icon="event" onClick={() => setDialog('schedule')}>Schedule</Button>
+        else {
+          blockedReason = scheduleNote
+          actions = <Button variant="primary" icon="event" onClick={() => setDialog('schedule')}>Schedule</Button>
+        }
       }
       break
     default:

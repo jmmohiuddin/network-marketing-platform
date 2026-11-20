@@ -1,12 +1,11 @@
 // Distributor-facing words (second person, factual: no projections, targets or rankings; BR-HON-01) and formatting.
+import { formatDateIn } from '../../lib/format'
 import { moneyText } from '../orders/format'
 import { periodName } from '../periods/format'
 import type { Blocker, DisputeState, LadderRank, Notice, OriginKind, PayoutState, PrivacyRequest, PrivacyType } from './types'
 
 /** "Nov 21, 2026" in the participant's market zone. */
-export function dayText(value: string, timeZone: string): string {
-  return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeZone }).format(new Date(value))
-}
+export const dayText = (value: string, timeZone: string): string => formatDateIn(value, timeZone)
 
 /** "Nov 21, 2026, 8:31 AM" in the participant's market zone. */
 export function timeText(value: string, timeZone: string): string {

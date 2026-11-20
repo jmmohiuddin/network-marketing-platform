@@ -115,7 +115,7 @@ describe('SnapshotReport', () => {
     const table = within(chart).getByRole('table', { name: 'Customer share of net sales in each period' })
     const row = within(table).getByText('2025-02').closest('tr')!
     expect([...row.querySelectorAll('td')].map((cell) => cell.textContent)).toEqual(['58.00 %', '600', '1,000'])
-    expect(within(chart).getByRole('button', { name: 'View as table' }).getAttribute('aria-pressed')).toBe('true')
+    expect(within(chart).getByRole('button', { name: 'View as chart' })).toBeTruthy()
   })
 
   it('opens on the latest period only, with the trend for the history (BUG-033)', async () => {

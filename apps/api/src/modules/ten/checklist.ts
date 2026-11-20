@@ -31,6 +31,8 @@ export const CHECKLIST_ITEMS = [
   { item: 'plan_variant', title: 'Plan variant', kind: 'automatic', category: 'plan' },
   { item: 'breach_contacts', title: 'Breach notification contacts', kind: 'automatic', category: 'data' },
   { item: 'pack_rules', title: 'Market-pack rules basis', kind: 'automatic', category: 'regulatory' },
+  // D-B6-11: complete when the market has no non-cancelled migration or its migration is signed off (MIG, mig_market_ready).
+  { item: 'migration_parallel_run', title: 'Migration parallel run', kind: 'automatic', category: 'data' },
 ] as const satisfies readonly ItemDefinition[]
 
 export type ChecklistItem = (typeof CHECKLIST_ITEMS)[number]['item']
@@ -49,6 +51,7 @@ const AUTOMATIC_MISSING: Readonly<Record<string, string>> = {
   breach_contacts: 'No breach notification contact is in force.',
   agreement_versions: 'No participant agreement version is published for this market.',
   plan_variant: 'No scheduled or active plan version covers this market.',
+  migration_parallel_run: "The migration's parallel run is not signed off.",
 }
 
 export interface PackRule {
@@ -189,6 +192,7 @@ interface Facts {
   readonly region: string
   readonly contacts: number
   readonly rules: PackRule[]
+  readonly migrationReady: boolean
 }
 
 function statusOf(definition: ItemDefinition, facts: Facts, providers: RecordedProvider[]): ItemStatus {
@@ -201,6 +205,7 @@ function statusOf(definition: ItemDefinition, facts: Facts, providers: RecordedP
       if (definition.item === 'breach_contacts') return facts.contacts > 0 ? 'complete' : 'missing'
       if (definition.item === 'agreement_versions') return facts.agreement !== null ? 'complete' : 'missing'
       if (definition.item === 'plan_variant') return facts.plan !== null ? 'complete' : 'missing'
+      if (definition.item === 'migration_parallel_run') return facts.migrationReady ? 'complete' : 'missing'
       return facts.rules.some((rule) => rule.mandatory && rule.basis_status === 'screening') ? 'needs_risk_acceptance' : 'complete'
   }
 }
@@ -222,7 +227,8 @@ function detailOf(definition: ItemDefinition, facts: Facts, providers: RecordedP
 
 /** Evaluates every item of the market's checklist now (T-B1-09). */
 export async function evaluateChecklist(tx: Tx, market: MarketView): Promise<Evaluation> {
-  const { rows } = await tx.query<{ region: string }>('SELECT region FROM tenant WHERE id = app_tenant_id()')
+  const { rows } = await tx.query<{ region: string; migration_ready: boolean }>(
+    'SELECT region, mig_market_ready($1) AS migration_ready FROM tenant WHERE id = app_tenant_id()', [market.id])
   const facts: Facts = {
     entries: await currentEntries(tx, market.id),
     agreement: await currentAgreement(tx, market.id),
@@ -231,6 +237,7 @@ export async function evaluateChecklist(tx: Tx, market: MarketView): Promise<Eva
     region: rows[0]!.region,
     contacts: (await getSetting(tx, 'privacy.breach_contacts'))?.length ?? 0,
     rules: await packRules(tx, market.market_pack),
+    migrationReady: rows[0]!.migration_ready,
   }
   const items: ItemView[] = []
   const snapshot: Evaluation['snapshot']['items'] = []

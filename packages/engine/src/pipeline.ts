@@ -111,21 +111,28 @@ export type PassRegistry = { readonly [K in PassName]: PassFn<K> }
 
 /**
  * S-1 memory (D-B4-22): after the last pass reading an output's lines, the runner drops those lines (keys and the
- * other fields stay). Credited lines are read up to pass 4; pass 4-8 lines up to pass 10 (pass 8 sums the breakage).
+ * other fields stay). Credited lines are read up to pass 4; pass 4-7 lines up to pass 8 (pass 8 sums the breakage);
+ * pass 8 lines up to pass 10.
  */
 export const RELEASE_AFTER: { readonly [K in PassName]?: (done: Partial<PassOutputs>) => Partial<PassOutputs> } = {
   individual: (d) => ({ lineVolumes: { ...d.lineVolumes!, lines: [] } }),
-  rounding: (d) => ({ individual: [], matching: [], pools: [], constraints: { ...d.constraints!, lines: [] }, caps: { ...d.caps!, lines: [] } }),
+  caps: (d) => ({ individual: [], matching: [], pools: [], constraints: { ...d.constraints!, lines: [] } }),
+  rounding: (d) => ({ caps: { ...d.caps!, lines: [] } }),
 }
 
-export function runPipeline(ctx: RunContext, passes: PassRegistry): PassOutputs {
+/** The passes from the first through L (run.ts streams passes 11-12 itself, D-B6-12). */
+export type PassesThrough<L extends PassName> = { readonly [K in Earlier<L> | L]: PassFn<K> }
+
+/** Runs the passes in PASS_ORDER through `last` (default: every pass). */
+export function runPipeline<L extends PassName = 'totals'>(ctx: RunContext, passes: PassesThrough<L>, last?: L): Pick<PassOutputs, Earlier<L> | L> {
   let done: Partial<PassOutputs> = {}
   for (const name of PASS_ORDER) {
-    const pass = passes[name] as (c: RunContext, d: Partial<PassOutputs>) => PassOutputs[typeof name]
+    const pass = (passes as Partial<PassRegistry>)[name] as (c: RunContext, d: Partial<PassOutputs>) => PassOutputs[typeof name]
     done = { ...done, [name]: pass(ctx, done) }
     done = { ...done, ...RELEASE_AFTER[name]?.(done) }
+    if (name === last) break
   }
-  return done as PassOutputs
+  return done as Pick<PassOutputs, Earlier<L> | L>
 }
 
 // ---------- Payout primitives (passes 4-6) ----------

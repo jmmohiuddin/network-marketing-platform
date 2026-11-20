@@ -43,11 +43,12 @@ export function unsetThresholdsTitle(thresholds: readonly SettingEntry[]): strin
 }
 
 /** Permissions that read GET /v1/settings (ten/routes.ts SETTINGS_READERS). */
-const SETTINGS_READERS = ['settings.manage', 'settings.approve', 'privacy.manage'] as const
+const SETTINGS_READERS = ['settings.manage', 'settings.approve', 'privacy.manage', 'market.signoff'] as const
 
 /** PLAN B2 5 SC-29: the B2 keys of the "Participants, orders and integrations" card, each with what holds while unset. */
 const B2_ROWS: readonly { readonly key: PolicyKey; readonly title: string; readonly description: string; readonly whenUnset: string; readonly retired?: true }[] = [
-  { key: 'orders.crediting_event', title: 'Crediting event', description: 'Whether an order counts when it is paid or when it is fulfilled.', whenUnset: 'Orders are refused until set.' },
+  // D-B6-05: the crediting event moved to the plan version; the setting is no longer read.
+  { key: 'orders.crediting_event', title: 'Crediting event', description: 'Retired: the crediting event is set on each plan version.', whenUnset: 'Retired: the crediting event is set on each plan version.', retired: true },
   { key: 'orders.attribution_precedence', title: 'Attribution precedence', description: 'Which hint names the distributor credited with an order: a link, a code or the customer’s servicer.', whenUnset: 'Orders are refused until set.' },
   { key: 'orders.purpose_required', title: 'Order purpose required', description: 'Whether each order must say if it is for resale or personal use; orders without one are flagged.', whenUnset: 'Orders without a purpose are not flagged.' },
   { key: 'orders.new_buyer_type', title: 'Type of new buyers', description: 'The participant type given to buyers an order names who are not enrolled yet.', whenUnset: 'Orders from buyers who are not enrolled are refused until set.' },
@@ -74,11 +75,16 @@ const B5_ROWS: readonly { readonly key: PolicyKey; readonly title: string; reado
   { key: 'privacy.policy', title: 'Privacy request deadlines', description: 'Per market the days to answer a data-subject request, and how many days before the deadline it escalates. Changes wait for the DPO.', whenUnset: 'Privacy requests get no deadline and are never escalated; the privacy queue says "No deadline configured".' },
   { key: 'portal.customer_contact_visible', title: 'Customer contact in the portal', description: 'Whether distributors see the masked contact details of the customers they service. Changes wait for the DPO.', whenUnset: 'Distributors do not see their customers’ contact details.' },
 ]
+/** PLAN B6 §5 SC-29: the D-B6-17 keys, each with what holds while unset (no default is shipped). */
+const B6_ROWS: readonly { readonly key: PolicyKey; readonly title: string; readonly description: string; readonly whenUnset: string }[] = [
+  { key: 'plan.filing_requirements', title: 'Plan filing requirements', description: 'The markets where a plan change needs a recorded filing before its version is scheduled. Changes wait for a market sign-off holder.', whenUnset: 'No market requires a filing: plan versions are scheduled without one.' },
+  { key: 'exports.full_schedule', title: 'Full data export schedule', description: 'How often a signed export of all your data is generated, in UTC. Changes ask for your authenticator code.', whenUnset: 'Manual exports only: run one from Integrations, Exports.' },
+]
 /** Keys the API refuses to write (SETTING_RETIRED): shown, never offered for a new version. */
 const RETIRED_KEYS: readonly string[] = [...B2_ROWS.filter((row) => row.retired === true).map((row) => row.key), 'money.clawback_policy']
 
 /**
- * SC-29 Tenant settings: the settings readers (settings.manage, settings.approve, privacy.manage) see the policy
+ * SC-29 Tenant settings: the settings readers (settings.manage, settings.approve, privacy.manage, market.signoff) see the policy
  * cards; participant types and agreement versions show to the roles that propose, approve or publish them.
  */
 export function SettingsPage() {
@@ -150,6 +156,7 @@ function PolicySettings({ children }: { readonly children: ReactNode }) {
   const b2Rows = rowsOf(B2_ROWS)
   const b4Rows = rowsOf(B4_ROWS)
   const b5Rows = rowsOf(B5_ROWS)
+  const b6Rows = rowsOf(B6_ROWS)
   const values = Object.fromEntries(Object.entries(view?.values ?? {}).map(([key, setting]) => [key, setting?.value]))
   return (
     <>
@@ -318,7 +325,7 @@ function PolicySettings({ children }: { readonly children: ReactNode }) {
           <ul className="flex flex-col gap-space-md">
             {b2Rows.map((row) => (
               <SettingRow key={row.key} title={row.title} description={row.description} whenUnset={row.whenUnset} entry={row.entry}
-                show={(value: unknown) => valueText(row.key, value)} onChange={row.retired ? undefined : versionOf(row.key)} />
+                show={(value: unknown) => (row.retired ? `Retired (last value: ${valueText(row.key, value)})` : valueText(row.key, value))} onChange={row.retired ? undefined : versionOf(row.key)} />
             ))}
           </ul>
         </section>
@@ -342,6 +349,19 @@ function PolicySettings({ children }: { readonly children: ReactNode }) {
           <p className={NOTE}>Deadlines for commission disputes and data-subject requests, and what distributors see of their customers. The product ships no default value for any of them.</p>
           <ul className="flex flex-col gap-space-md">
             {b5Rows.map((row) => (
+              <SettingRow key={row.key} title={row.title} description={row.description} whenUnset={row.whenUnset} entry={row.entry}
+                show={(value: unknown) => <PolicyValue name={row.key} value={value} />}
+                onChange={versionOf(row.key)} />
+            ))}
+          </ul>
+        </section>
+      )}
+      {b6Rows.length > 0 && (
+        <section className={SECTION_CARD} aria-labelledby="filings-exports-title" data-testid="filing-export-policies">
+          <SectionTitle id="filings-exports-title" icon="inventory" title="Plan filings and data exports" />
+          <p className={NOTE}>Where a plan change must be filed with an authority first, and when a full export of your data is generated. The product ships no default value for either.</p>
+          <ul className="flex flex-col gap-space-md">
+            {b6Rows.map((row) => (
               <SettingRow key={row.key} title={row.title} description={row.description} whenUnset={row.whenUnset} entry={row.entry}
                 show={(value: unknown) => <PolicyValue name={row.key} value={value} />}
                 onChange={versionOf(row.key)} />

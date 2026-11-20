@@ -15,6 +15,7 @@ import { marketName } from '../../lib/markets'
 import { MeterBar, Sparkline } from '../../components/charts'
 import { DataTable } from '../../components/data-table'
 import { Icon } from '../../components/icon'
+import { ComplianceKpis } from './compliance-kpis'
 import { CreateSnapshotDialog, type SnapshotRequest } from './create-snapshot-dialog'
 import { changeLabel, dateTime, figureAmount, figureLabel, figureUnit, figureValue, HEADLINE_KEYS, integer, periodRange, REPORT_NAMES, SNAPSHOTS_PATH } from './format'
 import { TrendChart } from './period-views'
@@ -267,6 +268,7 @@ export function ComplianceOverview() {
           {mayCreate && <Button variant="primary" icon="add_circle" onClick={() => setCreating({})} data-testid="primary-action">Create snapshot</Button>}
         </>}
       />
+      {can('compliance.read') && <ComplianceKpis />}
       {error !== null && <ErrorState message={errorMessage(error)} onRetry={reload} section />}
       {loading && <LoadingState label="Loading the latest snapshots" />}
       {data !== null && snapshots.length === 0 && (

@@ -185,11 +185,12 @@ describe('genealogy_change decision re-checks (AC-GEN4-2)', () => {
   test('D-B2-20: a leg beyond the placement width in force at decision is refused and the case stays submitted', async () => {
     const child = await holder('LEG')
     await enrol(support, 'placement', child, ids.R!, daysAgo(60), '1')
-    await saveSettings(support, { 'genealogy.placement_width': 3 })
+    // D-B6-05: the width comes from the market's plan version only; the version in force at decision narrows it to 2.
+    const version = await activePlanVersion(acmeId, gb, { submitterId: support.id, approverId: compliance.id, creditingEvent: 'paid', placementWidth: 3 })
     const id = await openCase('genealogy_change', child,
       { kind: 'placement', proposed_parent_position_id: ids.A, effective_from: today(), leg: '3' }, 'COMPANY_DECISION')
     expect((await submit(id)).statusCode).toBe(200)
-    await saveSettings(support, { 'genealogy.placement_width': 2 })
+    await ownerRows(`BEGIN; SET LOCAL session_replication_role = replica; UPDATE plan_version SET placement_width = 2 WHERE id = '${version}'; COMMIT`)
     const refused = await decide(id)
     expect([refused.statusCode, refused.json().error.code, await caseState(id)]).toEqual([422, 'LEG_OUT_OF_RANGE', 'submitted'])
     expect(await rowsOf(child)).toHaveLength(1)
@@ -221,7 +222,7 @@ describe('plan parameters (D-B3-06, D-B3-07): width and change window from the p
     expect([inside.statusCode, correction.statusCode, placementChange.statusCode]).toEqual([201, 201, 201])
   })
 
-  test('T-B3-32: the plan version\'s placement width wins over the retired setting; without a plan the setting is the fallback', async () => {
+  test('T-B3-32 / D-B6-05: the plan version\'s placement width applies; the retired setting is never a fallback', async () => {
     const my = (await ownerRows<{ id: string }>(`SELECT id FROM market WHERE tenant_id = $1 AND code = 'MY'`, [acmeId]))[0]!.id
     const child = await position(support, await participant(support, my, typeId, 'MW'), my, 'P-MW')
     await saveSettings(support, { 'genealogy.placement_width': 5 })
@@ -230,7 +231,9 @@ describe('plan parameters (D-B3-06, D-B3-07): width and change window from the p
 
     await expect(leg(child, '3')).rejects.toMatchObject({ statusCode: 422, code: 'LEG_OUT_OF_RANGE', details: { width: 2 } })
     await expect(leg(child, '2')).resolves.toBeUndefined()
-    await expect(leg(ids.C!, '5')).resolves.toBeUndefined() // GB: no plan, the legacy setting
+    const pt = await createMarket(acmeId, 'PT')
+    const planless = await position(support, await participant(support, pt, typeId, 'PTW'), pt, 'P-PTW')
+    await expect(leg(planless, '5')).rejects.toMatchObject({ statusCode: 422, code: 'PLACEMENT_NOT_CONFIGURED' }) // no plan: no width
     // A covering version that sets no width (unilevel) does not fall back to the setting.
     const nl = await createMarket(acmeId, 'NL')
     await activePlanVersion(acmeId, nl, { submitterId: support.id, approverId: compliance.id, creditingEvent: 'paid' })

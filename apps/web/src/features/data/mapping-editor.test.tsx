@@ -52,6 +52,7 @@ describe('MappingEditor', () => {
     const put = callsOf(fetchMock).findIndex((call) => call.startsWith('PUT'))
     expect(requestHeaders(fetchMock, put).get('If-Match')).toBe('"3"')
     expect(requestBody(fetchMock, put)).toEqual({
+      kind: 'overlay',
       mappings: {
         participant_types: { customer: { can_earn: false, counts_as_end_customer: true }, distributor: { can_earn: true, counts_as_end_customer: false } },
         purposes: { P: 'personal' },

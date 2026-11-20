@@ -136,7 +136,7 @@ async function effectPreview(tx: Tx, c: CaseRecord<Payload>) {
 
 /**
  * Approved: under the ledger lock (409 LEDGER_BUSY while another posting holds it), the amount still within the
- * receivable (else 409, decision rolled back), then Dr write_off / Cr receivable.
+ * receivable (else 409, decision rolled back) and a period to attribute to (else 422), then Dr write_off / Cr receivable.
  */
 async function onDecision(tx: Tx, c: CaseRecord<Payload>, decision: 'approved' | 'rejected'): Promise<void> {
   if (decision !== 'approved') return
@@ -150,13 +150,16 @@ async function onDecision(tx: Tx, c: CaseRecord<Payload>, decision: 'approved' |
   if (BigInt(c.payload.amount_minor) > BigInt(balance[0]!.amount)) {
     throw new ApiError(409, 'RECEIVABLE_CHANGED', 'The receivable changed since the case was submitted: open a new write-off.', { receivable_minor: balance[0]!.amount })
   }
+  // D-B6-04: closed periods leave the attribution set; none left is the NO_COMMITTED_PERIOD refusal PAY gives too.
+  const { rows: period } = await tx.query<{ id: string | null }>('SELECT led_attribution_period($1) AS id', [marketId])
+  if (period[0]!.id === null) throw new ApiError(422, 'NO_COMMITTED_PERIOD', 'The market has no committed or paid period open to post the write-off to.')
   const lines = [
     { type: 'write_off', payee_participant_id: null, debit_minor: c.payload.amount_minor, credit_minor: '0' },
     { type: 'clawback_receivable', payee_participant_id: participantId, debit_minor: '0', credit_minor: c.payload.amount_minor },
   ]
   const { rows: entry } = await tx.query<{ id: string }>(
-    `SELECT ledger_post($1, led_attribution_period($1), 'write_off', 'case', $2, $3, $4, $5) AS id`,
-    [marketId, c.id, `writeoff:${c.id}`, c.approval_id, JSON.stringify(lines)],
+    `SELECT ledger_post($1, $2, 'write_off', 'case', $3, $4, $5, $6) AS id`,
+    [marketId, period[0]!.id, c.id, `writeoff:${c.id}`, c.approval_id, JSON.stringify(lines)],
   )
   await recordAudit(tx, {
     action: 'LEDGER.WRITE_OFF_POSTED', objectType: 'journal_entry', objectId: entry[0]!.id,

@@ -95,9 +95,9 @@ describe('checklist and go-live request (AC-38.1, AC-53.1, T-B1-09)', () => {
     expect(statuses(view.json().data.items)).toEqual({
       licence_evidence: 'missing', payout_provider: 'missing', payment_provider: 'missing', tax_configuration: 'missing',
       agreement_versions: 'missing', data_region: 'missing', plan_variant: 'missing', breach_contacts: 'missing',
-      pack_rules: 'needs_risk_acceptance',
+      pack_rules: 'needs_risk_acceptance', migration_parallel_run: 'complete',
     })
-    expect(view.json().data.summary).toEqual({ complete: 0, missing: 8, needs_risk_acceptance: 1 })
+    expect(view.json().data.summary).toEqual({ complete: 1, missing: 8, needs_risk_acceptance: 1 })
     expect(view.json().data.items.find((i: Item) => i.item === 'data_region').detail).toEqual({ region: 'eu' })
     expect(view.json().data.items.find((i: Item) => i.item === 'pack_rules').detail.rules).toEqual([
       expect.objectContaining({ id: 'fixture-enrolment-only-bonus@2026-01-01', basis_status: 'screening', mandatory: true, source_ref: expect.any(String) }),
@@ -144,7 +144,7 @@ describe('checklist and go-live request (AC-38.1, AC-53.1, T-B1-09)', () => {
     const second = await requestGoLive()
 
     expect(licence.json().data).toMatchObject({ item: 'licence_evidence', status: 'complete', entry: { document: { file_name: 'licence.pdf', mime: 'application/pdf', size_bytes: 1024 }, recorded_by: { id: adminSigner.id } } })
-    expect(view.json().data.summary).toEqual({ complete: 8, missing: 0, needs_risk_acceptance: 1 })
+    expect(view.json().data.summary).toEqual({ complete: 9, missing: 0, needs_risk_acceptance: 1 })
     // T-B2-14: the agreement item is automatic, complete with the market's published version.
     expect(view.json().data.items.find((i: Item) => i.item === 'agreement_versions')).toMatchObject({
       kind: 'automatic', status: 'complete', entry: null, detail: { version: { id: agreement, label: 'v1' } },
@@ -155,7 +155,7 @@ describe('checklist and go-live request (AC-38.1, AC-53.1, T-B1-09)', () => {
     })
     expect(created.statusCode).toBe(201)
     expect(created.json().data).toMatchObject({ market_id: market, state: 'pending', requested_by: { id: admin.id } })
-    expect(created.json().data.checklist.items).toHaveLength(9)
+    expect(created.json().data.checklist.items).toHaveLength(10)
     expect(blockedEntry.json().error.code).toBe('GO_LIVE_PENDING')
     expect(second.json().error.code).toBe('GO_LIVE_PENDING')
     expect(await auditActions(acme.id)).toEqual(expect.arrayContaining(['MARKET.CHECKLIST_RECORDED', 'MARKET.GO_LIVE_REQUESTED']))
@@ -311,5 +311,41 @@ describe('market state guard (AC-TEN4-4, T-B1-11)', () => {
     await expect(withTenant(ctx, (tx) => tx.query(
       `INSERT INTO market (tenant_id, code, currency, minor_unit, time_zone, languages, market_pack, state)
        VALUES (app_tenant_id(), 'LU', 'EUR', 2, 'Europe/Luxembourg', '{fr}', 'none', 'live')`))).rejects.toMatchObject({ code: '42501' })
+  })
+})
+
+describe('T-B6-47 checklist item migration_parallel_run (AC-MIG2-4)', () => {
+  /** FIXTURE (MIG and IMP write these): a draft market with a loaded migration batch and a migration in `state`. */
+  async function marketWithMigration(code: string, state: 'draft' | 'applied'): Promise<{ id: string; migration: string }> {
+    const [row] = await ownerRows<{ id: string; migration: string }>(
+      `WITH k AS (INSERT INTO market (tenant_id, code, currency, minor_unit, time_zone, languages, market_pack, state)
+                  VALUES ($1, $2, 'EUR', 2, 'Europe/Vienna', '{de}', $3, 'draft') RETURNING id),
+            c AS (INSERT INTO calendar (tenant_id, market_id, name, cadence, cutoff_time_zone, first_period_start)
+                  SELECT $1, k.id, $2 || ' monthly', 'monthly', 'Europe/Vienna', '2026-01-01' FROM k RETURNING id, market_id),
+            p AS (INSERT INTO period (tenant_id, calendar_id, starts_at, ends_at)
+                  SELECT $1, c.id, '2025-12-31T23:00:00Z', '2026-01-31T23:00:00Z' FROM c RETURNING id),
+            b AS (INSERT INTO import_batch (tenant_id, market_id, kind, period_from, period_to, state, uploaded_by)
+                  SELECT $1, k.id, 'migration', '2026-01-01', '2026-01-31', 'loaded', $4 FROM k RETURNING id)
+       INSERT INTO migration (tenant_id, market_id, import_batch_id, cutover_period_id, volume_key, state, applied_counts, applied_at, created_by)
+       SELECT $1, k.id, b.id, p.id, 'pv', $5, CASE WHEN $5 = 'applied' THEN '{}'::jsonb END, CASE WHEN $5 = 'applied' THEN now() END, $4
+       FROM k, b, p RETURNING market_id AS id, id AS migration`,
+      [acme.id, code, PACK, admin.id, state],
+    )
+    return row!
+  }
+  const item = async (id: string) => (await checklist(admin, id)).json().data.items.find((i: Item) => i.item === 'migration_parallel_run')
+
+  test('an applied migration leaves the item missing with its reason; a migration cancelled as a draft does not count', async () => {
+    const applied = await marketWithMigration('AT', 'applied')
+    const cancelled = await marketWithMigration('CH', 'draft')
+    const pending = await item(cancelled.id)
+    await ownerRows("UPDATE migration SET state = 'cancelled' WHERE id = $1", [cancelled.migration])
+
+    expect(await item(applied.id)).toMatchObject({ kind: 'automatic', category: 'data', status: 'missing', entry: null })
+    expect((await requestGoLive(admin, applied.id)).json().error.details.missing).toEqual(expect.arrayContaining([
+      { item: 'migration_parallel_run', title: 'Migration parallel run', reason: "The migration's parallel run is not signed off." },
+    ]))
+    expect(pending.status).toBe('missing')
+    expect((await item(cancelled.id)).status).toBe('complete')
   })
 })

@@ -9,8 +9,9 @@ export interface PeriodDates { readonly starts_at: Date; readonly ends_at: Date 
 export interface ExplanationInput {
   readonly line: { readonly id: string; readonly run_id: string; readonly amount_minor: string; readonly currency: string }
   readonly trace: Trace
-  readonly rule: { readonly key: string; readonly name: string | null }
+  readonly rule: { readonly key: string; readonly name: string }
   readonly period: PeriodDates
+  readonly timeZone: string // the market's zone: dates in the text are its calendar days (BUG-112)
   readonly origin: { readonly kind: OriginKind; readonly original_period: (PeriodDates & { readonly id: string }) | null } | null
   readonly minorDigits: number
 }
@@ -94,7 +95,32 @@ function stepText(step: Exclude<TraceStep, { step: 'rounding' }>, digits: number
   return `Points converted at ${step.factor}: ${raw(step.beforeRaw)} becomes ${raw(step.afterRaw)}.`
 }
 
-const day = (at: Date): string => at.toISOString().slice(0, 10)
+/** The calendar day (YYYY-MM-DD) of an instant in the market's zone (BUG-112). */
+export const marketDay = (at: Date, timeZone: string): string =>
+  new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(at)
+
+// shortcut: plan rules carry no distributor-facing name, so a rule is named by its key in words (common volume
+// abbreviations spelled out), as the web portal does (BUG-119); use the plan's display names once rules have them.
+const KEY_WORDS: Readonly<Record<string, string>> = {
+  pv: 'personal volume', gv: 'group volume', bv: 'business volume', cv: 'commissionable volume', qv: 'qualifying volume', ov: 'organisation volume',
+}
+
+/** "unilevel" → "Unilevel", "capped_pv" → "Capped personal volume". */
+export function ruleName(key: string): string {
+  const words = key.split('_').filter((word) => word !== '').map((word) => KEY_WORDS[word] ?? word).join(' ')
+  return words.charAt(0).toUpperCase() + words.slice(1)
+}
+
+/** A rate as a percentage by string arithmetic: "0.08" → "8 %", "0.125" → "12.5 %"; anything else unchanged. */
+export function percentText(rate: string): string {
+  const match = /^(-?)(\d+)(?:\.(\d+))?$/.exec(rate)
+  if (match === null) return rate
+  const [, sign, whole, fraction = ''] = match
+  const digits = fraction.padEnd(2, '0')
+  const integer = `${whole}${digits.slice(0, 2)}`.replace(/^0+(?=\d)/, '')
+  const rest = digits.slice(2).replace(/0+$/, '')
+  return `${sign}${integer}${rest === '' ? '' : `.${rest}`} %`
+}
 
 export type Explanation = ReturnType<typeof explainLine>
 
@@ -104,6 +130,9 @@ export type Explanation = ReturnType<typeof explainLine>
  */
 export function explainLine(input: ExplanationInput) {
   const { trace, minorDigits: digits } = input
+  const day = (at: Date): string => marketDay(at, input.timeZone)
+  // A period's ends_at is exclusive: the text names the last market day it includes.
+  const span = (p: PeriodDates): string => `${day(p.starts_at)} to ${day(new Date(p.ends_at.getTime() - 1))}`
   const intro = TEMPLATES[trace.kind]
   const template = intro === undefined ? 'generic' : trace.kind.replace(/^pay\./, '')
   const parts = partsOf(trace, digits)
@@ -116,13 +145,13 @@ export function explainLine(input: ExplanationInput) {
   const origin = input.origin
   const text = [
     intro ?? `This bonus (${trace.kind}) was calculated from the inputs below.`,
-    `Rule: ${input.rule.name ?? input.rule.key}.`,
+    `Rule: ${input.rule.name}.`,
     ...(ranks === '' ? [] : [`Rank used: ${ranks}.`]),
-    `Period: ${day(input.period.starts_at)} to ${day(input.period.ends_at)}.`,
-    ...parts.map((p) => `${p.label}: ${p.count} ${p.count === 1 ? 'source' : 'sources'}${p.base === null ? '' : `, base ${p.base}`}${p.rate === null ? '' : `, rate ${p.rate}`}, contribution ${p.contribution}.`),
+    `Period: ${span(input.period)}.`,
+    ...parts.map((p) => `${p.label}: ${p.count} ${p.count === 1 ? 'source' : 'sources'}${p.base === null ? '' : `, base ${p.base}`}${p.rate === null ? '' : `, rate ${percentText(p.rate)}`}, contribution ${p.contribution}.`),
     ...steps.map((s) => s.text),
     ...(rounding === null ? [] : [`Rounded ${rounding.mode.replace('_', ' ')}: ${rounding.before} to ${rounding.after}.`]),
-    ...(origin === null ? [] : [`Origin: ${origin.kind.replace('_', ' ')}${origin.original_period === null ? '' : ` of the period ${day(origin.original_period.starts_at)} to ${day(origin.original_period.ends_at)}`}.`]),
+    ...(origin === null ? [] : [`Origin: ${origin.kind.replace('_', ' ')}${origin.original_period === null ? '' : ` of the period ${span(origin.original_period)}`}.`]),
     `Amount: ${amount} ${input.line.currency}.`,
   ]
   return {

@@ -106,7 +106,7 @@ describe('T-B5-11 statements (FR-DIST-001, D-B5-07)', () => {
     const list = await asPortal(pa, (tx) => listStatements(tx, pa.participantId, undefined, undefined, 12))
     expect(list).toEqual([{
       run_id: runId, period: { id: w.periods[0]!.id, starts_at: w.periods[0]!.starts_at, ends_at: w.periods[0]!.ends_at, state: 'committed' },
-      market: { code: 'DE', currency: 'EUR', minor_unit: 2 }, committed_at: expect.any(Date), net_minor: '1500', payout_state: 'none',
+      market: { code: 'DE', currency: 'EUR', minor_unit: 2, time_zone: 'Europe/Berlin' }, committed_at: expect.any(Date), net_minor: '1500', payout_state: 'none',
     }])
     expect(await asPortal(pa, (tx) => listStatements(tx, pa.participantId, randomUUID(), undefined, 12))).toEqual([])
     expect(await asPortal(pd, (tx) => listStatements(tx, pd.participantId, undefined, undefined, 12))).toEqual([])
@@ -121,7 +121,7 @@ describe('T-B5-11 statements (FR-DIST-001, D-B5-07)', () => {
     expect(statement.positions.map((p) => [p.position_ref, p.total_minor, p.bonuses.map((b) => [b.rule_key, b.total_minor])]))
       .toEqual([['DE-A', '500', [['rank_bonus', '500']]], ['DE-A2', '1000', [['rank_bonus', '1000']]]])
     expect(statement.positions[0]!.paid_as).toEqual([{ ladder: 'main', rank: 'R1' }])
-    expect(statement.positions[0]!.bonuses[0]!.rule_name).toMatch(/gv/)
+    expect(statement.positions[0]!.bonuses[0]!.rule_name).toBe('Rank bonus') // BUG-119: the rule key in words
     expect(statement).toMatchObject({
       person_total_minor: '1500', disclosure_url: null,
       summary: { gross_minor: '1500', adjustment_minor: '0', clawback_minor: '0', withheld_minor: '0', net_minor: '1500' },
@@ -141,9 +141,11 @@ describe('T-B5-11 statements (FR-DIST-001, D-B5-07)', () => {
     await expect(asPortal(pd, (tx) => statementDetail(tx, a.participantId, runId, log))).rejects.toMatchObject({ statusCode: 404 })
   })
 
-  test('AC-DIST1-3: the CSV carries the JSON figures as decimals and is audited', async () => {
+  test('AC-DIST1-3: the CSV carries the JSON figures as decimals and is audited; BUG-112: named by the Berlin start day', async () => {
     const file = await asPortal(pa, (tx) => statementCsv(tx, pa.participantId, runId, log))
-    expect(file.name).toBe(`statement-${w.periods[0]!.starts_at.toISOString().slice(0, 10)}.csv`)
+    const berlinDay = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Berlin', year: 'numeric', month: '2-digit', day: '2-digit' }).format(w.periods[0]!.starts_at)
+    expect(berlinDay).toMatch(/-01$/)
+    expect(file.name).toBe(`statement-${berlinDay}.csv`)
     const rows = file.csv.trim().split('\r\n').map((row) => row.split(','))
     expect(rows[0]).toEqual(['record', 'position_ref', 'rule_key', 'line_id', 'origin_kind', 'original_period_id', 'amount', 'currency'])
     expect(rows.filter((r) => r[0] !== 'line').map((r) => [r[0], r[1], r[6]])).toEqual([
@@ -226,7 +228,7 @@ describe('T-B5-30 dispute lifecycle (FR-CAS-003, D-B5-15, TS-59 dispute part)', 
     expect(stored).toEqual({ state: 'submitted', trace_equal: true, opened_by: pa.id, market_id: w.marketId, days: 10, reason_code: 'DISTRIBUTOR_DISPUTE' })
     const detail = await call(app, { method: 'GET', url: `/v1/cases/${disputeId}`, as: w.analyst })
     expect(detail.statusCode, detail.body).toBe(200)
-    expect(detail.json().data).toMatchObject({ type: 'dispute', payload: { line_id: lineId, message: 'The rate should be 10 %.' }, effect_preview: { line: { id: lineId, amount_minor: '500' }, position: { position_ref: 'DE-A' } } })
+    expect(detail.json().data).toMatchObject({ type: 'dispute', payload: { line_id: lineId, message: 'The rate should be 10 %.' }, effect_preview: { line: { id: lineId, amount_minor: '500', rule_name: 'Rank bonus' }, position: { position_ref: 'DE-A' } } })
     expect(await asPortal(pa, (tx) => disputeDetail(tx, pa.participantId, disputeId))).toMatchObject({
       case_id: disputeId, line_id: lineId, run_id: runId, amount_minor: '500', state: 'opened', overdue: false, explanation: null,
     })

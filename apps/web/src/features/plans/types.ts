@@ -267,3 +267,47 @@ export interface PeriodItem {
   readonly cut_off_passed: boolean
   readonly state: string
 }
+
+export type FilingStatus = 'filed' | 'acknowledged' | 'not_required'
+export type GovernanceKey = 'simulation' | 'goldens' | 'guardrails' | 'transitions' | 'filing' | 'notice' | 'approvals'
+
+/** A plan_version_filing row (insert-only; the newest per market is the status). */
+export interface Filing {
+  readonly id: string
+  readonly market_id: string
+  readonly status: FilingStatus
+  readonly reference: string | null
+  /** YYYY-MM-DD */
+  readonly filed_on: string | null
+  readonly document_id: string | null
+  readonly note: string | null
+  readonly recorded_by: { readonly id: string; readonly display_name: string | null }
+  readonly recorded_at: string
+}
+
+export interface ApprovalRecord {
+  readonly by: { readonly id: string; readonly display_name: string | null }
+  readonly at: string
+}
+
+/** GET /v1/plans/:id/versions/:v/governance (PLAN B6 §2.1, SC-44). */
+export interface Governance {
+  readonly version: {
+    readonly id: string
+    readonly version: number
+    readonly state: VersionState
+    readonly effective_from: string | null
+    readonly notice_sent_at: string | null
+    readonly notice_recipients: number | null
+  }
+  readonly items: readonly { readonly key: GovernanceKey; readonly ok: boolean; readonly reason: string | null; readonly details: unknown }[]
+  readonly filings: readonly {
+    readonly market: { readonly id: string; readonly code: string }
+    readonly required: boolean
+    readonly current: Filing | null
+    readonly history: readonly Filing[]
+  }[]
+  readonly notice: { readonly days: number | null; readonly earliest_effective_from: string | null; readonly sent_at: string | null; readonly recipients: number | null }
+  readonly approvals: { readonly compliance: ApprovalRecord | null; readonly activation: ApprovalRecord | null }
+  readonly first_run_id: string | null
+}

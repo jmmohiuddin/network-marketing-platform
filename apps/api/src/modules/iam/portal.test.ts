@@ -95,6 +95,19 @@ describe('portal accounts on participants (T-B5-01, AC-IAM7-1)', () => {
     expect(await auditActions(acme.id)).toEqual(expect.arrayContaining(['PORTAL_ACCOUNT.INVITED', 'USER.ACTIVATED']))
   })
 
+  test('BUG-112: the mail states the expiry as a readable time in the tenant\'s first market zone, named, not an ISO instant', async () => {
+    const member = await portalMember(acme.id, de)
+    await invite(member.id)
+    await runQueuedJobs(sendInvitationJob)
+    const [mail] = await mailsTo(member.email!)
+    const [invitation] = await ownerRows<{ expires_at: Date }>(
+      'SELECT i.expires_at FROM user_invitation i JOIN user_account u ON u.id = i.user_id WHERE u.email = $1', [member.email])
+    const readable = new Intl.DateTimeFormat('en-US', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Europe/London' }).format(invitation!.expires_at)
+
+    expect(mail).toContain(`It works once, until ${readable} (Europe/London):`)
+    expect(mail).not.toMatch(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/)
+  })
+
   test('a second invitation is 409 PORTAL_ACCOUNT_EXISTS; another member with the same email is 409 PORTAL_EMAIL_IN_USE', async () => {
     const first = await portalMember(acme.id, de)
     const sharing = await portalMember(acme.id, de, { email: first.email })

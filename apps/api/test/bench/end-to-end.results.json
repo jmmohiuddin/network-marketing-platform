@@ -42,6 +42,19 @@
       "write_flip_ms": 113993,
       "total_ms": 134503,
       "rss_mb": 755
+    },
+    {
+      "measured_at": "2026-11-20T06:23:18.885Z",
+      "positions": 100000,
+      "orders": 100000,
+      "lines": 150000,
+      "request_ms": 3026,
+      "snapshot_load_store_ms": 19562,
+      "engine_ms": 1689,
+      "write_flip_ms": 30893,
+      "total_ms": 55170,
+      "rss_mb": 305,
+      "peak_rss_mb": 837
     }
   ]
 }

@@ -1,10 +1,11 @@
 // Local development data (nmp_dev) and the browser-test seed (nmp_e2e, `pnpm --filter @nmp/api seed:e2e`): two
 // independent vendor operators with MFA (BUG-031: bootstrap users, no inviter, so either can be the other's second
 // person) and two tenants with staff (no MFA: their forced enrolment is part of the browser test). nmp_e2e also gets the
-// labelled fixture market pack and markets (PLAN B1, B2, B3 and B4 section 6).
+// labelled fixture market pack and markets (PLAN B1, B2, B3, B4 and B6 section 6).
 // Idempotent: existing rows are kept and their passwords are not changed. Refuses production, any database but the
 // local ones, and any database server not on this machine.
 import { randomBytes, randomUUID } from 'node:crypto'
+import { mkdir, writeFile } from 'node:fs/promises'
 import { closePool, withSystem, type Tx } from '@nmp/db'
 import { closeOwnerPool, getOwnerPool } from '@nmp/db/testing'
 import { pathToFileURL } from 'node:url'
@@ -397,6 +398,87 @@ async function fixtureBankDetail(owner: ReturnType<typeof getOwnerPool>, secretK
   )
 }
 
+/**
+ * PLAN B6 section 6, E2E FIXTURE: acme's market AT in implementation (draft, owner connection) with a Vienna monthly
+ * calendar from three months before this month to three months ahead (all open), and the structure settings version as
+ * of its first period (BUG-085). No participants, plans or orders: the migration workflows import them. Idempotent:
+ * skipped once the AT calendar exists.
+ */
+export async function seedFixtureMigrationMarket(expectedDatabase: string): Promise<void> {
+  const owner = await ownerOn(expectedDatabase, 'migration market')
+  await owner.query(
+    `INSERT INTO market (tenant_id, code, currency, minor_unit, time_zone, languages, market_pack, state)
+     SELECT t.id, 'AT', 'EUR', 2, 'Europe/Vienna', '{de}', $1, 'draft' FROM tenant t WHERE t.slug = 'acme'
+     ON CONFLICT DO NOTHING`,
+    [E2E_FIXTURE_PACK],
+  )
+  const { rows } = await owner.query<{ id: string }>(`SELECT id FROM tenant WHERE slug = 'acme'`)
+  await runInTenant({ tenantId: rows[0]!.id, userId: SYSTEM_ACTOR_ID }, SYSTEM, async (tx) => {
+    if ((await tx.query(`SELECT 1 FROM calendar WHERE name = 'AT monthly'`)).rowCount !== 0) return
+    const { rows: [calendar] } = await tx.query<{ id: string }>(
+      `INSERT INTO calendar (tenant_id, market_id, name, cadence, cutoff_time_zone, first_period_start)
+       SELECT app_tenant_id(), m.id, 'AT monthly', 'monthly', 'Europe/Vienna',
+              (date_trunc('month', now() AT TIME ZONE 'Europe/Vienna') - interval '3 months')::date
+       FROM market m WHERE m.code = 'AT' RETURNING id`,
+    )
+    await tx.query(
+      `INSERT INTO period (tenant_id, calendar_id, starts_at, ends_at)
+       SELECT app_tenant_id(), c.id, d AT TIME ZONE c.cutoff_time_zone, (d + interval '1 month') AT TIME ZONE c.cutoff_time_zone
+       FROM calendar c
+       CROSS JOIN generate_series(c.first_period_start::timestamp, c.first_period_start::timestamp + interval '6 months',
+                                  interval '1 month') AS d
+       WHERE c.id = $1`,
+      [calendar!.id],
+    )
+    const { rows: [first] } = await tx.query<{ starts_at: Date }>('SELECT min(starts_at) AS starts_at FROM period WHERE calendar_id = $1', [calendar!.id])
+    const { rows: [admin] } = await tx.query<{ id: string }>(`SELECT id FROM user_account WHERE email = 'admin@acme.example'`)
+    await asSelf(tx, admin!.id, () => recordStructureChange(tx, `${FIXTURE_DE}: market AT and its calendar`, first!.starts_at))
+  })
+}
+
+/** The three ended AT months M-3, M-2, M-1 as YYYY-MM (the cutover C is M-1). */
+export interface MigrationMonths {
+  readonly m3: string
+  readonly m2: string
+  readonly m1: string
+}
+
+/**
+ * PLAN B6 section 6: the migration workflow's files for market AT (pseudonymous ids, the overlay validator's columns; type
+ * code FXDIST, purpose code personal, source kinds as their platform codes). opening_balances.csv sums to 950 (the
+ * control_total_minor the workflow sends).
+ */
+export function migrationFixtureFiles({ m3, m2, m1 }: MigrationMonths): Readonly<Record<string, string>> {
+  const participants = (cycle: boolean) =>
+    `participant_id,type,enrolled_month,sponsor_id\nAT-A,FXDIST,${m3},${cycle ? 'AT-C' : ''}\nAT-B,FXDIST,${m3},AT-A\nAT-C,FXDIST,${m3},AT-B\n`
+  return {
+    'participants.csv': participants(false),
+    'participants-cycle.csv': participants(true),
+    'orders.csv': 'order_id,month,day,buyer_id,amount_cents,volume_cents,purpose,is_starter_kit,refunded_cents,refund_month\n'
+      + `AT-O0,${m2},10,AT-A,10000,10000,personal,0,0,\nAT-O1,${m1},5,AT-A,10000,10000,personal,0,0,\n`
+      + `AT-O2,${m1},6,AT-B,10000,10000,personal,0,0,\nAT-O3,${m1},7,AT-C,30000,30000,personal,0,0,\n`,
+    'payout_lines.csv': 'line_id,month,payee_id,bonus_type,source_kind,source_order_id,amount_cents\n'
+      + `L1,${m1},AT-A,unilevel,downline_volume,AT-O2,800\nL2,${m1},AT-A,unilevel,downline_volume,AT-O3,1500\n`
+      + `L3,${m1},AT-B,unilevel,downline_volume,AT-O3,2401\nL4,${m1},AT-C,retail,other,,500\n`,
+    'opening_balances.csv': 'payee_id,amount_minor\nAT-A,1250\nAT-C,-300\n',
+    'opening_state.csv': 'participant_id,item,value\nAT-A,title.main,R1\n',
+  }
+}
+
+/** Writes the migration files into dir (repo var/e2e/b6-migration/ by default), months from AT's zone now. */
+export async function writeMigrationFixtureFiles(
+  expectedDatabase: string, dir = new URL('../../../var/e2e/b6-migration/', import.meta.url),
+): Promise<void> {
+  const owner = await ownerOn(expectedDatabase, 'migration files')
+  const { rows: [months] } = await owner.query<MigrationMonths>(
+    `SELECT to_char(m - interval '3 months', 'YYYY-MM') AS m3, to_char(m - interval '2 months', 'YYYY-MM') AS m2,
+            to_char(m - interval '1 month', 'YYYY-MM') AS m1
+     FROM (SELECT date_trunc('month', now() AT TIME ZONE 'Europe/Vienna') AS m) t`,
+  )
+  await mkdir(dir, { recursive: true })
+  for (const [name, content] of Object.entries(migrationFixtureFiles(months!))) await writeFile(new URL(name, dir), content)
+}
+
 // The seed creates known staff accounts: only the local databases of PROJECT_ENGINEERING_CONTEXT may get them.
 const SEEDABLE_DATABASES: ReadonlySet<string> = new Set(['nmp_dev', 'nmp_test', 'nmp_test_1', 'nmp_test_2', 'nmp_test_3', 'nmp_test_4', 'nmp_test_5', 'nmp_test_6', 'nmp_e2e'])
 // A fixed password (SEED_PASSWORD) makes every seeded account known: development and browser-test databases only.
@@ -458,8 +540,11 @@ export async function seed(config: Config, password: string | undefined, print: 
     await seedFixturePack(E2E_DATABASE)
     await seedFixtureMarket(E2E_DATABASE)
     await seedFixturePlanMarket(E2E_DATABASE, config.secretKey)
+    await seedFixtureMigrationMarket(E2E_DATABASE)
+    await writeMigrationFixtureFiles(E2E_DATABASE)
     print(`market pack: ${E2E_FIXTURE_PACK} (fixture), acme market NL live with committed past periods (fixture)`)
     print('acme market DE live with DE-A, DE-B, DE-C, DE-K and SKU FX-1, DE-A bank details, no plan yet (fixture)')
+    print('acme market AT in implementation, migration files in var/e2e/b6-migration/ (fixture)')
   }
   if (created && password === undefined) print(`password of the accounts created now: ${effective}`)
 }

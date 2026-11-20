@@ -78,6 +78,7 @@ describe('OrdersPage (SC-31)', () => {
       'GET /v1/orders/summary': () => ok({ orders: 12, held: 2, late_pending: 1, purpose_missing: 3, attribution_conflict: 4 }),
       'GET /v1/orders': () => ok([{ ...ORDER, events: 1, late: true }]),
       'GET /v1/orders/o1': () => ok(ORDER),
+      'GET /v1/saved-views': () => ok([]),
     })
     renderAs(ANALYST, <OrdersPage />, fetchMock)
     const kpis = await screen.findByTestId('kpis')
@@ -98,6 +99,7 @@ describe('OrdersPage (SC-31)', () => {
       'GET /v1/markets': () => ok([MARKET]),
       'GET /v1/orders/summary': () => apiError(500, 'INTERNAL', 'Something went wrong.'),
       'GET /v1/orders': () => ok([]),
+      'GET /v1/saved-views': () => ok([]),
     })
     renderAs(ANALYST, <OrdersPage />, fetchMock)
     expect(await screen.findByRole('button', { name: 'Try again' })).toBeTruthy()

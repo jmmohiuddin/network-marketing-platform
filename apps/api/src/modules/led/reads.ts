@@ -89,7 +89,7 @@ export async function listAccounts(tx: Tx, scope: Scope, filter: AccountFilter, 
 
 const ENTRY_SELECT = `
   SELECT e.id, e.market_id, e.event_type, e.origin_type, e.origin_id, e.idempotency_key, e.period_id, p.starts_at, p.ends_at, e.posted_at,
-         e.posted_at::text AS at, au.id AS approver_id, au.display_name AS approver_name
+         e.posted_at::text AS at, e.approval_id, au.id AS approver_id, au.display_name AS approver_name
   FROM journal_entry e JOIN period p ON p.id = e.period_id
   LEFT JOIN approval ap ON ap.id = e.approval_id LEFT JOIN user_account au ON au.id = ap.approver_id`
 
@@ -105,6 +105,7 @@ interface EntryRow {
   ends_at: Date
   posted_at: Date
   at: string
+  approval_id: string | null
   approver_id: string | null
   approver_name: string | null
 }
@@ -143,21 +144,39 @@ export interface EntryFilter {
   readonly origin_id?: string | undefined
 }
 
-/** GET /v1/ledger/entries, newest first. */
-export async function listEntries(tx: Tx, scope: Scope, filter: EntryFilter, after: TimeCursor | undefined, limit: number) {
-  const { rows } = await tx.query<EntryRow & { debit_total_minor: string; posting_count: number }>(
-    `SELECT q.*, t.d::text AS debit_total_minor, t.n AS posting_count
+/** D-B6-08 list sorts; the cursor carries the sort value (posted_at text) and the id. */
+export const ENTRY_SORTS = ['posted_at_desc', 'posted_at_asc'] as const
+export type EntrySort = (typeof ENTRY_SORTS)[number]
+
+const ENTRY_FILTER = `${IN_SCOPE('e.market_id', 1)} AND ($2::uuid IS NULL OR e.market_id = $2) AND ($3::uuid IS NULL OR e.period_id = $3)
+  AND ($4::text IS NULL OR e.origin_type = $4) AND ($5::uuid IS NULL OR e.origin_id = $5)`
+const filterParams = (scope: Scope, filter: EntryFilter) =>
+  [scope, filter.market_id ?? null, filter.period_id ?? null, filter.origin_type ?? null, filter.origin_id ?? null]
+
+/** GET /v1/ledger/entries (and its export: every row when `limit` is null), in `sort` order. */
+export async function listEntries(tx: Tx, scope: Scope, filter: EntryFilter, sort: EntrySort, after: TimeCursor | undefined, limit: number | null) {
+  const [dir, past] = sort === 'posted_at_desc' ? ['DESC', '<'] : ['ASC', '>']
+  const { rows } = await tx.query<EntryRow & { market_code: string; minor_digits: number; debit_total_minor: string; credit_total_minor: string; posting_count: number }>(
+    `SELECT q.*, m.code AS market_code, m.minor_unit::int AS minor_digits, t.d::text AS debit_total_minor, t.c::text AS credit_total_minor,
+            t.n AS posting_count
      FROM (${ENTRY_SELECT}
-           WHERE ${IN_SCOPE('e.market_id', 1)} AND ($2::uuid IS NULL OR e.market_id = $2) AND ($3::uuid IS NULL OR e.period_id = $3)
-             AND ($4::text IS NULL OR e.origin_type = $4) AND ($5::uuid IS NULL OR e.origin_id = $5)
-             AND ($6::timestamptz IS NULL OR (e.posted_at, e.id) < ($6, $7::uuid))
-           ORDER BY e.posted_at DESC, e.id DESC LIMIT $8) q
-     CROSS JOIN LATERAL (SELECT sum(x.debit_minor) AS d, count(*)::int AS n FROM posting x WHERE x.entry_id = q.id) t
-     ORDER BY q.posted_at DESC, q.id DESC`,
-    [scope, filter.market_id ?? null, filter.period_id ?? null, filter.origin_type ?? null, filter.origin_id ?? null, after?.at ?? null,
-      after?.id ?? null, limit + 1],
+           WHERE ${ENTRY_FILTER} AND ($6::timestamptz IS NULL OR (e.posted_at, e.id) ${past} ($6, $7::uuid))
+           ORDER BY e.posted_at ${dir}, e.id ${dir} LIMIT $8) q
+     JOIN market m ON m.id = q.market_id
+     CROSS JOIN LATERAL (SELECT sum(x.debit_minor) AS d, sum(x.credit_minor) AS c, count(*)::int AS n FROM posting x WHERE x.entry_id = q.id) t
+     ORDER BY q.posted_at ${dir}, q.id ${dir}`,
+    [...filterParams(scope, filter), after?.at ?? null, after?.id ?? null, limit === null ? null : limit + 1],
   )
-  return rows.map((row) => ({ ...entryView(row), at: row.at, debit_total_minor: row.debit_total_minor, posting_count: row.posting_count }))
+  return rows.map((row) => ({
+    ...entryView(row), at: row.at, market: { id: row.market_id, code: row.market_code, minor_digits: row.minor_digits }, approval_id: row.approval_id,
+    debit_total_minor: row.debit_total_minor, credit_total_minor: row.credit_total_minor, posting_count: row.posting_count,
+  }))
+}
+
+/** Entries matching the filter (the export's row count, checked against the cap before anything is read). */
+export async function countEntries(tx: Tx, scope: Scope, filter: EntryFilter): Promise<number> {
+  const { rows } = await tx.query<{ n: number }>(`SELECT count(*)::int AS n FROM journal_entry e WHERE ${ENTRY_FILTER}`, filterParams(scope, filter))
+  return rows[0]!.n
 }
 
 /** GET /v1/ledger/entries/:id: the entry and one page of its postings (cursor = posting id). */

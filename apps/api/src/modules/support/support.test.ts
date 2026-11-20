@@ -83,6 +83,7 @@ describe('GET /v1/support-sessions/limits', () => {
       'restatement.approve', 'override.approve', 'payout.prepare', 'payout.approve', 'payout.reconcile', 'payout.hold', 'ledger.export',
       'tax.manage', 'case.adjustment.create', 'case.adjustment.approve', 'case.write_off.create', 'case.write_off.approve',
       'case.bank_detail.create', 'case.bank_detail.approve', 'case.returned_payment.create', 'case.dispute.approve',
+      'export.full', 'migration.manage', 'migration.signoff', 'period.close',
     ]
     expect(limits.json().data).toEqual({ max_minutes: 480, scopes: PERMISSIONS.filter((permission) => !excluded.includes(permission)) })
     expect(scopes).toEqual(expect.arrayContaining(['market.manage', 'ledger.read', 'payout.read', 'case.write_off.read']))

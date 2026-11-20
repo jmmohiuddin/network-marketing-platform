@@ -132,3 +132,60 @@ export interface SyncHealth {
   readonly sources: readonly SyncSource[]
   readonly thresholds: { readonly behind_after_minutes: number; readonly failing_after_minutes: number } | null
 }
+
+export type FullExportState = 'queued' | 'running' | 'completed' | 'failed' | 'expired'
+
+/** GET /v1/exports rows (API-32, PLAN B6 2.3). */
+export interface FullExport {
+  readonly id: string
+  readonly trigger: 'manual' | 'schedule'
+  readonly state: FullExportState
+  readonly model_version: number
+  readonly snapshot_at: string | null
+  readonly table_count: number | null
+  readonly total_rows: number | null
+  readonly created_at: string
+  readonly finished_at: string | null
+  readonly requested_by: { readonly id: string; readonly type: string } | null
+  readonly error: { readonly code: string } | null
+}
+
+export interface ManifestTable {
+  readonly name: string
+  readonly file: string
+  readonly rows: number
+  readonly bytes: number
+  readonly sha256: string
+}
+
+/** GET /v1/exports/:id: the row, its signed manifest (more keys than shown: all of them are signed) and the Ed25519 signature (base64). */
+export interface FullExportDetail extends FullExport {
+  readonly manifest: { readonly tables: readonly ManifestTable[]; readonly snapshot_at: string; readonly generated_at: string } | null
+  readonly signature: string | null
+}
+
+export interface ExcludedTable {
+  readonly name: string
+  readonly reason: string
+}
+
+/** GET /v1/exports/model: the published data model. */
+export interface ExportModel {
+  readonly version: number
+  readonly tables: readonly { readonly name: string; readonly schema: string; readonly columns: readonly { readonly name: string; readonly type: string }[] }[]
+  readonly excluded_tables: readonly ExcludedTable[]
+  readonly excluded_columns: readonly { readonly table: string; readonly column: string; readonly reason: string }[]
+}
+
+/** GET /v1/exports/signing-key. */
+export interface SigningKey {
+  readonly algorithm: string
+  readonly public_key: string
+  readonly key_id: string
+}
+
+/** exports.full_schedule (D-B6-17): UTC; weekly = Mondays, monthly = the 1st. */
+export interface FullSchedule {
+  readonly cadence: 'daily' | 'weekly' | 'monthly'
+  readonly hour_utc: number
+}

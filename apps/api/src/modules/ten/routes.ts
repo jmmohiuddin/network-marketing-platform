@@ -29,8 +29,9 @@ const withdrawBody = z.strictObject({ reason: reasonField })
 const changeRequestQuery = z.strictObject({ state: z.enum(['pending', 'all']).default('pending'), ...pageQuery })
 const versionsQuery = z.strictObject(pageQuery)
 const IF_MATCH = /^(?:W\/)?"?(\d{1,9})"?$/
-// privacy.manage: the DPO reads and decides genealogy.visibility_policy (D-B2-08).
-const SETTINGS_READERS = ['settings.manage', 'settings.approve', 'privacy.manage'] as const
+// privacy.manage: the DPO reads and decides genealogy.visibility_policy (D-B2-08); market.signoff: the approver of
+// plan.filing_requirements (D-B6-02, BUG-121). Each reader sees only the keys canReadSetting gives it.
+const SETTINGS_READERS = ['settings.manage', 'settings.approve', 'privacy.manage', 'market.signoff'] as const
 const APPROVER_PERMISSIONS = [...new Set(Object.values(SETTINGS).flatMap((definition): Permission[] =>
   definition.approverPermission === null ? [] : [definition.approverPermission]))]
 

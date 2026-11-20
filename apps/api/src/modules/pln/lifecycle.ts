@@ -124,6 +124,11 @@ async function assertSchedulable(tx: Tx, plan: PlanRow, version: VersionRow, eff
     const { rows } = await tx.query<{ short: boolean }>('SELECT $1::timestamptz < now() + make_interval(days => $2) AS short', [effectiveFrom, noticeDays])
     if (rows[0]!.short) refuse('NOTICE_PERIOD_NOT_MET', `Plan changes need ${noticeDays} days' notice.`, { notice_days: noticeDays })
   }
+  // D-B6-02 (a): every plan market plan.filing_requirements names needs a filing row for this version.
+  const { rows: filings } = await tx.query<{ missing: string[] }>('SELECT plan_filing_missing($1) AS missing', [version.id])
+  if (filings[0]!.missing.length > 0) {
+    refuse('FILING_STATUS_MISSING', 'Record the filing status of every market that requires one first.', { market_ids: filings[0]!.missing })
+  }
   await assertCreditingConsistent(tx, plan, version, effectiveFrom)
   const { rows: simulated } = await tx.query<{ ok: boolean }>('SELECT plan_version_simulated($1) AS ok', [version.id])
   if (!simulated[0]!.ok) refuse('SIMULATION_REQUIRED', 'Run a simulation of this exact version before scheduling it.')
@@ -133,13 +138,17 @@ async function assertSchedulable(tx: Tx, plan: PlanRow, version: VersionRow, eff
 
 /**
  * BR-PER-02: a past effective time must not re-credit orders already ingested under another crediting event, and no
- * other plan covering a market may be in force at an overlapping instant with another crediting event.
+ * other plan covering a market may be in force at an overlapping instant with another crediting event. The retired
+ * orders.crediting_event is read as history (how pre-B6 orders were credited, D-B6-05); migrated orders were credited at
+ * their legacy date and are not compared (D-B6-10); they are known by their server-built inbound event, not by the
+ * client-chosen source_system.
  */
 async function assertCreditingConsistent(tx: Tx, plan: PlanRow, version: VersionRow, effectiveFrom: string): Promise<void> {
   const fallback = await getSetting(tx, 'orders.crediting_event')
   const { rows: ingested } = await tx.query<{ market_id: string }>(
     `SELECT pm.market_id FROM plan_market pm WHERE pm.plan_id = $1 AND $2::timestamptz < now() AND EXISTS (
        SELECT 1 FROM sales_order o WHERE o.market_id = pm.market_id AND o.ordered_at >= $2::timestamptz AND o.ordered_at < now()
+         AND NOT EXISTS (SELECT 1 FROM inbound_event i WHERE i.id = o.inbound_event_id AND i.source LIKE 'migration:%')
          AND coalesce(plan_crediting_event(pm.market_id, o.ordered_at), $3) IS DISTINCT FROM $4)
      ORDER BY 1 LIMIT 1`,
     [plan.id, effectiveFrom, fallback, version.crediting_event],
@@ -225,8 +234,11 @@ export function registerLifecycleRoutes(app: FastifyInstance): void {
         [version.id, approvalId, body.effective_from, body.justification],
       )
       // D-B5-14: plan.change_scheduled to the owners of the plan's markets, in the transaction that schedules it.
-      await tx.query('SELECT notify_plan_change($1)', [version.id])
-      await recordAudit(tx, { action: 'PLAN_VERSION.SCHEDULED', objectType: 'plan_version', objectId: version.id, after: { effective_from: body.effective_from, activation_approval_id: approvalId }, reason: body.justification })
+      // D-B6-02 (c): the notice record is the schedule time and the number of notifications written.
+      const { rows: notified } = await tx.query<{ recipients: number }>('SELECT notify_plan_change($1) AS recipients', [version.id])
+      const recipients = notified[0]!.recipients
+      await tx.query('UPDATE plan_version SET notice_sent_at = now(), notice_recipients = $2 WHERE id = $1', [version.id, recipients])
+      await recordAudit(tx, { action: 'PLAN_VERSION.SCHEDULED', objectType: 'plan_version', objectId: version.id, after: { effective_from: body.effective_from, activation_approval_id: approvalId, notice_recipients: recipients }, reason: body.justification })
       await activate(tx, version.id)
       return reloaded(tx, version)
     })

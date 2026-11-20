@@ -40,10 +40,10 @@ describe('T-B3-01 POST /v1/plans, GET /v1/plans, GET /v1/plans/:id', () => {
     expect(await auditActions(w.tenantId)).toEqual(expect.arrayContaining(['PLAN.CREATED', 'PLAN_VERSION.CREATED']))
   })
 
-  test('D-B3-06: the tenant legacy placement width pre-fills the first draft', async () => {
+  test('D-B6-05: the retired genealogy.placement_width no longer pre-fills the first draft', async () => {
     await setSettings(other.tenantId, other.planadmin.id, { 'genealogy.placement_width': 3 })
     const { planId } = await newPlan(app, other)
-    expect((await get(other.planadmin, `/v1/plans/${planId}/versions/1`)).json().data.placement_width).toBe(3)
+    expect((await get(other.planadmin, `/v1/plans/${planId}/versions/1`)).json().data.placement_width).toBeNull()
   })
 
   test('refusals: validation, calendar in a plan or outside the markets, name taken, unknown market', async () => {

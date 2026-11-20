@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { RAW_SCALE, type Trace, type TraceSource, type TraceStep } from '@nmp/engine'
 import { describe, expect, test } from 'vitest'
-import { explainLine, traceFromJson } from './explanation.js'
+import { explainLine, percentText, ruleName, traceFromJson } from './explanation.js'
 import { jsonText } from './results.js'
 import { buildStatement, originKind, type StatementLine } from './statements.js'
 
@@ -27,8 +27,8 @@ function traceOf(kind: string, sources: readonly TraceSource[], omitted = { coun
 
 const input = (trace: Trace, amountMinor: string) => ({
   line: { id: randomUUID(), run_id: randomUUID(), amount_minor: amountMinor, currency: 'EUR' }, trace,
-  rule: { key: 'rule_x', name: 'Pays 10% of level 1' }, period: { starts_at: new Date('2026-09-30T22:00:00Z'), ends_at: new Date('2026-10-31T23:00:00Z') },
-  origin: null, minorDigits: 2,
+  rule: { key: 'rule_x', name: 'Rule x' }, period: { starts_at: new Date('2026-09-30T22:00:00Z'), ends_at: new Date('2026-10-31T23:00:00Z') },
+  timeZone: 'Europe/Berlin', origin: null, minorDigits: 2,
 })
 
 const KINDS = [
@@ -84,6 +84,16 @@ describe('T-B5-12 explanation templates', () => {
     expect(body.parts).toHaveLength(1)
   })
 
+  test('BUG-112 / BUG-119: dates are market-zone days, the rule is named in words and rates read as percentages', () => {
+    const body = explainLine({ ...input(traceOf('pay.percent_by_level', [source(randomUUID(), 1, 10_000n, '0.08', 800n)]), '800'),
+      rule: { key: 'unilevel', name: ruleName('unilevel') } })
+    expect(body.text).toContain('Rule: Unilevel.')
+    expect(body.text).toContain('Period: 2026-10-01 to 2026-10-31.')
+    expect(body.text).toContain('level 1: 1 source, base 100.00, rate 8 %, contribution 8.00.')
+    expect(body.parts[0]!.rate).toBe('0.08')
+    expect([ruleName('capped_pv'), percentText('0.125'), percentText('1'), percentText('rates vary')]).toEqual(['Capped personal volume', '12.5 %', '100 %', 'rates vary'])
+  })
+
   test('the stored trace text (bigints as strings) reads back as the engine trace', () => {
     const trace = traceOf('pay.flat', [source(PAYEE, 0, 1n, null, 1_000n)], { count: 0, raw: 0n }, [
       { step: 'allocation', key: 'pool', weight: 2n, totalMinor: 3_000n, afterMinor: 1_000n },
@@ -99,21 +109,21 @@ const line = (positionRef: string, amount: string, rule = 'rank_bonus', origin: 
 describe('T-B5-10 statement builder', () => {
   test('TS-22 / AC-04.1: lines grouped per position with totals 100.10, 250.25, 49.65 and person total 400.00', () => {
     const lines = [line('A', '10000'), line('A', '10', 'match'), line('B', '25025'), line('C', '4965')]
-    const statement = buildStatement(lines, { gross_minor: '40000', netted_minor: '0', withheld_minor: '0', net_payable_minor: '40000' }, new Map([['rank_bonus', 'Rank bonus']]), new Map())
+    const statement = buildStatement(lines, { gross_minor: '40000', netted_minor: '0', withheld_minor: '0', net_payable_minor: '40000' }, new Map())
     expect(statement.positions.map((p) => [p.position_ref, p.total_minor])).toEqual([['A', '10010'], ['B', '25025'], ['C', '4965']])
-    expect(statement.positions[0]!.bonuses.map((b) => [b.rule_key, b.rule_name, b.total_minor])).toEqual([['match', null, '10'], ['rank_bonus', 'Rank bonus', '10000']])
+    expect(statement.positions[0]!.bonuses.map((b) => [b.rule_key, b.rule_name, b.total_minor])).toEqual([['match', 'Match', '10'], ['rank_bonus', 'Rank bonus', '10000']])
     expect(statement).toMatchObject({ person_total_minor: '40000', invariant: true })
   })
 
   test('AC-04.2: gross, withholding, clawback, adjustment and net are separate and net = gross - withheld - clawback + adjustment', () => {
     const lines = [line('A', '10000'), line('A', '-500', 'rank_bonus', 'late_transaction'), line('A', '300', 'manual_adjustment', 'manual')]
     const settlement = { gross_minor: '9800', netted_minor: '1500', withheld_minor: '200', net_payable_minor: '8100' }
-    const statement = buildStatement(lines, settlement, new Map(), new Map())
+    const statement = buildStatement(lines, settlement, new Map())
     expect(statement.summary).toEqual({ gross_minor: '10000', adjustment_minor: '-200', clawback_minor: '1500', withheld_minor: '200', net_minor: '8100' })
     expect(statement.invariant).toBe(true)
     expect(statement.positions[0]!.bonuses[1]!.lines.map((l) => l.origin_kind)).toEqual(['none', 'refund'])
-    expect(buildStatement(lines, { ...settlement, net_payable_minor: '8000' }, new Map(), new Map()).invariant).toBe(false)
-    expect(buildStatement(lines, null, new Map(), new Map()).invariant).toBe(false)
+    expect(buildStatement(lines, { ...settlement, net_payable_minor: '8000' }, new Map()).invariant).toBe(false)
+    expect(buildStatement(lines, null, new Map()).invariant).toBe(false)
   })
 
   test('origin kinds', () => {

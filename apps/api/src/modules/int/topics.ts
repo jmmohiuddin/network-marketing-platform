@@ -60,6 +60,11 @@ export const WEBHOOK_TOPICS = [
     description: 'A payout was returned by the bank: the amount is owed again and a returned-payment case is open.',
     payload: z.object({ instruction_id: id, batch_id: id, participant_id: id, amount_minor: z.string(), case_id: id }),
   },
+  {
+    topic: 'period.closed',
+    description: 'A paid period was closed after reconciliation sign-off; its GL journal export (if it had entries) was made at close.',
+    payload: z.object({ period_id: id, calendar_id: id, market_id: id, journal_export_id: id.nullable() }),
+  },
 ] as const
 
 export type WebhookTopic = (typeof WEBHOOK_TOPICS)[number]['topic']

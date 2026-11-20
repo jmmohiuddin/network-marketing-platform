@@ -20,9 +20,9 @@ vi.mock('@nmp/engine', async (importOriginal) => {
   const engine = await importOriginal<typeof import('@nmp/engine')>()
   return {
     ...engine,
-    run: (...args: Parameters<typeof engine.run>) => {
+    runIncremental: (...args: Parameters<typeof engine.runIncremental>) => {
       if (engineFault.transient) throw Object.assign(new Error('could not serialize access due to concurrent update'), { code: '40001' })
-      return engine.run(...args)
+      return engine.runIncremental(...args)
     },
   }
 })

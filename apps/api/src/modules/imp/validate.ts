@@ -2,10 +2,10 @@ import { projectCsv, readCsv, type CsvTable } from './csv-table.js'
 import { findingLog, type Finding, type FindingLog, type ImportWarning } from './findings.js'
 import { holdsEmailAddresses, isForbiddenColumn } from './forbidden-columns.js'
 import {
-  checkOrders, checkParticipants, checkPayoutLines, type OrderCheck, type OrderRow, type ParticipantCheck,
+  checkGenealogy, checkOrders, checkParticipants, checkPayoutLines, type OrderCheck, type OrderRow, type ParticipantCheck,
   type ParticipantRow, type PayoutRow, type Period,
 } from './validate-rows.js'
-import { IMPORT_FILES, MAX_CODES, REQUIRED_COLUMNS, type ImportFile } from './vocabulary.js'
+import { IMPORT_FILES, MAX_CODES, REQUIRED_COLUMNS, type ImportFile, type ImportKind } from './vocabulary.js'
 
 /** At most this many findings are stored per batch (see FindingLog). */
 export const MAX_KEPT_FINDINGS = 10_000
@@ -153,14 +153,18 @@ const rejectedEarly = (log: FindingLog): ValidationResult => ({
 
 /**
  * Validates the three export files against the published format (FR-IMP-001, MVP_A 3.3) before anything is
- * stored. File-level problems stop the check before the rows (as the prototype). Pure: same input, same result.
+ * stored. File-level problems stop the check before the rows (as the prototype). A migration batch also gets the
+ * genealogy checks (checkGenealogy). Pure: same input, same result.
  */
-export function validateImport(files: Readonly<Record<ImportFile, Buffer>>, period: Period): ValidationResult {
+export function validateImport(files: Readonly<Record<ImportFile, Buffer>>, period: Period, kind: ImportKind): ValidationResult {
   const log = findingLog(MAX_KEPT_FINDINGS)
   const [participantTable, orderTable, payoutTable] = IMPORT_FILES.map((file) => readTable(file, files[file], log))
   if (log.total() > 0 || participantTable == null || orderTable == null || payoutTable == null) return rejectedEarly(log)
 
-  const participants = checkParticipants(participantTable, log)
+  const checked = checkParticipants(participantTable, log)
+  if (kind === 'migration') checkGenealogy(checked, log)
+  // A migration's sponsors outside the file are errors (checkGenealogy), not the overlay's warning.
+  const participants = kind === 'migration' ? { ...checked, sponsorsOutsideFile: 0 } : checked
   const orders = checkOrders(orderTable, log, participants.ids, period)
   const payoutLines = checkPayoutLines(payoutTable, log, participants.ids, orders.ids, period)
   const rowCounts = {

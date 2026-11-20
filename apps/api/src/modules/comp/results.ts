@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto'
 import type { Tx } from '@nmp/db'
-import type { PayeeSettlement, ResultLine, RunOutput } from '@nmp/engine'
+import type { MeasureValue, PayeeSettlement, QualificationStateRow, ResultLine, RunChunk, RunOutput, RunSummary } from '@nmp/engine'
 
 // Writes engine output rows with multi-row INSERT ... SELECT unnest(...) in batches inside the caller's transaction
 // (§S-2: one transaction for write + flip, measured in bench/write-path.ts).
@@ -40,12 +40,10 @@ export async function insertLines(tx: Tx, target: LineTable, ownerId: string, li
 
 /**
  * qualification_state per state row of a position of `marketId` (the calendar's market), with the position's volume
- * summary (D-B3-19). The snapshot keeps other markets' positions for cross-market sponsor chains (D-B2-21); their state
- * belongs to their own market's runs.
+ * summary measures (D-B3-19; none known = []). The snapshot keeps other markets' positions for cross-market sponsor
+ * chains (D-B2-21); their state belongs to their own market's runs.
  */
-export async function insertState(tx: Tx, runId: string, output: RunOutput, marketId: string): Promise<void> {
-  const measures = new Map(output.volumeSummaries.map((summary) => [summary.positionId, summary.measures]))
-  const rows = output.qualification
+export async function insertState(tx: Tx, runId: string, rows: readonly QualificationStateRow[], measures: ReadonlyMap<string, readonly MeasureValue[]>, marketId: string): Promise<void> {
   for (let start = 0; start < rows.length; start += BATCH) {
     const batch = rows.slice(start, start + BATCH)
     const json = (pick: (row: (typeof batch)[number]) => unknown) => batch.map((row) => jsonText(pick(row)))
@@ -81,14 +79,68 @@ export async function insertSettlement(tx: Tx, runId: string, payees: readonly P
   }
 }
 
-/** sha256 over (payee, pass, rule, origin, amount) of every line in engine order: equal lines, equal hash (G-B3-REPLAY). */
+/**
+ * sha256 over the JSON array of (payee, pass, rule, origin, amount) of every line in engine order: equal lines, equal
+ * hash (G-B3-REPLAY). Fed line by line, so a streamed run hashes its chunks as they pass (D-B6-12).
+ */
+export function linesHasher(): { readonly add: (line: ResultLine) => void; readonly digest: () => string } {
+  const h = createHash('sha256').update('[')
+  let first = true
+  return {
+    add(l) {
+      const material = [l.payeePositionId, l.pass, l.ruleKey, l.origin?.originType ?? null, l.origin?.originId ?? null, l.amountMinor]
+      h.update(first ? jsonText(material) : `,${jsonText(material)}`)
+      first = false
+    },
+    digest: () => h.update(']').digest('hex'),
+  }
+}
+
 export function linesHash(lines: readonly ResultLine[]): string {
-  const material = lines.map((l) => [l.payeePositionId, l.pass, l.ruleKey, l.origin?.originType ?? null, l.origin?.originId ?? null, l.amountMinor])
-  return createHash('sha256').update(jsonText(material)).digest('hex')
+  const h = linesHasher()
+  for (const l of lines) h.add(l)
+  return h.digest()
+}
+
+/** What tx B keeps of a streamed run once its rows are written. */
+export interface WrittenRun { readonly summary: RunSummary; readonly linesHash: string; readonly lineCount: number }
+
+/**
+ * Writes a streamed run (D-B6-12) chunk by chunk: lines, then each volume-summary chunk's state rows with their measures
+ * (state rows arrive first and are held: the engine holds them too until the summaries are out), then the settlement.
+ * Both state rows and summaries come in position id order.
+ */
+export async function writeRunOutput(tx: Tx, runId: string, marketId: string, stream: Generator<RunChunk, RunSummary, undefined>): Promise<WrittenRun> {
+  const hash = linesHasher()
+  let lineCount = 0
+  const state: QualificationStateRow[] = []
+  let written = 0
+  for (let next = stream.next(); ; next = stream.next()) {
+    if (next.done === true) {
+      await insertState(tx, runId, state.slice(written), new Map(), marketId) // rows of positions without a summary (none expected)
+      return { summary: next.value, linesHash: hash.digest(), lineCount }
+    }
+    const chunk = next.value
+    if (chunk.kind === 'lines') {
+      await insertLines(tx, RUN_LINES, runId, chunk.lines)
+      for (const l of chunk.lines) hash.add(l)
+      lineCount += chunk.lines.length
+    } else if (chunk.kind === 'qualification') {
+      state.push(...chunk.rows)
+    } else if (chunk.kind === 'summaries') {
+      const last = chunk.rows.at(-1)!.positionId
+      let end = written
+      while (end < state.length && state[end]!.positionId <= last) end += 1
+      await insertState(tx, runId, state.slice(written, end), new Map(chunk.rows.map((s) => [s.positionId, s.measures])), marketId)
+      written = end
+    } else {
+      await insertSettlement(tx, runId, chunk.rows)
+    }
+  }
 }
 
 /** run.totals / simulation.totals: control totals with every amount a decimal string (gross_minor = Σ lines). */
-export function totalsOf(output: RunOutput): Record<string, unknown> {
+export function totalsOf(output: Pick<RunOutput, 'controlTotals'>): Record<string, unknown> {
   const t = output.controlTotals
   return JSON.parse(jsonText({
     gross_minor: t.grossMinor, line_count: t.lineCount, payee_count: t.payeeCount, breakage_minor: t.breakageMinor,
@@ -97,7 +149,7 @@ export function totalsOf(output: RunOutput): Record<string, unknown> {
 }
 
 /** run.outputs: what review, replay and the transition report read (bigints as decimal strings, display/SQL only). */
-export function outputsOf(output: RunOutput, extra: Record<string, unknown> = {}): Record<string, unknown> {
+export function outputsOf(output: RunSummary, extra: Record<string, unknown> = {}): Record<string, unknown> {
   return JSON.parse(jsonText({
     result_hash: output.resultHash, warnings: output.warnings, cap_applications: output.capApplications,
     constraint_applications: output.constraintApplications, transition_report: output.transitionReport, ...extra,

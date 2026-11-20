@@ -11,6 +11,7 @@ import { DataTable, type DataTableColumn } from '../../components/data-table'
 import { useCursorPages } from '../../lib/cursor-pages'
 import { errorMessage, isNotAvailable } from '../../lib/messages'
 import { useSession } from '../../lib/session'
+import { mappingPath } from './batch-mapping'
 import { dateTime, humanize, integer, periodRange } from './format'
 import { BATCH_STATES, type Batch, type BatchState, type PageMeta } from './types'
 import { useResource } from '../../lib/use-resource'
@@ -52,7 +53,7 @@ const COLUMNS: readonly DataTableColumn<Batch>[] = [
     key: 'actions', header: 'Actions', align: 'end',
     cell: (batch) => (
       <div className="flex items-center justify-end gap-space-xs">
-        {MAPPABLE.includes(batch.state) && <LinkButton href={`/imports/mappings?batch=${batch.id}`} size="sm" icon="route">Open mapping</LinkButton>}
+        {MAPPABLE.includes(batch.state) && <LinkButton href={mappingPath(batch)} size="sm" icon="route">Open mapping</LinkButton>}
         <LinkButton href={`/imports/${batch.id}`} size="sm" icon="visibility" aria-label={`View details: ${batch.market} · ${periodRange(batch.period_from, batch.period_to)}`}>View details</LinkButton>
       </div>
     ),

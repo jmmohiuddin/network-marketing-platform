@@ -11,7 +11,6 @@ import { envelope, parse } from '../../lib/http.js'
 import { idempotent, sendIdempotent } from '../../lib/idempotency.js'
 import { decodeCursor, pageQuery, toPage } from '../../lib/pagination.js'
 import { evaluateGuardrails, PLAN_IN_SCOPE } from '../cpl/index.js'
-import { getSetting } from '../ten/index.js'
 import { loadPlan, loadVersion, planParams, sqlState, VERSION_COLUMNS, type VersionRow } from './access.js'
 import { recompile } from './content.js'
 import { versionFields } from './views.js'
@@ -101,15 +100,13 @@ export function registerPlanRoutes(app: FastifyInstance): void {
           if (sqlState(error) === '23505') throw new ApiError(409, 'CALENDAR_IN_PLAN', 'A calendar belongs to at most one plan.')
           throw error
         })
-      // D-B3-06: the tenant's own legacy width (not a shipped default) pre-fills the first draft.
-      const width = await getSetting(tx, 'genealogy.placement_width')
       const { rows: versions } = await tx.query<{ id: string }>(
-        `INSERT INTO plan_version (tenant_id, plan_id, version, engine_version, placement_width, created_by)
-         VALUES (app_tenant_id(), $1, 1, $2, $3, app_user_id()) RETURNING id`,
-        [planId, ENGINE_VERSION, width],
+        `INSERT INTO plan_version (tenant_id, plan_id, version, engine_version, created_by)
+         VALUES (app_tenant_id(), $1, 1, $2, app_user_id()) RETURNING id`,
+        [planId, ENGINE_VERSION],
       )
       await recordAudit(tx, { action: 'PLAN.CREATED', objectType: 'plan', objectId: planId, after: { name: body.name, market_ids: body.market_ids, calendar_ids: body.calendar_ids } })
-      await recordAudit(tx, { action: 'PLAN_VERSION.CREATED', objectType: 'plan_version', objectId: versions[0]!.id, after: { plan_id: planId, version: 1, placement_width: width } })
+      await recordAudit(tx, { action: 'PLAN_VERSION.CREATED', objectType: 'plan_version', objectId: versions[0]!.id, after: { plan_id: planId, version: 1 } })
       return { statusCode: 201, body: envelope({ plan: await planView(tx, planId), version: versionFields(await loadVersion(tx, planId, 1)) }) }
     }))
     return sendIdempotent(reply, result)

@@ -11,13 +11,27 @@ import { CODE } from './ui'
 
 const PAGE_SIZE = 50
 
+const CYCLE_PREFIX = 'sponsor cycle: '
+
+/**
+ * A finding's detail as shown. GENEALOGY_CYCLE (D-B6-09) names the cycle members in chain order:
+ * "sponsor cycle: 'AT-A' -> 'AT-C' -> 'AT-B' -> 'AT-A'" reads "Genealogy cycle: AT-A → AT-C → AT-B → AT-A".
+ */
+export function findingText(finding: Pick<Finding, 'code' | 'detail'>): string {
+  const { code, detail } = finding
+  if (detail === null) return '—'
+  if (code !== 'GENEALOGY_CYCLE' || !detail.startsWith(CYCLE_PREFIX)) return detail
+  const members = detail.slice(CYCLE_PREFIX.length).split(' -> ').map((member) => member.replace(/^'(.*)'$/, '$1'))
+  return `Genealogy cycle: ${members.join(' → ')}`
+}
+
 // Details come from the API, which never echoes personal data (email-like values are withheld there).
 const COLUMNS: readonly DataTableColumn<Finding>[] = [
   { key: 'file', header: 'File', cell: (finding) => finding.file },
   { key: 'row', header: 'Row', align: 'end', cell: (finding) => (finding.row_no === null ? 'Whole file' : integer(finding.row_no)) },
   { key: 'column', header: 'Column', cell: (finding) => finding.column_name ?? '—' },
   { key: 'code', header: 'Code', cell: (finding) => <span className={CODE}>{finding.code}</span> },
-  { key: 'detail', header: 'What to fix', cell: (finding) => finding.detail ?? '—' },
+  { key: 'detail', header: 'What to fix', cell: findingText },
 ]
 
 /** The batch's validation findings in the order found, 50 per page (GET /v1/imports/:id/errors). */

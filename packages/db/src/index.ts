@@ -13,6 +13,7 @@ export {
   withTenant,
   withVendor,
   type TenantContext,
+  type TransactionOptions,
   type Tx,
   type VendorContext,
 } from './pool.js'

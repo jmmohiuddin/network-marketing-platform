@@ -5,7 +5,7 @@ import { ApiError } from '../../lib/errors.js'
 import { enqueueOutbox } from '../../lib/outbox.js'
 import { approveOrRefuse } from '../ten/index.js'
 import { loadPeriod, lockMarketPeriods, lockRunKey, settingsVersionAt } from './period.js'
-import { marketSync } from './preflight.js'
+import { assertMigrationSignedOff, marketSync } from './preflight.js'
 import { runExceptions } from './review.js'
 import { runInScope, type RunView } from './views.js'
 
@@ -104,6 +104,7 @@ export async function commitRun(tx: Tx, auth: AuthContext, id: string, acknowled
   if (run.state === 'discarded') throw superseded('discarded')
   if (run.state !== 'calculated') throw new ApiError(409, 'RUN_NOT_CALCULATED', 'Only a calculated run can be committed.', { state: run.state })
   const lateIds = await stalenessGates(tx, run)
+  await assertMigrationSignedOff(tx, run.period_id)
   if (run.review_opened_at === null) throw new ApiError(409, 'REVIEW_NOT_OPENED', 'Open the run review before committing.')
   const missing = (await runExceptions(tx, run, await marketSync(tx, period.market_id)))
     .filter((e) => e.blocking && !acknowledged.includes(e.id)).map((e) => e.id)

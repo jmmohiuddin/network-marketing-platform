@@ -40,9 +40,13 @@ export interface DataQuality {
   readonly unmapped: { readonly purposes: readonly string[]; readonly source_kinds: readonly string[] }
 }
 
+export type ImportKind = 'overlay' | 'migration'
+
 /** GET /v1/imports/:id */
 export interface Batch {
   readonly id: string
+  /** D-B6-09: overlay (compliance) or migration (history import). */
+  readonly kind: ImportKind
   readonly market: string
   /** YYYY-MM */
   readonly period_from: string
@@ -94,6 +98,7 @@ export type SourceValues = { readonly [V in keyof Mappings]: Readonly<Record<str
 export interface MappingVersion {
   readonly id: string
   readonly version: number
+  readonly kind: ImportKind
   readonly state: 'draft' | 'approved'
   readonly notes: string | null
   readonly created_by: string | null

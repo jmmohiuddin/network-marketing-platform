@@ -2,9 +2,8 @@ import type { Tx } from '@nmp/db'
 import { z } from 'zod'
 import { recordAudit } from '../../lib/audit.js'
 import { ApiError, notFound } from '../../lib/errors.js'
-import { MAX_CODE_LENGTH, MAX_CODES, PURPOSES, SOURCE_KINDS, type Purpose, type SourceKind } from './vocabulary.js'
+import { MAX_CODE_LENGTH, MAX_CODES, PURPOSES, SOURCE_KINDS, type ImportKind, type Purpose, type SourceKind } from './vocabulary.js'
 
-const UNIQUE_VIOLATION = '23505'
 
 const codeMap = <T extends z.ZodType>(target: T) =>
   z.record(z.string().min(1).max(MAX_CODE_LENGTH), target).refine((map) => Object.keys(map).length <= MAX_CODES, {
@@ -28,6 +27,7 @@ export type ParticipantFlags = z.infer<typeof participantFlags>
 export interface MappingView {
   id: string
   version: number
+  kind: ImportKind
   state: 'draft' | 'approved'
   notes: string | null
   created_by: string | null
@@ -36,18 +36,20 @@ export interface MappingView {
   mappings?: Mappings
 }
 
-const SUMMARY = 'id, version, state, notes, created_by, created_at, approved_by'
+const SUMMARY = 'id, version, kind, state, notes, created_by, created_at, approved_by'
 
-export async function latestMappingVersion(tx: Tx): Promise<number> {
-  const { rows } = await tx.query<{ version: number | null }>('SELECT max(version) AS version FROM import_mapping')
+/** The latest version of a kind (D-B6-09: versions are one tenant-wide sequence, "latest" reads the same kind). */
+export async function latestMappingVersion(tx: Tx, kind: ImportKind): Promise<number> {
+  const { rows } = await tx.query<{ version: number | null }>('SELECT max(version) AS version FROM import_mapping WHERE kind = $1', [kind])
   return rows[0]?.version ?? 0
 }
 
-/** Newest version first; the cursor is the version of the last one shown. */
-export async function listMappings(tx: Tx, beforeVersion: number | undefined, limit: number): Promise<MappingView[]> {
+/** Newest version first, optionally of one kind; the cursor is the version of the last one shown. */
+export async function listMappings(tx: Tx, kind: ImportKind | undefined, beforeVersion: number | undefined, limit: number): Promise<MappingView[]> {
   const { rows } = await tx.query<MappingView>(
-    `SELECT ${SUMMARY} FROM import_mapping WHERE ($1::int IS NULL OR version < $1) ORDER BY version DESC LIMIT $2`,
-    [beforeVersion ?? null, limit + 1],
+    `SELECT ${SUMMARY} FROM import_mapping WHERE ($1::int IS NULL OR version < $1) AND ($3::text IS NULL OR kind = $3)
+     ORDER BY version DESC LIMIT $2`,
+    [beforeVersion ?? null, limit + 1, kind ?? null],
   )
   return rows
 }
@@ -58,9 +60,10 @@ export async function getMapping(tx: Tx, id: string): Promise<MappingView | null
 }
 
 export interface MappingDraft {
+  readonly kind: ImportKind
   readonly mappings: Mappings
   readonly notes: string | null
-  /** The latest version the client saw (If-Match); 0 when the tenant has none. */
+  /** The latest version of the kind the client saw (If-Match); 0 when the tenant has none. */
   readonly expectedVersion: number
 }
 
@@ -76,25 +79,20 @@ const sizeOf = (mappings: Mappings) => ({
 
 /** Saving always creates a new draft version (FR-IMP-002); approved versions are never edited. */
 export async function createMappingVersion(tx: Tx, draft: MappingDraft): Promise<MappingView> {
-  const latest = await latestMappingVersion(tx)
+  // Version numbers are one tenant-wide sequence: saves of any kind take it in turn, so only a same-kind save is a conflict.
+  await tx.query(`SELECT pg_advisory_xact_lock(hashtextextended('imp.mapping:' || app_tenant_id(), 0))`)
+  const latest = await latestMappingVersion(tx, draft.kind)
   if (latest !== draft.expectedVersion) throw preconditionFailed(latest)
-  let created: MappingView
-  try {
-    const { rows } = await tx.query<MappingView>(
-      `INSERT INTO import_mapping (tenant_id, version, mappings, notes, state, created_by)
-       VALUES (app_tenant_id(), $1, $2, $3, 'draft', current_setting('app.user_id')::uuid)
-       RETURNING ${SUMMARY}, mappings`,
-      [latest + 1, draft.mappings, draft.notes],
-    )
-    created = rows[0]!
-  } catch (error) {
-    // A concurrent save took this version number first.
-    if ((error as { code?: unknown }).code === UNIQUE_VIOLATION) throw preconditionFailed(latest + 1)
-    throw error
-  }
+  const { rows } = await tx.query<MappingView>(
+    `INSERT INTO import_mapping (tenant_id, version, kind, mappings, notes, state, created_by)
+     VALUES (app_tenant_id(), (SELECT coalesce(max(version), 0) + 1 FROM import_mapping), $1, $2, $3, 'draft', current_setting('app.user_id')::uuid)
+     RETURNING ${SUMMARY}, mappings`,
+    [draft.kind, draft.mappings, draft.notes],
+  )
+  const created = rows[0]!
   await recordAudit(tx, {
     action: 'MAPPING.VERSION_CREATED', objectType: 'import_mapping', objectId: created.id,
-    before: { version: latest }, after: { version: created.version, state: 'draft', codes: sizeOf(draft.mappings) },
+    before: { version: latest }, after: { version: created.version, kind: draft.kind, state: 'draft', codes: sizeOf(draft.mappings) },
   })
   return created
 }

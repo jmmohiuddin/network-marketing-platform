@@ -6,6 +6,7 @@ import { defineSystemJob } from '../../lib/jobs.js'
 import { sendMail } from '../../lib/mailer.js'
 import { escalateCase, openPortalCase, type CaseRecord, type CaseTypeDefinition } from '../cas/index.js'
 import { getSetting } from '../ten/index.js'
+import { ruleName } from './explanation.js'
 
 // FR-CAS-003 (D-B5-15): a commission dispute is case type 'dispute' on a result line, opened and submitted in one
 // portal transaction by the line's payee with the line's stored trace; decided by case.dispute.approve holders of the
@@ -28,9 +29,9 @@ async function lineMarket(tx: Tx, lineId: string): Promise<{ marketId: string } 
   return rows[0] === undefined ? null : { marketId: rows[0].market_id }
 }
 
-/** The line, its position and period, for the analyst (case detail). */
+/** The line (with its rule's name, BUG-119), its position and period, for the analyst (case detail). */
 async function effectPreview(tx: Tx, c: CaseRecord<Payload>) {
-  const { rows } = await tx.query(
+  const { rows } = await tx.query<{ line: { rule_key: string } }>(
     `SELECT jsonb_build_object('id', l.id, 'amount_minor', l.amount_minor::text, 'currency', l.currency, 'rule_key', l.rule_key) AS line,
             jsonb_build_object('id', x.id, 'position_ref', x.position_ref) AS position, r.id AS run_id,
             jsonb_build_object('id', p.id, 'starts_at', json_instant(p.starts_at), 'ends_at', json_instant(p.ends_at)) AS period
@@ -38,7 +39,8 @@ async function effectPreview(tx: Tx, c: CaseRecord<Payload>) {
      WHERE l.id = $1`,
     [c.subject_id],
   )
-  return rows[0]
+  const preview = rows[0]!
+  return { ...preview, line: { ...preview.line, rule_name: ruleName(preview.line.rule_key) } }
 }
 
 /** Submit + the market's response days (disputes.policy.response_days); unset market: no due date (DEC-14). */

@@ -42,13 +42,18 @@ const B4_TABLES = [
 ]
 // PLAN B5 section 1.
 const B5_TABLES = ['portal_sign_in_code', 'notification', 'notification_preference', 'privacy_request', 'privacy_export']
+// PLAN B6 section 1.
+const B6_TABLES = [
+  'plan_version_filing', 'data_export', 'data_export_file', 'saved_view', 'migration', 'migration_opening_balance',
+  'migration_opening_state', 'parallel_run', 'parallel_run_difference',
+]
 const INSERT_ONLY_TABLES = [
   'audit.audit_event', 'audit.vendor_event', 'outbox_event', 'approval', 'tenant_setting_version',
   'market_checklist_entry', 'case_event', 'case_evidence', 'document', 'participant_signal', 'agreement_version',
   'agreement_acceptance', 'position_status_history', 'order_line', 'order_event', 'plan_market', 'plan_calendar',
   'guardrail_decision', 'run_snapshot', 'result_line', 'qualification_state', 'sim_result_line',
   'ledger_account', 'journal_entry', 'posting', 'journal_export', 'run_settlement', 'bank_detail_request',
-  'sandbox_provider_payment', 'privacy_export',
+  'sandbox_provider_payment', 'privacy_export', 'plan_version_filing',
 ]
 // market_references (0105, 0204, AC-TEN2-3) counts every table with a key to market under these names, plus 'grants'
 // (market_ids arrays carry no key) and 'connectors' (the commerce rows of provider_config).
@@ -59,6 +64,7 @@ const MARKET_REFERENCES: Record<string, string> = {
   sales_order: 'orders', product_volume_map: 'product_volumes', agreement_version: 'agreement_versions',
   plan_market: 'plans', ledger_account: 'ledger_accounts', journal_entry: 'journal_entries', gl_account_map: 'gl_mappings',
   journal_export: 'journal_exports', payout_batch: 'payout_batches', payout_hold: 'payout_holds',
+  plan_version_filing: 'filings', migration: 'migrations',
 }
 // PLAN B1 1.1 (FR-TEN-003). The TEN settings registry pins its money-affecting keys against money_setting_keys().
 const MONEY_SETTING_KEYS = [
@@ -68,7 +74,7 @@ const MONEY_SETTING_KEYS = [
 // PLAN B2 1.7 (D-B2-08): every key whose change needs an approval; the registry pins it against approverPermission.
 const APPROVAL_SETTING_KEYS = [
   ...MONEY_SETTING_KEYS.slice(0, 2), 'genealogy.visibility_policy', ...MONEY_SETTING_KEYS.slice(2), 'privacy.policy',
-  'portal.customer_contact_visible',
+  'portal.customer_contact_visible', 'plan.filing_requirements',
 ]
 // Table names unquoted: regclass quotes keywords such as position.
 const TENANT_ID_TABLES = `
@@ -138,6 +144,9 @@ const POLICIES_BEYOND_TENANT_ISOLATION: Policy[] = [
   portalSelf('case_evidence', "(EXISTS ( SELECT 1 FROM case_file c WHERE ((c.id = case_evidence.case_id) AND ((c.payload ->> 'participant_id'::text) = (app_participant_id())::text))))"),
   // 0506: never in a portal transaction (staff hold text, other payees' exclusion reasons).
   ...['payout_hold', 'payout_batch'].map((table): Policy => [table, 'portal_hidden', '*!', '(app_participant_id() IS NULL)', '(app_participant_id() IS NULL)']),
+  // D-B6-13: B6 tables holding one participant's data or every exported field, and saved views.
+  ...['data_export', 'data_export_file', 'saved_view', 'migration_opening_balance', 'migration_opening_state', 'parallel_run_difference']
+    .map((table): Policy => [table, 'portal_hidden', '*!', '(app_participant_id() IS NULL)', '(app_participant_id() IS NULL)']),
   portalSelf('case_file', "((payload ->> 'participant_id'::text) = (app_participant_id())::text)"),
   portalSelf('case_event', "(EXISTS ( SELECT 1 FROM case_file c WHERE ((c.id = case_event.case_id) AND ((c.payload ->> 'participant_id'::text) = (app_participant_id())::text))))"),
   portalSelf('posting', '(EXISTS ( SELECT 1 FROM ledger_account a WHERE ((a.id = posting.account_id) AND (a.payee_participant_id = app_participant_id()))))'),
@@ -150,6 +159,7 @@ const KEYS_WITHOUT_TENANT_ID = [
   'password_credential_user_id_fkey', // no tenant_id column: policy acting_user
   'role_assignment_role_id_fkey', // base roles have no tenant: trigger role_assignment_role_in_tenant
   'role_grant_request_role_id_fkey', // base roles have no tenant: trigger role_grant_request_role_in_tenant
+  'saved_view_shared_role_id_fkey', // base roles have no tenant: trigger saved_view_role_in_tenant
   'session_user_id_realm_fkey', // realm match; session_tenant_id_user_id_fkey carries the tenant
   'support_session_requester_id_fkey', // a vendor user: policy vendor_request
   'user_invitation_user_id_fkey', // vendor invitations have no tenant: policy vendor_invitations (0042)
@@ -167,14 +177,15 @@ describe('migrations', () => {
     expect(again).toEqual([])
   })
 
-  test('create every release A table, the engineering additions and the B1..B5 tables', async () => {
+  test('create every release A table, the engineering additions and the B1..B6 tables', async () => {
     const { rows } = await getOwnerPool().query<{ name: string }>(
       `SELECT CASE schemaname WHEN 'public' THEN tablename ELSE schemaname || '.' || tablename END AS name
        FROM pg_tables WHERE schemaname IN ('public', 'audit')`,
     )
 
     expect(rows.map((row) => row.name).sort()).toEqual(
-      [...RELEASE_A_TABLES, ...ENGINEERING_TABLES, ...B1_TABLES, ...B2_TABLES, ...B3_TABLES, ...B4_TABLES, ...B5_TABLES, 'schema_migration']
+      [...RELEASE_A_TABLES, ...ENGINEERING_TABLES, ...B1_TABLES, ...B2_TABLES, ...B3_TABLES, ...B4_TABLES, ...B5_TABLES, ...B6_TABLES,
+        'schema_migration']
         .sort(),
     )
   })

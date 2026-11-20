@@ -8,7 +8,7 @@ import { randomUUID } from 'node:crypto'
 import { writeFileSync } from 'node:fs'
 import { closePool, withTenant, type Tx } from '@nmp/db'
 import { closeOwnerPool, createTenant, createUser, getOwnerPool, resetTestDb } from '@nmp/db/testing'
-import type { ResultLine, RunOutput, Trace } from '@nmp/engine'
+import type { ResultLine, Trace } from '@nmp/engine'
 import { insertLines, insertState, RUN_LINES } from '../../src/modules/comp/results.js'
 
 const POSITIONS = 100_000
@@ -96,7 +96,7 @@ async function measure(lines: number) {
       counters: [], carry: [], oneTimeFlags: [], banked: [],
     }))
     const volumeSummaries = pairs.map((p) => ({ positionId: p.position_id, measures: [{ measure: 'pv', valueMinor: 10_000n }], paidAs: [] }))
-    await insertState(tx, run, { qualification, volumeSummaries } as unknown as RunOutput, market)
+    await insertState(tx, run, qualification, new Map(volumeSummaries.map((v) => [v.positionId, v.measures])), market)
     marks.state_ms = performance.now() - started - marks.lines_ms
     const flip = performance.now()
     await tx.query(`UPDATE run SET state = 'calculated', totals = $2, inputs_hash = 'bench', lines_hash = 'bench', outputs = '{}',

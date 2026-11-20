@@ -1,19 +1,20 @@
 import { randomUUID } from 'node:crypto'
 import type { FastifyInstance, FastifyRequest } from 'fastify'
 import { z } from 'zod'
-import { currentAuth, requireAnyPermission, requirePermission, requireRealm, scopeOfAny } from '../../lib/auth.js'
+import { currentAuth, hasPermission, marketScope, requireAnyPermission, requirePermission, requireRealm, scopeOfAny } from '../../lib/auth.js'
 import { inTenant } from '../../lib/db.js'
-import { notFound } from '../../lib/errors.js'
+import { notFound, permissionDenied } from '../../lib/errors.js'
 import { envelope, parse } from '../../lib/http.js'
 import { idempotent, sendIdempotent } from '../../lib/idempotency.js'
 import { decodeCursor, pageQuery, toPage } from '../../lib/pagination.js'
 import { MAPPING_READERS, tenantOf } from './access.js'
-import { BATCH_STATES, getBatch, listBatches, listFindings, type MarketScope } from './batches.js'
+import { BATCH_STATES, getBatch, listBatches, listFindings, type BatchScope, type MarketScope } from './batches.js'
 import { createBatch } from './create-batch.js'
 import type { FileStore } from './file-store.js'
 import { inImportSlot } from './import-gate.js'
 import { attachMapping, loadBatch } from './load.js'
-import { idempotencyMaterial, readUpload } from './upload.js'
+import { idempotencyMaterial, readUpload, type Upload } from './upload.js'
+import { IMPORT_KINDS } from './vocabulary.js'
 
 export interface ImportRouteDeps {
   readonly store: FileStore
@@ -21,7 +22,7 @@ export interface ImportRouteDeps {
 }
 
 const idParams = z.object({ id: z.uuid() })
-const listQuery = z.strictObject({ ...pageQuery, state: z.enum(BATCH_STATES).optional() })
+const listQuery = z.strictObject({ ...pageQuery, state: z.enum(BATCH_STATES).optional(), kind: z.enum(IMPORT_KINDS).optional() })
 const findingsQuery = z.strictObject(pageQuery)
 const attachBody = z.strictObject({ mapping_id: z.uuid() })
 
@@ -31,12 +32,32 @@ const READ_VALUES = { preHandler: [requireRealm('tenant'), requireAnyPermission(
 const importScope = (request: FastifyRequest): MarketScope => scopeOfAny(currentAuth(request), ['import.manage'])
 const batchId = (request: FastifyRequest): string => parse(idParams, request.params).id
 
+/** D-B6-09: the markets where the caller holds import.manage and migration.manage ([] without migration.manage). */
+function migrationScope(request: FastifyRequest): MarketScope {
+  const auth = currentAuth(request)
+  if (!hasPermission(auth, 'migration.manage')) return []
+  const scope = importScope(request)
+  const migration = marketScope(auth, 'migration.manage')
+  if (scope === null) return migration
+  return migration === null ? scope : scope.filter((id) => migration.includes(id))
+}
+
+/** D-B6-09: migration batches are seen and changed only with migration.manage over the batch's market too. */
+const batchScope = (request: FastifyRequest): BatchScope => ({ markets: importScope(request), migrationMarkets: migrationScope(request) })
+
+/** A migration batch also needs migration.manage, over the batch's market. */
+function uploadScope(request: FastifyRequest, upload: Upload): MarketScope {
+  if (upload.kind === 'overlay') return importScope(request)
+  if (!hasPermission(currentAuth(request), 'migration.manage')) throw permissionDenied()
+  return migrationScope(request)
+}
+
 function registerUpload(app: FastifyInstance, deps: ImportRouteDeps): void {
   app.post('/v1/imports', MANAGE, (request, reply) => inImportSlot(reply, async () => {
     const upload = await readUpload(request, deps.maxFileBytes)
     // The Idempotency-Key's request hash covers request.body: the form fields and the file digests.
     request.body = idempotencyMaterial(upload)
-    const batch = { batchId: randomUUID(), tenantId: tenantOf(request), upload, scope: importScope(request) }
+    const batch = { batchId: randomUUID(), tenantId: tenantOf(request), upload, scope: uploadScope(request, upload) }
     try {
       const result = await inTenant(request, (tx) => idempotent(tx, request, () => createBatch(tx, deps.store, batch)))
       return sendIdempotent(reply, result)
@@ -57,12 +78,12 @@ function registerReads(app: FastifyInstance, deps: ImportRouteDeps): void {
   app.get('/v1/imports', MANAGE, async (request) => {
     const query = parse(listQuery, request.query)
     const after = decodeCursor(query.cursor, z.uuid())
-    const rows = await inTenant(request, (tx) => listBatches(tx, importScope(request), query.state, after, query.limit))
+    const rows = await inTenant(request, (tx) => listBatches(tx, batchScope(request), { state: query.state, kind: query.kind }, after, query.limit))
     return toPage(rows, query.limit, (row) => row.id)
   })
 
   app.get('/v1/imports/:id', MANAGE, async (request) => {
-    const batch = await inTenant(request, (tx) => getBatch(tx, batchId(request), importScope(request)))
+    const batch = await inTenant(request, (tx) => getBatch(tx, batchId(request), batchScope(request)))
     if (batch === null) throw notFound()
     return envelope(batch)
   })
@@ -72,7 +93,7 @@ function registerReads(app: FastifyInstance, deps: ImportRouteDeps): void {
     const query = parse(findingsQuery, request.query)
     const after = decodeCursor(query.cursor, z.string().regex(/^\d{1,19}$/))
     const rows = await inTenant(request, async (tx) => {
-      if ((await getBatch(tx, id, importScope(request))) === null) throw notFound()
+      if ((await getBatch(tx, id, batchScope(request))) === null) throw notFound()
       return listFindings(tx, id, after, query.limit)
     })
     return toPage(rows, query.limit, (row) => row.seq)
@@ -83,8 +104,9 @@ function registerReads(app: FastifyInstance, deps: ImportRouteDeps): void {
     const values = await inTenant(request, async (tx) => {
       const { rows } = await tx.query<{ state: string; source_values: unknown }>(
         `SELECT state, source_values FROM import_batch
-         WHERE id = $1 AND ($2::uuid[] IS NULL OR market_id = ANY($2::uuid[]))`,
-        [id, scopeOfAny(currentAuth(request), MAPPING_READERS)],
+         WHERE id = $1 AND ($2::uuid[] IS NULL OR market_id = ANY($2::uuid[]))
+           AND (kind <> 'migration' OR $3::uuid[] IS NULL OR market_id = ANY($3::uuid[]))`,
+        [id, scopeOfAny(currentAuth(request), MAPPING_READERS), migrationScope(request)],
       )
       return rows[0]
     })
@@ -97,13 +119,13 @@ function registerTransitions(app: FastifyInstance, deps: ImportRouteDeps): void 
   app.post('/v1/imports/:id/mapping', MANAGE, async (request) => {
     const id = batchId(request)
     const body = parse(attachBody, request.body)
-    return envelope(await inTenant(request, (tx) => attachMapping(tx, id, body.mapping_id, importScope(request))))
+    return envelope(await inTenant(request, (tx) => attachMapping(tx, id, body.mapping_id, batchScope(request))))
   })
 
   app.post('/v1/imports/:id/load', MANAGE, (request, reply) => inImportSlot(reply, async () => {
     const id = batchId(request)
     const tenantId = tenantOf(request)
-    const loaded = await inTenant(request, (tx) => loadBatch(tx, deps.store, tenantId, id, importScope(request)))
+    const loaded = await inTenant(request, (tx) => loadBatch(tx, deps.store, tenantId, id, batchScope(request)))
     return envelope(loaded.batch, { superseded: loaded.superseded })
   }))
 }

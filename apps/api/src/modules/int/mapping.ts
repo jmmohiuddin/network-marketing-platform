@@ -12,7 +12,7 @@ export interface MappingContext {
   readonly connectorId: string
   readonly marketCode: string
   readonly minorUnit: number
-  /** orders.crediting_event; null = unset (ingestion then refuses CREDITING_EVENT_NOT_CONFIGURED). */
+  /** The plan version's crediting event at the order's time; null = no plan covers the market (ORD then refuses CREDITING_EVENT_NOT_CONFIGURED). */
   readonly creditingEvent: 'paid' | 'fulfilled' | null
 }
 
@@ -64,7 +64,7 @@ export function utc(value: string | null | undefined): string | undefined {
   return /(Z|[+-]\d{2}:\d{2})$/.test(value) ? value : `${value}Z`
 }
 
-/** The order is credited (its configured crediting time is present); an unset setting lets ingestion refuse it. */
+/** The order is credited (its configured crediting time is present); without a plan, ingestion refuses it. */
 export function credited(input: { paid_at?: string | undefined; fulfilled_at?: string | undefined }, ctx: MappingContext): boolean {
   if (ctx.creditingEvent === null) return true
   return (ctx.creditingEvent === 'paid' ? input.paid_at : input.fulfilled_at) !== undefined

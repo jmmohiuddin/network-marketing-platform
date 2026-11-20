@@ -1,4 +1,4 @@
-import { withTenant, withVendor, type TenantContext, type Tx } from '@nmp/db'
+import { withTenant, withVendor, type TenantContext, type TransactionOptions, type Tx } from '@nmp/db'
 import type { FastifyRequest } from 'fastify'
 import { currentAuth, type AuthContext } from './auth.js'
 import { ApiError } from './errors.js'
@@ -42,11 +42,13 @@ async function setActorContext(tx: Tx, actor: ActorContext): Promise<void> {
 }
 
 /** One tenant transaction with the actor context set. Use inTenant(request, fn) inside routes. */
-export function runInTenant<T>(ctx: TenantContext, actor: ActorContext, fn: (tx: Tx) => Promise<T>): Promise<T> {
+export function runInTenant<T>(
+  ctx: TenantContext, actor: ActorContext, fn: (tx: Tx) => Promise<T>, options?: TransactionOptions,
+): Promise<T> {
   return withTenant(ctx, async (tx) => {
     await setActorContext(tx, actor)
     return fn(tx)
-  })
+  }, options)
 }
 
 /** One vendor-realm transaction with the actor context set. */

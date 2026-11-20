@@ -332,6 +332,8 @@ describe('erasure (T-B5-39, TS-28, AC-30.1, AC-PRV2-1/2)', () => {
     const [hold] = await ownerRows<{ id: string }>(
       'INSERT INTO payout_hold (tenant_id, participant_id, market_id, reason, placed_by) VALUES ($1, $2, $3, $4, $5) RETURNING id',
       [acme.id, subject.id, de, 'Fixture hold', dpo.id])
+    // FIXTURE (INT): a queued full export, which holds the subject's data once generated (D-B6-13).
+    const [queued] = await ownerRows<{ id: string }>("INSERT INTO data_export (tenant_id, trigger, model_version) VALUES ($1, 'manual', 1) RETURNING id", [acme.id])
     const asked = await call(app, {
       method: 'POST', url: '/v1/me/privacy-requests', as: portal, body: { type: 'erasure', details: 'Please erase my account' }, idempotencyKey: true,
     })
@@ -359,6 +361,9 @@ describe('erasure (T-B5-39, TS-28, AC-30.1, AC-PRV2-1/2)', () => {
     expect(afterDeferral.requester_sealed).not.toBeNull()
     expect(await requestRow(id)).toMatchObject({ outcome: 'fulfilled', retention_basis: 'Ledger and tax records: 10 years', requester_sealed: null })
     expect(JSON.parse(audit!.after_ref).after.cleared).toEqual(ERASURE_CLEARED)
+    const exportAudits = await ownerRows<{ after_ref: string }>(
+      `SELECT after_ref FROM audit.audit_event WHERE action = 'EXPORT.FAILED' AND object_id = $1`, [queued!.id])
+    expect(exportAudits.map((row) => JSON.parse(row.after_ref).after)).toEqual([{ code: 'ERASED_DURING_EXPORT', request_id: id }])
     // D-B5-16: a portal requester is told by the notice only; no mail is written inside the decision transaction.
     expect((await mailsTo(subject.email)).join()).not.toContain('erased')
   })

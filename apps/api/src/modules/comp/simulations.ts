@@ -184,8 +184,11 @@ export async function assertPlanInScope(tx: Tx, versionId: string, scopes: Scope
   if (markets === undefined || !scopes.some((scope) => scope === null || markets.every((m) => scope.includes(m)))) throw notFound()
 }
 
-/** POST /v1/simulations (D-B3-15). */
-export async function requestSimulation(tx: Tx, body: { plan_version_id: string; period_id: string }, scope: readonly string[] | null) {
+/** POST /v1/simulations (D-B3-15); MIG's parallel runs through requestParallelRunSimulation (PLAN B6 section 1.9). */
+export async function requestSimulation(
+  tx: Tx, body: { plan_version_id: string; period_id: string }, scope: readonly string[] | null,
+  kind: 'simulation' | 'parallel_run' = 'simulation',
+) {
   await assertPlanInScope(tx, body.plan_version_id, [scope])
   const { rows } = await tx.query<{ in_plan: boolean; ended: boolean; compiled: boolean }>(
     `SELECT EXISTS (SELECT 1 FROM plan_calendar pc WHERE pc.plan_id = v.plan_id AND pc.calendar_id = p.calendar_id) AS in_plan,
@@ -200,14 +203,23 @@ export async function requestSimulation(tx: Tx, body: { plan_version_id: string;
   if (!check.compiled) throw new ApiError(422, 'PLAN_INVALID', 'The plan version does not compile: fix its validation errors first.')
   const { rows: created } = await tx.query(
     `INSERT INTO simulation (tenant_id, plan_version_id, period_id, kind, content_hash, requested_by)
-     SELECT app_tenant_id(), v.id, $2, 'simulation', digest(v.compiled::text, 'sha256'), app_user_id() FROM plan_version v WHERE v.id = $1
+     SELECT app_tenant_id(), v.id, $2, $3, digest(v.compiled::text, 'sha256'), app_user_id() FROM plan_version v WHERE v.id = $1
      RETURNING id, plan_version_id, period_id, kind, state, requested_by, requested_at`,
-    [body.plan_version_id, body.period_id],
+    [body.plan_version_id, body.period_id, kind],
   )
   const simulation = created[0] as { id: string }
   await recordAudit(tx, { action: 'SIMULATION.REQUESTED', objectType: 'simulation', objectId: simulation.id, after: body })
   await enqueueLong(tx, simulationJob, { simulationId: simulation.id })
   return simulation
+}
+
+/**
+ * D-B6-11: MIG's only way to create a simulation (kind parallel_run, same checks, audit and job); the caller checked the
+ * migration's market scope and inserts the parallel_run row in the same transaction.
+ */
+export async function requestParallelRunSimulation(tx: Tx, input: { planVersionId: string; periodId: string }): Promise<string> {
+  const simulation = await requestSimulation(tx, { plan_version_id: input.planVersionId, period_id: input.periodId }, null, 'parallel_run')
+  return simulation.id
 }
 
 const SIMULATION_COLUMNS = `s.id, s.plan_version_id, s.period_id, s.kind, s.state, s.baseline_run_id, encode(s.content_hash, 'hex') AS content_hash,

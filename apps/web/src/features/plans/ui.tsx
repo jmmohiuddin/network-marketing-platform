@@ -137,6 +137,8 @@ export function refusalLines(error: unknown, names: RefusalNames = {}): string[]
         const g = x as { name: string; mismatches: unknown[]; error: { message: string } | null }
         return g.error !== null ? `${g.name}: ${g.error.message}` : `${g.name}: ${g.mismatches.length} line${g.mismatches.length === 1 ? '' : 's'} differ.`
       })
+    case 'FILING_STATUS_MISSING':
+      return listOf(d, 'market_ids').map((id) => `Record the filing status for ${names.market?.(String(id)) ?? 'a plan market'} first.`)
     case 'TRANSITION_MISSING':
       return listOf(d, 'state_items').map((item) => `No transition declared for ${String(item)}.`)
     case 'UNKNOWN_EXTENSION_RULE':

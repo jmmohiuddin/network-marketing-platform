@@ -40,6 +40,13 @@ describe('withTenant', () => {
     expect(rows).toEqual([])
   })
 
+  test('opens a repeatable read transaction when asked (D-B6-06), read committed otherwise', async () => {
+    const isolation = (tx: Tx) => tx.query<{ level: string }>("SELECT current_setting('transaction_isolation') AS level").then((result) => result.rows[0]!.level)
+
+    expect(await withTenant(ctx, isolation, { isolation: 'repeatable read' })).toBe('repeatable read')
+    expect(await withTenant(ctx, isolation)).toBe('read committed')
+  })
+
   test('rejects ids that are not UUIDs before touching the database', () => {
     const injection = `${ctx.tenantId}'; RESET ROLE; --`
 

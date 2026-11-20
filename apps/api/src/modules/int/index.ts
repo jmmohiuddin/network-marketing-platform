@@ -1,6 +1,8 @@
 import type { ApiModule } from '../../lib/module.js'
 import { registerConnectorRoutes } from './connector-routes.js'
 import { dispatchJob } from './dispatch.js'
+import { registerExportRoutes } from './export-routes.js'
+import { fullExportJob, fullExportScheduleJob } from './full-export.js'
 import { registerProviderWebhook } from './provider-webhook.js'
 import { registerIntRoutes } from './routes.js'
 import { httpsTransport, systemResolver, type WebhookResolver, type WebhookTransport } from './transport.js'
@@ -15,7 +17,7 @@ export interface IntModuleOptions {
 /**
  * Integrations (INT, FR-INT-001/002, FR-ORD-002): the public OpenAPI document, webhook endpoints, the dispatcher job
  * that turns outbox events into signed, SSRF-safe webhook deliveries with retries and dead letters, inbound commerce
- * connectors (Shopify, WooCommerce) and sync health.
+ * connectors (Shopify, WooCommerce), sync health and the scheduled full data export (FR-INT-003).
  */
 export function createIntModule(options: IntModuleOptions = {}): ApiModule {
   const deps = { transport: options.transport ?? httpsTransport(), resolver: options.resolver ?? systemResolver }
@@ -25,8 +27,9 @@ export function createIntModule(options: IntModuleOptions = {}): ApiModule {
       registerIntRoutes(app)
       registerConnectorRoutes(app)
       registerProviderWebhook(app)
+      registerExportRoutes(app)
     },
-    jobs: [dispatchJob(deps)],
+    jobs: [dispatchJob(deps), fullExportJob, fullExportScheduleJob],
   }
 }
 

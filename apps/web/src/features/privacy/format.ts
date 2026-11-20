@@ -70,6 +70,7 @@ const PRIVACY_ITEM_LABELS: Readonly<Record<string, string>> = {
   'notification.params.previous_masked': 'Masked replaced account numbers in notifications', 'notification (queued email: suppressed)': 'Unsent notification emails (suppressed)',
   privacy_export: 'Data exports', 'privacy_request.corrections_sealed': 'Requested corrections',
   'privacy_request.requester_sealed (other requests)': 'Requester details on the member’s other privacy requests',
+  'data_export_file.content': 'Files of earlier full data exports (expired)',
   position: 'Positions', relationship: 'Sponsor and placement links', result_line: 'Commission lines', qualification_state: 'Rank results',
   run_snapshot: 'Calculation inputs', journal_entry: 'Journal entries', posting: 'Ledger postings', payout_instruction: 'Payouts',
   'bank_detail fingerprints': 'Bank detail fingerprints', 'tax_profile.residency': 'Tax residency', 'tax_profile.entity_type': 'Tax entity type',

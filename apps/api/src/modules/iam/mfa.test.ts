@@ -240,7 +240,7 @@ describe('GET /v1/me', () => {
     expect(await keys(['Plan administrator'])).toEqual(expect.arrayContaining(['periods', 'plans', 'guardrails']))
     expect(await keys(['Finance approver'])).toEqual(expect.arrayContaining(['periods', 'plans', 'cases']))
     expect(await keys(['Finance approver'])).not.toContain('guardrails')
-    expect(await keys(['Executive read-only'])).toEqual(['compliance', 'periods', 'plans'])
+    expect(await keys(['Executive read-only'])).toEqual(['overview', 'compliance', 'periods', 'plans']) // B6: lands on the overview
     expect(await keys(['Payout officer'])).not.toContain('periods')
   })
 

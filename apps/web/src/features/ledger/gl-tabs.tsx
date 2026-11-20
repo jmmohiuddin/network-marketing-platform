@@ -6,6 +6,7 @@ import { Banner } from '../../components/banner'
 import { Button } from '../../components/button'
 import { DataTable, type DataTableColumn } from '../../components/data-table'
 import { Select, TextInput } from '../../components/form-field'
+import { StatusBadge } from '../../components/status-badge'
 import { useToast } from '../../components/toast'
 import { ApiError, isApiError, newIdempotencyKey } from '../../lib/api'
 import { formatDateTime } from '../../lib/format'
@@ -140,7 +141,11 @@ export function ExportsTab({ marketId, money, periods }: LedgerTabProps) {
     }
   }
   const columns: readonly DataTableColumn<JournalExport>[] = [
-    { key: 'period', header: 'Period', cell: (row) => <span className="whitespace-nowrap">{label(row.period.id)}</span> },
+    {
+      key: 'period', header: 'Period', cell: (row) => (
+        <span className="flex flex-col items-start gap-1"><span className="whitespace-nowrap">{label(row.period.id)}</span>{row.created_at_close && <StatusBadge state="closed" label="Created at close" />}</span>
+      ),
+    },
     { key: 'lines', header: 'Lines', align: 'end', cell: (row) => row.line_count },
     { key: 'debits', header: `Debits (${money.currency})`, align: 'end', cell: (row) => <span className="whitespace-nowrap">{marketAmount(row.debit_total_minor, money)}</span> },
     { key: 'credits', header: `Credits (${money.currency})`, align: 'end', cell: (row) => <span className="whitespace-nowrap">{marketAmount(row.credit_total_minor, money)}</span> },

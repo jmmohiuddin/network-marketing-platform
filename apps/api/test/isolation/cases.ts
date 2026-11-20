@@ -6,7 +6,9 @@ import { PROTOTYPE_SETTINGS } from '../../src/modules/cpl/test-fixtures.js'
 import { IBAN } from '../../src/modules/pay/test-support.js'
 import { GOLDEN_EXPECTED, GOLDEN_INPUT, personal } from '../../src/modules/pln/test-support.js'
 import type { CallOptions } from '../helpers/index.js'
-import { DRAFT_MARKET_CODE, DRAFT_VERSION, PACK, PASSWORD, RECORDABLE_ITEM, RULE_KEY, STATE_ITEM, SUPPORT_SCOPE, type Targets } from './seed.js'
+import {
+  DRAFT_MARKET_CODE, DRAFT_VERSION, EXPORT_TABLE, PACK, PASSWORD, RECORDABLE_ITEM, RULE_KEY, STATE_ITEM, SUPPORT_SCOPE, type Targets,
+} from './seed.js'
 
 /**
  * Who the route is for. public: no session (sign-in, invitation); self: the caller's own session or account;
@@ -72,6 +74,9 @@ const portal = (shape: Shape, request: (t: Targets) => CaseRequest, status?: num
   ({ access: 'portal', shape, ...(status === undefined ? {} : { own: status }), request })
 
 const withReason = (body: Record<string, unknown> = {}) => ({ ...body, reason: 'isolation' })
+const SAVED_VIEW = { list: 'orders', name: 'Isolation view', filters: {}, columns: ['source_order_id'], sort: 'credited_at_desc' }
+const csv = (url: string, body: string): CaseRequest => ({ method: 'PUT', url, body, headers: { 'content-type': 'text/csv' } })
+const difference = (t: Targets) => `/v1/migrations/${t.migration}/parallel-runs/${t.parallelRun}/differences/${t.difference}`
 /** integration.manage is a tenant-own decision no support session may hold (support/sessions.ts). */
 const integrationRead = (shape: Shape, request: (t: Targets) => CaseRequest): RouteCase => ({ access: 'tenant', shape, inSession: 403, request })
 
@@ -527,6 +532,55 @@ export const ROUTE_CASES: Readonly<Record<string, RouteCase>> = {
   })),
   'PUT /v1/privacy-requests/:id/corrections': object('tenant', (t) =>
     json('PUT', `/v1/privacy-requests/${t.privacyRequest}/corrections`, { display_name: 'Isolation' })),
+  // PLN B6 (PLAN B6 2.1): tenant A's plan, market and document name nothing in tenant B.
+  'GET /v1/plans/:id/versions/:v/governance': object('tenant', (t) => get(`/v1/plans/${t.plan}/versions/1/governance`)),
+  'POST /v1/plans/:id/versions/:v/filings': object('tenant', (t) => json('POST', `/v1/plans/${t.plan}/versions/1/filings`, {
+    market_id: t.compMarket, status: 'not_required', note: 'isolation', document_id: t.freeDocument,
+  }, true)),
+  // COMP / LED B6 (PLAN B6 2.2, D-B6-08): period.read stays readable in a session; period.close and ledger.export do not.
+  'GET /v1/periods/:id/close-check': object('tenant', (t) => get(`/v1/periods/${t.period}/close-check`)),
+  'POST /v1/periods/:id/close': object('tenant', (t) => json('POST', `/v1/periods/${t.period}/close`, { note: 'isolation' }, true)),
+  'GET /v1/ledger/entries/export': { ...collection('tenant', () => get('/v1/ledger/entries/export')), inSession: 403 },
+  // order.read stays in a session, but recordExport refuses every export inside one (read-only, FR-IAM-005).
+  'GET /v1/orders/export': { ...collection('tenant', () => get('/v1/orders/export')), inSession: 403 },
+  // INT B6 (D-B6-06): export.full is excluded from support sessions; tenant B's own model, key and export.
+  'GET /v1/exports/model': { ...collection('tenant', () => get('/v1/exports/model')), inSession: 403 },
+  'GET /v1/exports/signing-key': { ...collection('tenant', () => get('/v1/exports/signing-key')), inSession: 403 },
+  'POST /v1/exports': own('tenant', 202, () => json('POST', '/v1/exports', {}, true)),
+  'GET /v1/exports': { ...collection('tenant', () => get('/v1/exports?limit=200')), inSession: 403 },
+  'GET /v1/exports/:id': { ...object('tenant', (t) => get(`/v1/exports/${t.fullExport}`)), inSession: 403 },
+  'GET /v1/exports/:id/files/:table': { ...object('tenant', (t) => get(`/v1/exports/${t.fullExport}/files/${EXPORT_TABLE}`)), inSession: 403 },
+  // RPT B6 (PLAN B6 2.4): dashboards stay readable in a session; tenant B's views are its own.
+  'GET /v1/dashboards/executive': collection('tenant', () => get('/v1/dashboards/executive')),
+  'GET /v1/dashboards/finance': object('tenant', (t) => get(`/v1/dashboards/finance?market_id=${t.compMarket}`)),
+  'GET /v1/dashboards/compliance': collection('tenant', () => get('/v1/dashboards/compliance')),
+  'GET /v1/saved-views': collection('tenant', () => get('/v1/saved-views?list=orders')),
+  'POST /v1/saved-views': own('tenant', 201, () => json('POST', '/v1/saved-views', SAVED_VIEW, true)),
+  'PUT /v1/saved-views/:id': object('tenant', (t) => json('PUT', `/v1/saved-views/${t.savedView}`, SAVED_VIEW)),
+  'DELETE /v1/saved-views/:id': object('tenant', (t) => json('DELETE', `/v1/saved-views/${t.savedView}`)),
+  // MIG B6 (PLAN B6 2.6): migration.manage and migration.signoff are excluded from support sessions.
+  'POST /v1/migrations': object('tenant', (t) => json('POST', '/v1/migrations', { import_batch_id: t.batch, cutover_period_id: t.period, volume_key: 'pv' }, true)),
+  'GET /v1/migrations': { ...collection('tenant', () => get('/v1/migrations?limit=200')), inSession: 403 },
+  'GET /v1/migrations/:id': { ...object('tenant', (t) => get(`/v1/migrations/${t.migration}`)), inSession: 403 },
+  'POST /v1/migrations/:id/apply': object('tenant', (t) => json('POST', `/v1/migrations/${t.migration}/apply`, undefined, true)),
+  'POST /v1/migrations/:id/cancel': object('tenant', (t) => json('POST', `/v1/migrations/${t.migration}/cancel`, withReason(), true)),
+  'PUT /v1/migrations/:id/opening-balances': object('tenant', (t) => csv(`/v1/migrations/${t.migration}/opening-balances?control_total_minor=0`, 'payee_id,amount_minor\n')),
+  'PUT /v1/migrations/:id/opening-state': object('tenant', (t) => csv(`/v1/migrations/${t.migration}/opening-state`, 'participant_id,item,value\n')),
+  'GET /v1/migrations/:id/opening': { ...object('tenant', (t) => get(`/v1/migrations/${t.migration}/opening`)), inSession: 403 },
+  'POST /v1/migrations/:id/opening/submit': object('tenant', (t) => json('POST', `/v1/migrations/${t.migration}/opening/submit`, undefined, true)),
+  'POST /v1/migrations/:id/opening/decision': object('tenant', (t) =>
+    json('POST', `/v1/migrations/${t.migration}/opening/decision`, { decision: 'approve', reason: 'isolation' }, true)),
+  'POST /v1/migrations/:id/parallel-runs': object('tenant', (t) =>
+    json('POST', `/v1/migrations/${t.migration}/parallel-runs`, { bonus_map: { unilevel: 'unilevel' } }, true)),
+  'GET /v1/migrations/:id/parallel-runs': { ...object('tenant', (t) => get(`/v1/migrations/${t.migration}/parallel-runs`)), inSession: 403 },
+  'GET /v1/migrations/:id/parallel-runs/:runId': { ...object('tenant', (t) => get(`/v1/migrations/${t.migration}/parallel-runs/${t.parallelRun}`)), inSession: 403 },
+  'GET /v1/migrations/:id/parallel-runs/:runId/differences': {
+    ...object('tenant', (t) => get(`/v1/migrations/${t.migration}/parallel-runs/${t.parallelRun}/differences`)), inSession: 403,
+  },
+  'POST /v1/migrations/:id/parallel-runs/:runId/differences/:diffId/classify': object('tenant', (t) =>
+    json('POST', `${difference(t)}/classify`, { class: 'data', note: 'isolation' })),
+  'POST /v1/migrations/:id/parallel-runs/:runId/differences/:diffId/accept': object('tenant', (t) => json('POST', `${difference(t)}/accept`, withReason())),
+  'POST /v1/migrations/:id/sign-off': object('tenant', (t) => json('POST', `/v1/migrations/${t.migration}/sign-off`, withReason(), true)),
 }
 
 /** The case of a route; Fastify's HEAD routes run their GET handler, so they take the GET case with method HEAD. */

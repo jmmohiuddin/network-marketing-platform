@@ -159,6 +159,7 @@ function VersionScreen({ plan, version, data }: { readonly plan: PlanDetail; rea
         actions={(
           <>
             <LinkButton href={`${versionPage(plan.id, version.version)}/caps`} icon="tune">Caps and pools</LinkButton>
+            <LinkButton href={`${versionPage(plan.id, version.version)}/change`} icon="timeline">Change workflow</LinkButton>
             {canSimulate && <Button variant="primary" icon="play_arrow" data-testid="primary-action" onClick={() => setSimulating(true)}>Run simulation</Button>}
           </>
         )}

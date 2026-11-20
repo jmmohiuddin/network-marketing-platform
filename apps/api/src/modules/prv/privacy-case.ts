@@ -29,7 +29,7 @@ export const ERASURE_CLEARED = [
   'bank_detail_request.details_sealed', 'bank_detail_request.contact_email_sealed', 'bank_detail_version.details_sealed',
   'tax_profile.tax_id_sealed', 'tax_profile.tax_id_masked', 'notification.params.masked', 'notification.params.previous_masked',
   'notification (queued email: suppressed)',
-  'privacy_export', 'privacy_request.corrections_sealed', 'privacy_request.requester_sealed (other requests)',
+  'privacy_export', 'privacy_request.corrections_sealed', 'privacy_request.requester_sealed (other requests)', 'data_export_file.content',
 ]
 export const ERASURE_RETAINED = [
   'position', 'relationship', 'result_line', 'qualification_state', 'run_snapshot', 'journal_entry', 'posting', 'payout_instruction',
@@ -125,7 +125,7 @@ async function correct(tx: Tx, request: RequestRow): Promise<void> {
 }
 
 async function erase(tx: Tx, request: RequestRow): Promise<void> {
-  let result: { cleared: string[]; retained: string[] }
+  let result: { cleared: string[]; retained: string[]; exports: { id: string; state: 'expired' | 'failed' }[] }
   try {
     const { rows } = await tx.query<{ result: typeof result }>('SELECT prv_erase_participant($1) AS result', [request.id])
     result = rows[0]!.result
@@ -138,6 +138,13 @@ async function erase(tx: Tx, request: RequestRow): Promise<void> {
     action: 'PARTICIPANT.PSEUDONYMISED', objectType: 'participant', objectId: request.subject_participant_id!,
     after: { request_id: request.id, cleared: result.cleared },
   })
+  // D-B6-13: every full export holds the subject's data; the erasure expired or failed it and deleted its files.
+  for (const { id, state } of result.exports) {
+    await recordAudit(tx, {
+      action: state === 'expired' ? 'EXPORT.EXPIRED' : 'EXPORT.FAILED', objectType: 'data_export', objectId: id,
+      after: state === 'expired' ? { request_id: request.id } : { code: 'ERASED_DURING_EXPORT', request_id: request.id },
+    })
+  }
 }
 
 async function close(tx: Tx, request: RequestRow, outcome: 'fulfilled' | 'refused', retentionBasis: string | null): Promise<void> {

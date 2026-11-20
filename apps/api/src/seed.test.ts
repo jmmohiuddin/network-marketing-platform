@@ -1,8 +1,15 @@
+import { mkdtemp, readdir, readFile, rm } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { pathToFileURL } from 'node:url'
 import { beforeAll, describe, expect, test } from 'vitest'
 import { closePoolsAfterAll, ownerRows, resetApiDb, testConfig } from '../test/helpers/index.js'
 import { bankVersionContext } from './lib/bank-crypto.js'
 import { open } from './lib/secret-box.js'
-import { assertSeedable, E2E_FIXTURE_PACK, seed, seedFixtureMarket, seedFixturePack, seedFixturePlanMarket } from './seed.js'
+import {
+  assertSeedable, E2E_FIXTURE_PACK, migrationFixtureFiles, seed, seedFixtureMarket, seedFixtureMigrationMarket, seedFixturePack,
+  seedFixturePlanMarket, writeMigrationFixtureFiles,
+} from './seed.js'
 
 closePoolsAfterAll()
 
@@ -198,6 +205,55 @@ describe('seed', () => {
       scheme: 'iban', account_holder: 'DE-A E2E', iban: 'DE89370400440532013000',
     })
     await expect(seedFixturePlanMarket('nmp_e2e', secretKey)).rejects.toThrow('not nmp_e2e')
+  })
+
+  test('the e2e fixture market AT: in implementation, Vienna months M-3 to M+3 open, structure from M-3; idempotent', async () => {
+    await resetApiDb()
+    const database = (await ownerRows<{ name: string }>('SELECT current_database() AS name'))[0]!.name
+    await seed(testConfig({ NODE_ENV: 'test' }), undefined, () => undefined)
+
+    await seedFixtureMigrationMarket(database)
+    await seedFixtureMigrationMarket(database)
+    const periods = await ownerRows<{ state: string; starts_at: Date; first: Date }>(
+      `SELECT p.state, p.starts_at,
+              (date_trunc('month', now() AT TIME ZONE 'Europe/Vienna') - interval '3 months') AT TIME ZONE 'Europe/Vienna' AS first
+       FROM period p JOIN calendar c ON c.id = p.calendar_id WHERE c.name = 'AT monthly' ORDER BY p.starts_at`,
+    )
+
+    expect(await ownerRows(`SELECT state, currency, minor_unit, time_zone, languages, market_pack FROM market WHERE code = 'AT'`)).toEqual([
+      { state: 'draft', currency: 'EUR', minor_unit: 2, time_zone: 'Europe/Vienna', languages: ['de'], market_pack: E2E_FIXTURE_PACK },
+    ])
+    expect(periods).toHaveLength(7)
+    expect(periods.every((period) => period.state === 'open')).toBe(true)
+    expect(periods[0]!.starts_at).toEqual(periods[0]!.first)
+    expect(await ownerRows(`SELECT count(*)::int AS n FROM participant p JOIN market m ON m.id = p.market_id WHERE m.code = 'AT'`))
+      .toEqual([{ n: 0 }])
+    expect(await ownerRows(
+      `SELECT v.settings -> 'structure' -> 'markets' @> '[{"code": "AT"}]' AS has_at FROM tenant_setting_version v JOIN tenant t ON t.id = v.tenant_id
+       WHERE t.slug = 'acme' AND v.effective_from <= $1 ORDER BY v.effective_from DESC, v.version DESC LIMIT 1`, [periods[0]!.starts_at],
+    )).toEqual([{ has_at: true }])
+    await expect(seedFixtureMigrationMarket('nmp_e2e')).rejects.toThrow('not nmp_e2e')
+  })
+
+  test('the migration files: months M-3..M-1, the cycle variant, opening balances summing to 950', async () => {
+    const files = migrationFixtureFiles({ m3: '2026-08', m2: '2026-09', m1: '2026-10' })
+    const dir = await mkdtemp(join(tmpdir(), 'nmp-b6-migration-'))
+    const database = (await ownerRows<{ name: string }>('SELECT current_database() AS name'))[0]!.name
+
+    try {
+      await writeMigrationFixtureFiles(database, pathToFileURL(`${dir}/`))
+      expect((await readdir(dir)).sort()).toEqual(Object.keys(files).sort())
+      expect(await readFile(join(dir, 'opening_balances.csv'), 'utf8')).toBe('payee_id,amount_minor\nAT-A,1250\nAT-C,-300\n')
+    } finally {
+      await rm(dir, { recursive: true })
+    }
+    expect(files['participants.csv']).toBe(
+      'participant_id,type,enrolled_month,sponsor_id\nAT-A,FXDIST,2026-08,\nAT-B,FXDIST,2026-08,AT-A\nAT-C,FXDIST,2026-08,AT-B\n')
+    expect(files['participants-cycle.csv']).toContain('AT-A,FXDIST,2026-08,AT-C\n')
+    expect(files['orders.csv']).toContain('AT-O0,2026-09,10,AT-A,10000,10000,personal,0,0,\n')
+    expect(files['payout_lines.csv']).toContain('L3,2026-10,AT-B,unilevel,downline_volume,AT-O3,2401\n')
+    expect(files['opening_state.csv']).toBe('participant_id,item,value\nAT-A,title.main,R1\n')
+    await expect(writeMigrationFixtureFiles('nmp_e2e', pathToFileURL(`${dir}/`))).rejects.toThrow('not nmp_e2e')
   })
 
   test('seeds only the local databases, with a fixed password only in nmp_dev and nmp_e2e', () => {

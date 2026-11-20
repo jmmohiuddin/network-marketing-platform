@@ -11,7 +11,7 @@ import { plnModule } from './index.js'
 import type { PlanRow, VersionRow } from './access.js'
 import { activateVersionsJob } from './lifecycle.js'
 import { missingTransitions } from './views.js'
-import { CAPPED, completedSimulation, customRoleUser, GOLDEN_EXPECTED, GOLDEN_INPUT, ingestedOrder, newPlan, personal, putRule, revisionOf, setSettings, UNILEVEL, world, type NewPlan, type World } from './test-support.js'
+import { approvedSetting, CAPPED, completedSimulation, customRoleUser, GOLDEN_EXPECTED, GOLDEN_INPUT, ingestedOrder, newPlan, personal, putRule, revisionOf, setSettings, UNILEVEL, world, type NewPlan, type World } from './test-support.js'
 
 let app: FastifyInstance
 let w: World
@@ -227,7 +227,8 @@ describe('T-B3-02 schedule gates (AC-PLN1-4, AC-10.2 / TS-46, AC-27.2)', () => {
 
     const u = await world()
     await setSettings(u.tenantId, u.planadmin.id, { 'orders.crediting_event': 'paid' })
-    await ingestedOrder(u.tenantId, u.marketA, u.planadmin.id, '2026-05-10T10:00:00Z')
+    // An API order may name its source system 'migration:...'; only a migration's own inbound event exempts an order.
+    await ingestedOrder(u.tenantId, u.marketA, u.planadmin.id, '2026-05-10T10:00:00Z', 'migration:legacy')
     const third = await newPlan(app, u)
     await putRule(app, u.planadmin, third.planId, 'pv', { kind: 'volume.personal', params: personal() })
     const rev = await revisionOf(app, u.planadmin, third.planId)
@@ -314,5 +315,177 @@ describe('D-B5-14 plan change notice', () => {
       { channel: 'email', template: 'plan.change_scheduled', effective_from: '2026-12-31T23:00:00.000Z', version_id: await versionId(plan.planId) },
       { channel: 'in_app', template: 'plan.change_scheduled', effective_from: '2026-12-31T23:00:00.000Z', version_id: await versionId(plan.planId) },
     ])
+  })
+})
+
+describe('B6 plan-change governance (D-B6-02, D-B6-03; T-B6-01..04, TS-46 filing part, TS-68)', () => {
+  let g: World
+  const SYSTEM = '00000000-0000-0000-0000-000000000000'
+  beforeAll(async () => {
+    g = await world()
+  })
+
+  /** FIXTURE: an evidence document uploaded by `by` (AUD writes these). */
+  async function evidence(by: TestUser): Promise<string> {
+    const [row] = await ownerRows<{ id: string }>(
+      `INSERT INTO document (tenant_id, class, storage_key, sha256, mime, size_bytes, uploaded_by, version, file_name)
+       VALUES ($1, 'evidence', 'documents/fixture', sha256(gen_random_uuid()::text::bytea), 'application/pdf', 1, $2, 1, 'filing.pdf') RETURNING id`,
+      [by.tenantId, by.id])
+    return row!.id
+  }
+  const gApproved = async (plan: NewPlan, on: World = g): Promise<void> => {
+    await author(plan, { as: on.planadmin })
+    expect((await submit(plan.planId, 1, on.planadmin)).statusCode).toBe(200)
+    expect((await decide(plan.planId, 1, on.compliance)).statusCode).toBe(200)
+  }
+  const fileFor = async (planId: string, as: TestUser, body: Record<string, unknown>) =>
+    post(as, url(planId, 1, '/filings'), body)
+  const governance = async (planId: string, as: TestUser) => call(app, { method: 'GET', url: url(planId, 1, '/governance'), as })
+  async function authorAs(plan: NewPlan, as: TestUser): Promise<void> {
+    await putRule(app, as, plan.planId, 'pv', { kind: 'volume.personal', params: personal() })
+    await putRule(app, as, plan.planId, 'unilevel', UNILEVEL)
+    const revision = await revisionOf(app, as, plan.planId)
+    await call(app, { method: 'PATCH', url: url(plan.planId, 1), as, body: { crediting_event: 'paid' }, headers: { 'if-match': `"${revision}"` } })
+    await completedSimulation(await versionId(plan.planId), plan.calendarA)
+  }
+
+  test('T-B6-01 / AC-PLN7-4: filing records: validation, state, plan market, evidence, scope; a contributor may record; the latest row is the status', async () => {
+    const contributor = await customRoleUser(g.tenantId, ['plan.read', 'plan.edit', 'plan.approve'])
+    const plan = await newPlan(app, g)
+    const draft = await fileFor(plan.planId, g.compliance, { market_id: g.marketA, status: 'not_required', note: 'Counsel: no filing', document_id: await evidence(g.compliance) })
+    await authorAs(plan, contributor)
+    expect((await submit(plan.planId, 1, contributor)).statusCode).toBe(200)
+    const filed = { market_id: g.marketA, status: 'filed', reference: 'BaFin-2026-17', filed_on: '2026-11-02' }
+
+    const refusals = [
+      await fileFor(plan.planId, g.compliance, { ...filed }),
+      await fileFor(plan.planId, g.compliance, { market_id: g.marketA, status: 'not_required', document_id: await evidence(g.compliance) }),
+      await fileFor(plan.planId, g.compliance, { ...filed, market_id: other.marketA, document_id: await evidence(g.compliance) }),
+      await fileFor(plan.planId, g.compliance, { ...filed, document_id: await evidence(g.finance) }),
+    ]
+    const byContributor = await fileFor(plan.planId, contributor, { ...filed, document_id: await evidence(contributor) })
+    expect((await decide(plan.planId, 1, g.compliance)).statusCode).toBe(200)
+    const acknowledged = await fileFor(plan.planId, g.compliance, { ...filed, status: 'acknowledged', filed_on: '2026-11-09', document_id: await evidence(g.compliance) })
+    const view = await governance(plan.planId, g.executive)
+
+    expect(draft.json().error).toMatchObject({ code: 'VERSION_STATE', details: { state: 'draft' } })
+    expect(refusals.map((r) => [r.statusCode, r.json().error.code])).toEqual([
+      [422, 'VALIDATION_FAILED'], [422, 'VALIDATION_FAILED'], [422, 'MARKET_NOT_IN_PLAN'], [422, 'DOCUMENT_NOT_REFERENCEABLE'],
+    ])
+    expect(refusals[0]!.json().error.details.issues).toEqual([{ path: 'document_id', message: 'required when status is filed' }])
+    expect(byContributor.statusCode).toBe(201)
+    expect(byContributor.json().data).toMatchObject({ market_id: g.marketA, status: 'filed', reference: 'BaFin-2026-17', filed_on: '2026-11-02', recorded_by: { id: contributor.id } })
+    expect(acknowledged.statusCode).toBe(201)
+    const filingA = view.json().data.filings.find((f: { market: { id: string } }) => f.market.id === g.marketA)
+    expect(filingA).toMatchObject({ required: false, current: { status: 'acknowledged', filed_on: '2026-11-09' } })
+    expect(filingA.history.map((f: { status: string }) => f.status)).toEqual(['acknowledged', 'filed'])
+    expect(await auditActions(g.tenantId)).toEqual(expect.arrayContaining(['PLAN_FILING.RECORDED']))
+    expect((await fileFor(plan.planId, g.planadmin, { ...filed, document_id: await evidence(g.planadmin) })).statusCode).toBe(403)
+    expect((await fileFor(plan.planId, other.compliance, { ...filed, document_id: await evidence(other.compliance) })).statusCode).toBe(404)
+    expect((await governance(plan.planId, other.executive)).statusCode).toBe(404)
+  })
+
+  test('T-B6-02 / AC-27.1 / AC-PLN7-3: the filing gate refuses until the required market has a filing; the schedule records the notice', async () => {
+    const g = await world()
+    await approvedSetting(g.tenantId, 'plan.filing_requirements', { market_ids: [g.marketA] }, g.planadmin, g.compliance)
+    const plan = await newPlan(app, g)
+    await gApproved(plan, g)
+    // FIXTURE: one position owner in market A (PAR and GEN write these): one in-app notice.
+    await ownerRows(
+      `WITH x AS (INSERT INTO participant (tenant_id, external_ref, account_type, market_id, display_name, enrolled_at, created_by, created_by_type)
+                  VALUES ($1, $2, 'individual', $3, 'Owner', '2020-01-01', $4, 'system') RETURNING id),
+            p AS (INSERT INTO position (tenant_id, position_ref, market_id, status, status_from, created_by, created_by_type)
+                  VALUES ($1, $2, $3, 'active', '2020-01-01', $4, 'system') RETURNING id)
+       INSERT INTO position_ownership (tenant_id, position_id, participant_id, valid_from, created_by, created_by_type)
+       SELECT $1, p.id, x.id, '2020-01-01', $4, 'system' FROM p, x`,
+      [g.tenantId, `OWN-${randomUUID().slice(0, 8)}`, g.marketA, SYSTEM])
+
+    const refused = await post(g.finance, url(plan.planId, 1, '/schedule'), { effective_from: NEXT_JANUARY, justification: 'Board decision 2026-11' })
+    const before = await governance(plan.planId, g.executive)
+    expect((await fileFor(plan.planId, g.compliance, { market_id: g.marketA, status: 'filed', reference: 'R-1', filed_on: '2026-11-02', document_id: await evidence(g.compliance) })).statusCode).toBe(201)
+    const scheduled = await post(g.finance, url(plan.planId, 1, '/schedule'), { effective_from: NEXT_JANUARY, justification: 'Board decision 2026-11' })
+    const after = await governance(plan.planId, g.executive)
+    const [notices] = await ownerRows<{ n: number }>(
+      "SELECT count(*)::int AS n FROM notification WHERE tenant_id = $1 AND template = 'plan.change_scheduled' AND channel = 'in_app' AND params ->> 'plan_version_id' = $2",
+      [g.tenantId, await versionId(plan.planId)])
+
+    expect(refused.json().error).toMatchObject({ code: 'FILING_STATUS_MISSING', details: { market_ids: [g.marketA] } })
+    expect(before.json().data.version).toMatchObject({ state: 'approved', notice_sent_at: null, notice_recipients: null })
+    expect(before.json().data.items.find((i: { key: string }) => i.key === 'filing')).toMatchObject({ ok: false, details: { market_ids: [g.marketA] } })
+    expect(scheduled.statusCode).toBe(200)
+    expect(notices!.n).toBe(1)
+    expect(after.json().data.version).toMatchObject({ state: 'scheduled', notice_recipients: 1, notice_sent_at: expect.any(String) })
+    expect(after.json().data.notice).toMatchObject({ days: null, earliest_effective_from: null, recipients: 1 })
+    expect(after.json().data.items.find((i: { key: string }) => i.key === 'filing')).toMatchObject({ ok: true, reason: null })
+    const [audit] = await ownerRows<{ after: { after: Record<string, unknown> } }>(
+      "SELECT after_ref::jsonb AS after FROM audit.audit_event WHERE object_id = $1 AND action = 'PLAN_VERSION.SCHEDULED'", [await versionId(plan.planId)])
+    expect(audit!.after.after).toMatchObject({ notice_recipients: 1 })
+  })
+
+  test('BR-PLN-03 / AC-27.1: a filing holds for the content it was recorded for; after a rejection and an edit the gate needs a new one', async () => {
+    const g = await world()
+    await approvedSetting(g.tenantId, 'plan.filing_requirements', { market_ids: [g.marketA] }, g.planadmin, g.compliance)
+    const plan = await newPlan(app, g)
+    await author(plan, { as: g.planadmin })
+    expect((await submit(plan.planId, 1, g.planadmin)).statusCode).toBe(200)
+    const counsel = { market_id: g.marketA, status: 'not_required', note: 'Counsel: no filing for this content' }
+    expect((await fileFor(plan.planId, g.compliance, { ...counsel, document_id: await evidence(g.compliance) })).statusCode).toBe(201)
+    expect((await decide(plan.planId, 1, g.compliance, 'reject')).statusCode).toBe(200)
+    await putRule(app, g.planadmin, plan.planId, 'unilevel', { ...UNILEVEL, params: { ...UNILEVEL.params, levels: ['0.12'] } })
+    await completedSimulation(await versionId(plan.planId), plan.calendarA)
+    expect((await submit(plan.planId, 1, g.planadmin)).statusCode).toBe(200)
+    expect((await decide(plan.planId, 1, g.compliance)).statusCode).toBe(200)
+
+    const refused = await schedule(plan.planId, NEXT_JANUARY, 1, g.finance)
+    const stale = (await governance(plan.planId, g.executive)).json().data
+    expect((await fileFor(plan.planId, g.compliance, { ...counsel, document_id: await evidence(g.compliance) })).statusCode).toBe(201)
+    const scheduled = await schedule(plan.planId, NEXT_JANUARY, 1, g.finance)
+
+    expect(refused.json().error).toMatchObject({ code: 'FILING_STATUS_MISSING', details: { market_ids: [g.marketA] } })
+    const filingA = stale.filings.find((f: { market: { id: string } }) => f.market.id === g.marketA)
+    expect(filingA).toMatchObject({ required: true, current: null, history: [{ status: 'not_required' }] })
+    expect(stale.items.find((i: { key: string }) => i.key === 'filing')).toMatchObject({ ok: false })
+    expect(scheduled.statusCode).toBe(200)
+  })
+
+  test('TS-68 regression with the filing gate unset: notice days refuse a short effective time; the governance view names the notice', async () => {
+    const g = await world()
+    await setSettings(g.tenantId, g.planadmin.id, { 'plan.activation_notice_days': 30 })
+    const plan = await newPlan(app, g)
+    await gApproved(plan, g)
+    const soon = await post(g.finance, url(plan.planId, 1, '/schedule'), { effective_from: DECEMBER, justification: 'Board decision 2026-11' })
+    const view = await governance(plan.planId, g.executive)
+    expect(soon.json().error).toMatchObject({ code: 'NOTICE_PERIOD_NOT_MET', details: { notice_days: 30 } })
+    expect(view.json().data.items.map((i: { key: string; ok: boolean }) => [i.key, i.ok])).toEqual([
+      ['simulation', true], ['goldens', true], ['guardrails', true], ['transitions', true], ['filing', true], ['notice', true], ['approvals', false],
+    ])
+    expect(view.json().data.items.find((i: { key: string }) => i.key === 'notice').reason).toMatch(/^Schedule on or after \d{4}-\d{2}-\d{2} \(30 days' notice\)\.$/)
+    expect(view.json().data.items.find((i: { key: string }) => i.key === 'filing').reason).toBe('No market requires a filing.')
+    expect(view.json().data.notice).toMatchObject({ days: 30, earliest_effective_from: expect.any(String), sent_at: null })
+    expect(view.json().data.approvals).toMatchObject({ compliance: { by: { id: g.compliance.id } }, activation: null })
+  })
+
+  test('T-B6-03 / AC-PLN8-2: first_run_id is null before a run under the version and the earliest run after', async () => {
+    const plan = await newPlan(app, g)
+    await gApproved(plan, g)
+    const scheduled = await post(g.finance, url(plan.planId, 1, '/schedule'), { effective_from: MARCH, justification: 'Board decision 2026-11' })
+    expect(scheduled.statusCode, scheduled.body).toBe(200)
+    const empty = await governance(plan.planId, g.executive)
+    // FIXTURE: COMP queues runs of March and April under the version (COMP writes runs).
+    const runs = await ownerRows<{ id: string }>(
+      `WITH s AS (INSERT INTO tenant_setting_version (tenant_id, version, effective_from, settings, reason, created_by)
+                  SELECT $1, coalesce(max(version), 0) + 1, now(), '{}', 'FIXTURE', $3 FROM tenant_setting_version WHERE tenant_id = $1 RETURNING id)
+       INSERT INTO run (tenant_id, period_id, run_request_id, plan_version_id, settings_version_id, engine_version, prepared_by)
+       SELECT $1, p.id, gen_random_uuid()::text, $2, s.id, 'fixture', $3
+       FROM s, period p WHERE p.calendar_id = $4 AND p.starts_at IN ($5::timestamptz, $6::timestamptz)
+       RETURNING id`,
+      [g.tenantId, await versionId(plan.planId), g.planadmin.id, plan.calendarA, MARCH, APRIL])
+    const [march] = await ownerRows<{ id: string }>('SELECT r.id FROM run r JOIN period p ON p.id = r.period_id WHERE r.id = ANY ($1::uuid[]) AND p.starts_at = $2::timestamptz',
+      [runs.map((r) => r.id), MARCH])
+    expect(empty.json().data.first_run_id).toBeNull()
+    expect((await governance(plan.planId, g.executive)).json().data.first_run_id).toBe(march!.id)
+    // FIXTURE: the March run fails (COMP); a failed run has no transition report, so the April run is named.
+    await ownerRows(`UPDATE run SET state = 'failed', error = '{"code": "FIXTURE"}' WHERE id = $1`, [march!.id])
+    expect((await governance(plan.planId, g.executive)).json().data.first_run_id).toBe(runs.find((r) => r.id !== march!.id)!.id)
   })
 })

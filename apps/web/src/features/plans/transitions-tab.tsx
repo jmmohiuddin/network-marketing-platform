@@ -15,7 +15,7 @@ import type { Transition } from './types'
 import { CARD, H2, ifMatch, MONO, NOTE, reloadedIfStale } from './ui'
 
 const STATE_ITEM = /^(title|paid_as|carry|counter|one_time|banked)\.([a-z0-9_]+|\*)$/
-const RULE_LABELS = { carry: 'Carry the value over', map: 'Map ranks', reset: 'Reset' } as const
+export const RULE_LABELS = { carry: 'Carry the value over', map: 'Map ranks', reset: 'Reset' } as const
 const RULE_HELP = {
   carry: 'Positions keep the value they had under the previous version.',
   map: 'Ranks of the previous version become ranks of this one.',

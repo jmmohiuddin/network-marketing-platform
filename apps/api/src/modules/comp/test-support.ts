@@ -40,7 +40,7 @@ export function user(tenantId: string, roles: BaseRoleName[], marketIds: string[
   return createSignedInUser({ tenantId, roles, stepUp: true, marketIds })
 }
 
-async function approval(tenantId: string, objectType: string, objectId: string, preparer: string, approver: string): Promise<string> {
+export async function approval(tenantId: string, objectType: string, objectId: string, preparer: string, approver: string): Promise<string> {
   return one(
     `INSERT INTO approval (tenant_id, object_type, object_id, preparer_id, approver_id, decision, decided_at, created_by)
      VALUES ($1, $2, $3, $4, $5, 'approved', now(), $5) RETURNING id`,
@@ -381,4 +381,21 @@ export async function balance(w: World, participantId: string | null, type: stri
     [w.marketId, participantId, type],
   )
   return row!.amount
+}
+
+/**
+ * A migration of the world's market cut over at `periodId`, already `opening_posted` or `signed_off` (D-B6-10/11), written
+ * by the owner with triggers off: its import batch is not modelled. The opening approval is the analyst's, decided by finance.
+ */
+export async function migrationAt(w: World, periodId: string, state: 'opening_posted' | 'signed_off'): Promise<{ id: string; openingApprovalId: string }> {
+  const id = randomUUID()
+  const openingApprovalId = await approval(w.tenantId, 'migration', id, w.analyst.id, w.finance.id)
+  const signoff = state === 'signed_off' ? await approval(w.tenantId, 'migration', id, w.analyst.id, w.finance2.id) : null
+  await ownerUnchecked(
+    `INSERT INTO migration (id, tenant_id, market_id, import_batch_id, cutover_period_id, volume_key, state, applied_counts, applied_at,
+       opening_submitted_by, opening_submitted_at, opening_approval_id, signoff_approval_id, signed_off_at, created_by)
+     VALUES ($1, $2, $3, gen_random_uuid(), $4, 'pv', $5, '{}', now(), $6, now(), $7, $8::uuid, CASE WHEN $8::uuid IS NOT NULL THEN now() END, $6)`,
+    [id, w.tenantId, w.marketId, periodId, state, w.analyst.id, openingApprovalId, signoff],
+  )
+  return { id, openingApprovalId }
 }

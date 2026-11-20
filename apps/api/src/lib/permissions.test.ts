@@ -4,6 +4,7 @@ import {
   B4_MFA_CHANGED_BASE_ROLES,
   B4_UPDATED_BASE_ROLES,
   B5_UPDATED_BASE_ROLES,
+  B6_UPDATED_BASE_ROLES,
   BASE_ROLES,
   isPrivileged,
   PERMISSIONS,
@@ -20,16 +21,17 @@ const MIGRATION_0206 = new URL('../../../../packages/db/migrations/0206_b2_base_
 const MIGRATION_0304 = new URL('../../../../packages/db/migrations/0304_b3_base_roles.sql', import.meta.url)
 const MIGRATION_0405 = new URL('../../../../packages/db/migrations/0405_b4_base_roles.sql', import.meta.url)
 const MIGRATION_0505 = new URL('../../../../packages/db/migrations/0505_b5_base_roles_settings.sql', import.meta.url)
+const MIGRATION_0606 = new URL('../../../../packages/db/migrations/0606_b6_roles_privacy.sql', import.meta.url)
 
 // TS-36 fixture (SDD-10 matrix, SEC-25 names, E-ADR-09). Changing a role's permissions must change this table.
 const MATRIX: Readonly<Record<string, string>> = {
   'Tenant admin':
-    'user.manage settings.manage import.manage mapping.edit mapping.approve compliance.read audit.read vendor_access.decide market.manage integration.manage participant.read order.read product.manage integration.read ledger.export',
+    'user.manage settings.manage import.manage mapping.edit mapping.approve compliance.read audit.read vendor_access.decide market.manage integration.manage participant.read order.read product.manage integration.read ledger.export export.full',
   'Commission analyst':
     'compliance.read participant.read genealogy.read case.genealogy.read order.read late.manage integration.read plan.read period.read run.execute run.review trace.read restatement.request case.restatement.read ledger.read case.adjustment.read case.adjustment.create case.write_off.read case.write_off.create case.dispute.read case.dispute.approve',
   'Plan administrator': 'compliance.read plan.read plan.edit plan.simulate period.read guardrail.read',
   'Finance approver':
-    'compliance.read participant.unmask plan.activate settings.approve participant.read order.read plan.read period.read run.review run.commit trace.read restatement.approve case.restatement.read ledger.read ledger.export payout.read payout.approve tax.manage case.adjustment.read case.adjustment.approve case.write_off.read case.write_off.create case.write_off.approve case.returned_payment.read case.dispute.read',
+    'compliance.read participant.unmask plan.activate settings.approve participant.read order.read plan.read period.read run.review run.commit trace.read restatement.approve case.restatement.read ledger.read ledger.export payout.read payout.approve tax.manage case.adjustment.read case.adjustment.approve case.write_off.read case.write_off.create case.write_off.approve case.returned_payment.read case.dispute.read migration.signoff period.close',
   'Payout officer':
     'participant.unmask participant.read ledger.read payout.read payout.prepare payout.reconcile payout.hold case.bank_detail.read case.returned_payment.read case.returned_payment.create',
   'Compliance officer':
@@ -37,8 +39,8 @@ const MATRIX: Readonly<Record<string, string>> = {
   'Support agent':
     'participant.read participant.manage genealogy.read case.genealogy.read case.genealogy.create case.duplicate.read case.duplicate.create servicing.manage order.read period.read run.review trace.read case.bank_detail.read case.bank_detail.create case.dispute.read',
   DPO: 'compliance.read audit.read participant.unmask participant.read privacy.manage',
-  'Implementation consultant': 'import.manage mapping.edit plan.read plan.edit plan.simulate period.read',
-  'Executive read-only': 'compliance.read plan.read period.read',
+  'Implementation consultant': 'import.manage mapping.edit plan.read plan.edit plan.simulate period.read migration.manage',
+  'Executive read-only': 'compliance.read plan.read period.read dashboard.exec',
   Integration: '',
 }
 // SEC-03 union (SECURITY_IAM_TENANCY conflict 1), plus Support agent for bank-detail requests (PLAN B4 section 3).
@@ -47,19 +49,20 @@ const MFA_ROLES = ['Tenant admin', 'Finance approver', 'Payout officer', 'Compli
 const PRIVILEGED_ROLES = ['Tenant admin', 'Finance approver', 'Compliance officer', 'DPO']
 
 describe('permission catalogue (TS-36 fixture)', () => {
-  test('lists exactly the release A permissions, participant.unmask, plan.activate and the B1..B5 additions', () => {
+  test('lists exactly the release A permissions, participant.unmask, plan.activate and the B1..B6 additions', () => {
     expect([...PERMISSIONS].sort()).toEqual([
       'agreement.publish', 'audit.read', 'case.adjustment.approve', 'case.adjustment.create', 'case.adjustment.read',
       'case.bank_detail.approve', 'case.bank_detail.create', 'case.bank_detail.read', 'case.dispute.approve',
       'case.dispute.read', 'case.duplicate.approve',
       'case.duplicate.create', 'case.duplicate.read', 'case.genealogy.approve', 'case.genealogy.create',
       'case.genealogy.read', 'case.restatement.read', 'case.returned_payment.create', 'case.returned_payment.read',
-      'case.write_off.approve', 'case.write_off.create', 'case.write_off.read', 'compliance.read', 'export',
-      'genealogy.read', 'guardrail.read', 'import.manage', 'integration.manage', 'integration.read', 'late.manage',
-      'ledger.export', 'ledger.read', 'mapping.approve', 'mapping.edit', 'market.manage', 'market.signoff', 'order.read',
+      'case.write_off.approve', 'case.write_off.create', 'case.write_off.read', 'compliance.read', 'dashboard.exec', 'export',
+      'export.full', 'genealogy.read', 'guardrail.read', 'import.manage', 'integration.manage', 'integration.read', 'late.manage',
+      'ledger.export', 'ledger.read', 'mapping.approve', 'mapping.edit', 'market.manage', 'market.signoff', 'migration.manage',
+      'migration.signoff', 'order.read',
       'override.approve', 'participant.manage', 'participant.read', 'participant.terminate', 'participant.unmask',
       'participant_type.approve', 'payout.approve', 'payout.hold', 'payout.prepare', 'payout.read', 'payout.reconcile',
-      'period.read', 'plan.activate', 'plan.approve', 'plan.edit', 'plan.read', 'plan.simulate', 'privacy.manage',
+      'period.close', 'period.read', 'plan.activate', 'plan.approve', 'plan.edit', 'plan.read', 'plan.simulate', 'privacy.manage',
       'product.manage', 'restatement.approve', 'restatement.request', 'run.commit', 'run.execute', 'run.review',
       'servicing.manage', 'settings.approve', 'settings.manage', 'snapshot.create', 'tax.manage', 'trace.read',
       'user.manage', 'vendor_access.decide',
@@ -81,6 +84,11 @@ describe('permission catalogue (TS-36 fixture)', () => {
   test('B5 dispute permissions are not privileged (PLAN B5 section 3)', () => {
     expect(isPrivileged(['case.dispute.read', 'case.dispute.approve'])).toBe(false)
     expect(requiresMfa(['case.dispute.approve'])).toBe(false)
+  })
+
+  test('B6 full export, migration sign-off and period close are privileged; dashboards and migration work are not', () => {
+    for (const permission of ['export.full', 'migration.signoff', 'period.close'] as const) expect(isPrivileged([permission])).toBe(true)
+    for (const permission of ['dashboard.exec', 'migration.manage'] as const) expect(isPrivileged([permission])).toBe(false)
   })
 
   test('B2 deciding, terminating, publishing and privacy permissions are privileged; reads and filing are not', () => {
@@ -146,13 +154,21 @@ describe('permission catalogue (TS-36 fixture)', () => {
     }
   })
 
-  test('migration 0505 brings exactly the B5-changed base roles to the catalogue', () => {
-    expect(readFileSync(MIGRATION_0505, 'utf8')).toContain(renderBaseRoleUpdate(B5_UPDATED_BASE_ROLES))
+  test('migration 0505 updates exactly the B5-changed base roles', () => {
+    const updated = readFileSync(MIGRATION_0505, 'utf8').split('\n')
+      .flatMap((line) => /^UPDATE role SET permissions .* name = '([^']+)';$/.exec(line)?.[1] ?? [])
+
+    // The permissions B5 wrote are pinned by the last-update test below (B6 extends Finance approver).
+    expect(updated).toEqual([...B5_UPDATED_BASE_ROLES])
   })
 
-  test('0007, then 0106, 0206, 0304, 0405 and 0505 equals the catalogue: each role as its last migration leaves it', () => {
+  test('migration 0606 brings exactly the B6-changed base roles to the catalogue', () => {
+    expect(readFileSync(MIGRATION_0606, 'utf8')).toContain(renderBaseRoleUpdate(B6_UPDATED_BASE_ROLES))
+  })
+
+  test('0007, then 0106, 0206, 0304, 0405, 0505 and 0606 equals the catalogue: each role as its last migration leaves it', () => {
     const lastUpdate = new Map<string, string>()
-    for (const file of [MIGRATION_0106, MIGRATION_0206, MIGRATION_0304, MIGRATION_0405, MIGRATION_0505]) {
+    for (const file of [MIGRATION_0106, MIGRATION_0206, MIGRATION_0304, MIGRATION_0405, MIGRATION_0505, MIGRATION_0606]) {
       for (const line of readFileSync(file, 'utf8').split('\n')) {
         const name = /^UPDATE role .* name = '([^']+)';$/.exec(line)?.[1]
         if (name !== undefined) lastUpdate.set(name, line)

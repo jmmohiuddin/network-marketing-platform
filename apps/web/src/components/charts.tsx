@@ -37,7 +37,7 @@ const SWATCH = { a: 'bg-primary-container', b: 'bg-tertiary-container' } as cons
  * The chart's drawn width in CSS pixels, so the SVG is laid out 1:1 and its 11 px text stays 11 px on a phone
  * (BUG-035: a fixed 560 viewBox scaled text down to about 5 px at 390). WIDTH until measured (and in tests).
  */
-function useMeasuredWidth() {
+export function useMeasuredWidth() {
   const ref = useRef<HTMLDivElement>(null)
   const [width, setWidth] = useState(WIDTH)
   useEffect(() => {
@@ -97,20 +97,24 @@ export interface ChartCardProps {
   /** The same values as a table: the chart's text alternative. */
   readonly table: ReactNode
   readonly children: ReactNode
+  /** h3 inside a titled section (default); h2 when the card is a top-level section of the page. */
+  readonly headingLevel?: 2 | 3
 }
 
-/** Chart card (sc_35 l.175 card): title, summary sentence and the "View as table" toggle (always present). */
-export function ChartCard({ title, summary, legend, table, children }: ChartCardProps) {
+/** Chart card (sc_35 l.175 card): title, summary sentence and the "View as table" / "View as chart" toggle (always present). */
+export function ChartCard({ title, summary, legend, table, children, headingLevel = 3 }: ChartCardProps) {
   const [asTable, setAsTable] = useState(false)
   const titleId = useId()
+  const Heading = headingLevel === 2 ? 'h2' : 'h3'
   return (
     <figure className="bg-surface-container-lowest rounded-xl p-space-md shadow-sm flex flex-col gap-space-sm" aria-labelledby={titleId}>
       <div className="flex flex-wrap items-start justify-between gap-space-sm">
         <div className="min-w-0">
-          <h3 id={titleId} className="font-section-heading text-section-heading text-on-surface">{title}</h3>
+          <Heading id={titleId} className="font-section-heading text-section-heading text-on-surface">{title}</Heading>
           <p className="font-body-sm text-body-sm text-secondary">{summary}</p>
         </div>
-        <Button variant="tertiary" aria-pressed={asTable} onClick={() => setAsTable((current) => !current)}>View as table</Button>
+        {/* The label names what the click shows (BUG-127), so no aria-pressed: a toggle's name must not change. */}
+        <Button variant="tertiary" onClick={() => setAsTable((current) => !current)}>{asTable ? 'View as chart' : 'View as table'}</Button>
       </div>
       {asTable ? table : <>{legend}{children}</>}
     </figure>

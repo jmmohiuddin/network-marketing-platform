@@ -37,4 +37,13 @@ describe('GET /v1/me navigation (PLAN B4 section 2.6)', () => {
     expect(await keys(['Executive read-only'])).not.toContain('privacy')
     expect(await keys(['Executive read-only'])).not.toContain('cases')
   })
+
+  test('B6: the overview opens with dashboard.exec, migration with migration.manage or migration.signoff', async () => {
+    expect(await keys(['Implementation consultant'])).toEqual(expect.arrayContaining(['imports', 'migration']))
+    expect(await keys(['Finance approver'])).toContain('migration')
+    expect(await keys(['Executive read-only'])).toContain('overview')
+    expect(await keys(['Commission analyst'])).not.toContain('migration')
+    expect(await keys(['Commission analyst'])).not.toContain('overview')
+    expect(await keys(['Support agent'])).not.toContain('migration')
+  })
 })

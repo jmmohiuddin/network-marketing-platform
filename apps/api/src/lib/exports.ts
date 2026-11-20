@@ -1,5 +1,6 @@
 import type { Tx } from '@nmp/db'
 import { recordAudit } from './audit.js'
+import { ApiError } from './errors.js'
 
 /** What an export would contain, checked against the row cap before anything is produced (FR-AUD-002). */
 export interface ExportRequest {
@@ -31,9 +32,13 @@ export type ExportDecision = { readonly refused: true; readonly rowCount: number
  * Records an export in the caller's tenant transaction: within the cap it writes export_job (destination =
  * the tenant's region, TS-57) and EXPORT.CREATED; above the cap it writes only EXPORT.REFUSED. Either way
  * the audit event names the actor, view (kind), filters and row count (AC-54.1). The caller commits the
- * transaction in both cases and answers a refusal with 422 EXPORT_ROW_CAP_EXCEEDED.
+ * transaction in both cases and answers a refusal with 422 EXPORT_ROW_CAP_EXCEEDED. Inside a support session it refuses
+ * 403 PERMISSION_DENIED before anything is written.
  */
 export async function recordExport(tx: Tx, request: ExportRequest): Promise<ExportDecision> {
+  // A support session is read-only (FR-IAM-005): it may read rows but takes no bulk copy of tenant data out.
+  const { rows: actor } = await tx.query<{ vendor: boolean }>(`SELECT app_actor_type() = 'vendor_user' AS vendor`)
+  if (actor[0]!.vendor) throw new ApiError(403, 'PERMISSION_DENIED', 'Exports are not available inside a support session.')
   const audited = { kind: request.kind, filters: request.filters, row_count: request.rowCount }
   if (request.rowCount > request.rowCap) {
     await recordAudit(tx, { action: 'EXPORT.REFUSED', objectType: 'export_job', after: { ...audited, row_cap: request.rowCap } })

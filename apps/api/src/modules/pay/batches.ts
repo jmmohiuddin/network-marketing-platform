@@ -27,7 +27,7 @@ const participant = (id: string) =>
 const BATCH_VIEW = `
   SELECT b.id, jsonb_build_object('id', m.id, 'code', m.code) AS market,
          jsonb_build_object('id', c.id, 'provider', c.provider, 'adapter', c.adapter, 'state', c.state) AS provider,
-         jsonb_build_object('id', p.id, 'starts_at', p.starts_at, 'ends_at', p.ends_at, 'state', p.state) AS period,
+         jsonb_build_object('id', p.id, 'starts_at', json_instant(p.starts_at), 'ends_at', json_instant(p.ends_at), 'state', p.state) AS period,
          b.state, b.total_minor::text AS total_minor, b.currency,
          (SELECT count(*)::int FROM payout_batch_line l WHERE l.batch_id = b.id) AS line_count,
          coalesce((SELECT jsonb_agg(jsonb_build_object('participant', ${participant(`(e ->> 'participant_id')::uuid`)}, 'reasons', e -> 'reasons'))

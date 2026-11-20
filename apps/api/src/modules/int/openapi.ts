@@ -3,6 +3,7 @@ import { publicSnapshotSchemas } from '../cpl/index.js'
 import { publicServicingSchemas } from '../crm/index.js'
 import { publicOrderSchemas } from '../ord/index.js'
 import { publicParticipantSchemas } from '../par/index.js'
+import { pageQuery } from '../../lib/pagination.js'
 import { WEBHOOK_TOPICS } from './topics.js'
 
 type JsonSchema = Record<string, unknown>
@@ -209,6 +210,47 @@ function ledgerPaths() {
   }
 }
 
+const dataOf = (schema: JsonSchema) => json({ type: 'object', required: ['data'], properties: { data: schema } })
+const EXPORT_ROW = {
+  type: 'object',
+  properties: {
+    id: { type: 'string', format: 'uuid' }, trigger: { enum: ['manual', 'schedule'] },
+    state: { enum: ['queued', 'running', 'completed', 'failed', 'expired'] }, model_version: { type: 'integer' },
+    snapshot_at: { type: ['string', 'null'], format: 'date-time' }, table_count: { type: ['integer', 'null'] }, total_rows: { type: ['integer', 'null'] },
+    created_at: { type: 'string', format: 'date-time' }, finished_at: { type: ['string', 'null'], format: 'date-time' },
+    requested_by: { type: ['object', 'null'], properties: { id: { type: 'string', format: 'uuid' }, type: { type: 'string' } } },
+    error: { type: ['object', 'null'], properties: { code: { type: 'string' } } },
+  },
+}
+
+/** PLAN B6 2.3 (API-32): full data exports by an exports:full key (a session needs export.full for all markets and step-up to create). */
+function exportPaths() {
+  const scope = { security: [{ bearer: [] }], 'x-required-scope': 'exports:full' }
+  const ok = (description: string, schema: JsonSchema) => ({ 200: { description, content: dataOf(schema) }, ...KEY_ERRORS })
+  return {
+    '/v1/exports/model': { get: { operationId: 'getExportModel', summary: 'The published model: exported tables and columns, exclusions with reasons', ...scope,
+      responses: ok('Model', { type: 'object', properties: { version: { type: 'integer' }, tables: { type: 'array' }, excluded_tables: { type: 'array' },
+        excluded_columns: { type: 'array' } } }) } },
+    '/v1/exports/signing-key': { get: { operationId: 'getExportSigningKey', summary: 'Ed25519 public key (base64 SPKI DER) that signs every manifest', ...scope,
+      responses: ok('Key', { type: 'object', properties: { algorithm: { const: 'Ed25519' }, public_key: { type: 'string' }, key_id: { type: 'string' } } }) } },
+    '/v1/exports': {
+      get: { operationId: 'listExports', summary: 'Full exports, newest first', ...scope, parameters: queryParameters(z.object(pageQuery)),
+        responses: ok('Exports', { type: 'array', items: EXPORT_ROW }) },
+      post: { operationId: 'createExport', summary: 'Queue a full export of the tenant (one at a time)', ...scope, parameters: [IDEMPOTENCY_KEY],
+        requestBody: { required: true, content: json({ type: 'object', additionalProperties: false }) },
+        responses: { 202: { description: 'Queued', content: dataOf({ type: 'object', properties: { id: { type: 'string', format: 'uuid' }, state: { const: 'queued' } } }) },
+          409: errorResponse('EXPORT_RUNNING: another export is queued or running'), ...KEY_ERRORS } },
+    },
+    '/v1/exports/{id}': { get: { operationId: 'getExport', summary: 'One export with its manifest and the manifest signature (base64)', ...scope,
+      parameters: [ID_PARAMETER], responses: { ...ok('Export', EXPORT_ROW), 404: errorResponse('NOT_FOUND: no such export') } } },
+    '/v1/exports/{id}/files/{table}': { get: { operationId: 'downloadExportFile', summary: 'One table as gzipped JSON Lines (<table>.jsonl.gz)', ...scope,
+      parameters: [ID_PARAMETER, { name: 'table', in: 'path', required: true, schema: { type: 'string' } }],
+      responses: { 200: { description: 'The file', content: { 'application/gzip': { schema: { type: 'string', contentMediaType: 'application/gzip' } } } },
+        404: errorResponse('NOT_FOUND: no such export or table, or the export expired'), 500: errorResponse('EXPORT_CORRUPT: the stored file fails its checksum'),
+        ...KEY_ERRORS } } },
+  }
+}
+
 /**
  * GET /v1/openapi.json (AC-INT1-1): the integration surface — key-accessible paths with the zod schemas that
  * validate them, the bearer scheme, the error envelope, and one webhook per subscribable topic.
@@ -228,7 +270,7 @@ export function openApiDocument(): Record<string, unknown> {
     info: {
       title: 'Platform integration API',
       version: '1',
-      description: 'Integration surface for API keys: compliance reads, order ingestion, participant writes and GL journal exports. Cursor pagination: '
+      description: 'Integration surface for API keys: compliance reads, order ingestion, participant writes, GL journal exports and full data exports. Cursor pagination: '
         + 'pass meta.next_cursor as cursor; limit 1..200.',
     },
     jsonSchemaDialect: 'https://json-schema.org/draft/2020-12/schema',
@@ -250,6 +292,7 @@ export function openApiDocument(): Record<string, unknown> {
       ...ingestPaths(),
       ...participantPaths(),
       ...ledgerPaths(),
+      ...exportPaths(),
     },
     webhooks: Object.fromEntries(WEBHOOK_TOPICS.map(({ topic, description, payload }) => [topic, webhook(topic, description, payload)])),
     components: {

@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import type { Tx } from '@nmp/db'
-import { ENGINE_VERSION, EngineError, run as calculate, type Receivable, type RunInput, type RunOutput } from '@nmp/engine'
+import { ENGINE_VERSION, EngineError, runIncremental, type Receivable, type RunChunk, type RunInput, type RunSummary } from '@nmp/engine'
 import { z } from 'zod'
 import { recordAudit } from '../../lib/audit.js'
 import { runInTenant, SYSTEM_ACTOR_ID } from '../../lib/db.js'
@@ -11,7 +11,7 @@ import { engineSettings, storedInput } from './inputs.js'
 import { consumeLate, LATE_ITEMS_OF_CALENDAR, restatementOrigins } from './late.js'
 import { loadPeriod, lockRunKey, periodInScope, settingsVersionAt } from './period.js'
 import { assertRunnable } from './preflight.js'
-import { insertLines, insertSettlement, insertState, linesHash, outputsOf, RUN_LINES, totalsOf } from './results.js'
+import { outputsOf, totalsOf, writeRunOutput } from './results.js'
 import { buildSnapshot, chainInputs, planFor, rowCounts, SnapshotCorrupt, storeSnapshot } from './snapshot.js'
 
 // D-B3-09: a run request inserts a queued run under the period's run lock; the worker loads and stores the snapshot
@@ -144,17 +144,31 @@ export async function prepareRun(tx: Tx, runId: string): Promise<RunInput | null
   return { plan, settings, snapshot: loaded.snapshot }
 }
 
+/** The engine's output stream (D-B6-12): every chunk is written and dropped in tx B. */
+export type RunStream = Generator<RunChunk, RunSummary, undefined>
+
 /**
- * tx B: lines, state rows, the per-payee settlement (D-B4-07) and the flip (Σ lines = totals.gross_minor, checked by the
- * run guard); older calculated run discarded.
+ * Runs the engine's passes up to the final lines now (the first chunk), so tx B only writes; the stream resumes from there.
  */
-export async function finishRun(tx: Tx, runId: string, output: RunOutput): Promise<void> {
+export function startedRun(input: RunInput): RunStream {
+  const stream = runIncremental(input)
+  const first = stream.next()
+  return (function* resumed(): RunStream {
+    if (first.done === true) return first.value
+    yield first.value
+    return yield* stream
+  })()
+}
+
+/**
+ * tx B: lines, state rows, the per-payee settlement (D-B4-07) chunk by chunk from the stream and the flip (Σ lines =
+ * totals.gross_minor, checked by the run guard); older calculated run discarded.
+ */
+export async function finishRun(tx: Tx, runId: string, stream: RunStream): Promise<void> {
   const row = await lockedRun(tx, runId)
   if (row.state !== 'running') return
   const period = await loadPeriod(tx, row.period_id)
-  await insertLines(tx, RUN_LINES, runId, output.lines)
-  await insertState(tx, runId, output, period.market_id)
-  await insertSettlement(tx, runId, output.payees)
+  const { summary, linesHash, lineCount } = await writeRunOutput(tx, runId, period.market_id, stream)
   // Restatement items not yet covered: a restatement submitted after the item's decision counted its order or event
   // (the sandbox refuses undecided items), so once approved or applied the item needs no reviewer attention.
   const { rows: skipped } = await tx.query<{ id: string }>(
@@ -164,11 +178,11 @@ export async function finishRun(tx: Tx, runId: string, output: RunOutput): Promi
      ORDER BY lt.id`,
     [period.calendar_id, period.id, 'restatement'],
   )
-  const totals = totalsOf(output)
+  const totals = totalsOf(summary)
   await tx.query(
     `UPDATE run SET state = 'calculated', totals = $2, inputs_hash = $3, lines_hash = $4, outputs = $5, finished_at = now(),
        progress = NULL WHERE id = $1`,
-    [runId, totals, output.inputsHash, linesHash(output.lines), outputsOf(output, { origin_skipped: skipped.map((s) => s.id) })],
+    [runId, totals, summary.inputsHash, linesHash, outputsOf(summary, { origin_skipped: skipped.map((s) => s.id) })],
   )
   const { rows: discarded } = await tx.query<{ id: string }>(
     `UPDATE run SET state = 'discarded' WHERE period_id = $1 AND state = 'calculated' AND id <> $2 RETURNING id`,
@@ -180,7 +194,7 @@ export async function finishRun(tx: Tx, runId: string, output: RunOutput): Promi
   await tx.query(`UPDATE period SET state = 'calculated' WHERE id = $1 AND state = 'calculating'`, [row.period_id])
   await recordAudit(tx, {
     action: 'RUN.CALCULATED', objectType: 'run', objectId: runId,
-    after: { gross_minor: totals.gross_minor, line_count: output.lines.length, period_state: 'calculated' },
+    after: { gross_minor: totals.gross_minor, line_count: lineCount, period_state: 'calculated' },
   })
 }
 
@@ -230,9 +244,9 @@ async function calculateRun(tx: Tx, runId: string, ctx: JobContext): Promise<voi
   try {
     const input = await inOwnTx((own) => prepareRun(own, runId))
     if (input === null) return
-    const output = calculate(input)
+    const stream = startedRun(input)
     await inOwnTx((own) => own.query(`UPDATE run SET progress = 'Writing results' WHERE id = $1 AND state = 'running'`, [runId]))
-    await inOwnTx((own) => finishRun(own, runId, output))
+    await inOwnTx((own) => finishRun(own, runId, stream))
   } catch (error) {
     const transient = isTransient(error)
     if (transient && !(await lastAttempt(tx, ctx.jobId))) throw error

@@ -1,5 +1,6 @@
 import type { Tx } from '@nmp/db'
 import { notFound } from '../../lib/errors.js'
+import type { OrderListRow, OrderSort } from './order-list.js'
 
 // Order columns shared by the ingestion response, the list and the detail. Amounts and volumes are text (bigint).
 const VOLUME_TOTALS = `coalesce((
@@ -77,10 +78,23 @@ export interface OrderFilter {
   readonly to?: string | undefined
 }
 
+/** The sort value of the last row (ISO instant or minor units) and its id. */
 export interface OrderCursor {
-  readonly credited_at: string
+  readonly value: string
   readonly id: string
 }
+
+// Instants at millisecond precision: the cursor carries an ISO string.
+const SORT_SQL: Readonly<Record<OrderSort, { readonly key: string; readonly type: string; readonly direction: 'ASC' | 'DESC' }>> = {
+  credited_at_desc: { key: "date_trunc('milliseconds', o.credited_at)", type: 'timestamptz', direction: 'DESC' },
+  credited_at_asc: { key: "date_trunc('milliseconds', o.credited_at)", type: 'timestamptz', direction: 'ASC' },
+  amount_desc: { key: 'o.amount_minor', type: 'bigint', direction: 'DESC' },
+  amount_asc: { key: 'o.amount_minor', type: 'bigint', direction: 'ASC' },
+}
+
+/** The cursor value of a row under the sort. */
+export const sortValueOf = (sort: OrderSort, row: OrderListRow): string =>
+  sort.startsWith('credited_at') ? row.credited_at.toISOString() : row.amount_minor
 
 const LATE_ORDER = 'EXISTS (SELECT 1 FROM late_transaction x WHERE x.order_id = o.id)'
 
@@ -97,20 +111,29 @@ function filterParams(scope: readonly string[] | null, f: OrderFilter): unknown[
     f.attributed_position_id ?? null, f.period_id ?? null, f.late === true ? true : null, f.flag ?? null, f.from ?? null, f.to ?? null]
 }
 
-/** GET /v1/orders: newest credited first, cursor (credited_at at millisecond precision, id). */
+/** GET /v1/orders and its export: in the sort's order, then id; at most limit + 1 rows (the + 1 tells a next page or an export over the cap). */
 export async function listOrders(
-  tx: Tx, scope: readonly string[] | null, filter: OrderFilter, after: OrderCursor | undefined, limit: number,
-): Promise<Record<string, unknown>[]> {
-  const { rows } = await tx.query(
+  tx: Tx, scope: readonly string[] | null, filter: OrderFilter, sort: OrderSort, after: OrderCursor | undefined, limit: number,
+): Promise<OrderListRow[]> {
+  const { key, type, direction } = SORT_SQL[sort]
+  const { rows } = await tx.query<OrderListRow>(
     `SELECT ${ORDER_COLUMNS},
        jsonb_build_object('id', b.id, 'external_ref', b.external_ref, 'display_name', b.display_name) AS buyer,
-       (SELECT count(*)::int FROM order_event e WHERE e.order_id = o.id) AS events, ${LATE_ORDER} AS late
+       (SELECT count(*)::int FROM order_event e WHERE e.order_id = o.id) AS events, ${LATE_ORDER} AS late, o.ordered_at,
+       round(o.amount_minor / 10::numeric ^ m.minor_unit, m.minor_unit::int)::text AS amount,
+       round(o.tax_minor / 10::numeric ^ m.minor_unit, m.minor_unit::int)::text AS tax
      ${ORDER_FROM}
-     WHERE ${FILTERS} AND ($12::timestamptz IS NULL OR (date_trunc('milliseconds', o.credited_at), o.id) < ($12, $13::uuid))
-     ORDER BY date_trunc('milliseconds', o.credited_at) DESC, o.id DESC LIMIT $14`,
-    [...filterParams(scope, filter), after?.credited_at ?? null, after?.id ?? null, limit + 1],
+     WHERE ${FILTERS} AND ($12::${type} IS NULL OR (${key}, o.id) ${direction === 'DESC' ? '<' : '>'} ($12::${type}, $13::uuid))
+     ORDER BY ${key} ${direction}, o.id ${direction} LIMIT $14`,
+    [...filterParams(scope, filter), after?.value ?? null, after?.id ?? null, limit + 1],
   )
   return rows
+}
+
+/** How many orders match (the row count of an export refused over the cap). */
+export async function countOrders(tx: Tx, scope: readonly string[] | null, filter: OrderFilter): Promise<number> {
+  const { rows } = await tx.query<{ n: number }>(`SELECT count(*)::int AS n FROM sales_order o WHERE ${FILTERS}`, filterParams(scope, filter))
+  return rows[0]!.n
 }
 
 /** GET /v1/orders/summary: counts only (SC-31 KPI cards). The exception queue is tenant-wide (PLAN 2.6). */

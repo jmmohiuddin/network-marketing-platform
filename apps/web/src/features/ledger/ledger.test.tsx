@@ -1,13 +1,14 @@
 // @vitest-environment jsdom
 import '../../test/dom'
-import { screen, within } from '@testing-library/react'
+import { act, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { apiError, json, ok } from '../../test/fetch'
 import { adminMe, bodyOf, callsTo, fetchByRoute, headerOf, renderAs } from '../admin/test-support'
 import { periodText } from '../periods/format'
-import { decimalToMinor } from './format'
+import { ACCOUNT_LABELS, accountLabel, decimalToMinor } from './format'
 import { LedgerPage } from './ledger-page'
+import type { FinanceDashboard } from '../overview/types'
 import type { GlMapping, JournalEntry, LedgerSummary, Receivable } from './types'
 
 const navigation = vi.hoisted(() => ({ search: '', router: { replace: vi.fn(), push: vi.fn() }, leavePage: vi.fn() }))
@@ -41,7 +42,8 @@ const SUMMARY: LedgerSummary = {
 const ENTRY: JournalEntry = {
   id: '00000000-0000-4000-8000-00000000e001', event_type: 'run_committed', origin_type: 'run', origin_id: '00000000-0000-4000-8000-0000000000f1',
   idempotency_key: 'run:x', period: { id: PERIOD.id, starts_at: PERIOD.starts_at, ends_at: PERIOD.ends_at }, posted_at: '2026-09-02T10:00:00.000Z',
-  approved_by: { id: 'u9', display_name: 'Fay Finance' }, debit_total_minor: '5200', posting_count: 3,
+  approved_by: { id: 'u9', display_name: 'Fay Finance' }, debit_total_minor: '5200', credit_total_minor: '5200', posting_count: 3,
+  market: { id: M, code: 'DE' }, approval_id: '00000000-0000-4000-8000-0000000000b1',
 }
 const RECEIVABLE = (participant: string, account: string, balance: string, overrides: Partial<Receivable> = {}): Receivable => ({
   participant: { id: participant, external_ref: participant.toUpperCase(), display_name: null }, market: { id: M, code: 'DE' }, account_id: account,
@@ -52,12 +54,24 @@ const MAPPINGS: GlMapping[] = [
   { account_type: 'payout_in_transit', gl_code: null, updated_by: null, updated_at: null },
 ]
 
+const FINANCE_KPIS: FinanceDashboard = {
+  market: { id: M, code: 'DE', currency: 'EUR', minor_unit: 2 }, payables_minor: '2900', in_transit_minor: '2300', receivables_minor: '700',
+  withholding_minor: '0', failed_payouts: { count: 0, amount_minor: '0' },
+}
+const FINANCE_DEFINITIONS = [
+  { key: 'payables_minor', label: 'Payables', definition: 'Balance of every payee_payable account of the market (normal side). Minor units.', source: 'ledger accounts of type payee_payable' },
+  { key: 'withholding_minor', label: 'Withholding', definition: 'Balance of every withholding_payable account of the market (normal side). Minor units.', source: 'ledger accounts of type withholding_payable' },
+  { key: 'failed_payouts', label: 'Failed payouts', definition: 'Payout instructions that failed and that no later instruction retries.', source: 'payout_instruction state failed, retry_of' },
+]
+
 function routes(extra: Record<string, (query: URLSearchParams) => Response> = {}) {
   return fetchByRoute({
     'GET /v1/markets': () => ok([MARKET]),
     'GET /v1/ledger/summary': () => ok(SUMMARY),
     'GET /v1/periods': () => json(200, { data: { calendars: [CAL], periods: [PERIOD] }, meta: { next_cursor: null } }),
     'GET /v1/ledger/entries': () => json(200, { data: [ENTRY], meta: { next_cursor: null } }),
+    'GET /v1/dashboards/finance': () => json(200, { data: FINANCE_KPIS, meta: { definitions: FINANCE_DEFINITIONS } }),
+    'GET /v1/saved-views': () => ok([]),
     ...extra,
   })
 }
@@ -78,17 +92,28 @@ describe('decimalToMinor', () => {
   })
 })
 
+describe('account types (BUG-126)', () => {
+  it('names migration_clearing in words and offers it as a filter', () => {
+    expect(accountLabel('migration_clearing')).toBe('Migration clearing')
+    expect(Object.keys(ACCOUNT_LABELS)).toHaveLength(11)
+  })
+})
+
 describe('LedgerPage (SC-33)', () => {
-  it('shows the balance check, the four balances and the journal, with the payable label', async () => {
+  it('shows the balance check, the five finance figures with definitions and the journal', async () => {
     renderAs(FINANCE, <LedgerPage />, routes())
     const banner = await screen.findByTestId('invariant')
     expect(banner.textContent).toContain('Balanced: debits = credits')
     expect(banner.textContent).toContain('Debits 82.00 EUR = Credits 82.00 EUR')
     const kpis = screen.getByTestId('kpis')
-    expect(kpis.textContent).toContain('29.00 EUR')
-    expect(kpis.textContent).toContain('Earnings balance owed by the tenant')
+    await vi.waitFor(() => expect(kpis.textContent).toContain('29.00 EUR'))
     expect(kpis.textContent).toContain('23.00 EUR')
     expect(kpis.textContent).toContain('7.00 EUR')
+    expect(kpis.textContent).toContain('Withholding0.00 EUR')
+    expect(kpis.textContent).toContain('0 payouts not retried')
+    const definition = within(kpis).getByRole('button', { name: 'Definition of Withholding' })
+    act(() => definition.focus())
+    expect(within(kpis).getByText(/Balance of every withholding_payable account/).closest('[role="note"]')!.hasAttribute('hidden')).toBe(false)
     const table = await screen.findByRole('table', { name: 'Journal entries' })
     expect(table.textContent).toContain('Run committed')
     expect(table.textContent).toContain('Fay Finance')
@@ -281,6 +306,19 @@ describe('LedgerPage (SC-33)', () => {
     const [, init] = callsTo(fetchMock, 'POST', '/v1/ledger/journal-exports')[0]!
     expect(bodyOf(init)).toEqual({ period_id: PERIOD.id })
     expect(headerOf(init, 'idempotency-key')).not.toBeNull()
+  })
+
+  it('shows closed periods as Closed and labels the GL export created at close', async () => {
+    navigation.search = `market=${M}&tab=exports`
+    const closed = { ...PERIOD, state: 'closed' }
+    const row = { id: 'x2', market: { id: M, code: 'DE' }, period: { id: PERIOD.id, starts_at: PERIOD.starts_at, ends_at: PERIOD.ends_at }, line_count: 4, debit_total_minor: '5200', credit_total_minor: '5200', content_sha256: 'cd'.repeat(32), created_by: { id: null, type: 'system' }, created_at: ENTRY.posted_at, created_at_close: true }
+    renderAs(FINANCE, <LedgerPage />, routes({
+      'GET /v1/periods': () => json(200, { data: { calendars: [CAL], periods: [closed] }, meta: { next_cursor: null } }),
+      'GET /v1/ledger/journal-exports': () => json(200, { data: [row], meta: { next_cursor: null } }),
+    }))
+    const table = await screen.findByRole('table', { name: 'Journal exports' })
+    expect(await within(table).findByText('Created at close')).toBeTruthy()
+    await vi.waitFor(() => expect(table.textContent).toContain('· Closed'))
   })
 
   it('downloads an export through the API client: full hash shown, an expired session leaves for sign-in', async () => {

@@ -1,27 +1,41 @@
 import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import { currentAuth, marketScope, requireAnyPermission, requirePermission, requireRealm, scopeOfAny } from '../../lib/auth.js'
+import { toCsv } from '../../lib/csv.js'
 import { inTenant } from '../../lib/db.js'
+import { ApiError } from '../../lib/errors.js'
+import { recordExport } from '../../lib/exports.js'
 import { envelope, parse } from '../../lib/http.js'
 import { idempotent, sendIdempotent } from '../../lib/idempotency.js'
 import { decodeCursor, pageQuery, toPage } from '../../lib/pagination.js'
 import { decideLate, lateCounts, listLate, previewLate } from './late-queue.js'
 import { listVolumes, setVolumes } from './product-volumes.js'
 import { minorString } from './schemas.js'
-import { listOrders, orderDetail, orderSummary } from './views.js'
+import { ORDER_COLUMNS, ORDER_SORTS, orderFilters, type OrderSort } from './order-list.js'
+import { countOrders, listOrders, orderDetail, orderSummary, sortValueOf, type OrderCursor } from './views.js'
 
 const idParams = z.object({ id: z.uuid() })
 const instant = z.iso.datetime({ offset: true })
-const orderCursor = z.object({ credited_at: instant, id: z.uuid() })
+const orderCursor = z.object({ sort: z.enum(ORDER_SORTS), value: z.string().min(1).max(40), id: z.uuid() })
+const SORT_VALUE = { credited_at: instant, amount: minorString } as const
 const createdCursor = z.object({ created_at: instant, id: z.uuid() })
 const keyOf = (field: string) => (row: Record<string, unknown>) => ({ [field]: (row[field] as Date).toISOString(), id: row.id })
 const window = { from: instant.optional(), to: instant.optional() }
-const orderQuery = z.strictObject({
-  ...pageQuery, ...window, market_id: z.uuid().optional(), source_system: z.string().min(1).max(100).optional(),
-  purpose: z.enum(['resale', 'personal', 'unspecified', 'customer']).optional(), buyer_id: z.uuid().optional(),
-  attributed_position_id: z.uuid().optional(), period_id: z.uuid().optional(), late: z.literal('true').transform(() => true).optional(),
-  flag: z.enum(['purpose_missing', 'attribution_conflict']).optional(),
-})
+const sort = z.enum(ORDER_SORTS).default('credited_at_desc')
+const orderQuery = z.strictObject({ ...pageQuery, ...orderFilters, sort })
+const columnList = z.string().max(1000).transform((list) => list.split(','))
+  .pipe(z.array(z.enum(Object.keys(ORDER_COLUMNS) as [string, ...string[]])).min(1).refine((c) => new Set(c).size === c.length, 'columns repeat'))
+const exportQuery = z.strictObject({ ...orderFilters, sort, columns: columnList.optional() })
+
+/** The cursor of the same sort, else 422 VALIDATION_FAILED (a cursor of another sort would skip or repeat rows). */
+function cursorFor(cursor: string | undefined, sorted: OrderSort): OrderCursor | undefined {
+  const after = decodeCursor(cursor, orderCursor)
+  if (after === undefined) return undefined
+  if (after.sort !== sorted || !SORT_VALUE[sorted.startsWith('amount') ? 'amount' : 'credited_at'].safeParse(after.value).success) {
+    throw new ApiError(422, 'VALIDATION_FAILED', 'The cursor belongs to another sort. Start again without a cursor.', { path: 'cursor' })
+  }
+  return { value: after.value, id: after.id }
+}
 const summaryQuery = z.strictObject({ ...window, market_id: z.uuid().optional() })
 const volumesQuery = z.strictObject({ ...pageQuery, market_id: z.uuid().optional(), sku: z.string().min(1).max(64).optional(), at: instant.optional() })
 const volumesBody = z.strictObject({
@@ -45,9 +59,32 @@ export function registerOrderRoutes(app: FastifyInstance): void {
 
   app.get('/v1/orders', orderRead, async (request) => {
     const query = parse(orderQuery, request.query)
-    const after = decodeCursor(query.cursor, orderCursor)
-    const rows = await inTenant(request, (tx) => listOrders(tx, scopeOf(request, 'order.read'), query, after, query.limit))
-    return toPage(rows, query.limit, keyOf('credited_at'))
+    const after = cursorFor(query.cursor, query.sort)
+    const rows = await inTenant(request, (tx) => listOrders(tx, scopeOf(request, 'order.read'), query, query.sort, after, query.limit))
+    return toPage(rows, query.limit, (row) => ({ sort: query.sort, value: sortValueOf(query.sort, row), id: row.id }))
+  })
+
+  // D-B6-08: the list's rows under its filter and sort as CSV, capped and audited with the filters (BR-SEC-03).
+  app.get('/v1/orders/export', orderRead, async (request, reply) => {
+    const { columns = Object.keys(ORDER_COLUMNS), ...query } = parse(exportQuery, request.query)
+    const scope = scopeOf(request, 'order.read')
+    const cap = app.config.exportRowCap
+    const result = await inTenant(request, async (tx) => {
+      // One statement reads the rows (at most cap + 1), so the audited count is exactly what the file holds.
+      const rows = await listOrders(tx, scope, query, query.sort, undefined, cap)
+      const decision = await recordExport(tx, {
+        kind: 'orders', filters: { ...(request.query as Record<string, unknown>) },
+        rowCount: rows.length > cap ? await countOrders(tx, scope, query) : rows.length, rowCap: cap,
+      })
+      return decision.refused ? decision : { refused: false as const, rows }
+    })
+    if (result.refused) {
+      throw new ApiError(422, 'EXPORT_ROW_CAP_EXCEEDED', 'The export is larger than the row limit.', { row_count: result.rowCount, row_cap: result.rowCap })
+    }
+    reply.header('content-type', 'text/csv; charset=utf-8')
+    reply.header('content-disposition', 'attachment; filename="orders.csv"')
+    reply.header('cache-control', 'no-store')
+    return reply.send(toCsv(columns, result.rows.map((row) => columns.map((column) => ORDER_COLUMNS[column]!(row)))))
   })
 
   app.get('/v1/orders/summary', orderRead, async (request) => {

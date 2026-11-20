@@ -350,6 +350,7 @@ Source: S1 (sc_01) icons; keys that S1 does not draw take the S3/S6 icon.
 | reconciliation (SC-34, under payouts; S1 draws one Payouts entry, B4 integrator choice) | `fact_check` |
 | compliance | `verified_user` |
 | imports (data) | `sync_alt` |
+| migration (SC-16, under imports; sc_16 "Migration & Parallel") | `compare_arrows` |
 | settings | `tune` |
 | users | `admin_panel_settings` |
 | vendor_access | `vpn_key` |

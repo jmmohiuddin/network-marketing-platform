@@ -218,7 +218,8 @@ describe('plan reads (PLAN 4.2)', () => {
 
     expect(await value('SELECT plan_version_for_period($1)', [periods[0]])).toBeNull() // starts before the version
     expect(await value('SELECT plan_version_for_period($1)', [periods[1]])).toBe(versionId)
-    expect(await value(`SELECT plan_crediting_event($1, '2025-12-15')`, [marketId])).toBeNull()
+    // D-B6-05: before the market's first version, that version's event applies.
+    expect(await value(`SELECT plan_crediting_event($1, '2025-12-15')`, [marketId])).toBe('paid')
     expect(await value(`SELECT plan_crediting_event($1, '2026-02-15')`, [marketId])).toBe('paid')
     expect(await value('SELECT placement_width_for($1)', [marketId])).toBe(3)
     expect(await rows(`SELECT plan_version_id, rule_key FROM plan_rules_in_force($1, now(), 'volume.personal')`, [marketId]))

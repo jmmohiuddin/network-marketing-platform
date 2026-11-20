@@ -18,7 +18,7 @@ import { SupportFrame } from './support-frame'
 /** Client icon map by server navigation key (guidelines §8.1); an unknown key gets no icon. */
 const NAV_ICONS: Readonly<Record<string, string>> = {
   overview: 'dashboard', periods: 'history_toggle_off', late: 'history_toggle_off', plans: 'schema', people: 'account_tree', genealogy: 'lan', orders: 'receipt_long',
-  cases: 'rule_folder', privacy: 'lock_person', payouts: 'payments', reconciliation: 'fact_check', ledger: 'account_balance', compliance: 'verified_user', imports: 'sync_alt',
+  cases: 'rule_folder', privacy: 'lock_person', payouts: 'payments', reconciliation: 'fact_check', ledger: 'account_balance', compliance: 'verified_user', imports: 'sync_alt', migration: 'compare_arrows',
   settings: 'tune', users: 'admin_panel_settings', vendor_access: 'vpn_key', audit: 'history_edu', markets: 'public', integrations: 'hub', guardrails: 'policy',
 }
 

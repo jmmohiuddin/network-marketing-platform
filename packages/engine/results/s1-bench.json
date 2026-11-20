@@ -1,513 +1,862 @@
 {
- "id": "S-1",
- "increment": "B4",
- "package": "BE1",
- "date": "2026-11-18",
- "engineVersion": "0.2.0",
- "command": "scripts/heavy.sh node --max-old-space-size=4096 --import tsx packages/engine/test/run/bench.ts <shape> <positions>",
- "plan": "G-E2E-01 plus measure.derived capped_pv = min(pv, 50000); one personal order per position, one customer order per third position",
- "deterministic": "run2 = the same input with positions, relationships and orders shuffled; resultHash equal in every completed run",
- "change": "D-B4-22 internal layout only: shared frozen sub-objects for repeated trace/state/summary parts (src/compact.ts), credited lines released after pass 4 and pass 4-8 lines after pass 10 (pipeline RELEASE_AFTER; breakage and allocation check computed in pass 8), streamed result hash, adjacent-line duplicate check. Public API, ENGINE_VERSION and every output unchanged.",
- "byteIdentical": {
-  "method": "before the change and after it: resultHash, inputsHash, linesHash (sha256 over [payee, pass, rule, origin type, origin id, amount] per line) and fullHash (sha256 over every RunOutput field, element by element, stringifyEngineJson) for each bench shape at 50k and every golden case of the RUN_FIXTURES",
-  "equal": true,
-  "hashes": {
-   "g-e2e-01.json:g-e2e-01": {
-    "resultHash": "dcb56e2b6b67a9569ed94aebf406affa418762f8eefcbdc0f1b2e01d3d7eb076",
-    "inputsHash": "f3c842ce0633219f14e5972fb103ce21fb50ba45beeda08f79d73616ea16bfb0",
-    "linesHash": "b69abd6b7a0ab73fdae9963dba7de8e1d2d1f97c21abc33eed76d302875ced52",
-    "fullHash": "a38d1b88d9b23b68ce5d9b5c6652579575ee0e03e95784cc7c347935dabe0a9b"
+ "B6": {
+  "id": "S-1",
+  "increment": "B6",
+  "package": "BE1",
+  "date": "2026-11-20",
+  "engineVersion": "0.2.0",
+  "command": "scripts/heavy.sh /usr/bin/time -l node --max-old-space-size=<heap> --import tsx packages/engine/test/run/bench.ts <shape> <positions>",
+  "change": "D-B6-12: additive runIncremental(input, options): Generator<RunChunk, RunSummary> yields the final lines in chunks of OUTPUT_CHUNK_LINES = 10000, then state rows, volume summaries and payees (same chunk size), and returns the rest of RunOutput; passes 11-12 read each line once as it leaves (settlement gross, invariants, limits, control totals, one-time keys, result hash streamed). run() = runIncremental collected. Pass 4-7 lines are now released after pass 8 (was after pass 10). The bench drains the stream like COMP (each chunk hashed, then dropped).",
+  "byteIdentical": {
+   "method": "resultHash, inputsHash, linesHash (test/run/output-hash.ts linesHashOf) and fullHash (fullHashOf: sha256 over every RunOutput field in declaration order, the field name then each element as engine JSON) of run() before the change (B4 engine), recorded here; after the change run() and the collected runIncremental give the same four values for every golden case and the four shapes at 50k (test/run/incremental.test.ts checks the goldens and all four shapes at 50k on every test run). resultHash/inputsHash/linesHash also equal the B4 record.",
+   "equal": true,
+   "hashes": {
+    "g-e2e-01.json:g-e2e-01": {
+     "resultHash": "dcb56e2b6b67a9569ed94aebf406affa418762f8eefcbdc0f1b2e01d3d7eb076",
+     "inputsHash": "f3c842ce0633219f14e5972fb103ce21fb50ba45beeda08f79d73616ea16bfb0",
+     "linesHash": "b69abd6b7a0ab73fdae9963dba7de8e1d2d1f97c21abc33eed76d302875ced52",
+     "fullHash": "2b01e28c12474adbf91d63395f89189938013d4a8e6866b2d2d34354f7b32d5d"
+    },
+    "ts01-unilevel.json:ts01": {
+     "resultHash": "ba61377858afb70b66c3491f6864b5263d7c0cfd29a31da3969099472aba0f61",
+     "inputsHash": "83515ad2e9b8f09ff638fcef6967474b7d7a177266a00f4c204fadad529f1679",
+     "linesHash": "5fd4f5212e0fc7066af2bfd9b1ae94380917c15b784418d019c8fa469c7bf4bc",
+     "fullHash": "e9d98a8c2665ef3e2f167e3fb3f06c61e800f263e4ae990ff33c389176a322e0"
+    },
+    "ts02-compression.json:ts02-none": {
+     "resultHash": "1ed7a6474ca1246713f310e173ea35eae12da5f6ec40f1e1a167d919d29ccc13",
+     "inputsHash": "e57bef739f7f5293ed6412d749bef0a1fb05a3ea57c054f4bee03e3213fa1341",
+     "linesHash": "fc1c350f9ad94ca078366f18ddc57e99ab4026bf7869a69c5f4c61fc473b74a5",
+     "fullHash": "f03af537ce63544f832b05bc0d1d7188dff4bb4c09fb28dc02708dce059dd380"
+    },
+    "ts02-compression.json:ts02-dynamic": {
+     "resultHash": "e04c25c9658c82e7e5a930fbd34b213219d63e8f568dfcace70d867beb71b387",
+     "inputsHash": "26d455fb245068abf287d59b77269b6e4580ade7149edf1838341b61187ed3ae",
+     "linesHash": "5428ec4da32a6b43cac41b07420d4c5a1f0ffe733f7440f028d501fd6507982a",
+     "fullHash": "537f3bcf0eae6e7b43a601e2626f093e64348ffe09593485babbd4fe1e377a7d"
+    },
+    "ts06-pool.json:ts06": {
+     "resultHash": "8adc729d28fdd96ea1a418f2dd501a63bf02c52ca1ba2873a72322aadbe2f074",
+     "inputsHash": "81d65e59cccedc977b8b722a2e579266d7c7682162a380dedb27e922aacbffde",
+     "linesHash": "3d4efc960162bbd9fa70b187af9aeaa85604db4f94642a0835664ee966e564cf",
+     "fullHash": "51263c059af3362dec9db2aced442493c393af3a3da1242a8f38eeca132507ef"
+    },
+    "ts10-refund.json:paid": {
+     "resultHash": "3a608af7dfb7cfdc93311254a0e7b8693f0ca15c69cdf9205745a6d4b9db519c",
+     "inputsHash": "6dafbff37595c169ba26efe58590917376f70343510882bad7408b493e4289b2",
+     "linesHash": "892734fc92ebca2508e4a784d8d148077217d31bad43d874b44d45cf0863f575",
+     "fullHash": "4a051d67ffc033c03691663c7648a0aa6214151b23d6e58e7820d2b218ff4f87"
+    },
+    "ts10-refund.json:restated": {
+     "resultHash": "6b65bc51fff6d3337aea5a26dc47e9df6467364cde578fb968e6809b132b262f",
+     "inputsHash": "11bd6543f8319bb6a88d1a632d5af22195572b281ed7bc0e4fafbc54a96ae5a5",
+     "linesHash": "0fe8df01e33ccfc528622a2e394f393684c45ebdfb05417d21a9ad33073ac908",
+     "fullHash": "2ebff1e29c4fa617fdb281051835fbb98b9e6701ff4eaf9741d22f050b5b09ee"
+    },
+    "ts11-netting.json:ts11": {
+     "resultHash": "45c74ff5f223221bb2f8e8dec518d40f87a4e5107179e62a1dce08d78b98bba5",
+     "inputsHash": "8155403735c9c2d7361d153a8364d0e9c84bfbb6702768b7db9cefcc97608c36",
+     "linesHash": "825bafe5d7c070354374464dec5fa190231749c5d0e1eaf99f78d9bb11340064",
+     "fullHash": "7f773f79056c0e3ad68e6fb3a377d1c2fde7d5b84d94a4cc5e79c64ad6ae6e4f"
+    },
+    "ts12-fast-start.json:ts12": {
+     "resultHash": "3875510f73e9d9efd6524a5fbe217db3c1824629918e5f1bd2f9fd44d88f7df9",
+     "inputsHash": "aa1173e46a095d7e545f5474747d21fd326d320d7195262eb2d5801793cde1d3",
+     "linesHash": "39edaf2a4c70307e469cd16bda666318f648fbeb8e8043a49b3462fa08558b2b",
+     "fullHash": "651d1dba55b07e2fd099b3e6c3a9d90b9fa10ad4d47480f084bebdcba4175996"
+    },
+    "ts22-multi-position.json:ts22": {
+     "resultHash": "c2a376b92180e1ebf4704a066ebff07fbfe705edb3fa9a469ad3098313ab7a1d",
+     "inputsHash": "902c1e0de80329d05665df1b9224795eea6175cd185709e0b4ee4f241065de52",
+     "linesHash": "5f3d7a358789cb52c92a706bc72fa2741a49600cbe4ce6de8e35c9a3cec43d7c",
+     "fullHash": "12883f4989b0568fcc52585161efc64bb419d5337f15f4fd17391e4e80f465ff"
+    },
+    "ts38-withholding.json:ts38": {
+     "resultHash": "bdd527735552a9e8e1ed79c6dce714e319fbcc6b46f72afb51e9ba4b2620bd3a",
+     "inputsHash": "d9b05ccda23c257fc94973775caade817634e67559c3216cc1b89351234dda18",
+     "linesHash": "1daef4e023ebb3d6376adfd8cdcf7657ed04a1107ab2f3732737869ec79fad12",
+     "fullHash": "138bc8c9147485b9bab6ed2afcf3d2dd1df4345fadebba7c6841010ed84d0b89"
+    },
+    "random:50000": {
+     "resultHash": "26426c2525f8647d96ae42405b48aeead34fd6ca35cc13a3a26bfa16d7ac9255",
+     "inputsHash": "2f6b4b20fc0c96869e509d05ccb7378ca5d59bc384e4561fa6611933c794e0f0",
+     "linesHash": "c1af7c6ee221ab07464500927e3f4a4de5583e658bd985c509ef7d5c736829d0",
+     "fullHash": "e35ee86dc9adb393c9d95659e75bc0ee9c2bd81822a1ffdd7778861ad4be062e"
+    },
+    "binary:50000": {
+     "resultHash": "fe01b09d5e5031527ce2fcbab36f3715f31c1ce82a1c75c43636698cd40342fc",
+     "inputsHash": "c192fc6787df20be86f9856c5bd5deb944ebe8f16181c095ceb5c614594adb69",
+     "linesHash": "c4f72ffb9bfb03d324afb1d68d8ee1d82e837ce954679e13973f92bc4598d78b",
+     "fullHash": "5630ed2a8dd9308b61d2c22f5e6be8155d8f2630fec2479c5cfe3fd65837add2"
+    },
+    "wide:50000": {
+     "resultHash": "5080ab4af32e1109260b33f152bbc8e8bd54039fd4a145d4191e38ed1a1d2b43",
+     "inputsHash": "8a0bd9dc875dfafcb4c820cb6fae2cbb95cebff6384faad8bee0cca1a16ca82f",
+     "linesHash": "f43a5c504a6da59a321f1c10c3055909cfb576f90be4fcbae5a310bd6e29f02b",
+     "fullHash": "41f4edca72140e6b474fe0f5611af83b130c7406048f8e9a8417dcc2a42f390d"
+    },
+    "deep:50000": {
+     "resultHash": "1d279e681811b52c228d40e7da36a13e1b1c6623be64bc6f1def48116f2f23c6",
+     "inputsHash": "efb6c8609aaab27c2099c5708adcaa7341f036783c011482df44d68abef65e1a",
+     "linesHash": "7b264a70ed1179be03eb6b79856eee37759843b78252101f47eaff25c7f34470",
+     "fullHash": "55c497cb3ae1cdb88e8e71f5107ade727d5cbdc4f25173b5ee0124c2f1bcee05"
+    }
+   }
+  },
+  "results": [
+   {
+    "heapMb": 4096,
+    "shape": "random",
+    "positions": 1000000,
+    "failed": "FATAL ERROR: Ineffective mark-compacts near heap limit Allocation failed - JavaScript heap out of memory",
+    "seconds": 54,
+    "peakRssMb": 4178,
+    "peakFootprintMb": 4742
    },
-   "ts01-unilevel.json:ts01": {
-    "resultHash": "ba61377858afb70b66c3491f6864b5263d7c0cfd29a31da3969099472aba0f61",
-    "inputsHash": "83515ad2e9b8f09ff638fcef6967474b7d7a177266a00f4c204fadad529f1679",
-    "linesHash": "5fd4f5212e0fc7066af2bfd9b1ae94380917c15b784418d019c8fa469c7bf4bc",
-    "fullHash": "6963aab795cbfda0c98bc79b0e640f24b3725a0cc69ea09e8a864b8878e265f9"
+   {
+    "heapMb": 4096,
+    "shape": "binary",
+    "positions": 1000000,
+    "failed": "FATAL ERROR: Ineffective mark-compacts near heap limit Allocation failed - JavaScript heap out of memory",
+    "seconds": 39,
+    "peakRssMb": 4460,
+    "peakFootprintMb": 4659
    },
-   "ts02-compression.json:ts02-none": {
-    "resultHash": "1ed7a6474ca1246713f310e173ea35eae12da5f6ec40f1e1a167d919d29ccc13",
-    "inputsHash": "e57bef739f7f5293ed6412d749bef0a1fb05a3ea57c054f4bee03e3213fa1341",
-    "linesHash": "fc1c350f9ad94ca078366f18ddc57e99ab4026bf7869a69c5f4c61fc473b74a5",
-    "fullHash": "d7f833672164612c7420812f23fbdf3d32068d275131365313207f71396ca086"
+   {
+    "heapMb": 4096,
+    "shape": "wide",
+    "positions": 1000000,
+    "failed": "FATAL ERROR: Ineffective mark-compacts near heap limit Allocation failed - JavaScript heap out of memory",
+    "seconds": 38,
+    "peakRssMb": 4400,
+    "peakFootprintMb": 4653
    },
-   "ts02-compression.json:ts02-dynamic": {
-    "resultHash": "e04c25c9658c82e7e5a930fbd34b213219d63e8f568dfcace70d867beb71b387",
-    "inputsHash": "26d455fb245068abf287d59b77269b6e4580ade7149edf1838341b61187ed3ae",
-    "linesHash": "5428ec4da32a6b43cac41b07420d4c5a1f0ffe733f7440f028d501fd6507982a",
-    "fullHash": "cc01c446fa3a2cc88a72dda286bb366c36d9c6018edc3a17ce37e2f5eda50192"
+   {
+    "heapMb": 4096,
+    "shape": "deep",
+    "positions": 1000000,
+    "failed": "FATAL ERROR: Ineffective mark-compacts near heap limit Allocation failed - JavaScript heap out of memory",
+    "seconds": 47,
+    "peakRssMb": 4381,
+    "peakFootprintMb": 4728
    },
-   "ts06-pool.json:ts06": {
-    "resultHash": "8adc729d28fdd96ea1a418f2dd501a63bf02c52ca1ba2873a72322aadbe2f074",
-    "inputsHash": "81d65e59cccedc977b8b722a2e579266d7c7682162a380dedb27e922aacbffde",
-    "linesHash": "3d4efc960162bbd9fa70b187af9aeaa85604db4f94642a0835664ee966e564cf",
-    "fullHash": "7bcf27d1a855d03a84a727698ff7342c3329d65f59145136a0270dec10093f16"
+   {
+    "heapMb": 4096,
+    "shape": "random",
+    "positions": 2000000,
+    "failed": "FATAL ERROR: Ineffective mark-compacts near heap limit Allocation failed - JavaScript heap out of memory",
+    "seconds": 64,
+    "peakRssMb": 4641,
+    "peakFootprintMb": 4914
    },
-   "ts10-refund.json:paid": {
-    "resultHash": "3a608af7dfb7cfdc93311254a0e7b8693f0ca15c69cdf9205745a6d4b9db519c",
-    "inputsHash": "6dafbff37595c169ba26efe58590917376f70343510882bad7408b493e4289b2",
-    "linesHash": "892734fc92ebca2508e4a784d8d148077217d31bad43d874b44d45cf0863f575",
-    "fullHash": "d6ec6b747b52e58679bab9eb99ae4c3e2fe4a70fbdf3093c7552982ed449aee5"
+   {
+    "heapMb": 4096,
+    "shape": "binary",
+    "positions": 2000000,
+    "failed": "FATAL ERROR: Ineffective mark-compacts near heap limit Allocation failed - JavaScript heap out of memory",
+    "seconds": 60,
+    "peakRssMb": 4606,
+    "peakFootprintMb": 4923
    },
-   "ts10-refund.json:restated": {
-    "resultHash": "6b65bc51fff6d3337aea5a26dc47e9df6467364cde578fb968e6809b132b262f",
-    "inputsHash": "11bd6543f8319bb6a88d1a632d5af22195572b281ed7bc0e4fafbc54a96ae5a5",
-    "linesHash": "0fe8df01e33ccfc528622a2e394f393684c45ebdfb05417d21a9ad33073ac908",
-    "fullHash": "bacac1c3920ef5f11242d2c610b0687730bd93d98b81206f91e10f9a55955c73"
+   {
+    "heapMb": 4096,
+    "shape": "wide",
+    "positions": 2000000,
+    "failed": "FATAL ERROR: Ineffective mark-compacts near heap limit Allocation failed - JavaScript heap out of memory",
+    "seconds": 62,
+    "peakRssMb": 4570,
+    "peakFootprintMb": 4939
    },
-   "ts11-netting.json:ts11": {
-    "resultHash": "45c74ff5f223221bb2f8e8dec518d40f87a4e5107179e62a1dce08d78b98bba5",
-    "inputsHash": "8155403735c9c2d7361d153a8364d0e9c84bfbb6702768b7db9cefcc97608c36",
-    "linesHash": "825bafe5d7c070354374464dec5fa190231749c5d0e1eaf99f78d9bb11340064",
-    "fullHash": "4310211976cc4b957674d6797d5110966f523f2c9e6d1f25d4a0ffda073c33dc"
+   {
+    "heapMb": 4096,
+    "shape": "deep",
+    "positions": 2000000,
+    "failed": "FATAL ERROR: Ineffective mark-compacts near heap limit Allocation failed - JavaScript heap out of memory",
+    "seconds": 63,
+    "peakRssMb": 4546,
+    "peakFootprintMb": 4795
    },
-   "ts12-fast-start.json:ts12": {
-    "resultHash": "3875510f73e9d9efd6524a5fbe217db3c1824629918e5f1bd2f9fd44d88f7df9",
-    "inputsHash": "aa1173e46a095d7e545f5474747d21fd326d320d7195262eb2d5801793cde1d3",
-    "linesHash": "39edaf2a4c70307e469cd16bda666318f648fbeb8e8043a49b3462fa08558b2b",
-    "fullHash": "49e2d75581ac967c1d0dca0e5d636561d82dea0f838f91e165d4037420d6846d"
+   {
+    "heapMb": 7168,
+    "shape": "random",
+    "positions": 1000000,
+    "seed": 20261113,
+    "orders": 1333334,
+    "generateMs": 876,
+    "run1Ms": 27649,
+    "run2Ms": 39051,
+    "rssMb": {
+     "afterGenerate": 1198,
+     "afterRun1": 4429,
+     "end": 2976,
+     "peak": 5298
+    },
+    "run1": {
+     "resultHash": "1bee12638801ea69126dc4769562597e1331e843faaf68985bb9ffcab716afae",
+     "inputsHash": "56c165780248dc0730393b5ab7f367dead860313657e962255e719df9c643be3",
+     "linesHash": "d62df6ca1842abcc1fc03b318bb66aefdc51c4df98b5b26edb1c7747328c9117",
+     "lines": 1754088,
+     "payees": 944904,
+     "grossMinor": "12796341156",
+     "breakageMinor": "49407665491",
+     "capBound": true
+    },
+    "deterministic": true,
+    "peakFootprintMb": 6500
    },
-   "ts22-multi-position.json:ts22": {
-    "resultHash": "c2a376b92180e1ebf4704a066ebff07fbfe705edb3fa9a469ad3098313ab7a1d",
-    "inputsHash": "902c1e0de80329d05665df1b9224795eea6175cd185709e0b4ee4f241065de52",
-    "linesHash": "5f3d7a358789cb52c92a706bc72fa2741a49600cbe4ce6de8e35c9a3cec43d7c",
-    "fullHash": "d2fc1721d2b2f61ba1d7de405c2e553906310f2657af80fd97eb422c05ff5aa4"
+   {
+    "heapMb": 7168,
+    "shape": "binary",
+    "positions": 1000000,
+    "seed": 20261113,
+    "orders": 1333334,
+    "generateMs": 1080,
+    "run1Ms": 30107,
+    "run2Ms": 40820,
+    "rssMb": {
+     "afterGenerate": 1123,
+     "afterRun1": 3729,
+     "end": 3777,
+     "peak": 5041
+    },
+    "run1": {
+     "resultHash": "7dd9993d05c48f657e5bd03c0ecb7949e13e15d6fbaf34613ef90638eb13dc2e",
+     "inputsHash": "4622bf73372f502d0a3c60f41076238e66bfbdf0480ad229630267a64662cac6",
+     "linesHash": "a6bf2aa0b74a2d97774134d38c2ed623d6eaeabfd99ccb279f13983c18a91cd8",
+     "lines": 1761684,
+     "payees": 944490,
+     "grossMinor": "12796359816",
+     "breakageMinor": "70743502234",
+     "capBound": true
+    },
+    "deterministic": true,
+    "peakFootprintMb": 6486
    },
-   "ts38-withholding.json:ts38": {
-    "resultHash": "bdd527735552a9e8e1ed79c6dce714e319fbcc6b46f72afb51e9ba4b2620bd3a",
-    "inputsHash": "d9b05ccda23c257fc94973775caade817634e67559c3216cc1b89351234dda18",
-    "linesHash": "1daef4e023ebb3d6376adfd8cdcf7657ed04a1107ab2f3732737869ec79fad12",
-    "fullHash": "38412bb330e6e83ddfd8a49c2a08a986f93908a85c0df2b1296633434e3f3fc5"
+   {
+    "heapMb": 7168,
+    "shape": "wide",
+    "positions": 1000000,
+    "seed": 20261113,
+    "orders": 1333334,
+    "generateMs": 1353,
+    "run1Ms": 38834,
+    "run2Ms": 51394,
+    "rssMb": {
+     "afterGenerate": 1176,
+     "afterRun1": 2288,
+     "end": 3187,
+     "peak": 4787
+    },
+    "run1": {
+     "resultHash": "6cf05b0f2524324488d726bea8f9edb29843d1fe932f3d0f68417cdf5b4dc3ba",
+     "inputsHash": "7c86793b0adb7653c4137ef5ba0b2b94a1cb2f1a78e5b75a46f42f6278457bf7",
+     "linesHash": "655f9726c122963a138d8c1ba2e0452e46cbd58aa8031dd2dcd20f7a62bb0a53",
+     "lines": 1746713,
+     "payees": 944187,
+     "grossMinor": "12708878805",
+     "breakageMinor": "11920261183",
+     "capBound": true
+    },
+    "deterministic": true,
+    "peakFootprintMb": 6442
    },
-   "random:50000": {
-    "resultHash": "26426c2525f8647d96ae42405b48aeead34fd6ca35cc13a3a26bfa16d7ac9255",
-    "inputsHash": "2f6b4b20fc0c96869e509d05ccb7378ca5d59bc384e4561fa6611933c794e0f0",
-    "linesHash": "c1af7c6ee221ab07464500927e3f4a4de5583e658bd985c509ef7d5c736829d0",
-    "fullHash": "826b502a0302b68c69b24b1186538ca12e62ee06f0e0c660decb8e2b54b7cd29"
+   {
+    "heapMb": 7168,
+    "shape": "deep",
+    "positions": 1000000,
+    "seed": 20261113,
+    "orders": 1333334,
+    "generateMs": 904,
+    "run1Ms": 40407,
+    "run2Ms": 51792,
+    "rssMb": {
+     "afterGenerate": 1180,
+     "afterRun1": 4524,
+     "end": 4021,
+     "peak": 4955
+    },
+    "run1": {
+     "resultHash": "30aab6a6f152b04b434c70a9222982c15b7d566914e010650f4a1407c5a27d4b",
+     "inputsHash": "06b7b98fbfa1c2cdd0dea00bbbb604aebbee69d8dfb4f79f71681ba232e0b14a",
+     "linesHash": "aa657365d1b5eae4eed82a5cf9b74180e96a233ad2f9dfafee244582029059a2",
+     "lines": 1729530,
+     "payees": 928705,
+     "grossMinor": "12796357370",
+     "breakageMinor": "10594749492791",
+     "capBound": true
+    },
+    "deterministic": true,
+    "peakFootprintMb": 6484
    },
-   "binary:50000": {
-    "resultHash": "fe01b09d5e5031527ce2fcbab36f3715f31c1ce82a1c75c43636698cd40342fc",
-    "inputsHash": "c192fc6787df20be86f9856c5bd5deb944ebe8f16181c095ceb5c614594adb69",
-    "linesHash": "c4f72ffb9bfb03d324afb1d68d8ee1d82e837ce954679e13973f92bc4598d78b",
-    "fullHash": "41576b996e23f6d452bffadbcac0c7dd16e1ea3af0a1f6968644b2745da08872"
+   {
+    "heapMb": 7168,
+    "shape": "random",
+    "positions": 2000000,
+    "failed": "FATAL ERROR: Ineffective mark-compacts near heap limit Allocation failed - JavaScript heap out of memory",
+    "seconds": 282,
+    "peakRssMb": 5441,
+    "peakFootprintMb": 8233
    },
-   "wide:50000": {
-    "resultHash": "5080ab4af32e1109260b33f152bbc8e8bd54039fd4a145d4191e38ed1a1d2b43",
-    "inputsHash": "8a0bd9dc875dfafcb4c820cb6fae2cbb95cebff6384faad8bee0cca1a16ca82f",
-    "linesHash": "f43a5c504a6da59a321f1c10c3055909cfb576f90be4fcbae5a310bd6e29f02b",
-    "fullHash": "2480f09efd5a150412968f157d42365d98ad193b4a808453bf4935053930934a"
+   {
+    "heapMb": 7168,
+    "shape": "binary",
+    "positions": 2000000,
+    "failed": "FATAL ERROR: Ineffective mark-compacts near heap limit Allocation failed - JavaScript heap out of memory",
+    "seconds": 112,
+    "peakRssMb": 7475,
+    "peakFootprintMb": 8174
    },
-   "deep:50000": {
-    "resultHash": "1d279e681811b52c228d40e7da36a13e1b1c6623be64bc6f1def48116f2f23c6",
-    "inputsHash": "efb6c8609aaab27c2099c5708adcaa7341f036783c011482df44d68abef65e1a",
-    "linesHash": "7b264a70ed1179be03eb6b79856eee37759843b78252101f47eaff25c7f34470",
-    "fullHash": "d6b428d8dd82d95b261478562f93f0e60d43fa6a4a88e33bb2590a3f6b22f47a"
+   {
+    "heapMb": 7168,
+    "shape": "wide",
+    "positions": 2000000,
+    "failed": "FATAL ERROR: Ineffective mark-compacts near heap limit Allocation failed - JavaScript heap out of memory",
+    "seconds": 146,
+    "peakRssMb": 5795,
+    "peakFootprintMb": 8047
+   },
+   {
+    "heapMb": 7168,
+    "shape": "deep",
+    "positions": 2000000,
+    "failed": "FATAL ERROR: Ineffective mark-compacts near heap limit Allocation failed - JavaScript heap out of memory",
+    "seconds": 213,
+    "peakRssMb": 6243,
+    "peakFootprintMb": 8223
+   }
+  ],
+  "verdict": {
+   "target": "2M positions in every shape within the worker heap (4 GB first, then --max-old-space-size=7168)",
+   "met": false,
+   "at4096": "1M and 2M run out of heap in every shape (inside passes 0-10, before the first chunk is yielded)",
+   "at7168": "1M passes in every shape (28-40 s per run, peak RSS 4.8-5.3 GB, deterministic under shuffle); 2M runs out of heap in every shape",
+   "largestPassingPositions": {
+    "heap4096": "750000 (B4 measurement; 1M fails here, sizes between not run)",
+    "heap7168": "1000000 (2M fails; sizes between not run)"
+   },
+   "why": "the peak is the input (~1.2 KB/position) plus the pass 0-10 working set and the full sorted line array of pass 10 (~4 KB/position at 1M); streaming frees the output only after pass 10, so it lowers the end-of-run footprint, not the peak",
+   "s2EndToEnd100k": {
+    "total_ms": 55170,
+    "write_flip_ms": 30893,
+    "peak_rss_mb": 837,
+    "before": {
+     "total_ms": 134503,
+     "write_flip_ms": 113993
+    }
    }
   }
  },
- "heapProfile150kBinary": {
-  "method": "forced gc after every pass (node --expose-gc), retained heapUsed MB; scratch script, not committed",
-  "before": {
-   "input": 148,
-   "afterQualification": 347,
-   "afterIndividual": 622,
-   "afterCaps": 809,
-   "afterRounding": 909,
-   "afterTotals": 1036,
-   "runOutputMb": 577,
-   "peakRssMb": 1563
+ "B4": {
+  "id": "S-1",
+  "increment": "B4",
+  "package": "BE1",
+  "date": "2026-11-18",
+  "engineVersion": "0.2.0",
+  "command": "scripts/heavy.sh node --max-old-space-size=4096 --import tsx packages/engine/test/run/bench.ts <shape> <positions>",
+  "plan": "G-E2E-01 plus measure.derived capped_pv = min(pv, 50000); one personal order per position, one customer order per third position",
+  "deterministic": "run2 = the same input with positions, relationships and orders shuffled; resultHash equal in every completed run",
+  "change": "D-B4-22 internal layout only: shared frozen sub-objects for repeated trace/state/summary parts (src/compact.ts), credited lines released after pass 4 and pass 4-8 lines after pass 10 (pipeline RELEASE_AFTER; breakage and allocation check computed in pass 8), streamed result hash, adjacent-line duplicate check. Public API, ENGINE_VERSION and every output unchanged.",
+  "byteIdentical": {
+   "method": "before the change and after it: resultHash, inputsHash, linesHash (sha256 over [payee, pass, rule, origin type, origin id, amount] per line) and fullHash (sha256 over every RunOutput field, element by element, stringifyEngineJson) for each bench shape at 50k and every golden case of the RUN_FIXTURES",
+   "equal": true,
+   "hashes": {
+    "g-e2e-01.json:g-e2e-01": {
+     "resultHash": "dcb56e2b6b67a9569ed94aebf406affa418762f8eefcbdc0f1b2e01d3d7eb076",
+     "inputsHash": "f3c842ce0633219f14e5972fb103ce21fb50ba45beeda08f79d73616ea16bfb0",
+     "linesHash": "b69abd6b7a0ab73fdae9963dba7de8e1d2d1f97c21abc33eed76d302875ced52",
+     "fullHash": "a38d1b88d9b23b68ce5d9b5c6652579575ee0e03e95784cc7c347935dabe0a9b"
+    },
+    "ts01-unilevel.json:ts01": {
+     "resultHash": "ba61377858afb70b66c3491f6864b5263d7c0cfd29a31da3969099472aba0f61",
+     "inputsHash": "83515ad2e9b8f09ff638fcef6967474b7d7a177266a00f4c204fadad529f1679",
+     "linesHash": "5fd4f5212e0fc7066af2bfd9b1ae94380917c15b784418d019c8fa469c7bf4bc",
+     "fullHash": "6963aab795cbfda0c98bc79b0e640f24b3725a0cc69ea09e8a864b8878e265f9"
+    },
+    "ts02-compression.json:ts02-none": {
+     "resultHash": "1ed7a6474ca1246713f310e173ea35eae12da5f6ec40f1e1a167d919d29ccc13",
+     "inputsHash": "e57bef739f7f5293ed6412d749bef0a1fb05a3ea57c054f4bee03e3213fa1341",
+     "linesHash": "fc1c350f9ad94ca078366f18ddc57e99ab4026bf7869a69c5f4c61fc473b74a5",
+     "fullHash": "d7f833672164612c7420812f23fbdf3d32068d275131365313207f71396ca086"
+    },
+    "ts02-compression.json:ts02-dynamic": {
+     "resultHash": "e04c25c9658c82e7e5a930fbd34b213219d63e8f568dfcace70d867beb71b387",
+     "inputsHash": "26d455fb245068abf287d59b77269b6e4580ade7149edf1838341b61187ed3ae",
+     "linesHash": "5428ec4da32a6b43cac41b07420d4c5a1f0ffe733f7440f028d501fd6507982a",
+     "fullHash": "cc01c446fa3a2cc88a72dda286bb366c36d9c6018edc3a17ce37e2f5eda50192"
+    },
+    "ts06-pool.json:ts06": {
+     "resultHash": "8adc729d28fdd96ea1a418f2dd501a63bf02c52ca1ba2873a72322aadbe2f074",
+     "inputsHash": "81d65e59cccedc977b8b722a2e579266d7c7682162a380dedb27e922aacbffde",
+     "linesHash": "3d4efc960162bbd9fa70b187af9aeaa85604db4f94642a0835664ee966e564cf",
+     "fullHash": "7bcf27d1a855d03a84a727698ff7342c3329d65f59145136a0270dec10093f16"
+    },
+    "ts10-refund.json:paid": {
+     "resultHash": "3a608af7dfb7cfdc93311254a0e7b8693f0ca15c69cdf9205745a6d4b9db519c",
+     "inputsHash": "6dafbff37595c169ba26efe58590917376f70343510882bad7408b493e4289b2",
+     "linesHash": "892734fc92ebca2508e4a784d8d148077217d31bad43d874b44d45cf0863f575",
+     "fullHash": "d6ec6b747b52e58679bab9eb99ae4c3e2fe4a70fbdf3093c7552982ed449aee5"
+    },
+    "ts10-refund.json:restated": {
+     "resultHash": "6b65bc51fff6d3337aea5a26dc47e9df6467364cde578fb968e6809b132b262f",
+     "inputsHash": "11bd6543f8319bb6a88d1a632d5af22195572b281ed7bc0e4fafbc54a96ae5a5",
+     "linesHash": "0fe8df01e33ccfc528622a2e394f393684c45ebdfb05417d21a9ad33073ac908",
+     "fullHash": "bacac1c3920ef5f11242d2c610b0687730bd93d98b81206f91e10f9a55955c73"
+    },
+    "ts11-netting.json:ts11": {
+     "resultHash": "45c74ff5f223221bb2f8e8dec518d40f87a4e5107179e62a1dce08d78b98bba5",
+     "inputsHash": "8155403735c9c2d7361d153a8364d0e9c84bfbb6702768b7db9cefcc97608c36",
+     "linesHash": "825bafe5d7c070354374464dec5fa190231749c5d0e1eaf99f78d9bb11340064",
+     "fullHash": "4310211976cc4b957674d6797d5110966f523f2c9e6d1f25d4a0ffda073c33dc"
+    },
+    "ts12-fast-start.json:ts12": {
+     "resultHash": "3875510f73e9d9efd6524a5fbe217db3c1824629918e5f1bd2f9fd44d88f7df9",
+     "inputsHash": "aa1173e46a095d7e545f5474747d21fd326d320d7195262eb2d5801793cde1d3",
+     "linesHash": "39edaf2a4c70307e469cd16bda666318f648fbeb8e8043a49b3462fa08558b2b",
+     "fullHash": "49e2d75581ac967c1d0dca0e5d636561d82dea0f838f91e165d4037420d6846d"
+    },
+    "ts22-multi-position.json:ts22": {
+     "resultHash": "c2a376b92180e1ebf4704a066ebff07fbfe705edb3fa9a469ad3098313ab7a1d",
+     "inputsHash": "902c1e0de80329d05665df1b9224795eea6175cd185709e0b4ee4f241065de52",
+     "linesHash": "5f3d7a358789cb52c92a706bc72fa2741a49600cbe4ce6de8e35c9a3cec43d7c",
+     "fullHash": "d2fc1721d2b2f61ba1d7de405c2e553906310f2657af80fd97eb422c05ff5aa4"
+    },
+    "ts38-withholding.json:ts38": {
+     "resultHash": "bdd527735552a9e8e1ed79c6dce714e319fbcc6b46f72afb51e9ba4b2620bd3a",
+     "inputsHash": "d9b05ccda23c257fc94973775caade817634e67559c3216cc1b89351234dda18",
+     "linesHash": "1daef4e023ebb3d6376adfd8cdcf7657ed04a1107ab2f3732737869ec79fad12",
+     "fullHash": "38412bb330e6e83ddfd8a49c2a08a986f93908a85c0df2b1296633434e3f3fc5"
+    },
+    "random:50000": {
+     "resultHash": "26426c2525f8647d96ae42405b48aeead34fd6ca35cc13a3a26bfa16d7ac9255",
+     "inputsHash": "2f6b4b20fc0c96869e509d05ccb7378ca5d59bc384e4561fa6611933c794e0f0",
+     "linesHash": "c1af7c6ee221ab07464500927e3f4a4de5583e658bd985c509ef7d5c736829d0",
+     "fullHash": "826b502a0302b68c69b24b1186538ca12e62ee06f0e0c660decb8e2b54b7cd29"
+    },
+    "binary:50000": {
+     "resultHash": "fe01b09d5e5031527ce2fcbab36f3715f31c1ce82a1c75c43636698cd40342fc",
+     "inputsHash": "c192fc6787df20be86f9856c5bd5deb944ebe8f16181c095ceb5c614594adb69",
+     "linesHash": "c4f72ffb9bfb03d324afb1d68d8ee1d82e837ce954679e13973f92bc4598d78b",
+     "fullHash": "41576b996e23f6d452bffadbcac0c7dd16e1ea3af0a1f6968644b2745da08872"
+    },
+    "wide:50000": {
+     "resultHash": "5080ab4af32e1109260b33f152bbc8e8bd54039fd4a145d4191e38ed1a1d2b43",
+     "inputsHash": "8a0bd9dc875dfafcb4c820cb6fae2cbb95cebff6384faad8bee0cca1a16ca82f",
+     "linesHash": "f43a5c504a6da59a321f1c10c3055909cfb576f90be4fcbae5a310bd6e29f02b",
+     "fullHash": "2480f09efd5a150412968f157d42365d98ad193b4a808453bf4935053930934a"
+    },
+    "deep:50000": {
+     "resultHash": "1d279e681811b52c228d40e7da36a13e1b1c6623be64bc6f1def48116f2f23c6",
+     "inputsHash": "efb6c8609aaab27c2099c5708adcaa7341f036783c011482df44d68abef65e1a",
+     "linesHash": "7b264a70ed1179be03eb6b79856eee37759843b78252101f47eaff25c7f34470",
+     "fullHash": "d6b428d8dd82d95b261478562f93f0e60d43fa6a4a88e33bb2590a3f6b22f47a"
+    }
+   }
   },
-  "after": {
-   "input": 148,
-   "afterQualification": 287,
-   "afterIndividual": 455,
-   "afterCaps": 621,
-   "afterRounding": 520,
-   "afterTotals": 633,
-   "runOutputMb": 455,
-   "peakRssMb": 954
+  "heapProfile150kBinary": {
+   "method": "forced gc after every pass (node --expose-gc), retained heapUsed MB; scratch script, not committed",
+   "before": {
+    "input": 148,
+    "afterQualification": 347,
+    "afterIndividual": 622,
+    "afterCaps": 809,
+    "afterRounding": 909,
+    "afterTotals": 1036,
+    "runOutputMb": 577,
+    "peakRssMb": 1563
+   },
+   "after": {
+    "input": 148,
+    "afterQualification": 287,
+    "afterIndividual": 455,
+    "afterCaps": 621,
+    "afterRounding": 520,
+    "afterTotals": 633,
+    "runOutputMb": 455,
+    "peakRssMb": 954
+   },
+   "dominantRetained": "RunOutput lines with traces (~250 MB = ~950 B per line), qualification state + evaluations, volume summaries; the caller's RunInput objects (~1 KB per position)"
   },
-  "dominantRetained": "RunOutput lines with traces (~250 MB = ~950 B per line), qualification state + evaluations, volume summaries; the caller's RunInput objects (~1 KB per position)"
- },
- "results": [
-  {
-   "shape": "random",
-   "positions": 50000,
-   "seed": 20261113,
-   "orders": 66667,
-   "generateMs": 31,
-   "run1Ms": 986,
-   "run2Ms": 1266,
-   "rssMb": {
-    "afterGenerate": 161,
-    "afterRun1": 513,
-    "end": 815,
-    "peak": 821
+  "results": [
+   {
+    "shape": "random",
+    "positions": 50000,
+    "seed": 20261113,
+    "orders": 66667,
+    "generateMs": 31,
+    "run1Ms": 986,
+    "run2Ms": 1266,
+    "rssMb": {
+     "afterGenerate": 161,
+     "afterRun1": 513,
+     "end": 815,
+     "peak": 821
+    },
+    "run1": {
+     "resultHash": "26426c2525f8647d96ae42405b48aeead34fd6ca35cc13a3a26bfa16d7ac9255",
+     "inputsHash": "2f6b4b20fc0c96869e509d05ccb7378ca5d59bc384e4561fa6611933c794e0f0",
+     "linesHash": "c1af7c6ee221ab07464500927e3f4a4de5583e658bd985c509ef7d5c736829d0",
+     "lines": 87659,
+     "payees": 47241,
+     "grossMinor": "639844394",
+     "breakageMinor": "1829247435",
+     "capBound": true
+    },
+    "deterministic": true
    },
-   "run1": {
-    "resultHash": "26426c2525f8647d96ae42405b48aeead34fd6ca35cc13a3a26bfa16d7ac9255",
-    "inputsHash": "2f6b4b20fc0c96869e509d05ccb7378ca5d59bc384e4561fa6611933c794e0f0",
-    "linesHash": "c1af7c6ee221ab07464500927e3f4a4de5583e658bd985c509ef7d5c736829d0",
-    "lines": 87659,
-    "payees": 47241,
-    "grossMinor": "639844394",
-    "breakageMinor": "1829247435",
-    "capBound": true
+   {
+    "shape": "binary",
+    "positions": 50000,
+    "seed": 20261113,
+    "orders": 66667,
+    "generateMs": 58,
+    "run1Ms": 908,
+    "run2Ms": 805,
+    "rssMb": {
+     "afterGenerate": 147,
+     "afterRun1": 505,
+     "end": 895,
+     "peak": 895
+    },
+    "run1": {
+     "resultHash": "fe01b09d5e5031527ce2fcbab36f3715f31c1ce82a1c75c43636698cd40342fc",
+     "inputsHash": "c192fc6787df20be86f9856c5bd5deb944ebe8f16181c095ceb5c614594adb69",
+     "linesHash": "c4f72ffb9bfb03d324afb1d68d8ee1d82e837ce954679e13973f92bc4598d78b",
+     "lines": 88088,
+     "payees": 47227,
+     "grossMinor": "639859134",
+     "breakageMinor": "2641780934",
+     "capBound": true
+    },
+    "deterministic": true
    },
-   "deterministic": true
-  },
-  {
-   "shape": "binary",
-   "positions": 50000,
-   "seed": 20261113,
-   "orders": 66667,
-   "generateMs": 58,
-   "run1Ms": 908,
-   "run2Ms": 805,
-   "rssMb": {
-    "afterGenerate": 147,
-    "afterRun1": 505,
-    "end": 895,
-    "peak": 895
+   {
+    "shape": "wide",
+    "positions": 50000,
+    "seed": 20261113,
+    "orders": 66667,
+    "generateMs": 32,
+    "run1Ms": 601,
+    "run2Ms": 807,
+    "rssMb": {
+     "afterGenerate": 147,
+     "afterRun1": 453,
+     "end": 489,
+     "peak": 499
+    },
+    "run1": {
+     "resultHash": "5080ab4af32e1109260b33f152bbc8e8bd54039fd4a145d4191e38ed1a1d2b43",
+     "inputsHash": "8a0bd9dc875dfafcb4c820cb6fae2cbb95cebff6384faad8bee0cca1a16ca82f",
+     "linesHash": "f43a5c504a6da59a321f1c10c3055909cfb576f90be4fcbae5a310bd6e29f02b",
+     "lines": 60633,
+     "payees": 44433,
+     "grossMinor": "488782205",
+     "breakageMinor": "0",
+     "capBound": false
+    },
+    "deterministic": true
    },
-   "run1": {
-    "resultHash": "fe01b09d5e5031527ce2fcbab36f3715f31c1ce82a1c75c43636698cd40342fc",
-    "inputsHash": "c192fc6787df20be86f9856c5bd5deb944ebe8f16181c095ceb5c614594adb69",
-    "linesHash": "c4f72ffb9bfb03d324afb1d68d8ee1d82e837ce954679e13973f92bc4598d78b",
-    "lines": 88088,
-    "payees": 47227,
-    "grossMinor": "639859134",
-    "breakageMinor": "2641780934",
-    "capBound": true
+   {
+    "shape": "deep",
+    "positions": 50000,
+    "seed": 20261113,
+    "orders": 66667,
+    "generateMs": 33,
+    "run1Ms": 962,
+    "run2Ms": 888,
+    "rssMb": {
+     "afterGenerate": 147,
+     "afterRun1": 527,
+     "end": 815,
+     "peak": 815
+    },
+    "run1": {
+     "resultHash": "1d279e681811b52c228d40e7da36a13e1b1c6623be64bc6f1def48116f2f23c6",
+     "inputsHash": "efb6c8609aaab27c2099c5708adcaa7341f036783c011482df44d68abef65e1a",
+     "linesHash": "7b264a70ed1179be03eb6b79856eee37759843b78252101f47eaff25c7f34470",
+     "lines": 86816,
+     "payees": 46467,
+     "grossMinor": "639860762",
+     "breakageMinor": "531050814016",
+     "capBound": true
+    },
+    "deterministic": true
    },
-   "deterministic": true
-  },
-  {
-   "shape": "wide",
-   "positions": 50000,
-   "seed": 20261113,
-   "orders": 66667,
-   "generateMs": 32,
-   "run1Ms": 601,
-   "run2Ms": 807,
-   "rssMb": {
-    "afterGenerate": 147,
-    "afterRun1": 453,
-    "end": 489,
-    "peak": 499
+   {
+    "shape": "random",
+    "positions": 500000,
+    "seed": 20261113,
+    "orders": 666667,
+    "generateMs": 578,
+    "run1Ms": 13609,
+    "run2Ms": 18266,
+    "rssMb": {
+     "afterGenerate": 613,
+     "afterRun1": 2860,
+     "end": 1991,
+     "peak": 3202
+    },
+    "run1": {
+     "resultHash": "8a0af63ce3317bfc455536d6e78150885590b26912a074f16df62599a2850147",
+     "inputsHash": "ebd9c4c2ef2557032a2a293f88bd2b1ce0b7c4b1801dd015de38ad7f7fb30ed4",
+     "linesHash": "622d7f48030a41c8290087950371251455d5352808da0fb0584e4f2b6f699fb1",
+     "lines": 877269,
+     "payees": 472601,
+     "grossMinor": "6397837614",
+     "breakageMinor": "23212792225",
+     "capBound": true
+    },
+    "deterministic": true
    },
-   "run1": {
-    "resultHash": "5080ab4af32e1109260b33f152bbc8e8bd54039fd4a145d4191e38ed1a1d2b43",
-    "inputsHash": "8a0bd9dc875dfafcb4c820cb6fae2cbb95cebff6384faad8bee0cca1a16ca82f",
-    "linesHash": "f43a5c504a6da59a321f1c10c3055909cfb576f90be4fcbae5a310bd6e29f02b",
-    "lines": 60633,
-    "payees": 44433,
-    "grossMinor": "488782205",
-    "breakageMinor": "0",
-    "capBound": false
+   {
+    "shape": "binary",
+    "positions": 500000,
+    "seed": 20261113,
+    "orders": 666667,
+    "generateMs": 577,
+    "run1Ms": 10705,
+    "run2Ms": 17100,
+    "rssMb": {
+     "afterGenerate": 612,
+     "afterRun1": 2975,
+     "end": 2376,
+     "peak": 3185
+    },
+    "run1": {
+     "resultHash": "ca853482cbbfa88a540eb3a76fbd98d558d59635a738ca77849772d5b8968d5f",
+     "inputsHash": "f7fd3784c4bbb12b5c8b9493f617548832494f2ad83f3f8558e66a4bfd5f57da",
+     "linesHash": "8f3f5b1a17f9f46e27665dbe9ccb9ded0fe7fc3a22a2fab62318920532e24de3",
+     "lines": 881107,
+     "payees": 472404,
+     "grossMinor": "6397856099",
+     "breakageMinor": "33273173849",
+     "capBound": true
+    },
+    "deterministic": true
    },
-   "deterministic": true
-  },
-  {
-   "shape": "deep",
-   "positions": 50000,
-   "seed": 20261113,
-   "orders": 66667,
-   "generateMs": 33,
-   "run1Ms": 962,
-   "run2Ms": 888,
-   "rssMb": {
-    "afterGenerate": 147,
-    "afterRun1": 527,
-    "end": 815,
-    "peak": 815
+   {
+    "shape": "wide",
+    "positions": 500000,
+    "seed": 20261113,
+    "orders": 666667,
+    "generateMs": 593,
+    "run1Ms": 15278,
+    "run2Ms": 18082,
+    "rssMb": {
+     "afterGenerate": 628,
+     "afterRun1": 2297,
+     "end": 2081,
+     "peak": 2881
+    },
+    "run1": {
+     "resultHash": "ae8c4674eabf6e6ba52e372889b09876ad501d81f982f50dae6f6c5692b1bce3",
+     "inputsHash": "16489a533b4c9b87c2a86453e5d63cf2ced058ed999aa0ed860e119717a71fe1",
+     "linesHash": "5f6119088f20f60e94b4985a4e43c9f3d07eebc2202042220097659debc629c9",
+     "lines": 871326,
+     "payees": 472059,
+     "grossMinor": "6310375325",
+     "breakageMinor": "4500961538",
+     "capBound": true
+    },
+    "deterministic": true
    },
-   "run1": {
-    "resultHash": "1d279e681811b52c228d40e7da36a13e1b1c6623be64bc6f1def48116f2f23c6",
-    "inputsHash": "efb6c8609aaab27c2099c5708adcaa7341f036783c011482df44d68abef65e1a",
-    "linesHash": "7b264a70ed1179be03eb6b79856eee37759843b78252101f47eaff25c7f34470",
-    "lines": 86816,
-    "payees": 46467,
-    "grossMinor": "639860762",
-    "breakageMinor": "531050814016",
-    "capBound": true
+   {
+    "shape": "deep",
+    "positions": 500000,
+    "seed": 20261113,
+    "orders": 666667,
+    "generateMs": 573,
+    "run1Ms": 13778,
+    "run2Ms": 16770,
+    "rssMb": {
+     "afterGenerate": 630,
+     "afterRun1": 2780,
+     "end": 2539,
+     "peak": 3137
+    },
+    "run1": {
+     "resultHash": "37eb977562a797d0f51196c1471f9c579f3ca45b6b1eb396c03e1553a936cb26",
+     "inputsHash": "e6a35f23a4d0fc40788b3977552879501ba7c7812b0be3fc66f9c17360d93c56",
+     "linesHash": "eb4ad17b38fe86be8d686188bc354e5854b29b091985e908189512aefb0af744",
+     "lines": 865203,
+     "payees": 464551,
+     "grossMinor": "6397853896",
+     "breakageMinor": "5296176576537",
+     "capBound": true
+    },
+    "deterministic": true
    },
-   "deterministic": true
-  },
-  {
-   "shape": "random",
-   "positions": 500000,
-   "seed": 20261113,
-   "orders": 666667,
-   "generateMs": 578,
-   "run1Ms": 13609,
-   "run2Ms": 18266,
-   "rssMb": {
-    "afterGenerate": 613,
-    "afterRun1": 2860,
-    "end": 1991,
-    "peak": 3202
+   {
+    "shape": "random",
+    "positions": 750000,
+    "seed": 20261113,
+    "orders": 1000000,
+    "generateMs": 586,
+    "run1Ms": 28715,
+    "run2Ms": 33804,
+    "rssMb": {
+     "afterGenerate": 892,
+     "afterRun1": 3662,
+     "end": 3377,
+     "peak": 4043
+    },
+    "run1": {
+     "resultHash": "c29b782d46c0705bd9aac415197480ae8447ca6deba85c48820f27c6b4ec67ce",
+     "inputsHash": "dc0a929b144b0726ba6c4ac091eb04c7c4f27c26485666f1e4608ba25bcce61f",
+     "linesHash": "9f0dc87c644776fed40572d8dde40da75d8d298273d2627819db60e88c31521c",
+     "lines": 1315923,
+     "payees": 708743,
+     "grossMinor": "9598587150",
+     "breakageMinor": "36143991200",
+     "capBound": true
+    },
+    "deterministic": true
    },
-   "run1": {
-    "resultHash": "8a0af63ce3317bfc455536d6e78150885590b26912a074f16df62599a2850147",
-    "inputsHash": "ebd9c4c2ef2557032a2a293f88bd2b1ce0b7c4b1801dd015de38ad7f7fb30ed4",
-    "linesHash": "622d7f48030a41c8290087950371251455d5352808da0fb0584e4f2b6f699fb1",
-    "lines": 877269,
-    "payees": 472601,
-    "grossMinor": "6397837614",
-    "breakageMinor": "23212792225",
-    "capBound": true
+   {
+    "shape": "binary",
+    "positions": 750000,
+    "seed": 20261113,
+    "orders": 1000000,
+    "generateMs": 538,
+    "run1Ms": 30124,
+    "run2Ms": 31065,
+    "rssMb": {
+     "afterGenerate": 894,
+     "afterRun1": 3060,
+     "end": 3573,
+     "peak": 4100
+    },
+    "run1": {
+     "resultHash": "63a730121fcb3be59e8c715e7554b8fe06e2602e69b6b7ebd9f8bef76dbaa0bd",
+     "inputsHash": "cb43e9a2a360def9b15c69580cbc2a702ab4938a052c1b69305f398efbb9ab41",
+     "linesHash": "d91316ee2c11d828f1092545d60e2bf91dd86ea0cf9b53ea057a4881c3820d41",
+     "lines": 1321219,
+     "payees": 708317,
+     "grossMinor": "9598605979",
+     "breakageMinor": "51970946859",
+     "capBound": true
+    },
+    "deterministic": true
    },
-   "deterministic": true
-  },
-  {
-   "shape": "binary",
-   "positions": 500000,
-   "seed": 20261113,
-   "orders": 666667,
-   "generateMs": 577,
-   "run1Ms": 10705,
-   "run2Ms": 17100,
-   "rssMb": {
-    "afterGenerate": 612,
-    "afterRun1": 2975,
-    "end": 2376,
-    "peak": 3185
+   {
+    "shape": "wide",
+    "positions": 750000,
+    "seed": 20261113,
+    "orders": 1000000,
+    "generateMs": 821,
+    "run1Ms": 26161,
+    "run2Ms": 30183,
+    "rssMb": {
+     "afterGenerate": 893,
+     "afterRun1": 3740,
+     "end": 3693,
+     "peak": 4059
+    },
+    "run1": {
+     "resultHash": "0750bf9b1f398f6a4bfd062d08bba218b91197d00778ca3441da4d815f06f78d",
+     "inputsHash": "d4ca083aeb4db8ec0dbf3e5cb3bf1cc5c9a0cf1fa1bb31fd0b310089123dd9b3",
+     "linesHash": "fe2d952a84e98f1dba5e80456346f92b2f2ff52caac3d6c06e8b1b6eafbe247a",
+     "lines": 1309471,
+     "payees": 708151,
+     "grossMinor": "9511124893",
+     "breakageMinor": "8035955818",
+     "capBound": true
+    },
+    "deterministic": true
    },
-   "run1": {
-    "resultHash": "ca853482cbbfa88a540eb3a76fbd98d558d59635a738ca77849772d5b8968d5f",
-    "inputsHash": "f7fd3784c4bbb12b5c8b9493f617548832494f2ad83f3f8558e66a4bfd5f57da",
-    "linesHash": "8f3f5b1a17f9f46e27665dbe9ccb9ded0fe7fc3a22a2fab62318920532e24de3",
-    "lines": 881107,
-    "payees": 472404,
-    "grossMinor": "6397856099",
-    "breakageMinor": "33273173849",
-    "capBound": true
+   {
+    "shape": "deep",
+    "positions": 750000,
+    "seed": 20261113,
+    "orders": 1000000,
+    "generateMs": 854,
+    "run1Ms": 31525,
+    "run2Ms": 38558,
+    "rssMb": {
+     "afterGenerate": 891,
+     "afterRun1": 3214,
+     "end": 2919,
+     "peak": 3912
+    },
+    "run1": {
+     "resultHash": "0390c4cbb44f430b5df55ab46000fa9f567e38e7e6fdc47ce11350d0d2631930",
+     "inputsHash": "e7321e11749d59d9add4d9af35e47b0f4a120a9bb659379fcd40a589456abc0b",
+     "linesHash": "5f3089e69f7ed5c341f0ec452fedbf7faa6f00d930a996dd667f57ced3a62187",
+     "lines": 1297721,
+     "payees": 696768,
+     "grossMinor": "9598603473",
+     "breakageMinor": "7948422913542",
+     "capBound": true
+    },
+    "deterministic": true
    },
-   "deterministic": true
-  },
-  {
-   "shape": "wide",
-   "positions": 500000,
-   "seed": 20261113,
-   "orders": 666667,
-   "generateMs": 593,
-   "run1Ms": 15278,
-   "run2Ms": 18082,
-   "rssMb": {
-    "afterGenerate": 628,
-    "afterRun1": 2297,
-    "end": 2081,
-    "peak": 2881
+   {
+    "shape": "random",
+    "positions": 1000000,
+    "failed": "exit 134: FATAL ERROR: Ineffective mark-compacts near heap limit Allocation failed - JavaScript heap out of memory",
+    "seconds": 42,
+    "peakRssMb": 4419
    },
-   "run1": {
-    "resultHash": "ae8c4674eabf6e6ba52e372889b09876ad501d81f982f50dae6f6c5692b1bce3",
-    "inputsHash": "16489a533b4c9b87c2a86453e5d63cf2ced058ed999aa0ed860e119717a71fe1",
-    "linesHash": "5f6119088f20f60e94b4985a4e43c9f3d07eebc2202042220097659debc629c9",
-    "lines": 871326,
-    "payees": 472059,
-    "grossMinor": "6310375325",
-    "breakageMinor": "4500961538",
-    "capBound": true
+   {
+    "shape": "binary",
+    "positions": 1000000,
+    "failed": "exit 134: FATAL ERROR: Ineffective mark-compacts near heap limit Allocation failed - JavaScript heap out of memory",
+    "seconds": 34,
+    "peakRssMb": 4405
    },
-   "deterministic": true
-  },
-  {
-   "shape": "deep",
-   "positions": 500000,
-   "seed": 20261113,
-   "orders": 666667,
-   "generateMs": 573,
-   "run1Ms": 13778,
-   "run2Ms": 16770,
-   "rssMb": {
-    "afterGenerate": 630,
-    "afterRun1": 2780,
-    "end": 2539,
-    "peak": 3137
+   {
+    "shape": "wide",
+    "positions": 1000000,
+    "failed": "exit 134: FATAL ERROR: Ineffective mark-compacts near heap limit Allocation failed - JavaScript heap out of memory",
+    "seconds": 38,
+    "peakRssMb": 4405
    },
-   "run1": {
-    "resultHash": "37eb977562a797d0f51196c1471f9c579f3ca45b6b1eb396c03e1553a936cb26",
-    "inputsHash": "e6a35f23a4d0fc40788b3977552879501ba7c7812b0be3fc66f9c17360d93c56",
-    "linesHash": "eb4ad17b38fe86be8d686188bc354e5854b29b091985e908189512aefb0af744",
-    "lines": 865203,
-    "payees": 464551,
-    "grossMinor": "6397853896",
-    "breakageMinor": "5296176576537",
-    "capBound": true
+   {
+    "shape": "deep",
+    "positions": 1000000,
+    "failed": "exit 134: FATAL ERROR: Ineffective mark-compacts near heap limit Allocation failed - JavaScript heap out of memory",
+    "seconds": 46,
+    "peakRssMb": 4395
    },
-   "deterministic": true
-  },
-  {
-   "shape": "random",
-   "positions": 750000,
-   "seed": 20261113,
-   "orders": 1000000,
-   "generateMs": 586,
-   "run1Ms": 28715,
-   "run2Ms": 33804,
-   "rssMb": {
-    "afterGenerate": 892,
-    "afterRun1": 3662,
-    "end": 3377,
-    "peak": 4043
+   {
+    "shape": "random",
+    "positions": 2000000,
+    "failed": "exit 134: FATAL ERROR: Ineffective mark-compacts near heap limit Allocation failed - JavaScript heap out of memory",
+    "seconds": 87,
+    "peakRssMb": 4346
    },
-   "run1": {
-    "resultHash": "c29b782d46c0705bd9aac415197480ae8447ca6deba85c48820f27c6b4ec67ce",
-    "inputsHash": "dc0a929b144b0726ba6c4ac091eb04c7c4f27c26485666f1e4608ba25bcce61f",
-    "linesHash": "9f0dc87c644776fed40572d8dde40da75d8d298273d2627819db60e88c31521c",
-    "lines": 1315923,
-    "payees": 708743,
-    "grossMinor": "9598587150",
-    "breakageMinor": "36143991200",
-    "capBound": true
+   {
+    "shape": "binary",
+    "positions": 2000000,
+    "failed": "exit 134: FATAL ERROR: Ineffective mark-compacts near heap limit Allocation failed - JavaScript heap out of memory",
+    "seconds": 57,
+    "peakRssMb": 4706
    },
-   "deterministic": true
-  },
-  {
-   "shape": "binary",
-   "positions": 750000,
-   "seed": 20261113,
-   "orders": 1000000,
-   "generateMs": 538,
-   "run1Ms": 30124,
-   "run2Ms": 31065,
-   "rssMb": {
-    "afterGenerate": 894,
-    "afterRun1": 3060,
-    "end": 3573,
-    "peak": 4100
+   {
+    "shape": "wide",
+    "positions": 2000000,
+    "failed": "exit 134: FATAL ERROR: Ineffective mark-compacts near heap limit Allocation failed - JavaScript heap out of memory",
+    "seconds": 57,
+    "peakRssMb": 4679
    },
-   "run1": {
-    "resultHash": "63a730121fcb3be59e8c715e7554b8fe06e2602e69b6b7ebd9f8bef76dbaa0bd",
-    "inputsHash": "cb43e9a2a360def9b15c69580cbc2a702ab4938a052c1b69305f398efbb9ab41",
-    "linesHash": "d91316ee2c11d828f1092545d60e2bf91dd86ea0cf9b53ea057a4881c3820d41",
-    "lines": 1321219,
-    "payees": 708317,
-    "grossMinor": "9598605979",
-    "breakageMinor": "51970946859",
-    "capBound": true
+   {
+    "shape": "deep",
+    "positions": 2000000,
+    "failed": "exit 134: FATAL ERROR: Ineffective mark-compacts near heap limit Allocation failed - JavaScript heap out of memory",
+    "seconds": 62,
+    "peakRssMb": 4506
+   }
+  ],
+  "verdict": {
+   "target": "2M positions within a 4 GB heap",
+   "met": false,
+   "largestPassingPositions": 750000,
+   "firstFailingPositions": 1000000,
+   "peakRssPerPositionKb": {
+    "500k": 6.6,
+    "750k": 5.6
    },
-   "deterministic": true
-  },
-  {
-   "shape": "wide",
-   "positions": 750000,
-   "seed": 20261113,
-   "orders": 1000000,
-   "generateMs": 821,
-   "run1Ms": 26161,
-   "run2Ms": 30183,
-   "rssMb": {
-    "afterGenerate": 893,
-    "afterRun1": 3740,
-    "end": 3693,
-    "peak": 4059
-   },
-   "run1": {
-    "resultHash": "0750bf9b1f398f6a4bfd062d08bba218b91197d00778ca3441da4d815f06f78d",
-    "inputsHash": "d4ca083aeb4db8ec0dbf3e5cb3bf1cc5c9a0cf1fa1bb31fd0b310089123dd9b3",
-    "linesHash": "fe2d952a84e98f1dba5e80456346f92b2f2ff52caac3d6c06e8b1b6eafbe247a",
-    "lines": 1309471,
-    "payees": 708151,
-    "grossMinor": "9511124893",
-    "breakageMinor": "8035955818",
-    "capBound": true
-   },
-   "deterministic": true
-  },
-  {
-   "shape": "deep",
-   "positions": 750000,
-   "seed": 20261113,
-   "orders": 1000000,
-   "generateMs": 854,
-   "run1Ms": 31525,
-   "run2Ms": 38558,
-   "rssMb": {
-    "afterGenerate": 891,
-    "afterRun1": 3214,
-    "end": 2919,
-    "peak": 3912
-   },
-   "run1": {
-    "resultHash": "0390c4cbb44f430b5df55ab46000fa9f567e38e7e6fdc47ce11350d0d2631930",
-    "inputsHash": "e7321e11749d59d9add4d9af35e47b0f4a120a9bb659379fcd40a589456abc0b",
-    "linesHash": "5f3089e69f7ed5c341f0ec452fedbf7faa6f00d930a996dd667f57ced3a62187",
-    "lines": 1297721,
-    "payees": 696768,
-    "grossMinor": "9598603473",
-    "breakageMinor": "7948422913542",
-    "capBound": true
-   },
-   "deterministic": true
-  },
-  {
-   "shape": "random",
-   "positions": 1000000,
-   "failed": "exit 134: FATAL ERROR: Ineffective mark-compacts near heap limit Allocation failed - JavaScript heap out of memory",
-   "seconds": 42,
-   "peakRssMb": 4419
-  },
-  {
-   "shape": "binary",
-   "positions": 1000000,
-   "failed": "exit 134: FATAL ERROR: Ineffective mark-compacts near heap limit Allocation failed - JavaScript heap out of memory",
-   "seconds": 34,
-   "peakRssMb": 4405
-  },
-  {
-   "shape": "wide",
-   "positions": 1000000,
-   "failed": "exit 134: FATAL ERROR: Ineffective mark-compacts near heap limit Allocation failed - JavaScript heap out of memory",
-   "seconds": 38,
-   "peakRssMb": 4405
-  },
-  {
-   "shape": "deep",
-   "positions": 1000000,
-   "failed": "exit 134: FATAL ERROR: Ineffective mark-compacts near heap limit Allocation failed - JavaScript heap out of memory",
-   "seconds": 46,
-   "peakRssMb": 4395
-  },
-  {
-   "shape": "random",
-   "positions": 2000000,
-   "failed": "exit 134: FATAL ERROR: Ineffective mark-compacts near heap limit Allocation failed - JavaScript heap out of memory",
-   "seconds": 87,
-   "peakRssMb": 4346
-  },
-  {
-   "shape": "binary",
-   "positions": 2000000,
-   "failed": "exit 134: FATAL ERROR: Ineffective mark-compacts near heap limit Allocation failed - JavaScript heap out of memory",
-   "seconds": 57,
-   "peakRssMb": 4706
-  },
-  {
-   "shape": "wide",
-   "positions": 2000000,
-   "failed": "exit 134: FATAL ERROR: Ineffective mark-compacts near heap limit Allocation failed - JavaScript heap out of memory",
-   "seconds": 57,
-   "peakRssMb": 4679
-  },
-  {
-   "shape": "deep",
-   "positions": 2000000,
-   "failed": "exit 134: FATAL ERROR: Ineffective mark-compacts near heap limit Allocation failed - JavaScript heap out of memory",
-   "seconds": 62,
-   "peakRssMb": 4506
+   "floor": "input (~1 KB/position) and the unchanged RunOutput (~3 KB/position: lines with compact traces, state rows, evaluations, summaries) are both resident at the end of a run; 2M needs about 8-9 GB whatever the internal layout",
+   "proposedWorker": "calc worker 8 GB with --max-old-space-size=7168 for tenants up to ~1.2M positions per market run (extrapolated from 5.5 KB/position peak); above that the additive streaming/columnar output API that D-B4-22 allows (lines and summaries handed to COMP in chunks, input loaded columnar) with COMP adoption as a recorded follow-up"
   }
- ],
- "verdict": {
-  "target": "2M positions within a 4 GB heap",
-  "met": false,
-  "largestPassingPositions": 750000,
-  "firstFailingPositions": 1000000,
-  "peakRssPerPositionKb": {
-   "500k": 6.6,
-   "750k": 5.6
-  },
-  "floor": "input (~1 KB/position) and the unchanged RunOutput (~3 KB/position: lines with compact traces, state rows, evaluations, summaries) are both resident at the end of a run; 2M needs about 8-9 GB whatever the internal layout",
-  "proposedWorker": "calc worker 8 GB with --max-old-space-size=7168 for tenants up to ~1.2M positions per market run (extrapolated from 5.5 KB/position peak); above that the additive streaming/columnar output API that D-B4-22 allows (lines and summaries handed to COMP in chunks, input loaded columnar) with COMP adoption as a recorded follow-up"
  }
 }

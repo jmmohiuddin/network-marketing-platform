@@ -166,6 +166,20 @@ describe('AppShell', () => {
     expect(links.map((link) => link.getAttribute('aria-current'))).toEqual([null, null, 'page'])
   })
 
+  it('shows the B6 entries the API grants with their icons; migration is not under data imports', async () => {
+    navigation.pathname = '/imports/migration/m1'
+    const entries = [
+      { key: 'overview', path: '/overview', label: 'Overview' },
+      { key: 'imports', path: '/imports', label: 'Data imports' },
+      { key: 'migration', path: '/imports/migration', label: 'Migration' },
+    ]
+    renderWithProviders(<AppShell realm="tenant"><Page /></AppShell>, fetchReturning(ok(me({ navigation: entries }))))
+    await screen.findByText('May invite users')
+    const links = entries.map((entry) => screen.getByRole('link', { name: entry.label }))
+    expect(links.map((link) => link.querySelector('.material-symbols-outlined')?.textContent)).toEqual(['dashboard', 'sync_alt', 'compare_arrows'])
+    expect(links.map((link) => link.getAttribute('aria-current'))).toEqual([null, null, 'page'])
+  })
+
   it('opens the navigation as an overlay from Menu and closes it with Escape', async () => {
     const user = userEvent.setup()
     renderWithProviders(<AppShell realm="tenant"><Page /></AppShell>, fetchReturning(ok(me())))

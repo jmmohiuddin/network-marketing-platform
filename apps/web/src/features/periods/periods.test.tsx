@@ -29,7 +29,7 @@ const SYNC = { code: 'SYNC_BEHIND', message: 'Order sync of this market is behin
 function period(id: string, month: number, overrides: Partial<PeriodRow> = {}): PeriodRow {
   const start = new Date(Date.UTC(2026, month, 1)).toISOString()
   const end = new Date(Date.UTC(2026, month + 1, 1)).toISOString()
-  return { id, calendar_id: CAL, starts_at: start, ends_at: end, cut_off_passed: true, state: 'open', committed_run_id: null, latest_run: null, blockers: [], late: { pending: 0, decided: 0 }, ...overrides }
+  return { id, calendar_id: CAL, starts_at: start, ends_at: end, cut_off_passed: true, state: 'open', committed_run_id: null, latest_run: null, blockers: [], late: { pending: 0, decided: 0 }, closed_at: null, closed_by: null, ...overrides }
 }
 
 const M3 = period('per-m3', 7, { state: 'committed', committed_run_id: 'run-m3', latest_run: { id: 'run-m3', state: 'committed', gross_minor: '4700', finished_at: '2026-09-02T10:00:00.000Z' }, late: { pending: 1, decided: 0 }, blockers: [{ code: 'PERIOD_COMMITTED', message: 'The period is already committed.', details: {} }] })

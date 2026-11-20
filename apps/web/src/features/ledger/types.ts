@@ -2,7 +2,7 @@
 
 export type AccountType =
   | 'commission_expense' | 'payee_payable' | 'withholding_payable' | 'payout_in_transit' | 'clawback_receivable' | 'rounding_residue'
-  | 'write_off' | 'credit_liability' | 'breakage' | 'settled_clearing'
+  | 'write_off' | 'credit_liability' | 'breakage' | 'settled_clearing' | 'migration_clearing'
 
 export interface PersonRef {
   readonly id: string
@@ -39,18 +39,21 @@ export interface LedgerSummary {
 export interface JournalEntry {
   readonly id: string
   readonly event_type: string
-  readonly origin_type: 'run' | 'payout_instruction' | 'case'
+  readonly origin_type: 'run' | 'payout_instruction' | 'case' | 'migration'
   readonly origin_id: string
   readonly idempotency_key: string
   readonly period: PeriodBounds
   readonly posted_at: string
   readonly approved_by: PersonRef | null
   readonly debit_total_minor: string
+  readonly credit_total_minor: string
   readonly posting_count: number
+  readonly market: { readonly id: string; readonly code: string }
+  readonly approval_id: string | null
 }
 
 /** GET /v1/ledger/entries/:id. */
-export interface EntryDetail extends Omit<JournalEntry, 'debit_total_minor' | 'posting_count'> {
+export interface EntryDetail extends Omit<JournalEntry, 'debit_total_minor' | 'credit_total_minor' | 'posting_count' | 'market' | 'approval_id'> {
   readonly postings: readonly {
     readonly id: string
     readonly account: { readonly id: string; readonly type: AccountType }
@@ -131,6 +134,8 @@ export interface JournalExport {
   readonly content_sha256: string
   readonly created_by: { readonly id: string | null; readonly type: string }
   readonly created_at: string
+  /** The export the period's close generated (PLAN B6 2.2). */
+  readonly created_at_close: boolean
 }
 
 /** GET /v1/payees/:id/balances rows. */

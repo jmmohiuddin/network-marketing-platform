@@ -16,6 +16,11 @@ export function formatDateTimeIn(value: string, timeZone: string | undefined): s
   return new Intl.DateTimeFormat(undefined, { year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZone, timeZoneName: 'short' }).format(new Date(value))
 }
 
+/** The calendar day of an instant in a zone (the viewer's when none): "Jan 1, 2027". Never the UTC day of an ISO string. */
+export function formatDateIn(value: string, timeZone: string | undefined): string {
+  return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeZone }).format(new Date(value))
+}
+
 /** A count with its noun in the right number: (1, 'market') -> "1 market", (3, 'batch', 'batches') -> "3 batches". */
 export function countLabel(count: number, one: string, many = `${one}s`): string {
   return `${NUMBER.format(count)} ${count === 1 ? one : many}`

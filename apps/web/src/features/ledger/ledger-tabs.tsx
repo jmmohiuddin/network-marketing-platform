@@ -6,6 +6,8 @@ import { Drawer } from '../../components/drawer'
 import { FiltersBar, type FilterChip } from '../../components/filters-bar'
 import { Select } from '../../components/form-field'
 import { LoadingState } from '../../components/states'
+import { ColumnChooser, ListExport, type ColumnOption } from '../views/list-tools'
+import { SavedViewsBar, type SavedView } from '../views/saved-views'
 import { useCursorPages } from '../../lib/cursor-pages'
 import { formatDateTime } from '../../lib/format'
 import { useSession } from '../../lib/session'
@@ -23,6 +25,22 @@ const MONO = 'font-data-mono-sm text-data-mono-sm'
 const LINK = 'text-primary font-semibold hover:underline'
 const ORIGIN_OPTIONS = [{ value: '', label: 'All origins' }, ...Object.entries(ORIGIN_LABELS).map(([value, label]) => ({ value, label }))]
 const TYPE_OPTIONS = [{ value: '', label: 'All account types' }, ...Object.entries(ACCOUNT_LABELS).map(([value, label]) => ({ value, label }))]
+
+/** PLAN B6 2.5 ledger-entry sorts and registry columns (the entry itself always shown, as the row's link). */
+const SORT_OPTIONS = [{ value: 'posted_at_desc', label: 'Posted, newest first' }, { value: 'posted_at_asc', label: 'Posted, oldest first' }] as const
+const COLUMN_OPTIONS: readonly ColumnOption[] = [
+  { key: 'posted_at', label: 'Posted' }, { key: 'entry_id', label: 'Journal entry', required: true }, { key: 'market', label: 'Market' },
+  { key: 'period', label: 'Period' }, { key: 'event_type', label: 'Event' }, { key: 'origin_type', label: 'Origin type' }, { key: 'origin_id', label: 'Origin' },
+  { key: 'debit_total', label: 'Debits' }, { key: 'credit_total', label: 'Credits' }, { key: 'approval_id', label: 'Approved by' },
+]
+const DEFAULT_COLUMNS = ['entry_id', 'posted_at', 'event_type', 'origin_id', 'period', 'debit_total', 'approval_id']
+
+/** The columns of ?columns= that the registry knows, with the entry first; the default set when none is valid. */
+function columnsOf(param: string | null): readonly string[] {
+  const chosen = COLUMN_OPTIONS.map((option) => option.key).filter((key) => (param ?? '').split(',').includes(key))
+  if (chosen.length === 0) return DEFAULT_COLUMNS
+  return ['entry_id', ...chosen.filter((key) => key !== 'entry_id')]
+}
 
 const amount = (minor: string, money: Money) => (minor === '0' ? '—' : marketAmount(minor, money))
 
@@ -84,49 +102,84 @@ function EntryDrawer({ entryId, money, periodLabel, onClose }: { readonly entryI
   )
 }
 
-/** Journal entries of the market, newest first, filtered by period and origin (?period=&origin=); ?entry= opens one. */
-export function JournalTab({ marketId, money, periods, params, update, entryId }: LedgerTabProps & { readonly entryId: string | null }) {
+/**
+ * Journal entries of the market filtered by period and origin (?period=&origin=), sorted (?sort=), with chosen columns
+ * (?columns=), saved views (?view=) and the CSV export (ledger.export); ?entry= opens one.
+ */
+export function JournalTab({ marketId, money, periods, params, update, opening, entryId }: LedgerTabProps & { readonly entryId: string | null }) {
   const { can } = useSession()
-  const chosen = periods.find((choice) => choice.id === params.get('period'))
-  const period = chosen?.id ?? ''
+  // A valid ?period= is always sent: a saved or shared view's period may be outside the loaded list (the newest 200, none
+  // without period.read), and dropping it would list every period's entries under the view's name.
+  const periodParam = params.get('period') ?? ''
+  const period = isUuid(periodParam) ? periodParam : ''
+  const chosen = period === '' ? undefined : { id: period, label: periods.find((choice) => choice.id === period)?.label ?? `Period ${shortId(period)}` }
+  const periodOptions = [{ value: '', label: 'All periods' }, ...(chosen !== undefined && !periods.some((choice) => choice.id === period) ? [{ value: chosen.id, label: chosen.label }] : []),
+    ...periods.map((choice) => ({ value: choice.id, label: choice.label }))]
   const origin = ORIGIN_OPTIONS.find((option) => option.value !== '' && option.value === params.get('origin'))?.value ?? ''
-  const query = { market_id: marketId, period_id: period || undefined, origin_type: origin || undefined }
+  const sort = SORT_OPTIONS.find((option) => option.value === params.get('sort'))?.value ?? SORT_OPTIONS[0].value
+  const columns = columnsOf(params.get('columns'))
+  const filters = { market_id: marketId, period_id: period || undefined, origin_type: origin || undefined }
+  const query = { ...filters, sort }
   const periodLabel: PeriodLabel = (bounds) => periods.find((choice) => choice.id === bounds.id)?.label ?? periodText(bounds, undefined)
+  const change = (changes: Readonly<Record<string, string | null>>) => update({ ...changes, view: null })
   const chips: FilterChip[] = [
-    ...(chosen === undefined ? [] : [{ key: 'period', label: `Period: ${chosen.label}`, onRemove: () => update({ period: null }) }]),
-    ...(origin === '' ? [] : [{ key: 'origin', label: `Origin: ${ORIGIN_LABELS[origin]}`, onRemove: () => update({ origin: null }) }]),
+    ...(chosen === undefined ? [] : [{ key: 'period', label: `Period: ${chosen.label}`, onRemove: () => change({ period: null }) }]),
+    ...(origin === '' ? [] : [{ key: 'origin', label: `Origin: ${ORIGIN_LABELS[origin]}`, onRemove: () => change({ origin: null }) }]),
   ]
+  const apply = (view: SavedView) => update({
+    market: typeof view.filters.market_id === 'string' ? view.filters.market_id : marketId,
+    period: typeof view.filters.period_id === 'string' ? view.filters.period_id : null,
+    origin: typeof view.filters.origin_type === 'string' ? view.filters.origin_type : null,
+    sort: view.sort, columns: view.columns.join(','), view: view.id, entry: null,
+  })
   return (
     <>
-      <FiltersBar label="Filter journal entries" chips={chips} onClear={() => update({ period: null, origin: null })}>
-        {periods.length > 0 && <Select label="Period" value={period} options={[{ value: '', label: 'All periods' }, ...periods.map((choice) => ({ value: choice.id, label: choice.label }))]} onChange={(event) => update({ period: event.target.value })} />}
-        <Select label="Origin" value={origin} options={ORIGIN_OPTIONS} onChange={(event) => update({ origin: event.target.value })} />
+      <div className="flex flex-wrap items-end justify-between gap-space-sm">
+        <SavedViewsBar list="ledger_entries" current={{ filters: Object.fromEntries(Object.entries(filters).filter(([, value]) => value !== undefined)), columns, sort }}
+          activeId={params.get('view')} applyDefault={opening} onApply={apply} />
+        <div className="flex flex-wrap items-end gap-space-xs">
+          <div className="w-56"><Select label="Sort" value={sort} options={SORT_OPTIONS} onChange={(event) => change({ sort: event.target.value })} /></div>
+          <ColumnChooser options={COLUMN_OPTIONS} selected={columns} onApply={(next) => change({ columns: next.join(',') })} />
+          {can('ledger.export') && <ListExport label="Export CSV" path="/v1/ledger/entries/export" query={{ ...query, columns: columns.join(',') }} filename="ledger-entries.csv" />}
+        </div>
+      </div>
+      <FiltersBar label="Filter journal entries" chips={chips} onClear={() => change({ period: null, origin: null })}>
+        {periods.length > 0 && <Select label="Period" value={period} options={periodOptions} onChange={(event) => change({ period: event.target.value })} />}
+        <Select label="Origin" value={origin} options={ORIGIN_OPTIONS} onChange={(event) => change({ origin: event.target.value })} />
         {!can('period.read') && <p className="font-caption text-caption text-secondary">Filtering by period needs read access to periods.</p>}
       </FiltersBar>
-      <EntriesTable key={JSON.stringify(query)} query={query} money={money} periodLabel={periodLabel} onOpen={(id) => update({ entry: id })} />
+      <EntriesTable key={JSON.stringify(query)} query={query} columns={columns} money={money} periodLabel={periodLabel} onOpen={(id) => update({ entry: id })} />
       {entryId !== null && <EntryDrawer entryId={entryId} money={money} periodLabel={periodLabel} onClose={() => update({ entry: null })} />}
     </>
   )
 }
 
-function EntriesTable({ query, money, periodLabel, onOpen }: { readonly query: Readonly<Record<string, string | undefined>>; readonly money: Money; readonly periodLabel: PeriodLabel; readonly onOpen: (id: string) => void }) {
+function EntriesTable({ query, columns, money, periodLabel, onOpen }: {
+  readonly query: Readonly<Record<string, string | undefined>>
+  readonly columns: readonly string[]
+  readonly money: Money
+  readonly periodLabel: PeriodLabel
+  readonly onOpen: (id: string) => void
+}) {
   const list = usePagedList<JournalEntry>('/v1/ledger/entries', query)
-  const columns: readonly DataTableColumn<JournalEntry>[] = [
-    {
-      key: 'entry', header: 'Journal entry', cell: (row) => (
+  const cells: Readonly<Record<string, DataTableColumn<JournalEntry>>> = {
+    entry_id: {
+      key: 'entry_id', header: 'Journal entry', cell: (row) => (
         <button type="button" className={`${MONO} ${LINK} text-left`} aria-label={`Open journal entry ${shortId(row.id)}`} onClick={() => onOpen(row.id)}>{shortId(row.id)}</button>
       ),
     },
-    { key: 'posted', header: 'Posted', cell: (row) => <span className={`${MONO} text-secondary whitespace-nowrap`}>{formatDateTime(row.posted_at)}</span> },
-    { key: 'event', header: 'Event', cell: (row) => eventLabel(row.event_type) },
-    { key: 'origin', header: 'Origin', cell: (row) => <Origin entry={{ ...row, period_id: row.period.id }} /> },
-    { key: 'period', header: 'Period', cell: (row) => <span className="whitespace-nowrap">{periodLabel(row.period)}</span> },
-    { key: 'total', header: `Debits = credits (${money.currency})`, align: 'end', cell: (row) => <span className="whitespace-nowrap">{marketAmount(row.debit_total_minor, money)}</span> },
-    { key: 'postings', header: 'Postings', align: 'end', cell: (row) => row.posting_count },
-    { key: 'approver', header: 'Approved by', cell: (row) => row.approved_by?.display_name ?? (row.approved_by === null ? '—' : 'Another user') },
-  ]
+    posted_at: { key: 'posted_at', header: 'Posted', cell: (row) => <span className={`${MONO} text-secondary whitespace-nowrap`}>{formatDateTime(row.posted_at)}</span> },
+    market: { key: 'market', header: 'Market', cell: (row) => row.market.code },
+    period: { key: 'period', header: 'Period', cell: (row) => <span className="whitespace-nowrap">{periodLabel(row.period)}</span> },
+    event_type: { key: 'event_type', header: 'Event', cell: (row) => eventLabel(row.event_type) },
+    origin_type: { key: 'origin_type', header: 'Origin type', cell: (row) => ORIGIN_LABELS[row.origin_type] ?? row.origin_type },
+    origin_id: { key: 'origin_id', header: 'Origin', cell: (row) => <Origin entry={{ ...row, period_id: row.period.id }} /> },
+    debit_total: { key: 'debit_total', header: `Debits (${money.currency})`, align: 'end', cell: (row) => <span className="whitespace-nowrap">{marketAmount(row.debit_total_minor, money)}</span> },
+    credit_total: { key: 'credit_total', header: `Credits (${money.currency})`, align: 'end', cell: (row) => <span className="whitespace-nowrap">{marketAmount(row.credit_total_minor, money)}</span> },
+    approval_id: { key: 'approval_id', header: 'Approved by', cell: (row) => row.approved_by?.display_name ?? (row.approved_by === null ? '—' : 'Another user') },
+  }
   return (
-    <DataTable caption="Journal entries" columns={columns} rows={list.rows} rowKey={(row) => row.id} loading={list.loading} error={tableError(list)}
+    <DataTable caption="Journal entries" columns={columns.flatMap((key) => cells[key] ?? [])} rows={list.rows} rowKey={(row) => row.id} loading={list.loading} error={tableError(list)}
       empty={{ title: 'No journal entry yet: entries are posted when a run is committed, a payout moves or a write-off is approved' }} pagination={list.pagination} stackOnPhone />
   )
 }

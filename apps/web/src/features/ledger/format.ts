@@ -1,7 +1,7 @@
 // Words and exact amounts of SC-33. Money stays a minor-unit string: no Number arithmetic on it.
 import type { AccountType, AgeBucket } from './types'
 
-/** The ten account types in the API's order (D-B4-04), in words. */
+/** The eleven account types in the API's order (D-B4-04; migration_clearing D-B6-10), in words. */
 export const ACCOUNT_LABELS: Readonly<Record<AccountType, string>> = {
   commission_expense: 'Commission expense',
   payee_payable: 'Payee payable',
@@ -13,6 +13,7 @@ export const ACCOUNT_LABELS: Readonly<Record<AccountType, string>> = {
   credit_liability: 'Credit liability',
   breakage: 'Breakage',
   settled_clearing: 'Settled clearing',
+  migration_clearing: 'Migration clearing',
 }
 
 export const accountLabel = (type: string): string => ACCOUNT_LABELS[type as AccountType] ?? type
@@ -28,7 +29,7 @@ export const EVENT_LABELS: Readonly<Record<string, string>> = {
 
 export const eventLabel = (event: string): string => EVENT_LABELS[event] ?? event
 
-export const ORIGIN_LABELS: Readonly<Record<string, string>> = { run: 'Run', payout_instruction: 'Payout instruction', case: 'Case' }
+export const ORIGIN_LABELS: Readonly<Record<string, string>> = { run: 'Run', payout_instruction: 'Payout instruction', case: 'Case', migration: 'Migration' }
 
 export const BUCKET_LABELS: Readonly<Record<AgeBucket, string>> = { '0_30': '0–30 days', '31_60': '31–60 days', '61_90': '61–90 days', over_90: 'Over 90 days' }
 

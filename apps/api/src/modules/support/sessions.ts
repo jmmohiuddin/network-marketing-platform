@@ -30,6 +30,8 @@ const SUPPORT_EXCLUDED_PERMISSIONS = [
   'case.returned_payment.create',
   // PLAN B5 section 3: deciding a dispute stays with the tenant (reading stays requestable).
   'case.dispute.approve',
+  // PLAN B6 section 3: full exports, migrations and period close stay with the tenant (dashboards stay readable).
+  'export.full', 'migration.manage', 'migration.signoff', 'period.close',
 ] as const satisfies readonly Permission[]
 export const scopePermission = z.enum(PERMISSIONS).exclude(SUPPORT_EXCLUDED_PERMISSIONS)
 export type ScopePermission = z.infer<typeof scopePermission>

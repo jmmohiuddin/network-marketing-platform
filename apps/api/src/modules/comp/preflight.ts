@@ -82,6 +82,8 @@ export async function preflight(tx: Tx, period: PeriodRow, sync?: MarketSync): P
       blockers.push(blocker(422, 'PRIOR_STATE_MISSING', 'The previous period was committed without a run: its qualification state must be migrated first.', { period_id: previous.id }))
     }
   }
+  const migration = await migrationBlocker(tx, period.id)
+  if (migration !== null) blockers.push(migration)
   const health = sync ?? (await marketSync(tx, period.market_id))
   if (health.blocking.length > 0) {
     blockers.push(blocker(422, 'SYNC_BEHIND', 'Order sync of this market is behind or failing.', {
@@ -89,6 +91,24 @@ export async function preflight(tx: Tx, period: PeriodRow, sync?: MarketSync): P
     }))
   }
   return blockers
+}
+
+/**
+ * D-B6-11: the period is the cutover of a migration that is not signed off (SQL mig_period_blocker), so it neither runs
+ * nor commits before the opening is posted and the parallel run signed off.
+ */
+async function migrationBlocker(tx: Tx, periodId: string): Promise<Blocker | null> {
+  const { rows } = await tx.query<{ blocker: { migration_id: string; state: string } | null }>('SELECT mig_period_blocker($1) AS blocker', [periodId])
+  const found = rows[0]!.blocker
+  return found === null ? null : blocker(422, 'MIGRATION_NOT_SIGNED_OFF', "The market's migration must be signed off before its cutover period runs or commits.", {
+    migration_id: found.migration_id, state: found.state,
+  })
+}
+
+/** Commit: refused while the period's migration is not signed off. */
+export async function assertMigrationSignedOff(tx: Tx, periodId: string): Promise<void> {
+  const found = await migrationBlocker(tx, periodId)
+  if (found !== null) throw new ApiError(found.status, found.code, found.message, found.details)
 }
 
 /** POST runs: the first blocker, as an error. */

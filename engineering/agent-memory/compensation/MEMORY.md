@@ -117,3 +117,10 @@ _Agent: compensation. Read before every task; update after every task. Keep conc
 - openPortalCase parses the payload with the type's schema (cas parsePayload).
 - comp/portal.ts shim stays until PLAN §1.7 lands in lib (requirePortal/assertPortalActive(auth)/inPortal, portal resolveAuth, createPortalUser); then switch portal-routes.ts to lib (assertPortalActive takes auth, inPortal fn gets tx only) and delete portal.ts. comp/portal-routes.test.ts (real portal sessions, incl. cross-participant idempotency) is red until then.
 - SQL gotcha: one $n used as both uuid and text → INTERNAL_ERROR (inconsistent types); compare via column::text.
+
+## 2026-11-20 — B6 review fixes (engine/COMP/LED)
+- LED write-off approval: `SELECT led_attribution_period($1)` first; NULL (every committed/paid period closed, D-B6-04) → 422 NO_COMMITTED_PERIOD (same as PAY prepareBatch); test in comp/posting.test.ts. Closing a period in a fixture needs closed_at, closed_by, close_note too (CHECK period_closed).
+- Explanation text names the last included market day of a period (ends_at is exclusive: `span()` uses ends_at − 1 ms).
+- incremental.test.ts checks all four bench shapes at 50k against s1-bench.json hashes (~20 s).
+- ledger_post's origin guard needs a real origin row (e.g. payout_instruction in its state): COMP tests cannot post PAY entries via ledger_post; erasure-replay.test.ts keeps the hand-made settled entry (shortcut comment; real PAY flow belongs in an apps/api/test integration test).
+- D-B6-12 / AC-S1-2 (2M) NOT met: SPIKE §8 says so; 1M is engine-only, COMP end to end measured only at 100k, simulations/replay/parallel run use non-streaming run(). Needs engine rework or architect amendment (E-ADR-49, product-visible limit).

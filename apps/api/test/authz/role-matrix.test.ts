@@ -6,7 +6,7 @@ import type { LightMyRequestResponse } from 'fastify'
 import { afterAll, beforeAll, describe, expect, test, vi } from 'vitest'
 import { BASE_ROLES, isPrivileged, type BaseRoleName, type Permission } from '../../src/lib/permissions.js'
 import type { SettingKey } from '../../src/modules/ten/settings.js'
-import { multipartBody, tinyFiles } from '../../src/modules/imp/test-support.js'
+import { multipartBody, TINY_MAPPING, tinyFiles } from '../../src/modules/imp/test-support.js'
 import {
   baseRoleId, buildTestApp, call, closePoolsAfterAll, createMarket, createSignedInUser, ownerRows, resetApiDb, type TestUser,
 } from '../helpers/index.js'
@@ -80,11 +80,15 @@ const SETTING_READERS: Readonly<Record<SettingKey, Needs>> = {
   'disputes.policy': any('settings.manage', 'settings.approve', 'case.dispute.read'),
   'privacy.policy': any('settings.manage', 'settings.approve', 'privacy.manage'),
   'portal.customer_contact_visible': any('settings.manage', 'settings.approve', 'privacy.manage'),
+  // PLAN B6 D-B6-17.
+  'plan.filing_requirements': any('settings.manage', 'plan.read'),
+  'exports.full_schedule': any('settings.manage', 'export.full'),
 }
 const SETTING_KEYS = Object.keys(SETTING_READERS) as SettingKey[]
 const MAPPING_READERS = any('import.manage', 'mapping.edit', 'mapping.approve')
 // A key's approver reads and decides its change requests (PLAN B2 2.1: privacy.manage for the visibility policy).
-const SETTINGS_HISTORY = any('settings.manage', 'settings.approve', 'privacy.manage')
+// market.signoff: the approver of plan.filing_requirements reads the list it decides from (BUG-121).
+const SETTINGS_HISTORY = any('settings.manage', 'settings.approve', 'privacy.manage', 'market.signoff')
 const STRUCTURE_READERS = any('settings.manage', 'market.manage', 'market.signoff')
 const LAUNCH_READERS = any('market.manage', 'market.signoff')
 const SETTINGS_MANAGE = all('settings.manage')
@@ -119,6 +123,24 @@ const PAYOUT_READ = all('payout.read')
 const BATCH = `/v1/payout-batches/${NOWHERE}`
 const LEDGER_READ = all('ledger.read')
 const LEDGER_EXPORT = all('ledger.export')
+const EXPORT_FULL = all('export.full')
+const VIEW_USERS = any('order.read', 'ledger.read')
+const MIGRATION_MANAGE = all('migration.manage')
+const MIGRATION_SIGNOFF = all('migration.signoff')
+const MIGRATION_READERS = any('migration.manage', 'migration.signoff')
+const MIGRATION = `/v1/migrations/${NOWHERE}`
+const DIFFERENCE = `${MIGRATION}/parallel-runs/${NOWHERE}/differences/${NOWHERE}`
+// D-B6-09: a migration batch or mapping also needs migration.manage. The market exists nowhere (422) and the If-Match is stale
+// (409): refused once past the permission checks, nothing is written.
+const migrationForm = multipartBody({ market: 'NOWHERE', kind: 'migration', period_from: '2025-01', period_to: '2025-01' }, tinyFiles())
+const MIGRATION_UPLOAD: Probe = {
+  needs: all('import.manage', 'migration.manage'),
+  request: { method: 'POST', url: '/v1/imports', body: migrationForm.payload, headers: { 'content-type': migrationForm.contentType }, idempotencyKey: true },
+}
+const MIGRATION_MAPPING: Probe = {
+  needs: all('mapping.edit', 'migration.manage'),
+  request: { method: 'PUT', url: '/v1/import-mappings', headers: { 'if-match': '"999999"' }, body: { kind: 'migration', mappings: TINY_MAPPING } },
+}
 
 const PROBES: Readonly<Record<string, readonly Probe[]>> = {
   'POST /v1/auth/sessions': [probe(everyone, 'POST', '/v1/auth/sessions', {})],
@@ -172,7 +194,7 @@ const PROBES: Readonly<Record<string, readonly Probe[]>> = {
   'POST /v1/vendor-users/:id/deactivate': [probe(nobody, 'POST', `/v1/vendor-users/${NOWHERE}/deactivate`)],
   'POST /v1/vendor-users/:id/approve': [probe(nobody, 'POST', `/v1/vendor-users/${NOWHERE}/approve`)],
   'POST /v1/vendor-users/:id/reject': [probe(nobody, 'POST', `/v1/vendor-users/${NOWHERE}/reject`)],
-  'POST /v1/imports': [probe(all('import.manage'), 'POST', '/v1/imports', {})],
+  'POST /v1/imports': [probe(all('import.manage'), 'POST', '/v1/imports', {}), MIGRATION_UPLOAD],
   'GET /v1/imports/limits': [read(all('import.manage'), '/v1/imports/limits')],
   'GET /v1/imports': [read(all('import.manage'), '/v1/imports')],
   'GET /v1/imports/:id': [read(all('import.manage'), `/v1/imports/${NOWHERE}`)],
@@ -182,7 +204,7 @@ const PROBES: Readonly<Record<string, readonly Probe[]>> = {
   'POST /v1/imports/:id/load': [probe(all('import.manage'), 'POST', `/v1/imports/${NOWHERE}/load`)],
   'GET /v1/import-mappings': [read(MAPPING_READERS, '/v1/import-mappings')],
   'GET /v1/import-mappings/:id': [read(MAPPING_READERS, `/v1/import-mappings/${NOWHERE}`)],
-  'PUT /v1/import-mappings': [probe(all('mapping.edit'), 'PUT', '/v1/import-mappings', {})],
+  'PUT /v1/import-mappings': [probe(all('mapping.edit'), 'PUT', '/v1/import-mappings', {}), MIGRATION_MAPPING],
   'POST /v1/import-mappings/:id/approve': [probe(all('mapping.approve'), 'POST', `/v1/import-mappings/${NOWHERE}/approve`)],
   'POST /v1/compliance/snapshots': [probe(all('snapshot.create'), 'POST', '/v1/compliance/snapshots', {})],
   'GET /v1/compliance/snapshots': [read(all('compliance.read'), '/v1/compliance/snapshots')],
@@ -195,7 +217,7 @@ const PROBES: Readonly<Record<string, readonly Probe[]>> = {
   'GET /v1/settings/versions': [read(SETTINGS_HISTORY, '/v1/settings/versions')],
   'GET /v1/settings/versions/:version': [read(SETTINGS_HISTORY, '/v1/settings/versions/2000000000')],
   'GET /v1/setting-change-requests': [read(SETTINGS_HISTORY, '/v1/setting-change-requests')],
-  'POST /v1/setting-change-requests/:id/decision': [probe(any('settings.approve', 'privacy.manage'), 'POST', `/v1/setting-change-requests/${NOWHERE}/decision`, {})],
+  'POST /v1/setting-change-requests/:id/decision': [probe(any('settings.approve', 'privacy.manage', 'market.signoff'), 'POST', `/v1/setting-change-requests/${NOWHERE}/decision`, {})],
   'POST /v1/setting-change-requests/:id/withdraw': [probe(SETTINGS_MANAGE, 'POST', `/v1/setting-change-requests/${NOWHERE}/withdraw`, {})],
   'GET /v1/markets/:id': [read(STRUCTURE_READERS, `/v1/markets/${NOWHERE}`)],
   'POST /v1/markets': [probe(SETTINGS_MANAGE, 'POST', '/v1/markets', {})],
@@ -459,6 +481,47 @@ const PROBES: Readonly<Record<string, readonly Probe[]>> = {
   'POST /v1/privacy-requests': [probe(all('privacy.manage'), 'POST', '/v1/privacy-requests', {})],
   'POST /v1/privacy-requests/:id/verify': [probe(all('privacy.manage'), 'POST', `/v1/privacy-requests/${NOWHERE}/verify`, {})],
   'PUT /v1/privacy-requests/:id/corrections': [probe(all('privacy.manage'), 'PUT', `/v1/privacy-requests/${NOWHERE}/corrections`, {})],
+  // PLN B6 (PLAN B6 2.1): filings need plan.approve (step-up).
+  'GET /v1/plans/:id/versions/:v/governance': [read(PLAN_READ, `${VERSION}/governance`)],
+  'POST /v1/plans/:id/versions/:v/filings': [probe(all('plan.approve'), 'POST', `${VERSION}/filings`, {})],
+  // COMP / LED B6 (D-B6-04, D-B6-08). The CSV probes send an unknown sort: 400 once past the permission, no export recorded.
+  'GET /v1/periods/:id/close-check': [read(all('period.read'), `/v1/periods/${NOWHERE}/close-check`)],
+  'POST /v1/periods/:id/close': [probe(all('period.close'), 'POST', `/v1/periods/${NOWHERE}/close`, {})],
+  'GET /v1/ledger/entries/export': [read(LEDGER_EXPORT, '/v1/ledger/entries/export?sort=unknown')],
+  'GET /v1/orders/export': [read(ORDER_READ, '/v1/orders/export?sort=unknown')],
+  // INT B6 (D-B6-06): export.full over every market; creating takes step-up.
+  'GET /v1/exports/model': [read(EXPORT_FULL, '/v1/exports/model')],
+  'GET /v1/exports/signing-key': [read(EXPORT_FULL, '/v1/exports/signing-key')],
+  'POST /v1/exports': [probe(EXPORT_FULL, 'POST', '/v1/exports', { unknown: true })],
+  'GET /v1/exports': [read(EXPORT_FULL, '/v1/exports')],
+  'GET /v1/exports/:id': [read(EXPORT_FULL, `/v1/exports/${NOWHERE}`)],
+  'GET /v1/exports/:id/files/:table': [read(EXPORT_FULL, `/v1/exports/${NOWHERE}/files/participant`)],
+  // RPT B6 (PLAN B6 2.4): each dashboard its permission; saved views of a list need that list's read permission.
+  'GET /v1/dashboards/executive': [read(all('dashboard.exec'), '/v1/dashboards/executive')],
+  'GET /v1/dashboards/finance': [read(LEDGER_READ, `/v1/dashboards/finance?market_id=${NOWHERE}`)],
+  'GET /v1/dashboards/compliance': [read(all('compliance.read'), '/v1/dashboards/compliance')],
+  'GET /v1/saved-views': [read(ORDER_READ, '/v1/saved-views?list=orders'), read(LEDGER_READ, '/v1/saved-views?list=ledger_entries')],
+  'POST /v1/saved-views': [probe(VIEW_USERS, 'POST', '/v1/saved-views', {})],
+  'PUT /v1/saved-views/:id': [probe(VIEW_USERS, 'PUT', `/v1/saved-views/${NOWHERE}`, {})],
+  'DELETE /v1/saved-views/:id': [probe(VIEW_USERS, 'DELETE', `/v1/saved-views/${NOWHERE}`)],
+  // MIG B6 (PLAN B6 2.6): reads need either migration permission; decisions migration.signoff (step-up).
+  'POST /v1/migrations': [probe(MIGRATION_MANAGE, 'POST', '/v1/migrations', {})],
+  'GET /v1/migrations': [read(MIGRATION_READERS, '/v1/migrations')],
+  'GET /v1/migrations/:id': [read(MIGRATION_READERS, MIGRATION)],
+  'POST /v1/migrations/:id/apply': [probe(MIGRATION_MANAGE, 'POST', `${MIGRATION}/apply`)],
+  'POST /v1/migrations/:id/cancel': [probe(MIGRATION_MANAGE, 'POST', `${MIGRATION}/cancel`, {})],
+  'PUT /v1/migrations/:id/opening-balances': [probe(MIGRATION_MANAGE, 'PUT', `${MIGRATION}/opening-balances`, {})],
+  'PUT /v1/migrations/:id/opening-state': [probe(MIGRATION_MANAGE, 'PUT', `${MIGRATION}/opening-state`, {})],
+  'GET /v1/migrations/:id/opening': [read(MIGRATION_READERS, `${MIGRATION}/opening`)],
+  'POST /v1/migrations/:id/opening/submit': [probe(MIGRATION_MANAGE, 'POST', `${MIGRATION}/opening/submit`)],
+  'POST /v1/migrations/:id/opening/decision': [probe(MIGRATION_SIGNOFF, 'POST', `${MIGRATION}/opening/decision`, {})],
+  'POST /v1/migrations/:id/parallel-runs': [probe(MIGRATION_MANAGE, 'POST', `${MIGRATION}/parallel-runs`, {})],
+  'GET /v1/migrations/:id/parallel-runs': [read(MIGRATION_READERS, `${MIGRATION}/parallel-runs`)],
+  'GET /v1/migrations/:id/parallel-runs/:runId': [read(MIGRATION_READERS, `${MIGRATION}/parallel-runs/${NOWHERE}`)],
+  'GET /v1/migrations/:id/parallel-runs/:runId/differences': [read(MIGRATION_READERS, `${MIGRATION}/parallel-runs/${NOWHERE}/differences`)],
+  'POST /v1/migrations/:id/parallel-runs/:runId/differences/:diffId/classify': [probe(MIGRATION_MANAGE, 'POST', `${DIFFERENCE}/classify`, {})],
+  'POST /v1/migrations/:id/parallel-runs/:runId/differences/:diffId/accept': [probe(MIGRATION_SIGNOFF, 'POST', `${DIFFERENCE}/accept`, {})],
+  'POST /v1/migrations/:id/sign-off': [probe(MIGRATION_SIGNOFF, 'POST', `${MIGRATION}/sign-off`, {})],
 }
 
 /** Fastify's HEAD routes run their GET handler: they take the GET probes with method HEAD. */

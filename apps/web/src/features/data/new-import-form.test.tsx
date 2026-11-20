@@ -6,7 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ok } from '../../test/fetch'
 import { renderWithProviders } from '../../test/render'
 import { NewImportForm } from './new-import-form'
-import { fetchRoutes } from './test-support'
+import { fetchRoutes, withSession } from './test-support'
 
 const router = vi.hoisted(() => ({ push: vi.fn(), replace: vi.fn() }))
 vi.mock('next/navigation', () => ({ useRouter: () => router, usePathname: () => '/imports/new', useSearchParams: () => new URLSearchParams('') }))
@@ -62,7 +62,7 @@ describe('NewImportForm', () => {
 
   it('lists what is missing and sends nothing', async () => {
     const user = userEvent.setup()
-    renderWithProviders(<NewImportForm />, apiRoutes())
+    renderWithProviders(withSession(<NewImportForm />, ['import.manage']), apiRoutes())
     fireEvent.change(screen.getByLabelText('First month'), { target: { value: '2025-03' } })
     fireEvent.change(screen.getByLabelText('Last month'), { target: { value: '2025-01' } })
     await user.click(screen.getByRole('button', { name: 'Upload and validate' }))
@@ -75,7 +75,7 @@ describe('NewImportForm', () => {
 
   it('BUG-026: takes the month as typed in the hinted form and refuses month 13', async () => {
     const user = userEvent.setup()
-    renderWithProviders(<NewImportForm />, apiRoutes())
+    renderWithProviders(withSession(<NewImportForm />, ['import.manage']), apiRoutes())
     const first = screen.getByLabelText('First month') as HTMLInputElement
     expect(first.type).toBe('text')
     expect(first.inputMode).toBe('numeric')
@@ -91,7 +91,7 @@ describe('NewImportForm', () => {
 
   it('uploads the three files as CSV with an Idempotency-Key and opens the new batch', async () => {
     const user = userEvent.setup()
-    renderWithProviders(<NewImportForm />, apiRoutes())
+    renderWithProviders(withSession(<NewImportForm />, ['import.manage']), apiRoutes())
     await fillForm(user)
     await user.click(screen.getByRole('button', { name: 'Upload and validate' }))
     const xhr = FakeXhr.sent[0]!
@@ -107,7 +107,7 @@ describe('NewImportForm', () => {
 
   it('shows a refused market on its field and retries with the same key', async () => {
     const user = userEvent.setup()
-    renderWithProviders(<NewImportForm />, apiRoutes())
+    renderWithProviders(withSession(<NewImportForm />, ['import.manage']), apiRoutes())
     await fillForm(user)
     await user.click(screen.getByRole('button', { name: 'Upload and validate' }))
     FakeXhr.sent[0]!.answer(422, { error: { code: 'MARKET_UNKNOWN', message: 'No market with this code is available to you.', details: null, request_id: 'r' } })
@@ -123,7 +123,7 @@ describe('NewImportForm', () => {
 
   it('refuses a file above the API size limit before sending anything', async () => {
     const user = userEvent.setup()
-    renderWithProviders(<NewImportForm />, apiRoutes())
+    renderWithProviders(withSession(<NewImportForm />, ['import.manage']), apiRoutes())
     expect(await screen.findAllByText('.csv file, up to 1 MB.')).toHaveLength(3)
     await user.upload(screen.getByLabelText('Orders file (orders.csv)'), new File(['x'.repeat(MAX_BYTES + 1)], 'orders.csv'))
     expect(screen.getByText('orders.csv is larger than the 1 MB limit.')).toBeTruthy()

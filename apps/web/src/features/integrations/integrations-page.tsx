@@ -11,9 +11,11 @@ import { useSession } from '../../lib/session'
 import { useResource } from '../../lib/use-resource'
 import { LoadFailure, useTabParam } from '../admin/page-states'
 import { usePagedList, type PagedList } from '../admin/resource'
+import { marketScope } from '../markets/format'
 import { NOTE } from '../admin/ui'
 import { ApiKeysTab } from './api-keys-tab'
 import { ConnectorsTab } from './connectors-tab'
+import { ExportsTab } from './exports-tab'
 import type { ProviderRecord } from '../markets/types'
 import { HealthTab } from './health-tab'
 import { PayoutProvidersTab } from './payout-providers-tab'
@@ -50,7 +52,13 @@ function IntegrationKpis({ accounts, endpoints }: { readonly accounts: PagedList
   )
 }
 
-const HEADER_SUMMARY = 'API keys for the systems that read your data, webhooks that tell your systems when something happens, the storefronts that send orders and the payout providers that pay participants.'
+/** PLAN B6 §5 SC-13 Exports tab: every /v1/exports route needs export.full for all markets (tenant-wide data). */
+function useExportsTab() {
+  const { me } = useSession()
+  return marketScope(me, 'export.full') === 'all' ? [{ id: 'exports', label: 'Exports' }] : []
+}
+
+const HEADER_SUMMARY = 'API keys for the systems that read your data, webhooks that tell your systems when something happens, the storefronts that send orders, the payout providers that pay participants and full exports of your data.'
 
 /** integration.read without integration.manage (Commission analyst): sync health (PLAN B2 2.7) and the payout providers, read-only (PLAN B4 2.3). */
 function HealthOnlyPage() {
@@ -58,6 +66,7 @@ function HealthOnlyPage() {
   const tabs = [
     { id: 'health', label: 'Sync health' },
     { id: 'payout-providers', label: 'Payout providers', ...(payoutProviders.data === null ? {} : { count: payoutProviders.data.length }) },
+    ...useExportsTab(),
   ]
   const [tab, selectTab] = useTabParam(tabs)
   return (
@@ -68,6 +77,7 @@ function HealthOnlyPage() {
         <TabPanel idPrefix={ID_PREFIX} tabId={tab}>
           {tab === 'health' && <HealthTab />}
           {tab === 'payout-providers' && <PayoutProvidersTab providers={payoutProviders} />}
+          {tab === 'exports' && <ExportsTab />}
         </TabPanel>
       </div>
     </>
@@ -99,6 +109,7 @@ function ManagedIntegrationsPage() {
     { id: 'connectors', label: 'Storefront connectors', ...(connectors.data === null ? {} : { count: connectors.data.length }) },
     { id: 'payout-providers', label: 'Payout providers', ...(payoutProviders.data === null ? {} : { count: payoutProviders.data.length }) },
     { id: 'health', label: 'Sync health' },
+    ...useExportsTab(),
   ]
   const [tab, selectTab] = useTabParam(tabs)
   const failure = [accounts.error, endpoints.error].find(isNotAvailable)
@@ -128,6 +139,7 @@ function ManagedIntegrationsPage() {
           {tab === 'connectors' && <ConnectorsTab connectors={connectors} adding={dialog?.kind === 'connector'} onAddClosed={close} />}
           {tab === 'payout-providers' && <PayoutProvidersTab providers={payoutProviders} />}
           {tab === 'health' && <HealthTab />}
+          {tab === 'exports' && <ExportsTab />}
         </TabPanel>
       </div>
       {dialog?.kind === 'account' && (

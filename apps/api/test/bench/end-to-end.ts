@@ -3,12 +3,12 @@
 // a binary sponsor tree. Test databases only; fixtures are bulk-written by the owner with triggers off (replica role).
 // Run like write-path.ts with the position count as argument, then reset the database.
 import { randomUUID } from 'node:crypto'
-import { writeFileSync } from 'node:fs'
+import { readFileSync, writeFileSync } from 'node:fs'
 import { closePool, type Tx } from '@nmp/db'
 import { closeOwnerPool, createTenant, createUser, getOwnerPool, resetTestDb } from '@nmp/db/testing'
-import { run, stringifyEngineJson } from '@nmp/engine'
+import { stringifyEngineJson } from '@nmp/engine'
 import { runInTenant, SYSTEM_ACTOR_ID } from '../../src/lib/db.js'
-import { finishRun, prepareRun, requestRun } from '../../src/modules/comp/runs.js'
+import { finishRun, prepareRun, requestRun, startedRun } from '../../src/modules/comp/runs.js'
 
 const positions = Number(process.argv[2] ?? 100_000)
 const owner = getOwnerPool()
@@ -115,15 +115,19 @@ const requested = await runInTenant({ tenantId: world.tenantId, userId: world.us
 lap('request')
 const input = (await asSystem((tx) => prepareRun(tx, requested.run_id)))!
 lap('snapshot_load_store')
-const output = run(input)
+const stream = startedRun(input) // the engine through the final lines (D-B6-12 streaming adoption)
 lap('engine')
-await asSystem((tx) => finishRun(tx, requested.run_id, output))
+await asSystem((tx) => finishRun(tx, requested.run_id, stream))
 lap('write_flip')
+const { rows: written } = await owner.query<{ lines: number }>('SELECT count(*)::int AS lines FROM result_line WHERE run_id = $1', [requested.run_id])
 const result = {
-  measured_at: new Date().toISOString(), positions, orders: positions, lines: output.lines.length, ...marks,
+  measured_at: new Date().toISOString(), positions, orders: positions, lines: written[0]!.lines, ...marks,
   total_ms: Object.values(marks).reduce((a, b) => a + b, 0), rss_mb: Math.round(process.memoryUsage().rss / 1e6),
+  peak_rss_mb: Math.round(process.resourceUsage().maxRSS / 1024),
 }
-writeFileSync(new URL('./end-to-end.results.json', import.meta.url), `${JSON.stringify(result, null, 2)}\n`)
+const file = new URL('./end-to-end.results.json', import.meta.url)
+const recorded = JSON.parse(readFileSync(file, 'utf8')) as { runs: unknown[] }
+writeFileSync(file, `${JSON.stringify({ ...recorded, runs: [...recorded.runs, result] }, null, 2)}\n`)
 process.stdout.write(`${JSON.stringify(result)}\n`)
 await closePool()
 await closeOwnerPool()

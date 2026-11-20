@@ -184,7 +184,8 @@ describe('tenant B user holding every permission (E-SEC-01: denied without revea
     const settings = await send(as, { method: 'GET', url: '/v1/settings/privacy.breach_contacts' })
     const mappings = await send(as, { method: 'GET', url: '/v1/import-mappings' })
 
-    expect(counts).toEqual({ settings: targets.settingsVersion, mappings: 1 })
+    // Tenant A's overlay mapping and the migration mapping of its B6 migration market.
+    expect(counts).toEqual({ settings: targets.settingsVersion, mappings: 2 })
     expect([settings.headers.etag, settings.json().meta.latest_version, settings.json().data.value]).toEqual(['"0"', 0, null])
     expect([mappings.headers.etag, mappings.json().meta.latest_version, mappings.json().data]).toEqual(['"0"', 0, []])
   })

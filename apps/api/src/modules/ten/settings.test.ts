@@ -236,7 +236,8 @@ describe('GET /v1/settings and value_since (BUG-025, T-B1-07)', () => {
     const finance = await createSignedInUser({ tenantId: acme.id, roles: ['Finance approver'] })
 
     const response = await call(app, { method: 'GET', url: '/v1/settings', as: finance })
-    const refused = await call(app, { method: 'GET', url: '/v1/settings', as: compliance })
+    // BUG-121: market.signoff makes the Compliance officer a reader of the keys it may read; a Payout officer reads none.
+    const refused = await call(app, { method: 'GET', url: '/v1/settings', as: analystWithoutCompliance })
     const structure = await read(admin, 'structure')
 
     expect(Object.keys(response.json().data.values).sort()).toEqual([
@@ -245,7 +246,7 @@ describe('GET /v1/settings and value_since (BUG-025, T-B1-07)', () => {
       'orders.crediting_event', 'orders.new_buyer_type', 'orders.purpose_required', 'orders.restocking_fee_volume_effect',
       'payouts.bank_detail_cooling_off_hours', 'payouts.dormant_after_days', 'payouts.market_policy',
       'payouts.provider_review_reminder_days', 'payouts.shared_account_threshold', 'plan.activation_notice_days',
-      'portal.customer_contact_visible', 'privacy.policy', 'runs.exception_thresholds', 'write_offs.policy',
+      'plan.filing_requirements', 'portal.customer_contact_visible', 'privacy.policy', 'runs.exception_thresholds', 'write_offs.policy',
     ])
     expect(refused.statusCode).toBe(403)
     expect(structure.statusCode).toBe(404)
@@ -287,7 +288,7 @@ describe('GET /v1/settings/versions(/:version)', () => {
     expect(redacted.json().data.changes).toEqual([{ key: 'privacy.breach_contacts', redacted: true }])
     expect(missing.statusCode).toBe(404)
     expect(foreign.body).not.toContain('dpo@acme.example')
-    expect((await call(app, { method: 'GET', url: '/v1/settings/versions', as: compliance })).statusCode).toBe(403)
+    expect((await call(app, { method: 'GET', url: '/v1/settings/versions', as: analystWithoutCompliance })).statusCode).toBe(403)
   })
 
   test('a version diffs against the chain row in force at its date, also when a rebase left a later-dated row in place', async () => {

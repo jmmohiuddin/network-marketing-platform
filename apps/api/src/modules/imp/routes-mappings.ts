@@ -1,16 +1,19 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify'
 import { z } from 'zod'
-import { currentAuth, requireAllMarkets, requireAnyPermission, requirePermission, requireRealm, requireStepUp } from '../../lib/auth.js'
+import { assertAllMarkets, currentAuth, hasPermission, requireAllMarkets, requireAnyPermission, requirePermission, requireRealm, requireStepUp } from '../../lib/auth.js'
 import { inTenant } from '../../lib/db.js'
-import { ApiError, notFound } from '../../lib/errors.js'
+import { ApiError, notFound, permissionDenied } from '../../lib/errors.js'
 import { envelope, parse } from '../../lib/http.js'
 import { decodeCursor, pageQuery, toPage } from '../../lib/pagination.js'
 import { MAPPING_READERS } from './access.js'
 import { approveMapping, createMappingVersion, getMapping, latestMappingVersion, listMappings, mappingsSchema } from './mappings.js'
+import { IMPORT_KINDS } from './vocabulary.js'
 
 const idParams = z.object({ id: z.uuid() })
-const listQuery = z.strictObject(pageQuery)
-const putBody = z.strictObject({ mappings: mappingsSchema, notes: z.string().trim().min(1).max(2000).optional() })
+const listQuery = z.strictObject({ ...pageQuery, kind: z.enum(IMPORT_KINDS).optional() })
+const putBody = z.strictObject({
+  kind: z.enum(IMPORT_KINDS).default('overlay'), mappings: mappingsSchema, notes: z.string().trim().min(1).max(2000).optional(),
+})
 const approveBody = z.strictObject({ reason: z.string().trim().min(1).max(500).optional() })
 const IF_MATCH = /^(?:W\/)?"?(\d{1,9})"?$/
 
@@ -31,8 +34,9 @@ function registerReads(app: FastifyInstance): void {
     const query = parse(listQuery, request.query)
     const before = decodeCursor(query.cursor, z.number().int().positive())
     const { rows, latest } = await inTenant(request, async (tx) => ({
-      rows: await listMappings(tx, before, query.limit),
-      latest: await latestMappingVersion(tx),
+      rows: await listMappings(tx, query.kind, before, query.limit),
+      // The ETag is the latest version of the listed kind (overlay when unfiltered: the default kind of a save).
+      latest: await latestMappingVersion(tx, query.kind ?? 'overlay'),
     }))
     reply.header('etag', `"${latest}"`)
     const page = toPage(rows, query.limit, (row) => row.version)
@@ -48,7 +52,7 @@ function registerReads(app: FastifyInstance): void {
 }
 
 function registerWrites(app: FastifyInstance): void {
-  // API-03: saving creates the next version as a draft; If-Match carries the latest version the client saw.
+  // API-03: saving creates the next version as a draft; If-Match carries the latest version of its kind the client saw.
   app.put(
     '/v1/import-mappings',
     // One mapping serves every market's imports, so editing and approving it need all markets.
@@ -56,7 +60,12 @@ function registerWrites(app: FastifyInstance): void {
     async (request, reply) => {
       const version = expectedVersion(request)
       const body = parse(putBody, request.body)
-      const draft = { mappings: body.mappings, notes: body.notes ?? null, expectedVersion: version }
+      // D-B6-09: a migration mapping is drafted by whoever runs the migration, over every market as any mapping.
+      if (body.kind === 'migration') {
+        if (!hasPermission(currentAuth(request), 'migration.manage')) throw permissionDenied()
+        assertAllMarkets(currentAuth(request), 'migration.manage')
+      }
+      const draft = { kind: body.kind, mappings: body.mappings, notes: body.notes ?? null, expectedVersion: version }
       const created = await inTenant(request, (tx) => createMappingVersion(tx, draft))
       reply.code(201).header('etag', `"${created.version}"`)
       return envelope(created)

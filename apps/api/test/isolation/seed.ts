@@ -9,7 +9,7 @@ import type { ApiModule } from '../../src/lib/module.js'
 import { uploadDocument } from '../../src/modules/aud/test-support.js'
 import { simulationJob } from '../../src/modules/comp/simulations.js'
 import {
-  activePlan, calculate, commit, createWorld, evidenceDocument, inside, lateItem, member, order, orderEvent, ts10Plan, type World,
+  activePlan, calculate, commit, createWorld, evidenceDocument, inside, lateItem, member, order, orderEvent, ownerUnchecked, ts10Plan, type World,
 } from '../../src/modules/comp/test-support.js'
 import { computeSnapshotJob } from '../../src/modules/cpl/index.js'
 import { PROTOTYPE_SETTINGS } from '../../src/modules/cpl/test-fixtures.js'
@@ -17,6 +17,9 @@ import { rebuildNow } from '../../src/modules/gen/test-support.js'
 import { ACCOUNT_TYPES } from '../../src/modules/led/ledger.js'
 import { approvedMappingId, TINY_MAPPING, tinyFiles, upload } from '../../src/modules/imp/test-support.js'
 import { defaultModules } from '../../src/modules/index.js'
+import { fullExportJob } from '../../src/modules/int/full-export.js'
+import { compareParallelRunsJob } from '../../src/modules/mig/parallel-runs.js'
+import { migrationMarket, postedMigration } from '../../src/modules/mig/test-support.js'
 import { apiKey, asKey, committedPeriod } from '../../src/modules/ord/test-support.js'
 import { activeType, CUSTOMER, DISTRIBUTOR, enrolled } from '../../src/modules/par/test-support.js'
 import { batchDispatchJob, sandboxAdapter } from '../../src/modules/pay/dispatch.js'
@@ -24,8 +27,8 @@ import { bankVersion, IBAN, setSettings, WEBHOOK_SECRET, webhook } from '../../s
 import { GOLDEN_EXPECTED, GOLDEN_INPUT, packRules, personal, putRule, revisionOf } from '../../src/modules/pln/test-support.js'
 import { supportScopePermission } from '../../src/modules/support/index.js'
 import {
-  activePlanVersion, baseRoleId, call, createMarket, createPortalUser, createSignedInUser, createTenant, ownerRows, runQueuedJobs, type CallOptions, type TestTenant,
-  type TestUser,
+  activePlanVersion, baseRoleId, call, createMarket, createPortalUser, createSignedInUser, createTenant, ownerRows, runQueuedJobs, testConfig, type CallOptions,
+  type TestTenant, type TestUser,
 } from '../helpers/index.js'
 
 /** seedTenants under full-suite load takes far longer than the default 10 s hook timeout (B1 OI-6). */
@@ -51,13 +54,16 @@ export const DRAFT_VERSION = 2
 /** A rule and a transition of the draft. */
 export const RULE_KEY = 'pv'
 export const STATE_ITEM = 'title.main'
+/** Tenant A's migration market (B6, draft): the migration's batch, opening and parallel run. */
+export const MIGRATION_MARKET_CODE = 'AT'
+/** A table of tenant A's full data export (one file per table). */
+export const EXPORT_TABLE = 'participant'
 const DISTRIBUTOR_TYPE = 'DIST'
 const CUSTOMER_TYPE = 'CUST'
 /** B2 settings without an approver (PLAN B2 2.1), values chosen by the suite. */
 const B2_SETTINGS = {
   'participants.duplicate_matching': { signals: ['identity_ref'], min_matches: 1, hold_activation: false },
   'customers.reassignment_rule': { rule: 'sponsor', notice_days: 0 },
-  'orders.crediting_event': 'paid',
   'orders.attribution_precedence': ['link', 'code', 'servicing'],
   'orders.new_buyer_type': CUSTOMER_TYPE,
 }
@@ -154,6 +160,13 @@ export interface Targets {
   readonly dispute: string
   readonly privacyRequest: string
   readonly notification: string
+  /** B6: a migration of the draft market with posted opening rows, its compared parallel run and one of its differences. */
+  readonly migration: string
+  readonly parallelRun: string
+  readonly difference: string
+  /** B6: a completed full data export (EXPORT_TABLE has a file) and the owner's saved view of the orders list. */
+  readonly fullExport: string
+  readonly savedView: string
   /** Tenant B's slug: tenant A's credentials are tried against it. */
   readonly otherSlug: string
 }
@@ -596,6 +609,44 @@ async function seedPortal(app: FastifyInstance, tenantId: string, lineId: string
   }
 }
 
+/**
+ * PLAN B6 6: a migration of a draft market (opening posted) with a compared parallel run and its differences, a saved
+ * view, a plan filing, a closed period and a completed full data export (last, so it holds every seeded table).
+ */
+async function seedB6(app: FastifyInstance, owner: TestUser, consultant: TestUser, w: World, journalExport: string) {
+  const migrationWorld = { tenantId: w.tenantId, consultant, finance: w.finance, dual: owner, admin: owner, executive: owner }
+  const market = await migrationMarket(migrationWorld, MIGRATION_MARKET_CODE, { typeCode: DISTRIBUTOR_TYPE })
+  const migration = await postedMigration(app, migrationWorld, MIGRATION_MARKET_CODE, market)
+  const run = await send(app, 202, 'parallel run', {
+    method: 'POST', url: `/v1/migrations/${migration}/parallel-runs`, as: consultant, body: { bonus_map: { unilevel: 'unilevel' } }, idempotencyKey: true,
+  })
+  await runQueuedJobs(simulationJob)
+  // The first pass sees the finished simulation, the second compares (mig/parallel-runs.test.ts).
+  for (let pass = 0; pass < 2; pass += 1) await compareParallelRunsJob.run({ jobId: 'isolation-seed', log: app.log, config: testConfig() })
+  const [difference] = await ownerRows<{ id: string }>('SELECT id FROM parallel_run_difference WHERE parallel_run_id = $1 ORDER BY id LIMIT 1', [run.data.id])
+  const view = await send(app, 201, 'saved view', {
+    method: 'POST', url: '/v1/saved-views', as: owner, idempotencyKey: true,
+    body: { list: 'orders', name: 'Canary view', filters: {}, columns: ['source_order_id'], sort: 'credited_at_desc' },
+  })
+  // FIXTURES (PLN, COMP): a filing on the active version and the first period closed onto its journal export. Through the API
+  // they need a version in review and a period without open payouts or restatements, which the other seeds keep open.
+  const [version] = await ownerRows<{ id: string }>('SELECT plan_version_for_period($1) AS id', [w.periods[0]!.id])
+  await ownerUnchecked(
+    `INSERT INTO plan_version_filing (tenant_id, plan_version_id, content_hash, market_id, status, document_id, note, recorded_by)
+     SELECT $1, $2, v.content_hash, $3, 'not_required', $4, 'isolation seed', $5 FROM plan_version v WHERE v.id = $2`,
+    [w.tenantId, version!.id, w.marketId, await document(app, owner), owner.id])
+  await ownerUnchecked(
+    `UPDATE period SET state = 'closed', closed_at = now(), closed_by = $2, close_note = 'isolation seed', close_journal_export_id = $3 WHERE id = $1`,
+    [w.periods[0]!.id, owner.id, journalExport])
+  const exported = await send(app, 202, 'full export', { method: 'POST', url: '/v1/exports', as: owner, body: {}, idempotencyKey: true })
+  await runQueuedJobs(fullExportJob)
+  const [file] = await ownerRows<{ n: number }>('SELECT count(*)::int AS n FROM data_export_file WHERE export_id = $1 AND table_name = $2', [exported.data.id, EXPORT_TABLE])
+  if (difference === undefined || file?.n !== 1) throw new Error('seed: the parallel run has no difference or the full export no participant file')
+  return {
+    migration, parallelRun: run.data.id as string, difference: difference.id, savedView: view.data.id as string, fullExport: exported.data.id as string,
+  }
+}
+
 /** Seeds tenant A through the API; the database must have been reset (resetApiDb) and the app built with every module. */
 export async function seedTenants(app: FastifyInstance): Promise<Seeded> {
   const a = await createTenant()
@@ -629,10 +680,11 @@ export async function seedTenants(app: FastifyInstance): Promise<Seeded> {
   })
   const freeDocument = await document(app, owner)
   const { portal, ...portalTargets } = await seedPortal(app, a.id, compensation.resultLine)
+  const b6 = await seedB6(app, owner, consultant, world, ledger.journalExport)
   const targets: Targets = {
     tenant: a.id, email: owner.email, ...people, ...imports, ...snapshot, export: exported.data.id as string, supportSession,
     market: MARKET_CODE, ...structure, changeRequest, ...launch, ...integrations, ...genealogy, ...orders, ...compensation, ...payouts, ...ledger,
-    relatedParty: related.data.id as string, freeDocument, ...portalTargets,
+    relatedParty: related.data.id as string, freeDocument, ...portalTargets, ...b6,
     settingsVersion: await latestSettingsVersion(a.id), otherSlug: b.slug,
   }
   return { a, b, owner, consultant, vendor, portal, targets }
@@ -653,7 +705,8 @@ export function phantomOf(targets: Targets): Targets {
     compMarket: id(), compCalendar: id(), period: id(), run: id(), resultLine: id(), payee: id(), simulation: id(), restatement: id(),
     payoutProvider: id(), payoutBatch: id(), payoutException: id(), payoutPayee: id(), payoutHold: id(), relatedParty: id(),
     ledgerAccount: id(), journalEntry: id(), journalExport: id(), portalParticipant: id(), portalEmail: `nobody-${id()}@nowhere.example`,
-    dispute: id(), privacyRequest: id(), notification: id(),
+    dispute: id(), privacyRequest: id(), notification: id(), migration: id(), parallelRun: id(), difference: id(), fullExport: id(),
+    savedView: id(),
   }
 }
 

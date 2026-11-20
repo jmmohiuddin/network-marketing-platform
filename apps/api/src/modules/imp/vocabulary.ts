@@ -32,4 +32,8 @@ export const ORDER_LEVEL_SOURCE_KINDS: ReadonlySet<string> = new Set([
 /** import_row_error.code values (API.md 2.3 plus the type and range codes the validator needs). */
 export type RowErrorCode =
   | 'FORBIDDEN_COLUMN' | 'SCHEMA_MISMATCH' | 'DUPLICATE_KEY' | 'ORPHAN_REFERENCE' | 'INVALID_VALUE'
-  | 'OUT_OF_RANGE' | 'REFUND_EXCEEDS_AMOUNT' | 'NOT_PSEUDONYMOUS'
+  | 'OUT_OF_RANGE' | 'REFUND_EXCEEDS_AMOUNT' | 'NOT_PSEUDONYMOUS' | 'GENEALOGY_CYCLE'
+
+/** import_batch.kind and import_mapping.kind (D-B6-09): kinds never mix. */
+export const IMPORT_KINDS = ['overlay', 'migration'] as const
+export type ImportKind = (typeof IMPORT_KINDS)[number]

@@ -6,10 +6,10 @@ import { runInTenant, SYSTEM_ACTOR_ID } from '../../lib/db.js'
 import { ApiError, notFound } from '../../lib/errors.js'
 import { envelope } from '../../lib/http.js'
 import type { StoredResponse } from '../../lib/idempotency.js'
-import { eventInput, orderInput, receive, recordRejected, Refusal, type IngestContext, type Submission } from '../ord/index.js'
+import { creditingEvent, eventInput, orderInput, receive, recordRejected, Refusal, type IngestContext, type Submission } from '../ord/index.js'
 import { connectorForWebhook, markConnectorOk } from '../pay/index.js'
-import { getMarket, getSetting } from '../ten/index.js'
-import type { Mapped } from './mapping.js'
+import { getMarket } from '../ten/index.js'
+import { utc, type Mapped } from './mapping.js'
 import { mapShopify } from './shopify.js'
 import { mapWooCommerce } from './woocommerce.js'
 
@@ -77,6 +77,15 @@ function parseSubmission(mapped: Mapped & { kind: 'order' | 'event' }, source: s
   return parsed.success ? { kind: 'event', source, input: parsed.data } : null
 }
 
+/** The order's creation time in the payload (Shopify created_at, WooCommerce date_created_gmt) when it is an instant. */
+function orderedAtOf(provider: 'shopify' | 'woocommerce', body: unknown): string | null {
+  const record = typeof body === 'object' && body !== null ? (body as Record<string, unknown>) : {}
+  const raw = provider === 'shopify' ? record.created_at : record.date_created_gmt
+  const at = typeof raw === 'string' ? (provider === 'shopify' ? raw : utc(raw)) : undefined
+  const parsed = z.iso.datetime({ offset: true }).safeParse(at)
+  return parsed.success ? parsed.data : null
+}
+
 async function handle(app: FastifyInstance, request: FastifyRequest): Promise<StoredResponse> {
   const params = idParams.safeParse(request.params)
   const connector = params.success ? await connectorForWebhook(app.config.secretKey, params.data.id) : null
@@ -97,9 +106,11 @@ async function handle(app: FastifyInstance, request: FastifyRequest): Promise<St
   const actor = { actorType: 'system' as const, requestId: request.id, supportSessionId: null }
   return runInTenant({ tenantId: connector.tenantId, userId: SYSTEM_ACTOR_ID }, actor, async (tx) => {
     const market = (await getMarket(tx, connector.marketId))!
+    // D-B6-05: the crediting event of the plan version in force at the order's time; none -> ORD refuses the order.
+    const orderedAt = orderedAtOf(connector.provider, body)
     const mapping = {
       connectorId: params.data.id, marketCode: market.code, minorUnit: market.minor_unit,
-      creditingEvent: await getSetting(tx, 'orders.crediting_event'),
+      creditingEvent: orderedAt === null ? null : await creditingEvent(tx, market.code, orderedAt),
     }
     const mapped = (connector.provider === 'shopify' ? mapShopify(topic, body, mapping) : mapWooCommerce(topic, body, mapping)) ?? unmappable(topic, raw)
     return deliver(tx, { connectorId: params.data.id, mapped, raw }, ctx)

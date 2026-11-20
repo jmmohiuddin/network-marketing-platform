@@ -13,12 +13,12 @@ import { REQUIRED_COLUMNS, type ImportFile } from './vocabulary.js'
 const YEAR_2025 = { from: '2025-01', to: '2025-12' }
 const asBuffers = (files: CsvFiles) =>
   Object.fromEntries(Object.entries(files).map(([name, data]) => [name, Buffer.from(data)])) as Record<ImportFile, Buffer>
-const validateTiny = (overrides: Partial<CsvFiles> = {}) => validateImport(asBuffers(tinyFiles(overrides)), YEAR_2025)
+const validateTiny = (overrides: Partial<CsvFiles> = {}) => validateImport(asBuffers(tinyFiles(overrides)), YEAR_2025, 'overlay')
 const codes = (result: ReturnType<typeof validateImport>) => result.findings.map((f) => [f.file, f.rowNo, f.column, f.code])
 
 describe('validateImport on the synthetic export (MVP_A 3.3 golden control totals)', () => {
   test('is usable with the documented row counts, control totals and partner codes', () => {
-    const result = validateImport(syntheticFiles(), YEAR_2025)
+    const result = validateImport(syntheticFiles(), YEAR_2025, 'overlay')
 
     expect(result.errorCount).toBe(0)
     expect(result.rowCounts).toEqual({ participants: 1466, orders: 4775, payout_lines: 7442 })
@@ -36,7 +36,7 @@ describe('validateImport on the synthetic export (MVP_A 3.3 golden control total
   })
 
   test('months outside the declared period are refused', () => {
-    const result = validateImport(syntheticFiles(), { from: '2025-01', to: '2025-06' })
+    const result = validateImport(syntheticFiles(), { from: '2025-01', to: '2025-06' }, 'overlay')
 
     // Orders and payout lines of 2025-07..12 (MVP_A data: 1,417 orders and 2,085 lines fall in 2025-01..06).
     expect(result.errorCount).toBe((4775 - 1417) + (7442 - 2085))
@@ -79,7 +79,7 @@ describe('file-level checks stop before the rows', () => {
     expect(extra.storedFiles?.participants.toString()).toBe(
       '"participant_id","type","enrolled_month","sponsor_id"\n"D1","dist","2025-01",""\n"C1","cust","2025-01","D1"\n',
     )
-    expect(validateImport(extra.storedFiles!, YEAR_2025).rows).toEqual(extra.rows)
+    expect(validateImport(extra.storedFiles!, YEAR_2025, 'overlay').rows).toEqual(extra.rows)
   })
 
   test('missing and repeated columns are schema mismatches', () => {
@@ -95,9 +95,9 @@ describe('file-level checks stop before the rows', () => {
 
   test('non-UTF-8, empty and ragged files are schema mismatches; a BOM is tolerated', () => {
     const latin1 = Buffer.from([0x70, 0xe9, 0x0a])
-    const result = validateImport({ ...asBuffers(tinyFiles()), participants: latin1, orders: Buffer.alloc(0) }, YEAR_2025)
+    const result = validateImport({ ...asBuffers(tinyFiles()), participants: latin1, orders: Buffer.alloc(0) }, YEAR_2025, 'overlay')
     const ragged = validateTiny({ payout_lines: 'line_id,month\nL1,2025-01,extra\n' })
-    const withBom = validateImport({ ...asBuffers(tinyFiles()), participants: Buffer.concat([Buffer.from([0xef, 0xbb, 0xbf]), Buffer.from(tinyFiles().participants)]) }, YEAR_2025)
+    const withBom = validateImport({ ...asBuffers(tinyFiles()), participants: Buffer.concat([Buffer.from([0xef, 0xbb, 0xbf]), Buffer.from(tinyFiles().participants)]) }, YEAR_2025, 'overlay')
 
     expect(codes(result)).toEqual([['participants', null, null, 'SCHEMA_MISMATCH'], ['orders', null, null, 'SCHEMA_MISMATCH']])
     expect(codes(ragged)).toEqual([['payout_lines', 2, null, 'SCHEMA_MISMATCH']])

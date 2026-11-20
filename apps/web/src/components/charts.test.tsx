@@ -48,16 +48,16 @@ describe('charts', () => {
 })
 
 describe('ChartCard', () => {
-  it('switches between the chart and its table with a pressed toggle', async () => {
+  it('switches between the chart and its table, the button naming the view it opens', async () => {
     const user = userEvent.setup()
     render(<ChartCard title="Customer share" summary="Latest 62.50 %." table={<table aria-label="Customer share values" />}><svg role="img" aria-label="Customer share chart" /></ChartCard>)
-    const toggle = screen.getByRole('button', { name: 'View as table' })
-    expect(toggle.getAttribute('aria-pressed')).toBe('false')
+    expect(screen.getByRole('heading', { level: 3, name: 'Customer share' })).toBeTruthy()
     expect(screen.getByRole('img', { name: 'Customer share chart' })).toBeTruthy()
-    await user.click(toggle)
-    expect(toggle.getAttribute('aria-pressed')).toBe('true')
+    await user.click(screen.getByRole('button', { name: 'View as table' }))
     expect(screen.getByRole('table', { name: 'Customer share values' })).toBeTruthy()
     expect(screen.queryByRole('img', { name: 'Customer share chart' })).toBeNull()
+    await user.click(screen.getByRole('button', { name: 'View as chart' }))
+    expect(screen.getByRole('img', { name: 'Customer share chart' })).toBeTruthy()
   })
 })
 

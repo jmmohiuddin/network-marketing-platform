@@ -31,6 +31,17 @@ export interface PeriodRow {
   readonly latest_run: { readonly id: string; readonly state: RunState; readonly gross_minor: string | null; readonly finished_at: string | null } | null
   readonly blockers: readonly Blocker[]
   readonly late: { readonly pending: number; readonly decided: number }
+  /** D-B6-04: set once the period is closed (user id). */
+  readonly closed_at: string | null
+  readonly closed_by: string | null
+}
+
+/** GET /v1/periods/:id/close-check: what stops the close (D-B6-04); each blocker names its object in `id`. */
+export interface CloseCheck {
+  readonly state: PeriodState
+  readonly closable: boolean
+  readonly blockers: readonly { readonly kind: string; readonly id: string }[]
+  readonly gl_unmapped: readonly string[]
 }
 
 /** GET /v1/periods. */

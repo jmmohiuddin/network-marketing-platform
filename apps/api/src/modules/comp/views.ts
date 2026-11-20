@@ -31,6 +31,11 @@ async function calendars(tx: Tx, scope: readonly string[] | null) {
   return rows
 }
 
+/** D-B6-04 close fields of a period (null until closed). */
+const closeOf = (p: PeriodRow) => ({
+  closed_at: p.closed_at, closed_by: p.closed_by, close_note: p.close_note, close_journal_export_id: p.close_journal_export_id,
+})
+
 const blockerView = ({ code, message, details }: { code: string; message: string; details: unknown }) => ({ code, message, details })
 
 interface LateCounts { pending: number; decided: number; consumed: number }
@@ -71,7 +76,7 @@ export async function listPeriods(tx: Tx, scope: readonly string[] | null, filte
     const late = lateOf(lateByPeriod, period.id)
     periods.push({
       id: period.id, calendar_id: period.calendar_id, starts_at: period.starts_at, ends_at: period.ends_at,
-      cut_off_passed: period.cut_off_passed, state: period.state, committed_run_id: period.committed_run_id, latest_run: period.latest_run,
+      cut_off_passed: period.cut_off_passed, state: period.state, committed_run_id: period.committed_run_id, ...closeOf(period), latest_run: period.latest_run,
       blockers: (await preflight(tx, period, sync.get(period.market_id))).map(blockerView),
       late: { pending: late.pending, decided: late.decided },
     })
@@ -105,7 +110,7 @@ export async function periodDetail(tx: Tx, id: string, scope: readonly string[] 
   const sync = await marketSync(tx, period.market_id)
   return {
     id: period.id, calendar_id: period.calendar_id, market_id: period.market_id, starts_at: period.starts_at, ends_at: period.ends_at,
-    cut_off_passed: period.cut_off_passed, state: period.state, committed_run_id: period.committed_run_id, runs,
+    cut_off_passed: period.cut_off_passed, state: period.state, committed_run_id: period.committed_run_id, ...closeOf(period), runs,
     plan_version: (version[0] as { plan_version: unknown } | undefined)?.plan_version ?? null,
     blockers: (await preflight(tx, period, sync)).map(blockerView), sync: syncView(sync), late: lateOf(await lateCounts(tx, [id]), id), restatements,
   }

@@ -5,7 +5,7 @@ import { interner } from './compact.js'
 import { EngineError } from './errors.js'
 import { traceAmountMinor } from './explain.js'
 import { assertInt64, formatRate, mulRate, parseDecimal, RATE_SCALE, roundRaw, toRaw } from './money.js'
-import { BONUS_PASS, ENGINE_VERSION, PASS_NUMBER, runPipeline, type CapOutput, type Done, type PassFn, type PassRegistry, type PayoutFn, type PayoutPass, type RunContext } from './pipeline.js'
+import { BONUS_PASS, ENGINE_VERSION, PASS_NUMBER, runPipeline, type CapOutput, type Done, type PassesThrough, type PassFn, type PayoutFn, type PayoutPass, type RunContext, type Settlement } from './pipeline.js'
 import { capAmountMinor, capPass, constraintPass, lineValue } from './primitives/caps.js'
 import { differential } from './primitives/differential.js'
 import { fastStart } from './primitives/fast-start.js'
@@ -22,8 +22,8 @@ import { percentByLevel } from './primitives/unilevel.js'
 import { lineVolumePass, pointsFactor, positionVolumePass } from './primitives/volume.js'
 import { buildTree, compareId, evaluationInstant, positionOrder } from './tree.js'
 import type {
-  AdjustmentOrigin, BonusKind, Expr, ExprOp, ControlTotals, EngineWarning, LadderRank, MeasureValue, Order, OrderEvent, OrderLine, OriginType, Participant, ParticipantType,
-  PayeeSettlement, PeriodSummary, Position, PositionSummary, QualificationStateRow, RawLine, Receivable, Relationship, ResultLine, RunInput,
+  AdjustmentOrigin, BonusKind, Expr, ExprOp, ControlTotals, EngineWarning, LadderRank, MeasureValue, Order, OrderEvent, OrderLine, OriginType, Participant, ParticipantId, ParticipantType,
+  PayeeSettlement, PeriodSummary, Position, PositionId, PositionSummary, QualificationStateRow, RawLine, Receivable, Relationship, ResultLine, RunInput,
   RunOptions, RunOutput, SourceKind, TaxLine, TraceStep, WithholdingInstruction,
 } from './types.js'
 
@@ -142,16 +142,124 @@ const roundingPass: PassFn<'rounding'> = (ctx, done) => {
   return out.sort(compareLines)
 }
 
-// ---------- pass 11 ----------
+// ---------- passes 11-12, streamed (D-B6-12) ----------
+// The final lines leave the engine in chunks (runIncremental), so passes 11 and 12 read them once, line by line in
+// output order: the tally keeps only what settlement, invariants, limits, control totals and state need from them.
 
-const settlementPass: PassFn<'settlement'> = (ctx, done) => {
+type Gross = ReadonlyMap<ParticipantId, { readonly amount: bigint; readonly positions: ReadonlySet<PositionId> }>
+
+interface LineTally {
+  readonly add: (line: ResultLine) => void
+  readonly gross: Gross
+  readonly oneTimeKeys: ReadonlyMap<PositionId, readonly string[]> // pay.one_time keys paid now, by payee position
+  readonly checkLimits: () => void
+  readonly controlTotals: (settlement: Settlement, breakageMinor: bigint) => ControlTotals
+}
+
+function invariant(ok: boolean, message: string, details: Record<string, string> = {}): void {
+  if (!ok) throw new EngineError('INVARIANT', message, details)
+}
+
+const plus = <K>(sums: Map<K, bigint>, key: K, amount: bigint): void => {
+  sums.set(key, (sums.get(key) ?? 0n) + amount)
+}
+
+/** Sums by key, sorted by key. */
+function sorted<K extends string>(sums: ReadonlyMap<K, bigint>): { key: K; amount: bigint }[] {
+  return [...sums].sort((a, b) => compareId(a[0], b[0])).map(([k, v]) => ({ key: k, amount: assertInt64(v, `total ${k}`) }))
+}
+
+const perPersonOnMeasure = (cap: RunInput['plan']['caps'][number]): boolean => cap.method.type === 'per_person' && cap.base.kind === 'measure'
+
+function lineTally(ctx: RunContext, done: Pick<Done<'settlement'>, 'volumes' | 'caps'>): LineTally {
+  const { plan, settings } = ctx.input
+  const onceKey = new Map(plan.bonuses.flatMap((b) => (b.kind === 'pay.one_time' ? [[b.key, b.onceKey] as const] : [])))
+  const gross = new Map<ParticipantId, { amount: bigint; positions: Set<PositionId> }>()
+  const oneTimeKeys = new Map<PositionId, string[]>()
+  const byRule = new Map<string, bigint>()
+  const bySourceKind = new Map<SourceKind, bigint>()
+  const byOrigin = new Map<OriginType, bigint>()
+  // Paid (non-origin) lines in each cap's scope: one sum ('') or, for a per-person cap on a measure, one per payee position.
+  const capSums = plan.caps.map(() => new Map<string, bigint>())
+  const limitSums = plan.constraints.map(() => new Map<ParticipantId, bigint>()) // limit.max_per_period, per participant
+  let grossMinor = 0n
+  let lineCount = 0
+  let prev: ResultLine | undefined
+  return {
+    gross,
+    oneTimeKeys,
+    add(l) {
+      // Lines are sorted by (payee, pass, rule, origin) and a rule has one pass, so a duplicate is the line before.
+      const ref = { positionId: l.payeePositionId, ruleKey: l.ruleKey }
+      const same = prev !== undefined && prev.payeePositionId === l.payeePositionId && prev.ruleKey === l.ruleKey
+        && (prev.origin?.originType ?? null) === (l.origin?.originType ?? null) && (prev.origin?.originId ?? null) === (l.origin?.originId ?? null)
+      invariant(!same, 'more than one line per (payee position, rule, origin)', ref)
+      invariant(l.origin !== null || ctx.earner[ctx.trees.sponsor.index.get(l.payeePositionId)!] === 1, 'payout to a position that may not earn', ref)
+      invariant(traceAmountMinor(l.trace) === l.amountMinor, 'line trace does not reconcile to its amount', ref)
+      prev = l
+      lineCount += 1
+      grossMinor += l.amountMinor
+      const g = gross.get(l.payeeParticipantId) ?? { amount: 0n, positions: new Set<PositionId>() }
+      gross.set(l.payeeParticipantId, { amount: g.amount + l.amountMinor, positions: g.positions.add(l.payeePositionId) })
+      plus(byRule, l.ruleKey, l.amountMinor)
+      plus(bySourceKind, l.sourceKind, l.amountMinor)
+      if (l.origin !== null) {
+        plus(byOrigin, l.origin.originType, l.amountMinor)
+        return
+      }
+      plan.caps.forEach((cap, i) => {
+        if (cap.scope.includes(l.ruleKey)) plus(capSums[i]!, perPersonOnMeasure(cap) ? l.payeePositionId : '', l.amountMinor)
+      })
+      plan.constraints.forEach((c, i) => {
+        if (c.kind === 'limit.max_per_period' && c.scope.includes(l.ruleKey)) plus(limitSums[i]!, l.payeeParticipantId, l.amountMinor)
+      })
+      const key = onceKey.get(l.ruleKey)
+      if (key !== undefined) oneTimeKeys.set(l.payeePositionId, [...(oneTimeKeys.get(l.payeePositionId) ?? []), key])
+    },
+    // After rounding: every cap (bound or not, per payee for per_person) and every max_per_period holds.
+    checkLimits() {
+      plan.caps.forEach((cap, i) => {
+        if (cap.method.type !== 'per_person' || cap.base.kind !== 'measure') {
+          invariant((capSums[i]!.get('') ?? 0n) <= done.caps.applications[i]!.capMinor, 'cap exceeded', { capKey: cap.key })
+          return
+        }
+        const own = done.volumes.byMeasure.get(cap.base.measure)!
+        for (const [positionId, amount] of capSums[i]!) {
+          const personCap = capAmountMinor(toRaw(own[ctx.trees.sponsor.index.get(positionId)!]!), cap.rate, settings.roundingMode)
+          invariant(amount <= personCap, 'per-person cap exceeded', { capKey: cap.key, positionId })
+        }
+      })
+      // max_share is exact in pass 7; rounded lines no longer carry the purpose part
+      plan.constraints.forEach((c, i) => {
+        if (c.kind !== 'limit.max_per_period') return
+        for (const [participantId, amount] of limitSums[i]!) invariant(amount <= c.maxMinor, 'participant limit exceeded', { key: c.key, participantId })
+      })
+    },
+    controlTotals(settlement, breakageMinor) {
+      const total = (f: (p: PayeeSettlement) => bigint): bigint => assertInt64(settlement.payees.reduce((a, p) => a + f(p), 0n), 'payee total')
+      return {
+        grossMinor: assertInt64(grossMinor, 'gross total'),
+        byRule: sorted(byRule).map((s) => ({ ruleKey: s.key, amountMinor: s.amount })),
+        bySourceKind: sorted(bySourceKind).map((s) => ({ sourceKind: s.key, amountMinor: s.amount })),
+        adjustmentsByOrigin: sorted(byOrigin).map((s) => ({ originType: s.key, amountMinor: s.amount })),
+        nettedMinor: total((p) => p.nettedMinor),
+        withheldMinor: total((p) => p.withheldMinor),
+        netPayableMinor: total((p) => p.netPayableMinor),
+        breakageMinor: assertInt64(breakageMinor, 'breakage'),
+        // Every line is rounded once, every split is exact (largestRemainder) and points pools convert before they
+        // split, so no residue arises; removed and unallocated amounts are breakage.
+        residueMinor: 0n,
+        lineCount,
+        payeeCount: settlement.payees.length,
+      }
+    },
+  }
+}
+
+/** Pass 11: netting of receivables, then withholding, per payee of the lines (gross from the tally). */
+function settle(ctx: RunContext, gross: Gross): Settlement {
   const receivable = unique(ctx.input.snapshot.receivables, (r) => r.participantId, 'receivable')
   const withholding = unique(ctx.input.snapshot.withholding, (w) => w.participantId, 'withholding instruction')
-  const gross = new Map<string, { amount: bigint; positions: Set<string> }>()
-  for (const l of done.rounding) {
-    const g = gross.get(l.payeeParticipantId) ?? { amount: 0n, positions: new Set<string>() }
-    gross.set(l.payeeParticipantId, { amount: g.amount + l.amountMinor, positions: g.positions.add(l.payeePositionId) })
-  }
   const payees: PayeeSettlement[] = []
   const taxLines: TaxLine[] = []
   const warnings: EngineWarning[] = []
@@ -177,68 +285,13 @@ const settlementPass: PassFn<'settlement'> = (ctx, done) => {
       taxableMinor: taxable, withheldMinor: withheld, netPayableMinor: taxable - withheld, receivableAfterMinor: before - netted,
     })
   }
-  return { payees, taxLines, warnings }
-}
-
-// ---------- pass 12 ----------
-
-function invariant(ok: boolean, message: string, details: Record<string, string> = {}): void {
-  if (!ok) throw new EngineError('INVARIANT', message, details)
-}
-
-function checkInvariants(ctx: RunContext, done: Done<'totals'>): void {
-  // Lines are sorted by (payee, pass, rule, origin) and a rule has one pass, so a duplicate is the line before.
-  done.rounding.forEach((l, i) => {
-    const ref = { positionId: l.payeePositionId, ruleKey: l.ruleKey }
-    const prev = done.rounding[i - 1]
-    const same = prev !== undefined && prev.payeePositionId === l.payeePositionId && prev.ruleKey === l.ruleKey
-      && (prev.origin?.originType ?? null) === (l.origin?.originType ?? null) && (prev.origin?.originId ?? null) === (l.origin?.originId ?? null)
-    invariant(!same, 'more than one line per (payee position, rule, origin)', ref)
-    invariant(l.origin !== null || ctx.earner[ctx.trees.sponsor.index.get(l.payeePositionId)!] === 1, 'payout to a position that may not earn', ref)
-    invariant(traceAmountMinor(l.trace) === l.amountMinor, 'line trace does not reconcile to its amount', ref)
-  })
-  checkLimits(ctx, done)
-  const byParticipant = new Map<string, bigint>()
-  for (const l of done.rounding) byParticipant.set(l.payeeParticipantId, (byParticipant.get(l.payeeParticipantId) ?? 0n) + l.amountMinor)
-  invariant(byParticipant.size === done.settlement.payees.length, 'every payee has one settlement')
-  for (const p of done.settlement.payees) {
+  // Settlement gross is the tally's sum of each payee's lines by construction; what remains to check is the split.
+  for (const p of payees) {
     const ref = { participantId: p.participantId }
-    invariant(byParticipant.get(p.participantId) === p.grossMinor, 'settlement gross differs from the payee lines', ref)
     invariant(p.grossMinor === p.nettedMinor + p.withheldMinor + p.netPayableMinor, 'gross != netted + withheld + net payable', ref)
     invariant(p.netPayableMinor >= 0n && p.withheldMinor >= 0n && p.receivableAfterMinor >= 0n, 'negative payable, withholding or receivable', ref)
   }
-}
-
-/** Sum of amounts per key. */
-function totalsBy<T>(items: readonly T[], key: (t: T) => string, amount: (t: T) => bigint): Map<string, bigint> {
-  const sums = new Map<string, bigint>()
-  for (const t of items) sums.set(key(t), (sums.get(key(t)) ?? 0n) + amount(t))
-  return sums
-}
-
-/** After rounding: every cap (bound or not, per payee for per_person) and every max_per_period holds. */
-function checkLimits(ctx: RunContext, done: Done<'totals'>): void {
-  const { plan, settings } = ctx.input
-  const paid = done.rounding.filter((l) => l.origin === null)
-  const inScope = (scope: readonly string[]): ResultLine[] => paid.filter((l) => scope.includes(l.ruleKey))
-  plan.caps.forEach((cap, i) => {
-    const lines = inScope(cap.scope)
-    if (cap.method.type !== 'per_person' || cap.base.kind !== 'measure') {
-      invariant(lines.reduce((a, l) => a + l.amountMinor, 0n) <= done.caps.applications[i]!.capMinor, 'cap exceeded', { capKey: cap.key })
-      return
-    }
-    const own = done.volumes.byMeasure.get(cap.base.measure)!
-    for (const [positionId, amount] of totalsBy(lines, (l) => l.payeePositionId, (l) => l.amountMinor)) {
-      const personCap = capAmountMinor(toRaw(own[ctx.trees.sponsor.index.get(positionId)!]!), cap.rate, settings.roundingMode)
-      invariant(amount <= personCap, 'per-person cap exceeded', { capKey: cap.key, positionId })
-    }
-  })
-  for (const c of plan.constraints) {
-    if (c.kind !== 'limit.max_per_period') continue // max_share is exact in pass 7; rounded lines no longer carry the purpose part
-    for (const [participantId, amount] of totalsBy(inScope(c.scope), (l) => l.payeeParticipantId, (l) => l.amountMinor)) {
-      invariant(amount <= c.maxMinor, 'participant limit exceeded', { key: c.key, participantId })
-    }
-  }
+  return { payees, taxLines, warnings }
 }
 
 /** Every allocation's parts sum to its total (FR-COMP-012). */
@@ -267,40 +320,11 @@ function breakageMinor(ctx: RunContext, done: Done<'caps'>, capped: readonly Raw
   return removed
 }
 
-/** Pass 8 plus what pass 12 needs from the pass 4-8 lines, so those lines can be released after pass 10 (S-1). */
+/** Pass 8 plus what pass 12 needs from the pass 4-8 lines, so those lines can be released after pass 8 (S-1). */
 const capsPass: PassFn<'caps'> = (ctx, done): CapOutput => {
   const out = capPass(ctx, done)
   checkAllocations(out.lines)
   return { ...out, breakageMinor: breakageMinor(ctx, done, out.lines) }
-}
-
-function sumBy<T, K extends string>(items: readonly T[], key: (t: T) => K | null, amount: (t: T) => bigint): { key: K; amount: bigint }[] {
-  const sums = new Map<K, bigint>()
-  for (const t of items) {
-    const k = key(t)
-    if (k !== null) sums.set(k, (sums.get(k) ?? 0n) + amount(t))
-  }
-  return [...sums].sort((a, b) => compareId(a[0], b[0])).map(([k, v]) => ({ key: k, amount: assertInt64(v, `total ${k}`) }))
-}
-
-function controlTotals(ctx: RunContext, done: Done<'totals'>): ControlTotals {
-  const { rounding: lines, settlement } = done
-  const total = (f: (p: PayeeSettlement) => bigint): bigint => assertInt64(settlement.payees.reduce((a, p) => a + f(p), 0n), 'payee total')
-  return {
-    grossMinor: assertInt64(lines.reduce((a, l) => a + l.amountMinor, 0n), 'gross total'),
-    byRule: sumBy(lines, (l) => l.ruleKey, (l) => l.amountMinor).map((s) => ({ ruleKey: s.key, amountMinor: s.amount })),
-    bySourceKind: sumBy(lines, (l): SourceKind => l.sourceKind, (l) => l.amountMinor).map((s) => ({ sourceKind: s.key, amountMinor: s.amount })),
-    adjustmentsByOrigin: sumBy(lines, (l): OriginType | null => l.origin?.originType ?? null, (l) => l.amountMinor).map((s) => ({ originType: s.key, amountMinor: s.amount })),
-    nettedMinor: total((p) => p.nettedMinor),
-    withheldMinor: total((p) => p.withheldMinor),
-    netPayableMinor: total((p) => p.netPayableMinor),
-    breakageMinor: assertInt64(done.caps.breakageMinor, 'breakage'),
-    // Every line is rounded once, every split is exact (largestRemainder) and points pools convert before they
-    // split, so no residue arises; removed and unallocated amounts are breakage.
-    residueMinor: 0n,
-    lineCount: lines.length,
-    payeeCount: settlement.payees.length,
-  }
 }
 
 /** QualificationStateRow with a fixed field order, arrays sorted and bigint as decimal strings (RESULT_HASH). */
@@ -323,56 +347,55 @@ function sortedState(rows: readonly QualificationStateRow[]): QualificationState
   return [...rows].sort((a, b) => compareId(a.positionId, b.positionId))
 }
 
-export function resultHash(lines: readonly ResultLine[], taxLines: readonly TaxLine[], state: readonly QualificationStateRow[], summaries: readonly PositionSummary[]): string {
+const byKeyOf = <T>(items: readonly T[], key: (t: T) => string): T[] => [...items].sort((a, b) => compareId(key(a), key(b)))
+const lineRecord = (l: ResultLine): unknown => ['L', l.payeePositionId, l.pass, l.ruleKey, l.origin?.originType ?? null, l.origin?.originId ?? null, l.amountMinor.toString(), l.currency]
+const taxRecord = (t: TaxLine): unknown => ['T', t.participantId, t.ruleId, t.taxableMinor.toString(), t.withheldMinor.toString()]
+const stateRecord = (s: QualificationStateRow): unknown => ['S', s.positionId, canonicalState(s)]
+const summaryRecord = (s: PositionSummary): unknown =>
+  ['V', s.positionId, byKeyOf(s.measures, (m) => m.measure).map((m) => [m.measure, m.valueMinor.toString()]), byKeyOf(s.paidAs, (p) => p.ladder).map((p) => [p.ladder, p.rank])]
+
+/** RESULT_HASH writer: records are hashed as they are made (no array of every record: S-1 memory). */
+function recordHash(): { readonly record: (r: unknown) => void; readonly digest: () => string } {
   const h = createHash('sha256')
-  const byKey = <T>(items: readonly T[], key: (t: T) => string): T[] => [...items].sort((a, b) => compareId(key(a), key(b)))
-  // Records are hashed as they are made (no array of every record: S-1 memory).
   let first = true
-  const record = (r: unknown): void => {
-    h.update(first ? JSON.stringify(r) : `\n${JSON.stringify(r)}`)
-    first = false
+  return {
+    record(r) {
+      h.update(first ? JSON.stringify(r) : `\n${JSON.stringify(r)}`)
+      first = false
+    },
+    digest: () => h.digest('hex'),
   }
-  for (const l of lines) record(['L', l.payeePositionId, l.pass, l.ruleKey, l.origin?.originType ?? null, l.origin?.originId ?? null, l.amountMinor.toString(), l.currency])
-  for (const t of [...taxLines].sort((a, b) => compareId(a.participantId, b.participantId))) record(['T', t.participantId, t.ruleId, t.taxableMinor.toString(), t.withheldMinor.toString()])
-  for (const s of sortedState(state)) record(['S', s.positionId, canonicalState(s)])
-  for (const s of byKey(summaries, (s) => s.positionId)) {
-    record(['V', s.positionId, byKey(s.measures, (m) => m.measure).map((m) => [m.measure, m.valueMinor.toString()]), byKey(s.paidAs, (p) => p.ladder).map((p) => [p.ladder, p.rank])])
-  }
-  return h.digest('hex')
+}
+
+export function resultHash(lines: readonly ResultLine[], taxLines: readonly TaxLine[], state: readonly QualificationStateRow[], summaries: readonly PositionSummary[]): string {
+  const h = recordHash()
+  for (const l of lines) h.record(lineRecord(l))
+  for (const t of byKeyOf(taxLines, (t) => t.participantId)) h.record(taxRecord(t))
+  for (const s of sortedState(state)) h.record(stateRecord(s))
+  for (const s of byKeyOf(summaries, (s) => s.positionId)) h.record(summaryRecord(s))
+  return h.digest()
 }
 
 /** Pass 3 runs before pass 4 pays, so a one-time key paid now is added to the payee's state row here (TS-25). */
-function committedState(ctx: RunContext, done: Done<'totals'>): QualificationStateRow[] {
-  const onceKey = new Map(ctx.input.plan.bonuses.flatMap((b) => (b.kind === 'pay.one_time' ? [[b.key, b.onceKey] as const] : [])))
-  const paid = new Map<string, string[]>()
-  for (const l of done.rounding) {
-    const key = l.origin === null ? onceKey.get(l.ruleKey) : undefined
-    if (key !== undefined) paid.set(l.payeePositionId, [...(paid.get(l.payeePositionId) ?? []), key])
-  }
-  return sortedState(done.qualification.state).map((row) => {
+function committedState(state: readonly QualificationStateRow[], paid: ReadonlyMap<PositionId, readonly string[]>): QualificationStateRow[] {
+  return sortedState(state).map((row) => {
     const keys = paid.get(row.positionId)
     return keys === undefined ? row : { ...row, oneTimeFlags: [...new Set([...row.oneTimeFlags, ...keys])].sort(compareId) }
   })
 }
 
-function summaries(ctx: RunContext, done: Done<'totals'>): PositionSummary[] {
+/** Volume summary of the position at index k (one shared paid-as copy per rank combination: S-1 memory). */
+function summarizer(ctx: RunContext, done: Pick<Done<'settlement'>, 'volumes' | 'qualification'>): (p: Position, k: number) => PositionSummary {
   const { plan } = ctx.input
-  const paidAs = interner<readonly LadderRank[]>() // one shared copy per rank combination (S-1 memory)
-  return ctx.positions.map((p, k) => {
+  const paidAs = interner<readonly LadderRank[]>()
+  return (p, k) => {
     const at = plan.ladders.map((l) => done.qualification.paidAs.get(l.key)![k]!)
     return {
       positionId: p.positionId,
       measures: plan.measures.map((m) => ({ measure: m.key, valueMinor: done.volumes.byMeasure.get(m.key)![k]! })),
       paidAs: paidAs(at.join(), () => plan.ladders.map((l, i) => ({ ladder: l.key, rank: at[i]! < 0 ? null : l.ranks[at[i]!]!.key }))),
     }
-  })
-}
-
-const totalsPass: PassFn<'totals'> = (ctx, done) => {
-  checkInvariants(ctx, done)
-  const state = committedState(ctx, done)
-  const volumeSummaries = summaries(ctx, done)
-  return { controlTotals: controlTotals(ctx, done), resultHash: resultHash(done.rounding, done.settlement.taxLines, state, volumeSummaries), state, volumeSummaries }
+  }
 }
 
 // ---------- inputs hash ----------
@@ -489,16 +512,75 @@ export function inputsHash(input: RunInput): string {
 
 // ---------- run ----------
 
-export const PASSES: PassRegistry = {
+export const PASSES: PassesThrough<'rounding'> = {
   transition: transitionPass, lineVolumes: lineVolumePass, volumes: positionVolumePass, qualification: qualificationPass,
   individual: payoutPass('individual'), matching: payoutPass('matching'), pools: payoutPass('pools'),
-  constraints: constraintPass, caps: capsPass, adjustments: adjustmentPass, rounding: roundingPass, settlement: settlementPass, totals: totalsPass,
+  constraints: constraintPass, caps: capsPass, adjustments: adjustmentPass, rounding: roundingPass,
 }
 
-export function run(input: RunInput, options: RunOptions = { fullTraceFor: [] }): RunOutput {
+/** Lines per output chunk of runIncremental (D-B6-16); state rows, summaries and payees use the same size. */
+export const OUTPUT_CHUNK_LINES = 10_000
+
+/** One piece of the output, in this order: every line chunk (final order), then state rows, volume summaries, payees. */
+export type RunChunk =
+  | { readonly kind: 'lines'; readonly lines: readonly ResultLine[] }
+  | { readonly kind: 'qualification'; readonly rows: readonly QualificationStateRow[] }
+  | { readonly kind: 'summaries'; readonly rows: readonly PositionSummary[] }
+  | { readonly kind: 'payees'; readonly rows: readonly PayeeSettlement[] }
+/** Everything of RunOutput that is not yielded in chunks. */
+export type RunSummary = Omit<RunOutput, 'lines' | 'qualification' | 'volumeSummaries' | 'payees'>
+
+function chunksOf<T>(items: readonly T[]): T[][] {
+  const out: T[][] = []
+  for (let from = 0; from < items.length; from += OUTPUT_CHUNK_LINES) out.push(items.slice(from, from + OUTPUT_CHUNK_LINES))
+  return out
+}
+
+/** Hands out the chunks one by one, dropping each from the queue before the caller sees it (the queue is this generator's own). */
+function* drained<T>(chunks: T[][]): Generator<T[], void, undefined> {
+  while (chunks.length > 0) yield chunks.shift()!
+}
+
+/** Passes 0-10; the final lines come back as chunks only, so nothing holds the whole line array once this returns. */
+function calculated(input: RunInput, options: RunOptions) {
   const hash = inputsHash(input) // first: it also refuses missing fields and number-typed *Minor / *Us values
   const ctx = buildContext(input, options)
-  const out = runPipeline(ctx, PASSES)
+  const { rounding, ...done } = runPipeline(ctx, PASSES, 'rounding')
+  return { hash, ctx, done, lineChunks: chunksOf(rounding) }
+}
+
+/**
+ * The run as a stream (D-B6-12, S-1): yields the final lines in chunks of OUTPUT_CHUNK_LINES, then the state rows,
+ * volume summaries and payees, and returns the rest of RunOutput. Passes 11-12 read each line once as it leaves, and
+ * the engine keeps no reference to a chunk once yielded, so a caller that writes and drops chunks never holds the
+ * whole output. Collecting every chunk gives exactly run()'s output.
+ */
+export function* runIncremental(input: RunInput, options: RunOptions = { fullTraceFor: [] }): Generator<RunChunk, RunSummary, undefined> {
+  const { hash, ctx, done, lineChunks } = calculated(input, options)
+  const tally = lineTally(ctx, done)
+  const h = recordHash()
+  for (const lines of drained(lineChunks)) {
+    for (const l of lines) {
+      tally.add(l)
+      h.record(lineRecord(l))
+    }
+    yield { kind: 'lines', lines }
+  }
+  const settlement = settle(ctx, tally.gross)
+  tally.checkLimits()
+  for (const t of settlement.taxLines) h.record(taxRecord(t)) // participant id order (settle)
+  for (const rows of drained(chunksOf(committedState(done.qualification.state, tally.oneTimeKeys)))) {
+    for (const s of rows) h.record(stateRecord(s))
+    yield { kind: 'qualification', rows }
+  }
+  const summary = summarizer(ctx, done)
+  for (let from = 0; from < ctx.positions.length; from += OUTPUT_CHUNK_LINES) {
+    // ctx.positions are in position id order (positionOrder), the RESULT_HASH order of summaries.
+    const rows = ctx.positions.slice(from, from + OUTPUT_CHUNK_LINES).map((p, i) => summary(p, from + i))
+    for (const s of rows) h.record(summaryRecord(s))
+    yield { kind: 'summaries', rows }
+  }
+  for (const rows of drained(chunksOf(settlement.payees))) yield { kind: 'payees', rows }
   return {
     engineVersion: ENGINE_VERSION,
     planVersionId: input.plan.planVersionId,
@@ -506,17 +588,38 @@ export function run(input: RunInput, options: RunOptions = { fullTraceFor: [] })
     snapshotId: input.snapshot.snapshotId,
     periodId: input.snapshot.period.periodId,
     inputsHash: hash,
-    lines: out.rounding,
-    payees: out.settlement.payees,
-    taxLines: out.settlement.taxLines,
-    qualification: out.totals.state,
-    evaluations: out.qualification.evaluations,
-    volumeSummaries: out.totals.volumeSummaries,
-    constraintApplications: out.constraints.applications,
-    capApplications: out.caps.applications,
-    transitionReport: out.transition.report,
-    controlTotals: out.totals.controlTotals,
-    warnings: [...out.lineVolumes.warnings, ...out.qualification.warnings, ...out.settlement.warnings],
-    resultHash: out.totals.resultHash,
+    taxLines: settlement.taxLines,
+    evaluations: done.qualification.evaluations,
+    constraintApplications: done.constraints.applications,
+    capApplications: done.caps.applications,
+    transitionReport: done.transition.report,
+    controlTotals: tally.controlTotals(settlement, done.caps.breakageMinor),
+    warnings: [...done.lineVolumes.warnings, ...done.qualification.warnings, ...settlement.warnings],
+    resultHash: h.digest(),
+  }
+}
+
+/** The whole output at once: runIncremental collected. */
+export function run(input: RunInput, options: RunOptions = { fullTraceFor: [] }): RunOutput {
+  const lines: ResultLine[] = []
+  const payees: PayeeSettlement[] = []
+  const qualification: QualificationStateRow[] = []
+  const volumeSummaries: PositionSummary[] = []
+  const stream = runIncremental(input, options)
+  for (let next = stream.next(); ; next = stream.next()) {
+    if (next.done === true) {
+      const s = next.value
+      return {
+        engineVersion: s.engineVersion, planVersionId: s.planVersionId, settingsVersionId: s.settingsVersionId, snapshotId: s.snapshotId, periodId: s.periodId,
+        inputsHash: s.inputsHash, lines, payees, taxLines: s.taxLines, qualification, evaluations: s.evaluations, volumeSummaries,
+        constraintApplications: s.constraintApplications, capApplications: s.capApplications, transitionReport: s.transitionReport,
+        controlTotals: s.controlTotals, warnings: s.warnings, resultHash: s.resultHash,
+      }
+    }
+    const chunk = next.value
+    if (chunk.kind === 'lines') lines.push(...chunk.lines)
+    else if (chunk.kind === 'qualification') qualification.push(...chunk.rows)
+    else if (chunk.kind === 'summaries') volumeSummaries.push(...chunk.rows)
+    else payees.push(...chunk.rows)
   }
 }

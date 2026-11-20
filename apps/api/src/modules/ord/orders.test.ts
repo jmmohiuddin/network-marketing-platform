@@ -129,12 +129,10 @@ describe('POST /v1/orders (API-10)', () => {
     expect(JSON.parse(ingested!.after_ref).after.buyer_id).toBe(first.buyer.id)
   })
 
-  test('a redelivery still matches after orders.crediting_event changes; a changed crediting time is a conflict', async () => {
+  test('a redelivery under a new key replays; a changed crediting time is a conflict', async () => {
     const body = orderBody()
     const original = await postOrder(body)
-    await setSettings(acme.id, shop.admin.id, { 'orders.crediting_event': 'fulfilled' })
     const afterSwitch = await postOrder(body, shop.token, randomUUID())
-    await setSettings(acme.id, shop.admin.id, { 'orders.crediting_event': 'paid' })
     const moved = await postOrder({ ...body, paid_at: new Date(Date.now() - 120_000).toISOString() }, shop.token, randomUUID())
 
     expect(original.statusCode).toBe(201)
@@ -205,11 +203,12 @@ describe('T-B2-23 validation matrix: refusals are persisted, body-shape failures
 
   test('settings are required, none has a default (DEC-14); another tenant\'s orders stay apart', async () => {
     const globexAdmin = await createSignedInUser({ tenantId: globex.id, roles: ['Tenant admin'], stepUp: true })
-    await createMarket(globex.id, 'GB')
+    const globexGb = await createMarket(globex.id, 'GB')
     const token = await apiKey(app, globexAdmin, ['orders:write'])
 
     await expectRefused(orderBody(), 422, 'CREDITING_EVENT_NOT_CONFIGURED', token)
-    await setSettings(globex.id, globexAdmin.id, { 'orders.crediting_event': 'paid' })
+    const globexApprover = await createSignedInUser({ tenantId: globex.id, roles: ['Compliance officer'] })
+    await activePlanVersion(globex.id, globexGb, { submitterId: globexAdmin.id, approverId: globexApprover.id, creditingEvent: 'paid' })
     await expectRefused(orderBody(), 422, 'ATTRIBUTION_NOT_CONFIGURED', token)
     await setSettings(globex.id, globexAdmin.id, { 'orders.attribution_precedence': ['servicing'] })
     await expectRefused(orderBody(), 422, 'BUYER_NOT_FOUND', token)
@@ -382,8 +381,9 @@ describe('T-B2-33 attribution precedence and FR-ORD-003 purpose', () => {
 describe('B3 carry-over in ingestion (D-B3-05, OI-4, OI-7)', () => {
   const ago = (ms: number) => new Date(Date.now() - ms).toISOString()
 
-  test('T-B3-16: the plan version\'s crediting event wins over the setting; no covering version falls back to the setting', async () => {
+  test('T-B3-16 / D-B6-05: the plan version\'s crediting event applies, before the first version too; no plan refuses the order', async () => {
     const ie = await createMarket(acme.id, 'IE')
+    await createMarket(acme.id, 'LU')
     await volumes(app, shop.admin, ie, 'SKU-A', { qv: '150' })
     await volumes(app, shop.admin, ie, 'SKU-B', { qv: '100' })
     await activePlanVersion(acme.id, ie, { submitterId: shop.admin.id, approverId: analyst.id, creditingEvent: 'fulfilled', effectiveFrom: ago(3_600_000) })
@@ -392,14 +392,16 @@ describe('B3 carry-over in ingestion (D-B3-05, OI-4, OI-7)', () => {
 
     const covered = await postOrder(orderBody({ market: 'IE', ordered_at: paid, ...times }))
     const beforePlan = await postOrder(orderBody({ market: 'IE', ordered_at: ago(7_200_000), ...times }))
-    const uncovered = await postOrder(orderBody({ ordered_at: paid, ...times }))
+    const uncovered = await postOrder(orderBody({ market: 'LU', ordered_at: paid, ...times }))
     const unfulfilled = await postOrder(orderBody({ market: 'IE', ordered_at: paid, paid_at: paid }))
 
     const creditedAt = (response: Awaited<ReturnType<typeof postOrder>>) => Date.parse(response.json().data.order.credited_at)
-    expect([covered.statusCode, beforePlan.statusCode, uncovered.statusCode]).toEqual([201, 201, 201])
-    expect(creditedAt(covered)).toBe(Date.parse(fulfilled)) // plan: fulfilled; setting: paid
-    expect(creditedAt(beforePlan)).toBe(Date.parse(paid)) // ordered before the version took effect
-    expect(creditedAt(uncovered)).toBe(Date.parse(paid))
+    expect([covered.statusCode, beforePlan.statusCode]).toEqual([201, 201])
+    expect(creditedAt(covered)).toBe(Date.parse(fulfilled))
+    expect(creditedAt(beforePlan)).toBe(Date.parse(fulfilled)) // ordered before the market's first version: its event (D-B6-05)
+    expect(uncovered.json().error).toMatchObject({
+      code: 'CREDITING_EVENT_NOT_CONFIGURED', message: 'Schedule a plan version for this market before sending orders.',
+    })
     expect([unfulfilled.statusCode, unfulfilled.json().error.code]).toEqual([422, 'CREDITING_EVENT_MISSING'])
   })
 

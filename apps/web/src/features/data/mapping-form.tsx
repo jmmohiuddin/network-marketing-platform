@@ -13,7 +13,7 @@ import { TabPanel, Tabs } from '../../components/tabs'
 import { errorMessage, fieldErrors } from '../../lib/messages'
 import { humanize, integer } from './format'
 import { draftFrom, PUBLISHED_STARTER_KIT_CODES, toMappings, unmappedCodes, type Choice, type Draft, type ParticipantChoice } from './mapping-model'
-import { PURPOSES, SOURCE_KINDS, type Mappings, type MappingVersion, type SourceValues } from './types'
+import { PURPOSES, SOURCE_KINDS, type ImportKind, type Mappings, type MappingVersion, type SourceValues } from './types'
 import { CODE, NOTE, Panel, SECTION_HEADING } from './ui'
 
 const NOTES_MAX = 2000
@@ -124,10 +124,12 @@ export interface MappingFormProps {
   readonly domain: Domain
   /** Keeps the chosen tab in the URL. */
   readonly onDomain: (domain: Domain) => void
+  /** D-B6-09: the kind of mapping saved (migration mappings never touch compliance snapshots). */
+  readonly kind: ImportKind
 }
 
 /** SC-25 mapping table per vocabulary; saving always creates the next version as a draft (PUT /v1/import-mappings). */
-export function MappingForm({ version, sourceValues, latest, editable: mayEdit, saveVariant, onSaved, domain: initialDomain, onDomain }: MappingFormProps) {
+export function MappingForm({ version, sourceValues, latest, editable: mayEdit, saveVariant, onSaved, domain: initialDomain, onDomain, kind }: MappingFormProps) {
   const api = useApi()
   const [draft, setDraft] = useState<Draft>(() => draftFrom(version?.mappings ?? null, sourceValues))
   // An approved version is shown read-only; editing it starts the next version from its content.
@@ -154,7 +156,7 @@ export function MappingForm({ version, sourceValues, latest, editable: mayEdit, 
     }
     setBusy(true)
     try {
-      const body: { mappings: Mappings; notes?: string } = notes.trim() === '' ? { mappings } : { mappings, notes: notes.trim() }
+      const body: { kind: ImportKind; mappings: Mappings; notes?: string } = notes.trim() === '' ? { kind, mappings } : { kind, mappings, notes: notes.trim() }
       const { data } = await api.put<MappingVersion>('/v1/import-mappings', body, { headers: { 'If-Match': `"${latest}"` } })
       onSaved(data)
     } catch (error) {
@@ -232,7 +234,9 @@ export function MappingForm({ version, sourceValues, latest, editable: mayEdit, 
                 {(control) => <textarea {...control} className={TEXTAREA_CLASS} rows={3} maxLength={NOTES_MAX} value={notes} onChange={(event) => setNotes(event.target.value)} />}
               </FormField>
               <p className={NOTE}>
-                Saving creates version {latest + 1} as a draft; no saved version changes. Snapshots made with an earlier mapping version are marked Outdated, and their figures stay as they were.
+                {kind === 'migration'
+                  ? 'Saving creates a new migration mapping version as a draft; no saved version changes. Compliance snapshots are not affected.'
+                  : `Saving creates version ${latest + 1} as a draft; no saved version changes. Snapshots made with an earlier mapping version are marked Outdated, and their figures stay as they were.`}
               </p>
               <div className="flex justify-end">
                 <Button type="submit" variant={saveVariant} icon="save" loading={busy} data-testid={saveVariant === 'primary' ? 'primary-action' : undefined}>Save draft</Button>

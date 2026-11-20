@@ -1,21 +1,16 @@
 import type { Tx } from '@nmp/db'
 import { z } from 'zod'
-import { getSetting } from './settings.js'
 
 // The plan parameters B2 modules read (D-B3-06, D-B3-07), through the PLAN 4.2 SQL contracts: PAR, GEN and ORD never
 // import PLN code. PLN validates these params when a rule is written; parsing here guards the reader.
 
 /**
- * D-B3-06: the placement width of the market's plan version in force now (null when it sets none); the retired setting
- * only when no version covers the market, as the crediting event (D-B3-05). A submitted version always has a crediting
- * event, so plan_crediting_event (same version selection as placement_width_for) tells whether one covers the market.
+ * D-B6-05: the placement width of the market's plan version in force now, else of its earliest scheduled version (null
+ * when no version covers the market or the version sets none). The retired genealogy.placement_width is not read.
  */
 export async function placementWidthFor(tx: Tx, marketId: string): Promise<number | null> {
-  const { rows } = await tx.query<{ width: number | null; covered: boolean }>(
-    'SELECT placement_width_for($1) AS width, plan_crediting_event($1, now()) IS NOT NULL AS covered', [marketId])
-  if (rows[0]!.covered) return rows[0]!.width
-  // shortcut: legacy fallback until every tenant has a plan version, drop in B6
-  return getSetting(tx, 'genealogy.placement_width')
+  const { rows } = await tx.query<{ width: number | null }>('SELECT placement_width_for($1) AS width', [marketId])
+  return rows[0]!.width
 }
 
 const tree = z.enum(['sponsor', 'placement'])

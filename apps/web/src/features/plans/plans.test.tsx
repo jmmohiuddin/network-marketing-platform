@@ -252,7 +252,7 @@ describe('VersionPage (SC-04)', () => {
     expect(screen.queryByRole('button', { name: 'Submit for review' })).toBeNull()
     first.unmount()
     renderAs(OFFICER, <VersionPage planId={PLAN_ID} version={1} />, routes(view))
-    expect(await screen.findByText('You submitted this version, so a compliance officer who did not write it must decide it.')).toBeTruthy()
+    expect(await screen.findByText('You wrote or submitted this version, so a compliance officer who did not write it must decide it.')).toBeTruthy()
     expect(screen.queryByRole('button', { name: 'Approve' })).toBeNull()
   })
 

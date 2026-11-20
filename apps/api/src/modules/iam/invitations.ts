@@ -42,6 +42,7 @@ interface Invitee {
   tenant_slug: string
   realm: string
   inviter: string | null
+  time_zone: string
 }
 
 /**
@@ -56,12 +57,17 @@ export function invitationLink(webUrl: string, tenantSlug: string, token: string
 async function findInvitee(tx: Tx, userId: string, invitedBy: string): Promise<Invitee | undefined> {
   const { rows } = await tx.query<Invitee>(
     `SELECT u.email, u.state, u.realm, t.legal_name AS tenant_name, t.slug AS tenant_slug,
-            (SELECT coalesce(i.display_name, i.email) FROM user_account i WHERE i.id = $2) AS inviter
+            (SELECT coalesce(i.display_name, i.email) FROM user_account i WHERE i.id = $2) AS inviter,
+            coalesce((SELECT m.time_zone FROM market m WHERE m.tenant_id = t.id ORDER BY m.created_at, m.id LIMIT 1), 'UTC') AS time_zone
      FROM user_account u JOIN tenant t ON t.id = u.tenant_id WHERE u.id = $1`,
     [userId, invitedBy],
   )
   return rows[0]
 }
+
+/** BUG-112: a readable time in the tenant's first market zone, named (a tenant without a market reads UTC). */
+const zonedTime = (at: Date, timeZone: string): string =>
+  `${new Intl.DateTimeFormat('en-US', { dateStyle: 'medium', timeStyle: 'short', timeZone }).format(at)} (${timeZone})`
 
 function invitationMail(config: Config, invitee: Invitee, invitation: IssuedInvitation): Mail {
   return {
@@ -70,7 +76,7 @@ function invitationMail(config: Config, invitee: Invitee, invitation: IssuedInvi
     text: [
       `${invitee.inviter ?? 'An administrator'} invited you to ${invitee.tenant_name}.`,
       '',
-      `Choose your password with this link. It works once, until ${invitation.expires_at.toISOString()}:`,
+      `Choose your password with this link. It works once, until ${zonedTime(invitation.expires_at, invitee.time_zone)}:`,
       invitationLink(config.webUrl, invitee.tenant_slug, invitation.token, invitee.realm === 'portal'),
       '',
       'If you did not expect this invitation, ignore this email.',

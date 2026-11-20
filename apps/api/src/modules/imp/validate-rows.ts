@@ -18,6 +18,8 @@ export interface Period {
 }
 
 export interface ParticipantRow {
+  /** File line (the header is line 1). */
+  readonly line: number
   readonly ref: string
   readonly typeCode: string
   /** YYYY-MM-01 */
@@ -177,10 +179,46 @@ export function checkParticipants(table: CsvTable, log: FindingLog): Participant
     // sponsor_id becomes the servicing reference in the facts (R4), so it must be pseudonymous as well.
     const sponsor = cell(record, 'sponsor_id')
     if (sponsor !== '') checkId(check, 'sponsor_id', sponsor)
-    if (check.ok()) rows.push({ ref, typeCode, enrolledMonth: `${enrolled}-01`, servicingRef: sponsor === '' ? null : sponsor })
+    if (check.ok()) rows.push({ line: lineOf(index), ref, typeCode, enrolledMonth: `${enrolled}-01`, servicingRef: sponsor === '' ? null : sponsor })
   })
   const sponsorsOutsideFile = rows.filter((row) => row.servicingRef !== null && !ids.has(row.servicingRef)).length
   return { rows, ids, sponsorsOutsideFile }
+}
+
+/**
+ * D-B6-09: a migration builds the sponsor tree from sponsor_id, so a sponsor outside the file is an error per participant
+ * (ORPHAN_REFERENCE), and every participant on a sponsor cycle gets GENEALOGY_CYCLE with the cycle in chain order (from
+ * itself up its sponsors).
+ */
+export function checkGenealogy(participants: ParticipantCheck, log: FindingLog): void {
+  const sponsorOf = new Map(participants.rows.flatMap((row) => (row.servicingRef === null ? [] : [[row.ref, row.servicingRef] as const])))
+  const cycleOf = new Map<string, string[]>()
+  const seen = new Set<string>()
+  for (const start of sponsorOf.keys()) {
+    const path: string[] = []
+    const index = new Map<string, number>()
+    let current: string | undefined = start
+    while (current !== undefined && !seen.has(current) && !index.has(current)) {
+      index.set(current, path.length)
+      path.push(current)
+      current = sponsorOf.get(current)
+    }
+    if (current !== undefined && index.has(current)) {
+      const cycle = path.slice(index.get(current))
+      cycle.forEach((member, i) => cycleOf.set(member, [...cycle.slice(i), ...cycle.slice(0, i)]))
+    }
+    for (const member of path) seen.add(member)
+  }
+  for (const row of participants.rows) {
+    const label = `participant ${quote(row.ref)}`
+    if (row.servicingRef !== null && !participants.ids.has(row.servicingRef)) {
+      log.add({ file: 'participants', rowNo: row.line, column: 'sponsor_id', code: 'ORPHAN_REFERENCE', detail: `${label}: sponsor_id ${quote(row.servicingRef)} not in participants.csv` })
+    }
+    const cycle = cycleOf.get(row.ref)
+    if (cycle !== undefined) {
+      log.add({ file: 'participants', rowNo: row.line, column: 'sponsor_id', code: 'GENEALOGY_CYCLE', detail: `sponsor cycle: ${[...cycle, row.ref].map(quote).join(' -> ')}` })
+    }
+  }
 }
 
 export interface OrderCheck {

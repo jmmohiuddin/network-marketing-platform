@@ -18,3 +18,6 @@ export { publicOrderSchemas, orderInput, eventInput, type OrderInput, type Event
 // Connector facade (INT, D-B2-14): connector payloads are mapped to the same inputs and received like API writes.
 export { receive, recordRejected, payloadHash, type IngestContext, type Submission } from './inbound.js'
 export { Refusal } from './refusal.js'
+export { creditingEvent } from './order-checks.js'
+// SC-31 list registry for RPT saved views (D-B6-08).
+export { ORDER_COLUMNS, ORDER_SORTS, orderFilters } from './order-list.js'

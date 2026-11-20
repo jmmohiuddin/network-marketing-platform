@@ -22,10 +22,15 @@ export interface PeriodRow {
   readonly state: string
   readonly committed_run_id: string | null
   readonly cut_off_passed: boolean
+  readonly closed_at: Date | null
+  readonly closed_by: string | null
+  readonly close_note: string | null
+  readonly close_journal_export_id: string | null
 }
 
 export const PERIOD_COLUMNS = `p.id, p.calendar_id, c.market_id, m.currency, m.minor_unit::int AS minor_unit, p.starts_at, p.ends_at,
-  ${us('p.starts_at')} AS starts_us, ${us('p.ends_at')} AS ends_us, p.state, p.committed_run_id, now() >= p.ends_at AS cut_off_passed`
+  ${us('p.starts_at')} AS starts_us, ${us('p.ends_at')} AS ends_us, p.state, p.committed_run_id, now() >= p.ends_at AS cut_off_passed,
+  p.closed_at, p.closed_by, p.close_note, p.close_journal_export_id`
 export const PERIOD_FROM = 'FROM period p JOIN calendar c ON c.id = p.calendar_id JOIN market m ON m.id = c.market_id'
 export const PERIOD_SELECT = `SELECT ${PERIOD_COLUMNS} ${PERIOD_FROM}`
 

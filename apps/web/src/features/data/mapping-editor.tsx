@@ -19,7 +19,7 @@ import { dateTime } from './format'
 import { isDomain, MappingForm, type Domain } from './mapping-form'
 import { NOTE, ScopeStrip } from './ui'
 import { ApprovalBar } from '../../components/approval-bar'
-import type { BatchState, MappingVersion, SourceValues } from './types'
+import type { BatchState, ImportKind, MappingVersion, SourceValues } from './types'
 import { useResource } from '../../lib/use-resource'
 
 // shortcut: the newest 200 versions (one API page) are offered; page through the list if a tenant ever has more.
@@ -88,7 +88,9 @@ export function MappingEditor() {
   const toast = useToast()
   const { me, can, readOnly } = useSession()
   const batchId = params.get('batch')
-  const versions = useResource<MappingVersion[]>('/v1/import-mappings', { limit: VERSIONS_LIMIT })
+  // D-B6-09: overlay and migration mappings are separate version lines; ?kind=migration comes from a migration batch.
+  const kind: ImportKind = params.get('kind') === 'migration' ? 'migration' : 'overlay'
+  const versions = useResource<MappingVersion[]>('/v1/import-mappings', { limit: VERSIONS_LIMIT, kind })
   const selectedId = params.get('version') ?? versions.data?.[0]?.id ?? null
   const mapping = useResource<MappingVersion>(selectedId === null ? null : `/v1/import-mappings/${selectedId}`)
   const batch = useResource<BatchSourceValues>(batchId === null ? null : `/v1/imports/${batchId}/source-values`)
@@ -109,21 +111,33 @@ export function MappingEditor() {
     const query = new URLSearchParams()
     if (versionId !== null) query.set('version', versionId)
     if (batchId !== null) query.set('batch', batchId)
+    if (kind === 'migration') query.set('kind', kind)
     if (tab !== null) query.set('domain', tab)
     router.replace(`${pathname}?${query.toString()}`)
   }
   const select = (id: string | null) => replace(id, domainParam)
   const version = mapping.data
   const latest = Number(versions.meta.latest_version ?? 0)
-  const editable = !readOnly && can('mapping.edit')
+  const editable = !readOnly && can('mapping.edit') && (kind === 'overlay' || can('migration.manage'))
   const mayApprove = !readOnly && can('mapping.approve') && version?.state === 'draft' && version.created_by !== me.user.id
   const ownDraft = !readOnly && can('mapping.approve') && version?.state === 'draft' && version.created_by === me.user.id
   const values = batch.data?.source_values ?? null
 
+  // BUG-122: overlay and migration mappings are separate version lines; a batch's link fixes the kind.
+  const kindSelect = batchId === null && (
+    <div className="min-w-[14rem]">
+      <Select
+        label="Mapping" value={kind} options={[{ value: 'overlay', label: 'Import mappings' }, { value: 'migration', label: 'Migration mappings' }]}
+        onChange={(event) => router.replace(event.target.value === 'migration' ? `${pathname}?kind=migration` : pathname)}
+      />
+    </div>
+  )
+
   if (version === null && values === null) {
     return (
       <>
-        <PageHeader title="Import mapping" summary="Maps your partner codes to the platform's categories." />
+        <PageHeader title={kind === 'migration' ? 'Migration mapping' : 'Import mapping'} summary="Maps your partner codes to the platform's categories." />
+        {kindSelect}
         <EmptyState
           title="No mapping version yet. Open a validated import batch and choose Open mapping to map its partner codes."
           action={can('import.manage') ? <LinkButton href="/imports" variant="primary">Open data imports</LinkButton> : undefined}
@@ -148,12 +162,13 @@ export function MappingEditor() {
   return (
     <>
       <PageHeader
-        title={version === null ? 'Import mapping' : `Import mapping, version ${version.version}`}
+        title={`${kind === 'migration' ? 'Migration mapping' : 'Import mapping'}${version === null ? '' : `, version ${version.version}`}`}
         state={version === null ? undefined : <StatusBadge state={version.state} />}
         summary="Maps your partner codes to the platform's categories. Saving creates a new version; approved versions never change."
         actions={batchId !== null && can('import.manage') ? <LinkButton href={`/imports/${batchId}`} icon="arrow_back">Back to the import batch</LinkButton> : undefined}
       />
       <div className="flex flex-wrap items-end gap-space-md">
+        {kindSelect}
         {(versions.data ?? []).length > 0 && (
           <div className="min-w-[14rem]">
             <Select
@@ -177,7 +192,7 @@ export function MappingEditor() {
         key={`${version?.id ?? 'none'}:${batchId ?? ''}`}
         version={version} sourceValues={values} latest={latest} editable={editable}
         saveVariant={mayApprove ? 'secondary' : 'primary'} onSaved={saved}
-        domain={domain} onDomain={(tab) => replace(version?.id ?? null, tab)}
+        domain={domain} onDomain={(tab) => replace(version?.id ?? null, tab)} kind={kind}
       />
       {draft !== null && (
         <>

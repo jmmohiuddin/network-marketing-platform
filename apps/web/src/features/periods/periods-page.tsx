@@ -20,7 +20,9 @@ import { useSession } from '../../lib/session'
 import { useResource } from '../../lib/use-resource'
 import { isUuid } from '../admin/format'
 import { LoadFailure } from '../admin/page-states'
+import { inSentence, personName } from '../cases/format'
 import { RestatementDialog, type RestatementPeriod } from '../cases/restatement-dialog'
+import { CloseDialog, type ClosePeriod } from './close-dialog'
 import { blockerLabel, canCalculate, cutOffText, hasResults, isFinished, isRunning, marketAmount, PERIOD_STATE_LABELS, periodName, reviewPath, RUN_STATE_LABELS, listedBlockers, targetPeriod } from './format'
 import { blockerChip, Diagnostics, PeriodKpis, ReplayBanner, StateTimeline } from './period-panels'
 import { useRunRequest } from './run-request'
@@ -64,7 +66,7 @@ function CalendarView({ calendarId }: { readonly calendarId: string | null }) {
   const api = useApi()
   const router = useRouter()
   const pathname = usePathname()
-  const { can, readOnly } = useSession()
+  const { me, can, readOnly } = useSession()
   const pages = useCursorPages()
   const list = useResource<PeriodList>('/v1/periods', { calendar_id: calendarId ?? undefined, cursor: pages.cursor }, busyPeriods)
   const markets = useResource<Market[]>(MARKETS_PATH)
@@ -74,6 +76,7 @@ function CalendarView({ calendarId }: { readonly calendarId: string | null }) {
   const [replaying, setReplaying] = useState<string | null>(null)
   const [problem, setProblem] = useState<string | null>(null)
   const [restating, setRestating] = useState<RestatementPeriod | null>(null)
+  const [closing, setClosing] = useState<ClosePeriod | null>(null)
   const calendars = list.data?.calendars ?? []
   const calendar = calendars.find((candidate) => candidate.id === calendarId)
   const first = calendars[0]?.id
@@ -153,6 +156,9 @@ function CalendarView({ calendarId }: { readonly calendarId: string | null }) {
         ? [{ label: 'Replay', ariaLabel: `Replay ${name}`, icon: 'history', busy: replaying === period.id, onSelect: () => replayRun(period, period.committed_run_id!) }] : []),
       ...(isFinished(period.state) && write('restatement.request')
         ? [{ label: 'Request restatement', ariaLabel: `Request restatement of ${name}`, icon: 'history_edu', onSelect: () => setRestating({ id: period.id, label: name }) }] : []),
+      // D-B6-04: a paid period is closed by a period.close holder once nothing blocks it.
+      ...(period.state === 'paid' && write('period.close')
+        ? [{ label: 'Close period', ariaLabel: `Close ${name}`, icon: 'lock', onSelect: () => setClosing({ id: period.id, label: name, marketId: calendar.market.id }) }] : []),
     ]
     const review = reviewable(period) && latest !== null
     const shown = review ? undefined : buttons[0]
@@ -199,6 +205,7 @@ function CalendarView({ calendarId }: { readonly calendarId: string | null }) {
                   <span className="flex flex-col sm:whitespace-nowrap">
                     <span className={`${MONO} font-semibold text-on-surface`}>{label(row)}</span>
                     <span className="font-caption text-caption text-secondary font-normal">Cut-off {cutOffText(row.ends_at, calendar.cutoff_time_zone)}</span>
+                    {row.closed_at !== null && <span className="font-caption text-caption text-secondary font-normal">Closed {formatDateTime(row.closed_at)} by {inSentence(personName(row.closed_by, me.user.id))}</span>}
                     {!large && row.latest_run !== null && <span className="font-caption text-caption text-secondary font-normal">Latest run: {RUN_STATE_LABELS[row.latest_run.state]}</span>}
                     {!large && row.late.pending > 0 && <span className="font-caption text-caption text-secondary font-normal">Late pending: {row.late.pending}</span>}
                     {!large && blockers(row)}
@@ -234,6 +241,7 @@ function CalendarView({ calendarId }: { readonly calendarId: string | null }) {
         </div>
       </div>
       {restating !== null && <RestatementDialog period={restating} onClose={() => setRestating(null)} />}
+      {closing !== null && <CloseDialog period={closing} onClose={() => setClosing(null)} onClosed={() => { setClosing(null); list.reload() }} />}
     </div>
   )
 }

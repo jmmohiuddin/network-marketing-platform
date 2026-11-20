@@ -9,6 +9,7 @@ import { renderWithProviders } from '../test/render'
 import { Drawer } from './drawer'
 import { FileDropZone, formatMegabytes } from './file-drop-zone'
 import { FilterChips } from './filters-bar'
+import { Popover } from './popover'
 import { SegmentedControl } from './segmented-control'
 import { StepUpModal } from './step-up-modal'
 import { Switch } from './switch'
@@ -148,5 +149,37 @@ describe('StepUpModal', () => {
     expect(onDone).not.toHaveBeenCalled()
     await user.click(screen.getByRole('button', { name: 'Cancel' }))
     expect(onDone).toHaveBeenCalledWith(false)
+  })
+})
+
+describe('Popover', () => {
+  it('opens on click and keyboard focus, describes its button, closes on Escape with focus back and on an outside pointer', async () => {
+    const user = userEvent.setup()
+    render(<><Popover label="Definition of Net sales" text="Definition"><p>Orders credited in the period minus refunds.</p></Popover><p>Outside</p></>)
+    const button = screen.getByRole('button', { name: 'Definition of Net sales' })
+    const note = document.getElementById(button.getAttribute('aria-controls')!)!
+    expect(button.getAttribute('aria-describedby')).toBe(note.id)
+    expect(note.hidden).toBe(true)
+    await user.click(button)
+    expect(button.getAttribute('aria-expanded')).toBe('true')
+    expect(screen.getByRole('note').textContent).toBe('Orders credited in the period minus refunds.')
+    await user.keyboard('{Escape}')
+    expect(note.hidden).toBe(true)
+    expect(document.activeElement).toBe(button)
+    button.blur()
+    await user.tab()
+    expect(button.getAttribute('aria-expanded')).toBe('true')
+    await user.keyboard('{Enter}') // BUG-123: activating the focused button keeps it open
+    expect(button.getAttribute('aria-expanded')).toBe('true')
+    await user.keyboard('{Enter}')
+    expect(note.hidden).toBe(true)
+    await user.keyboard(' ')
+    expect(note.hidden).toBe(false)
+    button.blur()
+    await user.tab()
+    await user.keyboard('{Escape}{Enter}') // after Escape, Enter opens it again
+    expect(note.hidden).toBe(false)
+    await user.pointer({ keys: '[MouseLeft]', target: screen.getByText('Outside') })
+    expect(note.hidden).toBe(true)
   })
 })

@@ -212,6 +212,17 @@ describe('posting at commit (FR-FIN-001, D-B4-02)', () => {
     expect(await ownerRows('SELECT 1 FROM journal_entry WHERE origin_id = $1', [caseId])).toHaveLength(0)
   })
 
+  test('D-B6-04: approving a write-off when every committed or paid period of the market is closed is refused 422 NO_COMMITTED_PERIOD', async () => {
+    const { w, a } = await clawedBack()
+    const { caseId, decide } = await writeOffSubmitted(w, a, '1000')
+    await ownerUnchecked(
+      `UPDATE period SET state = 'closed', closed_at = now(), closed_by = $2, close_note = 'Closed (fixture)'
+       WHERE state IN ('committed', 'paid') AND calendar_id IN (SELECT id FROM calendar WHERE market_id = $1)`, [w.marketId, w.finance.id])
+    expect((await decide()).json().error.code).toBe('NO_COMMITTED_PERIOD')
+    expect(await ownerRows('SELECT state FROM case_file WHERE id = $1', [caseId])).toEqual([{ state: 'submitted' }])
+    expect(await ownerRows('SELECT 1 FROM journal_entry WHERE origin_id = $1', [caseId])).toHaveLength(0)
+  })
+
   test('T-B4-29 / AC-FIN3-4: a late refund of a Paid period is consumed by the next run (clawback line, item consumed at commit)', async () => {
     const w = await createWorld()
     const a = await member(w, 'DE-A')

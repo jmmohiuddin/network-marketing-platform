@@ -186,3 +186,18 @@ _Agent: backend. Read before every task; update after every task. Keep concise �
 - QA: TS-28/T-B5-39 cross-module replay-after-erasure test (committed run, erase payee via privacy case, row hashes + replay result hash) still missing.
 - PLAN owner: §1.7 participantTerminated is true for a portal participant with no current position (vacuous "all terminated"); confirm D-B5-06 intent.
 - Not done here: nmp_test / nmp_e2e migrate+reset+seed:e2e (PLAN §P integrator list); nmp_dev migrated to 0510.
+
+## From B6 BE2 (2026-11-20)
+- Integrator: mount migModule in modules/index.ts; isolation cases + role-matrix rows for POST /v1/plans/:id/versions/:v/filings, GET …/governance, and every /v1/migrations* route (list in BE2 result); web-security checks for the text/csv PUTs opening-balances/opening-state.
+- Typecheck errors at hand-off belong to BE3 (int/full-export.test.ts 'pg' types, rpt/dashboards.test.ts readonly casts).
+
+## From B6 BE3 (2026-11-20)
+- Integrator: mount rptModule in modules/index.ts; isolation cases + role-matrix rows for GET /v1/exports/model, /v1/exports/signing-key, POST+GET /v1/exports, GET /v1/exports/:id, /v1/exports/:id/files/:table, GET /v1/orders/export, GET /v1/dashboards/executive|finance|compliance, GET+POST /v1/saved-views, PUT+DELETE /v1/saved-views/:id (GET /v1/orders gains sort).
+- Not mine, red at hand-off: boundaries test (modules/pln/transitions.test.ts imports comp/test-support.ts, BE2); api typecheck comp/ledger-routes.test.ts:162 TS7022 (BE1).
+- T-B6-15 erasure test replays prv_erase_participant's data_export statements inline (the function itself is DB agent's b6 test); a cross-module test calling prv_erase_participant during a running export would be stronger.
+- columns_hidden not built (PLAN §8 defers per-column permissions; AC-RPT2-3 removed).
+
+## From B6 BE1 (2026-11-20)
+- AC-S1-2 not met: 2M positions OOM at 4 GB and at --max-old-space-size=7168 in every shape; 1M passes at 7168 (peak ~5.3 GB). Peak is passes 0-10 + pass-10 line array, before streaming starts. Follow-up: columnar input, lazy traces, pass 10 per payee range. E-ADR-35 text proposed in SPIKE §8.
+- Integrator: isolation cases + role-matrix rows for GET /v1/periods/:id/close-check, POST /v1/periods/:id/close, GET /v1/ledger/entries/export. apps/api/test/bench/end-to-end.ts (integrator file) now appends to results.json runs.
+- Not mine, red at hand-off: boundaries test (pln/transitions.test.ts -> comp/test-support.ts, BE2); typecheck errors in int/full-export.test.ts and rpt/dashboards.test.ts (BE3).

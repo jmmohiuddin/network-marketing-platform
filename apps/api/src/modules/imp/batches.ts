@@ -1,12 +1,22 @@
 import type { Tx } from '@nmp/db'
 import type { ImportWarning } from './findings.js'
 import type { ControlTotals, RowCounts, SourceValues } from './validate.js'
+import type { ImportKind } from './vocabulary.js'
 
 export const BATCH_STATES = ['uploaded', 'rejected', 'validated', 'mapped', 'loaded', 'superseded'] as const
 export type BatchState = (typeof BATCH_STATES)[number]
 
 /** Markets the caller may act on (marketScope, AC-36.2): null = every market of the tenant. */
 export type MarketScope = readonly string[] | null
+
+/**
+ * D-B6-09: the batches a caller may see and change: those of its import.manage markets, and of a migration batch only
+ * where it also holds migration.manage (`migrationMarkets`, [] = none). null = unrestricted (internal reads).
+ */
+export interface BatchScope {
+  readonly markets: MarketScope
+  readonly migrationMarkets: MarketScope
+}
 
 export interface BatchReport {
   readonly error_count: number
@@ -38,7 +48,7 @@ export interface BatchView {
   id: string
   market_id: string
   market: string
-  kind: string
+  kind: ImportKind
   /** YYYY-MM */
   period_from: string
   /** YYYY-MM */
@@ -64,24 +74,30 @@ const VIEW = `
   JOIN market m ON m.tenant_id = b.tenant_id AND m.id = b.market_id
   LEFT JOIN import_mapping im ON im.tenant_id = b.tenant_id AND im.id = b.mapping_id`
 
-const inScope = (param: number): string => `($${param}::uuid[] IS NULL OR b.market_id = ANY($${param}::uuid[]))`
+const inScope = (markets: number, migrationMarkets: number): string =>
+  `($${markets}::uuid[] IS NULL OR b.market_id = ANY($${markets}::uuid[]))
+   AND (b.kind <> 'migration' OR $${migrationMarkets}::uuid[] IS NULL OR b.market_id = ANY($${migrationMarkets}::uuid[]))`
+const scopeParams = (scope: BatchScope | null): [MarketScope, MarketScope] => [scope?.markets ?? null, scope?.migrationMarkets ?? null]
 
 /** One batch, if it exists in the caller's tenant (RLS) and market scope. */
-export async function getBatch(tx: Tx, id: string, scope: MarketScope): Promise<BatchView | null> {
-  const { rows } = await tx.query<BatchView>(`${VIEW} WHERE b.id = $1 AND ${inScope(2)}`, [id, scope])
+export async function getBatch(tx: Tx, id: string, scope: BatchScope | null): Promise<BatchView | null> {
+  const { rows } = await tx.query<BatchView>(`${VIEW} WHERE b.id = $1 AND ${inScope(2, 3)}`, [id, ...scopeParams(scope)])
   return rows[0] ?? null
 }
 
+export interface BatchFilter {
+  readonly state?: BatchState | undefined
+  readonly kind?: ImportKind | undefined
+}
+
 /** Newest first. The cursor is the id of the last batch shown. */
-export async function listBatches(
-  tx: Tx, scope: MarketScope, state: BatchState | undefined, afterId: string | undefined, limit: number,
-): Promise<BatchView[]> {
+export async function listBatches(tx: Tx, scope: BatchScope, filter: BatchFilter, afterId: string | undefined, limit: number): Promise<BatchView[]> {
   const { rows } = await tx.query<BatchView>(
     `${VIEW}
-     WHERE ${inScope(1)} AND ($2::text IS NULL OR b.state = $2)
+     WHERE ${inScope(1, 6)} AND ($2::text IS NULL OR b.state = $2) AND ($5::text IS NULL OR b.kind = $5)
        AND ($3::uuid IS NULL OR (b.created_at, b.id) < (SELECT created_at, id FROM import_batch WHERE id = $3))
      ORDER BY b.created_at DESC, b.id DESC LIMIT $4`,
-    [scope, state ?? null, afterId ?? null, limit + 1],
+    [scope.markets, filter.state ?? null, afterId ?? null, limit + 1, filter.kind ?? null, scope.migrationMarkets],
   )
   return rows
 }
@@ -108,6 +124,7 @@ export async function listFindings(tx: Tx, batchId: string, afterSeq: string | u
 export interface LockedBatch {
   id: string
   market_id: string
+  kind: ImportKind
   state: BatchState
   mapping_id: string | null
   period_from: string
@@ -119,12 +136,12 @@ export interface LockedBatch {
 }
 
 /** The batch row locked for a state change (period as YYYY-MM). */
-export async function lockBatch(tx: Tx, id: string, scope: MarketScope): Promise<LockedBatch | null> {
+export async function lockBatch(tx: Tx, id: string, scope: BatchScope): Promise<LockedBatch | null> {
   const { rows } = await tx.query<LockedBatch>(
-    `SELECT b.id, b.market_id, b.state, b.mapping_id, to_char(b.period_from, 'YYYY-MM') AS period_from,
+    `SELECT b.id, b.market_id, b.kind, b.state, b.mapping_id, to_char(b.period_from, 'YYYY-MM') AS period_from,
             to_char(b.period_to, 'YYYY-MM') AS period_to, b.files, b.row_counts, b.control_totals, b.source_values
-     FROM import_batch b WHERE b.id = $1 AND ${inScope(2)} FOR UPDATE`,
-    [id, scope],
+     FROM import_batch b WHERE b.id = $1 AND ${inScope(2, 3)} FOR UPDATE`,
+    [id, ...scopeParams(scope)],
   )
   return rows[0] ?? null
 }
@@ -165,15 +182,16 @@ export interface LoadedBatch {
 }
 
 /**
- * Facade for compliance snapshots (BR-IMP-03, FR-CPL-006): the batches in force (state 'loaded') for a
- * market whose period overlaps [from, to] (dates YYYY-MM-DD), with the mapping version each was loaded with.
+ * Facade for compliance snapshots (BR-IMP-03, FR-CPL-006): the overlay batches in force (state 'loaded') for a
+ * market whose period overlaps [from, to] (dates YYYY-MM-DD), with the mapping version each was loaded with. Migration
+ * batches are never compliance input (D-B6-09).
  */
 export async function loadedBatches(tx: Tx, marketId: string, from: string, to: string): Promise<LoadedBatch[]> {
   const { rows } = await tx.query<LoadedBatch>(
     `SELECT b.id, b.mapping_id AS "mappingId", im.version AS "mappingVersion",
             to_char(b.period_from, 'YYYY-MM-DD') AS "periodFrom", to_char(b.period_to, 'YYYY-MM-DD') AS "periodTo"
      FROM import_batch b JOIN import_mapping im ON im.tenant_id = b.tenant_id AND im.id = b.mapping_id
-     WHERE b.state = 'loaded' AND b.market_id = $1
+     WHERE b.state = 'loaded' AND b.kind = 'overlay' AND b.market_id = $1
        AND daterange(b.period_from, b.period_to, '[]') && daterange($2::date, $3::date, '[]')
      ORDER BY b.period_from, b.id`,
     [marketId, from, to],
