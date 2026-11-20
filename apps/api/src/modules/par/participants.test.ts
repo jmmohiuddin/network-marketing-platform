@@ -109,6 +109,38 @@ describe('GET /v1/participants and /:id (T-B2-03, AC-PAR1-3)', () => {
   })
 })
 
+describe('POST /v1/participants/:id/contact-email (BUG-133)', () => {
+  test('records an e-mail for a member without one (step-up), then another user invites (never the recorder); one on record is 409', async () => {
+    const email = `migrated-${Date.now()}@example.test`
+    const memberId = (await enrolled(app, support, enrolment('DIST'))).participant.id
+    const record = (as: TestUser, id = memberId, body: Record<string, unknown> = { email, reason: 'Member called in' }) =>
+      call(app, { method: 'POST', url: `/v1/participants/${id}/contact-email`, as, idempotencyKey: true, body })
+    const stepped = await createSignedInUser({ tenantId: acme.id, roles: ['Support agent'], stepUp: true })
+
+    expect((await record(support)).json().error.code).toBe('STEP_UP_REQUIRED')
+    expect((await record(finance)).statusCode).toBe(403)
+    const outOfScope = await createSignedInUser({ tenantId: acme.id, roles: ['Support agent'], marketIds: [my], stepUp: true })
+    expect((await record(outOfScope)).statusCode).toBe(404)
+    expect((await record(stepped, memberId, { email: 'not-an-email', reason: 'x' })).statusCode).toBe(400)
+    const recorded = await record(stepped)
+    expect(recorded.statusCode, recorded.body).toBe(200)
+    expect(recorded.json().data).toEqual({ contact_masked: { email: 'm•••@e•••.test' } })
+    expect((await record(stepped, memberId, { email: 'other@example.test', reason: 'again' })).json().error.code).toBe('CONTACT_EMAIL_RECORDED')
+    expect((await record(stepped, jane)).json().error.code).toBe('CONTACT_EMAIL_RECORDED')
+    const audit = await ownerRows(`SELECT * FROM audit.audit_event WHERE tenant_id = $1 AND action = 'PARTICIPANT.CONTACT_RECORDED'`, [acme.id])
+    expect(audit).toHaveLength(1)
+    expect(JSON.stringify(audit)).not.toContain(email)
+
+    // Two people: the recorder never also invites to the address they recorded (else one agent takes over the account).
+    const invite = (as: TestUser) => call(app, { method: 'POST', url: `/v1/participants/${memberId}/portal-account`, as, idempotencyKey: true })
+    const byRecorder = await invite(stepped)
+    expect(byRecorder.statusCode).toBe(422)
+    expect(byRecorder.json().error.code).toBe('SOD_SELF_APPROVAL')
+    const invited = await invite(support)
+    expect(invited.statusCode, invited.body).toBe(201)
+  })
+})
+
 describe('POST /v1/participants/:id/type (T-B2-02, TS-48 history part, AC-PAR1-2)', () => {
   test('closes the open type at T and opens the new one at T; the timeline never overlaps', async () => {
     const customer = (await enrolled(app, support, enrolment('CUST'))).participant.id

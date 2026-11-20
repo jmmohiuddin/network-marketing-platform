@@ -27,6 +27,8 @@ export interface SettingDefinition<S extends z.ZodType = z.ZodType> {
   readonly approverPermission: Permission | null
   /** D-B3-06: kept so stored values still parse; writes are refused (SETTING_RETIRED). */
   readonly retired?: boolean
+  /** BUG-129: PUT {value: null} writes a version without the key (unset). */
+  readonly clearable?: boolean
 }
 
 const COMPLIANCE_READERS: readonly Permission[] = ['settings.manage', 'compliance.read']
@@ -87,7 +89,7 @@ export const SETTINGS = {
   },
   /** BR-PLN-04: days of notice before a plan version activates. */
   'plan.activation_notice_days': {
-    schema: z.number().int().min(0).max(365), readPermissions: POLICY_READERS, stepUp: false, approverPermission: null,
+    schema: z.number().int().min(0).max(365), readPermissions: POLICY_READERS, stepUp: false, approverPermission: null, clearable: true,
   },
   // PLAN B2 section 2.1: none has a default (DEC-14); each unset key's consequence is stated where it is read.
   /** FR-PAR-003 (D-B2-10): which hashed signals match, how many must, and whether a match holds activation. */

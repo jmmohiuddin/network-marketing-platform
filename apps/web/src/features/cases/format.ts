@@ -62,6 +62,11 @@ export const CASE_TYPES: readonly CaseTypeInfo[] = [
     type: 'privacy', label: 'Privacy request', plural: 'Privacy requests', read: 'privacy.manage', create: 'privacy.manage',
     decide: 'privacy.manage', deciderRole: 'DPO',
   },
+  {
+    // D-BM-08: recorded by staff from the tenant's channels; submit = acknowledged, approve/reject = resolved upheld/not upheld.
+    type: 'grievance', label: 'Grievance', plural: 'Grievances', read: 'case.grievance.read', create: 'case.grievance.create',
+    decide: 'case.grievance.approve', deciderRole: 'Compliance officer', reasonCodes: ['payout', 'product', 'conduct', 'data', 'other'],
+  },
 ]
 
 export function caseTypeInfo(type: string): CaseTypeInfo | undefined {
@@ -84,6 +89,8 @@ const REASON_LABELS: Readonly<Record<string, string>> = {
   PAYEE_REQUEST: 'Payee request', CORRECTION: 'Correction', RETURNED_BY_BANK: 'Returned by the bank',
   DISTRIBUTOR_DISPUTE: 'Disputed by the distributor', PORTAL_REQUEST: 'Requested in the portal', PUBLIC_FORM: 'Public request form',
   RECEIVED_BY_STAFF: 'Received by staff',
+  // Grievance categories (D-BM-08).
+  payout: 'Payout', product: 'Product', conduct: 'Conduct', data: 'Personal data', other: 'Other',
 }
 
 export function reasonLabel(code: string): string {
@@ -105,6 +112,7 @@ export const STATE_BADGES: Readonly<Record<CaseState, string>> = {
 export const EVENT_LABELS: Readonly<Record<CaseEventKind, string>> = {
   opened: 'Opened', evidence_added: 'Evidence added', assigned: 'Assignment changed', submitted: 'Submitted for decision',
   first_approved: 'First approval', approved: 'Approved', rejected: 'Rejected', withdrawn: 'Withdrawn', updated: 'Updated',
+  escalated: 'Escalated',
 }
 
 export const KIND_LABELS: Readonly<Record<TreeKind, string>> = { sponsor: 'Sponsor tree', placement: 'Placement tree' }

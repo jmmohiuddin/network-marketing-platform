@@ -173,6 +173,8 @@ async function seedTenant(slug: string, legalName: string, passwordHash: string,
 
 const E2E_DATABASE = 'nmp_e2e'
 export const E2E_FIXTURE_PACK = 'e2e-fixture'
+/** PLAN B-MKT section 6: the labelled tax fixture pack of market AT (withholding, year-end form, registers). */
+export const E2E_TAX_PACK = 'e2e-fixture-tax'
 
 /** The owner connection, refused unless it is on the database the app seeds (MIGRATE_DATABASE_URL, .env: nmp_dev). */
 async function ownerOn(expectedDatabase: string, what: string) {
@@ -211,6 +213,36 @@ export async function seedFixturePack(expectedDatabase: string): Promise<void> {
        '2026-01-01', 'E2E fixture basis, not a real tax rule', 'counsel_confirmed', 'E2E fixture')
      ON CONFLICT (id) DO NOTHING`,
     [E2E_FIXTURE_PACK],
+  )
+  // PLAN B-MKT section 6: pack rows are immutable (forbid_mutation), so these are inserted once and never updated.
+  await owner.query(
+    `INSERT INTO tax_rule (id, market_pack, title, kind, conditions, rate, threshold_minor, threshold_basis, missing_id_rate, rounding,
+       mandatory, effective_from, basis, basis_status, source_ref)
+     VALUES ('e2e-tax-withholding@2020-01-01', $1, 'E2E FIXTURE — withholding, not a real tax rule', 'withholding', '{}', 0.020000, 2350,
+       'current_year_cumulative', 0.200000, 'half_up', true, '2020-01-01', 'E2E fixture basis, not a real tax rule', 'counsel_confirmed',
+       'E2E fixture'),
+       ('e2e-tax-form@2020-01-01', $1, 'E2E FIXTURE — annual statement, not a real tax form', 'year_end_form',
+       '{"form_type": "FX-ANNUAL", "title": "E2E FIXTURE annual statement", "min_gross_minor": "2000"}', NULL, NULL, NULL, NULL, 'none', true,
+       '2020-01-01', 'E2E fixture basis, not a real tax rule', 'counsel_confirmed', 'E2E fixture')
+     ON CONFLICT (id) DO NOTHING`,
+    [E2E_TAX_PACK],
+  )
+  // shortcut: the fixture tax year follows the month of the first seed:e2e, reset nmp_e2e to move it
+  await owner.query(
+    `INSERT INTO pack_rule (id, market_pack, kind, title, params, mandatory, basis, basis_status, source_ref, effective_from)
+     SELECT r.id, $1, r.kind, r.title, r.params, true, 'E2E fixture basis, not a real market rule', 'counsel_confirmed', 'E2E fixture',
+            '2020-01-01'
+     FROM (VALUES
+       ('e2e-tax-year@2020-01-01', 'tax_year', 'E2E FIXTURE — tax year',
+        jsonb_build_object('start_month', extract(month FROM now() AT TIME ZONE 'Europe/Vienna')::int, 'start_day', 1)),
+       ('e2e-tax-id@2020-01-01', 'tax_id_format', 'E2E FIXTURE — tax id format', '{"pattern": "^FX[0-9]{6}$", "label": "FX tax id"}'::jsonb),
+       ('e2e-grievance@2020-01-01', 'grievance_register', 'E2E FIXTURE — grievance register',
+        '{"ack_hours": 48, "resolution": {"days": 30}, "escalation_lead_hours": 24}'::jsonb),
+       ('e2e-delisted@2020-01-01', 'delisted_register', 'E2E FIXTURE — delisted sellers',
+        '{"fields": ["external_ref", "display_name", "terminated_on"]}'::jsonb)
+     ) AS r (id, kind, title, params)
+     ON CONFLICT (id) DO NOTHING`,
+    [E2E_TAX_PACK],
   )
 }
 
@@ -308,10 +340,12 @@ export async function seedFixturePlanMarket(expectedDatabase: string, secretKey:
   const owner = await ownerOn(expectedDatabase, 'plan market')
   await owner.query(
     `INSERT INTO market (tenant_id, code, currency, minor_unit, time_zone, languages, market_pack, state)
-     SELECT t.id, 'DE', 'EUR', 2, 'Europe/Berlin', '{de}', $1, 'live' FROM tenant t WHERE t.slug = 'acme'
+     SELECT t.id, 'DE', 'EUR', 2, 'Europe/Berlin', '{en,de}', $1, 'live' FROM tenant t WHERE t.slug = 'acme'
      ON CONFLICT DO NOTHING`,
     [E2E_FIXTURE_PACK],
   )
+  // PLAN B-MKT section 6: English stays DE's default, German its second language (an older DE row is brought along).
+  await owner.query(`UPDATE market SET languages = '{en,de}' WHERE code = 'DE' AND languages = '{de}'`)
   const { rows } = await owner.query<{ id: string }>(`SELECT id FROM tenant WHERE slug = 'acme'`)
   await runInTenant({ tenantId: rows[0]!.id, userId: SYSTEM_ACTOR_ID }, SYSTEM, async (tx) => {
     if ((await tx.query(`SELECT 1 FROM participant WHERE external_ref = 'DE-A'`)).rowCount !== 0) return
@@ -410,8 +444,10 @@ export async function seedFixtureMigrationMarket(expectedDatabase: string): Prom
     `INSERT INTO market (tenant_id, code, currency, minor_unit, time_zone, languages, market_pack, state)
      SELECT t.id, 'AT', 'EUR', 2, 'Europe/Vienna', '{de}', $1, 'draft' FROM tenant t WHERE t.slug = 'acme'
      ON CONFLICT DO NOTHING`,
-    [E2E_FIXTURE_PACK],
+    [E2E_TAX_PACK],
   )
+  // PLAN B-MKT section 6: AT runs on the tax fixture pack (an older AT row on the B6 pack is moved).
+  await owner.query(`UPDATE market SET market_pack = $1 WHERE code = 'AT' AND market_pack = $2`, [E2E_TAX_PACK, E2E_FIXTURE_PACK])
   const { rows } = await owner.query<{ id: string }>(`SELECT id FROM tenant WHERE slug = 'acme'`)
   await runInTenant({ tenantId: rows[0]!.id, userId: SYSTEM_ACTOR_ID }, SYSTEM, async (tx) => {
     if ((await tx.query(`SELECT 1 FROM calendar WHERE name = 'AT monthly'`)).rowCount !== 0) return
@@ -542,9 +578,9 @@ export async function seed(config: Config, password: string | undefined, print: 
     await seedFixturePlanMarket(E2E_DATABASE, config.secretKey)
     await seedFixtureMigrationMarket(E2E_DATABASE)
     await writeMigrationFixtureFiles(E2E_DATABASE)
-    print(`market pack: ${E2E_FIXTURE_PACK} (fixture), acme market NL live with committed past periods (fixture)`)
+    print(`market packs: ${E2E_FIXTURE_PACK}, ${E2E_TAX_PACK} (fixtures), acme market NL live with committed past periods (fixture)`)
     print('acme market DE live with DE-A, DE-B, DE-C, DE-K and SKU FX-1, DE-A bank details, no plan yet (fixture)')
-    print('acme market AT in implementation, migration files in var/e2e/b6-migration/ (fixture)')
+    print(`acme market AT in implementation on ${E2E_TAX_PACK}, migration files in var/e2e/b6-migration/ (fixture)`)
   }
   if (created && password === undefined) print(`password of the accounts created now: ${effective}`)
 }

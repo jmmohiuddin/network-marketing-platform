@@ -429,6 +429,16 @@ describe('ChecklistPage: B2 agreement item and rule lines', () => {
     expect(basisText(item({ item: 'plan_variant', title: 'Plan variant', kind: 'automatic', category: 'plan', detail: { version: null } }))).toBe('No version published')
   })
 
+  it('names the kind of each pack rule, the new B-MKT kinds included (D-BM-02)', async () => {
+    router.params = new URLSearchParams('item=pack_rules')
+    const grievance = { ...SCREENING_RULE, kind: 'grievance_register', id: 'e2e-grievance@2020-01-01', title: 'Fixture grievance register', basis_status: 'counsel_confirmed' as const }
+    const rules = item({ item: 'pack_rules', title: 'Market-pack rules basis', kind: 'automatic', category: 'regulatory', status: 'needs_risk_acceptance', detail: { rules: [SCREENING_RULE, grievance] } })
+    renderAs(ADMIN, <ChecklistPage marketId={MARKET} />, routes(checklist({ items: [...ITEMS.slice(0, 3), rules] })))
+    const list = await screen.findByRole('list', { name: 'Market-pack rules' })
+    expect(within(list).getByText('Guardrail')).toBeTruthy()
+    expect(within(list).getByText('Grievance register')).toBeTruthy()
+  })
+
   it('BUG-060: only the rule id may break anywhere, never the word "mandatory"', async () => {
     router.params = new URLSearchParams('item=pack_rules')
     renderAs(ADMIN, <ChecklistPage marketId={MARKET} />, routes(checklist()))
@@ -466,5 +476,11 @@ describe('basisText', () => {
     expect(basisText(ITEMS[1]!)).toBe('No approval recorded')
     expect(basisText(item({ item: 'breach_contacts', title: 'B', kind: 'automatic', category: 'data', detail: { contacts: 2 } }))).toBe('2 contacts')
     expect(basisText(item({ item: 'agreement_versions', title: 'A', kind: 'automatic', category: 'regulatory', detail: { version: null } }))).toBe('No version published')
+  })
+
+  it('names the market languages without a distributor translation (portal_languages, D-BM-11)', () => {
+    expect(basisText(item({ item: 'portal_languages', title: 'L', kind: 'automatic', category: 'data', detail: { untranslated: ['nl'] } }))).toBe('No distributor translation for: nl')
+    expect(basisText(item({ item: 'portal_languages', title: 'L', kind: 'automatic', category: 'data', status: 'complete', detail: { untranslated: [] } })))
+      .toBe('Every market language has a distributor translation')
   })
 })

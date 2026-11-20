@@ -99,12 +99,12 @@ const INTEGRATION = all('integration.manage')
 const UPLOADERS = any(
   'market.manage', 'market.signoff', 'case.genealogy.create', 'case.duplicate.create', 'restatement.request', 'agreement.publish',
   'case.adjustment.create', 'case.bank_detail.create', 'case.returned_payment.create', 'case.write_off.create',
-  // PLAN B5: the dispute and privacy case types' create permissions.
-  'case.dispute.approve', 'privacy.manage',
+  // PLAN B5: the dispute and privacy case types' create permissions; B-MKT the grievance's.
+  'case.dispute.approve', 'privacy.manage', 'case.grievance.create',
 )
 const CASE_READERS = any(
   'case.genealogy.read', 'case.duplicate.read', 'case.restatement.read', 'case.adjustment.read', 'case.bank_detail.read', 'case.returned_payment.read',
-  'case.write_off.read', 'case.dispute.read', 'privacy.manage',
+  'case.write_off.read', 'case.dispute.read', 'privacy.manage', 'case.grievance.read',
 )
 const PARTICIPANT_READ = all('participant.read')
 const PARTICIPANT_MANAGE = all('participant.manage')
@@ -129,6 +129,9 @@ const MIGRATION_MANAGE = all('migration.manage')
 const MIGRATION_SIGNOFF = all('migration.signoff')
 const MIGRATION_READERS = any('migration.manage', 'migration.signoff')
 const MIGRATION = `/v1/migrations/${NOWHERE}`
+const TAX_READ = all('tax.read')
+const TAX_FORMS = all('tax.forms')
+const TAX_YEAR = `market_id=${NOWHERE}&tax_year=2025`
 const DIFFERENCE = `${MIGRATION}/parallel-runs/${NOWHERE}/differences/${NOWHERE}`
 // D-B6-09: a migration batch or mapping also needs migration.manage. The market exists nowhere (422) and the If-Match is stale
 // (409): refused once past the permission checks, nothing is written.
@@ -281,6 +284,9 @@ const PROBES: Readonly<Record<string, readonly Probe[]>> = {
     probe(all('case.bank_detail.create'), 'POST', '/v1/cases', {
       type: 'bank_detail', subject_type: 'participant', subject_id: NOWHERE, reason_code: 'PAYEE_REQUEST', payload: { request_id: NOWHERE },
     }),
+    probe(all('case.grievance.create'), 'POST', '/v1/cases', {
+      type: 'grievance', subject_type: 'participant', subject_id: NOWHERE, reason_code: 'payout', payload: { received_at: TODAY, channel: 'email' },
+    }),
     // Only the system opens it (RETURNED_BY_BANK is a system reason): past the permission, 422.
     probe(all('case.returned_payment.create'), 'POST', '/v1/cases', {
       type: 'returned_payment', subject_type: 'payout_instruction', subject_id: NOWHERE, reason_code: 'RETURNED_BY_BANK', payload: { instruction_id: NOWHERE },
@@ -305,6 +311,7 @@ const PROBES: Readonly<Record<string, readonly Probe[]>> = {
   'GET /v1/participants/:id': [read(PARTICIPANT_READ, `/v1/participants/${NOWHERE}`)],
   'POST /v1/participants/:id/unmask': [probe(all('participant.unmask'), 'POST', `/v1/participants/${NOWHERE}/unmask`, {})],
   'POST /v1/participants/:id/type': [probe(PARTICIPANT_MANAGE, 'POST', `/v1/participants/${NOWHERE}/type`, {})],
+  'POST /v1/participants/:id/contact-email': [probe(PARTICIPANT_MANAGE, 'POST', `/v1/participants/${NOWHERE}/contact-email`, {})],
   'POST /v1/participants/:id/positions': [probe(PARTICIPANT_MANAGE, 'POST', `/v1/participants/${NOWHERE}/positions`, {})],
   'POST /v1/participants/:id/agreement-acceptances': [probe(PARTICIPANT_MANAGE, 'POST', `/v1/participants/${NOWHERE}/agreement-acceptances`, {})],
   'POST /v1/participants/:id/signals': [probe(PARTICIPANT_MANAGE, 'POST', `/v1/participants/${NOWHERE}/signals`, {})],
@@ -522,6 +529,25 @@ const PROBES: Readonly<Record<string, readonly Probe[]>> = {
   'POST /v1/migrations/:id/parallel-runs/:runId/differences/:diffId/classify': [probe(MIGRATION_MANAGE, 'POST', `${DIFFERENCE}/classify`, {})],
   'POST /v1/migrations/:id/parallel-runs/:runId/differences/:diffId/accept': [probe(MIGRATION_SIGNOFF, 'POST', `${DIFFERENCE}/accept`, {})],
   'POST /v1/migrations/:id/sign-off': [probe(MIGRATION_SIGNOFF, 'POST', `${MIGRATION}/sign-off`, {})],
+  // TAX B-MKT (PLAN B-MKT 2.1, section 3): reads need tax.read (a run's lines also run.review, BUG-131); generation and the filing export tax.forms (step-up).
+  'GET /v1/tax/rules': [read(TAX_READ, `/v1/tax/rules?market_id=${NOWHERE}`)],
+  'GET /v1/tax/lines': [read(any('tax.read', 'run.review'), `/v1/tax/lines?run_id=${NOWHERE}`)],
+  'GET /v1/tax/year-end': [read(TAX_READ, `/v1/tax/year-end?${TAX_YEAR}`)],
+  'GET /v1/tax/year-end-generations': [read(TAX_READ, `/v1/tax/year-end-generations?${TAX_YEAR}`)],
+  'GET /v1/tax/year-end-forms': [read(TAX_READ, `/v1/tax/year-end-forms?${TAX_YEAR}`)],
+  'GET /v1/tax/year-end-forms/:id/download': [read(TAX_READ, `/v1/tax/year-end-forms/${NOWHERE}/download`)],
+  'POST /v1/tax/year-end-forms': [probe(TAX_FORMS, 'POST', '/v1/tax/year-end-forms', {})],
+  'POST /v1/tax/year-end-forms/export': [probe(TAX_FORMS, 'POST', '/v1/tax/year-end-forms/export', {})],
+  'GET /v1/me/tax-forms': [read(nobody, '/v1/me/tax-forms')],
+  'GET /v1/me/tax-forms/:id/download': [read(nobody, `/v1/me/tax-forms/${NOWHERE}/download`)],
+  // CPL B-MKT (PLAN B-MKT 2.3): the grievance register needs case.grievance.read, the delisted register register.read.
+  // The export probes send an unknown filter: 400 once past the permission, no export recorded.
+  'GET /v1/registers/grievances': [read(all('case.grievance.read'), '/v1/registers/grievances')],
+  'GET /v1/registers/grievances/export': [read(all('case.grievance.read'), '/v1/registers/grievances/export?unknown=1')],
+  'GET /v1/registers/delisted': [read(all('register.read'), `/v1/registers/delisted?market_id=${NOWHERE}`)],
+  'GET /v1/registers/delisted/export': [read(all('register.read'), '/v1/registers/delisted/export?unknown=1')],
+  // IAM B-MKT (PLAN B-MKT 2.5): portal sessions only.
+  'PUT /v1/me/locale': [probe(nobody, 'PUT', '/v1/me/locale', {})],
 }
 
 /** Fastify's HEAD routes run their GET handler: they take the GET probes with method HEAD. */

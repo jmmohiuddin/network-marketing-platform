@@ -9,9 +9,14 @@ export interface Crumb {
 }
 
 /** sc_09 l.7 breadcrumbs; the last item is the current page, not a link. `touch`: portal size (16 px, 44 px targets). */
-export function Breadcrumbs({ items, touch = false }: { readonly items: readonly Crumb[]; readonly touch?: boolean }) {
+export function Breadcrumbs({ items, touch = false, label = 'Breadcrumb' }: {
+  readonly items: readonly Crumb[]
+  readonly touch?: boolean
+  /** The landmark name in the page's language (portal catalogue). */
+  readonly label?: string
+}) {
   return (
-    <nav aria-label="Breadcrumb">
+    <nav aria-label={label}>
       <ol className={`flex flex-wrap items-center gap-space-xs text-on-surface-variant ${touch ? 'font-body-lg text-body-lg' : 'font-caption text-caption'}`}>
         {items.map((item, index) => {
           const last = index === items.length - 1

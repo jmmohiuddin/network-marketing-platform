@@ -1,5 +1,7 @@
-// API shapes of the distributor portal (PLAN B5 §2.1–§2.6). Money is minor units as decimal strings, instants ISO-8601.
+// API shapes of the distributor portal (PLAN B5 §2.1–§2.6, B-MKT §2.1/§2.2/§2.5). Money is minor units as decimal strings,
+// instants ISO-8601.
 import type { Me } from '../../lib/me'
+import type { Locale } from './i18n'
 
 export interface PortalMarket {
   readonly id: string
@@ -37,6 +39,10 @@ export interface PortalProfile {
 export interface PortalMe extends Omit<Me, 'tenant' | 'roles' | 'permissions' | 'support_session'> {
   readonly tenant: { readonly slug: string; readonly legal_name: string } | null
   readonly participant: PortalProfile | null
+  /** D-BM-11: the effective locale, the locales the participant's market offers (endonyms) and the market default. */
+  readonly locale: Locale
+  readonly locales: readonly { readonly code: Locale; readonly label: string }[]
+  readonly default_locale: Locale
 }
 
 export interface PeriodRef {
@@ -96,6 +102,8 @@ export interface Statement extends Omit<StatementSummary, 'net_minor' | 'payout_
     readonly adjustment_minor: string
     readonly clawback_minor: string
     readonly withheld_minor: string
+    /** The run's tax line for you (B-MKT §2.2): rate as a 6-dp string and its basis; null without a withholding rule. */
+    readonly withholding: { readonly rule_id: string; readonly rate: string; readonly rate_basis: string } | null
     readonly net_minor: string
   }
   readonly payout: {
@@ -239,6 +247,20 @@ export interface TaxVersion {
 export interface TaxProfile {
   readonly current: TaxVersion | null
   readonly history: readonly TaxVersion[]
+  /** D-BM-07: the market pack's tax-id format in force today, null when the pack has none. */
+  readonly format: { readonly label: string; readonly pattern: string } | null
+}
+
+/** GET /v1/me/tax-forms: the latest version per tax year and form type. */
+export interface TaxForm {
+  readonly id: string
+  readonly tax_year: number
+  readonly form_type: string
+  readonly title: string
+  readonly version: number
+  readonly currency: string
+  readonly totals: { readonly gross_minor: string; readonly taxable_minor: string; readonly withheld_minor: string }
+  readonly created_at: string
 }
 
 export interface Notice {

@@ -65,6 +65,46 @@ beforeEach(() => {
   navigation.router.replace.mockReset()
 })
 
+const TAX_FINANCE = adminMe({ user: FINANCE.user, permissions: [...FINANCE.permissions, 'tax.read'] })
+const TAX_LINE = { id: 'tl1', payee: { id: 'par-b', external_ref: 'AT-B' }, rule_id: 'e2e-tax-withholding@2020-01-01', rate: '0.200000', rate_basis: 'missing_id_rate', taxable_minor: '2400', withheld_minor: '480', tax_year: 2025, tax_date: '2026-09-30' }
+const TAX_ROUTES = {
+  'GET /v1/tax/lines': () => json(200, { data: [TAX_LINE], meta: { next_cursor: null, totals: { taxable_minor: '4700', withheld_minor: '480' }, run: { id: 'run-m2', state: 'calculated', period_id: 'per-m2' } } }),
+  'GET /v1/tax/rules': () => ok({ market: { id: 'm1', code: 'DE', market_pack: 'e2e-fixture' }, withholding: [{ id: TAX_LINE.rule_id, title: 'E2E FIXTURE withholding' }], year_end_forms: [], tax_year: null, tax_id_format: null }),
+}
+
+describe('withholding on the run review (BUG-131)', () => {
+  it('shows the Withheld total with a link to the withholding lines, the per-payee rows and the commit tile', async () => {
+    renderAs(TAX_FINANCE, <RunReviewPage periodId="per-m2" runId="run-m2" />, routes(RUN, TAX_ROUTES))
+    const kpis = await screen.findByTestId('kpis')
+    expect(await within(kpis).findByText(moneyText('480', 'EUR', 2))).toBeTruthy()
+    expect(within(kpis).getByRole('link', { name: 'Withholding lines' }).getAttribute('href')).toBe('/tax?market=m1&tab=lines&period=per-m2&run=run-m2')
+    await userEvent.click(screen.getByRole('tab', { name: /Withholding/ }))
+    expect(navigation.router.replace).toHaveBeenLastCalledWith('/periods/per-m2/runs/run-m2/review?tab=withholding')
+    await userEvent.click(screen.getByRole('button', { name: 'Commit run' }))
+    const dialog = await screen.findByRole('dialog', { name: 'Commit run' })
+    expect(within(dialog).getByText('Withheld').nextElementSibling?.textContent).toBe(moneyText('480', 'EUR', 2))
+  })
+
+  it('lists each payee’s withholding with rule title, rate and basis', async () => {
+    navigation.search = 'tab=withholding'
+    renderAs(TAX_FINANCE, <RunReviewPage periodId="per-m2" runId="run-m2" />, routes(RUN, TAX_ROUTES))
+    expect(await screen.findByRole('heading', { name: 'Withholding by payee' })).toBeTruthy()
+    expect(await screen.findByText('No tax id: higher rate')).toBeTruthy()
+    expect(screen.getByText('E2E FIXTURE withholding')).toBeTruthy()
+    expect(screen.getByText('20 %')).toBeTruthy()
+  })
+
+  it('shows the run reviewer the Withheld total without the tax.read tab, rules or link', async () => {
+    const fetchMock = routes(RUN, TAX_ROUTES)
+    renderAs(FINANCE, <RunReviewPage periodId="per-m2" runId="run-m2" />, fetchMock)
+    const kpis = await screen.findByTestId('kpis')
+    expect(await within(kpis).findByText(moneyText('480', 'EUR', 2))).toBeTruthy()
+    expect(within(kpis).queryByRole('link', { name: 'Withholding lines' })).toBeNull()
+    expect(screen.queryByRole('tab', { name: /Withholding/ })).toBeNull()
+    expect(callsTo(fetchMock, 'GET', '/v1/tax/rules')).toHaveLength(0)
+  })
+})
+
 describe('RunReviewPage (SC-02)', () => {
   it('shows KPIs and the variance, and never says "post"', async () => {
     renderAs(FINANCE, <RunReviewPage periodId="per-m2" runId="run-m2" />, routes(RUN))

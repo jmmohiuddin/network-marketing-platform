@@ -12,6 +12,15 @@ describe('rebaseTimeline (T-B1-05)', () => {
     expect(rows).toEqual([{ version: 1, effectiveFrom: at('2026-11-17T00:00:00Z'), settings: { t: 1 }, approvalId: null, reason: 'first', rebases: null }])
   })
 
+  test('BUG-129: an undefined patch value removes the key; a later row is rebased without it', () => {
+    const chain = [row(1, '2026-01-01T00:00:00Z', { t: 1, n: 30 }), row(2, '2026-12-01T00:00:00Z', { t: 2, n: 30 })]
+
+    const rows = rebaseTimeline(chain, { effectiveFrom: at('2026-11-17T00:00:00Z'), patch: { n: undefined }, reason: 'unset', approvalId: null }, 3)
+
+    expect(rows.map((r) => r.settings)).toEqual([{ t: 1 }, { t: 2 }])
+    expect(Object.keys(rows[0]!.settings)).toEqual(['t'])
+  })
+
   test('a change after every row applies to the latest row and rebases nothing', () => {
     const chain = [row(1, '2026-01-01T00:00:00Z', { t: 1, m: 'half_up' })]
 

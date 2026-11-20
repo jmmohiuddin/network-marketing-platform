@@ -76,6 +76,21 @@ function assertEligible(target: Target): string {
   return target.email.toLowerCase()
 }
 
+/**
+ * Two people: whoever recorded the member's contact e-mail on the staff path (BUG-133, PARTICIPANT.CONTACT_RECORDED) never
+ * also sends the portal invitation to it, else one agent could hand a member's account (and its payouts) to their own address.
+ */
+async function assertNotContactRecorder(tx: Tx, participantId: string): Promise<void> {
+  const { rowCount } = await tx.query(
+    `SELECT 1 FROM audit.audit_event WHERE object_type = 'participant' AND object_id = $1
+       AND action = 'PARTICIPANT.CONTACT_RECORDED' AND actor_id = app_user_id() LIMIT 1`,
+    [participantId],
+  )
+  if (rowCount !== 0) {
+    throw new ApiError(422, 'SOD_SELF_APPROVAL', 'You recorded this member’s contact e-mail, so another colleague sends the portal invitation.')
+  }
+}
+
 // D-B5-05: an invited portal account with the contact email of now; the invitation mail goes to that address.
 async function invite(tx: Tx, request: FastifyRequest, participantId: string) {
   const email = assertEligible(await targetOf(tx, request, participantId, 'participant.manage'))
@@ -83,6 +98,7 @@ async function invite(tx: Tx, request: FastifyRequest, participantId: string) {
   if (existing !== undefined && existing.state !== 'deactivated') {
     throw new ApiError(409, 'PORTAL_ACCOUNT_EXISTS', 'This member already has a portal account.')
   }
+  await assertNotContactRecorder(tx, participantId)
   let userId: string
   try {
     const { rows } = await tx.query<{ id: string }>(

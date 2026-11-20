@@ -205,8 +205,12 @@ function registerReads(app: FastifyInstance, registry: CaseTypeRegistry): void {
   })
 }
 
-async function addEvidence(tx: Tx, record: CaseRecord, body: z.infer<typeof evidenceBody>): Promise<StoredResponse> {
+async function addEvidence(tx: Tx, loaded: Loaded, body: z.infer<typeof evidenceBody>): Promise<StoredResponse> {
+  const { record, definition } = loaded
   if (record.state !== 'open') throw stateConflict(record.state)
+  if (definition.evidenceAllowed?.(record) === false) {
+    throw new ApiError(422, 'EVIDENCE_NOT_ALLOWED', 'This case takes no evidence.')
+  }
   if (await hasEvidence(tx, record.id, body.document_id)) {
     throw new ApiError(409, 'EVIDENCE_DUPLICATE', 'This document is already evidence of the case.')
   }
@@ -237,9 +241,9 @@ function registerPreparation(app: FastifyInstance, registry: CaseTypeRegistry): 
     const auth = currentAuth(request)
     const body = parse(evidenceBody, request.body)
     const result = await inTenant(request, async (tx) => {
-      const { record, definition } = await readableCase(tx, registry, auth, id, true)
-      assertHolds(auth, definition.permissions.create, record)
-      return idempotent(tx, request, () => addEvidence(tx, record, body))
+      const loaded = await readableCase(tx, registry, auth, id, true)
+      assertHolds(auth, loaded.definition.permissions.create, loaded.record)
+      return idempotent(tx, request, () => addEvidence(tx, loaded, body))
     })
     return sendIdempotent(reply, result)
   })

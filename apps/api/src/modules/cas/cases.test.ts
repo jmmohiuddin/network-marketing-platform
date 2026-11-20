@@ -6,7 +6,8 @@ import {
   type TestTenant, type TestUser,
 } from '../../../test/helpers/index.js'
 import { audModule } from '../aud/index.js'
-import { evidenceDocument, fixtureCasModule, FIXTURE_SUBJECT, openFixtureCase } from './test-support.js'
+import { createCasModule, type CaseTypeDefinition } from './index.js'
+import { evidenceDocument, FIXTURE_CASE_TYPE, fixtureCasModule, FIXTURE_SUBJECT, openFixtureCase } from './test-support.js'
 
 // T-B1-23..26, AC-CAS1-1..5, TS-42 (case part): the case framework with the labelled fixture type (D-B1-13).
 let app: FastifyInstance
@@ -180,6 +181,17 @@ describe('evidence and submission (AC-CAS1-3)', () => {
       expect(response.json().error.code).toBe('DOCUMENT_NOT_FOUND')
     }
     expect((await call(app, { method: 'GET', url: `/v1/documents/${othersDocument}`, as: admin })).statusCode).toBe(404)
+  })
+
+  test('a type\'s evidenceAllowed hook refuses evidence before anything is stored (B-MKT D-BM-08)', async () => {
+    const refusing: CaseTypeDefinition = { ...(FIXTURE_CASE_TYPE as CaseTypeDefinition), evidenceAllowed: () => false }
+    const strict = await buildTestApp({ modules: [createCasModule({ types: [refusing] })] })
+    const id = (await openFixtureCase(strict, admin, gb)).json().data.id as string
+    const refused = await call(strict, { method: 'POST', url: `/v1/cases/${id}/evidence`, as: admin, idempotencyKey: true, body: { document_id: await evidenceDocument(admin) } })
+    await strict.close()
+
+    expect([refused.statusCode, refused.json().error.code]).toEqual([422, 'EVIDENCE_NOT_ALLOWED'])
+    expect(await ownerRows('SELECT 1 FROM case_evidence WHERE case_id = $1', [id])).toEqual([])
   })
 
   test('evidence and submission need the type\'s create permission', async () => {

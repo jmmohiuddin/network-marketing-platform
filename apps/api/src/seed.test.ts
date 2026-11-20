@@ -7,7 +7,7 @@ import { closePoolsAfterAll, ownerRows, resetApiDb, testConfig } from '../test/h
 import { bankVersionContext } from './lib/bank-crypto.js'
 import { open } from './lib/secret-box.js'
 import {
-  assertSeedable, E2E_FIXTURE_PACK, migrationFixtureFiles, seed, seedFixtureMarket, seedFixtureMigrationMarket, seedFixturePack,
+  assertSeedable, E2E_FIXTURE_PACK, E2E_TAX_PACK, migrationFixtureFiles, seed, seedFixtureMarket, seedFixtureMigrationMarket, seedFixturePack,
   seedFixturePlanMarket, writeMigrationFixtureFiles,
 } from './seed.js'
 
@@ -117,6 +117,29 @@ describe('seed', () => {
       { id: 'e2e-enrolment-only-bonus@2026-01-01', outcome: 'blocked', overridable: false, predicate: { check: 'enrolment_only_pay' } },
       { id: 'e2e-starter-kit-volume@2026-01-01', outcome: 'warned', overridable: true, predicate: { check: 'starter_kit_volume' } },
     ])
+    // PLAN B-MKT section 6: the tax fixture pack, labelled; its tax year starts in the month of the seed (Vienna).
+    expect(await ownerRows(
+      `SELECT id, kind, rate::text, threshold_minor, threshold_basis, missing_id_rate::text, rounding, conditions, basis_status
+       FROM tax_rule WHERE market_pack = $1 ORDER BY id`, [E2E_TAX_PACK])).toEqual([
+      { id: 'e2e-tax-form@2020-01-01', kind: 'year_end_form', rate: null, threshold_minor: null, threshold_basis: null, missing_id_rate: null,
+        rounding: 'none', conditions: { form_type: 'FX-ANNUAL', title: 'E2E FIXTURE annual statement', min_gross_minor: '2000' },
+        basis_status: 'counsel_confirmed' },
+      { id: 'e2e-tax-withholding@2020-01-01', kind: 'withholding', rate: '0.020000', threshold_minor: '2350',
+        threshold_basis: 'current_year_cumulative', missing_id_rate: '0.200000', rounding: 'half_up', conditions: {},
+        basis_status: 'counsel_confirmed' },
+    ])
+    const [month] = await ownerRows<{ month: number }>(`SELECT extract(month FROM now() AT TIME ZONE 'Europe/Vienna')::int AS month`)
+    expect(await ownerRows('SELECT id, kind, params, mandatory FROM pack_rule WHERE market_pack = $1 ORDER BY id', [E2E_TAX_PACK])).toEqual([
+      { id: 'e2e-delisted@2020-01-01', kind: 'delisted_register', params: { fields: ['external_ref', 'display_name', 'terminated_on'] }, mandatory: true },
+      { id: 'e2e-grievance@2020-01-01', kind: 'grievance_register', params: { ack_hours: 48, resolution: { days: 30 }, escalation_lead_hours: 24 }, mandatory: true },
+      { id: 'e2e-tax-id@2020-01-01', kind: 'tax_id_format', params: { pattern: '^FX[0-9]{6}$', label: 'FX tax id' }, mandatory: true },
+      { id: 'e2e-tax-year@2020-01-01', kind: 'tax_year', params: { start_month: month!.month, start_day: 1 }, mandatory: true },
+    ])
+    // T-BM-20: the fixture's tax id format compiles in JS and matches its documented examples.
+    const fx = new RegExp('^FX[0-9]{6}$')
+    expect([fx.test('FX123456'), fx.test('FX654321'), fx.test('FX12')]).toEqual([true, true, false])
+    expect((await ownerRows<{ title: string }>('SELECT title FROM tax_rule WHERE market_pack = $1', [E2E_TAX_PACK]))
+      .every((rule) => rule.title.startsWith('E2E FIXTURE'))).toBe(true)
     await expect(seedFixturePack('nmp_e2e')).rejects.toThrow('not nmp_e2e')
   })
 
@@ -178,8 +201,8 @@ describe('seed', () => {
        JOIN position_ownership o ON o.position_id = s.servicing_position_id JOIN participant p ON p.id = o.participant_id`,
     )
 
-    expect(await ownerRows(`SELECT state, currency, time_zone, market_pack FROM market WHERE code = 'DE'`)).toEqual([
-      { state: 'live', currency: 'EUR', time_zone: 'Europe/Berlin', market_pack: E2E_FIXTURE_PACK },
+    expect(await ownerRows(`SELECT state, currency, time_zone, languages, market_pack FROM market WHERE code = 'DE'`)).toEqual([
+      { state: 'live', currency: 'EUR', time_zone: 'Europe/Berlin', languages: ['en', 'de'], market_pack: E2E_FIXTURE_PACK },
     ])
     expect(periods).toHaveLength(7)
     expect(periods.every((period) => period.state === 'open')).toBe(true)
@@ -221,7 +244,7 @@ describe('seed', () => {
     )
 
     expect(await ownerRows(`SELECT state, currency, minor_unit, time_zone, languages, market_pack FROM market WHERE code = 'AT'`)).toEqual([
-      { state: 'draft', currency: 'EUR', minor_unit: 2, time_zone: 'Europe/Vienna', languages: ['de'], market_pack: E2E_FIXTURE_PACK },
+      { state: 'draft', currency: 'EUR', minor_unit: 2, time_zone: 'Europe/Vienna', languages: ['de'], market_pack: E2E_TAX_PACK },
     ])
     expect(periods).toHaveLength(7)
     expect(periods.every((period) => period.state === 'open')).toBe(true)

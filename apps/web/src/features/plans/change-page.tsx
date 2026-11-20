@@ -20,7 +20,7 @@ import { calendarZone, STATE_LABELS, versionApi, versionPage } from './format'
 import { GovernanceBar } from './governance'
 import type { DraftScope } from './rules-tab'
 import { RULE_LABELS } from './transitions-tab'
-import type { ApprovalRecord, Filing, Governance, GovernanceKey, PlanDetail, VersionView } from './types'
+import type { ApprovalRecord, Filing, Governance, GovernanceKey, PlanDetail, RequiredFiling, VersionView } from './types'
 import { MONO, NOTE, RefusalBanner, useKeptData, usePlanData, type PlanData, type RefusalNames } from './ui'
 
 /** sc_44 section cards are p-space-lg (the shared plans CARD is p-space-md). */
@@ -151,9 +151,17 @@ function History({ history }: { readonly history: readonly Filing[] }) {
   )
 }
 
+/** "Market pack (authority)" / "Tenant setting" for a market whose filing is required (D-BM-10), "—" otherwise. */
+export function requiredByText(required: readonly RequiredFiling[], marketId: string): string {
+  const entry = required.find((r) => r.market_id === marketId)
+  if (entry === undefined) return '—'
+  return entry.sources.map((source) => (source === 'pack' ? `Market pack${entry.authority === null ? '' : ` (${entry.authority})`}` : 'Tenant setting')).join(', ')
+}
+
 /** sc_44 filing table: one row per plan market with status, reference, date, evidence, history and Record filing. */
 function Filings({ governance, onRecord }: { readonly governance: Governance; readonly onRecord?: (market: FilingTarget['market']) => void }) {
   const required = governance.filings.filter((f) => f.required)
+  const requiredBy = ((itemOf(governance, 'filing')?.details ?? {}) as { required?: readonly RequiredFiling[] }).required ?? []
   return (
     <section className={SECTION} aria-labelledby="filings-title">
       <SectionHead id="filings-title" icon="policy" title="Filings per market"
@@ -166,6 +174,7 @@ function Filings({ governance, onRecord }: { readonly governance: Governance; re
         columns={[
           { key: 'market', header: 'Market', cell: (row) => <span className={`${MONO} font-bold text-primary`}>{row.market.code}</span> },
           { key: 'required', header: 'Required', cell: (row) => (row.required ? 'Yes' : 'No') },
+          { key: 'required_by', header: 'Required by', cell: (row) => requiredByText(requiredBy, row.market.id) },
           { key: 'status', header: 'Status', cell: (row) => (row.current === null
             ? <StatusBadge state={row.required ? 'blocked' : 'retired'} label={row.required ? 'Missing' : 'Not recorded'} />
             : <StatusBadge state={row.current.status === 'not_required' ? 'retired' : 'accepted'} label={FILING_LABELS[row.current.status]} />) },
@@ -186,7 +195,7 @@ function Filings({ governance, onRecord }: { readonly governance: Governance; re
   )
 }
 
-function NoticeCard({ governance, zone }: { readonly governance: Governance; readonly zone: string | undefined }) {
+function NoticeCard({ governance }: { readonly governance: Governance }) {
   const { notice } = governance
   const fact = (label: string, value: string) => (
     <div className="flex items-center justify-between gap-space-sm">
@@ -199,7 +208,7 @@ function NoticeCard({ governance, zone }: { readonly governance: Governance; rea
       <SectionHead id="notice-title" icon="calendar_month" title="Notice" note="Distributors are notified in the transaction that schedules the version." />
       <dl className="flex flex-col gap-space-xs p-space-sm rounded-lg bg-surface-container-low">
         {fact('Notice period', notice.days === null ? 'No notice period set' : `${notice.days} days`)}
-        {fact('Earliest effective date', notice.earliest_effective_from === null ? '—' : formatDateIn(notice.earliest_effective_from, zone))}
+        {fact('Earliest effective date', notice.earliest_effective_on ?? '—')}
         {fact('Sent at', notice.sent_at === null ? 'Not sent yet' : formatDateTime(notice.sent_at))}
         {fact('Recipients', notice.recipients === null ? '—' : String(notice.recipients))}
       </dl>
@@ -314,7 +323,7 @@ function ChangeScreen({ plan, version, governance, data, reload }: ChangeScreenP
           <TransitionsCard plan={plan} version={version} firstRunId={governance.first_run_id} />
         </div>
         <div className="lg:col-span-4 flex flex-col gap-space-md min-w-0">
-          <NoticeCard governance={governance} zone={zone} />
+          <NoticeCard governance={governance} />
           <ApprovalsCard governance={governance} />
         </div>
       </div>

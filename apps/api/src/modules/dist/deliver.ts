@@ -1,4 +1,5 @@
 import { withSystem, type Tx } from '@nmp/db'
+import type { FastifyBaseLogger } from 'fastify'
 import type { Config } from '../../config.js'
 import { recordAudit } from '../../lib/audit.js'
 import { runInTenant, SYSTEM_ACTOR_ID } from '../../lib/db.js'
@@ -23,6 +24,7 @@ interface DueRow {
   readonly id: string
   readonly template: string
   readonly params: unknown
+  readonly locale: string
   readonly attempts: number
   readonly email: string | null
   readonly time_zone: string
@@ -34,13 +36,13 @@ async function settle(tx: Tx, row: DueRow, action: string, update: string, param
   await recordAudit(tx, { action, objectType: 'notification', objectId: row.id, after: { template: row.template } })
 }
 
-async function deliverOne(tx: Tx, row: DueRow, config: Config): Promise<void> {
+async function deliverOne(tx: Tx, row: DueRow, config: Config, log: FastifyBaseLogger): Promise<void> {
   if (row.email === null || row.email === '') {
     await settle(tx, row, 'NOTIFICATION.UNDELIVERABLE', `UPDATE notification SET state = 'undeliverable', next_attempt_at = NULL WHERE id = $1`)
     return
   }
   try {
-    await sendMail(config.mailDir, { to: row.email, ...renderNotification(row.template, row.params, row.time_zone, config.webUrl) })
+    await sendMail(config.mailDir, { to: row.email, ...renderNotification(row.template, row.params, row.locale, row.time_zone, config.webUrl, log) })
   } catch (error) {
     const attempts = row.attempts + 1
     const failed = attempts >= MAX_ATTEMPTS
@@ -56,9 +58,9 @@ async function deliverOne(tx: Tx, row: DueRow, config: Config): Promise<void> {
 }
 
 /** One due email row of the tenant, if still due and no other worker holds it. */
-async function deliverDue(tx: Tx, id: string, config: Config): Promise<void> {
+async function deliverDue(tx: Tx, id: string, config: Config, log: FastifyBaseLogger): Promise<void> {
   const { rows } = await tx.query<DueRow>(
-    `SELECT n.id, n.template, n.params, n.attempts, x.contact ->> 'email' AS email, m.time_zone
+    `SELECT n.id, n.template, n.params, n.locale, n.attempts, x.contact ->> 'email' AS email, m.time_zone
      FROM notification n
      JOIN participant x ON x.tenant_id = n.tenant_id AND x.id = n.recipient_participant_id
      JOIN market m ON m.tenant_id = x.tenant_id AND m.id = x.market_id
@@ -66,7 +68,7 @@ async function deliverDue(tx: Tx, id: string, config: Config): Promise<void> {
      FOR UPDATE OF n SKIP LOCKED`,
     [id],
   )
-  if (rows[0] !== undefined) await deliverOne(tx, rows[0], config)
+  if (rows[0] !== undefined) await deliverOne(tx, rows[0], config, log)
 }
 
 /**
@@ -82,7 +84,7 @@ export const deliverCron = defineSystemJob({
     const actor = { actorType: 'system' as const, requestId: ctx.jobId, supportSessionId: null }
     for (const row of rows) {
       try {
-        await runInTenant({ tenantId: row.tenant_id, userId: SYSTEM_ACTOR_ID }, actor, (tx) => deliverDue(tx, row.notification_id, ctx.config))
+        await runInTenant({ tenantId: row.tenant_id, userId: SYSTEM_ACTOR_ID }, actor, (tx) => deliverDue(tx, row.notification_id, ctx.config, ctx.log))
       } catch (error) {
         ctx.log.error({ err: error, tenantId: row.tenant_id, notificationId: row.notification_id }, 'notification delivery failed')
       }

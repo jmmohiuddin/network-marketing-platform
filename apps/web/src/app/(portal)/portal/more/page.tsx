@@ -1,7 +1,7 @@
-import type { Metadata } from 'next'
 import { MorePage } from '../../../../features/portal/more'
+import { portalTitle } from '../../../../features/portal/i18n/server'
 
-export const metadata: Metadata = { title: 'More' }
+export const generateMetadata = portalTitle('nav.more')
 
 export default function Page() {
   return <MorePage />

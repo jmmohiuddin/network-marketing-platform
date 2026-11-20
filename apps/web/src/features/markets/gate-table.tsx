@@ -6,7 +6,7 @@ import { StatusBadge } from '../../components/status-badge'
 import { countLabel, formatDateTime } from '../../lib/format'
 import { NOTE } from '../admin/ui'
 import { EvidenceFile } from './gate-inspector'
-import { CATEGORY_TABS, ITEM_STATUS, KIND_LABELS } from './format'
+import { CATEGORY_TABS, ITEM_STATUS, KIND_LABELS, untranslatedText } from './format'
 import type { AgreementVersionRef, ChecklistItem, PlanVariantRef, ProviderRecord } from './types'
 
 /** "Version 2026-1" for an agreement; "Global plan, version 3 (scheduled)" for the plan variant (BUG-105). */
@@ -25,6 +25,7 @@ export function basisText(item: ChecklistItem): string {
   if (detail?.providers !== undefined) return detail.providers.length === 0 ? 'No approval recorded' : detail.providers.map((provider) => provider.provider).join(', ')
   if (detail?.contacts !== undefined) return countLabel(detail.contacts, 'contact')
   if (detail?.region !== undefined) return `Region ${detail.region}`
+  if (detail?.untranslated !== undefined) return untranslatedText(detail.untranslated)
   if (detail?.version !== undefined) return detail.version === null ? 'No version published' : versionText(detail.version)
   return item.entry?.note ?? (item.kind === 'evidence' ? 'Evidence document' : '—')
 }

@@ -155,6 +155,29 @@ describe('SC-09 Tax', () => {
     expect(bodyOf(init)).toEqual({ tax_id: 'DE999999999' })
   })
 
+  it('hints the pack format and names its label when a tax id does not match it (D-BM-07)', async () => {
+    navigation.search = 'tab=tax'
+    const format = { label: 'FX tax id', pattern: '^FX[0-9]{6}$' }
+    const fetchMock = routes({
+      'GET /v1/participants/p1/tax-profile': () => ok({ current: null, history: [], format }),
+      'PUT /v1/participants/p1/tax-profile': () => apiError(422, 'TAX_ID_FORMAT', 'refused', { label: 'FX tax id' }),
+    })
+    renderAs(FINANCE, <ParticipantRecord participantId="p1" />, fetchMock)
+    await userEvent.click(await within(await screen.findByTestId('tax')).findByRole('button', { name: 'Edit tax profile' }))
+    const edit = await screen.findByRole('dialog', { name: 'Edit tax profile' })
+    expect(within(edit).getByText(/Format: FX tax id\./)).toBeTruthy()
+    await userEvent.type(within(edit).getByLabelText(/New tax id/), 'FX12')
+    await userEvent.click(within(edit).getByRole('button', { name: 'Save new version' }))
+    expect((await within(edit).findAllByText('This is not a valid FX tax id.')).length).toBeGreaterThan(0)
+    expect(callsTo(fetchMock, 'PUT', '/v1/participants/p1/tax-profile')).toHaveLength(0)
+    // The server's refusal names the label too (a pattern changed since the page loaded).
+    await userEvent.clear(within(edit).getByLabelText(/New tax id/))
+    await userEvent.type(within(edit).getByLabelText(/New tax id/), 'FX123456')
+    await userEvent.click(within(edit).getByRole('button', { name: 'Save new version' }))
+    await vi.waitFor(() => expect(callsTo(fetchMock, 'PUT', '/v1/participants/p1/tax-profile')).toHaveLength(1))
+    expect((await within(edit).findAllByText('This is not a valid FX tax id.')).length).toBeGreaterThan(0)
+  })
+
   it('offers no edit or unmask without their permissions', async () => {
     navigation.search = 'tab=tax'
     renderAs(READER, <ParticipantRecord participantId="p1" />, routes())

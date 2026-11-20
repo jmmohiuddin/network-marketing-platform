@@ -54,6 +54,8 @@ export interface CaseTypeDefinition<P = unknown> {
   /** Reason codes only the system opens a case with (D-B2-04): users cannot choose them. */
   readonly systemReasonCodes?: readonly string[]
   readonly evidenceRequired: boolean
+  /** B-MKT D-BM-08: false refuses new evidence on this case (422 EVIDENCE_NOT_ALLOWED); absent = allowed. */
+  evidenceAllowed?(c: CaseRecord<P>): boolean
   readonly permissions: CaseTypePermissions
   readonly payload: z.ZodType<P>
   /**

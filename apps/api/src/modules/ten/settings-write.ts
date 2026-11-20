@@ -7,7 +7,7 @@ import { appendVersion, latestVersionNumber, lockSettings } from './versions.js'
 
 export interface SettingWrite {
   readonly key: SettingKey
-  /** Already validated against the key's schema. */
+  /** Already validated against the key's schema; null only for a clearable key (unset). */
   readonly value: unknown
   readonly reason: string
   /** null = now. Any instant from now on, outside committed periods; later versions are rebased (D-B1-01). */
@@ -76,7 +76,8 @@ export async function putSetting(tx: Tx, write: SettingWrite): Promise<SavedSett
   await assertExpectedVersion(tx, write.expectedVersion)
   await assertEffectiveFrom(tx, write.effectiveFrom)
   const appended = await appendVersion(tx, {
-    effectiveFrom: write.effectiveFrom, patch: { [write.key]: write.value }, reason: write.reason, approvalId: null, key: write.key,
+    // BUG-129: null (accepted for clearable keys only) unsets the key.
+    effectiveFrom: write.effectiveFrom, patch: { [write.key]: write.value === null ? undefined : write.value }, reason: write.reason, approvalId: null, key: write.key,
   })
   return {
     view: {

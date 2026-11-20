@@ -174,8 +174,8 @@ function baseRaw(base: CapBase, volumes: PositionVolumes): bigint {
 type Affected = CapApplication['affected'][number]
 interface CapScope { readonly cap: CapRule; readonly priority: readonly number[]; readonly mode: RoundingMode }
 
-/** Allocates one block of in-scope lines into `out`; changed lines are recorded in `affected` (BR-CAP-03). */
-function capBlock(c: CapScope, capMinor: bigint, items: readonly Scoped[], lines: readonly RawLine[], out: RawLine[], affected: Affected[]): { proposed: bigint; bound: boolean } {
+/** Allocates one block of in-scope lines, replacing them in `lines`; changed lines are recorded in `affected` (BR-CAP-03). */
+function capBlock(c: CapScope, capMinor: bigint, items: readonly Scoped[], lines: RawLine[], affected: Affected[]): { proposed: bigint; bound: boolean } {
   const { cap, priority, mode } = c
   const values = items.map((s) => lineValue(lines[s.index]!))
   const alloc = allocateCap(capMinor, values, items.map((s) => s.rule), priority, mode)
@@ -183,13 +183,14 @@ function capBlock(c: CapScope, capMinor: bigint, items: readonly Scoped[], lines
   if (alloc === null) return { proposed, bound: false }
   items.forEach((s, i) => {
     const line = lines[s.index]!
-    out[s.index] = withStep(line, { step: 'cap', key: cap.key, method: cap.method.type, beforeRaw: values[i]!, afterMinor: alloc[i]! }, { allocatedMinor: alloc[i]! })
+    lines[s.index] = withStep(line, { step: 'cap', key: cap.key, method: cap.method.type, beforeRaw: values[i]!, afterMinor: alloc[i]! }, { allocatedMinor: alloc[i]! })
     if (roundRaw(values[i]!, mode) !== alloc[i]!) affected.push({ payeePositionId: line.payeePositionId, ruleKey: line.ruleKey, beforeRaw: values[i]!, afterMinor: alloc[i]! })
   })
   return { proposed, bound: true }
 }
 
-function applyCap(ctx: RunContext, cap: CapRule, lines: readonly RawLine[], volumes: PositionVolumes): { lines: RawLine[]; application: CapApplication } {
+/** Applies one cap to `lines`, replacing each changed line in place (pass 8 owns the array, capPass). */
+function applyCap(ctx: RunContext, cap: CapRule, lines: RawLine[], volumes: PositionVolumes): CapApplication {
   const mode = ctx.input.settings.roundingMode
   const order = new Map(ctx.input.plan.bonuses.map((b, i) => [b.key, i]))
   const reduce = cap.method.type === 'priority' ? cap.method.reduce : []
@@ -198,13 +199,12 @@ function applyCap(ctx: RunContext, cap: CapRule, lines: readonly RawLine[], volu
   }
   const items = scoped(ctx, lines, cap.scope, cap.key)
   const c: CapScope = { cap, priority: reduce.map((k) => order.get(k)!), mode }
-  const out = [...lines]
   const affected: Affected[] = []
   if (cap.method.type !== 'per_person') {
     const base = baseRaw(cap.base, volumes)
     const capMinor = capAmountMinor(base, cap.rate, mode)
-    const { proposed, bound } = capBlock(c, capMinor, items, lines, out, affected)
-    return { lines: out, application: { capKey: cap.key, method: cap.method.type, baseMinor: roundRaw(base, mode), capMinor, proposedRaw: proposed, bound, affected } }
+    const { proposed, bound } = capBlock(c, capMinor, items, lines, affected)
+    return { capKey: cap.key, method: cap.method.type, baseMinor: roundRaw(base, mode), capMinor, proposedRaw: proposed, bound, affected }
   }
   if (cap.base.kind !== 'measure') throw new EngineError('INVALID_INPUT', 'per_person caps need a measure base', { cap: cap.key })
   const own = volumes.byMeasure.get(cap.base.measure)
@@ -215,25 +215,23 @@ function applyCap(ctx: RunContext, cap: CapRule, lines: readonly RawLine[], volu
     while (j < items.length && items[j]!.position === items[i]!.position) j++
     const base = own[items[i]!.position]!
     const personCap = capAmountMinor(toRaw(base), cap.rate, mode)
-    const r = capBlock(c, personCap, items.slice(i, j), lines, out, affected)
+    const r = capBlock(c, personCap, items.slice(i, j), lines, affected)
     baseMinor += base
     capMinor += personCap
     proposedRaw += r.proposed
     bound ||= r.bound
     i = j
   }
-  return { lines: out, application: { capKey: cap.key, method: 'per_person', baseMinor, capMinor, proposedRaw, bound, affected } }
+  return { capKey: cap.key, method: 'per_person', baseMinor, capMinor, proposedRaw, bound, affected }
 }
 
-/** Pass 8: company caps in plan order (array order = stated precedence). */
-/** Pass 8 lines and applications; run.ts adds the breakage while the pre-cap lines are still held. */
+/** Pass 8: company caps in plan order (array order = stated precedence); run.ts adds the breakage from the capped lines' steps. */
 export const capPass = (ctx: RunContext, done: Done<'caps'>): LimitedLines<CapApplication> => {
-  let lines: readonly RawLine[] = done.constraints.lines
-  const applications: CapApplication[] = []
-  for (const cap of ctx.input.plan.caps) {
-    const r = applyCap(ctx, cap, lines, done.volumes)
-    lines = r.lines
-    applications.push(r.application)
-  }
+  // TK-B6-14: pass 7's array (pass 7 made it, the runner releases it after this pass) is updated in place, so a
+  // pre-cap line is garbage as soon as its capped copy replaces it instead of both being held until the pass ends.
+  // shortcut: this breaks the readonly type of done.constraints.lines, so capPass is internal to the runner (not in
+  // index.ts); copy the array first if it is ever exported or called on lines the caller keeps.
+  const lines = done.constraints.lines as RawLine[]
+  const applications = ctx.input.plan.caps.map((cap) => applyCap(ctx, cap, lines, done.volumes))
   return { lines, applications }
 }

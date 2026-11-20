@@ -426,3 +426,12 @@ Order: **DB agent** (§1 all, §1.9 contract files, §3 permissions + base-role 
 - **`EXPORT_TABLE_MAX_BYTES` = 128 MiB** (was 256 MiB). The cap also bounds the download, because bytea arrives as hex text: about 5x the file size in memory, and the string must stay under V8's limit.
 - **BR-SEC-03:** the `export_job.filters` of a full export are `{export_id, requested_by {id, type} | null}`.
 - **GET /v1/orders/export** reads at most cap + 1 rows in one statement. The audited `row_count` is the number of rows in the file. A refusal still reports the exact count.
+
+## §A Amendments (TK-B6-19, architect, 2026-11-20; the code is the record, these lines bring the PLAN to it)
+- **D-B6-04 / §1.2 / §2.2:** `period_close_blockers` has a seventh kind, `payout_batch_open {batch_id}`: a payout batch with `period_id` = the period in state `draft`, `reviewed`, `approved` or `instructing` (it would later post `payout_instructed` into the period). The 422 PERIOD_CLOSE_BLOCKED details list it like the other kinds.
+- **§1.6 opening state:** the `migration_opening_state` jsonb columns hold JSON **arrays** with `DEFAULT '[]'` and a `jsonb_typeof = 'array'` CHECK, the same shape as `qualification_state`, **including `grace_used`** (the column list of §1.6 gains `grace_used jsonb NN DEFAULT '[]'`; `banked` is an array too, not an object).
+- **§1.3 export files:** `data_export_file` rows may be deleted once their export is `failed` **or** `expired` (the guard and the job), and the erasure of D-B6-13 deletes the file rows of the exports it fails as well as of those it expires.
+- **D-B6-07 net sales:** the refunds subtracted are `refund_minor` of **every** `order_event` type occurring in the period (refunds, returns, chargebacks, cancellations, unequal exchanges); `chargeback_reversed` counts with the opposite sign (added back).
+- **§1.1 filings:** `plan_version_filing` carries `content_hash bytea NN (length 32)`, set by the insert trigger from the version; `plan_filing_missing` and the schedule gate count only rows whose `content_hash` equals the version's current one, so a version edited after a filing needs a new filing (SEC-B6-2).
+- **§2.6 migration create:** `POST /v1/migrations` is refused 422 CUTOVER_NOT_OPEN `{state}` unless the cutover period is `open` and has no run in `queued`, `running`, `calculated` or `committed` (SEC-B6-1).
+- **D-B6-18:** unchanged and still awaiting product confirmation (B-MKT PLAN open issues).

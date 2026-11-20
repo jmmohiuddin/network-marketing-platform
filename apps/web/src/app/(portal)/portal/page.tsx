@@ -1,7 +1,7 @@
-import type { Metadata } from 'next'
 import { PortalHome } from '../../../features/portal/home'
+import { portalTitle } from '../../../features/portal/i18n/server'
 
-export const metadata: Metadata = { title: 'Home' }
+export const generateMetadata = portalTitle('nav.home')
 
 export default function Page() {
   return <PortalHome />

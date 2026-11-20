@@ -1,4 +1,5 @@
 import type { Tx } from '@nmp/db'
+import { isLocale, primarySubtag } from '../../lib/locale.js'
 import { recordedProviders, type ProviderKind, type RecordedProvider } from '../pay/index.js'
 import type { MarketView } from './markets.js'
 import { getSetting } from './settings.js'
@@ -33,6 +34,8 @@ export const CHECKLIST_ITEMS = [
   { item: 'pack_rules', title: 'Market-pack rules basis', kind: 'automatic', category: 'regulatory' },
   // D-B6-11: complete when the market has no non-cancelled migration or its migration is signed off (MIG, mig_market_ready).
   { item: 'migration_parallel_run', title: 'Migration parallel run', kind: 'automatic', category: 'data' },
+  // D-BM-11: complete when every market language has a distributor catalogue (its primary subtag is a supported locale).
+  { item: 'portal_languages', title: 'Distributor portal languages', kind: 'automatic', category: 'data' },
 ] as const satisfies readonly ItemDefinition[]
 
 export type ChecklistItem = (typeof CHECKLIST_ITEMS)[number]['item']
@@ -193,6 +196,8 @@ interface Facts {
   readonly contacts: number
   readonly rules: PackRule[]
   readonly migrationReady: boolean
+  /** Market language tags (as stored) without a distributor catalogue. */
+  readonly untranslated: string[]
 }
 
 function statusOf(definition: ItemDefinition, facts: Facts, providers: RecordedProvider[]): ItemStatus {
@@ -206,6 +211,7 @@ function statusOf(definition: ItemDefinition, facts: Facts, providers: RecordedP
       if (definition.item === 'agreement_versions') return facts.agreement !== null ? 'complete' : 'missing'
       if (definition.item === 'plan_variant') return facts.plan !== null ? 'complete' : 'missing'
       if (definition.item === 'migration_parallel_run') return facts.migrationReady ? 'complete' : 'missing'
+      if (definition.item === 'portal_languages') return facts.untranslated.length === 0 ? 'complete' : 'missing'
       return facts.rules.some((rule) => rule.mandatory && rule.basis_status === 'screening') ? 'needs_risk_acceptance' : 'complete'
   }
 }
@@ -220,6 +226,7 @@ function detailOf(definition: ItemDefinition, facts: Facts, providers: RecordedP
     case 'agreement_versions': return { version: facts.agreement }
     case 'plan_variant': return { version: facts.plan }
     case 'pack_rules': return { rules: facts.rules }
+    case 'portal_languages': return { untranslated: facts.untranslated }
     case 'tax_configuration': return { rules: facts.rules.filter((rule) => rule.kind === 'tax') }
     default: return null
   }
@@ -238,6 +245,7 @@ export async function evaluateChecklist(tx: Tx, market: MarketView): Promise<Eva
     contacts: (await getSetting(tx, 'privacy.breach_contacts'))?.length ?? 0,
     rules: await packRules(tx, market.market_pack),
     migrationReady: rows[0]!.migration_ready,
+    untranslated: market.languages.filter((tag) => !isLocale(primarySubtag(tag))),
   }
   const items: ItemView[] = []
   const snapshot: Evaluation['snapshot']['items'] = []
@@ -264,7 +272,9 @@ export function missingItems(evaluation: Evaluation): { item: string; title: str
     .filter((item) => item.status === 'missing')
     .map((item) => ({
       item: item.item, title: item.title,
-      reason: item.kind === 'automatic' ? AUTOMATIC_MISSING[item.item]! : MISSING_REASONS[item.kind],
+      reason: item.kind !== 'automatic' ? MISSING_REASONS[item.kind]
+        : item.item === 'portal_languages' ? `No distributor translation for: ${(item.detail as { untranslated: string[] }).untranslated.join(', ')}`
+        : AUTOMATIC_MISSING[item.item]!,
     }))
 }
 

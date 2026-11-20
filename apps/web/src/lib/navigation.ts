@@ -16,6 +16,8 @@ export const MFA_VERIFY_PATH = '/signin/mfa'
 export const VENDOR_HOME_PATH = '/vendor'
 export const PORTAL_HOME_PATH = '/portal'
 export const PORTAL_SIGN_IN_PATH = '/portal/signin'
+/** Request header proxy.ts sets to 'portal' on the portal surface (any client-sent value dropped); documentLang reads it. */
+export const SURFACE_HEADER = 'x-nmp-surface'
 const AUTH_PREFIXES = ['/signin', '/invitation', PORTAL_SIGN_IN_PATH]
 const ORIGIN = 'https://web.invalid'
 

@@ -3,7 +3,9 @@ import type { Tx } from '@nmp/db'
 import { z } from 'zod'
 import { recordAudit } from '../../lib/audit.js'
 import { defineTenantJob } from '../../lib/jobs.js'
+import { message } from '../../lib/locale.js'
 import { sendMail } from '../../lib/mailer.js'
+import { PORTAL_MAIL_CATALOGUES, userMailLocale } from './mail-locale.js'
 
 // shortcut: fixed code lifetime and check count (E-ADR-10 class), not tenant settings; make them settings when a tenant
 // asks for other values.
@@ -44,14 +46,17 @@ export async function useSignInCode(tx: Tx, userId: string, code: string): Promi
 interface CodeRecipient {
   email: string
   tenant_name: string
+  locale: string | null
+  languages: string[]
 }
 
 // An active portal account of an active, not pseudonymised participant (the request may be older than a deactivation).
 async function recipientOf(tx: Tx, userId: string): Promise<CodeRecipient | undefined> {
   const { rows } = await tx.query<CodeRecipient>(
-    `SELECT u.email, t.legal_name AS tenant_name FROM user_account u
+    `SELECT u.email, t.legal_name AS tenant_name, u.locale, m.languages FROM user_account u
      JOIN tenant t ON t.id = u.tenant_id
      JOIN participant p ON p.tenant_id = u.tenant_id AND p.id = u.participant_id
+     JOIN market m ON m.tenant_id = p.tenant_id AND m.id = p.market_id
      WHERE u.id = $1 AND u.realm = 'portal' AND u.state = 'active' AND p.status = 'active' AND p.pseudonymised_at IS NULL`,
     [userId],
   )
@@ -90,14 +95,13 @@ export const sendSignInCodeJob = defineTenantJob({
       [id, payload.user_id, codeHash(id, code), SIGN_IN_CODE_TTL_MINUTES],
     )
     await recordAudit(tx, { action: 'AUTH.SIGN_IN_CODE_SENT', objectType: 'portal_sign_in_code', objectId: id, after: { user_id: payload.user_id } })
+    // D-BM-11: in the user's language (saved preference the market offers, else the market default).
+    const locale = userMailLocale(recipient.locale, recipient.languages)
+    const t = (key: string, params: Record<string, string | number>) => message(PORTAL_MAIL_CATALOGUES, key, params, locale, 'en', ctx.log)
     await sendMail(ctx.config.mailDir, {
       to: recipient.email,
-      subject: `Your sign-in code for ${recipient.tenant_name}`,
-      text: [
-        `Your sign-in code is ${code}.`,
-        '',
-        `It works once, for ${SIGN_IN_CODE_TTL_MINUTES} minutes. If you did not ask to sign in, ignore this email.`,
-      ].join('\n'),
+      subject: t('sign_in_code.subject', { tenant: recipient.tenant_name }),
+      text: [t('sign_in_code.code', { code }), '', t('sign_in_code.validity', { minutes: SIGN_IN_CODE_TTL_MINUTES })].join('\n'),
     })
   },
 })

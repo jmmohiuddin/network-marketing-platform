@@ -1,5 +1,5 @@
 {
-  "when": "2026-11-19T16:40:22.584Z",
+  "when": "2026-11-20T16:22:04.919Z",
   "screenId": "SC-19",
   "stitch": "sc_19_distributor_rank_status",
   "module": "portal",
@@ -15,15 +15,15 @@
       "screenshot": "testing/ui-screenshots/app/portal/rank/distributor/1440x900.png",
       "reference": "testing/ui-screenshots/reference/sc_19_distributor_rank_status/1440x900.png",
       "diffImage": "testing/ui-screenshots/app/portal/rank/distributor/1440x900.diff.png",
-      "mismatchPercent": 10.91,
-      "diffPixels": 278951,
+      "mismatchPercent": 11.07,
+      "diffPixels": 283006,
       "referenceSize": "1440x1776",
       "actualSize": "1440x900",
       "landmarks": [
         {
           "landmark": "page",
           "stitchText": "badge Elena Gomez POS-01948 · Frontline Tree v4.2 Audit Cert",
-          "appText": "RankP-2 · Oct 1, 2026 – Oct 31, 2026Paid asNo rankHighest ti",
+          "appText": "RangP-1 · 01.10.2026 – 31.10.2026Vergütet alsR1Höchster Tite",
           "status": "match",
           "severity": "none",
           "props": [
@@ -56,7 +56,7 @@
         {
           "landmark": "sectionHeading",
           "stitchText": "Qualification Invariants",
-          "appText": "History",
+          "appText": "Voraussetzungen für R1",
           "status": "match",
           "severity": "none",
           "props": [
@@ -95,7 +95,7 @@
         {
           "landmark": "card",
           "stitchText": "badge Elena Gomez POS-01948 · Frontline Tree v4.2 Audit Cert",
-          "appText": "historyHistoryOct 1, 2026 – Oct 31, 2026lockFinalNo paid-as ",
+          "appText": "fact_checkVoraussetzungen für R1checkGehaltenPersönliches Vo",
           "status": "match",
           "severity": "none",
           "props": [
@@ -126,15 +126,15 @@
       "screenshot": "testing/ui-screenshots/app/portal/rank/distributor/1280x800.png",
       "reference": "testing/ui-screenshots/reference/sc_19_distributor_rank_status/1280x800.png",
       "diffImage": "testing/ui-screenshots/app/portal/rank/distributor/1280x800.diff.png",
-      "mismatchPercent": 11,
-      "diffPixels": 249981,
+      "mismatchPercent": 11.15,
+      "diffPixels": 253418,
       "referenceSize": "1280x1776",
-      "actualSize": "1280x800",
+      "actualSize": "1280x841",
       "landmarks": [
         {
           "landmark": "page",
           "stitchText": "badge Elena Gomez POS-01948 · Frontline Tree v4.2 Audit Cert",
-          "appText": "RankP-2 · Oct 1, 2026 – Oct 31, 2026Paid asNo rankHighest ti",
+          "appText": "RangP-1 · 01.10.2026 – 31.10.2026Vergütet alsR1Höchster Tite",
           "status": "match",
           "severity": "none",
           "props": [
@@ -167,7 +167,7 @@
         {
           "landmark": "sectionHeading",
           "stitchText": "Qualification Invariants",
-          "appText": "History",
+          "appText": "Voraussetzungen für R1",
           "status": "match",
           "severity": "none",
           "props": [
@@ -206,7 +206,7 @@
         {
           "landmark": "card",
           "stitchText": "badge Elena Gomez POS-01948 · Frontline Tree v4.2 Audit Cert",
-          "appText": "historyHistoryOct 1, 2026 – Oct 31, 2026lockFinalNo paid-as ",
+          "appText": "fact_checkVoraussetzungen für R1checkGehaltenPersönliches Vo",
           "status": "match",
           "severity": "none",
           "props": [
@@ -237,15 +237,15 @@
       "screenshot": "testing/ui-screenshots/app/portal/rank/distributor/768x1024.png",
       "reference": "testing/ui-screenshots/reference/sc_19_distributor_rank_status/768x1024.png",
       "diffImage": "testing/ui-screenshots/app/portal/rank/distributor/768x1024.diff.png",
-      "mismatchPercent": 11.76,
-      "diffPixels": 162266,
+      "mismatchPercent": 12.07,
+      "diffPixels": 166552,
       "referenceSize": "768x1797",
       "actualSize": "768x1024",
       "landmarks": [
         {
           "landmark": "page",
           "stitchText": "badge Elena Gomez POS-01948 · Frontline Tree v4.2 Audit Cert",
-          "appText": "RankP-2 · Oct 1, 2026 – Oct 31, 2026Paid asNo rankHighest ti",
+          "appText": "RangP-1 · 01.10.2026 – 31.10.2026Vergütet alsR1Höchster Tite",
           "status": "match",
           "severity": "none",
           "props": [
@@ -278,7 +278,7 @@
         {
           "landmark": "sectionHeading",
           "stitchText": "Qualification Invariants",
-          "appText": "History",
+          "appText": "Voraussetzungen für R1",
           "status": "match",
           "severity": "none",
           "props": [
@@ -317,7 +317,7 @@
         {
           "landmark": "card",
           "stitchText": "badge Elena Gomez POS-01948 · Frontline Tree v4.2 Audit Cert",
-          "appText": "historyHistoryOct 1, 2026 – Oct 31, 2026lockFinalNo paid-as ",
+          "appText": "fact_checkVoraussetzungen für R1checkGehaltenPersönliches Vo",
           "status": "match",
           "severity": "none",
           "props": [
@@ -348,15 +348,15 @@
       "screenshot": "testing/ui-screenshots/app/portal/rank/distributor/390x844.png",
       "reference": "testing/ui-screenshots/reference/sc_19_distributor_rank_status/390x844.png",
       "diffImage": "testing/ui-screenshots/app/portal/rank/distributor/390x844.diff.png",
-      "mismatchPercent": 13.54,
-      "diffPixels": 103518,
+      "mismatchPercent": 13.77,
+      "diffPixels": 105315,
       "referenceSize": "390x1961",
-      "actualSize": "390x844",
+      "actualSize": "390x1057",
       "landmarks": [
         {
           "landmark": "header",
           "stitchText": "AuditLedger•Apex HealthDistributor Homenotificationsperson",
-          "appText": "Acme Direct LtdRankdashboardHomereceipt_longEarningsmilitary",
+          "appText": "Acme Direct LtdRangdashboardStartreceipt_longProvisionenmili",
           "status": "match",
           "severity": "none",
           "props": [
@@ -377,7 +377,7 @@
         {
           "landmark": "page",
           "stitchText": "badge Elena Gomez POS-01948 · Frontline Tree v4.2 Audit Cert",
-          "appText": "RankP-2 · Oct 1, 2026 – Oct 31, 2026Paid asNo rankHighest ti",
+          "appText": "RangP-1 · 01.10.2026 – 31.10.2026Vergütet alsR1Höchster Tite",
           "status": "match",
           "severity": "none",
           "props": [
@@ -410,7 +410,7 @@
         {
           "landmark": "sectionHeading",
           "stitchText": "Qualification Invariants",
-          "appText": "History",
+          "appText": "Voraussetzungen für R1",
           "status": "match",
           "severity": "none",
           "props": [
@@ -449,7 +449,7 @@
         {
           "landmark": "card",
           "stitchText": "badge Elena Gomez POS-01948 · Frontline Tree v4.2 Audit Cert",
-          "appText": "historyHistoryOct 1, 2026 – Oct 31, 2026lockFinalNo paid-as ",
+          "appText": "fact_checkVoraussetzungen für R1checkGehaltenPersönliches Vo",
           "status": "match",
           "severity": "none",
           "props": [

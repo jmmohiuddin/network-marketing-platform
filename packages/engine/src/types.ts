@@ -304,8 +304,17 @@ export interface AdjustmentOrigin {
 }
 /** Clawback receivable balance before this run (positive). */
 export interface Receivable { readonly participantId: ParticipantId; readonly amountMinor: bigint }
-/** Withholding rule already selected by the orchestrator for this payee, market and pay date (MONEY §9.3 steps 1-3). */
-export interface WithholdingInstruction { readonly participantId: ParticipantId; readonly ruleId: string; readonly rate: Decimal; readonly rounding: RoundingMode }
+/**
+ * Withholding rule already selected by the orchestrator for this payee, market and pay date (MONEY §9.3 steps 1-3).
+ * threshold (current-year cumulative basis, D-BM-05): nothing is withheld while priorMinor + this run's gross <= limitMinor.
+ */
+export interface WithholdingInstruction {
+  readonly participantId: ParticipantId
+  readonly ruleId: string
+  readonly rate: Decimal
+  readonly rounding: RoundingMode
+  readonly threshold?: { readonly limitMinor: bigint; readonly priorMinor: bigint }
+}
 
 export interface Snapshot {
   readonly snapshotId: string

@@ -1,8 +1,15 @@
 // Fixtures and helpers for the portal tests (imported by *.test.tsx only).
 import type { RenderResult } from '@testing-library/react'
-import type { ReactElement } from 'react'
+import type { ReactElement, ReactNode } from 'react'
+import { renderToStaticMarkup } from 'react-dom/server'
+import { ApiProvider } from '../../components/api-provider'
+import { ToastProvider } from '../../components/toast'
+import { afterEach, vi } from 'vitest'
 import { json, type FetchMock } from '../../test/fetch'
 import { renderWithProviders } from '../../test/render'
+import { fetchByRoute } from '../admin/test-support'
+import { l10n } from './format'
+import { translator } from './i18n'
 import { PortalProvider, type Portal } from './shell'
 import type { PortalMe, PortalProfile, Statement, StatementSummary } from './types'
 
@@ -35,6 +42,9 @@ export function portalMe(overrides: Partial<PortalMe> = {}, team = false): Porta
     participant: profile({ has_downline: team }),
     mfa: { required: false, enrolled: false, verified: false },
     step_up_at: null,
+    locale: 'en',
+    locales: [{ code: 'en', label: 'English' }, { code: 'de', label: 'Deutsch' }],
+    default_locale: 'en',
     navigation: [
       { key: 'home', path: '/portal', label: 'Home' },
       { key: 'earnings', path: '/portal/earnings', label: 'Earnings' },
@@ -48,7 +58,9 @@ export function portalMe(overrides: Partial<PortalMe> = {}, team = false): Porta
 
 /** Renders inside the real providers with a signed-in distributor (as PortalShell provides). */
 export function renderPortal(ui: ReactElement, fetchMock: FetchMock, me: PortalMe = portalMe(), unread: number | null = 0): RenderResult {
-  const portal: Portal = { me, profile: me.participant!, zone: MARKET.time_zone, unread, refreshUnread: () => undefined }
+  const portal: Portal = {
+    me, profile: me.participant!, zone: MARKET.time_zone, words: l10n(me.locale, MARKET.time_zone, translator(me.locale)), unread, refresh: () => undefined,
+  }
   return renderWithProviders(<PortalProvider value={portal}>{ui}</PortalProvider>, fetchMock)
 }
 
@@ -70,8 +82,39 @@ export function statement(overrides: Partial<Statement> = {}): Statement {
       bonuses: [{ rule_key: 'unilevel', rule_name: ENGINE_RULE, total_minor: '2300', lines: [{ id: LINE, amount_minor: '2300', origin_kind: 'none', original_period_id: null }] }],
     }],
     person_total_minor: '2300',
-    summary: { gross_minor: '2300', adjustment_minor: '0', clawback_minor: '0', withheld_minor: '0', net_minor: '2300' },
+    summary: { gross_minor: '2300', adjustment_minor: '0', clawback_minor: '0', withheld_minor: '0', withholding: null, net_minor: '2300' },
     payout: { instructions: [{ amount_minor: '2300', state: 'settled', terminal_at: '2026-09-05T10:00:00.000Z', masked: 'DE•• 3000' }], blockers: [] },
     ...overrides,
   }
 }
+
+/**
+ * The API as the server components reach it (absolute API_URL): routes keyed by "METHOD /path" as fetchByRoute, with
+ * GET /v1/me answered by `me` unless given.
+ */
+export function serverRoutes(routes: Readonly<Record<string, (query: URLSearchParams) => Response>>, me: unknown = portalMe()): FetchMock {
+  const inner = fetchByRoute({ 'GET /v1/me': () => json(200, { data: me, meta: {} }), ...routes })
+  return vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => inner(String(input).replace(/^https?:\/\/[^/]+/, ''), init))
+}
+
+// Server renders sit outside Testing Library's containers: remove them so later renders (and files) start empty.
+afterEach(() => {
+  if (typeof document !== 'undefined') document.body.replaceChildren()
+})
+
+/**
+ * Renders a server component to static HTML (no scripts, as a browser without JavaScript gets it) in a container, its
+ * client islands inside the providers PortalShell gives them.
+ */
+export async function renderServer(page: () => Promise<ReactNode> | ReactNode, fetchMock: FetchMock, me: PortalMe = portalMe()): Promise<HTMLElement> {
+  vi.stubGlobal('fetch', fetchMock)
+  const portal: Portal = { me, profile: me.participant!, zone: MARKET.time_zone, words: l10n(me.locale, MARKET.time_zone, translator(me.locale)), unread: 0, refresh: () => undefined }
+  const element = await page()
+  const container = document.createElement('div')
+  container.innerHTML = renderToStaticMarkup(<ToastProvider><ApiProvider><PortalProvider value={portal}>{element}</PortalProvider></ApiProvider></ToastProvider>)
+  document.body.replaceChildren(container)
+  return container
+}
+
+/** The request headers next/headers returns in server-component tests (vi.mock('next/headers') reads this). */
+export const requestHeaders = { current: new Headers({ cookie: 'nmp_session=s', 'accept-language': 'en' }) }

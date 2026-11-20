@@ -61,7 +61,7 @@ const PRIVACY_ITEM_LABELS: Readonly<Record<string, string>> = {
   privacy_requests: 'Privacy requests', portal_accounts: 'Portal account and sign-ins', cases: 'Cases',
   'participant.display_name': 'Member name', 'participant.contact': 'Member contact details', 'participant.identity_doc_id': 'Identity document',
   'user_account.email': 'Portal sign-in email', 'user_account.idp_subject': 'Single sign-on identity', 'user_account.display_name': 'Portal account name',
-  'user_account.firebase_subject': 'Google or email sign-in identity', password_credential: 'Portal password', mfa_credential: 'Authenticator app',
+  'user_account.firebase_subject': 'Google or email sign-in identity', 'user_account.locale': 'Portal language preference', password_credential: 'Portal password', mfa_credential: 'Authenticator app',
   portal_sign_in_code: 'Emailed sign-in codes', 'user_invitation (open: revoked)': 'Open portal invitations (revoked)', login_attempt: 'Sign-in attempts',
   'session.ip': 'Session IP addresses', 'session.user_agent': 'Session browser details', participant_signal: 'Duplicate-check fingerprints',
   'bank_detail_request.details_sealed': 'Bank details in change requests', 'bank_detail_request.contact_email_sealed': 'Contact email in bank detail requests',

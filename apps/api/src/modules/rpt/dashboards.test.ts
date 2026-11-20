@@ -2,14 +2,14 @@ import { randomUUID } from 'node:crypto'
 import type { FastifyInstance } from 'fastify'
 import { afterAll, beforeAll, describe, expect, test } from 'vitest'
 import {
-  buildTestApp, call, closePoolsAfterAll, createMarket, createPortalUser, createSignedInUser, createTenant, resetApiDb, type TestUser,
+  buildTestApp, call, closePoolsAfterAll, createMarket, createPortalUser, createSignedInUser, createTenant, ownerReplica, resetApiDb, type TestUser,
 } from '../../../test/helpers/index.js'
 import { ledModule } from '../led/index.js'
 import { percentHalfUp } from './dashboards.js'
 import { COMPLIANCE_DEFINITIONS, EXECUTIVE_DEFINITIONS, FINANCE_DEFINITIONS } from './definitions.js'
 import { rptModule } from './index.js'
 import {
-  calendar, caseFile, committedRun, instruction, order, orderEvent, ownerReplica, payoutBatch, period, posting, snapshot, warnedVersion,
+  calendar, caseFile, committedRun, instruction, order, orderEvent, payoutBatch, period, posting, snapshot, warnedVersion,
 } from './test-support.js'
 
 // T-B6-20..23 (FR-RPT-001, D-B6-07): executive, finance and compliance dashboards from committed data, scope per market,

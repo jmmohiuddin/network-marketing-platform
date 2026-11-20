@@ -21,7 +21,8 @@ import { approverNames, noApproverText } from '../admin/settings/labels'
 import { formatMegabytes } from '../../components/file-drop-zone'
 import { AdjustmentDialog, adjustmentRefusal } from './adjustment-dialog'
 import { privacyFacts, type DisputePayload, type DisputePreview } from './b5-effects'
-import { AddEvidence, AssignDialog, DECISION_LABELS, DISPUTE_DECISION_LABELS, PrivacySubmitDialog, ReasonDialog, ReturnedSubmitDialog, type CaseDialog } from './case-actions'
+import { AddEvidence, AssignDialog, decisionLabelsOf, PrivacySubmitDialog, ReasonDialog, ReturnedSubmitDialog, type CaseDialog } from './case-actions'
+import { GRIEVANCE_EVENTS, GRIEVANCE_STATE, GrievanceDeadlinesCard, grievanceFacts, type GrievancePayload } from './grievance'
 import { RestatementDialog } from './restatement-dialog'
 import { PRIVACY_REQUESTS_PATH, type PrivacyPayload, type PrivacyRequestDetail } from '../privacy/types'
 import { EffectPreview } from './effect-preview'
@@ -82,6 +83,7 @@ function PayloadFacts({ record }: { readonly record: CaseDetail }) {
     return <Fact label="Distributor’s message">{(record.payload as DisputePayload).message}</Fact>
   }
   if (record.type === 'privacy') return <>{privacyFacts(record).map(([label, value]) => <Fact key={label} label={label}>{value}</Fact>)}</>
+  if (record.type === 'grievance') return <>{grievanceFacts(record.payload as GrievancePayload).map(([label, value]) => <Fact key={label} label={label}>{value}</Fact>)}</>
   if (record.type === 'duplicate') {
     const payload = record.payload as DuplicatePayload
     return (
@@ -123,7 +125,7 @@ function Timeline({ record, myId }: { readonly record: CaseDetail; readonly myId
           return (
             <li key={event.id} className="py-2 flex flex-col gap-0.5">
               <div className="flex flex-wrap items-baseline justify-between gap-x-space-sm">
-                <span className="font-body-sm text-body-sm font-semibold text-on-surface">{EVENT_LABELS[event.kind]}</span>
+                <span className="font-body-sm text-body-sm font-semibold text-on-surface">{(record.type === 'grievance' ? GRIEVANCE_EVENTS[event.kind] : undefined) ?? EVENT_LABELS[event.kind]}</span>
                 <span className="font-data-mono-sm text-data-mono-sm text-secondary">{formatDateTime(event.occurred_at)}</span>
               </div>
               <span className="font-caption text-caption text-secondary">{actorName(record, event.actor_id, myId, record.eligible_approvers)}</span>
@@ -234,7 +236,7 @@ function CaseView({ record, info, reload }: { readonly record: CaseDetail; reado
     setProblem(null)
     try {
       await api.post(`/v1/cases/${record.id}/submit`, {})
-      toast({ message: 'Case submitted. A second person decides it.' })
+      toast({ message: record.type === 'grievance' ? 'Grievance acknowledged. It is now due by its resolution deadline.' : 'Case submitted. A second person decides it.' })
       reload()
     } catch (error) {
       setProblem(errorMessage(adjustmentRefusal(error)))
@@ -260,7 +262,10 @@ function CaseView({ record, info, reload }: { readonly record: CaseDetail; reado
   // A dispute's subject is a result line: named by its position and period (BUG-117), not its id.
   const disputed = dispute ? record.effect_preview as DisputePreview | null : null
   const upheld = record.state === 'approved' ? disputed : null
-  const decisionLabels = dispute ? DISPUTE_DECISION_LABELS : DECISION_LABELS
+  const decisionLabels = decisionLabelsOf(record.type)
+  const grievance = record.type === 'grievance'
+  // D-BM-13: a grievance whose complainant is not on record takes no evidence.
+  const takesEvidence = !(grievance && record.subject_type === 'market')
   const overdue = record.state === 'submitted' && record.due_at !== null && Date.parse(record.due_at) < Date.now()
   const submitDialog = record.type === 'returned_payment' || record.type === 'privacy'
   // A write-off's subject is a ledger account: name whose receivable it is from the preview (BUG-103).
@@ -274,7 +279,7 @@ function CaseView({ record, info, reload }: { readonly record: CaseDetail; reado
         ? <Button variant="primary" icon="rate_review" data-testid="primary-action" onClick={startReview}>Start review</Button>
         : live && canDecide && <Button icon="person_add" onClick={() => setDialog('assign')}>Assign</Button>}
       {live && canCreate && record.opened_by === myId && <Button variant="destructive" onClick={() => setDialog('withdraw')}>Withdraw</Button>}
-      {preparing && canCreate && <Button variant="primary" icon="send" loading={submitting} data-testid="primary-action" onClick={submitDialog ? () => setDialog('submit') : submit}>Submit for decision</Button>}
+      {preparing && canCreate && <Button variant="primary" icon="send" loading={submitting} data-testid="primary-action" onClick={submitDialog ? () => setDialog('submit') : submit}>{grievance ? 'Acknowledge' : 'Submit for decision'}</Button>}
     </>
   )
   return (
@@ -282,7 +287,7 @@ function CaseView({ record, info, reload }: { readonly record: CaseDetail; reado
       <PageHeader
         title={`${info.label} ${shortId(record.id)}`}
         breadcrumbs={[{ label: 'Cases', href: '/cases' }, { label: info.label }]}
-        state={<StatusBadge state={STATE_BADGES[record.state]} label={STATE_LABELS[record.state]} />}
+        state={<StatusBadge state={STATE_BADGES[record.state]} label={(grievance ? GRIEVANCE_STATE : STATE_LABELS)[record.state]} />}
         summary={`${reasonLabel(record.reason_code)} · opened ${formatDateTime(record.created_at)} by ${openerText(record, myId)}${record.due_at === null ? '' : ` · due ${formatDateTime(record.due_at)}`}`}
         actions={actions}
       />
@@ -291,7 +296,7 @@ function CaseView({ record, info, reload }: { readonly record: CaseDetail; reado
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-space-md items-start">
         <div className="lg:col-span-7 flex flex-col gap-space-md min-w-0">
           <section className={`${CARD} border-l-4 border-l-primary`} aria-labelledby="proposal-title" data-testid="card">
-            <h2 id="proposal-title" className={LABEL}>Subject and proposal</h2>
+            <h2 id="proposal-title" className={LABEL}>{grievance ? 'Complainant and complaint' : 'Subject and proposal'}</h2>
             <dl className="grid grid-cols-1 sm:grid-cols-2 gap-space-sm">
               <Fact label={`Subject (${disputed === null ? record.subject_type.replace(/_/g, ' ') : 'commission line'})`}>
                 {receivableOf !== undefined ? <>Clawback receivable of {payeeLink(receivableOf)}</>
@@ -304,11 +309,11 @@ function CaseView({ record, info, reload }: { readonly record: CaseDetail; reado
             </dl>
             {record.type === 'duplicate' && <LinkButton className="self-start" icon="compare" href={`/cases/duplicates?case=${record.id}`}>Compare side by side</LinkButton>}
           </section>
-          <Evidence record={record} canAdd={preparing && canCreate} onAdded={reload} myId={myId} />
+          <Evidence record={record} canAdd={preparing && canCreate && takesEvidence} onAdded={reload} myId={myId} />
           <Timeline record={record} myId={myId} />
         </div>
         <div className="lg:col-span-5 flex flex-col gap-space-md min-w-0">
-          <EffectPreview record={record} />
+          {grievance ? <GrievanceDeadlinesCard caseId={record.id} /> : <EffectPreview record={record} />}
           <Duties record={record} info={info} myId={myId} involved={!firstApprover && involved && canDecide} />
         </div>
       </div>

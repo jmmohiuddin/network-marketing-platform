@@ -2,7 +2,7 @@ import type { ApiModule } from '../lib/module.js'
 import { audModule } from './aud/index.js'
 import { createCasModule, type CaseTypeDefinition } from './cas/index.js'
 import { compCaseTypes, compModule } from './comp/index.js'
-import { cplModule } from './cpl/index.js'
+import { cplCaseTypes, cplModule } from './cpl/index.js'
 import { crmModule } from './crm/index.js'
 import { distModule } from './dist/index.js'
 import { genCaseTypes, genModule } from './gen/index.js'
@@ -22,8 +22,8 @@ import { supportModule } from './support/index.js'
 import { taxModule } from './tax/index.js'
 import { tenModule } from './ten/index.js'
 
-/** Every case type the product registers with CAS (PLAN B2 2.4, B3 2.5, B4 2.3, B5 §P). */
-export const caseTypes: readonly CaseTypeDefinition[] = [...genCaseTypes, ...parCaseTypes, ...compCaseTypes, ...ledCaseTypes, ...payCaseTypes, ...prvCaseTypes]
+/** Every case type the product registers with CAS (PLAN B2 2.4, B3 2.5, B4 2.3, B5 §P, B-MKT 4.1). */
+export const caseTypes: readonly CaseTypeDefinition[] = [...genCaseTypes, ...parCaseTypes, ...compCaseTypes, ...ledCaseTypes, ...payCaseTypes, ...prvCaseTypes, ...cplCaseTypes]
 
 /** Every feature module, in mount order. A new module adds itself here. */
 export const defaultModules: readonly ApiModule[] = [

@@ -180,6 +180,19 @@ describe('AppShell', () => {
     expect(links.map((link) => link.getAttribute('aria-current'))).toEqual([null, null, 'page'])
   })
 
+  it('shows the B-MKT Tax entry the API grants (gavel); the registers page belongs to Cases', async () => {
+    navigation.pathname = '/cases/registers'
+    const entries = [
+      { key: 'cases', path: '/cases', label: 'Cases' },
+      { key: 'tax', path: '/tax', label: 'Tax' },
+    ]
+    renderWithProviders(<AppShell realm="tenant"><Page /></AppShell>, fetchReturning(ok(me({ navigation: entries }))))
+    await screen.findByText('May invite users')
+    const links = entries.map((entry) => screen.getByRole('link', { name: entry.label }))
+    expect(links.map((link) => link.querySelector('.material-symbols-outlined')?.textContent)).toEqual(['rule_folder', 'gavel'])
+    expect(links.map((link) => link.getAttribute('aria-current'))).toEqual(['page', null])
+  })
+
   it('opens the navigation as an overlay from Menu and closes it with Escape', async () => {
     const user = userEvent.setup()
     renderWithProviders(<AppShell realm="tenant"><Page /></AppShell>, fetchReturning(ok(me())))

@@ -1,7 +1,7 @@
-import type { Metadata } from 'next'
 import { MyDataPage } from '../../../../../features/portal/my-data'
+import { portalTitle } from '../../../../../features/portal/i18n/server'
 
-export const metadata: Metadata = { title: 'My data' }
+export const generateMetadata = portalTitle('my_data.title')
 
 export default function Page() {
   return <MyDataPage />

@@ -1,42 +1,32 @@
 'use client'
 
-import { useEffect, useState, type ComponentProps, type ReactNode } from 'react'
+import { useEffect, useState, type ComponentProps } from 'react'
 import { useApi } from '../../components/api-provider'
-import { Banner } from '../../components/banner'
 import { Button } from '../../components/button'
-import { Icon } from '../../components/icon'
 import { FormField, TEXTAREA_CLASS, TOUCH_INPUT_CLASS, type FieldLabelProps } from '../../components/form-field'
-import { ErrorState, NotAvailable } from '../../components/states'
-import { isApiError } from '../../lib/api'
-import { errorMessage, isNotAvailable } from '../../lib/messages'
+import { useSignOut } from '../../components/sign-out-button'
 import { useResource, type Query, type Resource } from '../../lib/use-resource'
+import { Failure } from './blocks'
+import { errorText } from './format'
+import { usePortal } from './shell'
 
-// Portal building blocks from the sc_37/sc_18 markup: cards, tiles, 16 px fields with 44 px targets (guidelines §6.9).
-
-/** sc_37 section card. */
-export const CARD = 'bg-surface-container-lowest rounded-xl p-space-md shadow-sm'
-/** sc_37 inner tile. */
-export const TILE = 'p-space-sm rounded-lg bg-surface-container-low'
-export const SECTION_TITLE = 'font-section-heading text-section-heading text-on-surface'
-export const PAGE_TITLE = 'font-title-lg-mobile text-title-lg-mobile text-on-surface tracking-tight'
-export const CAPTION = 'font-caption text-caption text-on-surface-variant'
-export const MONO = 'font-data-mono-sm text-data-mono-sm'
-/** sc_37 module link card (whole card is the link, ≥ 44 px). */
-export const LINK_CARD = 'flex items-center justify-between gap-space-sm p-space-md rounded-xl bg-surface-container-lowest shadow-sm hover:bg-surface-container-low transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary'
-/** Text link with a 44 px touch height. */
-export const TEXT_LINK = 'inline-flex items-center gap-0.5 min-h-11 font-body-sm text-body-sm text-primary font-semibold hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary'
-
-/** Items shown before "Show more" (PLAN B5 §5). */
-export const SHOW_FIRST = 7
+// Client islands of the portal: 16 px fields with 44 px targets (guidelines §6.9), failures with Try again, paged
+// lists with Show more, the wide-screen query and native download links.
 
 // 16 px text so phones do not zoom into the field, 44 px tall (guidelines: portal inputs 40/44 px, 16 px).
 const PORTAL_TEXTAREA = TEXTAREA_CLASS.replace('font-body-sm text-body-sm', 'font-body-lg text-body-lg')
+
+/** The field label with the catalogue's "(optional)" (FormField's own marker is English). */
+function useLabel(label: string, optional: boolean | undefined): string {
+  const { words } = usePortal()
+  return optional === true ? `${label} ${words.t('common.optional')}` : label
+}
 
 export type PortalInputProps = FieldLabelProps & Omit<ComponentProps<'input'>, 'id' | 'className'>
 
 export function PortalInput({ label, helper, error, optional, id, ...input }: PortalInputProps) {
   return (
-    <FormField label={label} helper={helper} error={error} optional={optional} id={id}>
+    <FormField label={useLabel(label, optional)} helper={helper} error={error} id={id}>
       {(control) => <input {...input} {...control} className={TOUCH_INPUT_CLASS} />}
     </FormField>
   )
@@ -46,7 +36,7 @@ export type PortalTextareaProps = FieldLabelProps & Omit<ComponentProps<'textare
 
 export function PortalTextarea({ label, helper, error, optional, id, ...textarea }: PortalTextareaProps) {
   return (
-    <FormField label={label} helper={helper} error={error} optional={optional} id={id}>
+    <FormField label={useLabel(label, optional)} helper={helper} error={error} id={id}>
       {(control) => <textarea {...textarea} {...control} className={PORTAL_TEXTAREA} />}
     </FormField>
   )
@@ -59,7 +49,7 @@ export type PortalSelectProps = FieldLabelProps & Omit<ComponentProps<'select'>,
 
 export function PortalSelect({ label, helper, error, optional, id, options, placeholder, ...select }: PortalSelectProps) {
   return (
-    <FormField label={label} helper={helper} error={error} optional={optional} id={id}>
+    <FormField label={useLabel(label, optional)} helper={helper} error={error} id={id}>
       {(control) => (
         <select {...select} {...control} className={`${TOUCH_INPUT_CLASS} cursor-pointer`}>
           {placeholder !== undefined && <option value="" disabled>{placeholder}</option>}
@@ -70,39 +60,10 @@ export function PortalSelect({ label, helper, error, optional, id, options, plac
   )
 }
 
-/** D-B5-06: team, customers, rank and new disputes are closed to a terminated participant. */
-export function ClosedNotice() {
-  return <Banner tone="info" title="Your account is closed">You can still read your statements, notifications and payment details.</Banner>
-}
-
-/** A failed read: 404/403 "Not found or not available to you", a closed account, else the error with Try again. */
+/** A failed read in a client island, with Try again. */
 export function PortalFailure({ error, onRetry, section = false }: { readonly error: unknown; readonly onRetry: () => void; readonly section?: boolean }) {
-  if (isApiError(error, 'PARTICIPANT_TERMINATED')) return <ClosedNotice />
-  if (isNotAvailable(error)) return <NotAvailable section={section} />
-  return <ErrorState message={errorMessage(error)} onRetry={onRetry} section={section} />
-}
-
-/** A card with a section heading (h2) and optional trailing content. */
-export function Section({ title, icon, aside, children, id, testId }: {
-  readonly title: string
-  readonly icon?: string
-  readonly aside?: ReactNode
-  readonly children: ReactNode
-  readonly id?: string
-  readonly testId?: string
-}) {
-  return (
-    <section id={id} data-testid={testId} aria-labelledby={id === undefined ? undefined : `${id}-title`} className={`${CARD} flex flex-col gap-space-sm`}>
-      <div className="flex items-center justify-between gap-space-sm">
-        <div className="flex items-center gap-1.5 min-w-0">
-          {icon !== undefined && <Icon name={icon} size={18} className="text-primary" />}
-          <h2 id={id === undefined ? undefined : `${id}-title`} className={SECTION_TITLE}>{title}</h2>
-        </div>
-        {aside}
-      </div>
-      {children}
-    </section>
-  )
+  const { t } = usePortal().words
+  return <Failure error={error} t={t} section={section} retry={<Button variant={section ? 'secondary' : 'primary'} onClick={onRetry}>{t('common.try_again')}</Button>} />
 }
 
 export interface ShownList<R> {
@@ -156,32 +117,26 @@ export function useShownList<D, R = D extends readonly (infer E)[] ? E : never>(
   }
 }
 
-/** The Show more control under a list, with its own error line. */
+/** The Show more control under a list, with its own error line; `label` names what is shown ("Show more customers"). */
 export function ShowMore({ list, label }: { readonly list: Pick<ShownList<unknown>, 'hasMore' | 'busy' | 'moreError' | 'showMore'>; readonly label: string }) {
+  const { t } = usePortal().words
   if (!list.hasMore && list.moreError === null) return null
   return (
     <div className="flex flex-col items-stretch gap-space-xs">
-      {list.moreError !== null && <p role="alert" className="font-body-sm text-body-sm text-error">{errorMessage(list.moreError)}</p>}
-      {list.hasMore && <Button size="lg" loading={list.busy} onClick={list.showMore} aria-label={`Show more ${label}`}>Show more</Button>}
+      {list.moreError !== null && <p role="alert" className="font-body-sm text-body-sm text-error">{errorText(list.moreError, t)}</p>}
+      {list.hasMore && <Button size="lg" loading={list.busy} onClick={list.showMore} aria-label={label}>{t('common.show_more')}</Button>}
     </div>
   )
 }
 
-const WIDE = '(min-width: 1024px)'
-
-/** Whether the viewport is 1024 px or wider (line explanation as a side panel); null until read, false without matchMedia. */
-export function useWideScreen(): boolean | null {
-  const [wide, setWide] = useState<boolean | null>(null)
-  useEffect(() => {
-    if (typeof window.matchMedia !== 'function') {
-      setWide(false)
-      return
-    }
-    const query = window.matchMedia(WIDE)
-    const update = () => setWide(query.matches)
-    update()
-    query.addEventListener('change', update)
-    return () => query.removeEventListener('change', update)
-  }, [])
-  return wide
+/** sc_38 sign-out: ends the session and opens the portal sign-in of this company (the hook's own message is English). */
+export function PortalSignOut() {
+  const { me, words } = usePortal()
+  const { busy, error, signOut } = useSignOut('portal', me.tenant?.slug ?? null)
+  return (
+    <div className="flex flex-col gap-space-xs">
+      <Button size="lg" variant="destructive" icon="logout" loading={busy} onClick={signOut}>{words.t('more.sign_out')}</Button>
+      {error !== null && <p role="alert" className="font-body-sm text-body-sm text-error">{words.t('more.sign_out_failed')}</p>}
+    </div>
+  )
 }

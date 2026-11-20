@@ -9,9 +9,10 @@ import { ApiError, notFound } from '../../lib/errors.js'
 import { envelope, parse } from '../../lib/http.js'
 import { idempotent, sendIdempotent } from '../../lib/idempotency.js'
 import { open, seal } from '../../lib/secret-box.js'
+import { sealContext as context } from './access.js'
 
 // D-B4-17: a PUT closes the current version now and starts the next one; fields not sent carry over, so a tax id given
-// later applies from then on, never retroactively. shortcut: generic tax-id format, market-pack formats in B-MKT.
+// later applies from then on, never retroactively. D-BM-07: the pack's tax-id format in force today is checked too.
 
 const idParams = z.object({ id: z.uuid() })
 const putBody = z.strictObject({
@@ -24,7 +25,6 @@ type PutBody = z.infer<typeof putBody>
 const portalPutBody = putBody.required({ residency: true, entity_type: true })
 
 const TAX_ID = /^[A-Z0-9-]{4,32}$/
-const context = (versionId: string) => `tax_profile:${versionId}`
 const masked = (taxId: string) => `•••• ${taxId.slice(-4)}`
 
 interface Version {
@@ -48,7 +48,35 @@ async function versions(tx: Tx, participantId: string, scope: readonly string[] 
   return found
 }
 
+const isCurrent = (v: Version) => v.valid_to === null || v.valid_to > new Date()
 const view = ({ tax_id_sealed: _sealed, ...rest }: Version) => rest
+
+interface TaxIdFormat {
+  label: string
+  pattern: string
+}
+
+/** D-BM-07: the tax_id_format rule of the participant's market pack in force today (market zone), or null. */
+async function packFormat(tx: Tx, participantId: string): Promise<TaxIdFormat | null> {
+  const { rows } = await tx.query<TaxIdFormat>(
+    `SELECT r.params ->> 'label' AS label, r.params ->> 'pattern' AS pattern
+     FROM participant p JOIN market m ON m.id = p.market_id
+     CROSS JOIN LATERAL market_pack_rule(m.id, 'tax_id_format', (now() AT TIME ZONE m.time_zone)::date) r
+     WHERE p.id = $1 AND r.id IS NOT NULL`,
+    [participantId],
+  )
+  return rows[0] ?? null
+}
+
+/** The current version, the history and the pack format hint (GET staff and portal). */
+async function profileView(tx: Tx, participantId: string, scope: readonly string[] | null) {
+  const all = await versions(tx, participantId, scope)
+  const current = all.find(isCurrent)
+  return {
+    current: current === undefined ? null : view(current), history: all.filter((v) => v !== current).map(view),
+    format: await packFormat(tx, participantId),
+  }
+}
 
 /**
  * The tax id normalised and format-checked (422 TAX_ID_FORMAT). The Idempotency-Key hash is unkeyed SHA-256, so the
@@ -77,6 +105,11 @@ async function saveVersion(tx: Tx, change: Change, scope: readonly string[] | nu
   const { rows: clock } = await tx.query<{ at: string }>('SELECT clock_timestamp()::text AS at') // text keeps the microseconds
   const at = clock[0]!.at
   const previous = (await versions(tx, id, scope)).find((v) => v.valid_to === null)
+  // After the B4 generic check (taxIdOf) and the scope check, so an out-of-scope participant stays a 404.
+  const format = taxId === undefined ? null : await packFormat(tx, id)
+  if (format !== null && !new RegExp(format.pattern).test(taxId!)) {
+    throw new ApiError(422, 'TAX_ID_FORMAT', `This is not a valid ${format.label}.`, { label: format.label })
+  }
   const versionId = randomUUID()
   const sealed = taxId !== undefined
     ? seal(secretKey, taxId, context(versionId))
@@ -101,7 +134,6 @@ async function saveVersion(tx: Tx, change: Change, scope: readonly string[] | nu
   )
   return rows[0]!
 }
-const isCurrent = (v: Version) => v.valid_to === null || v.valid_to > new Date()
 
 export function registerTaxProfileRoutes(app: FastifyInstance): void {
   const tenant = requireRealm('tenant')
@@ -110,9 +142,7 @@ export function registerTaxProfileRoutes(app: FastifyInstance): void {
   app.get('/v1/participants/:id/tax-profile', { preHandler: [tenant, requirePermission('participant.read')] }, async (request) => {
     const { id } = parse(idParams, request.params)
     const scope = marketScope(currentAuth(request), 'participant.read')
-    const all = await inTenant(request, (tx) => versions(tx, id, scope))
-    const current = all.find(isCurrent)
-    return envelope({ current: current === undefined ? null : view(current), history: all.filter((v) => v !== current).map(view) })
+    return envelope(await inTenant(request, (tx) => profileView(tx, id, scope)))
   })
 
   app.put('/v1/participants/:id/tax-profile', { preHandler: [tenant, requirePermission('tax.manage'), requireStepUp()] }, async (request, reply) => {
@@ -150,9 +180,7 @@ export function registerSelfTaxProfileRoutes(app: FastifyInstance): void {
 
   app.get('/v1/me/tax-profile', portal, async (request) => {
     const participantId = currentAuth(request).participantId!
-    const all = await inPortal(request, (tx) => versions(tx, participantId, null))
-    const current = all.find(isCurrent)
-    return envelope({ current: current === undefined ? null : view(current), history: all.filter((v) => v !== current).map(view) })
+    return envelope(await inPortal(request, (tx) => profileView(tx, participantId, null)))
   })
 
   app.put('/v1/me/tax-profile', portal, async (request, reply) => {

@@ -137,6 +137,8 @@ export function policyValue(key: PolicyKey, draft: Draft): Built {
   const value = draft.value ?? ''
   switch (key) {
     case 'plan.activation_notice_days': {
+      // BUG-134: "Clear (no notice period)" saves null, the key's unset value.
+      if (draft.clear === 'true') return built(null, [])
       const days = whole(draft, 'value', 0, NOTICE_MAX_DAYS, 'the days of notice')
       return built(days.number, [days.error])
     }
@@ -335,7 +337,13 @@ export function PolicyFields({ policyKey, draft, errors, onChange }: PolicyField
   switch (policyKey) {
     case 'money.rounding_mode': return select('value', 'Rounding mode', ROUNDING_OPTIONS)
     case 'money.clawback_policy': return select('value', 'Clawback default', CLAWBACK_OPTIONS)
-    case 'plan.activation_notice_days': return input('value', 'Days of notice', `0 to ${NOTICE_MAX_DAYS} days before a plan version activates.`)
+    case 'plan.activation_notice_days':
+      return (
+        <>
+          {check('clear', 'Clear (no notice period)', 'Saves no notice period: a new plan version may then start on any date.')}
+          {draft.clear !== 'true' && input('value', 'Days of notice', `0 to ${NOTICE_MAX_DAYS} days before a plan version activates.`)}
+        </>
+      )
     case 'participants.duplicate_matching':
       return (
         <>

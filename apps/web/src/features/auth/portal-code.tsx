@@ -10,21 +10,29 @@ import { FormField } from '../../components/form-field'
 import { LoadingState } from '../../components/states'
 import { isApiError } from '../../lib/api'
 import { leavePage } from '../../lib/leave-page'
-import { errorMessage } from '../../lib/messages'
 import { afterSignInPath, PORTAL_SIGN_IN_PATH } from '../../lib/navigation'
-import { CODE_LENGTH, codeError, digitsOnly } from '../../lib/validation'
+import { CODE_LENGTH, digitsOnly } from '../../lib/validation'
+import { errorText } from '../portal/format'
+import { translator, type Locale, type Translate } from '../portal/i18n'
 import { AuthFooter, AuthHeader } from './auth-card'
 import type { SignInSession } from './firebase-sign-in'
 import {
   PORTAL_CODES_ENDPOINT, PORTAL_SESSIONS_ENDPOINT, portalQuery, portalTarget, readPendingCode, savePendingCode, type PendingCode,
 } from './portal-sign-in'
 
+/** The 6-digit code check of lib/validation in catalogue words. */
+function codeProblem(code: string, t: Translate): string | null {
+  if (code === '') return t('auth.code_required')
+  return /^\d{6}$/.test(code) ? null : t('auth.code_digits')
+}
+
 /**
  * SC-27 portal code step (D-B5-03): the 6-digit code from the email, checked with the company and email of the first
  * step (kept in this tab). A wrong, used or expired code reads the same for every email; "Send a new code" asks again.
  */
-export function PortalCode() {
+export function PortalCode({ locale }: { readonly locale: Locale }) {
   const api = useApi()
+  const t = translator(locale)
   const params = useSearchParams()
   const next = params.get('next')
   const back = `${PORTAL_SIGN_IN_PATH}${portalQuery(params.get('tenant'), next)}`
@@ -45,12 +53,12 @@ export function PortalCode() {
     setPending(stored !== null && tenant !== null && tenant !== stored.tenant ? null : stored)
   }, [tenant])
 
-  if (pending === undefined) return <LoadingState label="Loading the code step" />
+  if (pending === undefined) return <LoadingState label={t('auth.code_loading')} />
   if (pending === null) {
     return (
       <>
-        <AuthHeader eyebrow="Distributor sign-in" icon="mail" title="Start the sign-in again">Enter your email address again to get a new code.</AuthHeader>
-        <LinkButton href={back} variant="primary" size="lg" icon="login" className="w-full" data-testid="primary-action">Back to sign-in</LinkButton>
+        <AuthHeader eyebrow={t('auth.eyebrow')} icon="mail" title={t('auth.start_again')}>{t('auth.start_again_text')}</AuthHeader>
+        <LinkButton href={back} variant="primary" size="lg" icon="login" className="w-full" data-testid="primary-action">{t('auth.back_to_sign_in')}</LinkButton>
       </>
     )
   }
@@ -58,7 +66,7 @@ export function PortalCode() {
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    const invalid = codeError(code)
+    const invalid = codeProblem(code, t)
     setFieldError(invalid)
     setFormError(null)
     setNotice(null)
@@ -73,10 +81,10 @@ export function PortalCode() {
       leavePage(afterSignInPath(data.next_step, portalTarget(next)))
     } catch (error) {
       if (isApiError(error, 'INVALID_CREDENTIALS')) {
-        setFieldError(errorMessage(error))
+        setFieldError(t('auth.code_wrong'))
         input.current?.focus()
       } else {
-        setFormError(errorMessage(error))
+        setFormError(errorText(error, t))
       }
       setBusy(false)
     }
@@ -92,33 +100,33 @@ export function PortalCode() {
       await api.post(PORTAL_CODES_ENDPOINT, started)
       setCode('')
       setFieldError(null)
-      setNotice('A new code is on its way. Earlier codes no longer work.')
+      setNotice(t('auth.code_resent'))
     } catch (error) {
-      setFormError(errorMessage(error))
+      setFormError(errorText(error, t))
     }
     setResending(false)
   }
 
   return (
     <>
-      <AuthHeader eyebrow="Distributor sign-in" icon="mail" title="Enter your sign-in code" step="Step 2 / 2">
-        If a portal account uses {started.email}, we sent it a 6-digit code. It works once and for a few minutes.
+      <AuthHeader eyebrow={t('auth.eyebrow')} icon="mail" title={t('auth.code_title')} step={t('auth.step', { step: 2, of: 2 })}>
+        {t('auth.code_intro', { email: started.email })}
       </AuthHeader>
       {notice !== null && <Banner tone="success">{notice}</Banner>}
       <form className="flex flex-col gap-space-md" onSubmit={submit} noValidate>
         {formError !== null && <Banner tone="danger">{formError}</Banner>}
-        <FormField id="portal-code" label="Sign-in code" helper="The 6-digit code from the email." error={fieldError}>
+        <FormField id="portal-code" label={t('auth.code')} helper={t('auth.code_helper')} error={fieldError}>
           {(control) => (
             <input {...control} ref={input} className={CODE_CLASS} value={code} onChange={(event) => setCode(digitsOnly(event.target.value))}
-              onBlur={() => code !== '' && setFieldError(codeError(code))} inputMode="numeric" autoComplete="one-time-code"
+              onBlur={() => code !== '' && setFieldError(codeProblem(code, t))} inputMode="numeric" autoComplete="one-time-code"
               maxLength={CODE_LENGTH} placeholder="000000" autoFocus />
           )}
         </FormField>
-        <Button type="submit" variant="primary" size="lg" icon="login" loading={busy} className="w-full" data-testid="primary-action">Sign in</Button>
+        <Button type="submit" variant="primary" size="lg" icon="login" loading={busy} className="w-full" data-testid="primary-action">{t('auth.sign_in')}</Button>
       </form>
       <AuthFooter>
-        <Button variant="tertiary" loading={resending} onClick={resend}>Send a new code</Button>
-        <LinkButton variant="tertiary" href={`${PORTAL_SIGN_IN_PATH}${portalQuery(params.get('tenant'), next, 'password')}`}>Use password</LinkButton>
+        <Button variant="tertiary" loading={resending} onClick={resend}>{t('auth.code_new')}</Button>
+        <LinkButton variant="tertiary" href={`${PORTAL_SIGN_IN_PATH}${portalQuery(params.get('tenant'), next, 'password')}`}>{t('auth.use_password')}</LinkButton>
       </AuthFooter>
     </>
   )

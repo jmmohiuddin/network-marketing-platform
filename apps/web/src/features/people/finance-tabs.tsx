@@ -18,7 +18,7 @@ import { ledgerPath } from '../ledger/format'
 import { inScope, marketScope } from '../markets/format'
 import type { PayeeBalance } from '../ledger/types'
 import { marketMoney } from '../periods/format'
-import { BankDetailDialog, ENTITY_LABELS, HoldDialog, TaxDialog, TaxUnmaskDialog } from './finance-dialogs'
+import { BankDetailDialog, ENTITY_LABELS, HoldDialog, TaxDialog, TaxUnmaskDialog, type TaxIdFormat } from './finance-dialogs'
 import type { ParticipantDetail } from './types'
 import { Facts, RecordCard } from './ui'
 
@@ -107,7 +107,7 @@ export function BankingTab({ detail }: { readonly detail: ParticipantDetail }) {
 
 export function TaxTab({ detail }: { readonly detail: ParticipantDetail }) {
   const write = useWrite()
-  const profile = useResource<{ readonly current: TaxVersion | null; readonly history: readonly TaxVersion[] }>(`/v1/participants/${detail.id}/tax-profile`)
+  const profile = useResource<{ readonly current: TaxVersion | null; readonly history: readonly TaxVersion[]; readonly format: TaxIdFormat | null }>(`/v1/participants/${detail.id}/tax-profile`)
   const [dialog, setDialog] = useState<'edit' | 'unmask' | null>(null)
   const current = profile.data?.current ?? null
   const actions = (
@@ -142,7 +142,7 @@ export function TaxTab({ detail }: { readonly detail: ParticipantDetail }) {
         <DataTable bare caption="Earlier tax profile versions" columns={columns} rows={profile.data?.history ?? []} rowKey={(row) => row.id} loading={profile.loading}
           error={tableError(profile)} empty={{ title: 'No earlier version.' }} />
       </RecordCard>
-      {dialog === 'edit' && <TaxDialog participantId={detail.id} current={current} onClose={() => setDialog(null)} onDone={() => {
+      {dialog === 'edit' && <TaxDialog participantId={detail.id} current={current} format={profile.data?.format ?? null} onClose={() => setDialog(null)} onDone={() => {
         setDialog(null)
         profile.reload()
       }} />}

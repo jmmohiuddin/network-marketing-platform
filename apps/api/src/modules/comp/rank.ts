@@ -1,6 +1,7 @@
 import type { Tx } from '@nmp/db'
 import { formatUnits, renderExpression, type Requirement } from '@nmp/engine'
 import { notFound } from '../../lib/errors.js'
+import type { Texts } from './messages.js'
 import { planFor } from './snapshot.js'
 import type { LadderRank } from './statements.js'
 
@@ -58,28 +59,28 @@ const periodRow = (row: StateRow, final: boolean) => ({
   measures: row.measures.map((m) => ({ measure: m.measure, value: m.valueMinor })),
 })
 
-const rankText = (r: { ladder: string; rank: string }) => `${r.ladder} ${r.rank} or higher`
-
-/** One requirement: measured and met only for a per-period measure without a leg rule (leg counts are not stored, C-B5-16). */
-export function requirementItem(q: Requirement, measures: StateRow['measures'], digits: number) {
+/** One requirement in the locale of `texts`: measured and met only for a per-period measure without a leg rule (leg counts are not stored, C-B5-16). */
+export function requirementItem(q: Requirement, measures: StateRow['measures'], digits: number, { t, decimal }: Texts) {
+  const rankText = (r: { ladder: string; rank: string }) => t('rank.at_or_higher', { ladder: r.ladder, rank: r.rank })
   if (q.kind === 'measure') {
-    const window = q.window.type === 'rolling' ? ` over ${q.window.periods} periods` : q.window.type === 'per_order' ? ' in one order' : ''
+    const window = q.window.type === 'rolling' ? t('rank.window.rolling', { periods: q.window.periods }) : q.window.type === 'per_order' ? t('rank.window.per_order') : ''
     const measured = measures.find((m) => m.measure === q.measure)?.valueMinor ?? null
     // Rolling, per-order and leg-limited requirements are not measured by the stored period value.
     const comparable = q.window.type === 'period' && q.maxPerLegShare === null && measured !== null
     return {
-      kind: q.kind, text: `${q.measure} at least ${formatUnits(q.atLeastMinor, digits)}${window}${q.maxPerLegShare === null ? '' : ', measured before the leg rule'}`,
+      kind: q.kind,
+      text: t('rank.measure', { measure: q.measure, amount: decimal(formatUnits(q.atLeastMinor, digits)), window, leg: q.maxPerLegShare === null ? '' : t('rank.leg_rule') }),
       measure: q.measure, required: q.atLeastMinor.toString(), measured, met: comparable ? BigInt(measured) >= q.atLeastMinor : null,
     }
   }
-  if (q.kind === 'legs') return { kind: q.kind, text: `${q.count} ${q.tree} legs at ${rankText(q.rank)}`, required: String(q.count), met: null }
-  if (q.kind === 'profile') return { kind: q.kind, text: `${q.fact} is ${q.equals}`, met: null }
-  if (q.kind === 'rank') return { kind: q.kind, text: `Holds ${rankText(q.rank)}`, met: null }
+  if (q.kind === 'legs') return { kind: q.kind, text: t('rank.legs', { count: q.count, tree: t(`rank.tree.${q.tree}`), rank: rankText(q.rank) }), required: String(q.count), met: null }
+  if (q.kind === 'profile') return { kind: q.kind, text: t('rank.profile', { fact: q.fact, equals: q.equals }), met: null }
+  if (q.kind === 'rank') return { kind: q.kind, text: t('rank.holds', { rank: rankText(q.rank) }), met: null }
   return { kind: q.kind, text: renderExpression(q.expr), met: null }
 }
 
 /** Requirements of each paid-as rank of the newest committed row, from its run's compiled plan. */
-async function requirementsOf(tx: Tx, row: StateRow | undefined, digits: number) {
+async function requirementsOf(tx: Tx, row: StateRow | undefined, digits: number, texts: Texts) {
   if (row === undefined) return []
   const plan = await planFor(tx, row.plan_version_id, row.calendar_id, '0')
   return row.paid_as.flatMap(({ ladder, rank }) => {
@@ -89,13 +90,15 @@ async function requirementsOf(tx: Tx, row: StateRow | undefined, digits: number)
     return [{
       ladder, rank, status: used > 0 ? 'held_by_grace' : 'held',
       ...(used > 0 ? { grace: { used, of: definition.maintenance?.gracePeriods ?? used } } : {}),
-      items: definition.requires.map((q) => requirementItem(q, row.measures, digits)),
+      items: definition.requires.map((q) => requirementItem(q, row.measures, digits, texts)),
     }]
   })
 }
 
 /** GET /v1/me/rank: one own position (the given one, else the first currently owned), 404 for any other. */
-export async function rankStatus(tx: Tx, participantId: string, positionId: string | undefined, after: RankCursor | undefined, limit: number) {
+export async function rankStatus(
+  tx: Tx, participantId: string, positionId: string | undefined, after: RankCursor | undefined, limit: number, texts: Texts,
+) {
   const { rows: positions } = await tx.query<{ id: string; position_ref: string; market_id: string; minor_unit: number }>(
     `SELECT x.id, x.position_ref, x.market_id, m.minor_unit FROM position x JOIN market m ON m.id = x.market_id
      WHERE EXISTS (SELECT 1 FROM position_ownership o WHERE o.position_id = x.id AND o.participant_id = $1) AND ($2::uuid IS NULL OR x.id = $2)
@@ -118,7 +121,7 @@ export async function rankStatus(tx: Tx, participantId: string, positionId: stri
     data: {
       position: { id: position.id, position_ref: position.position_ref },
       periods: [...(open === undefined ? [] : [periodRow(open, false)]), ...page.map((row) => periodRow(row, true))],
-      requirements: await requirementsOf(tx, newest, position.minor_unit),
+      requirements: await requirementsOf(tx, newest, position.minor_unit, texts),
       transition_notice: notice[0]?.effective_from == null ? null : { effective_from: notice[0].effective_from },
     },
     next: rows.length > limit && last !== undefined ? { starts_at: last.starts_at.toISOString(), period_id: last.period_id } : null,

@@ -1,17 +1,12 @@
 // Words and exact number formatting of SC-31 / SC-32. Never Number arithmetic on money or volume.
+import { minorToDecimal } from '../../lib/format'
 import { decimal, integer } from '../data/format'
 import { PROVIDER_NAMES } from '../integrations/format'
 import type { CommerceProvider } from '../integrations/types'
 import type { AttributionSource, Handling, LateState, Purpose, Volumes } from './types'
 
-/** "-12345" with 2 decimals -> "-123.45": exact string arithmetic on minor units. */
-export function minorToDecimal(minor: string, minorUnit: number): string {
-  const negative = minor.startsWith('-')
-  const digits = (negative ? minor.slice(1) : minor).replace(/^\+/, '').padStart(minorUnit + 1, '0')
-  const whole = digits.slice(0, digits.length - minorUnit)
-  const fraction = minorUnit === 0 ? '' : `.${digits.slice(-minorUnit)}`
-  return `${negative ? '-' : ''}${whole}${fraction}`
-}
+// Lives in lib/format so the portal bundle does not pull the staff format modules in (BUG-132).
+export { minorToDecimal }
 
 /** "1,234.50 EUR" with the market's minor unit; minor units as such while the minor unit is unknown. */
 export function moneyText(minor: string, currency: string, minorUnit: number | undefined): string {

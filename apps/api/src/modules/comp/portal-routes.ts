@@ -5,8 +5,10 @@ import { assertPortalActive, currentAuth, requirePortal } from '../../lib/auth.j
 import { inPortal } from '../../lib/db.js'
 import { envelope, parse } from '../../lib/http.js'
 import { idempotent, sendIdempotent } from '../../lib/idempotency.js'
+import { portalLocale } from '../../lib/locale.js'
 import { decodeCursor, encodeCursor, pageQuery, toPage } from '../../lib/pagination.js'
 import { disputeDetail, disputeMessage, listDisputes, openDispute } from './disputes.js'
+import { textsFor, type Texts } from './messages.js'
 import { rankStatus } from './rank.js'
 import { lineExplanation, listStatements, statementCsv, statementDetail } from './statements.js'
 
@@ -36,6 +38,11 @@ function asParticipant<T>(request: FastifyRequest, fn: (tx: Tx, participantId: s
   return inPortal(request, (tx) => fn(tx, currentAuth(request).participantId!))
 }
 
+/** asParticipant with the COMP texts in the session's effective locale (D-BM-11). */
+function localised<T>(request: FastifyRequest, fn: (tx: Tx, participantId: string, texts: Texts) => Promise<T>): Promise<T> {
+  return asParticipant(request, async (tx, participantId) => fn(tx, participantId, textsFor(await portalLocale(tx, request), request.log)))
+}
+
 export function registerPortalRoutes(app: FastifyInstance): void {
   app.get('/v1/me/statements', portal, async (request) => {
     const query = parse(statementsQuery, request.query)
@@ -60,14 +67,14 @@ export function registerPortalRoutes(app: FastifyInstance): void {
 
   app.get('/v1/me/statement-lines/:id/explanation', portal, async (request) => {
     const params = parse(id, request.params)
-    return envelope(await asParticipant(request, (tx, participant) => lineExplanation(tx, participant, params.id, request.log)))
+    return envelope(await localised(request, (tx, participant, texts) => lineExplanation(tx, participant, params.id, texts, request.log)))
   })
 
   app.get('/v1/me/rank', portal, async (request) => {
     assertPortalActive(currentAuth(request))
     const query = parse(rankQuery, request.query)
     const after = decodeCursor(query.cursor, rankCursor)
-    const status = await asParticipant(request, (tx, participant) => rankStatus(tx, participant, query.position_id, after, query.limit))
+    const status = await localised(request, (tx, participant, texts) => rankStatus(tx, participant, query.position_id, after, query.limit, texts))
     return envelope(status.data, { next_cursor: status.next === null ? null : encodeCursor(status.next) })
   })
 

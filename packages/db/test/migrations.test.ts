@@ -47,13 +47,15 @@ const B6_TABLES = [
   'plan_version_filing', 'data_export', 'data_export_file', 'saved_view', 'migration', 'migration_opening_balance',
   'migration_opening_state', 'parallel_run', 'parallel_run_difference',
 ]
+// PLAN B-MKT section 1 (pack_rule is a platform table without tenant_id).
+const BMKT_TABLES = ['pack_rule', 'tax_line', 'tax_form_generation', 'tax_form']
 const INSERT_ONLY_TABLES = [
   'audit.audit_event', 'audit.vendor_event', 'outbox_event', 'approval', 'tenant_setting_version',
   'market_checklist_entry', 'case_event', 'case_evidence', 'document', 'participant_signal', 'agreement_version',
   'agreement_acceptance', 'position_status_history', 'order_line', 'order_event', 'plan_market', 'plan_calendar',
   'guardrail_decision', 'run_snapshot', 'result_line', 'qualification_state', 'sim_result_line',
   'ledger_account', 'journal_entry', 'posting', 'journal_export', 'run_settlement', 'bank_detail_request',
-  'sandbox_provider_payment', 'privacy_export', 'plan_version_filing',
+  'sandbox_provider_payment', 'privacy_export', 'plan_version_filing', 'tax_line',
 ]
 // market_references (0105, 0204, AC-TEN2-3) counts every table with a key to market under these names, plus 'grants'
 // (market_ids arrays carry no key) and 'connectors' (the commerce rows of provider_config).
@@ -64,7 +66,7 @@ const MARKET_REFERENCES: Record<string, string> = {
   sales_order: 'orders', product_volume_map: 'product_volumes', agreement_version: 'agreement_versions',
   plan_market: 'plans', ledger_account: 'ledger_accounts', journal_entry: 'journal_entries', gl_account_map: 'gl_mappings',
   journal_export: 'journal_exports', payout_batch: 'payout_batches', payout_hold: 'payout_holds',
-  plan_version_filing: 'filings', migration: 'migrations',
+  plan_version_filing: 'filings', migration: 'migrations', tax_form_generation: 'tax_form_generations', tax_form: 'tax_forms',
 }
 // PLAN B1 1.1 (FR-TEN-003). The TEN settings registry pins its money-affecting keys against money_setting_keys().
 const MONEY_SETTING_KEYS = [
@@ -129,6 +131,7 @@ const POLICIES_BEYOND_TENANT_ISOLATION: Policy[] = [
   // FR-CPL-012 (0101): every realm reads the platform market-pack rules; nobody writes them at runtime.
   ['guardrail_rule', 'platform_read', 'r', PLATFORM_READ, null],
   ['tax_rule', 'platform_read', 'r', PLATFORM_READ, null],
+  ['pack_rule', 'platform_read', 'r', PLATFORM_READ, null],
   // D-B5-02 (2): inside a portal transaction (app.participant_id set) only the session participant's rows; no-ops otherwise.
   ...([
     ['result_line', 'payee_participant_id'], ['run_settlement', 'payee_participant_id'],
@@ -136,6 +139,8 @@ const POLICIES_BEYOND_TENANT_ISOLATION: Policy[] = [
     ['bank_detail_request', 'participant_id'], ['bank_detail_version', 'participant_id'], ['tax_profile', 'participant_id'],
     ['notification', 'recipient_participant_id'], ['notification_preference', 'participant_id'],
     ['privacy_request', 'subject_participant_id'], ['user_account', 'participant_id'], ['payout_batch_line', 'participant_id'],
+    // D-BM-13: the payee's own tax lines and year-end forms.
+    ['tax_line', 'payee_participant_id'], ['tax_form', 'participant_id'],
   ] as const).map(([table, column]): Policy => portalSelf(table, `(${column} = app_participant_id())`)),
   // 0506: the portal session's own sessions and sign-in codes, the origins of its own lines, the evidence of its own cases.
   portalSelf('session', '(user_id = app_user_id())'),
@@ -145,7 +150,8 @@ const POLICIES_BEYOND_TENANT_ISOLATION: Policy[] = [
   // 0506: never in a portal transaction (staff hold text, other payees' exclusion reasons).
   ...['payout_hold', 'payout_batch'].map((table): Policy => [table, 'portal_hidden', '*!', '(app_participant_id() IS NULL)', '(app_participant_id() IS NULL)']),
   // D-B6-13: B6 tables holding one participant's data or every exported field, and saved views.
-  ...['data_export', 'data_export_file', 'saved_view', 'migration_opening_balance', 'migration_opening_state', 'parallel_run_difference']
+  ...['data_export', 'data_export_file', 'saved_view', 'migration_opening_balance', 'migration_opening_state', 'parallel_run_difference',
+    'tax_form_generation']
     .map((table): Policy => [table, 'portal_hidden', '*!', '(app_participant_id() IS NULL)', '(app_participant_id() IS NULL)']),
   portalSelf('case_file', "((payload ->> 'participant_id'::text) = (app_participant_id())::text)"),
   portalSelf('case_event', "(EXISTS ( SELECT 1 FROM case_file c WHERE ((c.id = case_event.case_id) AND ((c.payload ->> 'participant_id'::text) = (app_participant_id())::text))))"),
@@ -177,7 +183,7 @@ describe('migrations', () => {
     expect(again).toEqual([])
   })
 
-  test('create every release A table, the engineering additions and the B1..B6 tables', async () => {
+  test('create every release A table, the engineering additions and the B1..B-MKT tables', async () => {
     const { rows } = await getOwnerPool().query<{ name: string }>(
       `SELECT CASE schemaname WHEN 'public' THEN tablename ELSE schemaname || '.' || tablename END AS name
        FROM pg_tables WHERE schemaname IN ('public', 'audit')`,
@@ -185,7 +191,7 @@ describe('migrations', () => {
 
     expect(rows.map((row) => row.name).sort()).toEqual(
       [...RELEASE_A_TABLES, ...ENGINEERING_TABLES, ...B1_TABLES, ...B2_TABLES, ...B3_TABLES, ...B4_TABLES, ...B5_TABLES, ...B6_TABLES,
-        'schema_migration']
+        ...BMKT_TABLES, 'schema_migration']
         .sort(),
     )
   })

@@ -51,6 +51,13 @@ export function decisionRefusal(error: unknown): unknown {
 /** A dispute's decision is upheld or not upheld, and its reason is the explanation the distributor reads (D-B5-15). */
 export const DECISION_LABELS: Readonly<Record<'approve' | 'reject', string>> = { approve: 'Approve', reject: 'Reject' }
 export const DISPUTE_DECISION_LABELS: Readonly<Record<'approve' | 'reject', string>> = { approve: 'Uphold', reject: 'Not upheld' }
+/** D-BM-08: approving a grievance resolves it upheld, rejecting resolves it not upheld. */
+export const GRIEVANCE_DECISION_LABELS: Readonly<Record<'approve' | 'reject', string>> = { approve: 'Resolve: upheld', reject: 'Resolve: not upheld' }
+
+/** The approve/reject button words of a case type. */
+export function decisionLabelsOf(type: string): Readonly<Record<'approve' | 'reject', string>> {
+  return type === 'dispute' ? DISPUTE_DECISION_LABELS : type === 'grievance' ? GRIEVANCE_DECISION_LABELS : DECISION_LABELS
+}
 
 /** Approve or reject (type.decide, step-up through ApiProvider with the dialog's Idempotency-Key), or withdraw (opener). */
 export function ReasonDialog({ record, info, action, onClose, onDone }: DialogProps & { readonly action: 'approve' | 'reject' | 'withdraw' }) {
@@ -61,6 +68,7 @@ export function ReasonDialog({ record, info, action, onClose, onDone }: DialogPr
   // An erasure that must wait (409 ERASURE_DEFERRED) names amounts in the market's currency.
   const markets = useResource<Market[]>(record.type === 'privacy' ? MARKETS_PATH : null)
   const dispute = record.type === 'dispute'
+  const grievance = record.type === 'grievance'
   const label = caseTypeLabel(record.type).toLowerCase()
   function submit(idempotencyKey: string) {
     const missing = requiredError('the reason', reason)
@@ -80,6 +88,7 @@ export function ReasonDialog({ record, info, action, onClose, onDone }: DialogPr
             const first = action === 'approve' && data.state === 'submitted'
             const decided = dispute
               ? `Dispute ${action === 'approve' ? 'upheld' : 'not upheld'}. The distributor is told with your explanation.`
+              : grievance ? `Grievance resolved: ${action === 'approve' ? 'upheld' : 'not upheld'}.`
               : action === 'approve' ? 'Case approved. Its change is applied.' : 'Case rejected.'
             toast({ message: first ? 'First approval recorded. A second approver decides next.' : decided })
           }
@@ -92,14 +101,16 @@ export function ReasonDialog({ record, info, action, onClose, onDone }: DialogPr
   }
   const titles = dispute
     ? { approve: 'Uphold this dispute', reject: 'Do not uphold this dispute', withdraw: `Withdraw this ${label}` }
-    : { approve: `Approve this ${label}`, reject: `Reject this ${label}`, withdraw: `Withdraw this ${label}` }
-  const labels = { ...(dispute ? DISPUTE_DECISION_LABELS : DECISION_LABELS), withdraw: 'Withdraw case' }
+    : grievance
+      ? { approve: 'Resolve this grievance as upheld', reject: 'Resolve this grievance as not upheld', withdraw: `Withdraw this ${label}` }
+      : { approve: `Approve this ${label}`, reject: `Reject this ${label}`, withdraw: `Withdraw this ${label}` }
+  const labels = { ...decisionLabelsOf(record.type), withdraw: 'Withdraw case' }
   return (
     <FormDialog title={titles[action]} submitLabel={labels[action]} submitVariant={action === 'approve' ? 'primary' : 'destructive-solid'} onClose={onClose} onSubmit={submit}>
       {action === 'approve' && <p>{dispute
         ? 'Upholding tells the distributor they are right, with your explanation. It changes no amount by itself: propose an adjustment or request a restatement afterwards.'
-        : 'Approving applies the change in the same step.'} You may be asked for a code from your authenticator app.</p>}
-      {action === 'reject' && <p>{dispute ? 'The dispute is closed as not upheld and the distributor is sent your explanation.' : 'The case is closed and nothing changes.'} You may be asked for a code from your authenticator app.</p>}
+        : grievance ? 'The grievance is recorded as resolved and upheld in the register.' : 'Approving applies the change in the same step.'} You may be asked for a code from your authenticator app.</p>}
+      {action === 'reject' && <p>{dispute ? 'The dispute is closed as not upheld and the distributor is sent your explanation.' : grievance ? 'The grievance is recorded as resolved and not upheld in the register.' : 'The case is closed and nothing changes.'} You may be asked for a code from your authenticator app.</p>}
       {action === 'withdraw' && <p>The case is closed without a decision and nothing changes.</p>}
       <TextAreaField id={REASON_FIELD} label={dispute && action !== 'withdraw' ? 'Explanation sent to the distributor' : 'Reason'} value={reason} error={error} onChange={setReason} />
     </FormDialog>

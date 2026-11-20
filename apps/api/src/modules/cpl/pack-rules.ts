@@ -1,7 +1,7 @@
 import type { Tx } from '@nmp/db'
 
 export interface PackRule {
-  kind: 'guardrail' | 'tax'
+  kind: 'guardrail' | 'tax' | 'grievance_register' | 'delisted_register' | 'plan_filing' | 'tax_year' | 'tax_id_format'
   id: string
   title: string
   mandatory: boolean

@@ -122,7 +122,10 @@ export interface MarketPatch {
   readonly reason: string
 }
 
-/** PATCH: zone and languages any time; pack and currency only while draft with no pending go-live, currency only while unreferenced. */
+/**
+ * PATCH: zone and languages any time; pack and currency only while draft with no pending go-live, pack only without a
+ * grievance, currency only while unreferenced.
+ */
 export async function updateMarket(tx: Tx, id: string, scope: readonly string[] | null, patch: MarketPatch): Promise<MarketView> {
   const market = await lockMarket(tx, id, scope)
   const { languages, minorUnit } = validateMarketFields(patch)
@@ -133,6 +136,17 @@ export async function updateMarket(tx: Tx, id: string, scope: readonly string[] 
     // A pending go-live request was checked against this pack and currency (AC-TEN4-2).
     const { rowCount } = await tx.query(`SELECT 1 FROM market_go_live_request WHERE market_id = $1 AND state = 'pending'`, [id])
     if (rowCount !== 0) throw new ApiError(409, 'GO_LIVE_PENDING', 'A go-live request is waiting for sign-off: decide or withdraw it first.')
+  }
+  if (patch.market_pack !== undefined && patch.market_pack !== market.market_pack) {
+    // BUG-130: a grievance's deadlines come from the pack in force when it was received (cpl grievance-case.ts).
+    const { rows: counted } = await tx.query<{ grievances: number }>(
+      `SELECT count(*)::int AS grievances FROM case_file WHERE market_id = $1 AND type = 'grievance'`, [id])
+    const grievances = counted[0]!.grievances
+    if (grievances !== 0) {
+      throw new ApiError(409, 'MARKET_REFERENCED', 'The pack cannot change once the market has a grievance: its deadlines come from the pack.', {
+        references: { grievances },
+      })
+    }
   }
   if (patch.currency !== undefined && patch.currency !== market.currency) {
     const references = await marketReferences(tx, id)

@@ -33,7 +33,7 @@ export function useToast(): ShowToast {
   return show
 }
 
-function Toast({ toast, onDismiss }: { readonly toast: ToastItem; readonly onDismiss: (id: number) => void }) {
+function Toast({ toast, dismissLabel, onDismiss }: { readonly toast: ToastItem; readonly dismissLabel: string; readonly onDismiss: (id: number) => void }) {
   const [paused, setPaused] = useState(false)
   useEffect(() => {
     if (paused) return
@@ -51,15 +51,21 @@ function Toast({ toast, onDismiss }: { readonly toast: ToastItem; readonly onDis
     >
       <Icon name={icon.name} size={24} className={icon.className} />
       <span className="flex-1 font-body-sm text-body-sm font-semibold">{toast.message}</span>
-      <button type="button" className="p-1 rounded text-inverse-on-surface hover:bg-on-surface/40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-inverse-primary" aria-label="Dismiss notification" title="Dismiss notification" onClick={() => onDismiss(toast.id)}>
+      <button type="button" className="p-1 rounded text-inverse-on-surface hover:bg-on-surface/40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-inverse-primary" aria-label={dismissLabel} title={dismissLabel} onClick={() => onDismiss(toast.id)}>
         <Icon name="close" size={16} />
       </button>
     </div>
   )
 }
 
+export interface ToastProviderProps {
+  readonly children: ReactNode
+  /** The dismiss button's name in the page's language (the root layout gives the portal's catalogue word). */
+  readonly dismissLabel?: string
+}
+
 /** Polite live region, bottom-right (sc_33), above the bottom edge on phones (sc_18); 5 s each, paused on hover or focus, at most 3. */
-export function ToastProvider({ children }: { readonly children: ReactNode }) {
+export function ToastProvider({ children, dismissLabel = 'Dismiss notification' }: ToastProviderProps) {
   const [toasts, setToasts] = useState<readonly ToastItem[]>([])
   const lastId = useRef(0)
   const show = useCallback<ShowToast>(({ message, tone = 'success' }) => {
@@ -72,7 +78,7 @@ export function ToastProvider({ children }: { readonly children: ReactNode }) {
     <ToastContext value={show}>
       {children}
       <div className="fixed z-50 bottom-6 right-6 max-sm:bottom-20 max-sm:left-4 max-sm:right-4 sm:w-[400px] flex flex-col gap-space-sm pointer-events-none" role="status" aria-live="polite">
-        {toasts.map((toast) => <Toast key={toast.id} toast={toast} onDismiss={dismiss} />)}
+        {toasts.map((toast) => <Toast key={toast.id} toast={toast} dismissLabel={dismissLabel} onDismiss={dismiss} />)}
       </div>
     </ToastContext>
   )

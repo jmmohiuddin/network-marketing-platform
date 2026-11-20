@@ -9,6 +9,7 @@ import { runInTenant } from '../../lib/db.js'
 import { createCasModule } from '../cas/index.js'
 import { disputeDetail, listDisputes, openDispute, overdueDisputesJob } from './disputes.js'
 import { compCaseTypes, compModule } from './index.js'
+import { textsFor } from './messages.js'
 import { rankStatus } from './rank.js'
 import { lineExplanation, listStatements, statementCsv, statementDetail } from './statements.js'
 import {
@@ -33,6 +34,7 @@ let stranger: Portal // another tenant
 let runId: string
 let openRunId: string
 const log = fastify({ logger: false }).log
+const EN = textsFor({ locale: 'en', defaultLocale: 'en' }, log)
 closePoolsAfterAll()
 
 /** A portal account of the participant (owner fixture, as IAM's invitation acceptance leaves it). */
@@ -124,7 +126,7 @@ describe('T-B5-11 statements (FR-DIST-001, D-B5-07)', () => {
     expect(statement.positions[0]!.bonuses[0]!.rule_name).toBe('Rank bonus') // BUG-119: the rule key in words
     expect(statement).toMatchObject({
       person_total_minor: '1500', disclosure_url: null,
-      summary: { gross_minor: '1500', adjustment_minor: '0', clawback_minor: '0', withheld_minor: '0', net_minor: '1500' },
+      summary: { gross_minor: '1500', adjustment_minor: '0', clawback_minor: '0', withheld_minor: '0', withholding: null, net_minor: '1500' },
       payout: { instructions: [], blockers: [{ reason: 'no_bank_details' }, { reason: 'hold' }] },
     })
     const body = JSON.stringify(statement)
@@ -168,7 +170,7 @@ describe('T-B5-11 statements (FR-DIST-001, D-B5-07)', () => {
 describe('T-B5-13 line explanation (FR-DIST-002, D-B5-08)', () => {
   test('AC-12.1: rule, base, rate, rank, period and rounding; every uuid is the line, run, period or an own position', async () => {
     const lineId = await lineOf(a.positionId)
-    const body = await asPortal(pa, (tx) => lineExplanation(tx, pa.participantId, lineId, log))
+    const body = await asPortal(pa, (tx) => lineExplanation(tx, pa.participantId, lineId, EN, log))
     expect(body).toMatchObject({
       line_id: lineId, run_id: runId, template: 'percent_of_measure', rule: { key: 'rank_bonus', kind: 'pay.percent_of_measure' },
       amount_minor: '500', currency: 'EUR', rank_used: [{ ladder: 'main', rank: 'R1' }], reconciles: true,
@@ -180,16 +182,16 @@ describe('T-B5-13 line explanation (FR-DIST-002, D-B5-08)', () => {
 
   test('404 for another participant\'s line, a line of an uncommitted run and another tenant', async () => {
     const lineId = await lineOf(a.positionId)
-    await expect(asPortal(pd, (tx) => lineExplanation(tx, pd.participantId, lineId, log))).rejects.toMatchObject({ statusCode: 404 })
-    await expect(asPortal(stranger, (tx) => lineExplanation(tx, stranger.participantId, lineId, log))).rejects.toMatchObject({ statusCode: 404 })
+    await expect(asPortal(pd, (tx) => lineExplanation(tx, pd.participantId, lineId, EN, log))).rejects.toMatchObject({ statusCode: 404 })
+    await expect(asPortal(stranger, (tx) => lineExplanation(tx, stranger.participantId, lineId, EN, log))).rejects.toMatchObject({ statusCode: 404 })
     const uncommitted = await lineOf(a.positionId, openRunId)
-    await expect(asPortal(pa, (tx) => lineExplanation(tx, pa.participantId, uncommitted, log))).rejects.toMatchObject({ statusCode: 404 })
+    await expect(asPortal(pa, (tx) => lineExplanation(tx, pa.participantId, uncommitted, EN, log))).rejects.toMatchObject({ statusCode: 404 })
   })
 })
 
 describe('T-B5-14 rank status (FR-DIST-003, D-B5-09)', () => {
   test('AC-DIST3-1/2/3: committed values, one not-final row from the calculated open-period run, requirements, scheduled plan change', async () => {
-    const status = await asPortal(pa, (tx) => rankStatus(tx, pa.participantId, a.positionId, undefined, 12))
+    const status = await asPortal(pa, (tx) => rankStatus(tx, pa.participantId, a.positionId, undefined, 12, EN))
     expect(status.data.position).toEqual({ id: a.positionId, position_ref: 'DE-A' })
     expect(status.data.periods.map((p) => [p.period.id, p.final, p.run_id])).toEqual([[w.periods[1]!.id, false, null], [w.periods[0]!.id, true, runId]])
     expect(status.data.periods[1]).toMatchObject({ paid_as: [{ ladder: 'main', rank: 'R1' }], titles: [{ ladder: 'main', rank: 'R1' }], measures: expect.arrayContaining([{ measure: 'pv', value: '10000' }]) })
@@ -201,14 +203,14 @@ describe('T-B5-14 rank status (FR-DIST-003, D-B5-09)', () => {
     expect(keysOf(status).filter((key) => FORBIDDEN_FIELDS.test(key))).toEqual([]) // TS-53 API part
     const [plan] = await ownerRows<{ plan_id: string }>('SELECT plan_id FROM plan_version WHERE id = (SELECT plan_version_id FROM run WHERE id = $1)', [runId])
     await activePlan(w, ts10Plan(), w.periods[5]!.starts_at, { planId: plan!.plan_id, version: 2, state: 'scheduled' })
-    const later = await asPortal(pa, (tx) => rankStatus(tx, pa.participantId, a.positionId, undefined, 12))
+    const later = await asPortal(pa, (tx) => rankStatus(tx, pa.participantId, a.positionId, undefined, 12, EN))
     expect(later.data.transition_notice).toEqual({ effective_from: w.periods[5]!.starts_at })
   })
 
   test('another participant\'s or another tenant\'s position is 404', async () => {
-    await expect(asPortal(pd, (tx) => rankStatus(tx, pd.participantId, a.positionId, undefined, 12))).rejects.toMatchObject({ statusCode: 404 })
-    await expect(asPortal(stranger, (tx) => rankStatus(tx, stranger.participantId, a.positionId, undefined, 12))).rejects.toMatchObject({ statusCode: 404 })
-    expect((await asPortal(pd, (tx) => rankStatus(tx, pd.participantId, undefined, undefined, 12))).data.position.position_ref).toBe('DE-D')
+    await expect(asPortal(pd, (tx) => rankStatus(tx, pd.participantId, a.positionId, undefined, 12, EN))).rejects.toMatchObject({ statusCode: 404 })
+    await expect(asPortal(stranger, (tx) => rankStatus(tx, stranger.participantId, a.positionId, undefined, 12, EN))).rejects.toMatchObject({ statusCode: 404 })
+    expect((await asPortal(pd, (tx) => rankStatus(tx, pd.participantId, undefined, undefined, 12, EN))).data.position.position_ref).toBe('DE-D')
   })
 })
 
@@ -353,7 +355,7 @@ describe('AC-DIST1-2 / AC-DIST3-4 transferred position', () => {
       [w.tenantId, a2.positionId, d.participantId, SYSTEM])
     const statement = await asPortal(pa, (tx) => statementDetail(tx, pa.participantId, runId, log))
     expect(statement.positions.map((p) => p.position_ref)).toEqual(['DE-A', 'DE-A2'])
-    const bought = await asPortal(pd, (tx) => rankStatus(tx, pd.participantId, a2.positionId, undefined, 12))
+    const bought = await asPortal(pd, (tx) => rankStatus(tx, pd.participantId, a2.positionId, undefined, 12, EN))
     expect(bought.data.periods.filter((p) => p.final)).toEqual([])
     await expect(asPortal(pd, (tx) => statementDetail(tx, pd.participantId, runId, log))).rejects.toMatchObject({ statusCode: 404 })
   })

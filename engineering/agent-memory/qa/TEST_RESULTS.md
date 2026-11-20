@@ -128,3 +128,16 @@ _Agent: qa. Read before every task; update after every task. Keep concise — fa
 - BUG-121..127 all verified fixed in the browser (121 compliance approves filing in /settings; 122 Mapping kind switch; 123 popover keyboard; 124 stepper/notice card in calendar zone; 125 legacy-type selects + "lacks bonus detail" banner; 126 "Migration clearing"; 127 stacked full-width layout, H2s, "View as chart").
 - W-B6-1..8 pass (W-B6-5 with BUG-128), W-B6-9 partial. Money = PLAN (parallel run 52.01/47.00, A 0, B −0.01, C −5.00; opening 12.50/−3.00/9.50; DE Oct 47.00, close export 139.00 = 139.00). Regression 1466/4775/7442 + sums, R1 16.61 %, audit chain intact 201. No 5xx.
 - New: BUG-128 LOW (checklist notice date UTC ISO), BUG-129 LOW (notice 0 refuses past starts, setting not unsettable). Impeccable detect 0 findings, 14/16-equivalent. Evidence var/qa-b6/r2/.
+
+## 2026-11-20 — B-MKT browser round 1 (W-B-MKT-0..7, harness 9 screens, Impeccable + a11y)
+- Reduced chain (no B3 corrections/B4 adjustment/B5 insertions/DE payout). W-B-MKT-1/5 pass, W-B-MKT-2/3/6 pass with defects (W-B-MKT-3 contact via DPO workaround), W-B-MKT-4 FAIL as written (BUG-130; rest pass on AT-live workaround), W-B-MKT-0/7 partial. Money = PLAN §6: AT-A 23.00/0.00 below threshold, AT-B 24.00/4.80 missing id; payable 42.20 + 4.80 = 47.00; AT-A 35.50; ledger 4.80 = forms 4.80; generate 1/0/1 then 1/1/0; filing CSV both full ids. Regression import 1466/4775/7442 + sums, snapshot 16.61 %, audit chain intact 301. No 5xx.
+- New: BUG-130 HIGH, BUG-131..133 MEDIUM, BUG-134..140 LOW. SEC-B6-1/3 and BUG-129 (API) verified. Impeccable 13/16-equivalent. Evidence var/qa-bmkt/r1/.
+
+## 2026-11-20 — B-MKT browser round 2 (retest of BUG-130..140, quick W-B-MKT-0..7, MVP-A regression, harness 9 screens, Impeccable + a11y)
+- Verified fixed: BUG-130, 134, 135, 136, 137, 140; web parts of 131, 138, 139; API part of 133. Still open: BUG-131 analyst 403/no Withheld, BUG-132 (script FAIL 195.8 KB; CDP 215.7 KB), BUG-133 web "Record e-mail" control, BUG-139 CSV state/escalated.
+- W-B-MKT-1..7 pass (W-B-MKT-0 partial). Money = PLAN §6 (AT-A 23.00/0, AT-B 24.00/4.80, payables 54.70, ledger 4.80 = forms 4.80; generate 1/0/1 then 1/1/0; filing CSV FX123456/FX654321). Regression 1466/4775/7442 + sums, 16.61 %, audit chain intact 282. No 5xx.
+- New: BUG-141 LOW (duplicate bank_detail.changed mail). Impeccable 14/16-equivalent. Evidence var/qa-bmkt/r2/.
+
+## 2026-11-20 — B-MKT browser round 3 (retest of BUG-131..133, quick W-B-MKT-0..7, MVP-A regression, harness 9 screens, Impeccable + a11y)
+- BUG-133 verified fixed (SC-09 "Record e-mail" dialog, validation, toast, masked e-mail, audit, invite). BUG-131 still open: API part works for analyst@ (200 totals 480) but the review web gate is still `can('tax.read')` → no Withheld KPI/tab for analyst@. BUG-132 still open: script FAIL 179.3 KB (was 195.8), CDP 185.7 KB excl. fonts, visible 0.36 s.
+- W-B-MKT-1..7 pass (W-B-MKT-0 partial). Money = PLAN §6 (AT-A 23.00/0, AT-B 24.00/4.80, batch 54.70 = 35.50 + 19.20, ledger 4.80 = forms 4.80; generate 1/0/1 then 1/1/0; filing CSV FX123456/FX654321). Regression 1466/4775/7442 + sums, 16.61 %, audit chain intact 205. No 5xx. BUG-139 CSV and BUG-141 still reproduce. No new defect. Impeccable detect 0, 14/16-equivalent. Evidence var/qa-bmkt/r3/.

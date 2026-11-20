@@ -65,11 +65,50 @@ async function filings(tx: Tx, plan: PlanRow, version: VersionRow) {
      FROM plan_version_filing f JOIN plan_version v ON v.id = f.plan_version_id
      WHERE f.plan_version_id = $1 ORDER BY f.recorded_at DESC, f.id DESC`, [version.id])
   const history = rows.map(({ for_content: forContent, ...filing }) => ({ filing, forContent }))
-  const requiredIds = new Set((await getSetting(tx, 'plan.filing_requirements'))?.market_ids ?? [])
-  return markets.map((market) => {
+  const required = await requiredFilings(tx, version.id)
+  const perMarket = markets.map((market) => {
     const own = history.filter(({ filing }) => filing.market_id === market.id)
-    return { market, required: requiredIds.has(market.id), current: own.find((f) => f.forContent)?.filing ?? null, history: own.map(({ filing }) => filing) }
+    return { market, required: required.some((r) => r.market_id === market.id), current: own.find((f) => f.forContent)?.filing ?? null, history: own.map(({ filing }) => filing) }
   })
+  return { rows: perMarket, required }
+}
+
+interface RequiredFiling {
+  market_id: string
+  sources: ('setting' | 'pack')[]
+  rule_id: string | null
+  authority: string | null
+}
+
+/** D-BM-10: the markets requiring a filing, from plan.filing_requirements and the packs' plan_filing rules, one row each. */
+async function requiredFilings(tx: Tx, versionId: string): Promise<RequiredFiling[]> {
+  const { rows } = await tx.query<RequiredFiling>(
+    `SELECT market_id, array_agg(source ORDER BY source DESC) AS sources, max(rule_id) AS rule_id, max(authority) AS authority
+     FROM plan_filing_required($1) GROUP BY market_id ORDER BY market_id`,
+    [versionId],
+  )
+  return rows
+}
+
+interface NoticeDates {
+  at: Date
+  on: string
+}
+
+/**
+ * BUG-128: the earliest effective instant `days` after now (the schedule gate's instant) and the first calendar date
+ * in the zone of the plan's first calendar (by name, as the plan view lists them) whose start is not before it, so a
+ * start on that date passes the gate; never the UTC date.
+ */
+export async function earliestEffective(tx: Tx, planId: string, days: number): Promise<NoticeDates> {
+  const { rows } = await tx.query<NoticeDates>(
+    `SELECT e.at, to_char(((e.at AT TIME ZONE coalesce((
+              SELECT m.time_zone FROM plan_calendar pc JOIN calendar c ON c.id = pc.calendar_id JOIN market m ON m.id = c.market_id
+              WHERE pc.plan_id = $1 ORDER BY c.name, c.id LIMIT 1), 'UTC')) - interval '1 microsecond')::date + 1, 'YYYY-MM-DD') AS "on"
+     FROM (SELECT now() + make_interval(days => $2) AS at) e`,
+    [planId, days],
+  )
+  return rows[0]!
 }
 
 async function approver(tx: Tx, approvalId: string | null): Promise<{ by: { id: string; display_name: string | null }; at: Date } | null> {
@@ -94,23 +133,26 @@ async function governanceView(tx: Tx, plan: PlanRow, version: VersionRow) {
   const fact = facts[0]!
   const outstanding = await outstandingDecisions(tx, version.id)
   const missing = await missingTransitions(tx, plan, version, await transitionRows(tx, version.id))
-  const filingRows = await filings(tx, plan, version)
+  const { rows: filingRows, required } = await filings(tx, plan, version)
   const days = await getSetting(tx, 'plan.activation_notice_days')
-  const { rows: earliest } = await tx.query<{ at: Date | null }>('SELECT CASE WHEN $1::int IS NULL THEN NULL ELSE now() + make_interval(days => $1::int) END AS at', [days])
-  const notice = { days, earliest_effective_from: earliest[0]!.at, sent_at: fact.notice_sent_at, recipients: fact.notice_recipients }
+  // BUG-129: unset and 0 both mean no notice period.
+  const earliest = days === null || days === 0 ? null : await earliestEffective(tx, plan.id, days)
+  const notice = {
+    days, earliest_effective_from: earliest?.at ?? null, earliest_effective_on: earliest?.on ?? null, sent_at: fact.notice_sent_at, recipients: fact.notice_recipients,
+  }
   const approvals = { compliance: await approver(tx, version.approval_id), activation: await approver(tx, version.activation_approval_id) }
-  const anyRequired = filingRows.some((f) => f.required)
+  const anyRequired = required.length > 0
   const items: Item[] = [
     item('simulation', fact.simulated, 'Run a simulation of this exact version before scheduling it.'),
     item('goldens', fact.goldens_ok, 'A golden dataset has not passed on this exact version.'),
     item('guardrails', outstanding.length === 0, 'Acknowledge or override the open guardrail decisions first.', { decisions: outstanding }),
     item('transitions', missing.length === 0, 'Declare a transition for every state item of the previous version.', { state_items: missing }),
     {
-      ...item('filing', fact.missing_filings.length === 0, 'A market requires a recorded filing status for this version.', { market_ids: fact.missing_filings }),
+      ...item('filing', fact.missing_filings.length === 0, 'A market requires a recorded filing status for this version.', { market_ids: fact.missing_filings, required }),
       ...(anyRequired ? {} : { reason: 'No market requires a filing.' }),
     },
     // The notice gate (effective_from >= earliest_effective_from) is judged at schedule time; before it the item states it.
-    { key: 'notice', ok: true, reason: days === null || fact.notice_sent_at !== null ? null : `Schedule on or after ${notice.earliest_effective_from!.toISOString().slice(0, 10)} (${days} days' notice).`, details: notice },
+    { key: 'notice', ok: true, reason: earliest === null || fact.notice_sent_at !== null ? null : `Schedule on or after ${earliest.on} (${days} days' notice).`, details: notice },
     item('approvals', approvals.compliance !== null && approvals.activation !== null, 'The version needs the compliance approval and the activation approval.'),
   ]
   return {

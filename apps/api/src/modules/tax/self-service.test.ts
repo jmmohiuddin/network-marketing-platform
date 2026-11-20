@@ -70,9 +70,9 @@ describe('PUT/GET /v1/me/tax-profile', () => {
   test('only the payee itself: another participant or tenant sees nothing; staff sessions are refused', async () => {
     const p = await payee(tenantId, market)
     await put(p.user, { residency: 'GB', entity_type: 'company' })
-    expect((await get((await payee(tenantId, market)).user)).json().data).toEqual({ current: null, history: [] })
+    expect((await get((await payee(tenantId, market)).user)).json().data).toEqual({ current: null, history: [], format: null })
     const other = (await createTenant()).id
-    expect((await get((await payee(other, await createMarket(other))).user)).json().data).toEqual({ current: null, history: [] })
+    expect((await get((await payee(other, await createMarket(other))).user)).json().data).toEqual({ current: null, history: [], format: null })
     const staff = await createSignedInUser({ tenantId, roles: ['Finance approver'], stepUp: true })
     expect((await get(staff)).json().error.code).toBe('REALM_FORBIDDEN')
     expect((await put(staff, { residency: 'GB', entity_type: 'company' })).json().error.code).toBe('REALM_FORBIDDEN')

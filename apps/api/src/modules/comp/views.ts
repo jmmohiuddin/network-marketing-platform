@@ -2,7 +2,7 @@ import type { Tx } from '@nmp/db'
 import { notFound } from '../../lib/errors.js'
 import { encodeCursor } from '../../lib/pagination.js'
 import { PERIOD_COLUMNS, PERIOD_FROM, periodInScope, type PeriodRow } from './period.js'
-import { marketSync, preflight, type MarketSync } from './preflight.js'
+import { marketSync, preflight, taxRulesBlocker, type MarketSync } from './preflight.js'
 
 // API-18/19 reads: periods with their blockers (§2.4) and runs. Scope: the calendar's market (D-B3-23).
 
@@ -108,11 +108,12 @@ export async function periodDetail(tx: Tx, id: string, scope: readonly string[] 
     [id],
   )
   const sync = await marketSync(tx, period.market_id)
+  const taxRules = await taxRulesBlocker(tx, period)
   return {
     id: period.id, calendar_id: period.calendar_id, market_id: period.market_id, starts_at: period.starts_at, ends_at: period.ends_at,
     cut_off_passed: period.cut_off_passed, state: period.state, committed_run_id: period.committed_run_id, ...closeOf(period), runs,
     plan_version: (version[0] as { plan_version: unknown } | undefined)?.plan_version ?? null,
-    blockers: (await preflight(tx, period, sync)).map(blockerView), sync: syncView(sync), late: lateOf(await lateCounts(tx, [id]), id), restatements,
+    blockers: [...(await preflight(tx, period, sync)), ...(taxRules === null ? [] : [taxRules])].map(blockerView), sync: syncView(sync), late: lateOf(await lateCounts(tx, [id]), id), restatements,
   }
 }
 

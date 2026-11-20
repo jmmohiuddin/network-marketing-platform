@@ -1,11 +1,15 @@
 'use client'
 
-import { createContext, use, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { createContext, lazy, Suspense, use, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { createApiClient, type ApiClient } from '../lib/api'
 import { leavePage } from '../lib/leave-page'
 import { realmOf, returnTarget } from '../lib/navigation'
 import { leaveSupportSession, SUPPORT_SESSIONS_PATH, supportSessionFor } from '../lib/support-session'
-import { PasswordStepUpModal, StepUpModal } from './step-up-modal'
+import type { StepUpWords } from './step-up-modal'
+
+// Loaded at the first step-up only: the dialogs (TOTP enrolment, QR code) are ~15 KB gzip every page would carry (BUG-132).
+const StepUpModal = lazy(() => import('./step-up-modal').then((module) => ({ default: module.StepUpModal })))
+const PasswordStepUpModal = lazy(() => import('./step-up-modal').then((module) => ({ default: module.PasswordStepUpModal })))
 
 const ApiContext = createContext<ApiClient | null>(null)
 
@@ -44,9 +48,17 @@ function restore(aside: SetAside): void {
  * while the code is asked for, shown again afterwards, and focus goes back to the control that started the action
  * (the action's primary button) while the action is retried with the same Idempotency-Key.
  */
-export function ApiProvider({ children }: { readonly children: ReactNode }) {
+export interface ApiProviderProps {
+  readonly children: ReactNode
+  /** The portal re-authentication's words in the page's language (the root layout, from the portal catalogue). */
+  readonly portalStepUpWords?: StepUpWords
+}
+
+export function ApiProvider({ children, portalStepUpWords }: ApiProviderProps) {
   const [resolveStepUp, setResolveStepUp] = useState<((verified: boolean) => void) | null>(null)
   const [portal, setPortal] = useState(false)
+  // Mounted from the first step-up on, so later prompts open and close the same dialog (its focus return included).
+  const [asked, setAsked] = useState(false)
   const pending = useRef<Promise<boolean> | null>(null)
   const aside = useRef<SetAside | null>(null)
   const closed = useRef<SetAside | null>(null)
@@ -59,6 +71,7 @@ export function ApiProvider({ children }: { readonly children: ReactNode }) {
           aside.current = setAside()
           // An auth page (portal TOTP enrolment, /signin/enrol?next=/portal/…) asks as the realm it returns to.
           setPortal(realmOf(returnTarget(`${window.location.pathname}${window.location.search}`)) === 'portal')
+          setAsked(true)
           pending.current = new Promise<boolean>((resolve) => setResolveStepUp(() => resolve))
         }
         return pending.current
@@ -92,7 +105,11 @@ export function ApiProvider({ children }: { readonly children: ReactNode }) {
   return (
     <ApiContext value={api}>
       {children}
-      {portal ? <PasswordStepUpModal open={resolveStepUp !== null} onDone={finish} /> : <StepUpModal open={resolveStepUp !== null} onDone={finish} />}
+      {asked && (
+        <Suspense fallback={null}>
+          {portal ? <PasswordStepUpModal open={resolveStepUp !== null} onDone={finish} words={portalStepUpWords} /> : <StepUpModal open={resolveStepUp !== null} onDone={finish} />}
+        </Suspense>
+      )}
     </ApiContext>
   )
 }

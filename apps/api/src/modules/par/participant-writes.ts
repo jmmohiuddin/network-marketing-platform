@@ -2,6 +2,8 @@ import type { Tx } from '@nmp/db'
 import type { FastifyInstance, FastifyRequest } from 'fastify'
 import { z } from 'zod'
 import { recordAudit } from '../../lib/audit.js'
+import { requirePermission, requireRealm, requireStepUp } from '../../lib/auth.js'
+import { maskContact } from '../../lib/contact.js'
 import { inTenant } from '../../lib/db.js'
 import { ApiError } from '../../lib/errors.js'
 import { envelope, parse } from '../../lib/http.js'
@@ -12,7 +14,7 @@ import { recordAcceptance } from './agreements.js'
 import { activeType, enrol } from './enrolment.js'
 import { createPosition, resolveSponsor } from './positions.js'
 import {
-  acceptanceBody, acceptanceResponse, enrolmentBody, enrolmentResponse, positionBody, positionResponse, signalsBody,
+  acceptanceBody, acceptanceResponse, contactEmailBody, enrolmentBody, enrolmentResponse, positionBody, positionResponse, signalsBody,
   signalsResponse, typeChangeBody, typesResponse,
 } from './schemas.js'
 import { addSignals, digestSignals, findDuplicates, openDuplicateCases, type SignalDigests } from './signals.js'
@@ -100,6 +102,22 @@ async function addParticipantSignals(tx: Tx, request: FastifyRequest, participan
   return signalsResponse.parse({ added: added.length, duplicate_case_id: await readableDuplicateCase(tx, request, caseIds) })
 }
 
+/**
+ * BUG-133: records a contact e-mail for an active participant who has none (SQL par_record_contact_email); one on record
+ * changes only by a DPO correction. The audit names the field, never the address (erasure cannot clear the audit).
+ */
+async function recordContactEmail(tx: Tx, participantId: string, body: z.infer<typeof contactEmailBody>) {
+  const { rows } = await tx.query<{ recorded: boolean }>('SELECT par_record_contact_email($1, $2) AS recorded', [participantId, body.email])
+  if (!rows[0]!.recorded) {
+    throw new ApiError(409, 'CONTACT_EMAIL_RECORDED',
+      'This member already has a contact e-mail or was erased: a change of the e-mail on record is a privacy correction.')
+  }
+  await recordAudit(tx, {
+    action: 'PARTICIPANT.CONTACT_RECORDED', objectType: 'participant', objectId: participantId, after: { fields: ['contact.email'] }, reason: body.reason,
+  })
+  return { contact_masked: maskContact({ email: body.email }) }
+}
+
 type ParticipantAction = (tx: Tx, participant: ParticipantRef) => Promise<StoredResponse>
 
 /**
@@ -131,6 +149,14 @@ export function registerParticipantWriteRoutes(app: FastifyInstance): void {
       const duplicateCaseId = await readableDuplicateCase(tx, request, caseIds)
       return { statusCode: 201, body: envelope(enrolmentResponse.parse({ ...enrolled, duplicate_case_id: duplicateCaseId })) }
     }))
+    return sendIdempotent(reply, result)
+  })
+
+  // Session only (no key: not in the public OpenAPI), with a fresh second factor: the address may receive a portal invitation.
+  const recordContact = { preHandler: [requireRealm('tenant'), requirePermission(MANAGE), requireStepUp()] }
+  app.post('/v1/participants/:id/contact-email', recordContact, async (request, reply) => {
+    const body = parse(contactEmailBody, request.body)
+    const result = await onParticipant(request, async (tx, participant) => ({ statusCode: 200, body: envelope(await recordContactEmail(tx, participant.id, body)) }))
     return sendIdempotent(reply, result)
   })
 

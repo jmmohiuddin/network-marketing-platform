@@ -2,6 +2,7 @@ import type { Tx } from '@nmp/db'
 import { ApiError } from '../../lib/errors.js'
 import { syncHealth } from '../int/index.js'
 import { previousPeriod, type PeriodRow } from './period.js'
+import { withholdingInstructions } from './snapshot.js'
 
 // §2.4 run preflight (one function for POST /v1/periods/:id/runs and the blockers of GET /v1/periods) and the sync
 // health of a period's market (D-B3-10).
@@ -111,8 +112,28 @@ export async function assertMigrationSignedOff(tx: Tx, periodId: string): Promis
   if (found !== null) throw new ApiError(found.status, found.code, found.message, found.details)
 }
 
+/**
+ * Single-period view: the pack's withholding rules that would refuse POST runs (422 TAX_RULES_INVALID, D-BM-03), as a
+ * blocker. Under a savepoint, since the SQL refusal (TX001) aborts the transaction. Not on the period list: the SQL reads
+ * every payee's committed gross of the tax year.
+ */
+export async function taxRulesBlocker(tx: Tx, period: PeriodRow): Promise<Blocker | null> {
+  if (CLOSED.includes(period.state)) return null
+  await tx.query('SAVEPOINT tax_rules')
+  try {
+    await withholdingInstructions(tx, period.id)
+    await tx.query('RELEASE SAVEPOINT tax_rules')
+    return null
+  } catch (error) {
+    if (!(error instanceof ApiError)) throw error
+    await tx.query('ROLLBACK TO SAVEPOINT tax_rules')
+    return blocker(422, error.code, error.message, error.details as Record<string, unknown>)
+  }
+}
+
 /** POST runs: the first blocker, as an error. */
 export async function assertRunnable(tx: Tx, period: PeriodRow): Promise<void> {
   const first = (await preflight(tx, period))[0]
   if (first !== undefined) throw new ApiError(first.status, first.code, first.message, first.details)
+  await withholdingInstructions(tx, period.id) // 422 TAX_RULES_INVALID before a run is queued (D-BM-03)
 }

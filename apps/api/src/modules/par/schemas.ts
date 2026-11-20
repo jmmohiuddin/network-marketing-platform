@@ -38,6 +38,8 @@ const contact = z.strictObject({
   address: z.string().trim().min(1).max(500).optional(),
 })
 
+export const contactEmailBody = z.strictObject({ email: contact.shape.email.unwrap(), reason: z.string().trim().min(1).max(500) })
+
 export const enrolmentBody = z.strictObject({
   external_ref: z.string().regex(/^[\x21-\x7e]{1,100}$/, 'printable ASCII without spaces, 1..100'),
   market: z.string().regex(/^[A-Z]{2}$/, 'must be the market\'s ISO code'),

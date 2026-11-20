@@ -261,6 +261,24 @@ describe('GET /v1/settings and value_since (BUG-025, T-B1-07)', () => {
     expect(invalid.statusCode).toBe(400)
     expect(saved.statusCode).toBe(200)
   })
+  test('T-BM-71 / BUG-129: value null unsets plan.activation_notice_days (a version without the key); other keys still refuse null', async () => {
+    const tenant = await createTenant()
+    const owner = await createSignedInUser({ tenantId: tenant.id, roles: ['Tenant admin'], stepUp: true })
+    expect((await write(owner, 'plan.activation_notice_days', 30, '"0"')).statusCode).toBe(200)
+
+    const stale = await write(owner, 'plan.activation_notice_days', null, '"0"')
+    const cleared = await write(owner, 'plan.activation_notice_days', null, '"1"')
+    const other = await write(owner, 'compliance.late_order_day', null, '"2"')
+    const [stored] = await ownerRows<{ settings: Record<string, unknown> }>(
+      'SELECT settings FROM tenant_setting_version WHERE tenant_id = $1 ORDER BY version DESC LIMIT 1', [tenant.id])
+
+    expect(stale.statusCode).toBe(412)
+    expect(cleared.statusCode).toBe(200)
+    expect(cleared.json()).toMatchObject({ data: { key: 'plan.activation_notice_days', value: null, version: 2 }, meta: { latest_version: 2 } })
+    expect(stored!.settings).not.toHaveProperty('plan.activation_notice_days')
+    expect((await read(owner, 'plan.activation_notice_days')).json().data.value).toBeNull()
+    expect([other.statusCode, other.json().error.code]).toEqual([400, 'VALIDATION_FAILED'])
+  })
 })
 
 describe('GET /v1/settings/versions(/:version)', () => {

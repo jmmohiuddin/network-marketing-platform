@@ -41,6 +41,8 @@ B5 (2026-11-19, `increments/B5/HANDOFF.md`): FR-IAM-007, FR-DIST-001..006, FR-DI
 
 B6 (2026-11-20, `increments/B6/HANDOFF.md`): FR-PLN-007, FR-PLN-008, FR-INT-003, FR-RPT-001, FR-RPT-002, FR-MIG-001, FR-MIG-002 set to I T V (PLN-008, RPT-002 and MIG-001 with the limits in their status). T = module (pln, mig, imp, int, rpt, ord, comp, led, pay), packages/db b6-guards, isolation (all 54 B6 routes) and role-matrix tests green in the records full run (nmp_test_4 reset to 0606, 243 files, 5241 tests, 0 failed/skipped); api + web typecheck clean. V = `testing/UI_TESTING_REPORT.md` "Increment B6 — round 2": W-B6-1..8 pass (W-B6-4 orders part repeated, ledger part from round 1; W-B6-8 quick repeat, offline signature check in round 1), W-B6-9 partial. Limits of V: round 2 seeded nmp_e2e at 15:12; the security round-3 fixes then edited 0600/0604/0606 in place (15:54–15:56) and changed MIG/PLN/PRV/RPT/IMP/INT code, so they are covered by tests only. Scale: AC-S1-2 (2M positions) not met (SPIKE_REPORT §8).
 
+B-MKT (2026-11-20, `increments/B-MKT/HANDOFF.md`): FR-CPL-013, FR-TAX-002, FR-TAX-003, FR-DIST-007 set to I T V (with the limits in their status). T = module (tax, comp withholding, cpl registers, iam locale, dist templates, pln, ten), packages/db bmkt-guards, engine, isolation (all 15 B-MKT routes) and role-matrix tests and the web catalogue/server-render tests green in the records full run (nmp_test_3 reset to 0705, 257 files, 5602 tests, 0 failed/skipped); api + web typecheck clean. V = `testing/UI_TESTING_REPORT.md` "Increment B-MKT" rounds 1–3: W-B-MKT-1..7 pass in rounds 2 and 3 (W-B-MKT-0 partial); money = PLAN §6 (AT-A 23.00/0.00 below threshold, AT-B 24.00/4.80 missing id, batch 54.70, ledger 4.80 = forms 4.80, generate 1/0/1 then 1/1/0). Limits of V: the security fixes (0705, contact-e-mail SoD, grievance related approvers, commit-time withholding check) landed after round 3 and are covered by tests only; the India pack exists only as a test fixture (D-BM-01, C-9). Scale: AC-S1-2 (2M positions) still not met (SPIKE_REPORT §9).
+
 | FR | Title | Stories | ACs | Rules | Tests | Screens | APIs | Tables | Status |
 |---|---|---|---|---|---|---|---|---|---|
 | FR-IAM-004 | Separation of duties | US-07 | AC-07.1 AC-07.2 | BR-ADJ-02 BR-SEC-06 | TS-35 TS-42 | SC-02 SC-03 | API-20 API-25 | approval | I T V |
@@ -129,10 +131,10 @@ B6 (2026-11-20, `increments/B6/HANDOFF.md`): FR-PLN-007, FR-PLN-008, FR-INT-003,
 
 | FR | Title | Stories | ACs | Rules | Tests | Screens | APIs | Tables | Status |
 |---|---|---|---|---|---|---|---|---|---|
-| FR-CPL-013 | Market-pack registers |  |  | BR-ADJ-04 | TS-68 | SC-06 | API-30 | case | - |
-| FR-TAX-002 | Withholding rules per market | US-18 US-19 | AC-18.1 AC-18.2 AC-19.1 | BR-TAX-01 BR-TAX-02 BR-TAX-03 | TS-18 TS-19 TS-38 TS-59 | SC-12 | API-39 | tax_rule tax_line posting | - |
-| FR-TAX-003 | Year-end statements | US-18 | AC-18.1 AC-18.2 | BR-TAX-04 | TS-18 TS-38 TS-59 | SC-12 | API-36 | tax_form tax_line | - |
-| FR-DIST-007 | Localisation and low-bandwidth delivery | US-34 | AC-34.1 | BR-LOC-01 | TS-30 TS-54 TS-55 | SC-18 SC-37 | API-28 | notification | - |
+| FR-CPL-013 | Market-pack registers |  |  | BR-ADJ-04 | TS-68 | SC-06 | API-30 | case | I T V (V limits: escalation cron, its mails and the filing-from-pack gate tested only; register CSV still prints state approved/rejected, BUG-139) |
+| FR-TAX-002 | Withholding rules per market | US-18 US-19 | AC-18.1 AC-18.2 AC-19.1 | BR-TAX-01 BR-TAX-02 BR-TAX-03 | TS-18 TS-19 TS-38 TS-59 | SC-12 | API-39 | tax_rule tax_line posting | I T V (V limits: analyst@ sees no Withheld total on SC-02, BUG-131; tax id added after the period end, ambiguity refusal and TS-38 tested only) |
+| FR-TAX-003 | Year-end statements | US-18 | AC-18.1 AC-18.2 | BR-TAX-04 | TS-18 TS-38 TS-59 | SC-12 | API-36 | tax_form tax_line | I T V |
+| FR-DIST-007 | Localisation and low-bandwidth delivery | US-34 | AC-34.1 | BR-LOC-01 | TS-30 TS-54 TS-55 | SC-18 SC-37 | API-28 | notification | I T V (partial V: TS-30 budget NOT met, 179.3 KB > 150 KB, BUG-132; screen reader (TS-54) not run) |
 
 ## Release V1 (19)
 

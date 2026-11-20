@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { useApi } from '../../components/api-provider'
@@ -23,6 +24,7 @@ import { useIdempotencyKey } from '../admin/resource'
 import { approverNames, noApproverText } from '../admin/settings/labels'
 import { downloadCsv, saveFile } from '../data/transfer'
 import { CommitDialog } from './commit-dialog'
+import { WithholdingTab, withholdingLinesPath } from './withholding'
 import { ledgerPath } from '../ledger/format'
 import { hasResults, isFinished, isRunning, marketMoney, periodText, reviewPath, RUN_STATE_LABELS, signedMoney } from './format'
 import { LinesTable } from './lines-tab'
@@ -81,6 +83,11 @@ function Review({ run, period, label, zone, market, review, reload }: ReviewProp
   const [problem, setProblem] = useState<string | null>(null)
   const [busy, setBusy] = useState<'request' | 'export' | null>(null)
   const [committing, setCommitting] = useState(false)
+  // PLAN B-MKT §5 SC-02 / BUG-131: the API lets tax.read and run.review read the run's tax lines (KPI); the tab and /tax need tax.read.
+  const lineReader = (can('tax.read') || can('run.review')) && review !== null
+  const taxReader = can('tax.read') && review !== null
+  const taxLines = useResource<unknown[]>(lineReader ? '/v1/tax/lines' : null, { run_id: run.id, limit: 1 })
+  const withheld = (taxLines.meta.totals as { readonly withheld_minor: string } | undefined)?.withheld_minor ?? null
   const tabs = [
     { id: 'variance', label: 'Variance' },
     { id: 'movers', label: 'Top movers', ...(review === null ? {} : { count: review.movers.length }) },
@@ -88,6 +95,7 @@ function Review({ run, period, label, zone, market, review, reload }: ReviewProp
     { id: 'lines', label: 'Lines' },
     { id: 'changes', label: 'What changed' },
     { id: 'adjustments', label: 'Adjustments', ...(review === null ? {} : { count: review.adjustments.reduce((sum, row) => sum + row.count, 0) }) },
+    ...(taxReader && market !== undefined ? [{ id: 'withholding', label: 'Withholding' }] : []),
   ]
   const [tab, selectTab] = useTabParam(tabs)
   const write = (permission: string) => !readOnly && can(permission)
@@ -162,7 +170,7 @@ function Review({ run, period, label, zone, market, review, reload }: ReviewProp
       {problem !== null && <Banner tone="danger">{problem}</Banner>}
       {review === null ? (hasResults(run.state) && <LoadingState label="Loading the review" />) : (
         <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-space-md" data-testid="kpis">
+          <div className={`grid grid-cols-1 sm:grid-cols-2 ${lineReader ? 'xl:grid-cols-5' : 'xl:grid-cols-4'} gap-space-md`} data-testid="kpis">
             <KpiCard label="Gross" icon="payments" value={marketMoney(totals!.current.gross_minor, market)}
               delta={previousGross === undefined ? undefined : `${signedMoney((BigInt(totals!.current.gross_minor) - BigInt(previousGross)).toString(), market)} vs previous`}
               detail={previousGross === undefined ? 'No committed previous period' : undefined} />
@@ -170,6 +178,11 @@ function Review({ run, period, label, zone, market, review, reload }: ReviewProp
             <KpiCard label="Payees" icon="groups" value={totals!.current.payee_count.toLocaleString()} detail={totals!.previous === null ? undefined : `${totals!.previous.payee_count.toLocaleString()} previously`} />
             <KpiCard label="Adjustments" icon="rule" value={marketMoney(adjustments.reduce((sum, row) => sum + BigInt(row.amount_minor), 0n).toString(), market)}
               detail={`${adjustments.reduce((sum, row) => sum + row.count, 0)} lines from late items, clawbacks, restatements and manual adjustments`} />
+            {lineReader && (
+              <KpiCard label="Withheld" icon="gavel" value={withheld === null ? null : marketMoney(withheld, market)}
+                detail={taxLines.error !== null ? 'The withholding total could not be loaded.'
+                  : !taxReader ? 'Withheld from this run' : <Link className="text-primary font-semibold hover:underline" href={withholdingLinesPath(period.market_id, period.id, run.id)}>Withholding lines</Link>} />
+            )}
           </div>
           <div>
             <Tabs label="Run review" idPrefix={ID_PREFIX} tabs={tabs} selected={tab} onSelect={selectTab} />
@@ -180,6 +193,7 @@ function Review({ run, period, label, zone, market, review, reload }: ReviewProp
               {tab === 'lines' && <LinesTable runId={run.id} market={market} ruleKeys={ruleKeys} />}
               {tab === 'changes' && <ChangesTab review={review} runId={run.id} version={run.plan_version.version} />}
               {tab === 'adjustments' && <AdjustmentsTab review={review} market={market} runId={run.id} ruleKeys={ruleKeys} />}
+              {tab === 'withholding' && market !== undefined && <WithholdingTab market={market} runId={run.id} />}
             </TabPanel>
           </div>
         </>
@@ -201,7 +215,7 @@ function Review({ run, period, label, zone, market, review, reload }: ReviewProp
         />
       )}
       {committing && review !== null && (
-        <CommitDialog run={run} review={review} period={label} market={market} acknowledged={acknowledged} onAcknowledge={acknowledge}
+        <CommitDialog run={run} review={review} period={label} market={market} withheld={withheld} acknowledged={acknowledged} onAcknowledge={acknowledge}
           onClose={() => setCommitting(false)} onDone={() => {
             setCommitting(false)
             reload()

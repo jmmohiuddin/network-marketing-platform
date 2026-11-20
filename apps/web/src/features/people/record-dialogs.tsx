@@ -9,7 +9,7 @@ import { Modal } from '../../components/modal'
 import { useToast } from '../../components/toast'
 import { errorMessage } from '../../lib/messages'
 import { useResource } from '../../lib/use-resource'
-import { requiredError } from '../../lib/validation'
+import { emailError, requiredError } from '../../lib/validation'
 import { fromLocalInput } from '../admin/format'
 import { FormDialog, TextAreaField } from '../admin/form-dialog'
 import { FIELDSET, LEGEND, MONO, NOTE } from '../admin/ui'
@@ -246,6 +246,43 @@ export function ServicerDialog({ customerId, onClose, onDone }: { readonly custo
       <TextInput id={ids.valid_from} type="datetime-local" label="Valid from" optional helper="Your local time. Empty: now. Never in the past."
         value={local} error={errors.valid_from} onChange={(event) => setLocal(event.target.value)} />
       <TextAreaField id={ids.reason} label="Reason" value={reason} error={errors.reason} onChange={setReason} />
+    </FormDialog>
+  )
+}
+
+/**
+ * POST /v1/participants/:id/contact-email (BUG-133, participant.manage, step-up through ApiProvider): records the first
+ * contact e-mail of a member who has none, e.g. a migrated one, so another user can send the portal invitation (never the recorder: 422 SOD_SELF_APPROVAL). Changing an e-mail
+ * on record is a privacy correction: the API refuses with 409 CONTACT_EMAIL_RECORDED and that message shows here.
+ */
+export function ContactEmailDialog({ participantId, onClose, onDone }: { readonly participantId: string; readonly onClose: () => void; readonly onDone: () => void }) {
+  const api = useApi()
+  const toast = useToast()
+  const [email, setEmail] = useState('')
+  const [reason, setReason] = useState('')
+  const [errors, setErrors] = useState<Errors>({})
+  const ids = { email: 'contact-email', reason: 'contact-email-reason' }
+  function submit(idempotencyKey: string) {
+    const found = { email: requiredError('the e-mail address', email) ?? emailError(email), reason: requiredError('the reason', reason) }
+    setErrors(found)
+    const items = itemsOf(found, ids)
+    if (items.length > 0) return { items }
+    const body = { email: email.trim(), reason: reason.trim() }
+    return {
+      items,
+      fieldIds: ids,
+      send: async () => {
+        await api.post(`/v1/participants/${participantId}/contact-email`, body, { idempotencyKey })
+        toast({ message: 'Contact e-mail recorded.' })
+        onDone()
+      },
+    }
+  }
+  return (
+    <FormDialog title="Record contact e-mail" submitLabel="Record e-mail" onClose={onClose} onSubmit={submit}>
+      <TextInput id={ids.email} type="email" label="Email address" autoComplete="off" value={email} error={errors.email} onChange={(event) => setEmail(event.target.value)} />
+      <TextAreaField id={ids.reason} label="Reason" helper="Kept in the audit log; the address itself is not." value={reason} error={errors.reason} onChange={setReason} />
+      <p className={NOTE}>Only a member without a contact e-mail gets one here; changing one on record is a privacy correction. A colleague, not you, then sends the portal invitation. You may be asked for a code from your authenticator app.</p>
     </FormDialog>
   )
 }

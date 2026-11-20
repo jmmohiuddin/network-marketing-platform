@@ -41,10 +41,16 @@ interface CaseFormProps {
   readonly submitLabel: string
   /** false: the type's payload carries its own required note (restatement), so the optional statement is not asked. */
   readonly statement?: boolean
+  /** The statement field's helper (a grievance's statement summarises the complaint, not a requested change). */
+  readonly statementHelper?: string
   /** The type's own refusals at create, in words (adjustment: ADJUSTMENT_BLOCKED). */
   readonly explain?: (error: unknown) => unknown
   /** The reason chosen at first (an upheld dispute's adjustment: DISPUTE_UPHELD). */
   readonly initialReason?: string
+  /** required (default), optional (a grievance about a participant) or none (a grievance whose complainant is not on record, D-BM-13). */
+  readonly evidence?: 'required' | 'optional' | 'none'
+  /** The reason field's label ("Category" for a grievance). */
+  readonly reasonFieldLabel?: string
   readonly children: ReactNode
 }
 
@@ -59,11 +65,14 @@ function explained(error: unknown): unknown {
  * (POST /v1/documents, class evidence), attach it, then open the case page to submit it. A case opened before a failed
  * evidence step is kept: the retry only attaches the evidence.
  */
-export function CaseForm({ idPrefix, info, prepare, fieldIds, submitLabel, statement = true, explain = (error) => error, initialReason = '', children }: CaseFormProps) {
+export function CaseForm({
+  idPrefix, info, prepare, fieldIds, submitLabel, statement = true, statementHelper = 'Why the change is needed; kept with the case.', explain = (error) => error, initialReason = '', evidence: evidenceRule = 'required',
+  reasonFieldLabel = 'Reason', children,
+}: CaseFormProps) {
   const api = useApi()
   const router = useRouter()
   const toast = useToast()
-  const limits = useResource<DocumentLimits>('/v1/documents/limits')
+  const limits = useResource<DocumentLimits>(evidenceRule === 'none' ? null : '/v1/documents/limits')
   const evidence = useEvidenceFile()
   const [reason, setReason] = useState(initialReason)
   const [note, setNote] = useState('')
@@ -84,8 +93,8 @@ export function CaseForm({ idPrefix, info, prepare, fieldIds, submitLabel, state
     event.preventDefault()
     const proposal = prepare()
     const own = {
-      [ids.reason]: opened === null && chosenReason === '' ? 'Choose a reason.' : null,
-      [ids.evidence]: evidence.file === null ? 'Choose the evidence file.' : null,
+      [ids.reason]: opened === null && chosenReason === '' ? `Choose a ${reasonFieldLabel.toLowerCase()}.` : null,
+      [ids.evidence]: evidenceRule === 'required' && evidence.file === null ? 'Choose the evidence file.' : null,
     }
     setErrors(own)
     const items = [
@@ -100,7 +109,8 @@ export function CaseForm({ idPrefix, info, prepare, fieldIds, submitLabel, state
       if (caseId === null) {
         const body = {
           type: info.type, subject_type: proposal.subjectType, subject_id: proposal.subjectId, reason_code: chosenReason, payload: proposal.payload,
-          ...(note.trim() === '' ? {} : { note: note.trim() }),
+          // A statement typed before the field was hidden (grievance switched to "Not on record") is not sent.
+          ...(!statement || note.trim() === '' ? {} : { note: note.trim() }),
         }
         const text = JSON.stringify(body)
         const key = attempt !== null && attempt.body === text ? attempt.key : newIdempotencyKey()
@@ -108,9 +118,12 @@ export function CaseForm({ idPrefix, info, prepare, fieldIds, submitLabel, state
         caseId = (await api.post<CaseRecord>('/v1/cases', body, { idempotencyKey: key })).data.id
         setOpened(caseId)
       }
-      const document = await evidence.upload(api)
-      await api.post(`/v1/cases/${caseId}/evidence`, { document_id: document.id }, { idempotencyKey: evidenceKey })
-      toast({ message: 'Case opened with its evidence. Submit it for a decision when it is complete.' })
+      const attach = evidenceRule !== 'none' && evidence.file !== null
+      if (attach) {
+        const document = await evidence.upload(api)
+        await api.post(`/v1/cases/${caseId}/evidence`, { document_id: document.id }, { idempotencyKey: evidenceKey })
+      }
+      toast({ message: `Case opened${attach ? ' with its evidence' : ''}. Submit it for a decision when it is complete.` })
       router.push(`/cases/${caseId}`)
     } catch (error) {
       setSummary(summaryOf(explain(explained(error)), { ...fieldIds, reason_code: ids.reason }))
@@ -128,13 +141,13 @@ export function CaseForm({ idPrefix, info, prepare, fieldIds, submitLabel, state
       )}
       <fieldset className="flex flex-col gap-space-md min-w-0" disabled={opened !== null}>
         {children}
-        <Select id={ids.reason} label="Reason" placeholder="Choose a reason" value={chosenReason} options={reasonOptions} error={errors[ids.reason]} onChange={(event) => setReason(event.target.value)} />
-        {statement && <TextAreaField id={ids.note} label="Statement" optional helper="Why the change is needed; kept with the case." maxLength={NOTE_MAX} value={note} onChange={setNote} />}
+        <Select id={ids.reason} label={reasonFieldLabel} placeholder={`Choose a ${reasonFieldLabel.toLowerCase()}`} value={chosenReason} options={reasonOptions} error={errors[ids.reason]} onChange={(event) => setReason(event.target.value)} />
+        {statement && <TextAreaField id={ids.note} label="Statement" optional helper={statementHelper} maxLength={NOTE_MAX} value={note} onChange={setNote} />}
       </fieldset>
-      {limits.error !== null ? <LoadFailure error={limits.error} onRetry={limits.reload} section />
+      {evidenceRule === 'none' ? null : limits.error !== null ? <LoadFailure error={limits.error} onRetry={limits.reload} section />
         : limits.data === null ? <LoadingState label="Loading the evidence file rules" />
           : (
-            <FileDropZone id={ids.evidence} label="Evidence" extensions={extensionsOf(limits.data.types)} maxBytes={limits.data.max_file_bytes} error={errors[ids.evidence]} onFiles={(files) => {
+            <FileDropZone id={ids.evidence} label="Evidence" optional={evidenceRule === 'optional'} extensions={extensionsOf(limits.data.types)} maxBytes={limits.data.max_file_bytes} error={errors[ids.evidence]} onFiles={(files) => {
               evidence.choose(files)
               setEvidenceKey(newIdempotencyKey())
             }} />

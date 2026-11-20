@@ -1,26 +1,9 @@
 // TEST FIXTURES ONLY: committed periods, runs, orders, ledger postings, payouts, cases and guardrail decisions written
 // by the owner with triggers off (session_replication_role replica), as the owning modules would have written them.
 import { randomUUID } from 'node:crypto'
-import { getOwnerPool } from '@nmp/db/testing'
+import { ownerReplica } from '../../../test/helpers/index.js'
 
 const SYSTEM = '00000000-0000-0000-0000-000000000000'
-
-/** Owner statement with triggers (and so foreign-key checks) off; CHECK constraints still apply. */
-export async function ownerReplica<T extends Record<string, unknown>>(sql: string, params: unknown[] = []): Promise<T[]> {
-  const client = await getOwnerPool().connect()
-  try {
-    await client.query('BEGIN')
-    await client.query('SET LOCAL session_replication_role = replica')
-    const { rows } = await client.query<T>(sql, params)
-    await client.query('COMMIT')
-    return rows
-  } catch (error) {
-    await client.query('ROLLBACK')
-    throw error
-  } finally {
-    client.release()
-  }
-}
 
 const id = async (sql: string, params: unknown[]): Promise<string> => (await ownerReplica<{ id: string }>(sql, params))[0]!.id
 

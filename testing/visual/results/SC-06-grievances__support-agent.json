@@ -1,0 +1,958 @@
+{
+  "when": "2026-11-20T16:21:16.161Z",
+  "screenId": "SC-06-grievances",
+  "stitch": "sc_06_cases_exceptions",
+  "module": "cases",
+  "screen": "cases-grievances",
+  "route": "/cases?type=grievance",
+  "role": "support-agent",
+  "url": "http://127.0.0.1:3100/cases?type=grievance",
+  "self": false,
+  "patched": [],
+  "viewports": [
+    {
+      "viewport": "1440x900",
+      "screenshot": "testing/ui-screenshots/app/cases/cases-grievances/support-agent/1440x900.png",
+      "reference": "testing/ui-screenshots/reference/sc_06_cases_exceptions/1440x900.png",
+      "diffImage": "testing/ui-screenshots/app/cases/cases-grievances/support-agent/1440x900.diff.png",
+      "mismatchPercent": 4.72,
+      "diffPixels": 126937,
+      "referenceSize": "1440x1866",
+      "actualSize": "1440x900",
+      "landmarks": [
+        {
+          "landmark": "header",
+          "stitchText": "AuditLedgerAcrobex Global(TEN-842)arrow_drop_downUS - United",
+          "appText": "menuMenuAcme Direct LtdSASupport AgentSupport agentlogoutSig",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "height",
+              "stitch": "48px",
+              "app": "48px",
+              "match": true
+            },
+            {
+              "prop": "background",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "sidebar",
+          "stitchText": "dashboardOverviewhistory_toggle_offPeriods & RunsschemaCompe",
+          "appText": "account_treePeoplelanGenealogyrule_folderCasesreceipt_longOr",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "width",
+              "stitch": "208px",
+              "app": "208px",
+              "match": true
+            },
+            {
+              "prop": "background",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "page",
+          "stitchText": "verified LEDGER IMMUTABILITY ENGAGED / Reg. Directive: PRD-0",
+          "appText": "CasesGenealogy changes, transfers, duplicate reviews, restat",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "background",
+              "stitch": "rgb(248, 249, 255)",
+              "app": "rgb(248, 249, 255)",
+              "match": true
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "16px",
+              "app": "16px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "title",
+          "stitchText": "Cases & Exceptions — Audit & Resolution Queue",
+          "appText": "Cases",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "24px",
+              "app": "24px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            },
+            {
+              "prop": "line-height",
+              "stitch": "32px",
+              "app": "32px",
+              "match": true
+            },
+            {
+              "prop": "letter-spacing",
+              "stitch": "-0.6px",
+              "app": "-0.36px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "sectionHeading",
+          "stitchText": "Payee Dispute — Unilevel Compression Delta",
+          "appText": "",
+          "status": "missing-in-app",
+          "severity": "high",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": null,
+              "match": false
+            },
+            {
+              "prop": "font-size",
+              "stitch": "16px",
+              "app": null,
+              "match": false
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": null,
+              "match": false
+            },
+            {
+              "prop": "line-height",
+              "stitch": "24px",
+              "app": null,
+              "match": false
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": null,
+              "match": false
+            }
+          ]
+        },
+        {
+          "landmark": "primaryButton",
+          "stitchText": "add_circle + Create Manual Adjustment Case",
+          "appText": "add_circleFile genealogy case",
+          "status": "mismatch",
+          "severity": "high",
+          "props": [
+            {
+              "prop": "background-color",
+              "stitch": "rgb(30, 79, 163)",
+              "app": "rgb(0, 56, 131)",
+              "match": false
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            },
+            {
+              "prop": "border-radius",
+              "stitch": "2px",
+              "app": "2px",
+              "match": true
+            },
+            {
+              "prop": "height",
+              "stitch": "32px",
+              "app": "32px",
+              "match": true
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "13px",
+              "app": "13px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "tableHeader",
+          "stitchText": "",
+          "appText": "Case",
+          "status": "absent-in-stitch",
+          "severity": "info",
+          "props": []
+        },
+        {
+          "landmark": "card",
+          "stitchText": "Open Exceptions 14 Active pending_actions 4 Disputes 6 Adjus",
+          "appText": "Open0Being preparedpending_actions",
+          "status": "mismatch",
+          "severity": "medium",
+          "props": [
+            {
+              "prop": "border-radius",
+              "stitch": "2px",
+              "app": "8px",
+              "match": false
+            },
+            {
+              "prop": "box-shadow",
+              "stitch": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+              "app": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+              "match": true
+            },
+            {
+              "prop": "background-color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "viewport": "1280x800",
+      "screenshot": "testing/ui-screenshots/app/cases/cases-grievances/support-agent/1280x800.png",
+      "reference": "testing/ui-screenshots/reference/sc_06_cases_exceptions/1280x800.png",
+      "diffImage": "testing/ui-screenshots/app/cases/cases-grievances/support-agent/1280x800.diff.png",
+      "mismatchPercent": 4.89,
+      "diffPixels": 129287,
+      "referenceSize": "1280x2066",
+      "actualSize": "1280x808",
+      "landmarks": [
+        {
+          "landmark": "header",
+          "stitchText": "AuditLedgerAcrobex Global(TEN-842)arrow_drop_downUS - United",
+          "appText": "menuMenuAcme Direct LtdSASupport AgentSupport agentlogoutSig",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "height",
+              "stitch": "48px",
+              "app": "48px",
+              "match": true
+            },
+            {
+              "prop": "background",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "sidebar",
+          "stitchText": "dashboardOverviewhistory_toggle_offPeriods & RunsschemaCompe",
+          "appText": "account_treePeoplelanGenealogyrule_folderCasesreceipt_longOr",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "width",
+              "stitch": "208px",
+              "app": "208px",
+              "match": true
+            },
+            {
+              "prop": "background",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "page",
+          "stitchText": "verified LEDGER IMMUTABILITY ENGAGED / Reg. Directive: PRD-0",
+          "appText": "CasesGenealogy changes, transfers, duplicate reviews, restat",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "background",
+              "stitch": "rgb(248, 249, 255)",
+              "app": "rgb(248, 249, 255)",
+              "match": true
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "16px",
+              "app": "16px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "title",
+          "stitchText": "Cases & Exceptions — Audit & Resolution Queue",
+          "appText": "Cases",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "24px",
+              "app": "24px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            },
+            {
+              "prop": "line-height",
+              "stitch": "32px",
+              "app": "32px",
+              "match": true
+            },
+            {
+              "prop": "letter-spacing",
+              "stitch": "-0.6px",
+              "app": "-0.36px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "sectionHeading",
+          "stitchText": "Payee Dispute — Unilevel Compression Delta",
+          "appText": "",
+          "status": "missing-in-app",
+          "severity": "high",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": null,
+              "match": false
+            },
+            {
+              "prop": "font-size",
+              "stitch": "16px",
+              "app": null,
+              "match": false
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": null,
+              "match": false
+            },
+            {
+              "prop": "line-height",
+              "stitch": "24px",
+              "app": null,
+              "match": false
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": null,
+              "match": false
+            }
+          ]
+        },
+        {
+          "landmark": "primaryButton",
+          "stitchText": "add_circle + Create Manual Adjustment Case",
+          "appText": "add_circleFile genealogy case",
+          "status": "mismatch",
+          "severity": "high",
+          "props": [
+            {
+              "prop": "background-color",
+              "stitch": "rgb(30, 79, 163)",
+              "app": "rgb(0, 56, 131)",
+              "match": false
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            },
+            {
+              "prop": "border-radius",
+              "stitch": "2px",
+              "app": "2px",
+              "match": true
+            },
+            {
+              "prop": "height",
+              "stitch": "32px",
+              "app": "32px",
+              "match": true
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "13px",
+              "app": "13px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "tableHeader",
+          "stitchText": "",
+          "appText": "Case",
+          "status": "absent-in-stitch",
+          "severity": "info",
+          "props": []
+        },
+        {
+          "landmark": "card",
+          "stitchText": "Open Exceptions 14 Active pending_actions 4 Disputes 6 Adjus",
+          "appText": "Open0Being preparedpending_actions",
+          "status": "mismatch",
+          "severity": "medium",
+          "props": [
+            {
+              "prop": "border-radius",
+              "stitch": "2px",
+              "app": "8px",
+              "match": false
+            },
+            {
+              "prop": "box-shadow",
+              "stitch": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+              "app": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+              "match": true
+            },
+            {
+              "prop": "background-color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "viewport": "768x1024",
+      "screenshot": "testing/ui-screenshots/app/cases/cases-grievances/support-agent/768x1024.png",
+      "reference": "testing/ui-screenshots/reference/sc_06_cases_exceptions/768x1024.png",
+      "diffImage": "testing/ui-screenshots/app/cases/cases-grievances/support-agent/768x1024.diff.png",
+      "mismatchPercent": 5.61,
+      "diffPixels": 124453,
+      "referenceSize": "768x2891",
+      "actualSize": "768x1024",
+      "landmarks": [
+        {
+          "landmark": "page",
+          "stitchText": "verified LEDGER IMMUTABILITY ENGAGED / Reg. Directive: PRD-0",
+          "appText": "CasesGenealogy changes, transfers, duplicate reviews, restat",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "background",
+              "stitch": "rgb(248, 249, 255)",
+              "app": "rgb(248, 249, 255)",
+              "match": true
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "16px",
+              "app": "16px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "title",
+          "stitchText": "Cases & Exceptions — Audit & Resolution Queue",
+          "appText": "Cases",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "24px",
+              "app": "24px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            },
+            {
+              "prop": "line-height",
+              "stitch": "32px",
+              "app": "32px",
+              "match": true
+            },
+            {
+              "prop": "letter-spacing",
+              "stitch": "-0.6px",
+              "app": "-0.36px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "sectionHeading",
+          "stitchText": "Payee Dispute — Unilevel Compression Delta",
+          "appText": "",
+          "status": "missing-in-app",
+          "severity": "high",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": null,
+              "match": false
+            },
+            {
+              "prop": "font-size",
+              "stitch": "16px",
+              "app": null,
+              "match": false
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": null,
+              "match": false
+            },
+            {
+              "prop": "line-height",
+              "stitch": "24px",
+              "app": null,
+              "match": false
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": null,
+              "match": false
+            }
+          ]
+        },
+        {
+          "landmark": "primaryButton",
+          "stitchText": "add_circle + Create Manual Adjustment Case",
+          "appText": "add_circleFile genealogy case",
+          "status": "mismatch",
+          "severity": "high",
+          "props": [
+            {
+              "prop": "background-color",
+              "stitch": "rgb(30, 79, 163)",
+              "app": "rgb(0, 56, 131)",
+              "match": false
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            },
+            {
+              "prop": "border-radius",
+              "stitch": "2px",
+              "app": "2px",
+              "match": true
+            },
+            {
+              "prop": "height",
+              "stitch": "32px",
+              "app": "32px",
+              "match": true
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "13px",
+              "app": "13px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "tableHeader",
+          "stitchText": "",
+          "appText": "Case",
+          "status": "absent-in-stitch",
+          "severity": "info",
+          "props": []
+        },
+        {
+          "landmark": "card",
+          "stitchText": "Open Exceptions 14 Active pending_actions 4 Disputes 6 Adjus",
+          "appText": "Open0Being preparedpending_actions",
+          "status": "mismatch",
+          "severity": "medium",
+          "props": [
+            {
+              "prop": "border-radius",
+              "stitch": "2px",
+              "app": "8px",
+              "match": false
+            },
+            {
+              "prop": "box-shadow",
+              "stitch": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+              "app": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+              "match": true
+            },
+            {
+              "prop": "background-color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "viewport": "390x844",
+      "screenshot": "testing/ui-screenshots/app/cases/cases-grievances/support-agent/390x844.png",
+      "reference": "testing/ui-screenshots/reference/sc_06_cases_exceptions/390x844.png",
+      "diffImage": "testing/ui-screenshots/app/cases/cases-grievances/support-agent/390x844.diff.png",
+      "mismatchPercent": 2.95,
+      "diffPixels": 101039,
+      "referenceSize": "512x6697",
+      "actualSize": "390x1770",
+      "landmarks": [
+        {
+          "landmark": "page",
+          "stitchText": "verified LEDGER IMMUTABILITY ENGAGED / Reg. Directive: PRD-0",
+          "appText": "CasesGenealogy changes, transfers, duplicate reviews, restat",
+          "status": "match",
+          "severity": "none",
+          "props": [
+            {
+              "prop": "background",
+              "stitch": "rgb(248, 249, 255)",
+              "app": "rgb(248, 249, 255)",
+              "match": true
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "16px",
+              "app": "16px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "title",
+          "stitchText": "Cases & Exceptions — Audit & Resolution Queue",
+          "appText": "Cases",
+          "status": "mismatch",
+          "severity": "medium",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "24px",
+              "app": "20px",
+              "match": false
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            },
+            {
+              "prop": "line-height",
+              "stitch": "32px",
+              "app": "28px",
+              "match": false
+            },
+            {
+              "prop": "letter-spacing",
+              "stitch": "-0.6px",
+              "app": "-0.5px",
+              "match": true
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": "rgb(13, 28, 46)",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "sectionHeading",
+          "stitchText": "Payee Dispute — Unilevel Compression Delta",
+          "appText": "",
+          "status": "missing-in-app",
+          "severity": "high",
+          "props": [
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": null,
+              "match": false
+            },
+            {
+              "prop": "font-size",
+              "stitch": "16px",
+              "app": null,
+              "match": false
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": null,
+              "match": false
+            },
+            {
+              "prop": "line-height",
+              "stitch": "24px",
+              "app": null,
+              "match": false
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(13, 28, 46)",
+              "app": null,
+              "match": false
+            }
+          ]
+        },
+        {
+          "landmark": "primaryButton",
+          "stitchText": "add_circle + Create Manual Adjustment Case",
+          "appText": "add_circleFile genealogy case",
+          "status": "mismatch",
+          "severity": "high",
+          "props": [
+            {
+              "prop": "background-color",
+              "stitch": "rgb(30, 79, 163)",
+              "app": "rgb(0, 56, 131)",
+              "match": false
+            },
+            {
+              "prop": "color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            },
+            {
+              "prop": "border-radius",
+              "stitch": "2px",
+              "app": "2px",
+              "match": true
+            },
+            {
+              "prop": "height",
+              "stitch": "32px",
+              "app": "32px",
+              "match": true
+            },
+            {
+              "prop": "font-family",
+              "stitch": "Inter",
+              "app": "inter, \"inter Fallback\", Inter, system-ui, sans-serif",
+              "match": true
+            },
+            {
+              "prop": "font-size",
+              "stitch": "13px",
+              "app": "13px",
+              "match": true
+            },
+            {
+              "prop": "font-weight",
+              "stitch": "600",
+              "app": "600",
+              "match": true
+            }
+          ]
+        },
+        {
+          "landmark": "tableHeader",
+          "stitchText": "",
+          "appText": "Case",
+          "status": "absent-in-stitch",
+          "severity": "info",
+          "props": []
+        },
+        {
+          "landmark": "card",
+          "stitchText": "Open Exceptions 14 Active pending_actions 4 Disputes 6 Adjus",
+          "appText": "Open0Being preparedpending_actions",
+          "status": "mismatch",
+          "severity": "medium",
+          "props": [
+            {
+              "prop": "border-radius",
+              "stitch": "2px",
+              "app": "8px",
+              "match": false
+            },
+            {
+              "prop": "box-shadow",
+              "stitch": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+              "app": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+              "match": true
+            },
+            {
+              "prop": "background-color",
+              "stitch": "rgb(255, 255, 255)",
+              "app": "rgb(255, 255, 255)",
+              "match": true
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

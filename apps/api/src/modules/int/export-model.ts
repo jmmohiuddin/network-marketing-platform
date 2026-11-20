@@ -36,7 +36,8 @@ const PUBLIC_TABLES = [
   'plan_transition', 'plan_version', 'plan_version_filing', 'position', 'position_ownership', 'position_status_history', 'posting',
   'privacy_request', 'product_volume_map', 'provider_config', 'qualification_state', 'relationship', 'restatement', 'result_line', 'role',
   'role_assignment', 'role_grant_request', 'run', 'run_settlement', 'run_snapshot', 'sales_order', 'sandbox_provider_payment',
-  'saved_view', 'service_account', 'setting_change_request', 'sim_result_line', 'simulation', 'support_session', 'tax_profile',
+  'saved_view', 'service_account', 'setting_change_request', 'sim_result_line', 'simulation', 'support_session', 'tax_form',
+  'tax_form_generation', 'tax_line', 'tax_profile',
   'tenant_setting_version', 'user_account', 'user_invitation', 'user_related_participant', 'webhook_endpoint',
 ]
 
@@ -99,6 +100,7 @@ export const KEPT_INTEGRITY_COLUMNS: readonly { readonly table: string; readonly
   { table: 'plan_version', column: 'content_hash', reason: INTEGRITY },
   { table: 'plan_version_filing', column: 'content_hash', reason: INTEGRITY },
   { table: 'simulation', column: 'content_hash', reason: INTEGRITY },
+  { table: 'tax_form', column: 'totals_hash', reason: 'Integrity of the frozen statement: the hash of its totals.' },
   { table: 'compliance_report_snapshot', column: 'inputs_hash', reason: INTEGRITY },
   { table: 'sales_order', column: 'payload_hash', reason: INTEGRITY },
   { table: 'payout_instruction', column: 'signature', reason: INTEGRITY },

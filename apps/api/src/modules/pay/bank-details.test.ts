@@ -131,6 +131,31 @@ describe('bank-detail requests and the bank_detail case (AC-17.1, AC-17.2, AC-PA
     expect(exclusion.reasons).toEqual([{ reason: 'bank_detail_cooling_off', detail: { until: current.cooling_off_until } }])
   })
 
+  test('BUG-135: the request-contact notice reads in the participant\'s language (market {de}, no portal account)', async () => {
+    const at = await createMarket(w.tenant.id, 'AT')
+    await ownerRows(`UPDATE market SET languages = '{de}', time_zone = 'Europe/Vienna' WHERE id = $1`, [at])
+    const atPayee = await participant(w.tenant.id, at)
+    const contact = `at-${Date.now()}@example.test`
+    const created = await request(w.support, atPayee, { ...details('AT611904300234573201'), contact_email: contact })
+    expect(created.statusCode, created.body).toBe(201)
+    const opened = await call(app, {
+      method: 'POST', url: '/v1/cases', as: w.support, idempotencyKey: true,
+      body: { type: 'bank_detail', subject_type: 'participant', subject_id: atPayee, reason_code: 'PAYEE_REQUEST', payload: { request_id: created.json().data.request_id } },
+    })
+    const caseId = opened.json().data.id as string
+    await call(app, { method: 'POST', url: `/v1/cases/${caseId}/evidence`, as: w.support, idempotencyKey: true,
+      body: { document_id: await evidenceDocument(w.tenant.id, w.support.id) } })
+    expect((await call(app, { method: 'POST', url: `/v1/cases/${caseId}/submit`, as: w.support, body: {} })).statusCode).toBe(200)
+    const approved = await call(app, { method: 'POST', url: `/v1/cases/${caseId}/decision`, as: w.compliance, idempotencyKey: true, body: { decision: 'approve', reason: 'verified' } })
+    expect(approved.statusCode, approved.body).toBe(200)
+
+    await runQueuedJobs(noticeJob as never)
+    const mail = (await mailsTo(contact))[0]!
+    expect(mail).toContain('Subject: Ihre Bankdaten für Auszahlungen wurden geändert')
+    expect(mail).toContain('Das Bankkonto für Ihre Auszahlungen wurde von keinem auf •••• 3201 geändert.')
+    expect(mail).toContain('(Europe/Vienna)')
+  })
+
   test('the request counts sharers in the requester\'s markets only; the approver\'s preview counts every market', async () => {
     const ie = await createMarket(w.tenant.id, 'IE')
     await bankVersion(w.tenant.id, await participant(w.tenant.id, ie), { iban: NEW_IBAN })

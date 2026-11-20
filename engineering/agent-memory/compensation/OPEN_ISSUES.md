@@ -79,3 +79,14 @@ _Agent: compensation. Read before every task; update after every task. Keep conc
 - 2026-11-20 D-B6-12 AC-S1-2: 2M positions OOM at 7 GB heap; engine rework (columnar input, traces on chunk exit, pass 10 per payee range) or architect amends AC-S1-2 (E-ADR-49). Unmeasured at 1M: S-2 end to end, simulation, parallel run.
 - 2026-11-20 TS-28 erasure-replay settles A's payable with a hand-made entry; real PAY batch → sandbox settle → erasure → replay needs an apps/api/test cross-module test (integrator/QA).
 - 2026-11-20 close-check / close / ledger entries export lack isolation cases + role-matrix rows (apps/api/test, integrator).
+
+## B-MKT BE2 (2026-11-20)
+- Integrator: isolation cases + role-matrix probes for 10 tax routes (GET /v1/tax/rules, /lines, /year-end, /year-end-generations, /year-end-forms, /year-end-forms/:id/download; POST /v1/tax/year-end-forms, /year-end-forms/export; portal GET /v1/me/tax-forms, /:id/download).
+- e2e markets whose languages lack a catalogue (e.g. nl) now show checklist item portal_languages missing (by design).
+
+## 2026-11-20 (B-MKT BE1)
+- AC-S1-2 (2M) still not met after TK-B6-14: ceiling 1M at 4 GB, 1.5M at 7 GB (SPIKE §9). Next: traces built at chunk exit + columnar input, or architect amends AC-S1-2/E-ADR-35. S-2 and simulation at 1M not run (machine swap).
+- tax_line.tax_year falls back to the calendar year when the pack has no tax_year rule (shortcut in comp/results.ts); DB/TAX to decide whether such markets may write tax lines.
+- No staff statement view exists in COMP; staff withholding is TAX's GET /v1/tax/lines.
+- Web: explanation parts[].rate keeps the data sentinel 'rates vary' (web catalogue must translate it); portal market createWorld default '{de}'.
+- apps/api/test (integrator): isolation cases / role matrix missing for TAX, CPL registers, PUT /v1/me/locale routes; boundaries.test flags cpl/tax test-support cross imports (not COMP).

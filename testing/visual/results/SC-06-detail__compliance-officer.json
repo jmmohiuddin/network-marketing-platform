@@ -1,12 +1,12 @@
 {
-  "when": "2026-11-17T15:42:53.955Z",
+  "when": "2026-11-20T16:21:30.216Z",
   "screenId": "SC-06-detail",
   "stitch": "sc_06_cases_exceptions",
   "module": "cases",
   "screen": "case-detail",
   "route": "/cases/[id]",
   "role": "compliance-officer",
-  "url": "http://127.0.0.1:3100/cases/d97e1c32-c0b2-4391-8f94-4ee2f18971e2",
+  "url": "http://127.0.0.1:3100/cases/59906cd0-2148-4382-81ca-418b60e999f9",
   "self": false,
   "patched": [],
   "viewports": [
@@ -15,8 +15,8 @@
       "screenshot": "testing/ui-screenshots/app/cases/case-detail/compliance-officer/1440x900.png",
       "reference": "testing/ui-screenshots/reference/sc_06_cases_exceptions/1440x900.png",
       "diffImage": "testing/ui-screenshots/app/cases/case-detail/compliance-officer/1440x900.diff.png",
-      "mismatchPercent": 4.67,
-      "diffPixels": 125558,
+      "mismatchPercent": 4.64,
+      "diffPixels": 124798,
       "referenceSize": "1440x1866",
       "actualSize": "1440x900",
       "landmarks": [
@@ -65,7 +65,7 @@
         {
           "landmark": "page",
           "stitchText": "verified LEDGER IMMUTABILITY ENGAGED / Reg. Directive: PRD-0",
-          "appText": "Caseschevron_rightGenealogy changeGenealogy change d97e1c32l",
+          "appText": "Caseschevron_rightGrievanceGrievance 59906cd0lockResolved: u",
           "status": "match",
           "severity": "none",
           "props": [
@@ -98,7 +98,7 @@
         {
           "landmark": "title",
           "stitchText": "Cases & Exceptions — Audit & Resolution Queue",
-          "appText": "Genealogy change d97e1c32",
+          "appText": "Grievance 59906cd0",
           "status": "match",
           "severity": "none",
           "props": [
@@ -143,7 +143,7 @@
         {
           "landmark": "sectionHeading",
           "stitchText": "Payee Dispute — Unilevel Compression Delta",
-          "appText": "Subject and proposal",
+          "appText": "Complainant and complaint",
           "status": "mismatch",
           "severity": "medium",
           "props": [
@@ -241,7 +241,7 @@
         {
           "landmark": "card",
           "stitchText": "CAS-2026-1042 INSPECTOR Awaiting Sign-off (L2) Payee Dispute",
-          "appText": "Subject and proposalSubject (position)P-CReasonParticipant r",
+          "appText": "Complainant and complaintSubject (participant)AT-BReasonPayo",
           "status": "match",
           "severity": "none",
           "props": [
@@ -272,10 +272,10 @@
       "screenshot": "testing/ui-screenshots/app/cases/case-detail/compliance-officer/1280x800.png",
       "reference": "testing/ui-screenshots/reference/sc_06_cases_exceptions/1280x800.png",
       "diffImage": "testing/ui-screenshots/app/cases/case-detail/compliance-officer/1280x800.diff.png",
-      "mismatchPercent": 4.8,
-      "diffPixels": 126828,
+      "mismatchPercent": 4.76,
+      "diffPixels": 125976,
       "referenceSize": "1280x2066",
-      "actualSize": "1280x869",
+      "actualSize": "1280x800",
       "landmarks": [
         {
           "landmark": "header",
@@ -322,7 +322,7 @@
         {
           "landmark": "page",
           "stitchText": "verified LEDGER IMMUTABILITY ENGAGED / Reg. Directive: PRD-0",
-          "appText": "Caseschevron_rightGenealogy changeGenealogy change d97e1c32l",
+          "appText": "Caseschevron_rightGrievanceGrievance 59906cd0lockResolved: u",
           "status": "match",
           "severity": "none",
           "props": [
@@ -355,7 +355,7 @@
         {
           "landmark": "title",
           "stitchText": "Cases & Exceptions — Audit & Resolution Queue",
-          "appText": "Genealogy change d97e1c32",
+          "appText": "Grievance 59906cd0",
           "status": "match",
           "severity": "none",
           "props": [
@@ -400,7 +400,7 @@
         {
           "landmark": "sectionHeading",
           "stitchText": "Payee Dispute — Unilevel Compression Delta",
-          "appText": "Subject and proposal",
+          "appText": "Complainant and complaint",
           "status": "mismatch",
           "severity": "medium",
           "props": [
@@ -498,7 +498,7 @@
         {
           "landmark": "card",
           "stitchText": "CAS-2026-1042 INSPECTOR Awaiting Sign-off (L2) Payee Dispute",
-          "appText": "Subject and proposalSubject (position)P-CReasonParticipant r",
+          "appText": "Complainant and complaintSubject (participant)AT-BReasonPayo",
           "status": "match",
           "severity": "none",
           "props": [
@@ -529,15 +529,15 @@
       "screenshot": "testing/ui-screenshots/app/cases/case-detail/compliance-officer/768x1024.png",
       "reference": "testing/ui-screenshots/reference/sc_06_cases_exceptions/768x1024.png",
       "diffImage": "testing/ui-screenshots/app/cases/case-detail/compliance-officer/768x1024.diff.png",
-      "mismatchPercent": 5.47,
-      "diffPixels": 121540,
+      "mismatchPercent": 5.28,
+      "diffPixels": 117294,
       "referenceSize": "768x2891",
-      "actualSize": "768x1148",
+      "actualSize": "768x1062",
       "landmarks": [
         {
           "landmark": "page",
           "stitchText": "verified LEDGER IMMUTABILITY ENGAGED / Reg. Directive: PRD-0",
-          "appText": "Caseschevron_rightGenealogy changeGenealogy change d97e1c32l",
+          "appText": "Caseschevron_rightGrievanceGrievance 59906cd0lockResolved: u",
           "status": "match",
           "severity": "none",
           "props": [
@@ -570,7 +570,7 @@
         {
           "landmark": "title",
           "stitchText": "Cases & Exceptions — Audit & Resolution Queue",
-          "appText": "Genealogy change d97e1c32",
+          "appText": "Grievance 59906cd0",
           "status": "match",
           "severity": "none",
           "props": [
@@ -615,7 +615,7 @@
         {
           "landmark": "sectionHeading",
           "stitchText": "Payee Dispute — Unilevel Compression Delta",
-          "appText": "Subject and proposal",
+          "appText": "Complainant and complaint",
           "status": "mismatch",
           "severity": "medium",
           "props": [
@@ -713,7 +713,7 @@
         {
           "landmark": "card",
           "stitchText": "CAS-2026-1042 INSPECTOR Awaiting Sign-off (L2) Payee Dispute",
-          "appText": "Subject and proposalSubject (position)P-CReasonParticipant r",
+          "appText": "Complainant and complaintSubject (participant)AT-BReasonPayo",
           "status": "match",
           "severity": "none",
           "props": [
@@ -744,15 +744,15 @@
       "screenshot": "testing/ui-screenshots/app/cases/case-detail/compliance-officer/390x844.png",
       "reference": "testing/ui-screenshots/reference/sc_06_cases_exceptions/390x844.png",
       "diffImage": "testing/ui-screenshots/app/cases/case-detail/compliance-officer/390x844.diff.png",
-      "mismatchPercent": 2.85,
-      "diffPixels": 97649,
+      "mismatchPercent": 2.75,
+      "diffPixels": 94153,
       "referenceSize": "512x6697",
-      "actualSize": "390x1465",
+      "actualSize": "390x1352",
       "landmarks": [
         {
           "landmark": "page",
           "stitchText": "verified LEDGER IMMUTABILITY ENGAGED / Reg. Directive: PRD-0",
-          "appText": "Caseschevron_rightGenealogy changeGenealogy change d97e1c32l",
+          "appText": "Caseschevron_rightGrievanceGrievance 59906cd0lockResolved: u",
           "status": "match",
           "severity": "none",
           "props": [
@@ -785,7 +785,7 @@
         {
           "landmark": "title",
           "stitchText": "Cases & Exceptions — Audit & Resolution Queue",
-          "appText": "Genealogy change d97e1c32",
+          "appText": "Grievance 59906cd0",
           "status": "mismatch",
           "severity": "medium",
           "props": [
@@ -830,7 +830,7 @@
         {
           "landmark": "sectionHeading",
           "stitchText": "Payee Dispute — Unilevel Compression Delta",
-          "appText": "Subject and proposal",
+          "appText": "Complainant and complaint",
           "status": "mismatch",
           "severity": "medium",
           "props": [
@@ -928,7 +928,7 @@
         {
           "landmark": "card",
           "stitchText": "CAS-2026-1042 INSPECTOR Awaiting Sign-off (L2) Payee Dispute",
-          "appText": "Subject and proposalSubject (position)P-CReasonParticipant r",
+          "appText": "Complainant and complaintSubject (participant)AT-BReasonPayo",
           "status": "match",
           "severity": "none",
           "props": [

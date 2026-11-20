@@ -25,6 +25,8 @@ interface CommitDialogProps {
   readonly review: RunReview
   readonly period: string
   readonly market: Market | undefined
+  /** The run's withholding total (tax.read holders, BUG-131); null when not known. */
+  readonly withheld: string | null
   readonly acknowledged: ReadonlySet<string>
   readonly onAcknowledge: (id: string, on: boolean) => void
   readonly onClose: () => void
@@ -36,7 +38,7 @@ interface CommitDialogProps {
  * The API asks for a fresh second factor (TOTP step-up, handled by ApiProvider) and refuses the preparer (SoD, with
  * the people who can commit named). One Idempotency-Key per identical body.
  */
-export function CommitDialog({ run, review, period, market, acknowledged, onAcknowledge, onClose, onDone }: CommitDialogProps) {
+export function CommitDialog({ run, review, period, market, withheld, acknowledged, onAcknowledge, onClose, onDone }: CommitDialogProps) {
   const api = useApi()
   const toast = useToast()
   const formId = useId()
@@ -89,11 +91,12 @@ export function CommitDialog({ run, review, period, market, acknowledged, onAckn
         </div>
         <section className="bg-surface-container-low rounded-lg p-space-md flex flex-col gap-space-sm" aria-labelledby={`${formId}-totals`}>
           <h3 id={`${formId}-totals`} className="font-caption text-caption text-secondary uppercase font-semibold tracking-wide">Run totals</h3>
-          <dl className="grid grid-cols-2 md:grid-cols-4 gap-space-sm">
+          <dl className={`grid grid-cols-2 ${withheld === null ? 'md:grid-cols-4' : 'md:grid-cols-5'} gap-space-sm`}>
             <div className={TILE}><dt className={TILE_LABEL}>Gross</dt><dd className={TILE_VALUE}>{gross}</dd></div>
             <div className={TILE}><dt className={TILE_LABEL}>Lines</dt><dd className={TILE_VALUE}>{totals.line_count.toLocaleString()}</dd></div>
             <div className={TILE}><dt className={TILE_LABEL}>Payees</dt><dd className={TILE_VALUE}>{totals.payee_count.toLocaleString()}</dd></div>
             <div className={TILE}><dt className={TILE_LABEL}>Adjustments</dt><dd className={TILE_VALUE}>{marketMoney(adjustments, market)}</dd></div>
+            {withheld !== null && <div className={TILE}><dt className={TILE_LABEL}>Withheld</dt><dd className={TILE_VALUE}>{marketMoney(withheld, market)}</dd></div>}
           </dl>
         </section>
         <fieldset className="flex flex-col gap-space-xs min-w-0">

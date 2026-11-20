@@ -46,3 +46,5 @@ _Agent: qa. Read before every task; update after every task. Keep concise — fa
 - 2026-11-18 B3 browser round 1 (QA): workflows, harness 9 screens, audit; reports + BUG-084..093.
 - 2026-11-20 B6 browser round 1: W-B6-1..9 + regression, harness 10 screens, Impeccable audit, a11y; reports + BUG-121..127.
 - 2026-11-20 B6 browser round 2: BUG-121..127 verified fixed; quick W-B6-1..9 + MVP-A regression; harness 10 screens; new BUG-128/129 LOW. Reports: testing/UI_TESTING_REPORT.md, testing/VISUAL_REGRESSION_REPORT.md (B6 round 2 sections).
+- 2026-11-20 B-MKT browser round 1 (QA): reports + BUG-130..140.
+- 2026-11-20 B-MKT browser round 2 retest (reports + BUG-141).

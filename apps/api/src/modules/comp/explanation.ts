@@ -1,8 +1,10 @@
 import { formatUnits, RAW_DECIMALS, toRaw, traceAmountMinor, type Trace, type TraceSource, type TraceStep } from '@nmp/engine'
+import type { Texts } from './messages.js'
 import type { OriginKind } from './statements.js'
 
 // FR-DIST-002 (D-B5-08): the distributor's explanation of one result line, a pure template over the stored compact
-// trace. Sources are aggregated per level: no other position's id, ref or name ever appears (C-B5-15). English only.
+// trace. Sources are aggregated per level: no other position's id, ref or name ever appears (C-B5-15). Texts come from
+// the COMP catalogues in the portal's effective locale (D-BM-11, messages.ts).
 
 export interface PeriodDates { readonly starts_at: Date; readonly ends_at: Date }
 
@@ -26,21 +28,11 @@ export interface Part {
   readonly contribution: string
 }
 
-/** Opening sentence per engine bonus kind (template = kind without "pay."); any other kind is explained generically. */
-const TEMPLATES: Readonly<Record<string, string>> = {
-  'pay.retail_margin': 'A margin on the sales to your customers.',
-  'pay.percent_by_level': 'A percentage of the volume of each level of your team, at the rate of that level.',
-  'pay.generations': 'A percentage of the volume of each generation of your team.',
-  'pay.percent_of_measure': 'A percentage of a volume, at the rate of your paid-as rank.',
-  'pay.differential': 'The difference between your rate and the rates already paid below you, applied to the volume.',
-  'pay.override': 'An override on the volume of the levels below you.',
-  'pay.matching': 'A match on bonuses earned by your team, per generation.',
-  'pay.fast_start': 'A fast-start bonus on the first orders of newly enrolled positions.',
-  'pay.flat': 'A fixed amount for the period.',
-  'pay.one_time': 'A one-time amount.',
-  'pay.pool': 'Your share of a pool funded from the market total.',
-  adjustment: 'An adjustment of an earlier period.',
-}
+/** Engine bonus kinds with their own opening sentence (explanation.intro.<kind without "pay.">); any other is generic. */
+const TEMPLATED: ReadonlySet<string> = new Set([
+  'pay.retail_margin', 'pay.percent_by_level', 'pay.generations', 'pay.percent_of_measure', 'pay.differential', 'pay.override',
+  'pay.matching', 'pay.fast_start', 'pay.flat', 'pay.one_time', 'pay.pool', 'adjustment',
+])
 
 const TRACE_BIGINTS = new Set(['raw', 'base', 'capMinor', 'num', 'den', 'beforeRaw', 'afterRaw', 'afterMinor', 'weight', 'totalMinor', 'minor', 'knownAtUs'])
 
@@ -68,31 +60,35 @@ function partOf(sources: readonly TraceSource[], level: number | null, label: st
   }
 }
 
-/** Sources per level; the payee's own position is "your own volume" and the market total its own part. */
-export function partsOf(trace: Trace, digits: number): Part[] {
+/** Sources per level; the payee's own position is "your own volume" and the market total its own part (labels in the locale). */
+export function partsOf(trace: Trace, digits: number, { t }: Texts): Part[] {
   const own = trace.sources.filter((s) => s.positionId === trace.payeePositionId)
   const market = trace.sources.filter((s) => s.positionId === null)
   const others = trace.sources.filter((s) => s.positionId !== null && s.positionId !== trace.payeePositionId)
   const levels = [...new Set(others.map((s) => s.level))].sort((a, b) => (a ?? -1) - (b ?? -1))
-  const word = trace.kind === 'pay.generations' || trace.kind === 'pay.matching' ? 'generation' : 'level'
+  const word = trace.kind === 'pay.generations' || trace.kind === 'pay.matching' ? 'explanation.label.generation' : 'explanation.label.level'
   return [
-    ...(own.length === 0 ? [] : [partOf(own, own[0]!.level, 'your own volume', digits)]),
-    ...levels.map((level) => partOf(others.filter((s) => s.level === level), level, level === null ? 'your team' : `${word} ${level}`, digits)),
-    ...(market.length === 0 ? [] : [partOf(market, null, 'market total', digits)]),
+    ...(own.length === 0 ? [] : [partOf(own, own[0]!.level, t('explanation.label.own'), digits)]),
+    ...levels.map((level) => partOf(others.filter((s) => s.level === level), level, level === null ? t('explanation.label.team') : t(word, { level }), digits)),
+    ...(market.length === 0 ? [] : [partOf(market, null, t('explanation.label.market'), digits)]),
     ...(trace.omitted.count === 0 ? [] : [{
-      level: null, label: `${trace.omitted.count} further sources`, count: trace.omitted.count, base: null, base_unit: null, rate: null,
-      contribution: rawDecimal(trace.omitted.raw, digits),
+      level: null, label: t('explanation.label.omitted', { count: trace.omitted.count }), count: trace.omitted.count, base: null, base_unit: null,
+      rate: null, contribution: rawDecimal(trace.omitted.raw, digits),
     }]),
   ]
 }
 
-function stepText(step: Exclude<TraceStep, { step: 'rounding' }>, digits: number): string {
-  const raw = (r: bigint) => rawDecimal(r, digits)
-  const money = (m: bigint) => formatUnits(m, digits)
-  if (step.step === 'constraint') return `Limit ${step.key}: ${raw(step.beforeRaw)} reduced to ${raw(step.afterRaw)}.`
-  if (step.step === 'cap') return `Cap ${step.key} (${step.method}): ${raw(step.beforeRaw)} capped to ${money(step.afterMinor)}.`
-  if (step.step === 'allocation') return `Allocation ${step.key}: weight ${step.weight} of ${money(step.totalMinor)} gives ${money(step.afterMinor)}.`
-  return `Points converted at ${step.factor}: ${raw(step.beforeRaw)} becomes ${raw(step.afterRaw)}.`
+function stepText(step: Exclude<TraceStep, { step: 'rounding' }>, digits: number, { t, decimal }: Texts): string {
+  const raw = (r: bigint) => decimal(rawDecimal(r, digits))
+  const money = (m: bigint) => decimal(formatUnits(m, digits))
+  if (step.step === 'constraint') return t('explanation.step.limit', { key: step.key, before: raw(step.beforeRaw), after: raw(step.afterRaw) })
+  if (step.step === 'cap') {
+    return t('explanation.step.cap', { key: step.key, method: t(`explanation.cap_method.${step.method}`), before: raw(step.beforeRaw), after: money(step.afterMinor) })
+  }
+  if (step.step === 'allocation') {
+    return t('explanation.step.allocation', { key: step.key, weight: step.weight.toString(), total: money(step.totalMinor), after: money(step.afterMinor) })
+  }
+  return t('explanation.step.points', { factor: decimal(step.factor), before: raw(step.beforeRaw), after: raw(step.afterRaw) })
 }
 
 /** The calendar day (YYYY-MM-DD) of an instant in the market's zone (BUG-112). */
@@ -125,34 +121,42 @@ export function percentText(rate: string): string {
 export type Explanation = ReturnType<typeof explainLine>
 
 /**
- * The explanation body (API-29). `template` is 'generic' for a kind without a template (the caller logs it);
- * `reconciles` = the engine's traceAmountMinor equals the line amount (the caller refuses a mismatch).
+ * The explanation body (API-29) with its texts in the locale of `texts`. `template` is 'generic' for a kind without a
+ * template (the caller logs it); `reconciles` = the engine's traceAmountMinor equals the line amount (the caller refuses a mismatch).
  */
-export function explainLine(input: ExplanationInput) {
+export function explainLine(input: ExplanationInput, texts: Texts) {
   const { trace, minorDigits: digits } = input
-  const day = (at: Date): string => marketDay(at, input.timeZone)
+  const { t, decimal } = texts
+  const day = (at: Date): string => texts.day(at, input.timeZone)
   // A period's ends_at is exclusive: the text names the last market day it includes.
-  const span = (p: PeriodDates): string => `${day(p.starts_at)} to ${day(new Date(p.ends_at.getTime() - 1))}`
-  const intro = TEMPLATES[trace.kind]
-  const template = intro === undefined ? 'generic' : trace.kind.replace(/^pay\./, '')
-  const parts = partsOf(trace, digits)
-  const steps = trace.steps.flatMap((s) => (s.step === 'rounding' ? [] : [{ kind: s.step === 'constraint' ? 'limit' : s.step, text: stepText(s, digits) }]))
+  const span = (p: PeriodDates) => ({ from: day(p.starts_at), to: day(new Date(p.ends_at.getTime() - 1)) })
+  const template = TEMPLATED.has(trace.kind) ? trace.kind.replace(/^pay\./, '') : 'generic'
+  const parts = partsOf(trace, digits, texts)
+  const steps = trace.steps.flatMap((s) => (s.step === 'rounding' ? [] : [{ kind: s.step === 'constraint' ? 'limit' : s.step, text: stepText(s, digits, texts) }]))
   const roundingStep = trace.steps.find((s): s is Extract<TraceStep, { step: 'rounding' }> => s.step === 'rounding')
   const rounding = roundingStep === undefined ? null
     : { mode: roundingStep.mode, before: rawDecimal(roundingStep.raw, digits), after: formatUnits(roundingStep.minor, digits) }
   const amount = formatUnits(BigInt(input.line.amount_minor), digits)
-  const ranks = trace.rankEvaluated.map((r) => `${r.ladder} ${r.rank ?? 'none'}`).join(', ')
+  const ranks = trace.rankEvaluated.map((r) => `${r.ladder} ${r.rank ?? t('explanation.rank_none')}`).join(', ')
   const origin = input.origin
+  const rateText = (rate: string) => (rate === 'rates vary' ? t('explanation.rates_vary') : decimal(percentText(rate)))
   const text = [
-    intro ?? `This bonus (${trace.kind}) was calculated from the inputs below.`,
-    `Rule: ${input.rule.name}.`,
-    ...(ranks === '' ? [] : [`Rank used: ${ranks}.`]),
-    `Period: ${span(input.period)}.`,
-    ...parts.map((p) => `${p.label}: ${p.count} ${p.count === 1 ? 'source' : 'sources'}${p.base === null ? '' : `, base ${p.base}`}${p.rate === null ? '' : `, rate ${percentText(p.rate)}`}, contribution ${p.contribution}.`),
+    template === 'generic' ? t('explanation.intro.generic', { kind: trace.kind }) : t(`explanation.intro.${template}`),
+    t('explanation.rule', { name: input.rule.name }),
+    ...(ranks === '' ? [] : [t('explanation.rank_used', { ranks })]),
+    t('explanation.period', span(input.period)),
+    ...parts.map((p) => t('explanation.part', {
+      label: p.label, sources: t('explanation.sources', { count: p.count }),
+      base: p.base === null ? '' : t('explanation.part_base', { base: decimal(p.base) }),
+      rate: p.rate === null ? '' : t('explanation.part_rate', { rate: rateText(p.rate) }),
+      contribution: decimal(p.contribution),
+    })),
     ...steps.map((s) => s.text),
-    ...(rounding === null ? [] : [`Rounded ${rounding.mode.replace('_', ' ')}: ${rounding.before} to ${rounding.after}.`]),
-    ...(origin === null ? [] : [`Origin: ${origin.kind.replace('_', ' ')}${origin.original_period === null ? '' : ` of the period ${span(origin.original_period)}`}.`]),
-    `Amount: ${amount} ${input.line.currency}.`,
+    ...(rounding === null ? [] : [t('explanation.rounded', { mode: t(`explanation.rounding.${rounding.mode}`), before: decimal(rounding.before), after: decimal(rounding.after) })]),
+    ...(origin === null ? [] : [origin.original_period === null
+      ? t('explanation.origin', { kind: t(`explanation.origin_kind.${origin.kind}`) })
+      : t('explanation.origin_of', { kind: t(`explanation.origin_kind.${origin.kind}`), ...span(origin.original_period) })]),
+    t('explanation.amount', { amount: decimal(amount), currency: input.line.currency }),
   ]
   return {
     line_id: input.line.id, run_id: input.line.run_id, template,

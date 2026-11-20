@@ -79,8 +79,13 @@ export interface QualificationOutput {
   readonly warnings: readonly EngineWarning[]
 }
 export interface LimitedLines<A> { readonly lines: readonly RawLine[]; readonly applications: readonly A[] }
-/** breakageMinor: computed in pass 8 while the pass 4-6 lines are held (they are released after pass 10, S-1). */
+/** breakageMinor: computed in pass 8 from the constraint and cap steps of its lines. */
 export interface CapOutput extends LimitedLines<CapApplication> { readonly breakageMinor: bigint }
+/**
+ * Pass 10 output (D-BM-05 b, TK-B6-14): the final lines in RESULT_HASH order, made one chunk at a time when the caller
+ * asks for it; each raw line is released once its chunk is made, so the whole final line array never exists at once.
+ */
+export interface RoundedLines { readonly count: number; readonly chunks: () => Generator<ResultLine[], void, undefined> }
 export interface Settlement { readonly payees: readonly PayeeSettlement[]; readonly taxLines: readonly TaxLine[]; readonly warnings: readonly EngineWarning[] }
 /** state = rows to commit: pass-3 candidates plus the onceKey of every pay.one_time line paid in this run (TS-25). */
 export interface Totals { readonly controlTotals: ControlTotals; readonly resultHash: string; readonly state: readonly QualificationStateRow[]; readonly volumeSummaries: readonly PositionSummary[] }
@@ -96,7 +101,7 @@ export interface PassOutputs {
   readonly constraints: LimitedLines<ConstraintApplication> // every pass 4-6 line after per-participant limits
   readonly caps: CapOutput // every line after company caps
   readonly adjustments: readonly RawLine[]
-  readonly rounding: readonly ResultLine[] // final, sorted (see RESULT_HASH)
+  readonly rounding: RoundedLines
   readonly settlement: Settlement
   readonly totals: Totals
 }
@@ -111,12 +116,13 @@ export type PassRegistry = { readonly [K in PassName]: PassFn<K> }
 
 /**
  * S-1 memory (D-B4-22): after the last pass reading an output's lines, the runner drops those lines (keys and the
- * other fields stay). Credited lines are read up to pass 4; pass 4-7 lines up to pass 8 (pass 8 sums the breakage);
- * pass 8 lines up to pass 10.
+ * other fields stay). Credited lines are read up to pass 4; pass 4-6 lines up to pass 7 (pass 8 sums the breakage from
+ * the steps passes 7-8 add, TK-B6-14); pass 7 lines up to pass 8 (which updates them in place); pass 8 lines up to pass 10.
  */
 export const RELEASE_AFTER: { readonly [K in PassName]?: (done: Partial<PassOutputs>) => Partial<PassOutputs> } = {
   individual: (d) => ({ lineVolumes: { ...d.lineVolumes!, lines: [] } }),
-  caps: (d) => ({ individual: [], matching: [], pools: [], constraints: { ...d.constraints!, lines: [] } }),
+  constraints: () => ({ individual: [], matching: [], pools: [] }),
+  caps: (d) => ({ constraints: { ...d.constraints!, lines: [] } }),
   rounding: (d) => ({ caps: { ...d.caps!, lines: [] } }),
 }
 

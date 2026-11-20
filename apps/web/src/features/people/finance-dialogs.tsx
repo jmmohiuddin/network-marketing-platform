@@ -163,9 +163,19 @@ export function taxBody(form: { readonly residency: string; readonly entity_type
 }
 
 /** PUT tax profile (tax.manage, step-up): a new version from now on; the tax id is write-only and masked afterwards. */
-export function TaxDialog({ participantId, current, onClose, onDone }: {
+/** D-BM-07: the market pack's tax-id format in force today (GET …/tax-profile `format`), null when the pack has none. */
+export interface TaxIdFormat {
+  readonly label: string
+  readonly pattern: string
+}
+
+/** TAX_ID_FORMAT naming the pack's label ("This is not a valid FX tax id."). */
+export const taxIdFormatText = (label: string): string => `This is not a valid ${label}.`
+
+export function TaxDialog({ participantId, current, format, onClose, onDone }: {
   readonly participantId: string
   readonly current: { readonly residency: string | null; readonly entity_type: string | null } | null
+  readonly format: TaxIdFormat | null
   readonly onClose: () => void
   readonly onDone: () => void
 }) {
@@ -178,7 +188,9 @@ export function TaxDialog({ participantId, current, onClose, onDone }: {
     const taxId = form.tax_id.replace(/\s+/g, '').toUpperCase()
     const found = {
       [TAX_IDS.residency]: residency === '' || /^[A-Z]{2}$/.test(residency) ? null : 'Enter a two-letter country code, for example DE.',
-      [TAX_IDS.tax_id]: taxId === '' || /^[A-Z0-9-]{4,32}$/.test(taxId) ? null : 'Enter 4 to 32 letters, digits or hyphens.',
+      [TAX_IDS.tax_id]: taxId === '' ? null
+        : !/^[A-Z0-9-]{4,32}$/.test(taxId) ? 'Enter 4 to 32 letters, digits or hyphens.'
+          : format !== null && !new RegExp(format.pattern).test(taxId) ? taxIdFormatText(format.label) : null,
     }
     const body = taxBody(form, current)
     const items = [
@@ -195,7 +207,9 @@ export function TaxDialog({ participantId, current, onClose, onDone }: {
           await api.put(`/v1/participants/${participantId}/tax-profile`, body, { idempotencyKey })
         } catch (error) {
           if (!isApiError(error, 'TAX_ID_FORMAT')) throw error
-          throw new ApiError(error.status, 'VALIDATION_FAILED', error.message, { issues: [{ path: 'tax_id', message: error.message }] }, error.requestId)
+          const label = (error.details as { label?: string } | null)?.label
+          const message = label === undefined ? error.message : taxIdFormatText(label)
+          throw new ApiError(error.status, 'VALIDATION_FAILED', message, { issues: [{ path: 'tax_id', message }] }, error.requestId)
         }
         toast({ message: 'Tax profile saved as a new version.' })
         onDone()
@@ -207,7 +221,7 @@ export function TaxDialog({ participantId, current, onClose, onDone }: {
       <p>The change applies from now on; earlier versions stay as they were. You will be asked for a code from your authenticator app.</p>
       <TextInput id={TAX_IDS.residency} label="Tax residency" helper="Two-letter country code." maxLength={2} value={form.residency} error={errors[TAX_IDS.residency]} onChange={(event) => setForm({ ...form, residency: event.target.value })} />
       <Select id={TAX_IDS.entity_type} label="Entity type" placeholder="Choose" value={form.entity_type} options={ENTITY_OPTIONS} onChange={(event) => setForm({ ...form, entity_type: event.target.value })} />
-      <TextInput id={TAX_IDS.tax_id} label="New tax id" optional autoComplete="off" helper="Leave empty to keep the current tax id. It is shown masked after saving." value={form.tax_id} error={errors[TAX_IDS.tax_id]} onChange={(event) => setForm({ ...form, tax_id: event.target.value })} />
+      <TextInput id={TAX_IDS.tax_id} label="New tax id" optional autoComplete="off" helper={`${format === null ? '' : `Format: ${format.label}. `}Leave empty to keep the current tax id. It is shown masked after saving.`} value={form.tax_id} error={errors[TAX_IDS.tax_id]} onChange={(event) => setForm({ ...form, tax_id: event.target.value })} />
     </FormDialog>
   )
 }

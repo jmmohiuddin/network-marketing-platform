@@ -120,11 +120,12 @@ async function assertSchedulable(tx: Tx, plan: PlanRow, version: VersionRow, eff
   )
   if (later.length > 0) refuse('EFFECTIVE_NOT_AFTER_PREVIOUS', 'The effective time must be after the effective time of the previous version.')
   const noticeDays = await getSetting(tx, 'plan.activation_notice_days')
-  if (noticeDays !== null) {
+  // BUG-129: unset and 0 both mean no notice period (0 never refuses a start that has passed).
+  if (noticeDays !== null && noticeDays > 0) {
     const { rows } = await tx.query<{ short: boolean }>('SELECT $1::timestamptz < now() + make_interval(days => $2) AS short', [effectiveFrom, noticeDays])
     if (rows[0]!.short) refuse('NOTICE_PERIOD_NOT_MET', `Plan changes need ${noticeDays} days' notice.`, { notice_days: noticeDays })
   }
-  // D-B6-02 (a): every plan market plan.filing_requirements names needs a filing row for this version.
+  // D-B6-02 (a), D-BM-10: every plan market that plan.filing_requirements names or whose pack has a plan_filing rule needs a filing row.
   const { rows: filings } = await tx.query<{ missing: string[] }>('SELECT plan_filing_missing($1) AS missing', [version.id])
   if (filings[0]!.missing.length > 0) {
     refuse('FILING_STATUS_MISSING', 'Record the filing status of every market that requires one first.', { market_ids: filings[0]!.missing })

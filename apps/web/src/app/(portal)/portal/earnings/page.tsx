@@ -1,8 +1,8 @@
-import type { Metadata } from 'next'
-import { EarningsPage } from '../../../../features/portal/earnings'
+import { EarningsPage, type EarningsQuery } from '../../../../features/portal/earnings'
+import { portalTitle } from '../../../../features/portal/i18n/server'
 
-export const metadata: Metadata = { title: 'Earnings' }
+export const generateMetadata = portalTitle('nav.earnings')
 
-export default function Page() {
-  return <EarningsPage />
+export default async function Page({ searchParams }: { readonly searchParams: Promise<EarningsQuery> }) {
+  return <EarningsPage query={await searchParams} />
 }

@@ -84,9 +84,10 @@ describe('GET /v1/support-sessions/limits', () => {
       'tax.manage', 'case.adjustment.create', 'case.adjustment.approve', 'case.write_off.create', 'case.write_off.approve',
       'case.bank_detail.create', 'case.bank_detail.approve', 'case.returned_payment.create', 'case.dispute.approve',
       'export.full', 'migration.manage', 'migration.signoff', 'period.close',
+      'tax.forms', 'register.read', 'case.grievance.create', 'case.grievance.approve',
     ]
     expect(limits.json().data).toEqual({ max_minutes: 480, scopes: PERMISSIONS.filter((permission) => !excluded.includes(permission)) })
-    expect(scopes).toEqual(expect.arrayContaining(['market.manage', 'ledger.read', 'payout.read', 'case.write_off.read']))
+    expect(scopes).toEqual(expect.arrayContaining(['market.manage', 'ledger.read', 'payout.read', 'case.write_off.read', 'tax.read', 'case.grievance.read']))
     expect(longest.statusCode).toBe(201)
     expect([tooLong.statusCode, outOfScope.statusCode]).toEqual([400, 400])
     expect((await call(app, { method: 'GET', url: '/v1/support-sessions/limits', as: admin })).json().error.code).toBe('REALM_FORBIDDEN')

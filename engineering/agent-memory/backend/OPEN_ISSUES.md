@@ -201,3 +201,7 @@ _Agent: backend. Read before every task; update after every task. Keep concise โ
 - AC-S1-2 not met: 2M positions OOM at 4 GB and at --max-old-space-size=7168 in every shape; 1M passes at 7168 (peak ~5.3 GB). Peak is passes 0-10 + pass-10 line array, before streaming starts. Follow-up: columnar input, lazy traces, pass 10 per payee range. E-ADR-35 text proposed in SPIKE ยง8.
 - Integrator: isolation cases + role-matrix rows for GET /v1/periods/:id/close-check, POST /v1/periods/:id/close, GET /v1/ledger/entries/export. apps/api/test/bench/end-to-end.ts (integrator file) now appends to results.json runs.
 - Not mine, red at hand-off: boundaries test (pln/transitions.test.ts -> comp/test-support.ts, BE2); typecheck errors in int/full-export.test.ts and rpt/dashboards.test.ts (BE3).
+
+## B-MKT BE3 (2026-11-20)
+- CAS evidenceAllowed hook not built (outside BE3 ownership in this run): market-subject grievance evidence is still accepted.
+- Integrator: cplCaseTypes into modules/index.ts caseTypes; isolation cases + role-matrix rows for 5 new routes; CAS FIXTURE_CASE_TYPE also uses type 'grievance' (never mount both in one app).

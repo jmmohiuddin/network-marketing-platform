@@ -122,6 +122,12 @@ const PERMISSION_LABELS: Readonly<Record<string, string>> = {
   'migration.manage': 'Run data migrations',
   'migration.signoff': 'Sign off data migrations',
   'period.close': 'Close periods',
+  'tax.read': 'View tax rules, withholding and year-end statements',
+  'tax.forms': 'Generate and export year-end tax statements',
+  'case.grievance.read': 'View grievances and the grievance register',
+  'case.grievance.create': 'Record grievances',
+  'case.grievance.approve': 'Resolve grievances',
+  'register.read': 'View the delisted-seller register',
 }
 
 export function permissionLabel(permission: string): string {
@@ -164,6 +170,8 @@ const SUPPORT_SCOPE_LABELS: Readonly<Record<string, string>> = {
   'case.returned_payment.read': 'Returned-payment cases',
   'case.dispute.read': 'Commission dispute cases',
   'dashboard.exec': 'Executive dashboard',
+  'tax.read': 'Tax rules, withholding and year-end statements',
+  'case.grievance.read': 'Grievance cases and register',
 }
 
 // BUG-048: areas with no screen to view yet (plans arrive in B3); never offered in a session request.
@@ -234,7 +242,7 @@ export const BASE_ROLE_PERMISSIONS: Readonly<Record<string, readonly string[]>> 
     'plan.read', 'period.read', 'run.review', 'run.commit', 'trace.read', 'restatement.approve', 'case.restatement.read',
     'ledger.read', 'ledger.export', 'payout.read', 'payout.approve', 'tax.manage', 'case.adjustment.read',
     'case.adjustment.approve', 'case.write_off.read', 'case.write_off.create', 'case.write_off.approve',
-    'case.returned_payment.read', 'case.dispute.read', 'migration.signoff', 'period.close',
+    'case.returned_payment.read', 'case.dispute.read', 'migration.signoff', 'period.close', 'tax.read', 'tax.forms',
   ],
   'Payout officer': [
     'participant.unmask', 'participant.read', 'ledger.read', 'payout.read', 'payout.prepare', 'payout.reconcile',
@@ -246,12 +254,14 @@ export const BASE_ROLE_PERMISSIONS: Readonly<Record<string, readonly string[]>> 
     'case.genealogy.read', 'case.genealogy.approve', 'case.duplicate.read', 'case.duplicate.approve', 'order.read',
     'plan.read', 'plan.approve', 'period.read', 'run.review', 'trace.read', 'restatement.request', 'case.restatement.read',
     'guardrail.read', 'override.approve', 'ledger.read', 'payout.read', 'payout.hold', 'case.adjustment.read',
-    'case.write_off.read', 'case.bank_detail.read', 'case.bank_detail.approve', 'case.dispute.read',
+    'case.write_off.read', 'case.bank_detail.read', 'case.bank_detail.approve', 'case.dispute.read', 'tax.read',
+    'case.grievance.read', 'case.grievance.create', 'case.grievance.approve', 'register.read',
   ],
   'Support agent': [
     'participant.read', 'participant.manage', 'genealogy.read', 'case.genealogy.read', 'case.genealogy.create',
     'case.duplicate.read', 'case.duplicate.create', 'servicing.manage', 'order.read', 'period.read', 'run.review',
-    'trace.read', 'case.bank_detail.read', 'case.bank_detail.create', 'case.dispute.read',
+    'trace.read', 'case.bank_detail.read', 'case.bank_detail.create', 'case.dispute.read', 'case.grievance.read',
+    'case.grievance.create',
   ],
   DPO: ['compliance.read', 'audit.read', 'participant.unmask', 'participant.read', 'privacy.manage'],
   'Implementation consultant': ['import.manage', 'mapping.edit', 'plan.read', 'plan.edit', 'plan.simulate', 'period.read', 'migration.manage'],

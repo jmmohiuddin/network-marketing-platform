@@ -2,13 +2,14 @@
 // (AC-PLN1-3), TS-46 simulation gate (AC-10.2), T-B3-09 coverage gate (AC-PLN3-2), AC-PLN1-4, AC-27.2 TRANSITION_MISSING.
 import { randomUUID } from 'node:crypto'
 import { compilePlan, stringifyEngineJson } from '@nmp/engine'
-import type { Tx } from '@nmp/db'
+import { withTenant, type Tx } from '@nmp/db'
 import fastify, { type FastifyInstance } from 'fastify'
 import { afterAll, beforeAll, describe, expect, test } from 'vitest'
 import { auditActions, buildTestApp, call, closePoolsAfterAll, createSignedInUser, ownerRows, resetApiDb, testConfig, type TestUser } from '../../../test/helpers/index.js'
 import { cplModule } from '../cpl/index.js'
 import { plnModule } from './index.js'
 import type { PlanRow, VersionRow } from './access.js'
+import { earliestEffective } from './governance.js'
 import { activateVersionsJob } from './lifecycle.js'
 import { missingTransitions } from './views.js'
 import { approvedSetting, CAPPED, completedSimulation, customRoleUser, GOLDEN_EXPECTED, GOLDEN_INPUT, ingestedOrder, newPlan, personal, putRule, revisionOf, setSettings, UNILEVEL, world, type NewPlan, type World } from './test-support.js'
@@ -36,6 +37,18 @@ const APRIL = '2026-04-01T00:00:00+02:00'
 const OCTOBER = '2026-10-01T00:00:00+02:00'
 const DECEMBER = '2026-12-01T00:00:00+01:00'
 const NEXT_JANUARY = '2027-01-01T00:00:00+01:00'
+
+/**
+ * BUG-128: the schedule gate's comparison (effective_from < earliest instant refuses) at the Berlin start of the hinted
+ * date and of the day before; `{ hinted_passes: true, day_before_refused: true }` pins the hint to exactly one date.
+ */
+async function hintAgainstGate(on: string, at: string | Date): Promise<{ hinted_passes: boolean; day_before_refused: boolean }> {
+  const [row] = await ownerRows<{ hinted_passes: boolean; day_before_refused: boolean }>(
+    `SELECT NOT ($1::date::timestamp AT TIME ZONE 'Europe/Berlin' < $2::timestamptz) AS hinted_passes,
+            ($1::date - 1)::timestamp AT TIME ZONE 'Europe/Berlin' < $2::timestamptz AS day_before_refused`,
+    [on, at])
+  return row!
+}
 
 const url = (planId: string, v: number, tail = '') => `/v1/plans/${planId}/versions/${v}${tail}`
 const post = (as: TestUser, path: string, body?: unknown) => call(app, { method: 'POST', url: path, as, body: body ?? {}, idempotencyKey: true })
@@ -459,7 +472,10 @@ describe('B6 plan-change governance (D-B6-02, D-B6-03; T-B6-01..04, TS-46 filing
     expect(view.json().data.items.map((i: { key: string; ok: boolean }) => [i.key, i.ok])).toEqual([
       ['simulation', true], ['goldens', true], ['guardrails', true], ['transitions', true], ['filing', true], ['notice', true], ['approvals', false],
     ])
-    expect(view.json().data.items.find((i: { key: string }) => i.key === 'notice').reason).toMatch(/^Schedule on or after \d{4}-\d{2}-\d{2} \(30 days' notice\)\.$/)
+    const notice = view.json().data.notice
+    // BUG-128: the reason names the first Berlin calendar date whose start passes the gate.
+    expect(await hintAgainstGate(notice.earliest_effective_on, notice.earliest_effective_from)).toEqual({ hinted_passes: true, day_before_refused: true })
+    expect(view.json().data.items.find((i: { key: string }) => i.key === 'notice').reason).toBe(`Schedule on or after ${notice.earliest_effective_on} (30 days' notice).`)
     expect(view.json().data.items.find((i: { key: string }) => i.key === 'filing').reason).toBe('No market requires a filing.')
     expect(view.json().data.notice).toMatchObject({ days: 30, earliest_effective_from: expect.any(String), sent_at: null })
     expect(view.json().data.approvals).toMatchObject({ compliance: { by: { id: g.compliance.id } }, activation: null })
@@ -487,5 +503,69 @@ describe('B6 plan-change governance (D-B6-02, D-B6-03; T-B6-01..04, TS-46 filing
     // FIXTURE: the March run fails (COMP); a failed run has no transition report, so the April run is named.
     await ownerRows(`UPDATE run SET state = 'failed', error = '{"code": "FIXTURE"}' WHERE id = $1`, [march!.id])
     expect((await governance(plan.planId, g.executive)).json().data.first_run_id).toBe(runs.find((r) => r.id !== march!.id)!.id)
+  })
+})
+
+describe('B-MKT governance: filing from packs (T-BM-25), notice date (T-BM-70), notice days 0 (T-BM-71)', () => {
+  const governance = async (planId: string, as: TestUser) => call(app, { method: 'GET', url: url(planId, 1, '/governance'), as })
+  const filingItem = (view: Awaited<ReturnType<typeof governance>>) => view.json().data.items.find((i: { key: string }) => i.key === 'filing')
+  async function approvedOn(g: World): Promise<NewPlan> {
+    const plan = await newPlan(app, g)
+    await author(plan, { as: g.planadmin })
+    expect((await submit(plan.planId, 1, g.planadmin)).statusCode).toBe(200)
+    expect((await decide(plan.planId, 1, g.compliance)).statusCode).toBe(200)
+    return plan
+  }
+
+  test('T-BM-25 / AC-CPL13-6: a plan_filing pack rule requires a filing without the setting; setting and pack are merged per market', async () => {
+    const g = await world()
+    const ruleId = `${g.pack}-filing@2026-01-01`
+    // FIXTURE pack rule (not a real market rule): both world markets share the pack.
+    await ownerRows(
+      `INSERT INTO pack_rule (id, market_pack, kind, title, params, mandatory, basis, basis_status, source_ref, effective_from)
+       VALUES ($1, $2, 'plan_filing', 'FIXTURE plan filing', '{"authority": "FIXTURE authority"}', true, 'Test fixture basis, not a real market rule',
+               'counsel_confirmed', 'Test fixture', '2026-01-01')`,
+      [ruleId, g.pack])
+    const plan = await approvedOn(g)
+    const markets = [g.marketA, g.marketB].sort()
+
+    const refused = await schedule(plan.planId, NEXT_JANUARY, 1, g.finance)
+    const packOnly = await governance(plan.planId, g.executive)
+    await approvedSetting(g.tenantId, 'plan.filing_requirements', { market_ids: [g.marketA] }, g.planadmin, g.compliance)
+    const both = await governance(plan.planId, g.executive)
+
+    expect(refused.json().error).toMatchObject({ code: 'FILING_STATUS_MISSING', details: { market_ids: markets } })
+    expect(filingItem(packOnly)).toMatchObject({
+      ok: false, reason: 'A market requires a recorded filing status for this version.',
+      details: { market_ids: markets, required: markets.map((id) => ({ market_id: id, sources: ['pack'], rule_id: ruleId, authority: 'FIXTURE authority' })) },
+    })
+    expect(packOnly.json().data.filings.map((f: { required: boolean }) => f.required)).toEqual([true, true])
+    expect(filingItem(both).details.required.map((r: { market_id: string; sources: string[] }) => [r.market_id, r.sources])).toEqual(markets.map((id) => [id, id === g.marketA ? ['setting', 'pack'] : ['pack']]))
+  })
+
+  test('T-BM-70 / BUG-128: the earliest effective date is the first plan-zone date whose start passes the gate, at any clock', async () => {
+    const g = await world()
+    const plan = await newPlan(app, g)
+    const { dates, now } = await withTenant({ tenantId: g.tenantId, userId: g.planadmin.id }, async (tx) => ({
+      dates: await earliestEffective(tx, plan.planId, 30),
+      now: (await tx.query<{ at: Date }>(`SELECT now() + interval '30 days' AS at`)).rows[0]!.at,
+    }))
+
+    expect(dates.at).toEqual(now)
+    // The Berlin start of the hinted date passes the gate and the day before is refused, whichever side of a UTC or Berlin
+    // midnight the clock is on (a UTC date or the date the instant falls on would fail one of them).
+    expect(await hintAgainstGate(dates.on, dates.at)).toEqual({ hinted_passes: true, day_before_refused: true })
+  })
+
+  test('T-BM-71 / BUG-129: notice days 0 is no notice period: a past start schedules and the view names no date', async () => {
+    const g = await world()
+    await setSettings(g.tenantId, g.planadmin.id, { 'plan.activation_notice_days': 0 })
+    const plan = await approvedOn(g)
+    const before = await governance(plan.planId, g.executive)
+    const scheduled = await schedule(plan.planId, MARCH, 1, g.finance)
+
+    expect(before.json().data.notice).toMatchObject({ days: 0, earliest_effective_from: null, earliest_effective_on: null })
+    expect(before.json().data.items.find((i: { key: string }) => i.key === 'notice')).toMatchObject({ ok: true, reason: null })
+    expect(scheduled.statusCode, scheduled.body).toBe(200)
   })
 })

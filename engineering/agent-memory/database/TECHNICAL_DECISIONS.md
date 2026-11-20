@@ -50,3 +50,11 @@ _Agent: database. Read before every task; update after every task. Keep concise 
 - Added beyond PLAN: user_account realm/tenant/participant pinned (self scope cannot be redirected); dispute guard also checks payload line_id/run_id and market = line's position market; privacy_request insert guard (own privacy case, portal = self verified by session); privacy_export insert guard (approved access/portability); notification_template() map enforced by CHECK; notification_preference.updated_by FK + actor binding; prv_sign_in_attempts definer (nmp_app has no login_attempt grant).
 - prv_personal_data INVOKER (RLS) with a definer only for login_attempt; the map is a SQL function (section or reason per FK column).
 - prv_correct_participant refuses portal transactions; prv_erase_participant also resets mfa_enrolled.
+
+## B-MKT schema
+- tax_form/tax_form_generation insert guard = GUC `app.tax_generation` equal to the generation id (set and cleared by tax_generate_forms), not xmin (B6 lesson).
+- Year-end status reason order: TAX_YEAR_NOT_DEFINED alone when no tax year (the form rule is looked up on the year's last day); else FORM_NOT_DEFINED, TAX_YEAR_NOT_ENDED, TAX_YEAR_NOT_CLOSED. tax_generate_forms raises the first.
+- tax_withholding_instructions returns the rule's rounding as stored (rate-NULL rules may carry 'none'); prior_minor = this year's gross (cumulative) or last year's (prior-year basis), NULL without threshold.
+- Grievance resolution deadline in calendar days/months of the market zone; ack in elapsed hours.
+- Personal-data map: tax_line/tax_form excluded with reason "tax records of the payer" (PLAN D-BM-13 wording), not exported sections.
+- Added beyond PLAN: unique index case_event (tenant, case, data->>'deadline') WHERE escalated (once per deadline under concurrency); market_references counts the two tax tables with a market key (AC-TEN2-3 pin).

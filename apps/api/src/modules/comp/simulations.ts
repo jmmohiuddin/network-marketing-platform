@@ -160,7 +160,9 @@ export async function calculateSimulation(tx: Tx, simulationId: string, prepared
     await tx.query('ROLLBACK TO SAVEPOINT simulation')
     const code = typeof error === 'object' && error !== null && 'code' in error && typeof error.code === 'string' ? error.code : 'INTERNAL'
     const message = error instanceof ApiError || (error instanceof Error && error.name === 'EngineError') ? error.message : 'The simulation failed unexpectedly.'
-    await tx.query(`UPDATE simulation SET state = 'failed', error = $2, finished_at = now() WHERE id = $1`, [simulationId, { code, message }])
+    // As failRun: an ApiError keeps its details (e.g. TAX_RULES_INVALID {code, rule_ids, participant_ids}, AC-TAX2-2).
+    const failure = error instanceof ApiError ? { code, message, details: error.details ?? {} } : { code, message }
+    await tx.query(`UPDATE simulation SET state = 'failed', error = $2, finished_at = now() WHERE id = $1`, [simulationId, failure])
     await recordAudit(tx, { action: 'SIMULATION.FAILED', objectType: 'simulation', objectId: simulationId, after: { error: { code } } })
   }
 }

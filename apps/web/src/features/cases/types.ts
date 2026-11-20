@@ -42,7 +42,7 @@ export interface CaseEvidence {
   readonly added_at: string
 }
 
-export type CaseEventKind = 'opened' | 'evidence_added' | 'assigned' | 'submitted' | 'first_approved' | 'approved' | 'rejected' | 'withdrawn' | 'updated'
+export type CaseEventKind = 'opened' | 'evidence_added' | 'assigned' | 'submitted' | 'first_approved' | 'approved' | 'rejected' | 'withdrawn' | 'updated' | 'escalated'
 
 export interface CaseEvent {
   readonly id: string

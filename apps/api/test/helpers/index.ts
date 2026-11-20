@@ -10,6 +10,7 @@ export {
   createPortalUser,
   createSignedInUser,
   createTenant,
+  ownerReplica,
   ownerRows,
   resetApiDb,
   signInExisting,

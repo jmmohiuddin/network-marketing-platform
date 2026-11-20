@@ -8,10 +8,12 @@ import { Button } from '../../components/button'
 import { ErrorSummary, type SummaryItem } from '../../components/error-summary'
 import { TextInput } from '../../components/form-field'
 import { leavePage } from '../../lib/leave-page'
-import { errorMessage, fieldErrors } from '../../lib/messages'
+import { fieldErrors } from '../../lib/messages'
 import { afterSignInPath, PORTAL_HOME_PATH, realmOf, safeNext, tenantSlug } from '../../lib/navigation'
-import { emailError, requiredError } from '../../lib/validation'
+import { errorText } from '../portal/format'
+import { translator, type Locale, type Translate } from '../portal/i18n'
 import { AuthHeader } from './auth-card'
+import { emailProblem, passwordProblem } from './credentials'
 import { FirebaseSignIn, type SignInSession } from './firebase-sign-in'
 
 export const PORTAL_CODE_PATH = '/portal/signin/code'
@@ -68,17 +70,19 @@ type Field = 'tenant' | 'email' | 'password'
 type Method = 'code' | 'password'
 const fieldId = (field: Field) => `portal-${field}`
 
-function validate(field: Field, value: string): string | null {
-  if (field === 'email') return emailError(value)
-  return requiredError(field === 'tenant' ? 'your company sign-in name' : 'your password', value)
+function validate(field: Field, value: string, t: Translate): string | null {
+  if (field === 'email') return emailProblem(value, t)
+  if (field === 'password') return passwordProblem(value, t)
+  return value.trim() === '' ? t('auth.company_required') : null
 }
 
 /**
  * SC-27 portal sign-in (FR-IAM-007, D-B5-03): the email, then "Email me a code" (the default) or "Use password". Every
  * failure reads the same; the code request always answers alike, so the page never tells whether an account exists.
  */
-export function PortalSignIn({ firebase }: { readonly firebase: boolean }) {
+export function PortalSignIn({ firebase, locale }: { readonly firebase: boolean; readonly locale: Locale }) {
   const api = useApi()
+  const t = translator(locale)
   const router = useRouter()
   const params = useSearchParams()
   const knownTenant = tenantSlug(params.get('tenant'))
@@ -97,7 +101,7 @@ export function PortalSignIn({ firebase }: { readonly firebase: boolean }) {
 
   function check(only: readonly Field[]): boolean {
     const found = Object.fromEntries(only.flatMap((field) => {
-      const message = validate(field, values[field])
+      const message = validate(field, values[field], t)
       return message === null ? [] : [[field, message]]
     })) as Partial<Record<Field, string>>
     setErrors(found)
@@ -122,7 +126,7 @@ export function PortalSignIn({ firebase }: { readonly firebase: boolean }) {
     } catch (error) {
       const server = fieldErrors(error)
       const items = fields.filter((field) => server[field] !== undefined).map((field) => ({ fieldId: fieldId(field), message: server[field]! }))
-      setSummary(items.length > 0 ? items : [{ message: errorMessage(error) }])
+      setSummary(items.length > 0 ? items : [{ message: errorText(error, t) }])
       setBusy(false)
     }
   }
@@ -135,32 +139,32 @@ export function PortalSignIn({ firebase }: { readonly firebase: boolean }) {
 
   return (
     <>
-      <AuthHeader eyebrow="Distributor sign-in" icon="lock" title="Sign in to your portal">
-        {method === 'code' ? 'Enter your email address and we send you a 6-digit sign-in code.' : 'Enter your email address and your portal password.'}
+      <AuthHeader eyebrow={t('auth.eyebrow')} icon="lock" title={t('auth.title')}>
+        {method === 'code' ? t('auth.intro_code') : t('auth.intro_password')}
       </AuthHeader>
-      {params.get('reason') === 'signed_out' && <Banner tone="info">You are signed out.</Banner>}
+      {params.get('reason') === 'signed_out' && <Banner tone="info">{t('auth.signed_out')}</Banner>}
       <form className="flex flex-col gap-space-md" onSubmit={submit} noValidate>
-        <ErrorSummary items={summary} />
+        <ErrorSummary items={summary} title={t('auth.problem')} />
         {knownTenant === null
-          ? <TextInput id={fieldId('tenant')} label="Company" helper="Your company’s sign-in name, from your invitation email." autoComplete="organization" autoCapitalize="none" spellCheck={false}
+          ? <TextInput id={fieldId('tenant')} label={t('auth.company')} helper={t('auth.company_helper')} autoComplete="organization" autoCapitalize="none" spellCheck={false}
             value={values.tenant} error={errors.tenant} onChange={(event) => set('tenant', event.target.value)} />
-          : <TextInput id={fieldId('tenant')} label="Company" readOnly value={knownTenant} helper="From your sign-in link." />}
-        <TextInput id={fieldId('email')} label="Email address" type="email" autoComplete="username" autoCapitalize="none" spellCheck={false}
+          : <TextInput id={fieldId('tenant')} label={t('auth.company')} readOnly value={knownTenant} helper={t('auth.company_from_link')} />}
+        <TextInput id={fieldId('email')} label={t('auth.email')} type="email" autoComplete="username" autoCapitalize="none" spellCheck={false}
           value={values.email} error={errors.email} onChange={(event) => set('email', event.target.value)} />
         {method === 'password' && (
-          <TextInput id={fieldId('password')} label="Password" type="password" autoComplete="current-password"
+          <TextInput id={fieldId('password')} label={t('auth.password')} type="password" autoComplete="current-password"
             value={values.password} error={errors.password} onChange={(event) => set('password', event.target.value)} />
         )}
         <Button type="submit" variant="primary" size="lg" icon={method === 'code' ? 'mail' : 'login'} loading={busy} className="w-full" data-testid="primary-action">
-          {method === 'code' ? 'Email me a code' : 'Sign in'}
+          {method === 'code' ? t('auth.email_code') : t('auth.sign_in')}
         </Button>
         <Button variant="tertiary" className="self-center" onClick={() => switchTo(method === 'code' ? 'password' : 'code')}>
-          {method === 'code' ? 'Use password' : 'Email me a code instead'}
+          {method === 'code' ? t('auth.use_password') : t('auth.code_instead')}
         </Button>
       </form>
       {firebase && (
         <FirebaseSignIn realm="portal" company={() => (check(knownTenant === null ? ['tenant'] : []) ? company() : null)} onSignedIn={finish}
-          onError={(message) => setSummary(message === null ? [] : [{ message }])} />
+          onError={(message) => setSummary(message === null ? [] : [{ message }])} locale={locale} />
       )}
     </>
   )

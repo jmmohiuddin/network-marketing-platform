@@ -44,6 +44,9 @@ export interface TenantSeed {
 
 /** A platform guardrail rule for the seeded evaluation; pack rules are written by migrations or the owner only. */
 export const SEED_GUARDRAIL_RULE = 'seed-starter-kit@2026-01-01'
+/** Platform rules of the B-MKT seed pack (owner, insert-only): a no-duty withholding rule and a calendar tax year. */
+export const SEED_TAX_RULE = 'seed-withholding@2026-01-01'
+export const SEED_PACK_RULE = 'seed-tax-year@2026-01-01'
 
 /**
  * Writes one row into every tenant-scoped table as nmp_app in the tenant's own context, so a denial
@@ -59,7 +62,19 @@ export async function seedTenantRows(ctx: TenantContext, secondUserId: string): 
      ON CONFLICT (id) DO NOTHING`,
     [SEED_GUARDRAIL_RULE],
   )
-  return withTenant(ctx, async (tx) => {
+  await getOwnerPool().query(
+    `INSERT INTO tax_rule (id, market_pack, title, kind, conditions, rounding, mandatory, effective_from, basis, basis_status, source_ref)
+     VALUES ($1, 'seed', 'Seed withholding', 'withholding', '{}', 'none', true, '2026-01-01', 'seed', 'screening', 'seed')
+     ON CONFLICT (id) DO NOTHING`,
+    [SEED_TAX_RULE],
+  )
+  await getOwnerPool().query(
+    `INSERT INTO pack_rule (id, market_pack, kind, title, params, mandatory, basis, basis_status, source_ref, effective_from)
+     VALUES ($1, 'seed', 'tax_year', 'Seed tax year', '{"start_month": 1, "start_day": 1}', true, 'seed', 'screening', 'seed', '2026-01-01')
+     ON CONFLICT (id) DO NOTHING`,
+    [SEED_PACK_RULE],
+  )
+  const seed = await withTenant(ctx, async (tx) => {
     const marketId = await insertMarket(tx, tenant_id)
     const roleId = await insertRow(tx, 'role', {
       tenant_id, name: 'Custom', permissions: ['import.manage'], is_base: false, mfa_required: false,
@@ -135,6 +150,8 @@ export async function seedTenantRows(ctx: TenantContext, secondUserId: string): 
       ...b3, ...b4, ...b5, ...b6,
     }
   })
+  await seedBMktRows(ctx, seed)
+  return seed
 }
 
 /** One row in every B1 tenant table (PLAN B1 section 1), each document referenced once by its uploader. */
@@ -322,6 +339,10 @@ async function seedB3Rows(
        withheld_minor, net_payable_minor) VALUES ($1, $2, $3, 100, 0, 0, 0, 100)`,
     [tenant_id, runId, ids.participantId],
   )
+  await insertRow(tx, 'tax_line', {
+    tenant_id, run_id: runId, payee_participant_id: ids.participantId, rule_id: SEED_TAX_RULE, taxable_minor: 100, withheld_minor: 0,
+    rate: '0', rate_basis: 'no_duty', tax_year: 2026, tax_date: '2026-01-31',
+  })
   await tx.query(
     `INSERT INTO qualification_state (tenant_id, run_id, position_id, paid_as_rank, highest_titles, grace_used, counters, carry,
        one_time_flags, banked, measures) VALUES ($1, $2, $3, '[]', '[]', '[]', '[]', '[]', '{}', '[]', '[]')`,
@@ -549,6 +570,25 @@ async function seedB6Rows(
   await tx.query(`UPDATE simulation SET state = 'completed', totals = '{}', comparison = '{}', finished_at = now() WHERE id = $1`, [simulationId])
   await tx.query('SELECT mig_compare($1)', [parallelRunId])
   return { migrationId, migrationPeriodId, parallelRunId, dataExportId }
+}
+
+/**
+ * One row in every B-MKT tenant table (PLAN B-MKT section 1): the run's tax line is written in seedB3Rows while it runs; a
+ * year-end generation with one form through the owner (only tax_generate_forms writes them at runtime).
+ */
+async function seedBMktRows(ctx: TenantContext, ids: { marketId: string; participantId: string }) {
+  await getOwnerPool().query(
+    `WITH g AS (
+       INSERT INTO tax_form_generation (tenant_id, market_id, tax_year, form_type, rule_id, generated, unchanged, held,
+         withheld_total_minor, ledger_withheld_minor, created_by)
+       VALUES ($1, $2, 2026, 'SEED', $4, 1, 0, '[]', 0, 0, $5) RETURNING id)
+     INSERT INTO tax_form (tenant_id, generation_id, market_id, tax_year, form_type, participant_id, version, payee_ref, tax_id_masked,
+       currency, totals)
+     SELECT $1, g.id, $2, 2026, 'SEED', $3, 1, 'seed-distributor', '•••• 12', 'GBP',
+       '{"gross_minor": "100", "taxable_minor": "100", "withheld_minor": "0", "by_rule": [], "period_ids": []}'
+     FROM g`,
+    [ctx.tenantId, ids.marketId, ids.participantId, SEED_TAX_RULE, ctx.userId],
+  )
 }
 
 /**

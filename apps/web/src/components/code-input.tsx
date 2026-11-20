@@ -23,10 +23,29 @@ export interface CodeInputProps {
   readonly secondaryAction?: ReactNode
   /** Focus the field on mount: set when the form is the page's only task (MFA sign-in step); dialogs focus [data-autofocus]. */
   readonly autoFocus?: boolean
+  /** The field's words in the page's language (portal re-authentication); English when absent. */
+  readonly words?: CodeWords
+  /** A failure's text in that language; errorMessage (the API's English message) when absent. */
+  readonly failureText?: (error: unknown) => string
+}
+
+export interface CodeWords {
+  readonly label: string
+  readonly helper: string
+  /** Shown for an empty field. */
+  readonly required: string
+  /** Shown for anything other than 6 digits. */
+  readonly digits: string
+}
+
+function codeProblem(value: string, words: CodeWords | undefined): string | null {
+  const english = codeError(value)
+  if (english === null || words === undefined) return english
+  return value === '' ? words.required : words.digits
 }
 
 /** One 6-digit TOTP code field and its submit: numeric keyboard, one-time-code autofill, server errors inline. */
-export function CodeInput({ idPrefix, endpoint, submitLabel, onVerified, secondaryAction, autoFocus = false }: CodeInputProps) {
+export function CodeInput({ idPrefix, endpoint, submitLabel, onVerified, secondaryAction, autoFocus = false, words, failureText = errorMessage }: CodeInputProps) {
   const api = useApi()
   const input = useRef<HTMLInputElement>(null)
   const [code, setCode] = useState('')
@@ -35,7 +54,7 @@ export function CodeInput({ idPrefix, endpoint, submitLabel, onVerified, seconda
   const [busy, setBusy] = useState(false)
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    const invalid = codeError(code)
+    const invalid = codeProblem(code, words)
     setFieldError(invalid)
     setFormError(null)
     if (invalid !== null) {
@@ -48,10 +67,10 @@ export function CodeInput({ idPrefix, endpoint, submitLabel, onVerified, seconda
       onVerified()
     } catch (error) {
       if (isApiError(error, 'MFA_CODE_INVALID')) {
-        setFieldError(errorMessage(error))
+        setFieldError(failureText(error))
         input.current?.focus()
       } else {
-        setFormError(errorMessage(error))
+        setFormError(failureText(error))
       }
       setBusy(false)
     }
@@ -59,7 +78,7 @@ export function CodeInput({ idPrefix, endpoint, submitLabel, onVerified, seconda
   return (
     <form className="flex flex-col gap-space-md" onSubmit={submit} noValidate>
       {formError !== null && <Banner tone="danger">{formError}</Banner>}
-      <FormField id={`${idPrefix}-code`} label="Verification code" helper="The 6-digit code your authenticator app shows now." error={fieldError}>
+      <FormField id={`${idPrefix}-code`} label={words?.label ?? 'Verification code'} helper={words?.helper ?? 'The 6-digit code your authenticator app shows now.'} error={fieldError}>
         {(control) => (
           <input
             {...control}
@@ -67,7 +86,7 @@ export function CodeInput({ idPrefix, endpoint, submitLabel, onVerified, seconda
             className={CODE_CLASS}
             value={code}
             onChange={(event) => setCode(digitsOnly(event.target.value))}
-            onBlur={() => code !== '' && setFieldError(codeError(code))}
+            onBlur={() => code !== '' && setFieldError(codeProblem(code, words))}
             inputMode="numeric"
             autoComplete="one-time-code"
             maxLength={CODE_LENGTH}

@@ -14,7 +14,7 @@ import { LoadFailure } from '../admin/page-states'
 import { MONO, NOTE } from '../admin/ui'
 import { saveFile } from '../data/transfer'
 import { AttestationForm, EvidenceForm } from './evidence-forms'
-import { BASIS_STATUS, documentHref, fetchDocument, ITEM_STATUS, KIND_LABELS, reviewChip, todayLocal } from './format'
+import { BASIS_STATUS, documentHref, fetchDocument, ITEM_STATUS, KIND_LABELS, reviewChip, todayLocal, untranslatedText } from './format'
 import type { ChecklistEntry, ChecklistItem, DocumentLimits, DocumentSummary, PackRule, ProviderRecord } from './types'
 
 const LABEL = 'font-caption text-caption text-secondary uppercase font-semibold'
@@ -60,7 +60,13 @@ export function EvidenceFile({ entry }: { readonly entry: ChecklistEntry }) {
   )
 }
 
-/** FR-CPL-012 pack rules with their basis status, source and review (never a legal conclusion). */
+/** market_pack_rules kinds (B1 guardrail and tax, D-BM-02 pack_rule kinds) in words. */
+const RULE_KINDS: Readonly<Record<string, string>> = {
+  guardrail: 'Guardrail', tax: 'Tax', grievance_register: 'Grievance register', delisted_register: 'Delisted-seller register',
+  plan_filing: 'Plan filing', tax_year: 'Tax year', tax_id_format: 'Tax-id format',
+}
+
+/** FR-CPL-012 pack rules with their kind, basis status, source and review (never a legal conclusion). */
 export function RuleList({ rules }: { readonly rules: readonly PackRule[] }) {
   if (rules.length === 0) return <p className={NOTE}>The market pack has no rules of this kind in force today.</p>
   return (
@@ -71,6 +77,7 @@ export function RuleList({ rules }: { readonly rules: readonly PackRule[] }) {
             <span className="font-body-sm text-body-sm font-semibold text-on-surface">{rule.title}</span>
             <StatusBadge {...BASIS_STATUS[rule.basis_status]} />
           </div>
+          <span className="font-caption text-caption text-on-surface-variant">{RULE_KINDS[rule.kind] ?? rule.kind}</span>
           <span className={`${MONO} text-secondary`}><span className="break-all">{rule.id}</span>{rule.mandatory ? <span className="whitespace-nowrap"> · mandatory</span> : null}</span>
           <span className="font-caption text-caption text-on-surface-variant">Basis: {rule.basis}</span>
           <span className="font-caption text-caption text-on-surface-variant">Source: {rule.source_ref}</span>
@@ -223,6 +230,11 @@ export function GateInspector({ marketId, item, locked, limits, providers, onRec
             <p className={NOTE}>Mandatory rules still at screening need a written risk acceptance at sign-off.</p>
             <RuleList rules={item.detail?.rules ?? []} />
           </Section>
+        )}
+        {item.item === 'portal_languages' && (
+          <p className={NOTE}>
+            {untranslatedText(item.detail?.untranslated ?? [])}. Distributors whose language has no translation see the portal in English; this item completes itself once every market language has one.
+          </p>
         )}
         {item.item === 'tax_configuration' && (
           <Section label="Tax rules of the market pack"><RuleList rules={item.detail?.rules ?? []} /></Section>

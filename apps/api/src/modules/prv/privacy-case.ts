@@ -24,7 +24,7 @@ type PrivacyPayload = z.infer<typeof payloadSchema>
 // D-B5-18, the same lists prv_erase_participant (0511) returns: the preview shows what the approval will clear and keep.
 export const ERASURE_CLEARED = [
   'participant.display_name', 'participant.contact', 'participant.identity_doc_id', 'user_account.email', 'user_account.idp_subject',
-  'user_account.display_name', 'user_account.firebase_subject', 'password_credential', 'mfa_credential', 'portal_sign_in_code',
+  'user_account.display_name', 'user_account.firebase_subject', 'user_account.locale', 'password_credential', 'mfa_credential', 'portal_sign_in_code',
   'user_invitation (open: revoked)', 'login_attempt', 'session.ip', 'session.user_agent', 'participant_signal',
   'bank_detail_request.details_sealed', 'bank_detail_request.contact_email_sealed', 'bank_detail_version.details_sealed',
   'tax_profile.tax_id_sealed', 'tax_profile.tax_id_masked', 'notification.params.masked', 'notification.params.previous_masked',

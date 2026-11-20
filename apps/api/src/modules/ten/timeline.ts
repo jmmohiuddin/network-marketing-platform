@@ -16,7 +16,7 @@ export interface ChainRow {
 
 export interface TimelineChange {
   readonly effectiveFrom: Date
-  /** Keys set by the change (a money key, a threshold, the structure snapshot). */
+  /** Keys set by the change (a money key, a threshold, the structure snapshot); undefined removes a key. */
   readonly patch: Settings
   readonly reason: string
   readonly approvalId: string | null
@@ -43,6 +43,9 @@ export function changedKeys(before: Settings, after: Settings): string[] {
   return keys.filter((key) => !isDeepStrictEqual(before[key], after[key])).sort()
 }
 
+/** A patch value undefined removes the key (an unset setting, BUG-129). */
+const withoutUndefined = (settings: Settings): Settings => Object.fromEntries(Object.entries(settings).filter(([, value]) => value !== undefined))
+
 function overlay(base: Settings, source: Settings, keys: readonly string[]): Settings {
   const next: Record<string, unknown> = { ...base }
   for (const key of keys) {
@@ -62,7 +65,7 @@ export function rebaseTimeline(chain: readonly ChainRow[], change: TimelineChang
   const at = change.effectiveFrom.getTime()
   const base = inForceAt(chain, change.effectiveFrom)?.settings ?? {}
   const first: NewVersion = {
-    version: nextVersion, effectiveFrom: change.effectiveFrom, settings: { ...base, ...change.patch },
+    version: nextVersion, effectiveFrom: change.effectiveFrom, settings: withoutUndefined({ ...base, ...change.patch }),
     approvalId: change.approvalId, reason: change.reason, rebases: null,
   }
   const rows: NewVersion[] = [first]

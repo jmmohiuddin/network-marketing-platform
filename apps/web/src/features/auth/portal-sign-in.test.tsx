@@ -17,9 +17,12 @@ import { PortalSignIn, portalTarget, readPendingCode, savePendingCode } from './
 const navigation = vi.hoisted(() => ({ search: '', leavePage: vi.fn(), router: { replace: vi.fn(), push: vi.fn() } }))
 vi.mock('next/navigation', () => ({ useSearchParams: () => new URLSearchParams(navigation.search), useRouter: () => navigation.router }))
 vi.mock('../../lib/leave-page', () => ({ leavePage: navigation.leavePage }))
+const request = vi.hoisted(() => ({ headers: new Headers() }))
+vi.mock('next/headers', () => ({ headers: async () => request.headers }))
 
 const SESSION = { expires_at: '2026-11-19T20:00:00Z', next_step: 'none' }
 const CODE_REFUSED = 'The code is not valid or has expired. Request a new code.'
+const CODE_WORDS = 'This code is not valid. It may be mistyped, used or expired.'
 
 beforeEach(() => {
   navigation.search = 'tenant=acme'
@@ -44,7 +47,7 @@ describe('PortalSignIn (SC-27)', () => {
   it('emails a code by default and opens the code step without the email in the address', async () => {
     const user = userEvent.setup()
     const fetchMock = fetchReturning(ok({ accepted: true }, 202))
-    renderWithProviders(<PortalSignIn firebase={false} />, fetchMock)
+    renderWithProviders(<PortalSignIn firebase={false} locale="en" />, fetchMock)
     expect((screen.getByLabelText('Company') as HTMLInputElement).readOnly).toBe(true)
     expect(screen.queryByLabelText('Password')).toBeNull()
     await user.type(screen.getByLabelText('Email address'), 'de-b@example.test')
@@ -59,7 +62,7 @@ describe('PortalSignIn (SC-27)', () => {
     const user = userEvent.setup()
     navigation.search = `tenant=acme&next=${encodeURIComponent('/portal/rank')}`
     const fetchMock = fetchReturning(ok({ ...SESSION, next_step: 'mfa_verification' }, 201))
-    renderWithProviders(<PortalSignIn firebase={false} />, fetchMock)
+    renderWithProviders(<PortalSignIn firebase={false} locale="en" />, fetchMock)
     await user.click(screen.getByRole('button', { name: 'Use password' }))
     await user.type(screen.getByLabelText('Email address'), 'de-a@example.test')
     await user.type(screen.getByLabelText('Password'), 'a long enough secret')
@@ -72,7 +75,7 @@ describe('PortalSignIn (SC-27)', () => {
   it('asks for the company without a ?tenant=, and shows the generic and the locked refusals', async () => {
     const user = userEvent.setup()
     navigation.search = 'method=password'
-    renderWithProviders(<PortalSignIn firebase={false} />, fetchReturning(
+    renderWithProviders(<PortalSignIn firebase={false} locale="en" />, fetchReturning(
       apiError(401, 'INVALID_CREDENTIALS', 'The email or password is not correct.'),
       apiError(429, 'SIGN_IN_LOCKED', 'Too many failed sign-in attempts. Try again later.'),
     ))
@@ -84,7 +87,7 @@ describe('PortalSignIn (SC-27)', () => {
     await user.click(screen.getByRole('button', { name: 'Sign in' }))
     expect(await screen.findByText('The email or password is not correct.')).toBeTruthy()
     await user.click(screen.getByRole('button', { name: 'Sign in' }))
-    expect(await screen.findByText('Too many failed sign-in attempts. Try again later.')).toBeTruthy()
+    expect(await screen.findByText('Sign-in is paused after too many attempts. Try again later.')).toBeTruthy()
     expect(navigation.leavePage).not.toHaveBeenCalled()
   })
 })
@@ -94,7 +97,7 @@ describe('PortalCode (SC-27 code step)', () => {
     const user = userEvent.setup()
     savePendingCode({ tenant: 'acme', email: 'de-b@example.test' })
     const fetchMock = fetchReturning(ok(SESSION, 201))
-    renderWithProviders(<PortalCode />, fetchMock)
+    renderWithProviders(<PortalCode locale="en" />, fetchMock)
     expect(await screen.findByText(/If a portal account uses de-b@example.test/)).toBeTruthy()
     await user.type(screen.getByLabelText('Sign-in code'), '123 456')
     await user.click(screen.getByRole('button', { name: 'Sign in' }))
@@ -107,10 +110,11 @@ describe('PortalCode (SC-27 code step)', () => {
     const user = userEvent.setup()
     savePendingCode({ tenant: 'acme', email: 'de-b@example.test' })
     const fetchMock = fetchReturning(apiError(401, 'INVALID_CREDENTIALS', CODE_REFUSED), ok({ accepted: true }, 202))
-    renderWithProviders(<PortalCode />, fetchMock)
+    renderWithProviders(<PortalCode locale="en" />, fetchMock)
     await user.type(await screen.findByLabelText('Sign-in code'), '000000')
     await user.click(screen.getByRole('button', { name: 'Sign in' }))
-    expect(await screen.findByText(CODE_REFUSED)).toBeTruthy()
+    expect(await screen.findByText(CODE_WORDS)).toBeTruthy()
+    expect(screen.queryByText(CODE_REFUSED)).toBeNull()
     expect(screen.getByLabelText('Sign-in code').getAttribute('aria-invalid')).toBe('true')
     await user.click(screen.getByRole('button', { name: 'Send a new code' }))
     expect(await screen.findByText('A new code is on its way. Earlier codes no longer work.')).toBeTruthy()
@@ -123,7 +127,7 @@ describe('PortalCode (SC-27 code step)', () => {
     savePendingCode({ tenant: 'acme', email: 'de-b@example.test' })
     let answer: (response: Response) => void = () => undefined
     const fetchMock: FetchMock = vi.fn(() => new Promise<Response>((resolve) => { answer = resolve }))
-    renderWithProviders(<PortalCode />, fetchMock)
+    renderWithProviders(<PortalCode locale="en" />, fetchMock)
     const resend = await screen.findByRole('button', { name: 'Send a new code' })
     await user.dblClick(resend)
     expect(fetchMock).toHaveBeenCalledTimes(1)
@@ -133,12 +137,12 @@ describe('PortalCode (SC-27 code step)', () => {
 
   it('does not continue a code started for another company', async () => {
     savePendingCode({ tenant: 'other', email: 'de-b@example.test' })
-    renderWithProviders(<PortalCode />, fetchReturning())
+    renderWithProviders(<PortalCode locale="en" />, fetchReturning())
     expect(await screen.findByRole('heading', { name: 'Start the sign-in again' })).toBeTruthy()
   })
 
   it('asks to start again when the first step is not in this tab', async () => {
-    renderWithProviders(<PortalCode />, fetchReturning())
+    renderWithProviders(<PortalCode locale="en" />, fetchReturning())
     expect((await screen.findByRole('link', { name: 'Back to sign-in' })).getAttribute('href')).toBe('/portal/signin?tenant=acme')
   })
 })
@@ -187,10 +191,27 @@ describe('portal invitation and optional MFA', () => {
 describe('portal sign-in page', () => {
   afterEach(() => vi.unstubAllEnvs())
 
-  it('offers Firebase when configured: /portal/signin is an auth page, where proxy.ts allows its sources', () => {
+  type Page = ReactElement<{ lang: string; children: ReactElement<{ children: ReactElement<{ firebase: boolean; locale: string }> }> }>
+
+  it('offers Firebase when configured: /portal/signin is an auth page, where proxy.ts allows its sources', async () => {
     vi.stubEnv('FIREBASE_AUTH_DOMAIN', 'nmp-staging.firebaseapp.com')
-    const page = PortalSignInPage() as ReactElement<{ children: ReactElement<{ firebase: boolean }> }>
+    request.headers = new Headers()
+    const page = await PortalSignInPage() as Page
     expect(isAuthPage('/portal/signin')).toBe(true)
-    expect(page.props.children.props.firebase).toBe(true)
+    expect(page.props.children.props.children.props.firebase).toBe(true)
+    expect(page.props.lang).toBe('en')
+  })
+
+  it('speaks the Accept-Language match among the supported locales (D-BM-11)', async () => {
+    request.headers = new Headers({ 'accept-language': 'de-AT,de;q=0.9,en;q=0.5' })
+    const page = await PortalSignInPage() as Page
+    expect([page.props.lang, page.props.children.props.children.props.locale]).toEqual(['de', 'de'])
+    navigation.search = 'tenant=acme'
+    renderWithProviders(<PortalSignIn firebase={false} locale="de" />, fetchReturning())
+    expect(screen.getByRole('heading', { name: 'Im Portal anmelden' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Code per E-Mail senden' })).toBeTruthy()
+    await userEvent.click(screen.getByRole('button', { name: 'Code per E-Mail senden' }))
+    expect(screen.getAllByText('Geben Sie Ihre E-Mail-Adresse ein.').length).toBeGreaterThan(0)
+    expect(screen.getByText('Es gibt ein Problem')).toBeTruthy()
   })
 })

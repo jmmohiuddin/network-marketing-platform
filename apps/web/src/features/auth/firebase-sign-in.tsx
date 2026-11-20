@@ -13,7 +13,9 @@ import { TextInput } from '../../components/form-field'
 import { isApiError } from '../../lib/api'
 import { errorMessage } from '../../lib/messages'
 import type { NextStep, Realm } from '../../lib/navigation'
-import { emailError, requiredError } from '../../lib/validation'
+import { errorText } from '../portal/format'
+import { translator, type Locale, type Translate } from '../portal/i18n'
+import { emailProblem, passwordProblem } from './credentials'
 
 /** GET /v1/auth/firebase-config: the Firebase web app config (public values). */
 export interface FirebaseConfig {
@@ -32,26 +34,21 @@ export const FIREBASE_CONFIG_PATH = '/v1/auth/firebase-config'
 const ENDPOINT: Readonly<Record<Realm, string>> = {
   tenant: '/v1/auth/firebase-sessions', vendor: '/v1/auth/vendor-firebase-sessions', portal: '/v1/auth/portal-firebase-sessions',
 }
-const NO_ACCOUNT: Readonly<Record<Realm, string>> = {
-  tenant: 'No staff account in this company matches that Google/Firebase account.',
-  vendor: 'No operations staff account matches that Google/Firebase account.',
-  portal: 'No portal account in this company matches that Google/Firebase account.',
-}
-const SIGN_IN_FAILED = 'The sign-in could not be completed. Try again.'
-// Firebase's own errors; null: the person stopped the sign-in themselves, nothing to report.
-const FIREBASE_MESSAGES: Readonly<Record<string, string | null>> = {
+// Firebase's own errors by catalogue key; null: the person stopped the sign-in themselves, nothing to report.
+const FIREBASE_MESSAGES: Readonly<Record<string, 'auth.firebase.popup_blocked' | 'auth.firebase.wrong_credentials' | 'auth.firebase.email_in_use'
+  | 'auth.firebase.weak_password' | 'auth.firebase.too_many' | 'auth.firebase.network' | null>> = {
   'auth/popup-closed-by-user': null,
   'auth/cancelled-popup-request': null,
   'auth/user-cancelled': null,
-  'auth/popup-blocked': 'Your browser blocked the sign-in window. Allow pop-ups for this site and try again.',
-  'auth/invalid-credential': 'The email or password is not correct.',
-  'auth/invalid-email': 'The email or password is not correct.',
-  'auth/wrong-password': 'The email or password is not correct.',
-  'auth/user-not-found': 'The email or password is not correct.',
-  'auth/email-already-in-use': 'An account with this email address already exists. Sign in instead.',
-  'auth/weak-password': 'Choose a longer password: at least 6 characters.',
-  'auth/too-many-requests': 'Too many attempts. Try again later.',
-  'auth/network-request-failed': 'Cannot reach the sign-in service. Check your connection and try again.',
+  'auth/popup-blocked': 'auth.firebase.popup_blocked',
+  'auth/invalid-credential': 'auth.firebase.wrong_credentials',
+  'auth/invalid-email': 'auth.firebase.wrong_credentials',
+  'auth/wrong-password': 'auth.firebase.wrong_credentials',
+  'auth/user-not-found': 'auth.firebase.wrong_credentials',
+  'auth/email-already-in-use': 'auth.firebase.email_in_use',
+  'auth/weak-password': 'auth.firebase.weak_password',
+  'auth/too-many-requests': 'auth.firebase.too_many',
+  'auth/network-request-failed': 'auth.firebase.network',
 }
 
 /**
@@ -69,17 +66,20 @@ function firebaseCode(error: unknown): string | null {
   return typeof code === 'string' && code.startsWith('auth/') ? code : null
 }
 
+/** An API failure: the portal shows it by code from the catalogue (D-BM-11), staff the API's own sentence. */
+const apiFailure = (realm: Realm, error: unknown, t: Translate): string => (realm === 'portal' ? errorText(error, t) : errorMessage(error))
+
 /** The sentence for a failed Firebase or API step, or null when there is nothing to report. */
-function failureMessage(realm: Realm, error: unknown): string | null {
+function failureMessage(realm: Realm, error: unknown, t: Translate): string | null {
   const code = firebaseCode(error)
-  if (code !== null) return code in FIREBASE_MESSAGES ? FIREBASE_MESSAGES[code]! : SIGN_IN_FAILED
-  if (isApiError(error, 'INVALID_CREDENTIALS')) return NO_ACCOUNT[realm]
-  return errorMessage(error)
+  if (code !== null) {
+    if (!(code in FIREBASE_MESSAGES)) return t('auth.firebase.failed')
+    const key = FIREBASE_MESSAGES[code]!
+    return key === null ? null : t(key)
+  }
+  if (isApiError(error, 'INVALID_CREDENTIALS')) return t(`auth.firebase.no_account.${realm}`)
+  return apiFailure(realm, error, t)
 }
-
-const WRONG_ACCOUNT_PASSWORD = 'The password is not correct.'
-
-const sentMessage = (email: string) => `We sent a verification link to ${email}. Open it, then sign in.`
 
 type EmailField = 'email' | 'password'
 
@@ -97,14 +97,17 @@ export interface FirebaseSignInProps {
   readonly onSignedIn: (session: SignInSession) => void
   /** Shows a failure in the form's error summary; null clears it. */
   readonly onError: (message: string | null) => void
+  /** The portal's negotiated locale; staff and vendor sign-in stay English (the default). */
+  readonly locale?: Locale
 }
 
 /**
  * Firebase sign-in under the password form (Google, Firebase email/password), shown only when the API has Firebase
  * configured. The Firebase ID token is exchanged for the app's session; MFA and roles then apply as for a password.
  */
-export function FirebaseSignIn({ realm, company, onSignedIn, onError }: FirebaseSignInProps) {
+export function FirebaseSignIn({ realm, company, onSignedIn, onError, locale = 'en' }: FirebaseSignInProps) {
   const api = useApi()
+  const t = translator(locale)
   const [auth, setAuth] = useState<Auth | null>(null)
   const [busy, setBusy] = useState(false)
   const [open, setOpen] = useState(false)
@@ -148,7 +151,7 @@ export function FirebaseSignIn({ realm, company, onSignedIn, onError }: Firebase
     } catch (error) {
       if (viaEmail && isApiError(error, 'EMAIL_NOT_VERIFIED')) setUnverified(true)
       else {
-        const message = failureMessage(realm, error)
+        const message = failureMessage(realm, error, t)
         if (message !== null) onError(message)
       }
     } finally {
@@ -182,14 +185,14 @@ export function FirebaseSignIn({ realm, company, onSignedIn, onError }: Firebase
   function confirmLink(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (link === null) return
-    const missing = requiredError('your password', linkPassword) ?? undefined
+    const missing = passwordProblem(linkPassword, t) ?? undefined
     setLinkError(missing)
     if (missing !== undefined) return
     onError(null)
     setBusy(true)
     openSession(link, linkPassword).catch((error: unknown) => {
-      if (isApiError(error, 'INVALID_CREDENTIALS')) setLinkError(WRONG_ACCOUNT_PASSWORD)
-      else onError(errorMessage(error))
+      if (isApiError(error, 'INVALID_CREDENTIALS')) setLinkError(t('auth.firebase.wrong_password'))
+      else onError(apiFailure(realm, error, t))
       setBusy(false)
     })
   }
@@ -211,7 +214,7 @@ export function FirebaseSignIn({ realm, company, onSignedIn, onError }: Firebase
   }
 
   function emailValid(): boolean {
-    const found = { email: emailError(values.email) ?? undefined, password: requiredError('your password', values.password) ?? undefined }
+    const found = { email: emailProblem(values.email, t) ?? undefined, password: passwordProblem(values.password, t) ?? undefined }
     setErrors(found)
     return found.email === undefined && found.password === undefined
   }
@@ -231,7 +234,7 @@ export function FirebaseSignIn({ realm, company, onSignedIn, onError }: Firebase
     void withFirebase(async () => {
       const { user } = await credential()
       await sendEmailVerification(user)
-      setNotice(sentMessage(values.email.trim()))
+      setNotice(t('auth.firebase.link_sent', { email: values.email.trim() }))
       return false
     }, false)
   }
@@ -240,47 +243,47 @@ export function FirebaseSignIn({ realm, company, onSignedIn, onError }: Firebase
 
   return (
     <div className="flex flex-col gap-space-md">
-      <div className="flex items-center gap-space-sm" role="separator" aria-label="or">
+      <div className="flex items-center gap-space-sm" role="separator" aria-label={t('auth.or')}>
         <div className="h-[1px] flex-1 bg-surface-variant" />
-        <span aria-hidden="true" className="font-caption text-caption uppercase tracking-wider text-outline">or</span>
+        <span aria-hidden="true" className="font-caption text-caption uppercase tracking-wider text-outline">{t('auth.or')}</span>
         <div className="h-[1px] flex-1 bg-surface-variant" />
       </div>
       {link !== null && (
-        <form aria-label="Link your account" className="flex flex-col gap-space-md" onSubmit={confirmLink} noValidate>
-          <Banner tone="info">This is your first sign-in with Google/Firebase here. Enter the password of your account once to link them.</Banner>
-          <TextInput ref={linkRef} id="firebase-link-password" label="Account password" type="password" autoComplete="current-password"
+        <form aria-label={t('auth.firebase.link_title')} className="flex flex-col gap-space-md" onSubmit={confirmLink} noValidate>
+          <Banner tone="info">{t('auth.firebase.link_text')}</Banner>
+          <TextInput ref={linkRef} id="firebase-link-password" label={t('auth.firebase.account_password')} type="password" autoComplete="current-password"
             value={linkPassword} error={linkError} onChange={(event) => setLinkPassword(event.target.value)} />
-          <Button type="submit" variant="primary" disabled={busy}>Link and sign in</Button>
+          <Button type="submit" variant="primary" disabled={busy}>{t('auth.firebase.link_and_sign_in')}</Button>
         </form>
       )}
       <Button variant="secondary" size="lg" className="w-full" disabled={busy} onClick={google}>
         <span aria-hidden="true" className="font-semibold">G</span>
-        Continue with Google
+        {t('auth.firebase.google')}
       </Button>
       <Button variant="tertiary" icon={open ? 'expand_less' : 'expand_more'} className="self-start" aria-expanded={open} aria-controls="firebase-email"
         onClick={() => setOpen((value) => !value)}>
-        Use a Firebase email account
+        {t('auth.firebase.use_email')}
       </Button>
       {open && (
-        <form id="firebase-email" aria-label="Firebase email account" className="flex flex-col gap-space-md" onSubmit={signInWithEmail} noValidate>
+        <form id="firebase-email" aria-label={t('auth.firebase.email_account')} className="flex flex-col gap-space-md" onSubmit={signInWithEmail} noValidate>
           {unverified && (
             <Banner tone="danger" action={(
               <Button disabled={busy} onClick={() => sendVerification(() => signInWithEmailAndPassword(firebase, values.email.trim(), values.password))}>
-                Send the link again
+                {t('auth.firebase.send_again')}
               </Button>
             )}>
-              Your email address is not verified yet. Open the link we sent to {values.email.trim()}, then sign in.
+              {t('auth.firebase.unverified', { email: values.email.trim() })}
             </Banner>
           )}
           {notice !== null && <Banner tone="success">{notice}</Banner>}
-          <TextInput ref={emailRef} id="firebase-email-address" label="Email address" type="email" autoComplete="username" value={values.email}
+          <TextInput ref={emailRef} id="firebase-email-address" label={t('auth.email')} type="email" autoComplete="username" value={values.email}
             error={errors.email} onChange={(event) => set('email', event.target.value)} autoCapitalize="none" spellCheck={false} />
-          <TextInput id="firebase-password" label="Password" type="password" autoComplete="current-password" value={values.password}
+          <TextInput id="firebase-password" label={t('auth.password')} type="password" autoComplete="current-password" value={values.password}
             error={errors.password} onChange={(event) => set('password', event.target.value)} />
           <div className="flex flex-wrap gap-space-sm">
-            <Button type="submit" variant="secondary" disabled={busy}>Sign in</Button>
+            <Button type="submit" variant="secondary" disabled={busy}>{t('auth.sign_in')}</Button>
             <Button disabled={busy} onClick={() => sendVerification(() => createUserWithEmailAndPassword(firebase, values.email.trim(), values.password))}>
-              Create account
+              {t('auth.firebase.create_account')}
             </Button>
           </div>
         </form>

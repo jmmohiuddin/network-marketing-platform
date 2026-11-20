@@ -1,4 +1,5 @@
 import { eligibleApprovers, type Tx } from '@nmp/db'
+import { stringifyEngineJson } from '@nmp/engine'
 import { recordAudit } from '../../lib/audit.js'
 import type { AuthContext } from '../../lib/auth.js'
 import { ApiError } from '../../lib/errors.js'
@@ -7,6 +8,7 @@ import { approveOrRefuse } from '../ten/index.js'
 import { loadPeriod, lockMarketPeriods, lockRunKey, settingsVersionAt } from './period.js'
 import { assertMigrationSignedOff, marketSync } from './preflight.js'
 import { runExceptions } from './review.js'
+import { readSnapshot, withholdingInstructions } from './snapshot.js'
 import { runInScope, type RunView } from './views.js'
 
 // D-B3-12 / D-B4-02: one transaction: the run lock, then the market's periods lock (late detection and adjustment
@@ -50,7 +52,21 @@ async function stalenessGates(tx: Tx, run: RunView): Promise<string[]> {
   const changed = late.filter((item) => item.handling !== 'adjust' || item.state === 'consumed').map((item) => item.id)
   if (changed.length > 0) throw superseded('late_items_changed', { late_ids: changed })
   await originGates(tx, run)
+  await withholdingGate(tx, run)
   return late.map((item) => item.id)
+}
+
+/**
+ * D-BM-03: the withholding instructions frozen in the snapshot must still be what SQL computes now, under the market's
+ * periods lock: a run of another calendar of the market committed since adds to this year's prior gross (a crossing of a
+ * current-year threshold would otherwise be computed as below it and, with no catch-up, never withheld).
+ * shortcut: a run of an earlier tax date committed after this one is not counted here (D-BM-03 counts committed runs only), serialise commits per market and tax year if a pack needs it
+ */
+async function withholdingGate(tx: Tx, run: RunView): Promise<void> {
+  // A snapshot from before B-MKT carries no instructions: the same as none.
+  const frozen = (await readSnapshot(tx, run.snapshot_id!)).withholding ?? []
+  const current = await withholdingInstructions(tx, run.period_id)
+  if (stringifyEngineJson(frozen) !== stringifyEngineJson(current)) throw superseded('withholding_changed')
 }
 
 /**

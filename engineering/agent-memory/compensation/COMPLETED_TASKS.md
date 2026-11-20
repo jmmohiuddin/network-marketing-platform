@@ -26,3 +26,10 @@ _Agent: compensation. Read before every task; update after every task. Keep conc
 - Fixed: HIGH settings race (exact version), MEDIUM deadlock (lock order + test proven to fail without fix), export market scope, R2/R4/R5 drill measures + TS-34 test over every figure, range coverage, AC-40.1 mapping trigger; LOW fact guard, CSV negative numbers, stuck computing, INPUTS_CHANGING + computing->failed, IMP facades, response shape recorded (E-ADR-25, E-ADR-26).
 - Files: migration 0031; cpl/{snapshot-row,snapshots,inputs,compute,measures(new),drill,routes,test-fixtures,states.test(new),concurrency.test(new),snapshots.test,drill.test}; outside CPL (additive): ten/{settings,index} getSettingsVersion; imp/{batches,load,index} lockLoads/tryLockLoads/batchDataQuality; lib/csv.ts + formats.test.ts; packages/db/test/seed.ts.
 - Results: cpl 47/47, packages/db 76/76, apps/api 272/273 (1 failure in ops.test.ts, OPS files edited concurrently by another agent; nothing of mine touched).
+
+## B-MKT BE2 — D-BM-06/07/10(view)/16, §2.1, §2.4, TK-B6-17 (2026-11-20) — DONE
+- Tests: T-BM-05/06 (tax/rules.test.ts), T-BM-11/12/13 (tax/year-end.test.ts), T-BM-25/70/71 (pln/lifecycle.test.ts), T-BM-71 TEN (ten/settings.test.ts, timeline.test.ts), portal_languages (ten/go-live.test.ts). tax+pln+ten 169/169.
+
+## B-MKT BE1 — D-BM-04 (COMP), D-BM-05 (a)+(b), D-BM-11 (COMP texts), §2.2, T-BM-02/03/04/33, TS-38, TK-B6-14 (2026-11-20) — DONE (2M not met, see SPIKE §9)
+- Files: packages/engine/src/{types,run,pipeline}.ts, primitives/caps.ts, test/run/run.test.ts, results/s1-bench.json; comp/{snapshot,results,runs,preflight,statements,explanation,rank,portal-routes,messages(new)}.ts, tests {withholding(new),messages(new),explanation,portal,portal-routes}.test.ts; SPIKE_REPORT §9.
+

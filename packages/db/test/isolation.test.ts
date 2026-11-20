@@ -32,9 +32,11 @@ const TENANT_ID_TABLES = [
   // PLAN B6 section 1
   'plan_version_filing', 'data_export', 'data_export_file', 'saved_view', 'migration', 'migration_opening_balance',
   'migration_opening_state', 'parallel_run', 'parallel_run_difference',
+  // PLAN B-MKT section 1
+  'tax_line', 'tax_form_generation', 'tax_form',
 ]
 // Platform tables (no tenant): every realm reads them, none writes them (pack-rules.test.ts).
-const PLATFORM_TABLES = ['guardrail_rule', 'tax_rule']
+const PLATFORM_TABLES = ['guardrail_rule', 'tax_rule', 'pack_rule']
 // No tenant_id column: rows follow their user.
 const USER_OWNED_TABLES = ['password_credential', 'mfa_credential']
 const TENANT_TABLES = ['tenant', ...TENANT_ID_TABLES, ...USER_OWNED_TABLES]

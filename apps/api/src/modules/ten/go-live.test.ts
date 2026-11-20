@@ -95,9 +95,13 @@ describe('checklist and go-live request (AC-38.1, AC-53.1, T-B1-09)', () => {
     expect(statuses(view.json().data.items)).toEqual({
       licence_evidence: 'missing', payout_provider: 'missing', payment_provider: 'missing', tax_configuration: 'missing',
       agreement_versions: 'missing', data_region: 'missing', plan_variant: 'missing', breach_contacts: 'missing',
-      pack_rules: 'needs_risk_acceptance', migration_parallel_run: 'complete',
+      pack_rules: 'needs_risk_acceptance', migration_parallel_run: 'complete', portal_languages: 'missing',
     })
-    expect(view.json().data.summary).toEqual({ complete: 1, missing: 8, needs_risk_acceptance: 1 })
+    expect(view.json().data.summary).toEqual({ complete: 1, missing: 9, needs_risk_acceptance: 1 })
+    // D-BM-11: French has no distributor catalogue.
+    expect(view.json().data.items.find((i: Item) => i.item === 'portal_languages')).toMatchObject({
+      kind: 'automatic', category: 'data', status: 'missing', entry: null, detail: { untranslated: ['fr'] },
+    })
     expect(view.json().data.items.find((i: Item) => i.item === 'data_region').detail).toEqual({ region: 'eu' })
     expect(view.json().data.items.find((i: Item) => i.item === 'pack_rules').detail.rules).toEqual([
       expect.objectContaining({ id: 'fixture-enrolment-only-bonus@2026-01-01', basis_status: 'screening', mandatory: true, source_ref: expect.any(String) }),
@@ -108,8 +112,9 @@ describe('checklist and go-live request (AC-38.1, AC-53.1, T-B1-09)', () => {
     expect(refused.json().error.details.missing).toEqual(expect.arrayContaining([
       { item: 'payout_provider', title: 'Payout provider eligibility', reason: expect.any(String) },
       { item: 'breach_contacts', title: 'Breach notification contacts', reason: expect.any(String) },
+      { item: 'portal_languages', title: 'Distributor portal languages', reason: 'No distributor translation for: fr' },
     ]))
-    expect(refused.json().error.details.missing).toHaveLength(8)
+    expect(refused.json().error.details.missing).toHaveLength(9)
   })
 
   test('entries: provider and automatic items are not recordable; evidence needs a document, attestation a note', async () => {
@@ -136,6 +141,8 @@ describe('checklist and go-live request (AC-38.1, AC-53.1, T-B1-09)', () => {
     await recordProvider('payout')
     paymentProvider = (await recordProvider('payment')).json().data.id
     await recordBreachContacts()
+    // D-BM-11: a region tag counts by its primary subtag (de-AT is German).
+    const languages = await call(app, { method: 'PATCH', url: `/v1/markets/${market}`, as: admin, body: { languages: ['en', 'de-AT'], reason: 'portal languages' } })
 
     const view = await checklist(compliance)
     const created = await requestGoLive()
@@ -144,7 +151,8 @@ describe('checklist and go-live request (AC-38.1, AC-53.1, T-B1-09)', () => {
     const second = await requestGoLive()
 
     expect(licence.json().data).toMatchObject({ item: 'licence_evidence', status: 'complete', entry: { document: { file_name: 'licence.pdf', mime: 'application/pdf', size_bytes: 1024 }, recorded_by: { id: adminSigner.id } } })
-    expect(view.json().data.summary).toEqual({ complete: 9, missing: 0, needs_risk_acceptance: 1 })
+    expect(languages.statusCode).toBe(200)
+    expect(view.json().data.summary).toEqual({ complete: 10, missing: 0, needs_risk_acceptance: 1 })
     // T-B2-14: the agreement item is automatic, complete with the market's published version.
     expect(view.json().data.items.find((i: Item) => i.item === 'agreement_versions')).toMatchObject({
       kind: 'automatic', status: 'complete', entry: null, detail: { version: { id: agreement, label: 'v1' } },
@@ -155,7 +163,7 @@ describe('checklist and go-live request (AC-38.1, AC-53.1, T-B1-09)', () => {
     })
     expect(created.statusCode).toBe(201)
     expect(created.json().data).toMatchObject({ market_id: market, state: 'pending', requested_by: { id: admin.id } })
-    expect(created.json().data.checklist.items).toHaveLength(10)
+    expect(created.json().data.checklist.items).toHaveLength(11)
     expect(blockedEntry.json().error.code).toBe('GO_LIVE_PENDING')
     expect(second.json().error.code).toBe('GO_LIVE_PENDING')
     expect(await auditActions(acme.id)).toEqual(expect.arrayContaining(['MARKET.CHECKLIST_RECORDED', 'MARKET.GO_LIVE_REQUESTED']))
@@ -250,7 +258,7 @@ describe('withdraw and reject', () => {
   test('only the requester withdraws (decided_by NULL); a rejected request leaves the market draft', async () => {
     const created = await call(app, {
       method: 'POST', url: '/v1/markets', as: admin, idempotencyKey: true,
-      body: { code: 'BE', currency: 'EUR', time_zone: 'Europe/Brussels', languages: ['nl', 'fr'], market_pack: 'fixture-empty-pack', reason: 'launch' },
+      body: { code: 'BE', currency: 'EUR', time_zone: 'Europe/Brussels', languages: ['de-BE', 'en'], market_pack: 'fixture-empty-pack', reason: 'launch' },
     })
     const be = created.json().data.id as string
     for (const item of ['licence_evidence', 'tax_configuration']) await entry(admin, item, { document_id: await evidenceDocument(acme.id, admin.id) }, be)
@@ -278,7 +286,7 @@ describe('SoD over the request snapshot (AC-TEN4-2, BR-SEC-06)', () => {
   test('a provider recorder counted by the request stays barred: no withdrawal while pending, still barred once it is gone', async () => {
     const created = await call(app, {
       method: 'POST', url: '/v1/markets', as: admin, idempotencyKey: true,
-      body: { code: 'NL', currency: 'EUR', time_zone: 'Europe/Amsterdam', languages: ['nl'], market_pack: 'fixture-empty-pack', reason: 'launch' },
+      body: { code: 'NL', currency: 'EUR', time_zone: 'Europe/Amsterdam', languages: ['en-NL'], market_pack: 'fixture-empty-pack', reason: 'launch' },
     })
     const nl = created.json().data.id as string
     for (const item of ['licence_evidence', 'tax_configuration']) await entry(admin, item, { document_id: await evidenceDocument(acme.id, admin.id) }, nl)

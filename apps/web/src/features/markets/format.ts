@@ -144,3 +144,8 @@ export function todayLocal(now: Date = new Date()): string {
   const pad = (value: number) => String(value).padStart(2, '0')
   return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`
 }
+
+/** portal_languages in words: which market languages distributors cannot read the portal in. */
+export function untranslatedText(untranslated: readonly string[]): string {
+  return untranslated.length === 0 ? 'Every market language has a distributor translation' : `No distributor translation for: ${untranslated.join(', ')}`
+}

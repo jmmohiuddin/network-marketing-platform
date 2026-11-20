@@ -111,13 +111,15 @@ export interface ModalProps {
   readonly footer?: ReactNode
   /** Selector of the element focused on close instead of the opener (the list heading when the action removes the row). */
   readonly returnFocusTo?: string
+  /** The close button's name in the page's language (portal catalogue). */
+  readonly closeLabel?: string
 }
 
 /**
  * Modal dialog (sc_02-modal l.53-262): scrim, 720/560/400 card, header with close, scrolling body, footer strip.
  * Never open a dialog from inside another dialog.
  */
-export function Modal({ open, onClose, title, size = 'md', icon, description, children, footer, returnFocusTo }: ModalProps) {
+export function Modal({ open, onClose, title, size = 'md', icon, description, children, footer, returnFocusTo, closeLabel = 'Close dialog' }: ModalProps) {
   const dialog = useModalDialog(open, onClose, returnFocusTo)
   const titleId = useId()
   if (!open) return null
@@ -143,7 +145,7 @@ export function Modal({ open, onClose, title, size = 'md', icon, description, ch
               {description !== undefined && <p className="font-body-sm text-body-sm text-secondary">{description}</p>}
             </div>
           </div>
-          <button type="button" className="p-1 rounded text-secondary hover:text-on-surface hover:bg-surface-container transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary" aria-label="Close dialog" title="Close dialog" onClick={onClose}>
+          <button type="button" className="p-1 rounded text-secondary hover:text-on-surface hover:bg-surface-container transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary" aria-label={closeLabel} title={closeLabel} onClick={onClose}>
             <Icon name="close" size={20} />
           </button>
         </div>

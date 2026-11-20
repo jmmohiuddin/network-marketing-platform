@@ -5,6 +5,7 @@ import { recordAudit } from '../../lib/audit.js'
 import { toCsv } from '../../lib/csv.js'
 import { ApiError, notFound } from '../../lib/errors.js'
 import { explainLine, marketDay, ruleName, traceFromJson } from './explanation.js'
+import type { Texts } from './messages.js'
 
 // FR-DIST-001 (D-B5-07): a statement is derived on read from one committed run and the session participant's
 // result_line and run_settlement rows; no statement table. Every query also names the participant (the self-scope
@@ -32,6 +33,9 @@ export interface Settlement {
 
 export interface LadderRank { readonly ladder: string; readonly rank: string | null }
 
+/** The run's tax line for the payee (D-BM-04): rule, rate applied and its basis; null without a withholding rule. */
+export interface StatementWithholding { readonly rule_id: string; readonly rate: string; readonly rate_basis: string }
+
 /** A line's origin as the distributor reads it (late order or refund by the sign of a late or clawback line). */
 export function originKind(originType: string | null, amountMinor: bigint): OriginKind {
   if (originType === null) return 'none'
@@ -47,6 +51,7 @@ const sum = (values: readonly bigint[]): bigint => values.reduce((a, b) => a + b
  */
 export function buildStatement(
   lines: readonly StatementLine[], settlement: Settlement | null, paidAs: ReadonlyMap<string, readonly LadderRank[]>,
+  withholding: StatementWithholding | null,
 ) {
   const positions = [...new Set(lines.map((l) => l.position_id))].map((positionId) => {
     const own = lines.filter((l) => l.position_id === positionId)
@@ -75,7 +80,7 @@ export function buildStatement(
     positions, person_total_minor: (gross + adjustment).toString(),
     summary: {
       gross_minor: gross.toString(), adjustment_minor: adjustment.toString(), clawback_minor: clawback.toString(),
-      withheld_minor: withheld.toString(), net_minor: net.toString(),
+      withheld_minor: withheld.toString(), withholding, net_minor: net.toString(),
     },
     invariant,
   }
@@ -174,10 +179,12 @@ export async function statementDetail(tx: Tx, participantId: string, runId: stri
      WHERE run_id = $1 AND payee_participant_id = $2`,
     [runId, participantId],
   )
+  const { rows: tax } = await tx.query<StatementWithholding>(
+    'SELECT rule_id, rate::text, rate_basis FROM tax_line WHERE run_id = $1 AND payee_participant_id = $2', [runId, participantId])
   const positionIds = [...new Set(lines.map((l) => l.position_id))]
   const { rows: states } = await tx.query<{ position_id: string; paid_as: LadderRank[] }>(
     'SELECT position_id, paid_as_rank AS paid_as FROM qualification_state WHERE run_id = $1 AND position_id = ANY ($2::uuid[])', [runId, positionIds])
-  const { invariant, ...body } = buildStatement(lines, settlement[0] ?? null, new Map(states.map((s) => [s.position_id, s.paid_as])))
+  const { invariant, ...body } = buildStatement(lines, settlement[0] ?? null, new Map(states.map((s) => [s.position_id, s.paid_as])), tax[0] ?? null)
   if (!invariant) {
     log.error({ runId, participantId, summary: body.summary }, 'statement invariant failed: net <> gross - withheld - clawback + adjustment')
     throw new ApiError(500, 'INVARIANT_FAILED', 'This statement does not add up; it has been reported.')
@@ -229,7 +236,7 @@ interface ExplainedLine {
  * GET /v1/me/statement-lines/:id/explanation (FR-DIST-002): the participant's line of a committed run, else 404. A kind
  * without a template is logged (explanation_template_missing); a trace that does not reach the amount is 500 TRACE_MISMATCH.
  */
-export async function lineExplanation(tx: Tx, participantId: string, lineId: string, log: FastifyBaseLogger) {
+export async function lineExplanation(tx: Tx, participantId: string, lineId: string, texts: Texts, log: FastifyBaseLogger) {
   const { rows } = await tx.query<ExplainedLine>(
     `SELECT l.id, l.run_id, l.rule_key, l.amount_minor::text, l.currency, l.origin_type, l.trace::text AS trace, p.starts_at,
             p.ends_at, m.minor_unit, m.time_zone,
@@ -250,7 +257,7 @@ export async function lineExplanation(tx: Tx, participantId: string, lineId: str
       kind: originKind(line.origin_type, BigInt(line.amount_minor)),
       original_period: original === null ? null : { id: original.id, starts_at: new Date(original.starts_at), ends_at: new Date(original.ends_at) },
     },
-  })
+  }, texts)
   if (body.template === 'generic') log.warn({ rule_key: line.rule_key, kind: trace.kind }, 'explanation_template_missing')
   if (!body.reconciles) {
     log.error({ lineId, runId: line.run_id }, 'stored trace does not reach the line amount')

@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { MARKETS_PATH, marketName, type Market } from '../../lib/markets'
 import { useResource } from '../../lib/use-resource'
 import { shortId } from '../admin/format'
 import { periodText } from '../periods/format'
@@ -73,9 +74,17 @@ export function PeriodLink({ id }: { readonly id: string }) {
   return <Link className={LINK} href={`/periods?calendar=${period.calendarId}`}>{period.label}</Link>
 }
 
+/** A market (a grievance whose complainant is not on record) by name; the short id while unread. */
+export function MarketLabel({ id }: { readonly id: string }) {
+  const markets = useResource<Market[]>(MARKETS_PATH)
+  const market = markets.data?.find((candidate) => candidate.id === id)
+  return <span>{market === undefined ? shortId(id) : marketName(market)}</span>
+}
+
 export function SubjectLink({ subjectType, id, withOwner }: { readonly subjectType: string; readonly id: string; readonly withOwner?: boolean }) {
   if (subjectType === 'position') return <PositionLink id={id} withOwner={withOwner} />
   if (subjectType === 'participant') return <ParticipantLink id={id} />
   if (subjectType === 'period') return <PeriodLink id={id} />
+  if (subjectType === 'market') return <MarketLabel id={id} />
   return <span className={MONO}>{shortId(id)}</span>
 }

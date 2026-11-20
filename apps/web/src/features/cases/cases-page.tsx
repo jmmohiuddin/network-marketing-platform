@@ -20,7 +20,8 @@ import { shortId } from '../admin/format'
 import { LoadFailure } from '../admin/page-states'
 import { tableError, usePagedList } from '../admin/resource'
 import { caseTypeLabel, openerText, readableTypes, reasonLabel, STATE_BADGES, STATE_LABELS, type CaseTypeInfo } from './format'
-import { useRefLabel } from './refs'
+import { GrievanceDialog } from './grievance'
+import { MarketLabel, useRefLabel } from './refs'
 import type { DisputePreview } from './b5-effects'
 import { referenceOf } from '../privacy/format'
 import type { CaseCounts, CaseRecord, CaseState, WriteOffPreview } from './types'
@@ -57,7 +58,7 @@ const sentenceCase = (text: string): string => text.charAt(0).toUpperCase() + te
 function SubjectCell({ row }: { readonly row: CaseRecord }) {
   const payee = row.type === 'write_off' ? (row.effect_preview as WriteOffPreview | null)?.payee : undefined
   const disputed = row.type === 'dispute' ? (row.effect_preview as DisputePreview | null)?.position : undefined
-  const named = payee !== undefined || disputed !== undefined || row.type === 'privacy'
+  const named = payee !== undefined || disputed !== undefined || row.type === 'privacy' || row.subject_type === 'market'
   const label = useRefLabel(named ? null : row.subject_type, named ? null : row.subject_id)
   if (row.type === 'privacy') {
     return <Link className="text-primary font-semibold hover:underline" href={`/privacy/${row.subject_id}`}>Privacy request {referenceOf(row.subject_id)}</Link>
@@ -65,7 +66,8 @@ function SubjectCell({ row }: { readonly row: CaseRecord }) {
   return (
     <div className="flex flex-col">
       <span className="font-data-mono-sm text-data-mono-sm">
-        {payee !== undefined ? `${payee.external_ref}${payee.display_name === null ? '' : ` · ${payee.display_name}`}` : disputed?.position_ref ?? label}
+        {row.subject_type === 'market' ? <MarketLabel id={row.subject_id} />
+          : payee !== undefined ? `${payee.external_ref}${payee.display_name === null ? '' : ` · ${payee.display_name}`}` : disputed?.position_ref ?? label}
       </span>
       <span className={SUBJECT_KIND}>{payee !== undefined ? 'Clawback receivable' : disputed !== undefined ? 'Disputed line' : sentenceCase(row.subject_type.replace(/_/g, ' '))}</span>
     </div>
@@ -126,6 +128,7 @@ export function CasesPage() {
   const subjectId = params.get('subject_id')
   const subjectLabel = useRefLabel(subjectType, subjectId)
   const [adjusting, setAdjusting] = useState(false)
+  const [recording, setRecording] = useState(false)
   if (readable.length === 0) return <NotAvailable />
 
   const update = (changes: Readonly<Record<string, string | null>>) => {
@@ -161,16 +164,21 @@ export function CasesPage() {
   }
   const canFile = !readOnly && can('case.genealogy.create')
   const canAdjust = !readOnly && can('case.adjustment.create')
+  const canRecord = !readOnly && can('case.grievance.create')
+  // The single primary of the header: filing a genealogy case, else a new adjustment, else recording a grievance.
+  const primary = canFile ? 'file' : canAdjust ? 'adjust' : canRecord ? 'record' : null
   const kpiCounts = counts.data === null ? null : counts.data.filter((row) => tab === ALL || row.type === tab)
   return (
     <>
       <PageHeader
         title="Cases"
-        summary="Genealogy changes, transfers, duplicate reviews, restatements, manual adjustments, write-offs, bank-detail changes, returned payments, commission disputes and privacy requests. Each case keeps its evidence and history and is decided by a second person."
+        summary="Genealogy changes, transfers, duplicate reviews, restatements, manual adjustments, write-offs, bank-detail changes, returned payments, commission disputes, privacy requests and grievances. Each case keeps its evidence and history and is decided by a second person."
         actions={(
           <>
             {can('case.duplicate.read') && <LinkButton href="/cases/duplicates" icon="group_remove">Duplicate investigation</LinkButton>}
-            {canAdjust && <Button variant={canFile ? 'secondary' : 'primary'} icon="exposure" data-testid={canFile ? undefined : 'primary-action'} onClick={() => setAdjusting(true)}>New adjustment</Button>}
+            {(can('case.grievance.read') || can('register.read')) && <LinkButton href="/cases/registers" icon="menu_book">Registers</LinkButton>}
+            {canRecord && <Button variant={primary === 'record' ? 'primary' : 'secondary'} icon="campaign" data-testid={primary === 'record' ? 'primary-action' : undefined} onClick={() => setRecording(true)}>Record grievance</Button>}
+            {canAdjust && <Button variant={primary === 'adjust' ? 'primary' : 'secondary'} icon="exposure" data-testid={primary === 'adjust' ? 'primary-action' : undefined} onClick={() => setAdjusting(true)}>New adjustment</Button>}
             {canFile && <LinkButton variant="primary" icon="add_circle" href="/cases/genealogy/new" data-testid="primary-action">File genealogy case</LinkButton>}
           </>
         )}
@@ -192,6 +200,7 @@ export function CasesPage() {
         </TabPanel>
       </div>
       {adjusting && <AdjustmentDialog onClose={() => setAdjusting(false)} />}
+      {recording && <GrievanceDialog onClose={() => setRecording(false)} />}
     </>
   )
 }

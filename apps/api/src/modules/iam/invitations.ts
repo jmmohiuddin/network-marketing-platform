@@ -1,13 +1,16 @@
 import { randomBytes } from 'node:crypto'
 import { withSystem, type Tx } from '@nmp/db'
 import { z } from 'zod'
+import type { FastifyBaseLogger } from 'fastify'
 import type { Config } from '../../config.js'
 import { auditInRealm, recordAudit } from '../../lib/audit.js'
 import { ApiError } from '../../lib/errors.js'
 import { defineTenantJob } from '../../lib/jobs.js'
+import { message, type Locale } from '../../lib/locale.js'
 import { sendMail, type Mail } from '../../lib/mailer.js'
 import { hashPassword } from '../../lib/passwords.js'
 import { hashToken } from '../../lib/session.js'
+import { marketDefaultLocale, PORTAL_MAIL_CATALOGUES } from './mail-locale.js'
 import { asUser } from './realm.js'
 
 const TOKEN_BYTES = 32
@@ -43,6 +46,8 @@ interface Invitee {
   realm: string
   inviter: string | null
   time_zone: string
+  /** The portal invitee's market languages (null for staff and vendor users). */
+  languages: string[] | null
 }
 
 /**
@@ -58,7 +63,9 @@ async function findInvitee(tx: Tx, userId: string, invitedBy: string): Promise<I
   const { rows } = await tx.query<Invitee>(
     `SELECT u.email, u.state, u.realm, t.legal_name AS tenant_name, t.slug AS tenant_slug,
             (SELECT coalesce(i.display_name, i.email) FROM user_account i WHERE i.id = $2) AS inviter,
-            coalesce((SELECT m.time_zone FROM market m WHERE m.tenant_id = t.id ORDER BY m.created_at, m.id LIMIT 1), 'UTC') AS time_zone
+            coalesce((SELECT m.time_zone FROM market m WHERE m.tenant_id = t.id ORDER BY m.created_at, m.id LIMIT 1), 'UTC') AS time_zone,
+            (SELECT m.languages FROM participant x JOIN market m ON m.tenant_id = x.tenant_id AND m.id = x.market_id
+             WHERE x.tenant_id = u.tenant_id AND x.id = u.participant_id) AS languages
      FROM user_account u JOIN tenant t ON t.id = u.tenant_id WHERE u.id = $1`,
     [userId, invitedBy],
   )
@@ -66,20 +73,25 @@ async function findInvitee(tx: Tx, userId: string, invitedBy: string): Promise<I
 }
 
 /** BUG-112: a readable time in the tenant's first market zone, named (a tenant without a market reads UTC). */
-const zonedTime = (at: Date, timeZone: string): string =>
-  `${new Intl.DateTimeFormat('en-US', { dateStyle: 'medium', timeStyle: 'short', timeZone }).format(at)} (${timeZone})`
+const zonedTime = (at: Date, timeZone: string, locale: Locale): string =>
+  `${new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'short', timeZone }).format(at)} (${timeZone})`
 
-function invitationMail(config: Config, invitee: Invitee, invitation: IssuedInvitation): Mail {
+/** D-BM-11: a portal invitee reads the market default language (no preference yet), staff and vendor users English. */
+function invitationMail(config: Config, invitee: Invitee, invitation: IssuedInvitation, log: FastifyBaseLogger): Mail {
+  const portal = invitee.realm === 'portal'
+  const locale = portal ? marketDefaultLocale(invitee.languages) : 'en'
+  const t = (key: string, params: Record<string, string> = {}) => message(PORTAL_MAIL_CATALOGUES, key, params, locale, 'en', log)
+  const tenant = invitee.tenant_name
   return {
     to: invitee.email,
-    subject: `Your account at ${invitee.tenant_name}`,
+    subject: t('invitation.subject', { tenant }),
     text: [
-      `${invitee.inviter ?? 'An administrator'} invited you to ${invitee.tenant_name}.`,
+      t('invitation.invited', { inviter: invitee.inviter ?? t('invitation.inviter_unknown'), tenant }),
       '',
-      `Choose your password with this link. It works once, until ${zonedTime(invitation.expires_at, invitee.time_zone)}:`,
-      invitationLink(config.webUrl, invitee.tenant_slug, invitation.token, invitee.realm === 'portal'),
+      t('invitation.link', { expires_at: zonedTime(invitation.expires_at, invitee.time_zone, locale) }),
+      invitationLink(config.webUrl, invitee.tenant_slug, invitation.token, portal),
       '',
-      'If you did not expect this invitation, ignore this email.',
+      t('invitation.ignore'),
     ].join('\n'),
   }
 }
@@ -101,7 +113,7 @@ export const sendInvitationJob = defineTenantJob({
       action: 'USER.INVITATION_SENT', objectType: 'user_account', objectId: payload.user_id,
       after: { invited_by: payload.invited_by, expires_at: invitation.expires_at },
     })
-    await sendMail(ctx.config.mailDir, invitationMail(ctx.config, invitee, invitation))
+    await sendMail(ctx.config.mailDir, invitationMail(ctx.config, invitee, invitation, ctx.log))
   },
 })
 

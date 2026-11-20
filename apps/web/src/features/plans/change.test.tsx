@@ -6,7 +6,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { ApiError } from '../../lib/api'
 import { apiError, json, ok } from '../../test/fetch'
 import { bodyOf, callsTo, fetchByRoute, headerOf, renderAs } from '../admin/test-support'
-import { ChangePage, changeSteps } from './change-page'
+import { ChangePage, changeSteps, requiredByText } from './change-page'
 import { filingErrors } from './filing-dialog'
 import { FINANCE, MARKET, OFFICER, plan, PLAN_ID, PLANNER, version } from './test-fixtures'
 import type { Governance, VersionView } from './types'
@@ -25,12 +25,12 @@ function governance(overrides: Partial<Governance> = {}): Governance {
       { key: 'goldens', ok: true, reason: null, details: null },
       { key: 'guardrails', ok: true, reason: null, details: { decisions: [] } },
       { key: 'transitions', ok: true, reason: null, details: { state_items: [] } },
-      { key: 'filing', ok: false, reason: 'A market requires a recorded filing status for this version.', details: { market_ids: [MARKET.id] } },
+      { key: 'filing', ok: false, reason: 'A market requires a recorded filing status for this version.', details: { market_ids: [MARKET.id], required: [{ market_id: MARKET.id, sources: ['setting', 'pack'], rule_id: 'fx-filing@2020-01-01', authority: 'Fixture authority' }] } },
       { key: 'notice', ok: true, reason: "Schedule on or after 2026-12-20 (30 days' notice).", details: null },
       { key: 'approvals', ok: false, reason: 'The version needs the compliance approval and the activation approval.', details: null },
     ],
     filings: [{ market: { id: MARKET.id, code: 'TM' }, required: true, current: null, history: [] }],
-    notice: { days: 30, earliest_effective_from: '2026-12-20T10:00:00.000Z', sent_at: null, recipients: null },
+    notice: { days: 30, earliest_effective_on: '2026-12-20', sent_at: null, recipients: null },
     approvals: { compliance: null, activation: null },
     first_run_id: null,
     ...overrides,
@@ -59,12 +59,22 @@ describe('SC-44 plan change workflow', () => {
     const scheduled = changeSteps(governance({
       version: { id: 'v', version: 1, state: 'scheduled', effective_from: '2026-12-31T23:00:00.000Z', notice_sent_at: '2026-11-20T10:00:00.000Z', notice_recipients: 12 },
       approvals: { compliance: { by: { id: OFFICER.user.id, display_name: 'Cleo Compliance' }, at: '2026-11-19T10:00:00.000Z' }, activation: null },
-      notice: { days: 30, earliest_effective_from: null, sent_at: '2026-11-20T10:00:00.000Z', recipients: 12 },
+      notice: { days: 30, earliest_effective_on: null, sent_at: '2026-11-20T10:00:00.000Z', recipients: 12 },
     }), 'Europe/Berlin')
     expect(scheduled.map((s) => s.status)).toEqual(['done', 'done', 'done', 'todo', 'done', 'done'])
     // BUG-124: Jan 1, 2027 00:00 Europe/Berlin is its own day, not the UTC day before.
     expect(scheduled[5]!.detail).toBe('From Jan 1, 2027')
     expect(scheduled[2]!.detail).toBe('Approved Nov 19, 2026')
+  })
+
+  it('names what requires a filing: the market pack with its authority, the tenant setting, or nothing', () => {
+    const required = [
+      { market_id: 'a', sources: ['pack'] as const, rule_id: 'r', authority: 'Fixture authority' },
+      { market_id: 'b', sources: ['setting'] as const, rule_id: null, authority: null },
+    ]
+    expect(requiredByText(required, 'a')).toBe('Market pack (Fixture authority)')
+    expect(requiredByText(required, 'b')).toBe('Tenant setting')
+    expect(requiredByText(required, 'c')).toBe('—')
   })
 
   it('checks what each filing status must carry', () => {
@@ -91,6 +101,10 @@ describe('SC-44 plan change workflow', () => {
     expect(within(checks).getByText('Missing: TM')).toBeTruthy()
     expect(screen.getByRole('list', { name: 'Plan change stages' })).toBeTruthy()
     expect(screen.getByText('30 days')).toBeTruthy()
+    // BUG-128: the earliest date is the plan-zone calendar date the API gives, shown as is.
+    expect(screen.getByText('2026-12-20')).toBeTruthy()
+    // D-BM-10: why TM needs a filing.
+    expect(screen.getByText('Tenant setting, Market pack (Fixture authority)')).toBeTruthy()
     expect(screen.getByRole('link', { name: 'Open the Transitions tab' }).getAttribute('href')).toBe('/plans/00000000-0000-4000-8000-0000000000a1/versions/1?tab=transitions')
     expect(screen.queryByRole('link', { name: 'Transition report' })).toBeNull()
     // Approve absent for an author is covered by GovernanceBar; the officer did not write it.

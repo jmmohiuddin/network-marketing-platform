@@ -46,4 +46,12 @@ describe('GET /v1/me navigation (PLAN B4 section 2.6)', () => {
     expect(await keys(['Commission analyst'])).not.toContain('overview')
     expect(await keys(['Support agent'])).not.toContain('migration')
   })
+
+  test('B-MKT: tax opens with tax.read (Finance approver, Compliance officer); grievance holders keep the Cases nav', async () => {
+    expect(await keys(['Finance approver'])).toContain('tax')
+    expect(await keys(['Compliance officer'])).toEqual(expect.arrayContaining(['tax', 'cases']))
+    expect(await keys(['Support agent'])).toContain('cases')
+    expect(await keys(['Support agent'])).not.toContain('tax')
+    expect(await keys(['Commission analyst'])).not.toContain('tax')
+  })
 })

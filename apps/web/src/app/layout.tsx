@@ -4,6 +4,9 @@ import type { ReactNode } from 'react'
 import 'material-symbols/outlined.css'
 import { ApiProvider } from '../components/api-provider'
 import { ToastProvider } from '../components/toast'
+import { stepUpWords } from '../features/portal/format'
+import { translator } from '../features/portal/i18n'
+import { documentLang } from '../features/portal/i18n/server'
 import '../styles/globals.css'
 import { inter, jetbrainsMono } from './fonts'
 
@@ -17,13 +20,16 @@ export const viewport: Viewport = { width: 'device-width', initialScale: 1, view
 
 // Rendered per request: Next adds the proxy's CSP nonce (proxy.ts) to its scripts only when it renders them.
 // Body classes live on each layout's outer element (staff, vendor and card layouts differ: guidelines §2.3).
+// lang: the portal's effective locale on the portal surface, else en (D-BM-11); the shared providers' words follow it.
 export default async function RootLayout({ children }: { readonly children: ReactNode }) {
   await connection()
+  const lang = await documentLang()
+  const t = translator(lang)
   return (
-    <html lang="en" className={`${inter.variable} ${jetbrainsMono.variable}`}>
+    <html lang={lang} className={`${inter.variable} ${jetbrainsMono.variable}`}>
       <body>
-        <ToastProvider>
-          <ApiProvider>{children}</ApiProvider>
+        <ToastProvider dismissLabel={t('common.dismiss')}>
+          <ApiProvider portalStepUpWords={stepUpWords(t)}>{children}</ApiProvider>
         </ToastProvider>
       </body>
     </html>

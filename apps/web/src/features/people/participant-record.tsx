@@ -16,7 +16,7 @@ import { tableError, usePagedList } from '../admin/resource'
 import { MONO, NOTE, ROW_ACTIONS } from '../admin/ui'
 import type { PositionView } from '../genealogy/types'
 import { ACCOUNT_TYPES, parentOrigin, participantBadge, participantName, positionBadge, rangeText, servicingSource } from './format'
-import { ServicerDialog, StatusDialog, statusChoices, TypeDialog, UnmaskDialog } from './record-dialogs'
+import { ContactEmailDialog, ServicerDialog, StatusDialog, statusChoices, TypeDialog, UnmaskDialog } from './record-dialogs'
 import { PARTICIPANTS_PATH, type ContactField, type OwnedPosition, type ParticipantDetail, type ServicedCustomer, type ServicingEntry } from './types'
 import { BalancesTab, BankingTab, HoldsTab, TaxTab } from './finance-tabs'
 import { Facts, RecordCard } from './ui'
@@ -47,14 +47,19 @@ export function currentType(detail: Pick<ParticipantDetail, 'types'>, now: numbe
 }
 
 type Dialog =
-  | { readonly kind: 'unmask' | 'type' | 'servicer' }
+  | { readonly kind: 'unmask' | 'type' | 'servicer' | 'contact' }
   | { readonly kind: 'status'; readonly position: OwnedPosition }
 
-function Overview({ detail, onUnmask }: { readonly detail: ParticipantDetail; readonly onUnmask?: () => void }) {
+function Overview({ detail, onUnmask, onRecordEmail }: { readonly detail: ParticipantDetail; readonly onUnmask?: () => void; readonly onRecordEmail?: () => void }) {
   const masked = detail.contact_masked
+  const action = onUnmask === undefined && onRecordEmail === undefined ? undefined : (
+    <div className="flex flex-wrap gap-space-xs">
+      {onRecordEmail !== undefined && <Button size="sm" icon="mail" onClick={onRecordEmail}>Record e-mail</Button>}
+      {onUnmask !== undefined && <Button size="sm" icon="visibility" onClick={onUnmask}>Show contact</Button>}
+    </div>
+  )
   return (
-    <RecordCard id="identity-title" testId="card" icon="fingerprint" title="Identity and contact (masked)"
-      action={onUnmask === undefined ? undefined : <Button size="sm" icon="visibility" onClick={onUnmask}>Show contact</Button>}>
+    <RecordCard id="identity-title" testId="card" icon="fingerprint" title="Identity and contact (masked)" action={action}>
       <Facts items={[
         { label: 'Name', value: detail.display_name ?? 'Not recorded' },
         { label: 'External reference', value: <span className={MONO}>{detail.external_ref}</span> },
@@ -268,8 +273,10 @@ export function ParticipantRecord({ participantId }: { readonly participantId: s
                   Erased on {formatDateTime(detail.pseudonymised_at)} at the member’s request. Name, contact and identity document are cleared; positions, results and ledger postings are kept without the name.
                 </Banner>
               )}
-              <Overview detail={detail} onUnmask={write('participant.unmask') && available.length > 0 && !erased ? () => setDialog({ kind: 'unmask' }) : undefined} />
-              <PortalAccess participantId={detail.id} erased={erased} />
+              <Overview detail={detail} onUnmask={write('participant.unmask') && available.length > 0 && !erased ? () => setDialog({ kind: 'unmask' }) : undefined}
+                onRecordEmail={write('participant.manage') && !available.includes('email') && !erased && detail.merged_into === null ? () => setDialog({ kind: 'contact' }) : undefined} />
+              {/* Remounted when an e-mail is recorded, so a refused invitation's message does not outlive its cause. */}
+              <PortalAccess key={detail.contact_masked?.email ?? 'no-email'} participantId={detail.id} erased={erased} />
             </div>
           )}
           {tab === 'positions' && <Positions detail={detail} choicesOf={choicesOf} onStatus={write('participant.manage') || write('participant.terminate') ? (position) => setDialog({ kind: 'status', position }) : undefined} />}
@@ -288,6 +295,7 @@ export function ParticipantRecord({ participantId }: { readonly participantId: s
       {dialog?.kind === 'status' && <StatusDialog position={dialog.position} choices={choicesOf(dialog.position)} onClose={close} onDone={changed} />}
       {dialog?.kind === 'type' && <TypeDialog participantId={detail.id} currentCode={type?.code ?? null} onClose={close} onDone={changed} />}
       {dialog?.kind === 'servicer' && <ServicerDialog customerId={detail.id} onClose={close} onDone={changed} />}
+      {dialog?.kind === 'contact' && <ContactEmailDialog participantId={detail.id} onClose={close} onDone={changed} />}
     </>
   )
 }

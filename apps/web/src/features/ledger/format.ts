@@ -25,6 +25,7 @@ export const EVENT_LABELS: Readonly<Record<string, string>> = {
   payout_returned: 'Payout returned',
   payout_failed: 'Payout failed',
   write_off: 'Write-off',
+  migration_opening: 'Migration opening balances',
 }
 
 export const eventLabel = (event: string): string => EVENT_LABELS[event] ?? event

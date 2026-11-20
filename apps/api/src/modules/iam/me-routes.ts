@@ -1,8 +1,12 @@
 import type { Tx } from '@nmp/db'
 import type { FastifyInstance, FastifyRequest } from 'fastify'
-import { currentAuth, marketScope, requireAuth, type AuthContext } from '../../lib/auth.js'
-import { inOwnRealm, runInVendor } from '../../lib/db.js'
-import { envelope } from '../../lib/http.js'
+import { z } from 'zod'
+import { recordAudit } from '../../lib/audit.js'
+import { currentAuth, marketScope, requireAuth, requirePortal, type AuthContext } from '../../lib/auth.js'
+import { inOwnRealm, inPortal, runInVendor } from '../../lib/db.js'
+import { ApiError } from '../../lib/errors.js'
+import { envelope, parse } from '../../lib/http.js'
+import { LOCALE_LABELS, portalLocale } from '../../lib/locale.js'
 import type { Permission } from '../../lib/permissions.js'
 import { getSupportSession } from '../support/index.js'
 
@@ -39,6 +43,8 @@ const TENANT_NAVIGATION: readonly (NavigationEntry & { readonly anyOf: readonly 
       'case.bank_detail.read', 'case.returned_payment.read', 'case.dispute.read',
       // The privacy case type's read permission (prv/privacy-case.ts).
       'privacy.manage',
+      // PLAN B-MKT section 1.9: grievances and the market-pack registers (/cases/registers).
+      'case.grievance.read', 'register.read',
     ],
   },
   { key: 'orders', path: '/orders', label: 'Orders', anyOf: ['order.read', 'product.manage'] },
@@ -47,6 +53,7 @@ const TENANT_NAVIGATION: readonly (NavigationEntry & { readonly anyOf: readonly 
   { key: 'plans', path: '/plans', label: 'Plans', anyOf: ['plan.read'] },
   { key: 'guardrails', path: '/compliance/guardrails', label: 'Guardrails', anyOf: ['guardrail.read'] },
   { key: 'ledger', path: '/ledger', label: 'Ledger and exports', anyOf: ['ledger.read'] },
+  { key: 'tax', path: '/tax', label: 'Tax', anyOf: ['tax.read'] },
   { key: 'payouts', path: '/payouts', label: 'Payouts', anyOf: ['payout.read'] },
   { key: 'reconciliation', path: '/payouts/reconciliation', label: 'Payout reconciliation', anyOf: ['payout.read'] },
   { key: 'privacy', path: '/privacy', label: 'Privacy requests', anyOf: ['privacy.manage'] },
@@ -74,9 +81,10 @@ function portalNavigation(profile: PortalProfile): NavigationEntry[] {
 
 /**
  * FR-IAM-007 portal shape of GET /v1/me (PLAN B5 2.1): the participant from the session only, no roles or permissions.
- * While MFA is pending only the user, tenant and MFA state are returned: the password alone reveals no member data.
+ * While MFA is pending only the user, tenant, MFA state and language are returned: the password alone reveals no member
+ * data. D-BM-11: the effective locale, the locales the market offers and its default.
  */
-async function portalMe(tx: Tx, auth: AuthContext) {
+async function portalMe(tx: Tx, request: FastifyRequest, auth: AuthContext) {
   const pending = mfaPending(auth)
   const { rows } = await tx.query<{ user: Profile['user']; tenant: unknown; participant: PortalProfile | null }>(
     `SELECT jsonb_build_object('id', u.id, 'email', u.email, 'display_name', u.display_name) AS "user",
@@ -92,8 +100,10 @@ async function portalMe(tx: Tx, auth: AuthContext) {
         participant, positions: participant.positions, can_sponsor: participant.can_sponsor, has_downline: participant.has_downline,
         terminated: participant.terminated,
       }
+  const { locale, offered, defaultLocale } = await portalLocale(tx, request)
   return {
     realm: 'portal' as const, user, tenant, ...profile, roles: [], permissions: [],
+    locale, locales: offered.map((code) => ({ code, label: LOCALE_LABELS[code] })), default_locale: defaultLocale,
     mfa: { required: false, enrolled: auth.mfaEnrolled, verified: auth.mfaVerified }, step_up_at: auth.stepUpAt,
     navigation: participant === null ? [] : portalNavigation(participant),
   }
@@ -113,6 +123,8 @@ export function navigationFor(auth: AuthContext): NavigationEntry[] {
     ({ key, path, label }) => ({ key, path, label }),
   )
 }
+
+const localeBody = z.strictObject({ locale: z.string().regex(/^[a-z]{2}$/, 'must be a two-letter language code') })
 
 const USER_SELECT = 'SELECT id, email, display_name FROM user_account WHERE id = $1'
 
@@ -151,7 +163,7 @@ async function loadSupportProfile(request: FastifyRequest, auth: AuthContext, se
 export function registerMeRoutes(app: FastifyInstance): void {
   app.get('/v1/me', { preHandler: [requireAuth()], config: { allowPendingMfa: true } }, async (request) => {
     const auth = currentAuth(request)
-    if (auth.realm === 'portal') return envelope(await inOwnRealm(request, (tx) => portalMe(tx, auth)))
+    if (auth.realm === 'portal') return envelope(await inOwnRealm(request, (tx) => portalMe(tx, request, auth)))
     const profile = auth.supportSessionId === null
       ? await inOwnRealm(request, (tx) => loadProfile(tx, auth))
       : await loadSupportProfile(request, auth, auth.supportSessionId)
@@ -164,5 +176,20 @@ export function registerMeRoutes(app: FastifyInstance): void {
       step_up_at: auth.stepUpAt,
       navigation: navigationFor(auth),
     })
+  })
+
+  // D-BM-11: the portal user's language, one of the locales the participant's market offers.
+  app.put('/v1/me/locale', { preHandler: [requirePortal()] }, async (request) => {
+    const { locale } = parse(localeBody, request.body)
+    const auth = currentAuth(request)
+    return envelope(await inPortal(request, async (tx) => {
+      const { offered } = await portalLocale(tx, request)
+      if (!(offered as readonly string[]).includes(locale)) {
+        throw new ApiError(422, 'LOCALE_NOT_OFFERED', 'This language is not offered in your market.', { offered })
+      }
+      await tx.query('UPDATE user_account SET locale = $1 WHERE id = $2', [locale, auth.userId])
+      await recordAudit(tx, { action: 'PORTAL_LOCALE.CHANGED', objectType: 'user_account', objectId: auth.userId, after: { user_id: auth.userId } })
+      return { locale }
+    }))
   })
 }

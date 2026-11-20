@@ -214,6 +214,63 @@ describe('ParticipantRecord (SC-09)', () => {
     expect(document.activeElement).toBe(within(dialog).getByLabelText('Contact details shown'))
   })
 
+  it('records a first contact e-mail with a reason and step-up when none is on record (BUG-133)', async () => {
+    const user = userEvent.setup()
+    let recorded = false
+    let attempts = 0
+    const fetchMock = recordRoutes(detail(), {
+      'GET /v1/participants/p1': () => ok(detail({ contact_masked: recorded ? { email: 'a•••@e•••.test' } : null })),
+      'POST /v1/participants/p1/contact-email': () => {
+        if (++attempts === 1) return apiError(403, 'STEP_UP_REQUIRED')
+        recorded = true
+        return ok({ contact_masked: { email: 'a•••@e•••.test' } })
+      },
+      'POST /v1/auth/sessions/current/step-up': () => ok({ assurance: 'aal2' }),
+    })
+    renderAs(SUPPORT, <ParticipantRecord participantId="p1" />, fetchMock)
+    await user.click(await screen.findByRole('button', { name: 'Record e-mail' }))
+    const dialog = screen.getByRole('dialog', { name: 'Record contact e-mail' })
+    await user.type(within(dialog).getByLabelText('Email address'), 'not-an-address')
+    await user.click(within(dialog).getByRole('button', { name: 'Record e-mail' }))
+    expect(within(dialog).getAllByText('Enter an email address like name@example.com.').length).toBeGreaterThan(0)
+    expect(within(dialog).getAllByText('Enter the reason.').length).toBeGreaterThan(0)
+    expect(callsTo(fetchMock, 'POST', '/v1/participants/p1/contact-email')).toHaveLength(0)
+    await user.clear(within(dialog).getByLabelText('Email address'))
+    await user.type(within(dialog).getByLabelText('Email address'), ' at-a@example.test ')
+    await user.type(within(dialog).getByLabelText('Reason'), 'Migrated member asked for portal access')
+    await user.click(within(dialog).getByRole('button', { name: 'Record e-mail' }))
+    await user.type(await screen.findByLabelText('Verification code'), '123456')
+    await user.click(screen.getByRole('button', { name: 'Confirm and continue' }))
+    expect(await screen.findByText('a•••@e•••.test')).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Record e-mail' })).toBeNull()
+    const [first, second] = callsTo(fetchMock, 'POST', '/v1/participants/p1/contact-email')
+    expect(bodyOf(second![1])).toEqual({ email: 'at-a@example.test', reason: 'Migrated member asked for portal access' })
+    expect(headerOf(second![1], 'Idempotency-Key')).toBe(headerOf(first![1], 'Idempotency-Key'))
+  })
+
+  it.each([
+    ['one is on record', SUPPORT, detail()],
+    ['the user lacks participant.manage', FINANCE, detail({ contact_masked: null })],
+    ['the personal data was erased', SUPPORT, detail({ contact_masked: null, pseudonymised_at: AT })],
+  ])('offers no Record e-mail when %s', async (_case, me, data) => {
+    renderAs(me, <ParticipantRecord participantId="p1" />, recordRoutes(data))
+    expect(await screen.findByRole('heading', { level: 1, name: 'Bea Builder' })).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Record e-mail' })).toBeNull()
+  })
+
+  it('shows the privacy-correction refusal when an e-mail was recorded meanwhile', async () => {
+    const user = userEvent.setup()
+    renderAs(SUPPORT, <ParticipantRecord participantId="p1" />, recordRoutes(detail({ contact_masked: null }), {
+      'POST /v1/participants/p1/contact-email': () => apiError(409, 'CONTACT_EMAIL_RECORDED', 'A change of the e-mail on record is a privacy correction.'),
+    }))
+    await user.click(await screen.findByRole('button', { name: 'Record e-mail' }))
+    const dialog = screen.getByRole('dialog', { name: 'Record contact e-mail' })
+    await user.type(within(dialog).getByLabelText('Email address'), 'at-a@example.test')
+    await user.type(within(dialog).getByLabelText('Reason'), 'Portal access')
+    await user.click(within(dialog).getByRole('button', { name: 'Record e-mail' }))
+    expect((await within(dialog).findByRole('alert')).textContent).toContain('A change of the e-mail on record is a privacy correction.')
+  })
+
   it('a support agent changes status but cannot terminate', async () => {
     navigation.search = 'tab=positions'
     const user = userEvent.setup()

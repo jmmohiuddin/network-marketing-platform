@@ -105,17 +105,24 @@ const adjustmentPass: PassFn<'adjustments'> = (ctx) => {
 // ---------- pass 10 ----------
 
 const nullFirst = (a: string | null, b: string | null): number => (a === b ? 0 : a === null ? -1 : b === null ? 1 : compareId(a, b))
+type LineKeyFields = Pick<RawLine, 'payeePositionId' | 'pass' | 'ruleKey' | 'origin'>
 /** RESULT_HASH line order: payee position id, pass, rule key, origin type, origin id. */
-function compareLines(a: ResultLine, b: ResultLine): number {
+function compareLines(a: LineKeyFields, b: LineKeyFields): number {
   return compareId(a.payeePositionId, b.payeePositionId) || a.pass - b.pass || compareId(a.ruleKey, b.ruleKey)
     || nullFirst(a.origin?.originType ?? null, b.origin?.originType ?? null) || nullFirst(a.origin?.originId ?? null, b.origin?.originId ?? null)
 }
 
+/**
+ * Pass 10: points to currency and the one rounding of each line (allocated amounts stay), zero lines dropped, the rest
+ * in RESULT_HASH order. The amounts and the order are settled here (every refusal happens in the pass); the ResultLine
+ * objects are made per chunk of OUTPUT_CHUNK_LINES as the caller drains them, and each raw line is released once made.
+ */
 const roundingPass: PassFn<'rounding'> = (ctx, done) => {
   const { plan, settings, snapshot } = ctx.input
+  // The pass's own list: entries are cleared as their chunk is made (the runner drops done.caps.lines after this pass).
+  const pending: (RawLine | undefined)[] = [...done.caps.lines, ...done.adjustments]
   let factor: bigint | null = null
-  const out: ResultLine[] = []
-  for (const l of [...done.caps.lines, ...done.adjustments]) {
+  const valued = (l: RawLine): { value: bigint; steps: TraceStep[]; amountMinor: bigint } => {
     let value = lineValue(l)
     const steps: TraceStep[] = [...l.trace.steps]
     if (l.unit === 'points') {
@@ -131,15 +138,34 @@ const roundingPass: PassFn<'rounding'> = (ctx, done) => {
       amountMinor = roundRaw(value, settings.roundingMode) // the one rounding of this line
       steps.push({ step: 'rounding', mode: settings.roundingMode, raw: value, minor: amountMinor })
     }
-    if (amountMinor === 0n) continue
-    const k = ctx.trees.sponsor.index.get(l.payeePositionId)
-    if (k === undefined) throw new EngineError('INVALID_INPUT', 'line payee is not a snapshot position', { positionId: l.payeePositionId })
-    out.push({
-      payeePositionId: l.payeePositionId, payeeParticipantId: ctx.ownerOf[k]!, ruleKey: l.ruleKey, kind: l.kind, sourceKind: l.sourceKind, pass: l.pass,
-      amountMinor: assertInt64(amountMinor, 'line amount'), currency: snapshot.market.currency, reversalPolicy: l.reversalPolicy, origin: l.origin, trace: { ...l.trace, steps },
-    })
+    return { value, steps, amountMinor }
   }
-  return out.sort(compareLines)
+  const kept: number[] = []
+  pending.forEach((l, i) => {
+    const { amountMinor } = valued(l!)
+    if (amountMinor === 0n) return
+    if (!ctx.trees.sponsor.index.has(l!.payeePositionId)) throw new EngineError('INVALID_INPUT', 'line payee is not a snapshot position', { positionId: l!.payeePositionId })
+    assertInt64(amountMinor, 'line amount')
+    kept.push(i)
+  })
+  // The index breaks ties, so the order equals the stable sort of the lines themselves.
+  const order = Int32Array.from(kept).sort((a, b) => compareLines(pending[a]!, pending[b]!) || a - b)
+  const resultLine = (i: number): ResultLine => {
+    const l = pending[i]!
+    pending[i] = undefined
+    const { steps, amountMinor } = valued(l)
+    return {
+      payeePositionId: l.payeePositionId, payeeParticipantId: ctx.ownerOf[ctx.trees.sponsor.index.get(l.payeePositionId)!]!, ruleKey: l.ruleKey, kind: l.kind,
+      sourceKind: l.sourceKind, pass: l.pass, amountMinor, currency: snapshot.market.currency, reversalPolicy: l.reversalPolicy, origin: l.origin,
+      trace: { ...l.trace, steps },
+    }
+  }
+  return {
+    count: order.length,
+    *chunks() {
+      for (let from = 0; from < order.length; from += OUTPUT_CHUNK_LINES) yield Array.from(order.subarray(from, from + OUTPUT_CHUNK_LINES), resultLine)
+    },
+  }
 }
 
 // ---------- passes 11-12, streamed (D-B6-12) ----------
@@ -275,7 +301,13 @@ function settle(ctx: RunContext, gross: Gross): Settlement {
     if (rule) {
       const rate = parseDecimal(rule.rate)
       if (rate > RATE_SCALE) throw new EngineError('INVALID_INPUT', 'withholding rate above 1', { participantId, ruleId: rule.ruleId })
-      withheld = roundRaw(mulRate(toRaw(taxable), rate), rule.rounding)
+      if (rule.rounding !== 'half_up' && rule.rounding !== 'half_even') throw new EngineError('INVALID_INPUT', 'unknown withholding rounding', { participantId, ruleId: rule.ruleId })
+      // priorMinor may be negative (this year's committed gross can be clawbacks only); prior + gross <= limit still holds.
+      if (rule.threshold !== undefined && rule.threshold.limitMinor < 0n) {
+        throw new EngineError('INVALID_INPUT', 'withholding threshold limit must be >= 0', { participantId, ruleId: rule.ruleId })
+      }
+      const below = rule.threshold !== undefined && rule.threshold.priorMinor + amount <= rule.threshold.limitMinor
+      withheld = below ? 0n : roundRaw(mulRate(toRaw(taxable), rate), rule.rounding)
       taxLines.push({ participantId, ruleId: rule.ruleId, taxableMinor: taxable, withheldMinor: withheld })
     } else {
       warnings.push({ code: 'NO_WITHHOLDING_RULE', message: 'no withholding instruction for this payee: nothing withheld, review required', ref: participantId })
@@ -307,20 +339,22 @@ function checkAllocations(lines: readonly RawLine[]): void {
   for (const [key, a] of allocations) invariant(a.sum === a.total, 'allocation parts do not sum to its total (FR-COMP-012)', { key })
 }
 
-/** Not earned: what the pass 4-6 lines would have paid minus what they pay after passes 7-8, plus pool parts without a holder. */
+/**
+ * Not earned: what the pass 4-6 lines would have paid minus what they pay after passes 7-8, plus pool parts without a
+ * holder. A line passes 7-8 changed carries their steps, and the first such step's beforeRaw is the pass 4-6 value
+ * (lineValue), so its amount before is roundRaw(beforeRaw); untouched lines remove nothing.
+ */
 function breakageMinor(ctx: RunContext, done: Done<'caps'>, capped: readonly RawLine[]): bigint {
   const mode = ctx.input.settings.roundingMode
-  const before = [...done.individual, ...done.matching, ...done.pools]
-  invariant(before.length === capped.length, 'passes 7-8 must keep every line in place')
-  const amount = (l: RawLine): bigint => l.allocatedMinor ?? roundRaw(l.raw, mode)
   let removed = unpaidPoolMinor(ctx, done)
-  capped.forEach((after, i) => {
-    if (after !== before[i]) removed += amount(before[i]!) - amount(after)
-  })
+  for (const after of capped) {
+    const first = after.trace.steps.find((s) => s.step === 'constraint' || s.step === 'cap')
+    if (first !== undefined && (first.step === 'constraint' || first.step === 'cap')) removed += roundRaw(first.beforeRaw, mode) - (after.allocatedMinor ?? roundRaw(after.raw, mode))
+  }
   return removed
 }
 
-/** Pass 8 plus what pass 12 needs from the pass 4-8 lines, so those lines can be released after pass 8 (S-1). */
+/** Pass 8 plus what pass 12 needs from its lines (allocation sums, breakage), so pass 7's lines can go after pass 8 (S-1). */
 const capsPass: PassFn<'caps'> = (ctx, done): CapOutput => {
   const out = capPass(ctx, done)
   checkAllocations(out.lines)
@@ -408,16 +442,16 @@ const INPUT_FIELDS = [
   'creditPositionId', 'creditedAtUs', 'currency', 'customerRollUp', 'den', 'effectiveFromUs', 'eligibleIf', 'endsAtUs', 'enrolledAtUs',
   'equals', 'eventId', 'excludeItemClasses', 'expiresAfterPeriods', 'expr', 'fact', 'facts', 'factor', 'first', 'firstMultiplier', 'from',
   'gracePeriods', 'graceUsed', 'history', 'incrementIf', 'includeSelf', 'itemClass', 'items', 'keepIf', 'key', 'kind', 'knownAtUs',
-  'ladder', 'ladders', 'leader', 'leg', 'level', 'levels', 'lineId', 'lines', 'maintenance', 'map', 'market', 'marketId', 'maxMinor',
+  'ladder', 'ladders', 'leader', 'leg', 'level', 'levels', 'limitMinor', 'lineId', 'lines', 'maintenance', 'map', 'market', 'marketId', 'maxMinor',
   'maxPerLegShare', 'maxShare', 'measure', 'measures', 'method', 'minPerCustomerMinor', 'minorDigits', 'n', 'name', 'num', 'of',
   'oneTimeFlags', 'onceKey', 'op', 'orderBy', 'orderEvents', 'orderId', 'orders', 'originId', 'originType', 'originalPeriodId',
   'ownerParticipantId', 'paidAs', 'parentPositionId', 'participantId', 'participantTypes', 'participants', 'parts', 'payeePositionId',
   'perOrderCapMinor', 'perUnitMinor', 'period', 'periodId', 'periods', 'periodsHeld', 'plan', 'planVersionId', 'pointsToCurrency',
-  'positionId', 'positions', 'priorState', 'productId', 'purpose', 'quantity', 'rank', 'ranks', 'rate', 'rates', 'reason', 'reasonCode',
+  'positionId', 'positions', 'priorMinor', 'priorState', 'productId', 'purpose', 'quantity', 'rank', 'ranks', 'rate', 'rates', 'reason', 'reasonCode',
   'receivables', 'recordedAtUs', 'reduce', 'refundMinor', 'relationships', 'requires', 'residue', 'restockingFeeAffectsVolume',
   'restockingFeeMinor', 'reversalPolicy', 'roundingMode', 'rounding', 'rule', 'ruleId', 'ruleKey', 'scope', 'second', 'secondShareAbove',
   'settings', 'settingsVersionId', 'share', 'shares', 'snapshot', 'snapshotId', 'source', 'sourceKind', 'startsAtUs', 'state', 'stateItem',
-  'status', 'statusFromUs', 'supersededAtUs', 'taxMinor', 'tiers', 'titles', 'to', 'transitions', 'tree', 'type', 'typeCode', 'unit',
+  'status', 'statusFromUs', 'supersededAtUs', 'taxMinor', 'threshold', 'tiers', 'titles', 'to', 'transitions', 'tree', 'type', 'typeCode', 'unit',
   'validFromUs', 'validToUs', 'value', 'valueMinor', 'version', 'volumes', 'window', 'withholding',
 ] as const satisfies readonly DeepKeys<RunInput>[]
 type DeepKeys<T> = T extends bigint | string | number | boolean | null ? never
@@ -462,7 +496,8 @@ const LINE = rowOf<OrderLine>()(['amountMinor', 'category', 'itemClass', 'lineId
 const ORDER = rowOf<Order>()(['buyerParticipantId', 'buyerTypeCode', 'creditPositionId', 'creditedAtUs', ['lines', LINE], 'orderId', 'purpose'])
 const EVENT = rowOf<OrderEvent>()(['atUs', 'eventId', 'lineId', 'orderId', 'quantity', 'refundMinor', 'restockingFeeMinor', 'type'])
 const RECEIVABLE = rowOf<Receivable>()(['amountMinor', 'participantId'])
-const WITHHOLDING = rowOf<WithholdingInstruction>()(['participantId', 'rate', 'rounding', 'ruleId'])
+const WITHHOLDING = rowOf<Omit<WithholdingInstruction, 'threshold'>>()(['participantId', 'rate', 'rounding', 'ruleId'])
+const THRESHOLD = rowOf<NonNullable<WithholdingInstruction['threshold']>>()(['limitMinor', 'priorMinor'])
 const ADJUSTMENT = rowOf<AdjustmentOrigin>()(['amountMinor', 'originId', 'originType', 'originalPeriodId', 'payeePositionId', 'reasonCode', 'ruleKey', 'sourceKind'])
 const SUMMARY = rowOf<PositionSummary>()([['measures', rowOf<MeasureValue>()(['measure', 'valueMinor'])], ['paidAs', LADDER_RANK], 'positionId'])
 const PERIOD = rowOf<PeriodSummary>()(['endsAtUs', 'periodId', ['positions', SUMMARY], 'startsAtUs'])
@@ -481,9 +516,16 @@ function tuple(item: object, row: Row): unknown[] {
   })
 }
 
+/** The optional threshold is written only when present, so instructions without one hash as before D-BM-05. */
+function withholdingTuple(item: WithholdingInstruction): unknown[] {
+  const base = tuple(item, WITHHOLDING)
+  return item.threshold === undefined ? base : [...base, tuple(item.threshold, THRESHOLD)]
+}
+
 /** Row arrays carry no meaning in their order (duplicates are refused where a key is looked up): hash them sorted. */
 function sortedRows(items: readonly object[], row: Row): string[] {
-  return items.map((item) => JSON.stringify(tuple(item, row))).sort(compareId)
+  const of = row === WITHHOLDING ? (item: object) => withholdingTuple(item as WithholdingInstruction) : (item: object) => tuple(item, row)
+  return items.map((item) => JSON.stringify(of(item))).sort(compareId)
 }
 
 /**
@@ -541,12 +583,12 @@ function* drained<T>(chunks: T[][]): Generator<T[], void, undefined> {
   while (chunks.length > 0) yield chunks.shift()!
 }
 
-/** Passes 0-10; the final lines come back as chunks only, so nothing holds the whole line array once this returns. */
+/** Passes 0-10; the final lines come back as chunks made on demand (pass 10), so nothing holds the whole line array. */
 function calculated(input: RunInput, options: RunOptions) {
   const hash = inputsHash(input) // first: it also refuses missing fields and number-typed *Minor / *Us values
   const ctx = buildContext(input, options)
   const { rounding, ...done } = runPipeline(ctx, PASSES, 'rounding')
-  return { hash, ctx, done, lineChunks: chunksOf(rounding) }
+  return { hash, ctx, done, lineChunks: rounding.chunks() }
 }
 
 /**
@@ -559,7 +601,7 @@ export function* runIncremental(input: RunInput, options: RunOptions = { fullTra
   const { hash, ctx, done, lineChunks } = calculated(input, options)
   const tally = lineTally(ctx, done)
   const h = recordHash()
-  for (const lines of drained(lineChunks)) {
+  for (const lines of lineChunks) {
     for (const l of lines) {
       tally.add(l)
       h.record(lineRecord(l))

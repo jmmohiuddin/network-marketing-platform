@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import '../../test/dom'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
-import type { ReactElement } from 'react'
+import type { ReactNode } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 import { apiError, ok } from '../../test/fetch'
 import { callsTo, fetchByRoute } from '../admin/test-support'
@@ -11,7 +11,8 @@ import { PortalHome } from './home'
 import { RankPage } from './rank'
 import { StatementPage } from './statement'
 import { TeamPage } from './team'
-import { CHILD, CUSTOMER, page, portalMe, POSITION, renderPortal, RUN, statement, SUMMARY } from './test-support'
+import { CATALOGUES } from './i18n'
+import { CHILD, CUSTOMER, page, portalMe, POSITION, renderPortal, renderServer, RUN, serverRoutes, statement, SUMMARY } from './test-support'
 import type { RankStatus, TeamView } from './types'
 
 const nav = vi.hoisted(() => ({ push: vi.fn(), params: new URLSearchParams() }))
@@ -19,7 +20,9 @@ vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: nav.push, replace: vi.fn() }),
   usePathname: () => '/portal/team',
   useSearchParams: () => nav.params,
+  redirect: (path: string) => { throw new Error(`redirect ${path}`) },
 }))
+vi.mock('next/headers', async () => ({ headers: async () => (await import('./test-support')).requestHeaders.current }))
 
 const PERIOD = { id: 'per-3', starts_at: '2026-08-01T00:00:00.000Z', ends_at: '2026-09-01T00:00:00.000Z' }
 const OPEN_PERIOD = { id: 'per-4', starts_at: '2026-09-01T00:00:00.000Z', ends_at: '2026-10-01T00:00:00.000Z' }
@@ -54,10 +57,10 @@ const CUSTOMERS = [
   { customer_id: '40000000-0000-4000-8000-000000000002', display_name: 'Lee Customer', serviced_by_position_ref: 'DE-C-1', since: '2026-03-01T00:00:00.000Z', until: null, last_order_at: null, order_count: 0, repeat: false },
 ]
 
-describe('SC-19 rank', () => {
+describe('SC-19 rank (server-rendered)', () => {
   it('shows paid-as, requirements as met / not met / —, a "Not final" row and the plan change notice', async () => {
-    renderPortal(<RankPage />, fetchByRoute({ 'GET /v1/me/rank': () => ok(RANK) }))
-    expect(await screen.findByText('What Silver requires')).toBeTruthy()
+    await renderServer(() => RankPage({ query: {} }), serverRoutes({ 'GET /v1/me/rank': () => ok(RANK) }))
+    expect(screen.getByText('What Silver requires')).toBeTruthy()
     expect(screen.getAllByText('Silver').length).toBeGreaterThan(0)
     expect(screen.getByText('Met')).toBeTruthy()
     expect(screen.getByText('Not met')).toBeTruthy()
@@ -67,21 +70,33 @@ describe('SC-19 rank', () => {
     expect(screen.getByText('Plan change scheduled')).toBeTruthy()
   })
 
-  it('switches between owned positions and refuses a closed account', async () => {
+  it('switches between owned positions with links, reads the asked one and ignores a foreign id', async () => {
     const me = portalMe()
     const positions = [...me.participant!.positions, { id: CHILD, position_ref: 'DE-A-2', status: 'active', market_code: 'DE' }]
-    const fetchMock = fetchByRoute({ 'GET /v1/me/rank': () => ok(RANK) })
-    renderPortal(<RankPage />, fetchMock, { ...me, participant: { ...me.participant!, positions } })
-    fireEvent.change(await screen.findByLabelText('Position'), { target: { value: CHILD } })
-    await waitFor(() => expect(callsTo(fetchMock, 'GET', '/v1/me/rank').some(([url]) => url.includes(`position_id=${CHILD}`))).toBe(true))
+    const fetchMock = serverRoutes({ 'GET /v1/me/rank': () => ok(RANK) }, { ...me, participant: { ...me.participant!, positions } })
+    await renderServer(() => RankPage({ query: { position_id: CHILD } }), fetchMock)
+    expect(screen.getByRole('link', { name: 'DE-A-2' }).getAttribute('aria-current')).toBe('page')
+    expect(screen.getByRole('link', { name: 'DE-A-1' }).getAttribute('href')).toBe(`/portal/rank?position_id=${POSITION}`)
+    const rankUrls = () => fetchMock.mock.calls.map(([url]) => String(url)).filter((url) => url.includes('/v1/me/rank'))
+    expect(rankUrls().at(-1)).toContain(`position_id=${CHILD}`)
+    await renderServer(() => RankPage({ query: { position_id: 'not-mine' } }), fetchMock)
+    expect(rankUrls().at(-1)).toContain(`position_id=${POSITION}`)
   })
 
-  it('shows the closed-account notice without asking the API', () => {
+  it('shows the closed-account notice without asking for the rank', async () => {
     const me = portalMe()
-    const fetchMock = fetchByRoute({})
-    renderPortal(<RankPage />, fetchMock, { ...me, participant: { ...me.participant!, terminated: true } })
+    const fetchMock = serverRoutes({}, { ...me, participant: { ...me.participant!, terminated: true } })
+    await renderServer(() => RankPage({ query: {} }), fetchMock)
     expect(screen.getByText('Your account is closed')).toBeTruthy()
-    expect(fetchMock).not.toHaveBeenCalled()
+    expect(fetchMock.mock.calls.some(([url]) => String(url).includes('/v1/me/rank'))).toBe(false)
+  })
+
+  it('reads in German, with the requirement measure in German words', async () => {
+    await renderServer(() => RankPage({ query: {} }), serverRoutes({ 'GET /v1/me/rank': () => ok(RANK) }, portalMe({ locale: 'de' })))
+    expect(screen.getByText('Voraussetzungen für Silver')).toBeTruthy()
+    expect(screen.getByText('Persönliches Volumen at least 200.00')).toBeTruthy()
+    expect(screen.getByText('Gemessen 460,00 · erforderlich 200,00')).toBeTruthy()
+    expect(screen.getByText('Nicht endgültig')).toBeTruthy()
   })
 })
 
@@ -140,11 +155,13 @@ describe('SC-21 customers', () => {
   })
 })
 
-// TS-53 (UI): no projection, target, streak, leaderboard or wallet words on SC-37, SC-18, SC-19, SC-20, SC-21.
+// TS-53 (UI): no projection, target, streak, leaderboard or wallet words on SC-37, SC-18, SC-19, SC-20, SC-21, and none in
+// any catalogue (German list of PLAN B-MKT §5).
 const REFUSED = /project|potential|could earn|estimate|target|streak|leaderboard|rank(ed)? among|wallet/i
+const REFUSED_DE = /Prognose|potenziell|könnte verdienen|Ziel|Rangliste|Bestenliste|Wallet|Guthaben halten/i
 
 describe('TS-53 refused words on distributor screens', () => {
-  const routes = fetchByRoute({
+  const routes = {
     'GET /v1/me/statements': () => page([SUMMARY]),
     [`GET /v1/me/statements/${RUN}`]: () => ok(statement()),
     'GET /v1/me/bank-details': () => ok({ current: null, pending_review: null, history: [], owed: [] }),
@@ -153,19 +170,28 @@ describe('TS-53 refused words on distributor screens', () => {
     'GET /v1/me/rank': () => ok(RANK),
     'GET /v1/me/team': () => page(TEAM),
     'GET /v1/me/customers': () => page(CUSTOMERS),
-  })
-  const screens: readonly [string, () => ReactElement, string][] = [
-    ['SC-37', () => <PortalHome />, 'Open statement'],
-    ['SC-18 list', () => <EarningsPage />, 'Net 23.00 EUR'],
-    ['SC-18 detail', () => <StatementPage runId={RUN} />, 'How the net amount adds up'],
-    ['SC-19', () => <RankPage />, 'What Silver requires'],
-    ['SC-20', () => <TeamPage />, 'Ben Example'],
-    ['SC-21', () => <CustomersPage />, 'Kim Customer'],
+  }
+  const servers: readonly [string, () => Promise<ReactNode>][] = [
+    ['SC-37', () => PortalHome()],
+    ['SC-18 list', () => EarningsPage({ query: {} })],
+    ['SC-18 detail', () => StatementPage({ runId: RUN })],
+    ['SC-19', () => RankPage({ query: {} })],
   ]
-  it.each(screens)('%s', async (_name, ui, ready) => {
+  it.each(servers)('%s', async (_name, page) => {
+    const container = await renderServer(page, serverRoutes(routes))
+    expect(container.textContent).not.toBe('')
+    expect(container.textContent).not.toMatch(REFUSED)
+  })
+
+  it.each([['SC-20', <TeamPage key="team" />, 'Ben Example'], ['SC-21', <CustomersPage key="customers" />, 'Kim Customer']] as const)('%s', async (_name, ui, ready) => {
     nav.params = new URLSearchParams()
-    const { container } = renderPortal(ui(), routes)
+    const { container } = renderPortal(ui, fetchByRoute(routes))
     await screen.findAllByText(ready)
     expect(container.textContent ?? '').not.toMatch(REFUSED)
+  })
+
+  it('no catalogue entry uses a refused word in English or German', () => {
+    expect(Object.values(CATALOGUES.en).filter((text) => REFUSED.test(text))).toEqual([])
+    expect(Object.values(CATALOGUES.de).filter((text) => REFUSED.test(text) || REFUSED_DE.test(text))).toEqual([])
   })
 })

@@ -12,7 +12,7 @@ import { consumeLate, LATE_ITEMS_OF_CALENDAR, restatementOrigins } from './late.
 import { loadPeriod, lockRunKey, periodInScope, settingsVersionAt } from './period.js'
 import { assertRunnable } from './preflight.js'
 import { outputsOf, totalsOf, writeRunOutput } from './results.js'
-import { buildSnapshot, chainInputs, planFor, rowCounts, SnapshotCorrupt, storeSnapshot } from './snapshot.js'
+import { buildSnapshot, chainInputs, planFor, rowCounts, SnapshotCorrupt, storeSnapshot, type StoredInstruction } from './snapshot.js'
 
 // D-B3-09: a run request inserts a queued run under the period's run lock; the worker loads and stores the snapshot
 // (tx A), calculates, then writes lines, state and the flip in one transaction (tx B, §S-2). Transient database errors
@@ -144,8 +144,8 @@ export async function prepareRun(tx: Tx, runId: string): Promise<RunInput | null
   return { plan, settings, snapshot: loaded.snapshot }
 }
 
-/** The engine's output stream (D-B6-12): every chunk is written and dropped in tx B. */
-export type RunStream = Generator<RunChunk, RunSummary, undefined>
+/** The engine's output stream (D-B6-12): every chunk is written and dropped in tx B; the instructions give tax lines their basis. */
+export type RunStream = Generator<RunChunk, RunSummary, undefined> & { readonly withholding: readonly StoredInstruction[] }
 
 /**
  * Runs the engine's passes up to the final lines now (the first chunk), so tx B only writes; the stream resumes from there.
@@ -153,11 +153,13 @@ export type RunStream = Generator<RunChunk, RunSummary, undefined>
 export function startedRun(input: RunInput): RunStream {
   const stream = runIncremental(input)
   const first = stream.next()
-  return (function* resumed(): RunStream {
+  const resumed = (function* resumed(): Generator<RunChunk, RunSummary, undefined> {
     if (first.done === true) return first.value
     yield first.value
     return yield* stream
   })()
+  // Snapshots written by buildSnapshot carry StoredInstruction rows (snapshot.ts).
+  return Object.assign(resumed, { withholding: input.snapshot.withholding as readonly StoredInstruction[] })
 }
 
 /**
@@ -168,7 +170,7 @@ export async function finishRun(tx: Tx, runId: string, stream: RunStream): Promi
   const row = await lockedRun(tx, runId)
   if (row.state !== 'running') return
   const period = await loadPeriod(tx, row.period_id)
-  const { summary, linesHash, lineCount } = await writeRunOutput(tx, runId, period.market_id, stream)
+  const { summary, linesHash, lineCount } = await writeRunOutput(tx, runId, period, stream, stream.withholding)
   // Restatement items not yet covered: a restatement submitted after the item's decision counted its order or event
   // (the sandbox refuses undecided items), so once approved or applied the item needs no reviewer attention.
   const { rows: skipped } = await tx.query<{ id: string }>(

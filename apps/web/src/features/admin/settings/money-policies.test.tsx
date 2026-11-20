@@ -227,10 +227,33 @@ describe('versions', () => {
   })
 })
 
+describe('plan notice period (BUG-134)', () => {
+  it('clears the notice period: PUT {value: null} with If-Match, no days asked', async () => {
+    const user = userEvent.setup()
+    const fetchMock = routes([], {
+      'GET /v1/settings': settings({ 'plan.activation_notice_days': 30 }),
+      'PUT /v1/settings/plan.activation_notice_days': () => json(200, { data: { version: 8 }, meta: { latest_version: 8 } }),
+    })
+    renderAs(ADMIN, <SettingsPage />, fetchMock)
+    await user.click(await screen.findByRole('button', { name: 'Change plan notice period' }))
+    const dialog = screen.getByRole('dialog', { name: 'Save new version with effective date' })
+    expect(within(dialog).getByLabelText('Days of notice')).toBeTruthy()
+    await user.click(within(dialog).getByLabelText('Clear (no notice period)'))
+    expect(within(dialog).queryByLabelText('Days of notice')).toBeNull()
+    await user.type(within(dialog).getByLabelText('Reason for the change'), 'No notice needed')
+    await user.click(within(dialog).getByRole('button', { name: 'Save new version' }))
+    expect(await screen.findByText('Plan notice period saved as version 8.')).toBeTruthy()
+    const [, put] = callsTo(fetchMock, 'PUT', '/v1/settings/plan.activation_notice_days')[0]!
+    expect(bodyOf(put)).toEqual({ value: null, reason: 'No notice needed' })
+    expect(headerOf(put, 'If-Match')).toBe('"7"')
+  })
+})
+
 describe('helpers', () => {
   it('builds policy values and needs a date for money keys only', () => {
     expect(policyValue('money.clawback_policy', { value: 'restatement' })).toEqual({ value: { default: 'restatement' }, errors: {} })
     expect(policyValue('plan.activation_notice_days', { value: '400' }).errors.value).toContain('0 to 365')
+    expect(policyValue('plan.activation_notice_days', { clear: 'true', value: '400' })).toEqual({ value: null, errors: {} })
     expect(effectiveError('money.rounding_mode', '').error).toBe('Enter the date and time the change takes effect.')
     expect(effectiveError('plan.activation_notice_days', '')).toEqual({ iso: null, error: null })
     const now = Date.parse('2026-11-17T12:00:00.000Z')

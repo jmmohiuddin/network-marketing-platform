@@ -539,7 +539,10 @@ describe('privacy (D-B5-16..19)', () => {
       'SELECT * FROM prv_personal_data_map() ORDER BY 1, 2')
     const exported = await value<Record<string, unknown>>('SELECT prv_personal_data($1)', [seed.participantId])
 
-    expect(map.map(({ table_name, column_name }) => ({ table_name, column_name }))).toEqual(keys)
+    // Beyond the keys, the jsonb columns listing participants (PLAN B-MKT section 1.3).
+    const lists = map.filter((row) => row.table_name === 'tax_form_generation' && row.column_name === 'held')
+    expect(lists).toEqual([expect.objectContaining({ section: null, reason: expect.any(String) })])
+    expect(map.filter((row) => !lists.includes(row)).map(({ table_name, column_name }) => ({ table_name, column_name }))).toEqual(keys)
     expect(map.filter((row) => (row.section === null) === (row.reason === null))).toEqual([])
     expect(Object.keys(exported).sort()).toEqual([...new Set(map.flatMap((row) => row.section ?? []))].sort())
     expect(exported).toMatchObject({
@@ -602,10 +605,12 @@ describe('privacy (D-B5-16..19)', () => {
     const access = await approvedRequest('access', subject.participantId, 'sealed-requester')
     await owner('INSERT INTO privacy_export (tenant_id, request_id, content) VALUES ($1, $2, $3)', [tenant.id, access.id, randomBytes(8)])
     const request = await approvedRequest('erasure', subject.participantId, 'kept', { retention_basis: 'Ledger: 10 years' })
+    await owner(`UPDATE user_account SET locale = 'de' WHERE id = $1`, [subject.userId])
 
     const result = await value<{ cleared: string[]; retained: string[] }>('SELECT prv_erase_participant($1)', [request.id])
 
-    expect(result.cleared).toContain('participant.contact')
+    expect(result.cleared).toEqual(expect.arrayContaining(['participant.contact', 'user_account.locale']))
+    expect(await owner('SELECT locale FROM user_account WHERE id = $1', [subject.userId])).toEqual([{ locale: null }])
     expect(await owner('SELECT display_name, contact, pseudonymised_at IS NOT NULL AS done FROM participant WHERE id = $1', [subject.participantId]))
       .toEqual([{ display_name: null, contact: null, done: true }])
     expect(await owner('SELECT email, idp_subject, state FROM user_account WHERE id = $1', [subject.userId])).toEqual([

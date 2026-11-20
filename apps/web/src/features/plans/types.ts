@@ -271,6 +271,14 @@ export interface PeriodItem {
 export type FilingStatus = 'filed' | 'acknowledged' | 'not_required'
 export type GovernanceKey = 'simulation' | 'goldens' | 'guardrails' | 'transitions' | 'filing' | 'notice' | 'approvals'
 
+/** D-BM-10: why a market needs a filing (filing item details.required): the tenant setting, its market pack, or both. */
+export interface RequiredFiling {
+  readonly market_id: string
+  readonly sources: readonly ('setting' | 'pack')[]
+  readonly rule_id: string | null
+  readonly authority: string | null
+}
+
 /** A plan_version_filing row (insert-only; the newest per market is the status). */
 export interface Filing {
   readonly id: string
@@ -307,7 +315,13 @@ export interface Governance {
     readonly current: Filing | null
     readonly history: readonly Filing[]
   }[]
-  readonly notice: { readonly days: number | null; readonly earliest_effective_from: string | null; readonly sent_at: string | null; readonly recipients: number | null }
+  /** earliest_effective_on: the earliest start as a calendar date in the plan's first calendar zone (BUG-128). */
+  readonly notice: {
+    readonly days: number | null
+    readonly earliest_effective_on: string | null
+    readonly sent_at: string | null
+    readonly recipients: number | null
+  }
   readonly approvals: { readonly compliance: ApprovalRecord | null; readonly activation: ApprovalRecord | null }
   readonly first_run_id: string | null
 }

@@ -96,3 +96,7 @@ _Agent: backend. Read before every task; update after every task. Keep concise โ
 - D-B6-12 runIncremental + COMP adoption; bench 1M/2M at 4096 and 7168 (SPIKE ยง8, results/s1-bench.json B6); S-2 100k e2e 55 s.
 - D-B6-04 period close routes (comp/close.ts), PAY 409 PERIOD_CLOSED; D-B6-10 chain start; D-B6-11 parallel_run calc + MIGRATION_NOT_SIGNED_OFF; D-B6-08 ledger entries sort + CSV export; TS-28 erasure-replay; BUG-112/119/120.
 - Verified: engine + comp + led + pay 561/561, api typecheck clean for owned files.
+
+## B-MKT BE3 registers-locale (2026-11-20)
+- D-BM-08/09 grievance case type, registers + exports, escalation cron; D-BM-11 IAM/DIST locale (me/locale, portal mails, DIST de templates + tax_form.available); tests registers.test.ts (10), locale.test.ts (8), templates.test.ts (8).
+- B-MKT BE3 review fixes (2026-11-20): market-subject grievance evidence refused (CAS hook), no grievances on draft markets, delisted cursor = participant_id, delisted export counts first; regression tests in cpl/registers.test.ts + cas/cases.test.ts.

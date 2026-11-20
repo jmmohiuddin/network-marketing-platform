@@ -182,6 +182,56 @@ describe('pass 9 adjustments and pass 11 settlement', () => {
   })
 })
 
+describe('T-BM-02 pass 11 cumulative threshold (D-BM-05): TS-38 gross 1,234.56 at 2 %', () => {
+  const c = byName('ts38')
+  const instruction = c.input.snapshot.withholding[0]!
+  const withThreshold = (limitMinor: bigint, priorMinor: bigint): RunInput =>
+    ({ ...c.input, snapshot: { ...c.input.snapshot, withholding: [{ ...instruction, threshold: { limitMinor, priorMinor } }] } })
+  const settled = (input: RunInput) => {
+    const o = run(input)
+    return { payee: o.payees[0]!, tax: o.taxLines, warnings: o.warnings.filter((w) => w.code === 'NO_WITHHOLDING_RULE') }
+  }
+
+  test.each([
+    ['at the threshold: prior + gross = limit withholds 0', 100_000n + 123_456n, 0n],
+    ['below the threshold withholds 0', 300_000n, 0n],
+    ['above the threshold: prior + gross = limit + 0.01 withholds the whole run at 2 % (no catch-up)', 100_000n + 123_455n, 2_469n],
+  ])('%s', (_name, limitMinor, withheld) => {
+    const { payee, tax, warnings } = settled(withThreshold(limitMinor, 100_000n))
+    expect(payee).toMatchObject({ grossMinor: 123_456n, taxableMinor: 123_456n, withheldMinor: withheld, netPayableMinor: 123_456n - withheld })
+    // A tax line is emitted also when nothing is withheld; never a NO_WITHHOLDING_RULE warning.
+    expect(tax).toEqual([{ participantId: 'P1', ruleId: 'fixture-wh-0.02', taxableMinor: 123_456n, withheldMinor: withheld }])
+    expect(warnings).toEqual([])
+  })
+
+  test.each([
+    ['a negative prior (clawbacks only so far) below the limit withholds 0', 123_456n - 1_000n, 0n],
+    ['a negative prior above the limit withholds the whole run', 123_456n - 1_001n, 2_469n],
+  ])('%s', (_name, limitMinor, withheld) => {
+    const { payee, tax } = settled(withThreshold(limitMinor, -1_000n))
+    expect(payee).toMatchObject({ grossMinor: 123_456n, withheldMinor: withheld, netPayableMinor: 123_456n - withheld })
+    expect(tax).toEqual([{ participantId: 'P1', ruleId: 'fixture-wh-0.02', taxableMinor: 123_456n, withheldMinor: withheld }])
+  })
+
+  test('without a threshold the instruction hashes and settles exactly as before; a threshold is part of the inputs hash', () => {
+    const plain = run(c.input)
+    expect(plain.payees[0]!.withheldMinor).toBe(2_469n)
+    const above = run(withThreshold(0n, 0n))
+    expect(above.payees[0]!.withheldMinor).toBe(2_469n)
+    expect(above.inputsHash).not.toBe(plain.inputsHash)
+    expect(above.resultHash).toBe(plain.resultHash) // same lines, tax lines and state
+    expect(inputsHash(withThreshold(0n, 1n))).not.toBe(above.inputsHash)
+  })
+
+  test('a threshold amount that is not bigint is refused', () => {
+    const bad = { ...c.input, snapshot: { ...c.input.snapshot, withholding: [{ ...instruction, threshold: { limitMinor: 1, priorMinor: 0n } }] } }
+    expect(() => run(bad as unknown as RunInput)).toThrow('INVALID_INPUT')
+    expect(() => run(withThreshold(-1n, 0n))).toThrow('INVALID_INPUT')
+    const none = { ...c.input, snapshot: { ...c.input.snapshot, withholding: [{ ...instruction, rounding: 'none' }] } }
+    expect(() => run(none as unknown as RunInput)).toThrow('INVALID_INPUT')
+  })
+})
+
 describe('inputs hash and replay (FR-COMP-008, TS-03)', () => {
   const c = byName('g-e2e-01')
   const committed = run(c.input)

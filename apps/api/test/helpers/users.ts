@@ -133,6 +133,23 @@ export async function ownerRows<T extends Record<string, unknown>>(sql: string, 
   return rows
 }
 
+/** Owner statement with triggers (and so foreign-key checks) off; CHECK constraints still apply. */
+export async function ownerReplica<T extends Record<string, unknown>>(sql: string, params: unknown[] = []): Promise<T[]> {
+  const client = await getOwnerPool().connect()
+  try {
+    await client.query('BEGIN')
+    await client.query('SET LOCAL session_replication_role = replica')
+    const { rows } = await client.query<T>(sql, params)
+    await client.query('COMMIT')
+    return rows
+  } catch (error) {
+    await client.query('ROLLBACK')
+    throw error
+  } finally {
+    client.release()
+  }
+}
+
 /** Audit actions recorded for a tenant, oldest first. */
 export async function auditActions(tenantId: string): Promise<string[]> {
   const rows = await ownerRows<{ action: string }>('SELECT action FROM audit.audit_event WHERE tenant_id = $1 ORDER BY seq', [tenantId])

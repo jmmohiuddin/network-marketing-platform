@@ -40,6 +40,23 @@ describe('InvitationForm', () => {
     expect((await screen.findByRole('link', { name: 'Go to sign-in' })).getAttribute('href')).toBe('/signin?tenant=acme-eu')
   })
 
+  it('speaks German to an invited distributor in a German locale, with errors by code (D-BM-11)', async () => {
+    const user = userEvent.setup()
+    window.history.replaceState(null, '', '/invitation?realm=portal&tenant=acme#token=tok_123')
+    renderWithProviders(<InvitationForm locale="de" />, fetchReturning(apiError(429, 'RATE_LIMITED', 'API words')))
+    expect(await screen.findByRole('heading', { name: 'Passwort wählen' })).toBeTruthy()
+    expect(screen.getByText(/Ihrem Vertriebspartner-Portal/)).toBeTruthy()
+    await user.type(screen.getByLabelText('Neues Passwort'), 'short')
+    await user.click(screen.getByRole('button', { name: 'Passwort festlegen' }))
+    expect(screen.getAllByText('Verwenden Sie mindestens 12 Zeichen.').length).toBeGreaterThan(0)
+    await user.clear(screen.getByLabelText('Neues Passwort'))
+    await user.type(screen.getByLabelText('Neues Passwort'), PASSWORD)
+    await user.type(screen.getByLabelText('Passwort wiederholen'), PASSWORD)
+    await user.click(screen.getByRole('button', { name: 'Passwort festlegen' }))
+    expect(await screen.findByText('Zu viele Versuche. Warten Sie einige Minuten und versuchen Sie es erneut.')).toBeTruthy()
+    expect(screen.queryByText('API words')).toBeNull()
+  })
+
   it('sends an invited vendor user to the vendor sign-in (BUG-011)', async () => {
     const user = userEvent.setup()
     window.history.replaceState(null, '', '/invitation?realm=vendor#token=tok_123')

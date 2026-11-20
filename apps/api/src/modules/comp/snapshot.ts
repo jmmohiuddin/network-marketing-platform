@@ -4,7 +4,7 @@ import type { Tx } from '@nmp/db'
 import {
   parseEngineJson, stringifyEngineJson, type AdjustmentOrigin, type Order, type OrderEvent, type OrderEventType,
   type PeriodSummary, type PlanVersion, type Position, type PriorState, type QualificationStateRow, type Receivable, type Relationship,
-  type Snapshot,
+  type RoundingMode, type Snapshot, type WithholdingInstruction,
 } from '@nmp/engine'
 import { ApiError } from '../../lib/errors.js'
 import { previousPeriod, us, type PeriodRow } from './period.js'
@@ -297,6 +297,56 @@ async function participants(tx: Tx, period: PeriodRow, ids: readonly string[]): 
   return rows.map((row) => ({ participantId: row.id, typeCode: row.type_code, enrolledAtUs: BigInt(row.enrolled_us), facts: [] }))
 }
 
+export type RateBasis = 'rate' | 'missing_id_rate' | 'below_threshold' | 'no_duty'
+
+/**
+ * D-BM-04: an engine withholding instruction plus the rate basis SQL chose, which tax_line records. It travels inside
+ * the snapshot (run_snapshot.content), so a retried or replayed run writes the same tax lines; the engine reads and
+ * hashes only the WithholdingInstruction fields.
+ */
+export type StoredInstruction = WithholdingInstruction & { readonly rateBasis: RateBasis }
+
+interface InstructionRow {
+  participant_id: string
+  rule_id: string
+  rate: string
+  rounding: string
+  threshold_minor: string | null
+  prior_minor: string | null
+  rate_basis: RateBasis
+}
+
+/**
+ * The withholding instructions of the period (SQL tax_withholding_instructions, D-BM-03): the rate as a decimal string,
+ * a threshold only for the current-year cumulative basis. A pack data error (SQLSTATE TX001) is 422 TAX_RULES_INVALID
+ * with the function's DETAIL {code, rule_ids?, participant_ids?}.
+ */
+export async function withholdingInstructions(tx: Tx, periodId: string): Promise<StoredInstruction[]> {
+  let rows: InstructionRow[]
+  try {
+    ({ rows } = await tx.query<InstructionRow>(
+      `SELECT participant_id, rule_id, rate::text, rounding, threshold_minor::text, prior_minor::text, rate_basis
+       FROM tax_withholding_instructions($1) ORDER BY participant_id`,
+      [periodId],
+    ))
+  } catch (error) {
+    if (typeof error === 'object' && error !== null && 'code' in error && error.code === 'TX001' && 'detail' in error && typeof error.detail === 'string') {
+      const detail = JSON.parse(error.detail) as Record<string, unknown>
+      throw new ApiError(422, 'TAX_RULES_INVALID', "The market pack's withholding rules cannot be applied to this period.", detail)
+    }
+    throw error
+  }
+  return rows.map((row) => ({
+    participantId: row.participant_id,
+    ruleId: row.rule_id,
+    rate: row.rate,
+    // A no-duty rule may store rounding 'none'; its rate is 0, which rounds to 0 under either engine mode.
+    rounding: row.rate_basis === 'no_duty' ? 'half_up' : (row.rounding as RoundingMode),
+    ...(row.threshold_minor === null ? {} : { threshold: { limitMinor: BigInt(row.threshold_minor), priorMinor: BigInt(row.prior_minor ?? '0') } }),
+    rateBasis: row.rate_basis,
+  }))
+}
+
 /**
  * §0.1: the engine Snapshot of `period` as this transaction sees it, known at its now(). Under READ COMMITTED each
  * statement sees newer commits than the one before, so every row is read before the rows it references (orders and
@@ -338,7 +388,7 @@ export async function buildSnapshot(
     priorState: input.chain.priorState,
     adjustments: input.adjustments,
     receivables: input.receivables ?? [],
-    withholding: [], // B4 (the engine warns NO_WITHHOLDING_RULE)
+    withholding: await withholdingInstructions(tx, period.id),
   }
   return { snapshot, orderIds, eventIds: [...new Set(events.map((event) => event.id))] }
 }

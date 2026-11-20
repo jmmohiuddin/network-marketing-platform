@@ -2,6 +2,7 @@
 
 import { useState, type ReactNode } from 'react'
 import { PasswordStepUpModal, StepUpModal } from '../../components/step-up-modal'
+import { stepUpWords } from './format'
 import { usePortal } from './shell'
 
 // D-B5-04 re-authentication before a sensitive change (bank details, tax profile, erasure): the account password
@@ -16,7 +17,7 @@ export interface Reauth {
 }
 
 export function useReauth(): Reauth {
-  const { me } = usePortal()
+  const { me, words: { t } } = usePortal()
   const [resolve, setResolve] = useState<((done: boolean) => void) | null>(null)
   function finish(done: boolean) {
     resolve?.(done)
@@ -24,6 +25,7 @@ export function useReauth(): Reauth {
   }
   const confirm = () => new Promise<boolean>((settle) => setResolve(() => settle))
   const open = resolve !== null
-  const dialog = me.mfa.enrolled ? <StepUpModal open={open} onDone={finish} /> : <PasswordStepUpModal open={open} onDone={finish} />
+  const words = stepUpWords(t)
+  const dialog = me.mfa.enrolled ? <StepUpModal open={open} onDone={finish} words={words} /> : <PasswordStepUpModal open={open} onDone={finish} words={words} />
   return { confirm, dialog }
 }

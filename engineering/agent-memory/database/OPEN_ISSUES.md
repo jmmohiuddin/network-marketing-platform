@@ -79,3 +79,10 @@ _Agent: database. Read before every task; update after every task. Keep concise 
 - Opening an adjustment/dispute case still takes no lock against a concurrent erasure (blocker check race); erasure holds participant FOR UPDATE + ledger locks only.
 - pay_payee_blockers still returns hold.reason text to a portal caller: COMP must map to codes (D-B5-07).
 - nmp_dev / nmp_e2e / nmp_test not migrated to 0506.
+
+## From B-MKT schema (2026-11-20)
+- BE1: instructions for rate-NULL (no_duty) rules carry rounding 'none' (engine RoundingMode): map to rate 0 without rounding.
+- BE3: CAS test-support and several tests use 'grievance' as the generic case-type slot; the real grievance type (received_at payload) must not break them.
+- Web integrator: label for ERASURE_CLEARED 'user_account.locale' (features/privacy/format.ts); market references nouns for tax_form_generations / tax_forms.
+- lib/locale message() has a trailing log parameter (PLAN 1.9 signature had none).
+- nmp_dev / nmp_e2e / nmp_test not migrated to 0703 (only nmp_test_2); nmp_e2e needs reset + seed:e2e (TK-B6-15).

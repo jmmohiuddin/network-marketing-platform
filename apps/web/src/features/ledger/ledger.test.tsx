@@ -6,7 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { apiError, json, ok } from '../../test/fetch'
 import { adminMe, bodyOf, callsTo, fetchByRoute, headerOf, renderAs } from '../admin/test-support'
 import { periodText } from '../periods/format'
-import { ACCOUNT_LABELS, accountLabel, decimalToMinor } from './format'
+import { ACCOUNT_LABELS, accountLabel, decimalToMinor, eventLabel } from './format'
 import { LedgerPage } from './ledger-page'
 import type { FinanceDashboard } from '../overview/types'
 import type { GlMapping, JournalEntry, LedgerSummary, Receivable } from './types'
@@ -96,6 +96,13 @@ describe('account types (BUG-126)', () => {
   it('names migration_clearing in words and offers it as a filter', () => {
     expect(accountLabel('migration_clearing')).toBe('Migration clearing')
     expect(Object.keys(ACCOUNT_LABELS)).toHaveLength(11)
+  })
+
+  it('names every journal event type in words, the migration opening entry included (BUG-140)', () => {
+    expect(eventLabel('migration_opening')).toBe('Migration opening balances')
+    for (const event of ['run_committed', 'payout_instructed', 'payout_settled', 'payout_returned', 'payout_failed', 'write_off', 'migration_opening']) {
+      expect(eventLabel(event)).not.toBe(event)
+    }
   })
 })
 

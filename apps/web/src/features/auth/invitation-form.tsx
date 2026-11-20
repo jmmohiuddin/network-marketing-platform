@@ -10,14 +10,15 @@ import { isApiError } from '../../lib/api'
 import { leavePage } from '../../lib/leave-page'
 import { errorMessage, fieldErrors } from '../../lib/messages'
 import { PORTAL_SIGN_IN_PATH, tenantSignInPath, tenantSlug, VENDOR_SIGN_IN_PATH, type Realm } from '../../lib/navigation'
-import { PASSWORD_MIN_LENGTH, passwordError } from '../../lib/validation'
+import { PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH } from '../../lib/validation'
+import { errorText } from '../portal/format'
+import { translator, type Locale, type Translate } from '../portal/i18n'
 import { AuthHeader } from './auth-card'
 import { portalQuery } from './portal-sign-in'
 
 const PASSWORD_ID = 'invitation-password'
 const CONFIRM_ID = 'invitation-confirm'
 const TOKEN_MAX_LENGTH = 128
-const INVITED_TO = { tenant: 'your company’s staff application', vendor: 'the vendor operations console', portal: 'your distributor portal' } as const
 
 /** The one-time token from the URL fragment (#token=...), which browsers never send to a server. */
 export function tokenFromHash(hash: string): string | null {
@@ -25,11 +26,11 @@ export function tokenFromHash(hash: string): string | null {
   return token !== null && token.length > 0 && token.length <= TOKEN_MAX_LENGTH ? token : null
 }
 
-function Outcome({ title, children, signIn }: { readonly title: string; readonly children: string; readonly signIn?: string }) {
+function Outcome({ title, children, signIn, t }: { readonly title: string; readonly children: string; readonly signIn?: string; readonly t: Translate }) {
   return (
     <>
-      <AuthHeader eyebrow="Invitation" icon={signIn === undefined ? 'link_off' : 'how_to_reg'} title={title}>{children}</AuthHeader>
-      {signIn !== undefined && <LinkButton href={signIn} variant="primary" size="lg" icon="login" className="w-full" data-testid="primary-action">Go to sign-in</LinkButton>}
+      <AuthHeader eyebrow={t('invitation.eyebrow')} icon={signIn === undefined ? 'link_off' : 'how_to_reg'} title={title}>{children}</AuthHeader>
+      {signIn !== undefined && <LinkButton href={signIn} variant="primary" size="lg" icon="login" className="w-full" data-testid="primary-action">{t('invitation.go_to_sign_in')}</LinkButton>}
     </>
   )
 }
@@ -38,17 +39,24 @@ function signInPath(realm: Realm, tenant: string | null): string {
   return { tenant: tenantSignInPath(tenant), vendor: VENDOR_SIGN_IN_PATH, portal: `${PORTAL_SIGN_IN_PATH}${portalQuery(tenant, null, 'password')}` }[realm]
 }
 
-function confirmError(password: string, confirm: string): string | null {
-  return confirm === password ? null : 'Enter the same password in both fields.'
+function passwordProblem(password: string, t: Translate): string | null {
+  if (password.length < PASSWORD_MIN_LENGTH) return t('invitation.password_short', { count: PASSWORD_MIN_LENGTH })
+  return password.length > PASSWORD_MAX_LENGTH ? t('invitation.password_long', { count: PASSWORD_MAX_LENGTH }) : null
+}
+
+function confirmError(password: string, confirm: string, t: Translate): string | null {
+  return confirm === password ? null : t('invitation.confirm_mismatch')
 }
 
 /**
  * ${WEB_URL}/invitation?tenant=<slug>#token=...: the invitee chooses a password (FR-IAM-003 invite), then signs in
  * with the company already filled in from ?tenant=. A vendor user's link carries ?realm=vendor instead (BUG-011) and
- * leads to the vendor sign-in; a distributor's carries ?realm=portal (D-B5-03) and leads to the portal sign-in.
+ * leads to the vendor sign-in; a distributor's carries ?realm=portal (D-B5-03) and leads to the portal sign-in, in the
+ * negotiated `locale` (D-BM-11; staff and vendor invitations stay English, the default).
  */
-export function InvitationForm() {
+export function InvitationForm({ locale = 'en' }: { readonly locale?: Locale }) {
   const api = useApi()
+  const t = translator(locale)
   // undefined: not read yet (server render); null: the link has no token.
   const [token, setToken] = useState<string | null | undefined>(undefined)
   const [password, setPassword] = useState('')
@@ -74,7 +82,7 @@ export function InvitationForm() {
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    const found = { password: passwordError(password), confirm: confirmError(password, confirm) }
+    const found = { password: passwordProblem(password, t), confirm: confirmError(password, confirm, t) }
     setErrors(found)
     const items = [
       ...(found.password === null ? [] : [{ fieldId: PASSWORD_ID, message: found.password }]),
@@ -97,47 +105,45 @@ export function InvitationForm() {
         return
       }
       const serverMessage = fieldErrors(error).password
-      setSummary([serverMessage === undefined ? { message: errorMessage(error) } : { fieldId: PASSWORD_ID, message: serverMessage }])
+      // The portal words errors by code (D-BM-11); staff read the API's own sentence.
+      if (realm === 'portal') setSummary([{ message: errorText(error, t) }])
+      else setSummary([serverMessage === undefined ? { message: errorMessage(error) } : { fieldId: PASSWORD_ID, message: serverMessage }])
       setBusy(false)
     }
   }
 
-  if (token === undefined) return <LoadingState label="Reading your invitation" />
-  if (token === null) {
-    return <Outcome title="This invitation link is not complete">Open the link from your invitation email again. If it still does not work, ask your administrator for a new invitation.</Outcome>
-  }
-  if (outcome === 'done') return <Outcome title="Your password is set" signIn={signInPath(realm, tenant)}>Sign in with your email address and the new password.</Outcome>
-  if (outcome === 'invalid') {
-    return <Outcome title="This invitation link does not work">It was already used, has expired or was replaced by a newer invitation. Ask your administrator for a new one.</Outcome>
-  }
+  if (token === undefined) return <LoadingState label={t('invitation.loading')} />
+  if (token === null) return <Outcome t={t} title={t('invitation.incomplete')}>{t('invitation.incomplete_text')}</Outcome>
+  if (outcome === 'done') return <Outcome t={t} title={t('invitation.done')} signIn={signInPath(realm, tenant)}>{t('invitation.done_text')}</Outcome>
+  if (outcome === 'invalid') return <Outcome t={t} title={t('invitation.invalid')}>{t('invitation.invalid_text')}</Outcome>
   return (
     <>
-      <AuthHeader eyebrow="Invitation" icon="key" title="Choose your password">
-        You were invited to sign in to {INVITED_TO[realm]}. Choose a password to activate your account.
+      <AuthHeader eyebrow={t('invitation.eyebrow')} icon="key" title={t('invitation.title')}>
+        {t('invitation.intro', { place: t(`invitation.to.${realm}`) })}
       </AuthHeader>
       <form className="flex flex-col gap-space-md" onSubmit={submit} noValidate>
-        <ErrorSummary items={summary} />
+        <ErrorSummary items={summary} title={t('auth.problem')} />
         <TextInput
           id={PASSWORD_ID}
-          label="New password"
+          label={t('invitation.password')}
           type="password"
           autoComplete="new-password"
-          helper={`At least ${PASSWORD_MIN_LENGTH} characters. A longer phrase is easier to remember and harder to guess.`}
+          helper={t('invitation.password_helper', { count: PASSWORD_MIN_LENGTH })}
           value={password}
           error={errors.password}
           onChange={(event) => setPassword(event.target.value)}
-          onBlur={() => password !== '' && setErrors((current) => ({ ...current, password: passwordError(password) }))}
+          onBlur={() => password !== '' && setErrors((current) => ({ ...current, password: passwordProblem(password, t) }))}
         />
         <TextInput
           id={CONFIRM_ID}
-          label="Repeat the password"
+          label={t('invitation.confirm')}
           type="password"
           autoComplete="new-password"
           value={confirm}
           error={errors.confirm}
           onChange={(event) => setConfirm(event.target.value)}
         />
-        <Button type="submit" variant="primary" size="lg" icon="check" loading={busy} className="w-full" data-testid="primary-action">Set password</Button>
+        <Button type="submit" variant="primary" size="lg" icon="check" loading={busy} className="w-full" data-testid="primary-action">{t('invitation.submit')}</Button>
       </form>
     </>
   )

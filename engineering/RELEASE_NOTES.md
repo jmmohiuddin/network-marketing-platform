@@ -2,6 +2,41 @@
 
 ## Unreleased
 
+### Increment B-MKT — market packs: registers, withholding per market, year-end tax statements, German portal (2026-11-20)
+Sandbox only: no real provider is called, no money moves and nothing is filed with a tax authority. Tax and register rules come only from released market packs; the platform ships no rates or thresholds. The India pack is not released (it waits for founder and counsel confirmation).
+
+**Withholding per market (SC-12, SC-02)**
+- A market pack can define a withholding rule: a rate, an optional threshold per tax year (cumulative this year or the payer's total last year), a higher rate when no tax id is on file, and the rounding. A rule without a rate means no withholding duty.
+- Each run applies the rule in force at the period end for each payee. The withheld amount is a separate line, posted to the withholding liability at commit, and shown on the distributor's statement with its rate and reason. Commit is refused if the tax rules or profiles changed after the run was calculated.
+- New Tax page (`/tax`): the market's withholding rules, tax year and tax-id format in words, withholding lines per run, payees without a tax id. Finance sees the run's withheld total on the run review.
+- Tax ids are checked against the market's format ("This is not a valid FX tax id.").
+
+**Year-end tax statements**
+- After the tax year is closed in the ledger, Finance generates one statement per payee (step-up). Payees without a tax id are held until one is recorded; totals must equal the ledger, and a change creates a new version (older versions stay downloadable).
+- Distributors find their statements under More › Tax statements (CSV) and get a notification. Finance can export a filing file with the full tax ids (step-up, recorded in the audit log); the platform does not file it.
+
+**Registers (SC-06)**
+- Grievances are a case type: received date, channel, category and reference; acknowledgement and resolution deadlines come from the market pack, overdue cases are flagged and an hourly job escalates them once per deadline. Resolve as upheld or not upheld; a related staff member cannot decide.
+- New Registers page (`/cases/registers`): the grievance register and the delisted-seller register (participants whose positions are all terminated), each with an audited CSV export without names.
+- Plan filing duties can now come from the market pack as well as from the tenant setting.
+
+**Distributor portal in German**
+- Distributors choose English or German under More › Language (markets offer the languages they list). Pages, amounts, dates, explanations, rank texts and e-mails follow the choice; without a choice the browser language is used.
+- Home, earnings, statement and rank pages are rendered on the server and readable without JavaScript.
+
+**Staff**
+- Staff can record a contact e-mail for a participant who has none (SC-09), so the participant can be invited to the portal; the person who recorded it cannot send the invitation.
+
+**Fixed**
+- B6 carry-over: the plan-change notice date in the plan's time zone (BUG-128); the notice-days setting can be cleared (BUG-129).
+- B-MKT browser findings BUG-130, BUG-133..138, BUG-140 (grievances on markets in implementation, contact e-mail path, German bank-detail mail, German not-found page, tax wording, German labels, journal event label).
+
+**Known limits**
+- The statement page transfers about 180 KB on a slow connection, above the 150 KB target (BUG-132); content shows in under half a second.
+- Analysts do not yet see the withheld total on the run review (BUG-131). The grievance register CSV prints the internal case state (BUG-139). One German tax e-mail still uses the word "Bescheinigung" (BUG-142).
+- Market size: a run of 2 million positions still does not fit in memory; the engine now handles 1 million positions in a 4 GB heap and 1.5 million in 7 GB.
+- Payments made before the first committed run do not count toward a withholding threshold.
+
 ### Increment B6 — plan-change governance, full data export, dashboards, saved views, history import, parallel runs, period close (2026-11-20)
 Sandbox only: no real provider is called and no money moves. Exports stay in the platform (no upload to external storage). English only.
 

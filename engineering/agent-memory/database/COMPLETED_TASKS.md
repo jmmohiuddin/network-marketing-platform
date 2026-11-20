@@ -50,3 +50,8 @@ _Agent: database. Read before every task; update after every task. Keep concise 
 ## B5 review fixes (2026-11-19)
 - 0506_b5_review_fixes.sql: HIGH self bank version (cooling-off, review, shared threshold), MEDIUM system-opened cases, self scope on 8 more tables, case_event/assignee guards; LOW open_run blocker + wider ledger lock, deactivated portal account frozen, owner allow-list, fingerprint lock, session/notice erasure.
 - Tests: b5-guards +7 tests/assertions, migrations.test pins. nmp_test_2: packages + apps/api 3243/3244 (gen positions E-GEN-10 flaked once in the full run, green alone and with gen+par); typecheck clean.
+
+## B-MKT schema (2026-11-20)
+- Migrations 0700-0703; packages/db test/bmkt-guards.test.ts (T-BM-01/10/20/22/24/25/34, TK-B6-18), test/fixtures/in-2026-0.ts (IN rows, test only), seed rows for tax_line/tax_form_generation/tax_form + seed pack rows, list pins (migrations, isolation), b5 erasure clears locale.
+- apps/api: permissions (+test), lib/locale.ts (+test T-BM-30), me-routes (+test), support exclusions (+test), ERASURE_CLEARED, export-model, seed.ts (+test).
+- Verified on nmp_test_2: packages/db 17 files / 341 tests; apps/api 123 files / 3654 tests (3 pins fixed after the full run: permission sort order, 0606 test now pins names only, mfa /v1/me list + tax nav; affected files re-run green); typecheck (api + web) clean.

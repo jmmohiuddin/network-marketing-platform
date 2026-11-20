@@ -149,6 +149,22 @@ describe('GET/PATCH /v1/markets/:id', () => {
   })
 })
 
+describe('BUG-130: a draft market with a grievance keeps its pack', () => {
+  test('pack change refused 409 MARKET_REFERENCED {grievances}; zone still changes', async () => {
+    const pt = (await create(admin, { ...NEW_FR, code: 'PT', time_zone: 'Europe/Lisbon', languages: ['pt'] })).json().data.id as string
+    await ownerRows(
+      `INSERT INTO case_file (tenant_id, type, subject_type, subject_id, reason_code, state, payload, market_id, opened_by_kind, opened_by)
+       VALUES ($1, 'grievance', 'market', $2, 'payout', 'open', jsonb_build_object('received_at', now(), 'channel', 'email'), $2, 'user', $3)`,
+      [acme.id, pt, admin.id])
+    const pack = await call(app, { method: 'PATCH', url: `/v1/markets/${pt}`, as: admin, body: { market_pack: 'other-pack', reason: 'pack' } })
+    const same = await call(app, { method: 'PATCH', url: `/v1/markets/${pt}`, as: admin, body: { market_pack: 'fr-pack', time_zone: 'Atlantic/Azores', reason: 'tz' } })
+
+    expect(pack.statusCode).toBe(409)
+    expect(pack.json().error).toMatchObject({ code: 'MARKET_REFERENCED', details: { references: { grievances: 1 } } })
+    expect(same.json().data).toMatchObject({ market_pack: 'fr-pack', time_zone: 'Atlantic/Azores' })
+  })
+})
+
 describe('DELETE /v1/markets/:id (AC-TEN2-3, T-B1-02)', () => {
   test('referenced markets are refused 409 MARKET_REFERENCED with the counts; live ones MARKET_NOT_DRAFT; unreferenced drafts go', async () => {
     const tenant = await createTenant()

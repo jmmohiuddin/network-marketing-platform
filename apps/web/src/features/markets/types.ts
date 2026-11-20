@@ -82,7 +82,7 @@ export interface ChecklistItem {
   readonly mandatory: boolean
   readonly status: ItemStatus
   readonly entry: ChecklistEntry | null
-  /** providers / {region} / {contacts} / {rules} / {version}; null for the other items. */
+  /** providers / {region} / {contacts} / {rules} / {version} / {untranslated}; null for the other items. */
   readonly detail: {
     /**
      * agreement_versions (D-B2-15): the market's current published version; plan_variant: the plan version that runs
@@ -93,6 +93,8 @@ export interface ChecklistItem {
     readonly region?: string
     readonly contacts?: number
     readonly rules?: readonly PackRule[]
+    /** portal_languages (D-BM-11): market languages as stored that have no distributor catalogue. */
+    readonly untranslated?: readonly string[]
   } | null
 }
 

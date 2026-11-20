@@ -53,3 +53,10 @@ _Agent: compensation. Read before every task; update after every task. Keep conc
 - Job holds cpl_lock_inputs for the whole computation (simplest correct order); loads, creations and mapping saves for that market wait for it.
 - CSV: plain numbers /^-?\d+(\.\d+)?$/ are exempt from the formula apostrophe (T14 intent kept; any other value starting with = + - @ tab CR is still prefixed).
 - API-05 shape kept (grouped results, numerator/denominator): E-ADR-26. DB-level IMP->CPL contract and lock order: E-ADR-25.
+
+## B-MKT (2026-11-20)
+- tax_line rate_basis needs the SQL basis (rate vs missing_id_rate vs prior-year below_threshold vs no_duty), which the engine instruction does not carry: COMP stores it beside the instruction in run_snapshot.content (StoredInstruction.rateBasis) instead of re-querying in tx B (tax profiles and committed runs may change between tx A and tx B; retries and replays must write the same lines).
+- TAX_RULES_INVALID is checked at run request (assertRunnable) and again when the snapshot is built in the job (a pack or profile change in between fails the run with that code).
+- Explanation/rank texts: catalogue per locale in comp/messages.ts, numbers by replacing the decimal point with the locale separator (no grouping, no float), days via Intl.DateTimeFormat(en-CA | de-DE, market zone).
+- TK-B6-14 kept byte identity by construction: pass 10 sorts indices with the index as last tie-break (= stable sort), breakage = roundRaw(first constraint/cap step beforeRaw) - amount after (equals amount before because lineValue(before) is the step's beforeRaw).
+

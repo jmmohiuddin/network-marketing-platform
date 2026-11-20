@@ -1,5 +1,5 @@
 {
-  "when": "2026-11-19T16:39:59.698Z",
+  "when": "2026-11-20T16:21:40.715Z",
   "screenId": "SC-37",
   "stitch": "sc_37_distributor_home",
   "module": "portal",
@@ -15,15 +15,15 @@
       "screenshot": "testing/ui-screenshots/app/portal/home/distributor/1440x900.png",
       "reference": "testing/ui-screenshots/reference/sc_37_distributor_home/1440x900.png",
       "diffImage": "testing/ui-screenshots/app/portal/home/distributor/1440x900.diff.png",
-      "mismatchPercent": 6.21,
-      "diffPixels": 121302,
+      "mismatchPercent": 6.11,
+      "diffPixels": 119408,
       "referenceSize": "1440x1357",
       "actualSize": "1440x900",
       "landmarks": [
         {
           "landmark": "page",
           "stitchText": "POS-01948 • US - USD Welcome back, Elena military_tech Diamo",
-          "appText": "P-2•DE · EURWelcome back, DE-Bmilitary_techNo paid-as rankNe",
+          "appText": "P-1•DE · EURWillkommen zurück, DE-Amilitary_techVergütet als",
           "status": "match",
           "severity": "none",
           "props": [
@@ -56,7 +56,7 @@
         {
           "landmark": "title",
           "stitchText": "Welcome back, Elena",
-          "appText": "Welcome back, DE-B",
+          "appText": "Willkommen zurück, DE-A",
           "status": "match",
           "severity": "none",
           "props": [
@@ -101,7 +101,7 @@
         {
           "landmark": "sectionHeading",
           "stitchText": "Rank & Qualifications",
-          "appText": "Rank",
+          "appText": "Rang",
           "status": "match",
           "severity": "none",
           "props": [
@@ -140,7 +140,7 @@
         {
           "landmark": "primaryButton",
           "stitchText": "View Statement & Audit Breakdown arrow_forward",
-          "appText": "Open statement",
+          "appText": "Abrechnung öffnen",
           "status": "mismatch",
           "severity": "high",
           "props": [
@@ -191,7 +191,7 @@
         {
           "landmark": "card",
           "stitchText": "POS-01948 • US - USD Welcome back, Elena military_tech Diamo",
-          "appText": "Net amount · Oct 1, 2026 – Oct 31, 2026checkNo payout due0.0",
+          "appText": "Nettobetrag · 01.10.2026 – 31.10.2026radio_button_uncheckedN",
           "status": "match",
           "severity": "none",
           "props": [
@@ -222,15 +222,15 @@
       "screenshot": "testing/ui-screenshots/app/portal/home/distributor/1280x800.png",
       "reference": "testing/ui-screenshots/reference/sc_37_distributor_home/1280x800.png",
       "diffImage": "testing/ui-screenshots/app/portal/home/distributor/1280x800.diff.png",
-      "mismatchPercent": 6.45,
-      "diffPixels": 113592,
+      "mismatchPercent": 6.34,
+      "diffPixels": 111730,
       "referenceSize": "1280x1376",
       "actualSize": "1280x800",
       "landmarks": [
         {
           "landmark": "page",
           "stitchText": "POS-01948 • US - USD Welcome back, Elena military_tech Diamo",
-          "appText": "P-2•DE · EURWelcome back, DE-Bmilitary_techNo paid-as rankNe",
+          "appText": "P-1•DE · EURWillkommen zurück, DE-Amilitary_techVergütet als",
           "status": "match",
           "severity": "none",
           "props": [
@@ -263,7 +263,7 @@
         {
           "landmark": "title",
           "stitchText": "Welcome back, Elena",
-          "appText": "Welcome back, DE-B",
+          "appText": "Willkommen zurück, DE-A",
           "status": "match",
           "severity": "none",
           "props": [
@@ -308,7 +308,7 @@
         {
           "landmark": "sectionHeading",
           "stitchText": "Rank & Qualifications",
-          "appText": "Rank",
+          "appText": "Rang",
           "status": "match",
           "severity": "none",
           "props": [
@@ -347,7 +347,7 @@
         {
           "landmark": "primaryButton",
           "stitchText": "View Statement & Audit Breakdown arrow_forward",
-          "appText": "Open statement",
+          "appText": "Abrechnung öffnen",
           "status": "mismatch",
           "severity": "high",
           "props": [
@@ -398,7 +398,7 @@
         {
           "landmark": "card",
           "stitchText": "POS-01948 • US - USD Welcome back, Elena military_tech Diamo",
-          "appText": "Net amount · Oct 1, 2026 – Oct 31, 2026checkNo payout due0.0",
+          "appText": "Nettobetrag · 01.10.2026 – 31.10.2026radio_button_uncheckedN",
           "status": "match",
           "severity": "none",
           "props": [
@@ -429,15 +429,15 @@
       "screenshot": "testing/ui-screenshots/app/portal/home/distributor/768x1024.png",
       "reference": "testing/ui-screenshots/reference/sc_37_distributor_home/768x1024.png",
       "diffImage": "testing/ui-screenshots/app/portal/home/distributor/768x1024.diff.png",
-      "mismatchPercent": 8.41,
-      "diffPixels": 89932,
+      "mismatchPercent": 8.3,
+      "diffPixels": 88839,
       "referenceSize": "768x1393",
       "actualSize": "768x1024",
       "landmarks": [
         {
           "landmark": "page",
           "stitchText": "POS-01948 • US - USD Welcome back, Elena military_tech Diamo",
-          "appText": "P-2•DE · EURWelcome back, DE-Bmilitary_techNo paid-as rankNe",
+          "appText": "P-1•DE · EURWillkommen zurück, DE-Amilitary_techVergütet als",
           "status": "match",
           "severity": "none",
           "props": [
@@ -470,7 +470,7 @@
         {
           "landmark": "title",
           "stitchText": "Welcome back, Elena",
-          "appText": "Welcome back, DE-B",
+          "appText": "Willkommen zurück, DE-A",
           "status": "match",
           "severity": "none",
           "props": [
@@ -515,7 +515,7 @@
         {
           "landmark": "sectionHeading",
           "stitchText": "Rank & Qualifications",
-          "appText": "Rank",
+          "appText": "Rang",
           "status": "match",
           "severity": "none",
           "props": [
@@ -554,7 +554,7 @@
         {
           "landmark": "primaryButton",
           "stitchText": "View Statement & Audit Breakdown arrow_forward",
-          "appText": "Open statement",
+          "appText": "Abrechnung öffnen",
           "status": "mismatch",
           "severity": "high",
           "props": [
@@ -605,7 +605,7 @@
         {
           "landmark": "card",
           "stitchText": "POS-01948 • US - USD Welcome back, Elena military_tech Diamo",
-          "appText": "Net amount · Oct 1, 2026 – Oct 31, 2026checkNo payout due0.0",
+          "appText": "Nettobetrag · 01.10.2026 – 31.10.2026radio_button_uncheckedN",
           "status": "match",
           "severity": "none",
           "props": [
@@ -636,15 +636,15 @@
       "screenshot": "testing/ui-screenshots/app/portal/home/distributor/390x844.png",
       "reference": "testing/ui-screenshots/reference/sc_37_distributor_home/390x844.png",
       "diffImage": "testing/ui-screenshots/app/portal/home/distributor/390x844.diff.png",
-      "mismatchPercent": 9.46,
-      "diffPixels": 58859,
+      "mismatchPercent": 9.25,
+      "diffPixels": 57570,
       "referenceSize": "390x1596",
-      "actualSize": "390x924",
+      "actualSize": "390x980",
       "landmarks": [
         {
           "landmark": "header",
           "stitchText": "AuditLedger•Apex HealthDistributor Homenotificationsperson",
-          "appText": "Acme Direct LtdHomedashboardHomereceipt_longEarningsmilitary",
+          "appText": "Acme Direct LtdStartdashboardStartreceipt_longProvisionenmil",
           "status": "match",
           "severity": "none",
           "props": [
@@ -665,7 +665,7 @@
         {
           "landmark": "page",
           "stitchText": "POS-01948 • US - USD Welcome back, Elena military_tech Diamo",
-          "appText": "P-2•DE · EURWelcome back, DE-Bmilitary_techNo paid-as rankNe",
+          "appText": "P-1•DE · EURWillkommen zurück, DE-Amilitary_techVergütet als",
           "status": "match",
           "severity": "none",
           "props": [
@@ -698,7 +698,7 @@
         {
           "landmark": "title",
           "stitchText": "Welcome back, Elena",
-          "appText": "Welcome back, DE-B",
+          "appText": "Willkommen zurück, DE-A",
           "status": "match",
           "severity": "none",
           "props": [
@@ -743,7 +743,7 @@
         {
           "landmark": "sectionHeading",
           "stitchText": "Rank & Qualifications",
-          "appText": "Rank",
+          "appText": "Rang",
           "status": "match",
           "severity": "none",
           "props": [
@@ -782,7 +782,7 @@
         {
           "landmark": "primaryButton",
           "stitchText": "View Statement & Audit Breakdown arrow_forward",
-          "appText": "Open statement",
+          "appText": "Abrechnung öffnen",
           "status": "mismatch",
           "severity": "high",
           "props": [
@@ -833,7 +833,7 @@
         {
           "landmark": "card",
           "stitchText": "POS-01948 • US - USD Welcome back, Elena military_tech Diamo",
-          "appText": "Net amount · Oct 1, 2026 – Oct 31, 2026checkNo payout due0.0",
+          "appText": "Nettobetrag · 01.10.2026 – 31.10.2026radio_button_uncheckedN",
           "status": "match",
           "severity": "none",
           "props": [

@@ -7,7 +7,7 @@ import { IBAN } from '../../src/modules/pay/test-support.js'
 import { GOLDEN_EXPECTED, GOLDEN_INPUT, personal } from '../../src/modules/pln/test-support.js'
 import type { CallOptions } from '../helpers/index.js'
 import {
-  DRAFT_MARKET_CODE, DRAFT_VERSION, EXPORT_TABLE, PACK, PASSWORD, RECORDABLE_ITEM, RULE_KEY, STATE_ITEM, SUPPORT_SCOPE, type Targets,
+  DRAFT_MARKET_CODE, DRAFT_VERSION, EXPORT_TABLE, PACK, PASSWORD, RECORDABLE_ITEM, RULE_KEY, STATE_ITEM, SUPPORT_SCOPE, TAX_YEAR, type Targets,
 } from './seed.js'
 
 /**
@@ -105,6 +105,9 @@ const PAST = '2026-01-01T00:00:00Z'
 const draftWrite = (method: CaseRequest['method'], url: string, body?: unknown): CaseRequest =>
   ({ ...json(method, url, body), headers: { 'if-match': '"1"' } })
 const draft = (t: Targets) => `/v1/plans/${t.plan}/versions/${DRAFT_VERSION}`
+
+const taxYear = (t: Targets) => ({ market_id: t.taxMarket, tax_year: TAX_YEAR })
+const taxYearQuery = (t: Targets) => `market_id=${t.taxMarket}&tax_year=${TAX_YEAR}`
 
 const rows = (t: Targets) => `/v1/compliance/snapshots/${t.snapshot}/figures/${encodeURIComponent(t.figure)}/rows`
 
@@ -304,6 +307,8 @@ export const ROUTE_CASES: Readonly<Record<string, RouteCase>> = {
   'GET /v1/participants/:id': object('tenant', (t) => get(`/v1/participants/${t.participant}`)),
   // participant.unmask is a tenant-own decision: a support session never holds it.
   'POST /v1/participants/:id/unmask': object('tenant', (t) => json('POST', `/v1/participants/${t.participant}/unmask`, { fields: ['email'] })),
+  'POST /v1/participants/:id/contact-email': object('tenant', (t) =>
+    json('POST', `/v1/participants/${t.participant}/contact-email`, withReason({ email: 'isolation@example.test' }), true)),
   'POST /v1/participants/:id/type': object('tenant', (t) =>
     json('POST', `/v1/participants/${t.participant}/type`, withReason({ type_code: 'DIST', valid_from: '2099-01-01T00:00:00Z' }), true)),
   'POST /v1/participants/:id/positions': object('tenant', (t) => json('POST', `/v1/participants/${t.participant}/positions`, {}, true)),
@@ -581,6 +586,24 @@ export const ROUTE_CASES: Readonly<Record<string, RouteCase>> = {
     json('POST', `${difference(t)}/classify`, { class: 'data', note: 'isolation' })),
   'POST /v1/migrations/:id/parallel-runs/:runId/differences/:diffId/accept': object('tenant', (t) => json('POST', `${difference(t)}/accept`, withReason())),
   'POST /v1/migrations/:id/sign-off': object('tenant', (t) => json('POST', `/v1/migrations/${t.migration}/sign-off`, withReason(), true)),
+  // TAX B-MKT (PLAN B-MKT 2.1): tenant A's market, run and form name nothing in tenant B; tax.read stays in a session.
+  'GET /v1/tax/rules': object('tenant', (t) => get(`/v1/tax/rules?market_id=${t.taxMarket}`)),
+  'GET /v1/tax/lines': object('tenant', (t) => get(`/v1/tax/lines?run_id=${t.taxRun}`)),
+  'GET /v1/tax/year-end': object('tenant', (t) => get(`/v1/tax/year-end?${taxYearQuery(t)}`)),
+  'GET /v1/tax/year-end-generations': object('tenant', (t) => get(`/v1/tax/year-end-generations?${taxYearQuery(t)}`)),
+  'GET /v1/tax/year-end-forms': object('tenant', (t) => get(`/v1/tax/year-end-forms?${taxYearQuery(t)}`)),
+  'GET /v1/tax/year-end-forms/:id/download': object('tenant', (t) => get(`/v1/tax/year-end-forms/${t.taxForm}/download`)),
+  'POST /v1/tax/year-end-forms': object('tenant', (t) => json('POST', '/v1/tax/year-end-forms', taxYear(t), true)),
+  'POST /v1/tax/year-end-forms/export': object('tenant', (t) => json('POST', '/v1/tax/year-end-forms/export', taxYear(t))),
+  'GET /v1/me/tax-forms': portal('collection', () => get('/v1/me/tax-forms')),
+  'GET /v1/me/tax-forms/:id/download': portal('object', (t) => get(`/v1/me/tax-forms/${t.taxForm}/download`)),
+  // CPL B-MKT (PLAN B-MKT 2.3): register.read is excluded from support sessions, and recordExport refuses every export in one.
+  'GET /v1/registers/grievances': collection('tenant', () => get('/v1/registers/grievances')),
+  'GET /v1/registers/grievances/export': { ...collection('tenant', () => get('/v1/registers/grievances/export')), inSession: 403 },
+  'GET /v1/registers/delisted': { ...object('tenant', (t) => get(`/v1/registers/delisted?market_id=${t.taxMarket}`)), inSession: 403 },
+  'GET /v1/registers/delisted/export': { ...object('tenant', (t) => get(`/v1/registers/delisted/export?market_id=${t.taxMarket}`)), inSession: 403 },
+  // IAM B-MKT (PLAN B-MKT 2.5): a tenant-B member sets its own language.
+  'PUT /v1/me/locale': portal('own', () => json('PUT', '/v1/me/locale', { locale: 'en' }), 200),
 }
 
 /** The case of a route; Fastify's HEAD routes run their GET handler, so they take the GET case with method HEAD. */

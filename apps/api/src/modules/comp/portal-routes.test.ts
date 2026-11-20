@@ -37,6 +37,7 @@ beforeAll(async () => {
   await commit(app, w, runId)
   const [line] = await ownerRows<{ id: string }>('SELECT id FROM result_line WHERE run_id = $1 AND payee_position_id = $2 LIMIT 1', [runId, a.positionId])
   lineId = line!.id
+  await ownerRows(`UPDATE market SET languages = '{en,de}' WHERE id = $1`, [w.marketId]) // T-BM-33: both catalogues offered, en the default
   me = await createPortalUser({ tenantId: w.tenantId, participantId: a.participantId })
   peer = await createPortalUser({ tenantId: w.tenantId, participantId: (await member(w, 'DE-P')).participantId })
   const gone = await member(w, 'DE-T')
@@ -91,5 +92,22 @@ describe('portal session over HTTP (API-28/29/30)', () => {
     expect((await get('/v1/me/statements', closed)).statusCode).toBe(200)
     expect((await get('/v1/me/rank', closed)).json().error.code).toBe('PARTICIPANT_TERMINATED')
     expect((await dispute(closed, 'closed-1')).json().error.code).toBe('PARTICIPANT_TERMINATED')
+  })
+})
+
+describe('T-BM-33 portal texts in the effective locale (D-BM-11, AC-DIST7-4)', () => {
+  const texts = async (as: TestUser, headers: Record<string, string> = {}) => {
+    const explanation = await call(app, { method: 'GET', url: `/v1/me/statement-lines/${lineId}/explanation`, as, headers })
+    const rank = await call(app, { method: 'GET', url: '/v1/me/rank', as, headers })
+    expect([explanation.statusCode, rank.statusCode], explanation.body).toEqual([200, 200])
+    return { last: explanation.json().data.text.at(-1) as string, item: rank.json().data.requirements[0].items[0].text as string }
+  }
+
+  test('market default (en), then Accept-Language de, then the saved preference over the header', async () => {
+    expect(await texts(me)).toEqual({ last: expect.stringMatching(/^Amount: \d+\.\d{2} EUR\.$/), item: 'pv at least 0.01' })
+    expect(await texts(me, { 'accept-language': 'de-DE,de;q=0.9,en;q=0.5' })).toEqual({ last: expect.stringMatching(/^Betrag: \d+,\d{2} EUR\.$/), item: 'pv mindestens 0,01' })
+    await ownerRows(`UPDATE user_account SET locale = 'de' WHERE id = $1`, [me.id])
+    expect((await texts(me, { 'accept-language': 'en' })).item).toBe('pv mindestens 0,01')
+    await ownerRows(`UPDATE user_account SET locale = NULL WHERE id = $1`, [me.id])
   })
 })

@@ -108,7 +108,8 @@ export function registerSettingsRoutes(app: FastifyInstance): void {
     if (definition.stepUp) assertStepUp(request)
     const version = expectedVersion(request)
     const body = parse(putBody, request.body)
-    const value: unknown = parse(z.object({ value: definition.schema }), { value: body.value }).value
+    const schema = definition.clearable === true ? definition.schema.nullable() : definition.schema
+    const value: unknown = parse(z.object({ value: schema }), { value: body.value }).value
     const effectiveFrom = body.effective_from === undefined ? null : new Date(body.effective_from)
     const write = { key, value, reason: body.reason, effectiveFrom, expectedVersion: version }
     if (definition.approverPermission !== null) {
