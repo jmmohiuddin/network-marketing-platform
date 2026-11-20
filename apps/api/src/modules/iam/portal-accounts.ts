@@ -77,17 +77,19 @@ function assertEligible(target: Target): string {
 }
 
 /**
- * Two people: whoever recorded the member's contact e-mail on the staff path (BUG-133, PARTICIPANT.CONTACT_RECORDED) never
- * also sends the portal invitation to it, else one agent could hand a member's account (and its payouts) to their own address.
+ * Two people: whoever chose the member's contact e-mail never also sends the portal invitation to it, else one agent could
+ * hand a member's account (and its payouts) to their own address. The address on record came from PARTICIPANT.CONTACT_RECORDED
+ * when there is one (BUG-133 only records when none is on record), otherwise from the enrolment (PARTICIPANT.ENROLLED).
  */
 async function assertNotContactRecorder(tx: Tx, participantId: string): Promise<void> {
-  const { rowCount } = await tx.query(
-    `SELECT 1 FROM audit.audit_event WHERE object_type = 'participant' AND object_id = $1
-       AND action = 'PARTICIPANT.CONTACT_RECORDED' AND actor_id = app_user_id() LIMIT 1`,
+  const { rows } = await tx.query<{ chose: boolean }>(
+    `SELECT actor_id IS NOT DISTINCT FROM app_user_id() AS chose FROM audit.audit_event
+      WHERE object_type = 'participant' AND object_id = $1 AND action IN ('PARTICIPANT.CONTACT_RECORDED', 'PARTICIPANT.ENROLLED')
+      ORDER BY action = 'PARTICIPANT.CONTACT_RECORDED' DESC, occurred_at DESC LIMIT 1`,
     [participantId],
   )
-  if (rowCount !== 0) {
-    throw new ApiError(422, 'SOD_SELF_APPROVAL', 'You recorded this member’s contact e-mail, so another colleague sends the portal invitation.')
+  if (rows[0]?.chose === true) {
+    throw new ApiError(422, 'SOD_SELF_APPROVAL', 'You entered this member’s contact e-mail, so another colleague sends the portal invitation.')
   }
 }
 

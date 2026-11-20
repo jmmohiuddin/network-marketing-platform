@@ -139,6 +139,18 @@ describe('POST /v1/participants/:id/contact-email (BUG-133)', () => {
     const invited = await invite(support)
     expect(invited.statusCode, invited.body).toBe(201)
   })
+
+  test('the user who enrolled a member with an e-mail never also invites to it; a colleague does', async () => {
+    const memberId = (await enrolled(app, support, enrolment('DIST', { contact: { email: `own-${Date.now()}@example.test` } }))).participant.id
+    const invite = (as: TestUser) => call(app, { method: 'POST', url: `/v1/participants/${memberId}/portal-account`, as, idempotencyKey: true })
+    const colleague = await createSignedInUser({ tenantId: acme.id, roles: ['Support agent'] })
+
+    const byEnroller = await invite(support)
+    expect(byEnroller.statusCode).toBe(422)
+    expect(byEnroller.json().error.code).toBe('SOD_SELF_APPROVAL')
+    const invited = await invite(colleague)
+    expect(invited.statusCode, invited.body).toBe(201)
+  })
 })
 
 describe('POST /v1/participants/:id/type (T-B2-02, TS-48 history part, AC-PAR1-2)', () => {
