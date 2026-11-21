@@ -9,7 +9,10 @@ const MAX_BODY_BYTES = 8 * 1024
 const RATE_WINDOW_MS = 60_000
 const RATE_MAX = 5
 const MAX_TRACKED_IPS = 10_000
-const FIELD_LIMITS = { name: 120, email: 200, company: 160, url: 200, spend: 60, bottleneck: 60, message: 2000, source: 60 }
+const FIELD_LIMITS = {
+  name: 120, email: 200, company: 160, url: 200, spend: 60, bottleneck: 60, message: 2000, source: 60,
+  country: 60, vertical: 60, tier: 60, topic: 120,
+}
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
 
 const hits = new Map()

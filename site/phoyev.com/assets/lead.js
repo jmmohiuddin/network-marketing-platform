@@ -38,7 +38,7 @@
         if (button) button.classList.add('hidden')
         done.scrollIntoView({ behavior: 'smooth', block: 'center' })
       } else if (button) {
-        button.textContent = 'Joined'
+        button.textContent = form.dataset.doneText || 'Joined'
         button.disabled = true
       }
     } catch (error) {

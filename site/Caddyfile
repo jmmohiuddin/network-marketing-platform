@@ -22,6 +22,9 @@
 		file_server
 	}
 	handle @network {
+		handle /api/* {
+			reverse_proxy leads:8080
+		}
 		root * /srv/network.phoyev.com
 		file_server
 	}

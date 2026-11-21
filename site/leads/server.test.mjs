@@ -21,6 +21,11 @@ test('parseLead needs a valid email but not a name', () => {
   assert.match(parseLead({ name: 'A' }).error, /email/)
 })
 
+test('parseLead keeps the network application fields', () => {
+  const { lead } = parseLead({ email: 'a@b.co', country: 'CA', vertical: 'saas', tier: 'pro', topic: 'Payouts' }, NOW)
+  assert.deepEqual([lead.country, lead.vertical, lead.tier, lead.topic], ['CA', 'saas', 'pro', 'Payouts'])
+})
+
 test('parseLead swallows honeypot submissions without a lead', () => {
   assert.deepEqual(parseLead({ name: 'Bot', email: 'bot@x.io', hp: 'http://spam' }), { lead: null })
 })
