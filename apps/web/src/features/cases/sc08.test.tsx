@@ -81,6 +81,12 @@ describe('GenealogyCasePage (SC-08 change)', () => {
     expect(screen.getByLabelText('Position to transfer')).toBeTruthy()
   })
 
+  it('opens the transfer form from the PLAN deep link ?kind=transfer too', async () => {
+    navigation.search = 'kind=transfer'
+    renderAs(SUPPORT, <GenealogyCasePage />, routes())
+    expect(await screen.findByLabelText('Position to transfer')).toBeTruthy()
+  })
+
   it('files a correction from the current relationship start, uploads and attaches the evidence, then opens the case', async () => {
     const fetchMock = routes({
       'POST /v1/cases': () => ok({ id: 'case1' }, 201),

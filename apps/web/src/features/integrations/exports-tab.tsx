@@ -111,6 +111,18 @@ function PublicKey({ signing, manifestFile }: { readonly signing: SigningKey; re
   )
 }
 
+/** The export id with a copy button: the vendor names it to archive an offboarded tenant (SC-39). */
+function ExportId({ exportId }: { readonly exportId: string }) {
+  const [status, copy] = useCopy(exportId)
+  return (
+    <div className="flex flex-col gap-space-xs" data-testid="export-id">
+      <p className={NOTE}>Export id: <code className={`${MONO} break-all select-all`}>{exportId}</code></p>
+      <Button size="sm" icon="content_copy" className="self-start" onClick={() => void copy()}>Copy export id</Button>
+      <CopyStatusText status={status} noun="export id" />
+    </div>
+  )
+}
+
 /** GET /v1/exports/:id: manifest table with per-file downloads, the signature and its key id. */
 function ExportDrawer({ exportId, signing, onClose }: { readonly exportId: string; readonly signing: Resource<SigningKey>; readonly onClose: () => void }) {
   const api = useApi()
@@ -153,6 +165,7 @@ function ExportDrawer({ exportId, signing, onClose }: { readonly exportId: strin
           {data.state === 'expired' && <Banner tone="info" title="Files deleted">Only the {KEPT} latest completed exports keep their files. The manifest stays as the record.</Banner>}
           <Banner tone="warning">{ERASURE_NOTICE}</Banner>
           {problem !== null && <Banner tone="danger" title="No download">{problem}</Banner>}
+          <ExportId exportId={exportId} />
           <p className={NOTE}>{`${tables.length} files, one per table, each gzip-compressed JSON Lines. Each row of the manifest names the file's rows, size and checksum.`}</p>
           <DataTable bare density="compact" caption="Manifest of the export" columns={columns} rows={tables} rowKey={(row) => row.name} empty={{ title: 'No manifest: the export did not complete' }} stackOnPhone />
           {data.signature !== null && (
@@ -198,7 +211,8 @@ function DataModel() {
 
 /** The Exports tab: schedule, Run export now (step-up), the exports with their detail drawer (?export=), the data model. */
 export function ExportsTab() {
-  const { readOnly } = useSession()
+  // The final full export is allowed while the tenant is read-only (offboarding, D-V1A-07); a support session reads only.
+  const { supportReadOnly } = useSession()
   const api = useApi()
   const toast = useToast()
   const params = useSearchParams()
@@ -257,7 +271,7 @@ export function ExportsTab() {
             <h2 id="run-export-title" className={SECTION_HEADING}>Run an export now</h2>
           </div>
           <p className={NOTE}>Generates one file per table from a single consistent snapshot, with a manifest signed by your tenant&apos;s key. It asks for your authenticator code.</p>
-          {!readOnly && <Button variant="primary" icon="play_arrow" className="self-start" loading={running} data-testid="primary-action" onClick={() => void run()}>Run export now</Button>}
+          {!supportReadOnly && <Button variant="primary" icon="play_arrow" className="self-start" loading={running} data-testid="primary-action" onClick={() => void run()}>Run export now</Button>}
           {problem !== null && <Banner tone="danger" title="No export started">{problem}</Banner>}
         </section>
       </div>

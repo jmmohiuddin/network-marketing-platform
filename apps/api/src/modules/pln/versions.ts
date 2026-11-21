@@ -26,6 +26,7 @@ const ruleBody = z.strictObject({
   reversal_policy: z.enum(['order_line', 'restatement']).nullable().optional(),
   calendar_id: z.uuid().nullable().optional(),
   ordinal: z.number().int().min(-1000).max(1000).optional(),
+  credit_type_code: z.string().regex(/^[A-Z][A-Z0-9_]{1,31}$/).nullable().optional(),
 })
 const transitionBody = z.strictObject({
   rule: z.enum(['carry', 'map', 'reset']),
@@ -58,6 +59,28 @@ const RULE_CONTENT = 'kind, params, reversal_policy, calendar_id, ordinal'
 const calendarError = (error: unknown): never => {
   if (sqlState(error) === '23514' || sqlState(error) === '23503') throw new ApiError(422, 'CALENDAR_NOT_IN_PLAN', 'The calendar is not a calendar of the plan.')
   throw error
+}
+
+const invalid = (path: string, message: string): ApiError => new ApiError(422, 'VALIDATION_FAILED', 'The request is not valid.', { issues: [{ path, message }] })
+
+/**
+ * D-V1A-03: the stored params of a rule write. A pay rule's credit_type_code becomes the engine's `award` (so the
+ * compiled plan and content_hash carry it); `award` itself is never written directly.
+ */
+function storedParams(body: z.infer<typeof ruleBody>): Record<string, unknown> {
+  if (Object.hasOwn(body.params, 'award')) throw invalid('params.award', 'set credit_type_code instead')
+  const code = body.credit_type_code ?? null
+  if (code === null) return body.params
+  if (!body.kind.startsWith('pay.')) throw invalid('credit_type_code', 'only pay rules can pay in credits')
+  return { ...body.params, award: { creditType: code } }
+}
+
+/** 422 CREDIT_TYPE_UNKNOWN / CREDIT_TYPE_INACTIVE for the credit type a pay rule names. */
+async function assertCreditType(tx: Tx, code: string | null | undefined): Promise<void> {
+  if (code == null) return
+  const { rows } = await tx.query<{ active: boolean }>('SELECT active FROM credit_type WHERE code = $1', [code])
+  if (rows[0] === undefined) throw new ApiError(422, 'CREDIT_TYPE_UNKNOWN', 'No credit type has this code.', { credit_type_code: code })
+  if (!rows[0].active) throw new ApiError(422, 'CREDIT_TYPE_INACTIVE', 'The credit type is not active.', { credit_type_code: code })
 }
 
 function withEtag<T>(reply: FastifyReply, revision: number, body: T): T {
@@ -117,14 +140,16 @@ export function registerVersionRoutes(app: FastifyInstance): void {
     const expected = ifMatch(request)
     const { ruleKey } = parse(ruleParams, request.params)
     const body = parse(ruleBody, request.body)
-    const issues = validateRule(body.kind, body.params)
+    const params = storedParams(body)
+    const issues = validateRule(body.kind, params)
     if (issues.length > 0) throw new ApiError(422, 'RULE_INVALID', 'The rule parameters are not valid.', { errors: issues })
     const outcome = await inTenant(request, async (tx) => {
       const { plan, version } = await planVersionFor(tx, request, 'plan.edit')
       assertRevision(version, expected)
+      await assertCreditType(tx, body.credit_type_code)
       const { rows: prior } = await tx.query(`SELECT ${RULE_CONTENT} FROM plan_rule WHERE plan_version_id = $1 AND rule_key = $2`, [version.id, ruleKey])
       await tx.query('SAVEPOINT rule_save')
-      const input = { ruleKey, kind: body.kind, params: body.params, reversalPolicy: body.reversal_policy ?? null, calendarId: body.calendar_id ?? null, ordinal: body.ordinal ?? 0 }
+      const input = { ruleKey, kind: body.kind, params, reversalPolicy: body.reversal_policy ?? null, calendarId: body.calendar_id ?? null, ordinal: body.ordinal ?? 0 }
       const { rows } = await tx.query<RuleRow & { id: string; inserted: boolean }>(
         `INSERT INTO plan_rule (tenant_id, plan_version_id, rule_key, kind, pass, params, depends_on, reversal_policy, calendar_id, ordinal, created_by, updated_by)
          VALUES (app_tenant_id(), $1, $2, $3, $4, $5, $6, $7, $8, $9, app_user_id(), app_user_id())
@@ -132,7 +157,7 @@ export function registerVersionRoutes(app: FastifyInstance): void {
            depends_on = EXCLUDED.depends_on, reversal_policy = EXCLUDED.reversal_policy, calendar_id = EXCLUDED.calendar_id,
            ordinal = EXCLUDED.ordinal, updated_by = app_user_id(), updated_at = now()
          RETURNING id, rule_key, kind, pass, params, depends_on, reversal_policy, calendar_id, ordinal, created_by, updated_by, xmax = 0 AS inserted`,
-        [version.id, ruleKey, body.kind, rulePass(body.kind as RuleKind), body.params, ruleDependencies(input), input.reversalPolicy, input.calendarId, input.ordinal],
+        [version.id, ruleKey, body.kind, rulePass(body.kind as RuleKind), params, ruleDependencies(input), input.reversalPolicy, input.calendarId, input.ordinal],
       ).catch(calendarError)
       const { validation, revision } = await recompile(tx, version, plan.calendar_ids)
       const evaluations = await evaluateGuardrails(tx, version.id)

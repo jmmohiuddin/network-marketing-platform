@@ -120,7 +120,7 @@ describe('session resolution', () => {
     expect(events).toEqual([{ actor_type: 'system', actor_id: null, request_id: response.headers['x-request-id'] }])
   })
 
-  test('BUG-004: sessions of deactivated users and archived tenants stop working, and deactivation revokes them', async () => {
+  test('BUG-004: sessions of deactivated users stop working and deactivation revokes them; an archived tenant\'s keep reading (D-V1A-07)', async () => {
     const deactivated = await createSignedInUser({ tenantId })
     const archivedTenant = await createTenant({ state: 'archived' })
     const archived = await createSignedInUser({ tenantId: archivedTenant.id })
@@ -129,7 +129,7 @@ describe('session resolution', () => {
     const responses = await Promise.all([deactivated, archived].map((as) => call(app, { method: 'GET', url: '/v1/probe/whoami', as })))
     const liveSessions = await ownerRows('SELECT 1 FROM session WHERE id = $1 AND revoked_at IS NULL', [deactivated.sessionId])
 
-    expect(responses.map((response) => response.statusCode)).toEqual([401, 401])
+    expect(responses.map((response) => response.statusCode)).toEqual([401, 200])
     expect(liveSessions).toEqual([])
   })
 })

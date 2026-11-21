@@ -35,6 +35,8 @@ export interface AuthContext {
   readonly participantId: string | null
   /** Portal realm: every owned position is terminated (D-B5-06). */
   readonly participantTerminated: boolean
+  /** The tenant is offboarding (confirmed) or archived: writes outside the allowlist are refused (D-V1A-07). */
+  readonly tenantReadOnly: boolean
 }
 
 declare module 'fastify' {

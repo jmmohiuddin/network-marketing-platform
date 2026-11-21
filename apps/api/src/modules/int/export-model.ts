@@ -38,6 +38,9 @@ const PUBLIC_TABLES = [
   'role_assignment', 'role_grant_request', 'run', 'run_settlement', 'run_snapshot', 'sales_order', 'sandbox_provider_payment',
   'saved_view', 'service_account', 'setting_change_request', 'sim_result_line', 'simulation', 'support_session', 'tax_form',
   'tax_form_generation', 'tax_line', 'tax_profile',
+  // PLAN V1-A section 1.9.
+  'credit_award', 'credit_lot_event', 'credit_redemption', 'credit_type', 'fx_rate', 'fx_rate_batch', 'legal_hold', 'retention_run',
+  'retention_schedule', 'tenant_offboarding',
   'tenant_setting_version', 'user_account', 'user_invitation', 'user_related_participant', 'webhook_endpoint',
 ]
 

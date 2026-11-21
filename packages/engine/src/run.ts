@@ -22,7 +22,7 @@ import { percentByLevel } from './primitives/unilevel.js'
 import { lineVolumePass, pointsFactor, positionVolumePass } from './primitives/volume.js'
 import { buildTree, compareId, evaluationInstant, positionOrder } from './tree.js'
 import type {
-  AdjustmentOrigin, BonusKind, Expr, ExprOp, ControlTotals, EngineWarning, LadderRank, MeasureValue, Order, OrderEvent, OrderLine, OriginType, Participant, ParticipantId, ParticipantType,
+  AdjustmentOrigin, BonusKind, CreditAward, Expr, ExprOp, ControlTotals, EngineWarning, LadderRank, MeasureValue, Order, OrderEvent, OrderLine, OriginType, Participant, ParticipantId, ParticipantType,
   PayeeSettlement, PeriodSummary, Position, PositionId, PositionSummary, QualificationStateRow, RawLine, Receivable, Relationship, ResultLine, RunInput,
   RunOptions, RunOutput, SourceKind, TaxLine, TraceStep, WithholdingInstruction,
 } from './types.js'
@@ -175,7 +175,8 @@ const roundingPass: PassFn<'rounding'> = (ctx, done) => {
 type Gross = ReadonlyMap<ParticipantId, { readonly amount: bigint; readonly positions: ReadonlySet<PositionId> }>
 
 interface LineTally {
-  readonly add: (line: ResultLine) => void
+  /** award: a line of a credit-award rule (D-V1A-03): checked and counted against limits, but not cash (no gross, totals). */
+  readonly add: (line: ResultLine, award?: boolean) => void
   readonly gross: Gross
   readonly oneTimeKeys: ReadonlyMap<PositionId, readonly string[]> // pay.one_time keys paid now, by payee position
   readonly checkLimits: () => void
@@ -214,7 +215,7 @@ function lineTally(ctx: RunContext, done: Pick<Done<'settlement'>, 'volumes' | '
   return {
     gross,
     oneTimeKeys,
-    add(l) {
+    add(l, award = false) {
       // Lines are sorted by (payee, pass, rule, origin) and a rule has one pass, so a duplicate is the line before.
       const ref = { positionId: l.payeePositionId, ruleKey: l.ruleKey }
       const same = prev !== undefined && prev.payeePositionId === l.payeePositionId && prev.ruleKey === l.ruleKey
@@ -223,15 +224,19 @@ function lineTally(ctx: RunContext, done: Pick<Done<'settlement'>, 'volumes' | '
       invariant(l.origin !== null || ctx.earner[ctx.trees.sponsor.index.get(l.payeePositionId)!] === 1, 'payout to a position that may not earn', ref)
       invariant(traceAmountMinor(l.trace) === l.amountMinor, 'line trace does not reconcile to its amount', ref)
       prev = l
-      lineCount += 1
-      grossMinor += l.amountMinor
-      const g = gross.get(l.payeeParticipantId) ?? { amount: 0n, positions: new Set<PositionId>() }
-      gross.set(l.payeeParticipantId, { amount: g.amount + l.amountMinor, positions: g.positions.add(l.payeePositionId) })
-      plus(byRule, l.ruleKey, l.amountMinor)
-      plus(bySourceKind, l.sourceKind, l.amountMinor)
-      if (l.origin !== null) {
-        plus(byOrigin, l.origin.originType, l.amountMinor)
-        return
+      if (award) {
+        invariant(l.origin === null && l.amountMinor > 0n, 'a credit award is a positive line of its rule', ref)
+      } else {
+        lineCount += 1
+        grossMinor += l.amountMinor
+        const g = gross.get(l.payeeParticipantId) ?? { amount: 0n, positions: new Set<PositionId>() }
+        gross.set(l.payeeParticipantId, { amount: g.amount + l.amountMinor, positions: g.positions.add(l.payeePositionId) })
+        plus(byRule, l.ruleKey, l.amountMinor)
+        plus(bySourceKind, l.sourceKind, l.amountMinor)
+        if (l.origin !== null) {
+          plus(byOrigin, l.origin.originType, l.amountMinor)
+          return
+        }
       }
       plan.caps.forEach((cap, i) => {
         if (cap.scope.includes(l.ruleKey)) plus(capSums[i]!, perPersonOnMeasure(cap) ? l.payeePositionId : '', l.amountMinor)
@@ -383,6 +388,7 @@ function sortedState(rows: readonly QualificationStateRow[]): QualificationState
 
 const byKeyOf = <T>(items: readonly T[], key: (t: T) => string): T[] => [...items].sort((a, b) => compareId(key(a), key(b)))
 const lineRecord = (l: ResultLine): unknown => ['L', l.payeePositionId, l.pass, l.ruleKey, l.origin?.originType ?? null, l.origin?.originId ?? null, l.amountMinor.toString(), l.currency]
+const awardRecord = (a: CreditAward): unknown => ['A', a.payeePositionId, a.ruleKey, a.creditType, a.amountMinor.toString(), a.currency]
 const taxRecord = (t: TaxLine): unknown => ['T', t.participantId, t.ruleId, t.taxableMinor.toString(), t.withheldMinor.toString()]
 const stateRecord = (s: QualificationStateRow): unknown => ['S', s.positionId, canonicalState(s)]
 const summaryRecord = (s: PositionSummary): unknown =>
@@ -436,10 +442,10 @@ function summarizer(ctx: RunContext, done: Pick<Done<'settlement'>, 'volumes' | 
 
 /** Every property name of RunInput, so the canonical form never depends on an input object's key order. */
 const INPUT_FIELDS = [
-  'adjustments', 'agg', 'allocation', 'amountMinor', 'args', 'atLeastMinor', 'atUs', 'banked', 'base', 'baseMeasure', 'bonuses', 'buyerEnrolledWithinUs', 'buyerParticipantId',
+  'adjustments', 'agg', 'allocation', 'amountMinor', 'args', 'atLeastMinor', 'atUs', 'award', 'banked', 'base', 'baseMeasure', 'bonuses', 'buyerEnrolledWithinUs', 'buyerParticipantId',
   'buyerTypeCode', 'byRank', 'calendar', 'calendars', 'canEarn', 'canHoldPositions', 'canSponsor', 'capMinor', 'caps', 'carries', 'carry',
   'categories', 'category', 'childPositionId', 'code', 'compression', 'const', 'constraints', 'contentHash', 'count', 'counters', 'countsAsEndCustomer',
-  'creditPositionId', 'creditedAtUs', 'currency', 'customerRollUp', 'den', 'effectiveFromUs', 'eligibleIf', 'endsAtUs', 'enrolledAtUs',
+  'creditPositionId', 'creditType', 'creditedAtUs', 'currency', 'customerRollUp', 'den', 'effectiveFromUs', 'eligibleIf', 'endsAtUs', 'enrolledAtUs',
   'equals', 'eventId', 'excludeItemClasses', 'expiresAfterPeriods', 'expr', 'fact', 'facts', 'factor', 'first', 'firstMultiplier', 'from',
   'gracePeriods', 'graceUsed', 'history', 'incrementIf', 'includeSelf', 'itemClass', 'items', 'keepIf', 'key', 'kind', 'knownAtUs',
   'ladder', 'ladders', 'leader', 'leg', 'level', 'levels', 'limitMinor', 'lineId', 'lines', 'maintenance', 'map', 'market', 'marketId', 'maxMinor',
@@ -601,12 +607,24 @@ export function* runIncremental(input: RunInput, options: RunOptions = { fullTra
   const { hash, ctx, done, lineChunks } = calculated(input, options)
   const tally = lineTally(ctx, done)
   const h = recordHash()
+  const awardType = new Map(input.plan.bonuses.flatMap((b) => (b.award === undefined ? [] : [[b.key, b.award.creditType] as const])))
+  const creditAwards: CreditAward[] = []
   for (const lines of lineChunks) {
+    const cash: ResultLine[] = []
     for (const l of lines) {
-      tally.add(l)
-      h.record(lineRecord(l))
+      const creditType = l.origin === null ? awardType.get(l.ruleKey) : undefined
+      tally.add(l, creditType !== undefined)
+      if (creditType === undefined) {
+        cash.push(l)
+        h.record(lineRecord(l))
+      } else {
+        creditAwards.push({
+          payeePositionId: l.payeePositionId, payeeParticipantId: l.payeeParticipantId, ruleKey: l.ruleKey, creditType,
+          amountMinor: l.amountMinor, currency: l.currency, trace: l.trace,
+        })
+      }
     }
-    yield { kind: 'lines', lines }
+    if (cash.length > 0) yield { kind: 'lines', lines: cash }
   }
   const settlement = settle(ctx, tally.gross)
   tally.checkLimits()
@@ -623,6 +641,8 @@ export function* runIncremental(input: RunInput, options: RunOptions = { fullTra
     yield { kind: 'summaries', rows }
   }
   for (const rows of drained(chunksOf(settlement.payees))) yield { kind: 'payees', rows }
+  // After every other record, and only when there are awards: runs without them hash as before D-V1A-03.
+  for (const a of creditAwards) h.record(awardRecord(a))
   return {
     engineVersion: ENGINE_VERSION,
     planVersionId: input.plan.planVersionId,
@@ -630,6 +650,7 @@ export function* runIncremental(input: RunInput, options: RunOptions = { fullTra
     snapshotId: input.snapshot.snapshotId,
     periodId: input.snapshot.period.periodId,
     inputsHash: hash,
+    creditAwards,
     taxLines: settlement.taxLines,
     evaluations: done.qualification.evaluations,
     constraintApplications: done.constraints.applications,
@@ -653,7 +674,7 @@ export function run(input: RunInput, options: RunOptions = { fullTraceFor: [] })
       const s = next.value
       return {
         engineVersion: s.engineVersion, planVersionId: s.planVersionId, settingsVersionId: s.settingsVersionId, snapshotId: s.snapshotId, periodId: s.periodId,
-        inputsHash: s.inputsHash, lines, payees, taxLines: s.taxLines, qualification, evaluations: s.evaluations, volumeSummaries,
+        inputsHash: s.inputsHash, lines, creditAwards: s.creditAwards, payees, taxLines: s.taxLines, qualification, evaluations: s.evaluations, volumeSummaries,
         constraintApplications: s.constraintApplications, capApplications: s.capApplications, transitionReport: s.transitionReport,
         controlTotals: s.controlTotals, warnings: s.warnings, resultHash: s.resultHash,
       }

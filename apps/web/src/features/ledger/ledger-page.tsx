@@ -19,6 +19,8 @@ import type { FinanceDashboard } from '../overview/types'
 import { marketMoney, periodName } from '../periods/format'
 import type { PeriodList, PeriodState } from '../periods/types'
 import { sumMinor } from './format'
+import { CreditsTab } from './credits-tab'
+import { FxTab } from './fx-tab'
 import { MappingTab, ExportsTab } from './gl-tabs'
 import { AccountsTab, JournalTab } from './ledger-tabs'
 import { ReceivablesTab } from './receivables-tab'
@@ -126,15 +128,37 @@ function FinanceKpis({ marketId, money }: { readonly marketId: string; readonly 
   )
 }
 
+/** GET /v1/fx-rates readers. */
+const FX_READERS = ['ledger.read', 'fx.manage', 'fx.approve']
+
+/** The tabs the user's permissions open (credit.read alone: Credits; fx.* alone: Exchange rates). */
+function ledgerTabs(can: (permission: string) => boolean) {
+  const ledger = can('ledger.read')
+  return [
+    ...(ledger ? [
+      { id: 'journal', label: 'Journal entries' },
+      { id: 'accounts', label: 'Accounts' },
+      { id: 'receivables', label: 'Receivables' },
+      { id: 'mapping', label: 'Chart of accounts mapping' },
+    ] : []),
+    ...(ledger && can('ledger.export') ? [{ id: 'exports', label: 'Exports' }] : []),
+    ...(can('credit.read') ? [{ id: 'credits', label: 'Credits' }] : []),
+    ...(FX_READERS.some(can) ? [{ id: 'fx', label: 'Exchange rates' }] : []),
+  ]
+}
+
 /** SC-33 Ledger and journal export (FR-FIN-001..005): ?market=&tab= in the URL, entry and account drawers too. */
 export function LedgerPage() {
   const { me, can } = useSession()
   const params = useSearchParams()
   const router = useRouter()
   const pathname = usePathname()
-  const markets = useResource<Market[]>(can('ledger.read') ? MARKETS_PATH : null)
-  const scope = marketScope(me, 'ledger.read')
-  // Only the markets the user's ledger.read roles cover: the API answers 404 for the others.
+  const tabs = ledgerTabs(can)
+  const tab = tabs.find((candidate) => candidate.id === params.get('tab'))?.id ?? tabs[0]?.id
+  const ledger = can('ledger.read')
+  const markets = useResource<Market[]>(tab === undefined ? null : MARKETS_PATH)
+  // The market list follows the permission behind the tab shown: the API answers 404 for markets outside it.
+  const scope = marketScope(me, tab === 'credits' ? 'credit.read' : tab === 'fx' ? FX_READERS.find(can)! : 'ledger.read')
   const readable = markets.data?.filter((candidate) => inScope(scope, candidate.id))
   const requested = params.get('market')
   const market = readable?.find((candidate) => candidate.id === requested)
@@ -147,10 +171,10 @@ export function LedgerPage() {
     router.replace(`${pathname}?${next.toString()}`)
   }, [market, first, params, pathname, router])
   const marketId = market?.id ?? null
-  const summary = useResource<LedgerSummary>(marketId === null ? null : '/v1/ledger/summary', { market_id: marketId ?? undefined })
+  const summary = useResource<LedgerSummary>(marketId === null || !ledger ? null : '/v1/ledger/summary', { market_id: marketId ?? undefined })
   const periods = useMarketPeriods(marketId)
   const [opening, setOpening] = useState(() => !JOURNAL_PARAMS.some((key) => params.has(key)))
-  if (!can('ledger.read')) return <NotAvailable />
+  if (tab === undefined) return <NotAvailable />
   if (markets.error !== null) return <LoadFailure error={markets.error} onRetry={markets.reload} />
   if (readable === undefined || (market === undefined && first !== undefined)) return <LoadingState label="Loading the ledger" />
   if (market === undefined) {
@@ -158,7 +182,7 @@ export function LedgerPage() {
       <>
         <PageHeader title="Ledger and exports" />
         {markets.data !== null && markets.data.length > 0
-          ? <EmptyState title="No market in your scope">Your roles do not grant ledger access in any market.</EmptyState>
+          ? <EmptyState title="No market in your scope">Your roles do not grant access to this view in any market.</EmptyState>
           : <EmptyState title="No market is set up yet">The ledger starts with the first committed run of a market.</EmptyState>}
       </>
     )
@@ -173,14 +197,6 @@ export function LedgerPage() {
     }
     router.replace(`${pathname}?${next.toString()}`)
   }
-  const tabs = [
-    { id: 'journal', label: 'Journal entries' },
-    { id: 'accounts', label: 'Accounts' },
-    { id: 'receivables', label: 'Receivables' },
-    { id: 'mapping', label: 'Chart of accounts mapping' },
-    ...(can('ledger.export') ? [{ id: 'exports', label: 'Exports' }] : []),
-  ]
-  const tab = tabs.find((candidate) => candidate.id === params.get('tab'))?.id ?? 'journal'
   const money: Money = market
   const props: LedgerTabProps = { marketId: market.id, money, periods, params, update, opening }
   const valid = (key: string) => {
@@ -195,16 +211,16 @@ export function LedgerPage() {
         actions={(
           <div className="w-56">
             <Select label="Market" value={market.id} options={readable.map((candidate) => ({ value: candidate.id, label: marketName(candidate) }))}
-              onChange={(event) => router.replace(`${pathname}?market=${event.target.value}${tab === 'journal' ? '' : `&tab=${tab}`}`)} />
+              onChange={(event) => router.replace(`${pathname}?market=${event.target.value}${tab === tabs[0]!.id ? '' : `&tab=${tab}`}`)} />
           </div>
         )}
       />
       {summary.error !== null && <LoadFailure error={summary.error} onRetry={summary.reload} section />}
-      {summary.data === null && summary.error === null && <LoadingState label="Loading the balances" />}
+      {ledger && summary.data === null && summary.error === null && <LoadingState label="Loading the balances" />}
       {summary.data !== null && <InvariantBanner summary={summary.data} money={money} />}
-      <FinanceKpis key={market.id} marketId={market.id} money={money} />
+      {ledger && <FinanceKpis key={market.id} marketId={market.id} money={money} />}
       <div className="bg-surface-container-lowest rounded-xl shadow-sm min-w-0">
-        <Tabs label="Ledger views" idPrefix={ID_PREFIX} tabs={tabs} selected={tab} onSelect={(id) => update({ tab: id === 'journal' ? null : id, entry: null, account: null })} />
+        <Tabs label="Ledger views" idPrefix={ID_PREFIX} tabs={tabs} selected={tab} onSelect={(id) => update({ tab: id === tabs[0]!.id ? null : id, entry: null, account: null, lots: null })} />
         <TabPanel idPrefix={ID_PREFIX} tabId={tab}>
           <div className="p-space-md flex flex-col gap-space-md">
             {tab === 'journal' && <JournalTab key={market.id} {...props} entryId={valid('entry')} />}
@@ -212,6 +228,8 @@ export function LedgerPage() {
             {tab === 'receivables' && <ReceivablesTab key={market.id} {...props} onChanged={summary.reload} />}
             {tab === 'mapping' && <MappingTab key={market.id} {...props} />}
             {tab === 'exports' && <ExportsTab key={market.id} {...props} />}
+            {tab === 'credits' && <CreditsTab key={market.id} {...props} />}
+            {tab === 'fx' && <FxTab />}
           </div>
         </TabPanel>
       </div>

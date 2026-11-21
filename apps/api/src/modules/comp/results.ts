@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto'
 import type { Tx } from '@nmp/db'
 import type { MeasureValue, PayeeSettlement, QualificationStateRow, ResultLine, RunChunk, RunOutput, RunSummary, TaxLine } from '@nmp/engine'
+import { insertCreditAwards } from './awards.js'
 import type { RateBasis, StoredInstruction } from './snapshot.js'
 
 // Writes engine output rows with multi-row INSERT ... SELECT unnest(...) in batches inside the caller's transaction
@@ -144,8 +145,8 @@ export interface WrittenRun { readonly summary: RunSummary; readonly linesHash: 
 
 /**
  * Writes a streamed run (D-B6-12) chunk by chunk: lines, then each volume-summary chunk's state rows with their measures
- * (state rows arrive first and are held: the engine holds them too until the summaries are out), then the settlement and
- * its tax lines (the run's withholding instructions give their basis). Both state rows and summaries come in position id order.
+ * (state rows arrive first and are held: the engine holds them too until the summaries are out), then the settlement,
+ * its tax lines (the run's withholding instructions give their basis) and the credit awards (D-V1A-03). Both state rows and summaries come in position id order.
  */
 export async function writeRunOutput(
   tx: Tx, runId: string, period: { readonly id: string; readonly market_id: string }, stream: Generator<RunChunk, RunSummary, undefined>,
@@ -162,6 +163,7 @@ export async function writeRunOutput(
     if (next.done === true) {
       await insertState(tx, runId, state.slice(written), new Map(), marketId) // rows of positions without a summary (none expected)
       await insertTaxLines(tx, runId, period, next.value.taxLines, withholding, gross)
+      await insertCreditAwards(tx, runId, marketId, next.value.creditAwards)
       return { summary: next.value, linesHash: hash.digest(), lineCount }
     }
     const chunk = next.value

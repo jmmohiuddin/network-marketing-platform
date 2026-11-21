@@ -1,7 +1,7 @@
 // Local development data (nmp_dev) and the browser-test seed (nmp_e2e, `pnpm --filter @nmp/api seed:e2e`): two
 // independent vendor operators with MFA (BUG-031: bootstrap users, no inviter, so either can be the other's second
 // person) and two tenants with staff (no MFA: their forced enrolment is part of the browser test). nmp_e2e also gets the
-// labelled fixture market pack and markets (PLAN B1, B2, B3, B4 and B6 section 6).
+// labelled fixture market pack and markets (PLAN B1, B2, B3, B4, B6, B-MKT and V1-A section 6).
 // Idempotent: existing rows are kept and their passwords are not changed. Refuses production, any database but the
 // local ones, and any database server not on this machine.
 import { randomBytes, randomUUID } from 'node:crypto'
@@ -32,10 +32,12 @@ const STAFF: readonly { local: string; name: string; role: BaseRoleName }[] = [
   { local: 'admin', name: 'Tenant Admin', role: 'Tenant admin' },
   { local: 'admin2', name: 'Second Admin', role: 'Tenant admin' },
   { local: 'compliance', name: 'Compliance Officer', role: 'Compliance officer' },
+  { local: 'compliance2', name: 'Second Compliance Officer', role: 'Compliance officer' }, // V1-A: related party of BE-E
   { local: 'finance', name: 'Finance Approver', role: 'Finance approver' },
   { local: 'finance2', name: 'Second Finance Approver', role: 'Finance approver' }, // B4 second approvals
   { local: 'analyst', name: 'Commission Analyst', role: 'Commission analyst' },
   { local: 'support', name: 'Support Agent', role: 'Support agent' },
+  { local: 'support2', name: 'Second Support Agent', role: 'Support agent' }, // V1-A: a second participant.manage holder (SEC-BM-7)
   { local: 'dpo', name: 'Data Protection Officer', role: 'DPO' },
   { local: 'dpo2', name: 'Second Data Protection Officer', role: 'DPO' }, // B5 privacy decisions need a second DPO
   { local: 'planadmin', name: 'Plan Administrator', role: 'Plan administrator' },
@@ -403,25 +405,29 @@ export async function seedFixturePlanMarket(expectedDatabase: string, secretKey:
     )
     if (!first!.covered) await asSelf(tx, ids.admin, () => recordStructureChange(tx, `${FIXTURE_DE}: market DE and its calendar`, first!.starts_at))
   })
-  await fixtureBankDetail(owner, secretKey)
+  await fixtureBankDetail(owner, secretKey, 'DE-A', 'DE monthly', 'DE89370400440532013000')
 }
 
 /**
- * PLAN B4 section 6, E2E FIXTURE: DE-A's bank details (the public example IBAN), sealed and fingerprinted as PAY does, as
- * a migration-created version out of cooling-off from the first DE period. The runtime role creates versions only through
- * an approved case (0402), so this goes through the owner connection. Skipped when DE-A already has a version.
+ * PLAN B4 section 6, E2E FIXTURE: a participant's bank details (a public example IBAN), sealed and fingerprinted as PAY
+ * does, as a migration-created version out of cooling-off from the calendar's first period. The runtime role creates
+ * versions only through an approved case (0402), so this goes through the owner connection. Skipped when the participant
+ * already has a version.
  */
-async function fixtureBankDetail(owner: ReturnType<typeof getOwnerPool>, secretKey: Buffer): Promise<void> {
+async function fixtureBankDetail(
+  owner: ReturnType<typeof getOwnerPool>, secretKey: Buffer, ref: string, calendarName: string, iban: string,
+): Promise<void> {
   const { rows: [target] } = await owner.query<{ tenant_id: string; participant_id: string; first_start: Date }>(
     `SELECT p.tenant_id, p.id AS participant_id,
             (SELECT min(d.starts_at) FROM period d JOIN calendar c ON c.id = d.calendar_id WHERE c.tenant_id = p.tenant_id
-               AND c.name = 'DE monthly') AS first_start
+               AND c.name = $2) AS first_start
      FROM participant p JOIN tenant t ON t.id = p.tenant_id
-     WHERE t.slug = 'acme' AND p.external_ref = 'DE-A'
+     WHERE t.slug = 'acme' AND p.external_ref = $1
        AND NOT EXISTS (SELECT 1 FROM bank_detail_version v WHERE v.tenant_id = p.tenant_id AND v.participant_id = p.id)`,
+    [ref, calendarName],
   )
   if (target === undefined) return
-  const details = BankDetails.parse({ scheme: 'iban', account_holder: 'DE-A E2E', iban: 'DE89370400440532013000' })
+  const details = BankDetails.parse({ scheme: 'iban', account_holder: `${ref} E2E`, iban })
   const id = randomUUID()
   await owner.query(
     `INSERT INTO bank_detail_version (id, tenant_id, participant_id, scheme, details_sealed, fingerprint, masked, created_via,
@@ -470,6 +476,222 @@ export async function seedFixtureMigrationMarket(expectedDatabase: string): Prom
     const { rows: [admin] } = await tx.query<{ id: string }>(`SELECT id FROM user_account WHERE email = 'admin@acme.example'`)
     await asSelf(tx, admin!.id, () => recordStructureChange(tx, `${FIXTURE_DE}: market AT and its calendar`, first!.starts_at))
   })
+}
+
+const FIXTURE_V1A = 'E2E FIXTURE V1-A'
+const BE_ZONE = 'Europe/Brussels'
+/** PLAN V1-A section 6: BE participants, enrolled 2025-06-01; A, B, C, E with a tax profile (tax id) and bank details. */
+const BE_READY: readonly (readonly [ref: string, iban: string])[] = [
+  ['BE-A', 'BE68539007547034'], ['BE-B', 'BE71096123456769'], ['BE-C', 'BE62510007547061'], ['BE-E', 'BE48001234567802'],
+]
+/** PLAN V1-A section 6 orders, credited when ordered: ref, buyer, units of FX-BE-1 (1.00 EUR and 1 PV each), ordered at. */
+const BE_ORDERS: readonly (readonly [ref: string, buyer: string, units: number, at: string])[] = [
+  ['O-BE-1', 'BE-A', 100, '2026-10-06T10:00:00Z'], ['O-BE-2', 'BE-A', 50, '2026-10-20T10:00:00Z'],
+  ['O-BE-3', 'BE-A', 30, '2026-10-23T10:00:00Z'], ['O-BE-4', 'BE-B', 200, '2026-10-28T10:00:00Z'],
+]
+
+/** The acme staff ids by the local part of their e-mail. */
+async function acmeStaff(tx: Tx): Promise<(local: string) => string> {
+  const { rows } = await tx.query<{ email: string; id: string }>(`SELECT email, id FROM user_account WHERE email LIKE '%@acme.example'`)
+  const ids = new Map(rows.map((row) => [row.email.split('@')[0]!, row.id]))
+  return (local) => ids.get(local)!
+}
+
+/**
+ * PLAN V1-A section 6, E2E FIXTURE: acme's market BE (live on the fixture pack, which has no withholding duty) with BE
+ * monthly from October 2026 and BE weekly advances, provisional for it, whose weeks are cut at the month ends (Oct 26-Nov 1
+ * and Nov 1-Nov 2), periods through 2026-12-31; distributors BE-A <- BE-B, BE-A <- BE-C (portal be-c@example.test), BE-E
+ * (ready new owner, related party of compliance2), BE-D (no tax profile, no bank details), BE-R1 and BE-R2 terminated
+ * 2025-09-01 (a legal hold on BE-R2 by dpo, a closed access request of BE-R1 with sealed requester data); orders O-BE-1..4;
+ * credit type PRODUCT_CREDIT; an approved FX batch (analyst proposes, finance approves) and fx.max_rate_age_days = 45; a
+ * plan_filing pack rule on the tax pack. Owner connection for platform rows, tax profiles, bank details, the portal account
+ * and the closed request; the rest in acme's realm as the API writes it. Idempotent: skipped once BE-A exists.
+ * shortcut: the plan "BE advances" (weekly_advance, monthly_bonus, loyalty_credit in PRODUCT_CREDIT) is not seeded: a pay
+ * rule's credit_type_code is defined by the V1-A PLN/engine package; seed it here once PLN accepts credit rules.
+ */
+export async function seedFixtureAdvancesMarket(expectedDatabase: string, secretKey: Buffer, passwordHash: string): Promise<void> {
+  const owner = await ownerOn(expectedDatabase, 'advances market')
+  const { rows: [duty] } = await owner.query<{ rate: string | null }>(`SELECT rate FROM tax_rule WHERE id = 'e2e-withholding@2026-01-01'`)
+  if (duty === undefined || duty.rate !== null) throw new Error('seed refuses the advances market: the fixture pack must carry no withholding duty')
+  await owner.query(
+    `INSERT INTO pack_rule (id, market_pack, kind, title, params, mandatory, basis, basis_status, source_ref, effective_from)
+     VALUES ('e2e-plan-filing@2020-01-01', $1, 'plan_filing', 'E2E FIXTURE — plan filing', '{"authority": "E2E fixture authority, not a real regulator"}',
+       true, 'E2E fixture basis, not a real market rule', 'counsel_confirmed', 'E2E fixture', '2020-01-01')
+     ON CONFLICT (id) DO NOTHING`,
+    [E2E_TAX_PACK],
+  )
+  await owner.query(
+    `INSERT INTO market (tenant_id, code, currency, minor_unit, time_zone, languages, market_pack, state)
+     SELECT t.id, 'BE', 'EUR', 2, $2, '{en}', $1, 'live' FROM tenant t WHERE t.slug = 'acme' ON CONFLICT DO NOTHING`,
+    [E2E_FIXTURE_PACK, BE_ZONE],
+  )
+  const { rows: [acme] } = await owner.query<{ id: string }>(`SELECT id FROM tenant WHERE slug = 'acme'`)
+  const made = await runInTenant({ tenantId: acme!.id, userId: SYSTEM_ACTOR_ID }, SYSTEM, async (tx) => {
+    if ((await tx.query(`SELECT 1 FROM participant WHERE external_ref = 'BE-A'`)).rowCount !== 0) return null
+    const user = await acmeStaff(tx)
+    const one = async (sql: string, params: unknown[]): Promise<string> => Object.values((await tx.query(sql, params)).rows[0]!)[0] as string
+    const marketId = await one(`SELECT id FROM market WHERE code = 'BE'`, [])
+    const monthly = await one(
+      `INSERT INTO calendar (tenant_id, market_id, name, cadence, cutoff_time_zone, first_period_start)
+       VALUES (app_tenant_id(), $1, 'BE monthly', 'monthly', $2, '2026-10-01') RETURNING id`, [marketId, BE_ZONE])
+    const weekly = await one(
+      `INSERT INTO calendar (tenant_id, market_id, name, cadence, cutoff_time_zone, first_period_start, provisional_for_calendar_id)
+       VALUES (app_tenant_id(), $1, 'BE weekly advances', 'weekly', $2, '2026-10-05', $3) RETURNING id`, [marketId, BE_ZONE, monthly])
+    await tx.query(
+      `INSERT INTO period (tenant_id, calendar_id, starts_at, ends_at)
+       SELECT app_tenant_id(), $1, d AT TIME ZONE $2, (d + interval '1 month') AT TIME ZONE $2
+       FROM generate_series('2026-10-01'::timestamp, '2026-12-01'::timestamp, interval '1 month') AS d`, [monthly, BE_ZONE])
+    // D-V1A-02: the weekly grid cut at the monthly boundaries, up to the last monthly period.
+    await tx.query(
+      `INSERT INTO period (tenant_id, calendar_id, starts_at, ends_at)
+       SELECT app_tenant_id(), $1, greatest(w.s, f.starts_at), least(w.e, f.ends_at)
+       FROM (SELECT d AT TIME ZONE $3 AS s, (d + interval '7 days') AT TIME ZONE $3 AS e
+             FROM generate_series('2026-10-05'::timestamp, '2026-12-28'::timestamp, interval '7 days') AS d) w
+       JOIN period f ON f.calendar_id = $2 AND f.starts_at < w.e AND w.s < f.ends_at`, [weekly, monthly, BE_ZONE])
+    const firstStart = new Date(await one('SELECT min(starts_at) FROM period WHERE calendar_id = $1', [monthly]))
+    await asSelf(tx, user('admin'), () => recordStructureChange(tx, `${FIXTURE_V1A}: market BE and its calendars`, firstStart))
+    const distributor = await fixtureType(tx, { admin: user('admin'), admin2: user('admin2') }, 'FXDIST', true)
+    const at = '2025-06-01T00:00:00Z'
+    const participants = new Map<string, { participant: string; position: string }>()
+    for (const ref of ['BE-A', 'BE-B', 'BE-C', 'BE-D', 'BE-E', 'BE-R1', 'BE-R2']) {
+      const participant = await fixtureParticipant(tx, ref, marketId, distributor, at, `${ref.toLowerCase()}@example.test`)
+      const position = await one(`SELECT gen_create_position($1, $2, NULL, NULL, 'active', $3)`, [participant, marketId, at])
+      participants.set(ref, { participant, position })
+    }
+    const of = (ref: string) => participants.get(ref)!
+    for (const child of ['BE-B', 'BE-C']) {
+      await tx.query(`SELECT gen_apply_relationship('sponsor', $1, $2, NULL, $3, 'enrolment', NULL, NULL)`, [of(child).position, of('BE-A').position, at])
+    }
+    for (const ref of ['BE-R1', 'BE-R2']) {
+      await tx.query(`SELECT gen_set_position_status($1, 'terminated', '2025-09-01T00:00:00Z', $2, NULL)`, [of(ref).position, FIXTURE_V1A])
+    }
+    await asSelf(tx, user('admin'), () => tx.query(
+      `INSERT INTO product_volume_map (tenant_id, market_id, sku, item_class, volumes, valid_from, reason, created_by)
+       VALUES (app_tenant_id(), $1, 'FX-BE-1', 'product', '{"pv": "100"}', $2, $3, $4)`, [marketId, at, FIXTURE_V1A, user('admin')]))
+    for (const [ref, buyer, units, orderedAt] of BE_ORDERS) {
+      const inbound = await one(
+        `INSERT INTO inbound_event (tenant_id, source, idempotency_key, payload_hash, processed_at, state)
+         VALUES (app_tenant_id(), 'api:e2e-fixture', $1, $2, now(), 'processed') RETURNING id`, [`order:${ref}`, randomBytes(32)])
+      const orderId = await one(
+        `INSERT INTO sales_order (tenant_id, source_system, source_order_id, market_id, buyer_id, buyer_type_id, purpose, purpose_missing,
+           attributed_position_id, attribution_source, attribution_conflict, ordered_at, credited_at, period_id, amount_minor, tax_minor,
+           currency, payload_hash, inbound_event_id)
+         VALUES (app_tenant_id(), 'e2e-fixture', $1, $2, $3, $4, 'personal', false, $5, 'buyer', false, $6, $6, market_period_at($2, $6),
+           $7, 0, 'EUR', $8, $9) RETURNING id`,
+        [ref, marketId, of(buyer).participant, distributor, of(buyer).position, orderedAt, units * 100, randomBytes(32), inbound])
+      await tx.query(
+        `INSERT INTO order_line (tenant_id, order_id, line_no, sku, item_class, quantity, amount_minor, volumes)
+         VALUES (app_tenant_id(), $1, 1, 'FX-BE-1', 'product', $2, $3, jsonb_build_object('pv', $4::text))`,
+        [orderId, units, units * 100, String(units * 100)])
+    }
+    await asSelf(tx, user('finance'), () => tx.query(
+      `INSERT INTO credit_type (tenant_id, code, name, unit_value_minor, expiry_days, expiry_notice_days, redemption_scope, taxable)
+       VALUES (app_tenant_id(), 'PRODUCT_CREDIT', 'Product credit', 100, 30, 7, jsonb_build_object('markets', jsonb_build_array($1::text)), false)`,
+      [marketId]))
+    const batch = await asSelf(tx, user('analyst'), () => one(
+      `INSERT INTO fx_rate_batch (tenant_id, source, rows) VALUES (app_tenant_id(), $1, $2) RETURNING id`,
+      [`${FIXTURE_V1A} rates, not market data`, JSON.stringify([
+        { base: 'CHF', quote: 'EUR', rate: '1.0412000000', valid_from: '2026-11-01T00:00:00Z' },
+        { base: 'USD', quote: 'EUR', rate: '0.9200000000', valid_from: '2026-09-01T00:00:00Z' },
+      ])]))
+    await asSelf(tx, user('finance'), async () => {
+      const approval = await one(
+        `INSERT INTO approval (tenant_id, object_type, object_id, preparer_id, approver_id, decision, reason, decided_at)
+         VALUES (app_tenant_id(), 'fx_rate_batch', $1, $2, $3, 'approved', $4, now()) RETURNING id`, [batch, user('analyst'), user('finance'), FIXTURE_V1A])
+      await tx.query(`UPDATE fx_rate_batch SET state = 'approved', approval_id = $2, decided_at = now() WHERE id = $1`, [batch, approval])
+      await tx.query(
+        `INSERT INTO fx_rate (tenant_id, batch_id, base, quote, rate, source, valid_from)
+         SELECT app_tenant_id(), b.id, r ->> 'base', r ->> 'quote', (r ->> 'rate')::numeric, b.source, (r ->> 'valid_from')::timestamptz
+         FROM fx_rate_batch b CROSS JOIN jsonb_array_elements(b.rows) r WHERE b.id = $1`, [batch])
+    })
+    await asSelf(tx, user('admin'), () => tx.query(
+      `INSERT INTO user_related_participant (tenant_id, user_id, participant_id, relation, declared_by)
+       VALUES (app_tenant_id(), $1, $2, 'relative', $3)`, [user('compliance2'), of('BE-E').participant, user('admin')]))
+    await asSelf(tx, user('dpo'), () => tx.query(
+      `INSERT INTO legal_hold (tenant_id, participant_id, reason) VALUES (app_tenant_id(), $1, $2)`, [of('BE-R2').participant, FIXTURE_V1A]))
+    return { participant: (ref: string) => of(ref).participant, admin: user('admin'), finance: user('finance'), dpo: user('dpo'), dpo2: user('dpo2') }
+  })
+  if (made === null) return
+  for (const [ref, iban] of BE_READY) {
+    const id = randomUUID()
+    const taxId = `BE${ref.slice(3)}0000001`
+    await owner.query(
+      `INSERT INTO tax_profile (id, tenant_id, participant_id, residency, entity_type, tax_id_sealed, tax_id_masked, valid_from, created_by)
+       VALUES ($1, $2, $3, 'BE', 'individual', $4, $5, '2025-06-01T00:00:00Z', $6)`,
+      [id, acme!.id, made.participant(ref), seal(secretKey, taxId, `tax_profile:${id}`), `•••• ${taxId.slice(-2)}`, made.admin])
+    await fixtureBankDetail(owner, secretKey, ref, 'BE monthly', iban)
+  }
+  const portalUser = randomUUID()
+  await owner.query(
+    `INSERT INTO user_account (id, tenant_id, realm, idp_subject, email, display_name, state, participant_id, locale)
+     VALUES ($1, $2, 'portal', $3, 'be-c@example.test', 'BE-C', 'active', $4, 'en')`, [portalUser, acme!.id, `local:${randomUUID()}`, made.participant('BE-C')])
+  await owner.query('INSERT INTO password_credential (user_id, password_hash) VALUES ($1, $2)', [portalUser, passwordHash])
+  // A closed access request of BE-R1 (2025-10-01) with its approved system case, written together (0506: one transaction).
+  const requestId = randomUUID()
+  const client = await owner.connect()
+  try {
+    await client.query('BEGIN')
+    const { rows: [privacyCase] } = await client.query<{ id: string }>(
+      `INSERT INTO case_file (tenant_id, type, subject_type, subject_id, reason_code, state, payload, opened_by_kind, created_at)
+       VALUES ($1, 'privacy', 'privacy_request', $2, 'RECEIVED_BY_STAFF', 'open', jsonb_build_object('request_id', $3::text), 'system', '2025-09-10T00:00:00Z')
+       RETURNING id`, [acme!.id, requestId, requestId])
+    await client.query(
+      `INSERT INTO privacy_request (id, tenant_id, case_id, type, channel, subject_participant_id, requester_sealed, received_at, created_by,
+         created_by_type) VALUES ($1, $2, $3, 'access', 'staff', $4, $5, '2025-09-10T00:00:00Z', $6, 'user')`,
+      [requestId, acme!.id, privacyCase!.id, made.participant('BE-R1'),
+        seal(secretKey, JSON.stringify({ full_name: 'BE-R1 E2E', email: 'be-r1@example.test', received_via: FIXTURE_V1A }), `privacy_request:${requestId}`),
+        made.dpo])
+    const { rows: [approval] } = await client.query<{ id: string }>(
+      `INSERT INTO approval (tenant_id, object_type, object_id, preparer_id, approver_id, decision, reason, decided_at, created_by)
+       VALUES ($1, 'case', $2, $3, $4, 'approved', $5, '2025-09-20T00:00:00Z', $4) RETURNING id`, [acme!.id, privacyCase!.id, made.dpo, made.dpo2, FIXTURE_V1A])
+    await client.query(
+      `UPDATE case_file SET state = 'submitted', submitted_by = $2, submitted_at = '2025-09-12T00:00:00Z', approvals_required = 1 WHERE id = $1`,
+      [privacyCase!.id, made.dpo])
+    await client.query(`UPDATE case_file SET state = 'approved', approval_id = $2, decided_at = '2025-09-20T00:00:00Z' WHERE id = $1`, [privacyCase!.id, approval!.id])
+    await client.query(
+      `UPDATE privacy_request SET verified_at = '2025-09-11T00:00:00Z', verified_by = $2, verification_method = 'contact_match', outcome = 'fulfilled',
+         closed_at = '2025-10-01T00:00:00Z', retention_basis = $3 WHERE id = $1`, [requestId, made.dpo, FIXTURE_V1A])
+    await client.query('COMMIT')
+  } catch (error) {
+    await client.query('ROLLBACK')
+    throw error
+  } finally {
+    client.release()
+  }
+  // fx.max_rate_age_days = 45 (D-V1A-10): an approved change request (admin requests, finance approves) and its version.
+  await owner.query(
+    `WITH a AS (INSERT INTO approval (tenant_id, object_type, object_id, preparer_id, approver_id, decision, reason, decided_at, created_by)
+                VALUES ($1, 'setting_change_request', $2, $3, $4, 'approved', $5, now(), $4) RETURNING id),
+          v AS (INSERT INTO tenant_setting_version (tenant_id, version, effective_from, settings, reason, created_by, approval_id)
+                SELECT $1, max(version) + 1, now(),
+                       (SELECT settings FROM tenant_setting_version WHERE tenant_id = $1 ORDER BY version DESC LIMIT 1)
+                         || '{"fx.max_rate_age_days": 45}', $5, $3, (SELECT id FROM a)
+                FROM tenant_setting_version WHERE tenant_id = $1 RETURNING id, effective_from)
+     INSERT INTO setting_change_request (id, tenant_id, key, value, effective_from, reason, base_version, state, requested_by, decided_by,
+       decided_at, approval_id, version_id)
+     SELECT $2, $1, 'fx.max_rate_age_days', '45', v.effective_from, $5, 0, 'approved', $3, $4, now(), a.id, v.id FROM a, v`,
+    [acme!.id, randomUUID(), made.admin, made.finance, FIXTURE_V1A])
+}
+
+/**
+ * PLAN V1-A section 6, E2E FIXTURE: tenant offboard ("Offboard Demo", live) with one market OB and no activity, and its
+ * Tenant admin admin@offboard.test (the bootstrap grant; MFA enrolled in the browser like the other e2e admins).
+ * Idempotent.
+ */
+export async function seedFixtureOffboardTenant(expectedDatabase: string, passwordHash: string): Promise<void> {
+  const owner = await ownerOn(expectedDatabase, 'offboarding tenant')
+  await owner.query(
+    `INSERT INTO tenant (legal_name, slug, region, isolation_tier, db_route, state)
+     VALUES ('Offboard Demo', 'offboard', 'eu', 'pooled', 'pooled', 'live') ON CONFLICT (slug) DO NOTHING`)
+  const { rows: [tenant] } = await owner.query<{ id: string }>(`SELECT id FROM tenant WHERE slug = 'offboard'`)
+  await runInTenant({ tenantId: tenant!.id, userId: SYSTEM_ACTOR_ID }, SYSTEM, async (tx) => {
+    if ((await existingUser(tx, 'admin@offboard.test')) !== undefined) return
+    const admin = await insertUser(tx, { tenantId: tenant!.id, email: 'admin@offboard.test', name: 'Offboard Admin', passwordHash })
+    await grant(tx, randomUUID(), admin, 'Tenant admin', null)
+  })
+  await owner.query(
+    `INSERT INTO market (tenant_id, code, currency, minor_unit, time_zone, languages, market_pack, state)
+     VALUES ($1, 'OB', 'EUR', 2, $2, '{en}', 'none', 'live') ON CONFLICT DO NOTHING`, [tenant!.id, BE_ZONE])
 }
 
 /** The three ended AT months M-3, M-2, M-1 as YYYY-MM (the cutover C is M-1). */
@@ -578,9 +800,12 @@ export async function seed(config: Config, password: string | undefined, print: 
     await seedFixturePlanMarket(E2E_DATABASE, config.secretKey)
     await seedFixtureMigrationMarket(E2E_DATABASE)
     await writeMigrationFixtureFiles(E2E_DATABASE)
+    await seedFixtureAdvancesMarket(E2E_DATABASE, config.secretKey, passwordHash)
+    await seedFixtureOffboardTenant(E2E_DATABASE, passwordHash)
     print(`market packs: ${E2E_FIXTURE_PACK}, ${E2E_TAX_PACK} (fixtures), acme market NL live with committed past periods (fixture)`)
     print('acme market DE live with DE-A, DE-B, DE-C, DE-K and SKU FX-1, DE-A bank details, no plan yet (fixture)')
     print(`acme market AT in implementation on ${E2E_TAX_PACK}, migration files in var/e2e/b6-migration/ (fixture)`)
+    print('acme market BE live: monthly + weekly advances, BE-A..BE-E, BE-R1/R2, O-BE-1..4, PRODUCT_CREDIT, FX rates; tenant offboard (fixture)')
   }
   if (created && password === undefined) print(`password of the accounts created now: ${effective}`)
 }

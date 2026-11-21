@@ -131,6 +131,9 @@ interface BonusCommon {
   readonly sourceKind: SourceKind
   readonly reversalPolicy: ReversalPolicy
   readonly eligibleIf: RankRef | null // payee must hold this rank; for compression it is also "active"; null = every earner
+  // D-V1A-03: the rule pays in this credit type (non-cash): its lines leave cash settlement as RunOutput.creditAwards.
+  // Absent on cash rules, so plans without awards keep their content and inputs hashes.
+  readonly award?: { readonly creditType: string }
 }
 export interface RankRates { readonly ladder: string; readonly rates: readonly { readonly rank: string; readonly rate: Decimal }[] }
 
@@ -290,7 +293,7 @@ export interface QualificationStateRow {
 }
 export interface PriorState { readonly planVersionId: string; readonly periodId: string; readonly positions: readonly QualificationStateRow[] }
 
-export type OriginType = 'late_transaction' | 'clawback' | 'manual' | 'restatement'
+export type OriginType = 'late_transaction' | 'clawback' | 'manual' | 'restatement' | 'provisional'
 /** Pass-9 input, consumed once per run (FR-COMP-010). Amount already computed by its origin. */
 export interface AdjustmentOrigin {
   readonly originType: OriginType
@@ -418,6 +421,17 @@ export interface ResultLine {
   readonly trace: Trace
 }
 
+/** D-V1A-03: a final line of an award rule, owed in credits (never netted, withheld or paid out in cash). */
+export interface CreditAward {
+  readonly payeePositionId: PositionId
+  readonly payeeParticipantId: ParticipantId
+  readonly ruleKey: string
+  readonly creditType: string
+  readonly amountMinor: bigint
+  readonly currency: string
+  readonly trace: Trace
+}
+
 export interface ConstraintApplication { readonly key: string; readonly participantId: ParticipantId; readonly beforeRaw: bigint; readonly afterRaw: bigint }
 /** BR-CAP-03: payees affected and amounts removed, per cap. */
 export interface CapApplication {
@@ -476,7 +490,8 @@ export interface RunOutput {
   readonly snapshotId: string
   readonly periodId: string
   readonly inputsHash: string // sha256 of the canonical RunInput; replay compares it first
-  readonly lines: readonly ResultLine[] // sorted: payee position id, pass, rule key, origin type, origin id
+  readonly lines: readonly ResultLine[] // sorted: payee position id, pass, rule key, origin type, origin id; cash only
+  readonly creditAwards: readonly CreditAward[] // award-rule lines in line order (D-V1A-03); [] when no rule pays credits
   readonly payees: readonly PayeeSettlement[] // participant id asc
   readonly taxLines: readonly TaxLine[]
   readonly qualification: readonly QualificationStateRow[] // state candidates, position id asc

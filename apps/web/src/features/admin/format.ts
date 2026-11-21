@@ -128,6 +128,13 @@ const PERMISSION_LABELS: Readonly<Record<string, string>> = {
   'case.grievance.create': 'Record grievances',
   'case.grievance.approve': 'Resolve grievances',
   'register.read': 'View the delisted-seller register',
+  'credit.read': 'View credit types, balances and redemptions',
+  'credit.manage': 'Manage credit types',
+  'fx.manage': 'Propose exchange rates',
+  'fx.approve': 'Approve exchange rates',
+  'legal_hold.manage': 'Place and release legal holds',
+  'tenant.offboard': 'Confirm or cancel the account offboarding',
+  'case.transfer.approve': 'Approve ownership transfers',
 }
 
 export function permissionLabel(permission: string): string {
@@ -223,18 +230,18 @@ export function jobHealthLabel(health: { readonly queued: number; readonly runni
   return `${health.queued} queued · ${health.running} running · ${health.failed} failed`
 }
 
-/** The tenant base roles and their permissions (apps/api/src/lib/permissions.ts BASE_ROLES, PLAN B1 to B6 section 3). */
+/** The tenant base roles and their permissions (apps/api/src/lib/permissions.ts BASE_ROLES, PLAN B1 to B6 and V1-A section 3). */
 export const BASE_ROLE_PERMISSIONS: Readonly<Record<string, readonly string[]>> = {
   'Tenant admin': [
     'user.manage', 'settings.manage', 'import.manage', 'mapping.edit', 'mapping.approve', 'compliance.read',
     'audit.read', 'vendor_access.decide', 'market.manage', 'integration.manage', 'participant.read', 'order.read',
-    'product.manage', 'integration.read', 'ledger.export', 'export.full',
+    'product.manage', 'integration.read', 'ledger.export', 'export.full', 'tenant.offboard',
   ],
   'Commission analyst': [
     'compliance.read', 'participant.read', 'genealogy.read', 'case.genealogy.read', 'order.read', 'late.manage',
     'integration.read', 'plan.read', 'period.read', 'run.execute', 'run.review', 'trace.read', 'restatement.request',
     'case.restatement.read', 'ledger.read', 'case.adjustment.read', 'case.adjustment.create', 'case.write_off.read',
-    'case.write_off.create', 'case.dispute.read', 'case.dispute.approve',
+    'case.write_off.create', 'case.dispute.read', 'case.dispute.approve', 'credit.read', 'fx.manage',
   ],
   'Plan administrator': ['compliance.read', 'plan.read', 'plan.edit', 'plan.simulate', 'period.read', 'guardrail.read'],
   'Finance approver': [
@@ -243,10 +250,11 @@ export const BASE_ROLE_PERMISSIONS: Readonly<Record<string, readonly string[]>> 
     'ledger.read', 'ledger.export', 'payout.read', 'payout.approve', 'tax.manage', 'case.adjustment.read',
     'case.adjustment.approve', 'case.write_off.read', 'case.write_off.create', 'case.write_off.approve',
     'case.returned_payment.read', 'case.dispute.read', 'migration.signoff', 'period.close', 'tax.read', 'tax.forms',
+    'credit.read', 'credit.manage', 'fx.manage', 'fx.approve',
   ],
   'Payout officer': [
     'participant.unmask', 'participant.read', 'ledger.read', 'payout.read', 'payout.prepare', 'payout.reconcile',
-    'payout.hold', 'case.bank_detail.read', 'case.returned_payment.read', 'case.returned_payment.create',
+    'payout.hold', 'case.bank_detail.read', 'case.returned_payment.read', 'case.returned_payment.create', 'credit.read',
   ],
   'Compliance officer': [
     'mapping.approve', 'compliance.read', 'snapshot.create', 'export', 'audit.read', 'market.signoff',
@@ -256,14 +264,15 @@ export const BASE_ROLE_PERMISSIONS: Readonly<Record<string, readonly string[]>> 
     'guardrail.read', 'override.approve', 'ledger.read', 'payout.read', 'payout.hold', 'case.adjustment.read',
     'case.write_off.read', 'case.bank_detail.read', 'case.bank_detail.approve', 'case.dispute.read', 'tax.read',
     'case.grievance.read', 'case.grievance.create', 'case.grievance.approve', 'register.read',
+    'case.transfer.approve', 'legal_hold.manage',
   ],
   'Support agent': [
     'participant.read', 'participant.manage', 'genealogy.read', 'case.genealogy.read', 'case.genealogy.create',
     'case.duplicate.read', 'case.duplicate.create', 'servicing.manage', 'order.read', 'period.read', 'run.review',
     'trace.read', 'case.bank_detail.read', 'case.bank_detail.create', 'case.dispute.read', 'case.grievance.read',
-    'case.grievance.create',
+    'case.grievance.create', 'credit.read',
   ],
-  DPO: ['compliance.read', 'audit.read', 'participant.unmask', 'participant.read', 'privacy.manage'],
+  DPO: ['compliance.read', 'audit.read', 'participant.unmask', 'participant.read', 'privacy.manage', 'legal_hold.manage'],
   'Implementation consultant': ['import.manage', 'mapping.edit', 'plan.read', 'plan.edit', 'plan.simulate', 'period.read', 'migration.manage'],
   'Executive read-only': ['compliance.read', 'plan.read', 'period.read', 'dashboard.exec'],
   Integration: [],

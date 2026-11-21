@@ -12,7 +12,7 @@ import { envelope, parse } from '../../lib/http.js'
 import { idempotent, sendIdempotent } from '../../lib/idempotency.js'
 import { decodeCursor, pageQuery, toPage } from '../../lib/pagination.js'
 import { open } from '../../lib/secret-box.js'
-import { scopedMarket, scopeOf, sealContext, TAX_YEAR } from './access.js'
+import { parseYear, scopedMarket, scopeOf, sealContext, TAX_YEAR } from './access.js'
 import { formCsv, sendFormCsv, type FormTotals } from './forms.js'
 
 // D-BM-06 / FR-TAX-003 (API-36): the year-end preview, generation of frozen form versions (SQL tax_generate_forms, the
@@ -122,7 +122,7 @@ export function registerYearEndRoutes(app: FastifyInstance): void {
   const forms = { preHandler: [requireRealm('tenant'), requirePermission('tax.forms'), requireStepUp()] }
 
   app.get('/v1/tax/year-end', read, async (request) => {
-    const { market_id: marketId, tax_year: taxYear, cursor, limit } = parse(yearQuery, request.query)
+    const { market_id: marketId, tax_year: taxYear, cursor, limit } = parseYear(yearQuery, request.query)
     const after = decodeCursor(cursor, refCursor)
     return inTenant(request, async (tx) => {
       await scopedMarket(tx, marketId, scopeOf(request, 'tax.read'))
@@ -145,7 +145,7 @@ export function registerYearEndRoutes(app: FastifyInstance): void {
   })
 
   app.post('/v1/tax/year-end-forms', forms, async (request, reply) => {
-    const body = parse(yearBody, request.body)
+    const body = parseYear(yearBody, request.body)
     const result = await inTenant(request, (tx) => idempotent(tx, request, async () => {
       const market = await scopedMarket(tx, body.market_id, scopeOf(request, 'tax.forms'))
       const generation = await generateForms(tx, market.id, body.tax_year)
@@ -168,7 +168,7 @@ export function registerYearEndRoutes(app: FastifyInstance): void {
   })
 
   app.get('/v1/tax/year-end-generations', read, async (request) => {
-    const { market_id: marketId, tax_year: taxYear } = parse(generationsQuery, request.query)
+    const { market_id: marketId, tax_year: taxYear } = parseYear(generationsQuery, request.query)
     return inTenant(request, async (tx) => {
       await scopedMarket(tx, marketId, scopeOf(request, 'tax.read'))
       const { rows } = await tx.query(
@@ -187,7 +187,7 @@ export function registerYearEndRoutes(app: FastifyInstance): void {
   })
 
   app.get('/v1/tax/year-end-forms', read, async (request) => {
-    const { market_id: marketId, tax_year: taxYear, participant_id: participantId, cursor, limit } = parse(formsQuery, request.query)
+    const { market_id: marketId, tax_year: taxYear, participant_id: participantId, cursor, limit } = parseYear(formsQuery, request.query)
     const after = decodeCursor(cursor, refCursor)
     return inTenant(request, async (tx) => {
       await scopedMarket(tx, marketId, scopeOf(request, 'tax.read'))
@@ -212,7 +212,7 @@ export function registerYearEndRoutes(app: FastifyInstance): void {
 
   // A refused export is committed (EXPORT.REFUSED is audited), so it is sent, not thrown.
   app.post('/v1/tax/year-end-forms/export', forms, async (request, reply) => {
-    const body = parse(yearBody, request.body)
+    const body = parseYear(yearBody, request.body)
     const file = await inTenant(request, (tx) => exportCsv(tx, request, body))
     reply.header('cache-control', 'no-store')
     if ('refused' in file) {

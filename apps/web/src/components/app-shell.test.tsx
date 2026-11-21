@@ -51,6 +51,20 @@ describe('AppShell', () => {
     expect(screen.getByText('Acme Ltd')).toBeTruthy()
   })
 
+  it('shows the read-only notice for a read-only tenant and hides write controls (D-V1A-07)', async () => {
+    function Writes() {
+      const { readOnly } = useSession()
+      return <p>{readOnly ? 'Writes hidden' : 'Writes shown'}</p>
+    }
+    const view = renderWithProviders(<AppShell realm="tenant"><Writes /></AppShell>, fetchReturning(ok(me({ tenant: { id: 't1', slug: 'acme', legal_name: 'Acme Ltd', region: 'eu', state: 'archived', read_only: true } }))))
+    expect(await screen.findByText('Writes hidden')).toBeTruthy()
+    expect(screen.getByTestId('read-only-notice').textContent).toContain('This account is archived: you can read and export, not change data.')
+    view.unmount()
+    renderWithProviders(<AppShell realm="tenant"><Writes /></AppShell>, fetchReturning(ok(me({ tenant: { id: 't1', slug: 'acme', legal_name: 'Acme Ltd', region: 'eu', state: 'live', read_only: false } }))))
+    expect(await screen.findByText('Writes shown')).toBeTruthy()
+    expect(screen.queryByTestId('read-only-notice')).toBeNull()
+  })
+
   it('starts each page with focus on its main content (BUG-021)', async () => {
     renderWithProviders(<AppShell realm="tenant"><Page /></AppShell>, fetchReturning(ok(me())))
     await screen.findByText('May invite users')

@@ -271,6 +271,16 @@ export const SETTINGS = {
     stepUp: true,
     approverPermission: null,
   },
+  /**
+   * FR-FIN-007 (D-V1A-04, D-V1A-10): how old, in days, the rate in force at an order's time may be; unset = no conversion.
+   * settings.manage reads it because it writes it (PUT needs settings.manage); a Finance approver decides the change.
+   */
+  'fx.max_rate_age_days': {
+    schema: z.number().int().min(1).max(366),
+    readPermissions: ['settings.manage', 'fx.manage', 'fx.approve', 'ledger.read'],
+    stepUp: true,
+    approverPermission: 'settings.approve',
+  },
 } as const satisfies Record<string, SettingDefinition>
 
 export type SettingKey = keyof typeof SETTINGS

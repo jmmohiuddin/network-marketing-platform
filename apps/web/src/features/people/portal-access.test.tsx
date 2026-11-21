@@ -25,7 +25,7 @@ const PATH = '/v1/participants/p1/portal-account'
 
 function detail(overrides: Partial<ParticipantDetail> = {}): ParticipantDetail {
   return {
-    id: 'p1', external_ref: 'DE-A', account_type: 'individual', market: { id: 'm1', code: 'DE' }, display_name: 'Ann Example',
+    id: 'p1', external_ref: 'DE-A', account_type: 'individual', account_holders_count: 0, market: { id: 'm1', code: 'DE' }, display_name: 'Ann Example',
     contact_masked: { email: 'a•••@e•••.test' }, status: 'active', merged_into: null, enrolled_at: AT, pseudonymised_at: null,
     types: [], agreements: [], positions: [], duplicate_hold: false, ...overrides,
   }

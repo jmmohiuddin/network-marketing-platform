@@ -8,7 +8,7 @@ import { genealogyChangeType, changePayload, correctionPayload } from './genealo
 import { genCaseTypes, genModule } from './index.js'
 import { transferType } from './transfer-case.js'
 import {
-  activeType, asUser, committedPeriod, daysAgo, enrol, evidenceDocument, participant, position, saveSettings,
+  activeType, asUser, committedPeriod, daysAgo, enrol, evidenceDocument, participant, position, readyPayee, saveSettings,
 } from './test-support.js'
 
 // Case types genealogy_change, genealogy_correction, transfer (FR-GEN-004, AC-GEN1-2): TS-45 (cycle), TS-61, TS-03
@@ -277,14 +277,24 @@ describe('genealogy_correction (TS-03 flag part)', () => {
   })
 })
 
+// D-V1A-06: every new transfer names its legal basis; Compliance officers (case.transfer.approve) decide.
+const SUCCESSION_BASIS = { document_kind: 'death_certificate', reference: 'DC-2026-001' }
+const SALE_BASIS = { document_kind: 'sale_agreement', reference: 'SA-17' }
+const transferTo = (to: string, legal_basis: unknown = SUCCESSION_BASIS) => ({ to_participant_id: to, effective_from: today(), legal_basis })
+const readyOwner = async (ref: string, market = gb) => {
+  const id = await participant(support, market, typeId, ref)
+  await readyPayee(acmeId, id, support.id)
+  return id
+}
+
 describe('transfer (T-B2-15, AC-GEN1-2)', () => {
-  test('the position changes owner at the date; the tree is unchanged', async () => {
-    const newOwner = await participant(support, gb, typeId, 'HEIR')
+  test('T-V1A-43: the position changes owner at the date; the tree is unchanged', async () => {
+    const newOwner = await readyOwner('HEIR')
     const before = await ownerRows('SELECT * FROM relationship WHERE tenant_id = $1 ORDER BY id', [acmeId])
-    const id = await openCase('transfer', ids.C!, { to_participant_id: newOwner, effective_from: today() }, 'SUCCESSION')
+    const id = await openCase('transfer', ids.C!, transferTo(newOwner), 'SUCCESSION')
     expect((await submit(id)).json().data.effect_preview).toEqual({
       from_owner: { participant_id: owners.C, external_ref: 'C' }, to_owner: { participant_id: newOwner, external_ref: 'HEIR' },
-      to_type_can_hold_positions: true,
+      to_type_can_hold_positions: true, new_owner_ready: { tax_profile: true, bank_detail: true },
     })
     expect((await decide(id)).statusCode).toBe(200)
     const detail = (await call(app, { method: 'GET', url: `/v1/positions/${ids.C}`, as: support })).json().data
@@ -299,7 +309,7 @@ describe('transfer (T-B2-15, AC-GEN1-2)', () => {
     const customerType = await activeType(support, compliance, 'RETAIL', { holdsPositions: false, endCustomer: true })
     const customer = await participant(support, gb, customerType, 'CUSTOMER')
     const check = (to: string) => asUser(support, (tx) =>
-      transferType.validateCreate(tx, { type: 'position', id: ids.D! }, { to_participant_id: to, effective_from: today() }, null))
+      transferType.validateCreate(tx, { type: 'position', id: ids.D! }, { ...transferTo(to), legal_basis: SUCCESSION_BASIS }, null))
     await expect(check(customer)).rejects.toMatchObject({ statusCode: 422, code: 'TYPE_CANNOT_HOLD_POSITIONS' })
     await expect(check(owners.D!)).rejects.toMatchObject({ statusCode: 409, code: 'OWNERSHIP_CONFLICT' })
     await expect(check('00000000-0000-4000-8000-000000000000')).rejects.toMatchObject({ statusCode: 422, code: 'PARTICIPANT_NOT_FOUND' })
@@ -311,14 +321,14 @@ describe('transfer (T-B2-15, AC-GEN1-2)', () => {
       submitterId: support.id, approverId: compliance.id, creditingEvent: 'paid',
       rules: [{ rule_key: 'limit', kind: 'genealogy.positions_limit', params: { max: 1 } }],
     })
-    const heir = await participant(support, nz, typeId, 'NZ-HEIR')
+    const heir = await readyOwner('NZ-HEIR', nz)
     const [first, second] = await Promise.all(['NZ1', 'NZ2'].map(async (ref) => position(support, await participant(support, nz, typeId, ref), nz, `P-${ref}`)))
-    const pending = await openCase('transfer', first!, { to_participant_id: heir, effective_from: today() }, 'SUCCESSION')
+    const pending = await openCase('transfer', first!, transferTo(heir), 'SUCCESSION')
     expect((await submit(pending)).statusCode).toBe(200)
     await position(support, heir, nz)
 
     const atCreate = await post(support, '/v1/cases', {
-      type: 'transfer', subject_type: 'position', subject_id: second, reason_code: 'SALE', payload: { to_participant_id: heir, effective_from: today() },
+      type: 'transfer', subject_type: 'position', subject_id: second, reason_code: 'SALE', payload: transferTo(heir, SALE_BASIS),
     }, true)
     const atDecision = await decide(pending)
 
@@ -332,11 +342,59 @@ describe('transfer (T-B2-15, AC-GEN1-2)', () => {
     const local = await participant(support, gb, typeId, 'GB-HEIR')
     const supportGb = await createSignedInUser({ tenantId: acmeId, roles: ['Support agent'], marketIds: [gb] })
     const file = (to: string) => post(supportGb, '/v1/cases', {
-      type: 'transfer', subject_type: 'position', subject_id: ids.D, reason_code: 'SALE',
-      payload: { to_participant_id: to, effective_from: today() },
+      type: 'transfer', subject_type: 'position', subject_id: ids.D, reason_code: 'SALE', payload: transferTo(to, SALE_BASIS),
     }, true)
     const refused = await file(foreign)
     expect([refused.statusCode, refused.json().error.code]).toEqual([422, 'PARTICIPANT_NOT_FOUND'])
     expect((await file(local)).statusCode).toBe(201)
+  })
+})
+
+describe('transfer hardening (D-V1A-06, FR-PAR-004)', () => {
+  test('T-V1A-41: no legal basis, a document kind the reason does not allow, or no evidence is refused', async () => {
+    const heir = await readyOwner('BASIS-HEIR')
+    const file = (payload: unknown, reason = 'SUCCESSION') =>
+      post(support, '/v1/cases', { type: 'transfer', subject_type: 'position', subject_id: ids.E, reason_code: reason, payload }, true)
+
+    const missing = await file({ to_participant_id: heir, effective_from: today() })
+    expect([missing.statusCode, missing.json().error.code, missing.json().error.details]).toEqual([422, 'VALIDATION_FAILED', { field: 'legal_basis' }])
+    expect((await file(transferTo(heir, { document_kind: 'birth_certificate', reference: 'x' }))).statusCode).toBe(422)
+
+    const wrongKind = await file(transferTo(heir, SALE_BASIS)) // a sale agreement does not ground a succession
+    expect(wrongKind.statusCode).toBe(201)
+    const withoutEvidence = await submit(wrongKind.json().data.id)
+    expect([withoutEvidence.statusCode, withoutEvidence.json().error.code]).toEqual([422, 'EVIDENCE_REQUIRED'])
+    await post(support, `/v1/cases/${wrongKind.json().data.id}/evidence`, { document_id: await evidenceDocument(support) }, true)
+    const refused = await submit(wrongKind.json().data.id)
+    expect([refused.statusCode, refused.json().error.details]).toEqual([422, { field: 'legal_basis.document_kind' }])
+    expect(await caseState(wrongKind.json().data.id)).toBe('open')
+  })
+
+  test('T-V1A-42: only case.transfer.approve decides; staff related to either owner are excluded; an unready or ineligible owner is refused', async () => {
+    const [x, y] = await Promise.all(['X', 'Y'].map((ref) => holder(ref)))
+    const unready = await participant(support, gb, typeId, 'UNREADY')
+    const id = await openCase('transfer', x!, transferTo(unready), 'SUCCESSION')
+    expect((await submit(id)).json().data.effect_preview.new_owner_ready).toEqual({ tax_profile: false, bank_detail: false })
+
+    const bySupport = await decide(id, support)
+    expect([bySupport.statusCode, bySupport.json().error.code]).toEqual([403, 'PERMISSION_DENIED'])
+    const notReady = await decide(id)
+    expect([notReady.statusCode, notReady.json().error.code, notReady.json().error.details]).toEqual([422, 'NEW_OWNER_NOT_READY', { missing: ['tax_profile', 'bank_detail'] }])
+    expect(await caseState(id)).toBe('submitted')
+
+    const heir = await readyOwner('RELATED-HEIR')
+    const related = await createSignedInUser({ tenantId: acmeId, roles: ['Compliance officer'], stepUp: true })
+    await ownerRows(
+      `INSERT INTO user_related_participant (tenant_id, user_id, participant_id, relation, declared_by) VALUES ($1, $2, $3, 'relative', $2)`,
+      [acmeId, related.id, heir],
+    )
+    const second = await openCase('transfer', y!, transferTo(heir), 'SUCCESSION')
+    expect((await submit(second)).statusCode).toBe(200)
+    const byRelated = await decide(second, related)
+    expect([byRelated.statusCode, byRelated.json().error.code]).toEqual([422, 'SOD_SELF_APPROVAL'])
+
+    await ownerRows(`UPDATE participant SET status = 'merged', merged_into_id = $2 WHERE id = $1`, [heir, owners.R])
+    const ineligible = await decide(second)
+    expect([ineligible.statusCode, ineligible.json().error.code, await caseState(second)]).toEqual([422, 'NEW_OWNER_NOT_ELIGIBLE', 'submitted'])
   })
 })

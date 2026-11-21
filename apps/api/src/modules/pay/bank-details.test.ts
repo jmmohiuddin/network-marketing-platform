@@ -152,8 +152,33 @@ describe('bank-detail requests and the bank_detail case (AC-17.1, AC-17.2, AC-PA
     await runQueuedJobs(noticeJob as never)
     const mail = (await mailsTo(contact))[0]!
     expect(mail).toContain('Subject: Ihre Bankdaten für Auszahlungen wurden geändert')
-    expect(mail).toContain('Das Bankkonto für Ihre Auszahlungen wurde von keinem auf •••• 3201 geändert.')
+    expect(mail).toContain('Ihre Bankdaten für Auszahlungen wurden auf •••• 3201 festgelegt.') // BUG-141 (DIST): first account, no "von keinem"
+    expect(mail).not.toContain('von keinem')
     expect(mail).toContain('(Europe/Vienna)')
+  })
+
+  test('BUG-141: a request contact equal to the contact on record (any case) gets the account notice only, not a second mail', async () => {
+    const address = `dup-${Date.now()}@example.test`
+    const dupPayee = await participant(w.tenant.id, w.market, address)
+    const created = await request(w.support, dupPayee, { ...details('GB33BUKB20201555555555'), contact_email: address.toUpperCase() })
+    expect(created.statusCode, created.body).toBe(201)
+    const opened = await call(app, {
+      method: 'POST', url: '/v1/cases', as: w.support, idempotencyKey: true,
+      body: { type: 'bank_detail', subject_type: 'participant', subject_id: dupPayee, reason_code: 'PAYEE_REQUEST', payload: { request_id: created.json().data.request_id } },
+    })
+    const caseId = opened.json().data.id as string
+    await call(app, { method: 'POST', url: `/v1/cases/${caseId}/evidence`, as: w.support, idempotencyKey: true,
+      body: { document_id: await evidenceDocument(w.tenant.id, w.support.id) } })
+    expect((await call(app, { method: 'POST', url: `/v1/cases/${caseId}/submit`, as: w.support, body: {} })).statusCode).toBe(200)
+    const approved = await call(app, { method: 'POST', url: `/v1/cases/${caseId}/decision`, as: w.compliance, idempotencyKey: true, body: { decision: 'approve', reason: 'verified' } })
+    expect(approved.statusCode, approved.body).toBe(200)
+
+    await runQueuedJobs(noticeJob as never)
+    expect(await mailsTo(address)).toHaveLength(0)
+    expect(await mailsTo(address.toUpperCase())).toHaveLength(0)
+    const queued = await ownerRows(`SELECT 1 FROM notification WHERE recipient_participant_id = $1 AND template = 'bank_detail.changed' AND channel = 'email'`, [dupPayee])
+    expect(queued).toHaveLength(1)
+    expect(await auditActions(w.tenant.id)).toContain('NOTICE.SKIPPED')
   })
 
   test('the request counts sharers in the requester\'s markets only; the approver\'s preview counts every market', async () => {

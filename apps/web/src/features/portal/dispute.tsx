@@ -24,10 +24,13 @@ interface Opened {
 }
 
 export function DisputePage({ runId, lineId }: { readonly runId: string; readonly lineId: string }) {
-  const { profile, words: { t } } = usePortal()
-  const statement = useResource<Statement>(profile.terminated ? null : `/v1/me/statements/${runId}`)
-  const explanation = useResource<Explanation>(profile.terminated ? null : `/v1/me/statement-lines/${lineId}/explanation`)
+  const { profile, readOnly, words: { t } } = usePortal()
+  const closed = profile.terminated || readOnly
+  const statement = useResource<Statement>(closed ? null : `/v1/me/statements/${runId}`)
+  const explanation = useResource<Explanation>(closed ? null : `/v1/me/statement-lines/${lineId}/explanation`)
   if (profile.terminated) return <><h1 className={PAGE_TITLE}>{t('dispute.title')}</h1><ClosedNotice t={t} /></>
+  // The shell's read-only notice says why no dispute can be opened.
+  if (readOnly) return <h1 className={PAGE_TITLE}>{t('dispute.title')}</h1>
   const failed = statement.error ?? explanation.error
   if (failed !== null) return <PortalFailure error={failed} onRetry={() => { statement.reload(); explanation.reload() }} />
   if (statement.data === null || explanation.data === null) return <LoadingState label={t('dispute.loading')} />

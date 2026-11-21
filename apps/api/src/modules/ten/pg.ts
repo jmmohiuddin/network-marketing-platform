@@ -2,3 +2,8 @@
 export function pgCode(error: unknown): string | undefined {
   return (error as { code?: unknown } | null)?.code as string | undefined
 }
+
+/** The DETAIL of a database error (guards name their refusal there), or undefined. */
+export function pgDetail(error: unknown): string | undefined {
+  return (error as { detail?: unknown } | null)?.detail as string | undefined
+}

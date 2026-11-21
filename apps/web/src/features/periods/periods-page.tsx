@@ -13,7 +13,7 @@ import { StatusBadge } from '../../components/status-badge'
 import { EmptyState, LoadingState, NotAvailable } from '../../components/states'
 import { TabPanel, Tabs } from '../../components/tabs'
 import { useCursorPages } from '../../lib/cursor-pages'
-import { formatDateTime } from '../../lib/format'
+import { countLabel, formatDateTime } from '../../lib/format'
 import { MARKETS_PATH, type Market } from '../../lib/markets'
 import { errorMessage } from '../../lib/messages'
 import { useSession } from '../../lib/session'
@@ -23,7 +23,7 @@ import { LoadFailure } from '../admin/page-states'
 import { inSentence, personName } from '../cases/format'
 import { RestatementDialog, type RestatementPeriod } from '../cases/restatement-dialog'
 import { CloseDialog, type ClosePeriod } from './close-dialog'
-import { blockerLabel, canCalculate, cutOffText, hasResults, isFinished, isRunning, marketAmount, PERIOD_STATE_LABELS, periodName, reviewPath, RUN_STATE_LABELS, listedBlockers, targetPeriod } from './format'
+import { blockerLabel, calendarBadge, canCalculate, cutOffText, hasResults, isFinished, isRunning, marketAmount, PERIOD_STATE_LABELS, periodName, refusalTitle, reviewPath, RUN_STATE_LABELS, listedBlockers, targetPeriod } from './format'
 import { blockerChip, Diagnostics, PeriodKpis, ReplayBanner, StateTimeline } from './period-panels'
 import { useRunRequest } from './run-request'
 import type { Calendar, PeriodDetail, PeriodList, PeriodRow, ReplayResult, RunDetail } from './types'
@@ -184,14 +184,14 @@ function CalendarView({ calendarId }: { readonly calendarId: string | null }) {
         </>}
       />
       {target !== undefined && <StateTimeline period={target} calendar={calendar} />}
-      {runs.error !== null && <Banner tone="danger" title="The calculation was refused">{errorMessage(runs.error)}</Banner>}
+      {runs.error !== null && <Banner tone="danger" title={refusalTitle(runs.error)}>{errorMessage(runs.error)}</Banner>}
       {problem !== null && <Banner tone="danger">{problem}</Banner>}
       {replay !== null && <ReplayBanner period={replay.period} result={replay.result} />}
       {target !== undefined && <PeriodKpis period={target} calendar={calendar} detail={detail} market={market} />}
       {/* Diagnostics beside the table only where the 8-column table fits in 8/12 (BUG-094); below it until then. */}
       <div className="grid grid-cols-1 min-[1920px]:grid-cols-12 gap-space-lg items-start">
         <div className="min-[1920px]:col-span-8 min-w-0 bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden">
-          <Tabs label="Calendars" idPrefix={ID_PREFIX} tabs={calendars.map((c: Calendar) => ({ id: c.id, label: `${c.name} (${c.market.code})` }))} selected={calendar.id}
+          <Tabs label="Calendars" idPrefix={ID_PREFIX} tabs={calendars.map((c: Calendar) => ({ id: c.id, label: [`${c.name} (${c.market.code})`, calendarBadge(c)].filter((part) => part !== null).join(' · ') }))} selected={calendar.id}
             onSelect={(id) => router.replace(`${pathname}?calendar=${id}`)} />
           <TabPanel idPrefix={ID_PREFIX} tabId={calendar.id}>
             <p className="px-space-md pb-space-sm font-caption text-caption text-secondary">Cut-off time zone: <span className={`${MONO} text-on-surface font-semibold`}>{calendar.cutoff_time_zone}</span> · {calendar.cadence}</p>
@@ -205,6 +205,8 @@ function CalendarView({ calendarId }: { readonly calendarId: string | null }) {
                   <span className="flex flex-col sm:whitespace-nowrap">
                     <span className={`${MONO} font-semibold text-on-surface`}>{label(row)}</span>
                     <span className="font-caption text-caption text-secondary font-normal">Cut-off {cutOffText(row.ends_at, calendar.cutoff_time_zone)}</span>
+                    {/* D-V1A-02: a final period's latest run that offsets advances. */}
+                    {row.latest_run !== null && row.latest_run.true_up_runs > 0 && <span className="font-caption text-caption text-secondary font-normal">Trues up {countLabel(row.latest_run.true_up_runs, 'provisional run')}</span>}
                     {row.closed_at !== null && <span className="font-caption text-caption text-secondary font-normal">Closed {formatDateTime(row.closed_at)} by {inSentence(personName(row.closed_by, me.user.id))}</span>}
                     {!large && row.latest_run !== null && <span className="font-caption text-caption text-secondary font-normal">Latest run: {RUN_STATE_LABELS[row.latest_run.state]}</span>}
                     {!large && row.late.pending > 0 && <span className="font-caption text-caption text-secondary font-normal">Late pending: {row.late.pending}</span>}

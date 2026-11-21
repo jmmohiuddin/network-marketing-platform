@@ -145,6 +145,7 @@ export async function seedTenantRows(ctx: TenantContext, secondUserId: string): 
     const b4 = await seedB4Rows(tx, ctx, secondUserId, { marketId, ...b2, ...b3 })
     const b5 = await seedB5Rows(tx, ctx, secondUserId, b2.participantId)
     const b6 = await seedB6Rows(tx, ctx, secondUserId, { marketId, roleId, ...b3 })
+    await seedV1ARows(tx, ctx, secondUserId, { marketId, ...b2, ...b3 })
     return {
       marketId, roleId, approvalId, settingsVersionId, documentId, mappingId, batchId, snapshotId, outboxEventId, ...b1, ...b2,
       ...b3, ...b4, ...b5, ...b6,
@@ -334,6 +335,14 @@ async function seedB3Rows(
   const payee = { tenant_id, payee_position_id: ids.positionId, payee_participant_id: ids.participantId, rule_key: 'pv' }
   const line = { ...payee, bonus_type: 'pay.flat', source_kind: 'other', pass: 4, amount_minor: 100, currency: 'GBP', trace: {} }
   await insertRow(tx, 'result_line', { ...line, run_id: runId })
+  // V1-A run output: a credit award (expiry copied from its type by the insert trigger).
+  const creditTypeId = await insertRow(tx, 'credit_type', {
+    tenant_id, code: 'SEED_CREDIT', name: 'Seed credit', expiry_days: 30, expiry_notice_days: 7, taxable: false,
+  })
+  const creditAwardId = await insertRow(tx, 'credit_award', {
+    ...payee, run_id: runId, market_id: ids.marketId, credit_type_id: creditTypeId, amount_minor: 10, currency: 'GBP', taxable: false,
+    trace: {},
+  })
   await tx.query(
     `INSERT INTO run_settlement (tenant_id, run_id, payee_participant_id, gross_minor, receivable_before_minor, netted_minor,
        withheld_minor, net_payable_minor) VALUES ($1, $2, $3, 100, 0, 0, 0, 100)`,
@@ -375,7 +384,7 @@ async function seedB3Rows(
   await insertRow(tx, 'restatement', {
     tenant_id, period_id: periodId, case_id: caseId, simulation_id: simulationId, state: 'calculated', diff: {},
   })
-  return { planVersionId, runId, periodId }
+  return { planVersionId, runId, periodId, creditTypeId, creditAwardId }
 }
 
 /**
@@ -592,6 +601,57 @@ async function seedBMktRows(ctx: TenantContext, ids: { marketId: string; partici
 }
 
 /**
+ * One row in every V1-A tenant table (PLAN V1-A section 1): the seed run's credit award (seedB3Rows) redeemed in full and
+ * posted (so the payee owes nothing that defers erasure), its notice event, an approved FX batch with its rate, an approved
+ * retention schedule with a run, and a legal hold placed and released.
+ */
+async function seedV1ARows(
+  tx: Tx, ctx: TenantContext, secondUserId: string,
+  ids: { marketId: string; participantId: string; creditTypeId: string; creditAwardId: string },
+) {
+  const tenant_id = ctx.tenantId
+  const approve = (objectType: string, objectId: string) => asUser(tx, secondUserId, () => insertRow(tx, 'approval', {
+    tenant_id, object_type: objectType, object_id: objectId, preparer_id: ctx.userId, approver_id: secondUserId,
+    decision: 'approved', decided_at: new Date(),
+  }))
+  const redemptionId = await insertRow(tx, 'credit_redemption', {
+    tenant_id, market_id: ids.marketId, participant_id: ids.participantId, credit_type_id: ids.creditTypeId, amount_minor: 10,
+    currency: 'GBP', source_system: 'seed', source_redemption_id: 'r1', occurred_at: new Date(),
+  })
+  await tx.query(
+    `SELECT ledger_post($1, led_attribution_period($1), 'credit_redeemed', 'credit_redemption', $2, $3, NULL, $4)`,
+    [ids.marketId, redemptionId, `credit-redeem:${redemptionId}`, JSON.stringify([
+      { type: 'credit_liability', payee_participant_id: ids.participantId, credit_type_id: ids.creditTypeId, debit_minor: '10', credit_minor: '0' },
+      { type: 'settled_clearing', debit_minor: '0', credit_minor: '10' },
+    ])],
+  )
+  await insertRow(tx, 'credit_lot_event', { tenant_id, award_id: ids.creditAwardId, kind: 'notified', amount_minor: 10 })
+  const batchId = await insertRow(tx, 'fx_rate_batch', {
+    tenant_id, source: 'seed', rows: JSON.stringify([{ base: 'EUR', quote: 'GBP', rate: '0.8500000000', valid_from: '2026-01-01T00:00:00Z' }]),
+  })
+  await tx.query(`UPDATE fx_rate_batch SET state = 'approved', approval_id = $2, decided_at = now() WHERE id = $1`, [
+    batchId, await approve('fx_rate_batch', batchId),
+  ])
+  await insertRow(tx, 'fx_rate', {
+    tenant_id, batch_id: batchId, base: 'EUR', quote: 'GBP', rate: '0.8500000000', source: 'seed', valid_from: '2026-01-01T00:00:00Z',
+  })
+  const scheduleId = await insertRow(tx, 'retention_schedule', {
+    tenant_id, data_class: 'privacy_request', retain_days: 3650, basis: 'seed', effective_from: '2026-01-01',
+  })
+  await tx.query(`UPDATE retention_schedule SET state = 'approved', approval_id = $2, decided_at = now() WHERE id = $1`, [
+    scheduleId, await approve('retention_schedule', scheduleId),
+  ])
+  await insertRow(tx, 'retention_run', {
+    tenant_id, schedule_id: scheduleId, started_at: new Date(), finished_at: new Date(), due: 0, applied: 0, held: 0, deferred: 0,
+    items: '[]',
+  })
+  const holdId = await insertRow(tx, 'legal_hold', { tenant_id, participant_id: ids.participantId, reason: 'seed' })
+  await asUser(tx, secondUserId, () => tx.query(`UPDATE legal_hold SET released_by = $2, released_at = now() WHERE id = $1`, [
+    holdId, secondUserId,
+  ]))
+}
+
+/**
  * A migration batch (participant mig-a of type SEED with an order refunded in part, a payout line of the cutover month) applied
  * by mig_apply_batch, cutting over in the open period after periodId, an opening balance and state row, the opening submitted
  * by the acting user and posted with secondUserId's approval.
@@ -660,7 +720,7 @@ export interface VendorSeed {
   supportSessionId: string
 }
 
-/** Vendor-owned rows, and a support-session request for tenantId, written as nmp_app in the vendor realm. */
+/** Vendor-owned rows, a support-session request and an offboarding request for tenantId, written as nmp_app in the vendor realm. */
 export function seedVendorRows(vendorUserId: string, tenantId: string): Promise<VendorSeed> {
   return withVendor({ userId: vendorUserId }, async (tx) => {
     const platformRole = { permissions: ['user.manage'], mfa_required: true, created_by: vendorUserId }
@@ -674,6 +734,10 @@ export function seedVendorRows(vendorUserId: string, tenantId: string): Promise<
     const supportSessionId = await insertRow(tx, 'support_session', {
       tenant_id: tenantId, requester_id: vendorUserId, reason: 'ticket 1', scope: { modules: ['import'] },
       requested_minutes: 30, state: 'requested',
+    })
+    const { rows } = await tx.query<{ state: string }>('SELECT state FROM tenant WHERE id = $1', [tenantId])
+    await insertRow(tx, 'tenant_offboarding', {
+      tenant_id: tenantId, state: 'requested', reason: 'seed', previous_state: rows[0]!.state, requested_by: vendorUserId,
     })
     return { baseRoleId, vendorRoleId, supportSessionId }
   })

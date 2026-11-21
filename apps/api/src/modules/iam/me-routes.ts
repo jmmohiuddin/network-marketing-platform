@@ -30,7 +30,7 @@ const TENANT_NAVIGATION: readonly (NavigationEntry & { readonly anyOf: readonly 
   { key: 'audit', path: '/settings/audit', label: 'Audit log', anyOf: ['audit.read'], allMarkets: true },
   {
     key: 'settings', path: '/settings', label: 'Settings',
-    anyOf: ['settings.manage', 'settings.approve', 'participant_type.approve', 'privacy.manage', 'agreement.publish'],
+    anyOf: ['settings.manage', 'settings.approve', 'participant_type.approve', 'privacy.manage', 'agreement.publish', 'tenant.offboard'],
   },
   { key: 'markets', path: '/settings/markets', label: 'Markets', anyOf: ['settings.manage', 'market.manage', 'market.signoff'] },
   { key: 'integrations', path: '/settings/integrations', label: 'Integrations', anyOf: ['integration.manage', 'integration.read'], allMarkets: true },
@@ -52,11 +52,12 @@ const TENANT_NAVIGATION: readonly (NavigationEntry & { readonly anyOf: readonly 
   { key: 'periods', path: '/periods', label: 'Periods and runs', anyOf: ['period.read'] },
   { key: 'plans', path: '/plans', label: 'Plans', anyOf: ['plan.read'] },
   { key: 'guardrails', path: '/compliance/guardrails', label: 'Guardrails', anyOf: ['guardrail.read'] },
-  { key: 'ledger', path: '/ledger', label: 'Ledger and exports', anyOf: ['ledger.read'] },
+  // V1-A: the Credits tab (credit.read) and the Exchange rates tab (fx.manage, fx.approve) live on the ledger page.
+  { key: 'ledger', path: '/ledger', label: 'Ledger and exports', anyOf: ['ledger.read', 'credit.read', 'fx.manage', 'fx.approve'] },
   { key: 'tax', path: '/tax', label: 'Tax', anyOf: ['tax.read'] },
   { key: 'payouts', path: '/payouts', label: 'Payouts', anyOf: ['payout.read'] },
   { key: 'reconciliation', path: '/payouts/reconciliation', label: 'Payout reconciliation', anyOf: ['payout.read'] },
-  { key: 'privacy', path: '/privacy', label: 'Privacy requests', anyOf: ['privacy.manage'] },
+  { key: 'privacy', path: '/privacy', label: 'Privacy requests', anyOf: ['privacy.manage', 'legal_hold.manage'] },
 ]
 const VENDOR_NAVIGATION: readonly NavigationEntry[] = [{ key: 'console', path: '/vendor', label: 'Operations console' }]
 
@@ -88,7 +89,7 @@ async function portalMe(tx: Tx, request: FastifyRequest, auth: AuthContext) {
   const pending = mfaPending(auth)
   const { rows } = await tx.query<{ user: Profile['user']; tenant: unknown; participant: PortalProfile | null }>(
     `SELECT jsonb_build_object('id', u.id, 'email', u.email, 'display_name', u.display_name) AS "user",
-            jsonb_build_object('slug', t.slug, 'legal_name', t.legal_name) AS tenant,
+            jsonb_build_object('slug', t.slug, 'legal_name', t.legal_name, 'state', t.state, 'read_only', tenant_read_only(t.id)) AS tenant,
             CASE WHEN $2 THEN NULL ELSE portal_profile(u.participant_id) END AS participant
      FROM user_account u JOIN tenant t ON t.id = u.tenant_id WHERE u.id = $1`,
     [auth.userId, pending],
@@ -136,7 +137,10 @@ interface Profile {
 
 async function loadTenant(tx: Tx, auth: AuthContext): Promise<unknown> {
   if (auth.tenantId === null) return null
-  const { rows } = await tx.query('SELECT id, slug, legal_name, region, state FROM tenant WHERE id = $1', [auth.tenantId])
+  // D-V1A-07: read_only drives the read-only notice and hides write controls.
+  const { rows } = await tx.query(
+    'SELECT id, slug, legal_name, region, state, tenant_read_only(id) AS read_only FROM tenant WHERE id = $1', [auth.tenantId],
+  )
   return rows[0] ?? null
 }
 

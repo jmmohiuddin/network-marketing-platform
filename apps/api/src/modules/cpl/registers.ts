@@ -96,10 +96,13 @@ export const GRIEVANCE_CSV_HEADER = [
   'escalated', 'rule_id',
 ] as const
 
+// BUG-139: the register's words, as the web labels them (a decided case is resolved with its outcome).
+const CSV_STATE: Readonly<Record<string, string>> = { approved: 'resolved_upheld', rejected: 'resolved_not_upheld' }
+
 export const grievanceCsvRow = (r: GrievanceRow): unknown[] => [
   r.case_id, r.market_id, r.subject.type, r.subject.id, r.subject.external_ref, r.category, r.channel, r.external_ref, r.received_at,
-  r.ack_due_at, r.acknowledged_at, r.resolution_due_at, r.resolved_at, r.outcome, r.state, r.ack_overdue, r.resolution_overdue,
-  r.escalated.join(' '), r.rule_id,
+  r.ack_due_at, r.acknowledged_at, r.resolution_due_at, r.resolved_at, r.outcome, CSV_STATE[r.state] ?? r.state, r.ack_overdue,
+  r.resolution_overdue, r.escalated.length > 0, r.rule_id,
 ]
 
 /** The order the delisted register's fields are shown in; the pack rule picks which. */

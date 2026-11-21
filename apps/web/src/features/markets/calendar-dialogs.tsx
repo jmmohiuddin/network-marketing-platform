@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useApi } from '../../components/api-provider'
+import { ApiError } from '../../lib/api'
 import { Select, TextInput } from '../../components/form-field'
 import { useToast } from '../../components/toast'
 import { countLabel } from '../../lib/format'
@@ -23,6 +24,8 @@ export interface CalendarFields {
   readonly cutoff_time_zone: string
   readonly first_period_start: string
   readonly periods_ahead: string
+  /** '' = a final calendar; else the final calendar this one pays advances for (D-V1A-02). */
+  readonly provisional_for: string
 }
 
 /** Client checks of a new calendar; periods_ahead has no default (the user states the horizon). */
@@ -43,13 +46,20 @@ export function calendarErrors(fields: CalendarFields): Record<string, string | 
 const CADENCES = [{ value: 'monthly', label: 'Monthly' }, { value: 'weekly', label: 'Weekly' }]
 
 /** POST /v1/calendars: the market, cadence, cut-off zone and first start never change afterwards. */
-export function CalendarDialog({ markets, onClose, onSaved }: { readonly markets: readonly Market[]; readonly onClose: () => void; readonly onSaved: () => void }) {
+export function CalendarDialog({ markets, calendars, onClose, onSaved }: {
+  readonly markets: readonly Market[]
+  /** Existing calendars: the final ones of the chosen market can take advances. */
+  readonly calendars: readonly Calendar[]
+  readonly onClose: () => void
+  readonly onSaved: () => void
+}) {
   const api = useApi()
   const toast = useToast()
-  const [fields, setFields] = useState<CalendarFields>({ market_id: '', name: '', cadence: '', cutoff_time_zone: '', first_period_start: '', periods_ahead: '' })
+  const [fields, setFields] = useState<CalendarFields>({ market_id: '', name: '', cadence: '', cutoff_time_zone: '', first_period_start: '', periods_ahead: '', provisional_for: '' })
   const [reason, setReason] = useState('')
   const [errors, setErrors] = useState<Record<string, string | null>>({})
   const set = (field: keyof CalendarFields) => (event: { target: { value: string } }) => setFields({ ...fields, [field]: event.target.value })
+  const finals = calendars.filter((calendar) => calendar.market.id === fields.market_id && calendar.provisional_for === null)
   function submit(idempotencyKey: string) {
     const found = { ...calendarErrors(fields), [REASON_ID]: requiredError('the reason for this change', reason) }
     setErrors(found)
@@ -58,12 +68,15 @@ export function CalendarDialog({ markets, onClose, onSaved }: { readonly markets
     const body = {
       market_id: fields.market_id, name: fields.name.trim(), cadence: fields.cadence, cutoff_time_zone: fields.cutoff_time_zone.trim(),
       first_period_start: fields.first_period_start, periods_ahead: Number(fields.periods_ahead.trim()), reason: reason.trim(),
+      ...(fields.provisional_for === '' ? {} : { provisional_for_calendar_id: fields.provisional_for }),
     }
     return {
       items,
-      fieldIds: { market_id: 'calendar-market', name: 'calendar-name', cadence: 'calendar-cadence', cutoff_time_zone: 'calendar-zone', first_period_start: 'calendar-start', periods_ahead: 'calendar-ahead', reason: REASON_ID },
+      fieldIds: { market_id: 'calendar-market', name: 'calendar-name', cadence: 'calendar-cadence', cutoff_time_zone: 'calendar-zone', first_period_start: 'calendar-start', periods_ahead: 'calendar-ahead', provisional_for_calendar_id: 'calendar-provisional', reason: REASON_ID },
       send: async () => {
-        const saved = await explained(() => api.post<{ calendar: Calendar; generated: number }>('/v1/calendars', body, { idempotencyKey }))
+        const saved = await explained(() => api.post<{ calendar: Calendar; generated: number }>('/v1/calendars', body, { idempotencyKey }).catch((error: unknown) => {
+          throw provisionalRefusal(error)
+        }))
         toast({ message: `Calendar ${saved.data.calendar.name} created with ${countLabel(saved.data.generated, 'period')}.` })
         onSaved()
       },
@@ -72,16 +85,33 @@ export function CalendarDialog({ markets, onClose, onSaved }: { readonly markets
   return (
     <FormDialog title="Add calendar" size="lg" submitLabel="Add calendar" onClose={onClose} onSubmit={submit}>
       <div className={PAIR}>
-        <Select id="calendar-market" label="Market" placeholder="Choose" options={markets.map((market) => ({ value: market.id, label: market.code }))} value={fields.market_id} error={errors['calendar-market']} onChange={set('market_id')} />
+        <Select id="calendar-market" label="Market" placeholder="Choose" options={markets.map((market) => ({ value: market.id, label: market.code }))} value={fields.market_id} error={errors['calendar-market']} onChange={(event) => setFields({ ...fields, market_id: event.target.value, provisional_for: '' })} />
         <TextInput id="calendar-name" label="Name" maxLength={100} value={fields.name} error={errors['calendar-name']} onChange={set('name')} />
         <Select id="calendar-cadence" label="Cadence" placeholder="Choose" options={CADENCES} value={fields.cadence} error={errors['calendar-cadence']} onChange={set('cadence')} />
         <TextInput id="calendar-zone" label="Cut-off time zone" helper="IANA name: periods start at local midnight there." value={fields.cutoff_time_zone} error={errors['calendar-zone']} onChange={set('cutoff_time_zone')} />
         <TextInput id="calendar-start" type="date" label="First period starts" helper="Monthly calendars start on the 1st; weekly periods start on this weekday." value={fields.first_period_start} error={errors['calendar-start']} onChange={set('first_period_start')} />
         <TextInput id="calendar-ahead" label="Periods to generate" helper={`1 to ${PERIODS_AHEAD_MAX}, counted ahead of today.`} inputMode="numeric" value={fields.periods_ahead} error={errors['calendar-ahead']} onChange={set('periods_ahead')} />
+        <Select id="calendar-provisional" label="Provisional for" value={fields.provisional_for} disabled={fields.market_id === ''}
+          helper="Pays advances that the chosen final calendar trues up. Its periods are cut at the final calendar's period ends; this never changes later."
+          options={[{ value: '', label: 'None: a final calendar' }, ...finals.map((calendar) => ({ value: calendar.id, label: calendar.name }))]} onChange={set('provisional_for')} />
       </div>
       <TextAreaField id={REASON_ID} label="Reason for the change" helper="Kept with the new settings version." value={reason} error={errors[REASON_ID]} onChange={setReason} />
     </FormDialog>
   )
+}
+
+const TARGET_REASONS: Readonly<Record<string, string>> = {
+  other_market: 'The final calendar belongs to another market.',
+  target_provisional: 'The chosen calendar pays advances itself; choose a final calendar.',
+  periods_not_nested: 'The first period starts before the final calendar\u2019s first period, so its periods would not fall inside final periods.',
+}
+
+/** 422 PROVISIONAL_TARGET_INVALID {reason} in words, on the Provisional for field. */
+function provisionalRefusal(error: unknown): unknown {
+  if (!(error instanceof ApiError) || error.code !== 'PROVISIONAL_TARGET_INVALID') return error
+  const reason = (error.details as { reason?: string } | null)?.reason
+  const message = (reason === undefined ? undefined : TARGET_REASONS[reason]) ?? error.message
+  return new ApiError(422, 'VALIDATION_FAILED', message, { issues: [{ path: 'provisional_for_calendar_id', message }] }, error.requestId)
 }
 
 /** PATCH /v1/calendars/:id: only the name changes (timing is immutable, D-B1-11). */

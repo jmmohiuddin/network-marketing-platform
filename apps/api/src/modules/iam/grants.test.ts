@@ -158,7 +158,7 @@ describe('POST /v1/users/:id/role-assignments', () => {
     expect(before).toEqual([])
     expect(approved.statusCode).toBe(200)
     expect(await permissionsOf(user)).toEqual([
-      'case.bank_detail.read', 'case.returned_payment.create', 'case.returned_payment.read', 'ledger.read', 'participant.read',
+      'case.bank_detail.read', 'case.returned_payment.create', 'case.returned_payment.read', 'credit.read', 'ledger.read', 'participant.read',
       'participant.unmask', 'payout.hold', 'payout.prepare', 'payout.read', 'payout.reconcile',
     ])
   })

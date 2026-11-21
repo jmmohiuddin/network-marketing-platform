@@ -13,7 +13,7 @@ import { useSession } from '../../lib/session'
 import { useResource } from '../../lib/use-resource'
 import { LoadFailure } from '../admin/page-states'
 import { CONNECTORS_PATH, type Connector } from '../integrations/types'
-import { ITEM_CLASS_LABELS, ATTRIBUTION_LABELS, EVENT_LABELS, HANDLING_LABELS, LATE_STATE_LABELS, moneyText, PURPOSE_LABELS, sourceText, volumesText } from './format'
+import { ITEM_CLASS_LABELS, ATTRIBUTION_LABELS, currencyDigits, EVENT_LABELS, HANDLING_LABELS, LATE_STATE_LABELS, moneyText, PURPOSE_LABELS, rateText, RECORD_ONLY_EVENTS, sourceText, volumesText } from './format'
 import type { OrderDetail } from './types'
 
 const BLOCK = 'bg-surface-container-low p-space-sm rounded-lg flex flex-col gap-2'
@@ -44,6 +44,7 @@ function Row({ label, children }: { readonly label: string; readonly children: R
 
 function Inspector({ order, minorUnit }: { readonly order: OrderDetail; readonly minorUnit: number | undefined }) {
   const money = (minor: string) => moneyText(minor, order.currency, minorUnit)
+  const original = (minor: string, currency: string) => moneyText(minor, currency, currencyDigits(currency))
   const units = order.lines.reduce((total, line) => total + line.quantity, 0)
   return (
     <div className="flex flex-col gap-space-md">
@@ -58,6 +59,7 @@ function Inspector({ order, minorUnit }: { readonly order: OrderDetail; readonly
           <Row label="Purpose">{PURPOSE_LABELS[order.purpose]}{order.purpose_missing && ' (missing in the source)'}</Row>
           <Row label="Attributed to">{order.attributed_position === null ? 'Not attributed' : <span className={MONO}>{order.attributed_position.position_ref}</span>}</Row>
           <Row label="Attribution source">{order.attribution_source === null ? '—' : ATTRIBUTION_LABELS[order.attribution_source]}</Row>
+          {order.subscription_ref !== null && <Row label="Subscription"><span className={`${MONO} break-all`}>{order.subscription_ref}</span></Row>}
         </dl>
         {order.attribution_conflict && (
           <p className="font-caption text-caption text-amber-900 flex items-start gap-1">
@@ -65,6 +67,19 @@ function Inspector({ order, minorUnit }: { readonly order: OrderDetail; readonly
           </p>
         )}
       </div>
+
+      {order.original !== null && (
+        <div className={BLOCK} data-testid="conversion">
+          <h3 className={HEAD}>Currency conversion</h3>
+          <dl className="bg-surface-container-lowest p-2 rounded flex flex-col gap-1">
+            <Row label="Sent as"><span className={MONO}>{original(order.original.amount_minor, order.original.currency)} · tax {original(order.original.tax_minor, order.original.currency)}</span></Row>
+            <Row label="Rate"><span className={MONO}>1 {order.original.currency} = {rateText(order.original.rate)} {order.currency}</span></Row>
+            <Row label="Rate valid from">{formatDateTime(order.original.rate_valid_from)}</Row>
+            <Row label="Credited as"><span className={`${MONO} font-semibold`}>{money(order.amount_minor)} · tax {money(order.tax_minor)}</span></Row>
+          </dl>
+          <p className="font-caption text-caption text-secondary">Converted once, when received, at the rate in force at the order time; refunds use the same rate.</p>
+        </div>
+      )}
 
       <div className={BLOCK}>
         <div className="flex items-center justify-between gap-space-sm">
@@ -94,7 +109,7 @@ function Inspector({ order, minorUnit }: { readonly order: OrderDetail; readonly
 
       <div className={BLOCK}>
         <h3 className={HEAD}>Events</h3>
-        {order.events.length === 0 ? <p className="font-caption text-caption text-secondary">No refund, return or chargeback.</p> : (
+        {order.events.length === 0 ? <p className="font-caption text-caption text-secondary">No refund, return, chargeback or subscription event.</p> : (
           <ol className="flex flex-col gap-1">
             {order.events.map((event) => (
               <li key={event.id} className="bg-surface-container-lowest p-2 rounded flex flex-col gap-0.5">
@@ -103,11 +118,23 @@ function Inspector({ order, minorUnit }: { readonly order: OrderDetail; readonly
                   {event.late && <StatusBadge state="held" label="Late" />}
                 </div>
                 <span className={`${MONO} text-secondary`}>{formatDateTime(event.occurred_at)}</span>
-                <span className="font-caption text-caption text-on-surface-variant">
-                  Refund {money(event.refund_minor)} · fee {money(event.fee_minor)}
-                  {event.lines !== null && ` · lines ${event.lines.map((line) => `${line.line_no}×${line.quantity}`).join(', ')}`}
-                </span>
-                <span className={`${MONO} text-[11px] text-tertiary`}>Volume effect: {event.volume_effect.total === undefined ? 'none' : volumesText(event.volume_effect.total, minorUnit)}</span>
+                {event.dispute_of_event_id !== null && (
+                  <span className="font-caption text-caption text-on-surface-variant">
+                    Closes the chargeback of {formatDateTime(order.events.find((other) => other.id === event.dispute_of_event_id)?.occurred_at)}
+                  </span>
+                )}
+                {RECORD_ONLY_EVENTS.has(event.type) ? (
+                  <span className="font-caption text-caption text-on-surface-variant">Recorded for the history: no volume or pay effect.</span>
+                ) : (
+                  <>
+                    <span className="font-caption text-caption text-on-surface-variant">
+                      Refund {money(event.refund_minor)} · fee {money(event.fee_minor)}
+                      {event.original !== null && ` (sent as ${original(event.original.refund_minor, event.original.currency)} · fee ${original(event.original.fee_minor, event.original.currency)})`}
+                      {event.lines !== null && ` · lines ${event.lines.map((line) => `${line.line_no}×${line.quantity}`).join(', ')}`}
+                    </span>
+                    <span className={`${MONO} text-[11px] text-tertiary`}>Volume effect: {event.volume_effect.total === undefined ? 'none' : volumesText(event.volume_effect.total, minorUnit)}</span>
+                  </>
+                )}
               </li>
             ))}
           </ol>

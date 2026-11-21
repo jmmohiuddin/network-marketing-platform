@@ -14,14 +14,14 @@ import { formatDateTime } from '../../lib/format'
 import { errorMessage, isNotAvailable } from '../../lib/messages'
 import { useSession } from '../../lib/session'
 import { tableError, usePagedList } from '../admin/resource'
-import { HOLD_LABELS, refusalText, sourceText } from './format'
+import { holdText, refusalText, sourceText } from './format'
 import { useConnectorNames } from './order-inspector'
 import type { InboundEvent } from './types'
 
 const STATES = [{ value: 'held', label: 'Held' }, { value: 'rejected', label: 'Rejected' }]
 
 function reasonOf(event: InboundEvent): string {
-  if (event.hold_reason !== null) return `${HOLD_LABELS[event.hold_reason] ?? event.hold_reason}${event.hold_ref === null ? '' : `: ${event.hold_ref}`}`
+  if (event.hold_reason !== null) return holdText(event.hold_reason, event.hold_ref)
   return event.result?.error === undefined ? '—' : refusalText(event.result.error.code)
 }
 

@@ -22,9 +22,10 @@ type Notice = z.infer<typeof payload>
 async function deliver(tx: Tx, notice: Notice, ctx: JobContext): Promise<void> {
   const { rows } = await tx.query<{
     masked: string; until: Date; time_zone: string; previous: string | null; request_id: string; contact: string | null; locale: string
+    on_record: string | null
   }>(
     `SELECT v.masked, v.cooling_off_until AS until, m.time_zone, r.id AS request_id, r.contact_email_sealed AS contact,
-            portal_locale(v.participant_id) AS locale,
+            portal_locale(v.participant_id) AS locale, pa.contact ->> 'email' AS on_record,
             (SELECT p.masked FROM bank_detail_version p WHERE p.participant_id = v.participant_id AND p.superseded_at IS NOT NULL
                AND p.id <> v.id ORDER BY p.superseded_at DESC, p.id LIMIT 1) AS previous
      FROM bank_detail_version v JOIN bank_detail_request r ON r.id = v.request_id
@@ -33,6 +34,14 @@ async function deliver(tx: Tx, notice: Notice, ctx: JobContext): Promise<void> {
   )
   const row = rows[0]!
   const address = row.contact === null ? null : open(ctx.config.secretKey, row.contact, bankRequestContext(row.request_id))
+  // BUG-141: the account notice (notify_participant) already mails the contact on record; the same address gets one mail.
+  if (address !== null && address.toLowerCase() === row.on_record?.toLowerCase()) {
+    await recordAudit(tx, {
+      action: 'NOTICE.SKIPPED', objectType: 'participant', objectId: notice.participant_id,
+      after: { template: notice.template, participant_id: notice.participant_id, recipient: 'request_contact', reason: 'same_as_contact_on_record' },
+    })
+    return
+  }
   await recordAudit(tx, {
     action: address === null ? 'NOTICE.UNDELIVERABLE' : 'NOTICE.SENT', objectType: 'participant', objectId: notice.participant_id,
     after: { template: notice.template, participant_id: notice.participant_id, recipient: 'request_contact' },

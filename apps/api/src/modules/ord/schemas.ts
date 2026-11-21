@@ -30,6 +30,8 @@ const orderShape = {
   tax_minor: minorString,
   lines: z.array(z.strictObject({ line_no: lineNo, sku, quantity, amount_minor: minorString, source_line_id: text100.optional() }))
     .min(1).max(500),
+  /** D-V1A-05: the subscription this order renews (a successful renewal is an ordinary order). */
+  subscription_ref: text100.optional(),
 }
 
 /** POST /v1/orders body: one attribution hint. */
@@ -49,19 +51,30 @@ export const orderInput = z.strictObject({
 })
 export type OrderInput = z.infer<typeof orderInput>
 
-const EVENT_TYPES = ['refund', 'return', 'exchange', 'chargeback', 'chargeback_reversed', 'cancelled', 'renewal_failed'] as const
+const EVENT_TYPES = [
+  'refund', 'return', 'exchange', 'chargeback', 'chargeback_reversed', 'cancelled', 'renewal_failed', 'subscription_cancelled', 'dispute_lost',
+] as const
+/** D-V1A-05: events recorded for the order timeline only: no lines, no amounts, no volume, pay or late effect. */
+export const NO_EFFECT_TYPES: readonly string[] = ['renewal_failed', 'subscription_cancelled', 'dispute_lost']
+/** The events that name a subscription instead of an order. */
+const SUBSCRIPTION_TYPES: readonly string[] = ['renewal_failed', 'subscription_cancelled']
 const eventShape = {
   source_system: sourceSystem,
   source_event_id: text100,
-  source_order_id: text100,
+  source_order_id: text100.optional(),
+  subscription_ref: text100.optional(),
   type: z.enum(EVENT_TYPES),
   occurred_at: instant,
   refund_minor: minorString,
   fee_minor: minorString,
   equal_value: z.boolean().optional(),
   reverses_source_event_id: text100.optional(),
+  disputes_source_event_id: text100.optional(),
 }
-type EventShape = { type: string; equal_value?: boolean | undefined; reverses_source_event_id?: string | undefined; lines?: unknown }
+type EventShape = {
+  type: string; equal_value?: boolean | undefined; reverses_source_event_id?: string | undefined; lines?: unknown
+  source_order_id?: string | undefined; subscription_ref?: string | undefined; disputes_source_event_id?: string | undefined
+}
 
 const uniqueLines = (lines: readonly { line_no?: number; source_line_id?: string }[]) =>
   new Set(lines.map((line) => line.line_no ?? line.source_line_id)).size === lines.length
@@ -74,6 +87,15 @@ function eventRules<S extends z.ZodType<EventShape>>(schema: S): S {
     })
     .refine((body) => body.type !== 'chargeback_reversed' || body.lines === undefined, {
       message: 'a chargeback reversal re-credits the lines of its chargeback', path: ['lines'],
+    })
+    .refine((body) => (body.source_order_id === undefined) !== (body.subscription_ref === undefined), {
+      message: 'name exactly one of source_order_id and subscription_ref', path: ['source_order_id'],
+    })
+    .refine((body) => body.subscription_ref === undefined || SUBSCRIPTION_TYPES.includes(body.type), {
+      message: 'subscription_ref names the subscription of renewal_failed and subscription_cancelled events only', path: ['subscription_ref'],
+    })
+    .refine((body) => (body.type === 'dispute_lost') === (body.disputes_source_event_id !== undefined), {
+      message: 'disputes_source_event_id names the chargeback a dispute_lost event closes (and only then)', path: ['disputes_source_event_id'],
     }) as unknown as S
 }
 
@@ -96,10 +118,14 @@ export const eventInput = eventRules(z.strictObject({
 }))
 export type EventInput = z.infer<typeof eventInput>
 
+/** inbound_event.hold_reason values (0802). */
+export const HOLD_REASONS = ['UNKNOWN_SKU', 'ORDER_NOT_FOUND', 'SUBSCRIPTION_NOT_FOUND', 'FX_RATE_MISSING', 'FX_RATE_STALE'] as const
+export type HoldReason = (typeof HOLD_REASONS)[number]
+
 const id = z.guid()
 const orderLineView = z.object({
   line_no: z.number(), sku: z.string(), item_class: z.string(), quantity: z.number(), amount_minor: z.string(),
-  volumes: volumesSchema, source_line_id: z.string().nullable(),
+  original_amount_minor: z.string().nullable(), volumes: volumesSchema, source_line_id: z.string().nullable(),
 })
 const orderView = z.object({
   id, source_system: z.string(), source_order_id: z.string(), market: z.object({ id, code: z.string() }),
@@ -108,13 +134,17 @@ const orderView = z.object({
   attributed_position: z.object({ id, position_ref: z.string() }).nullable(),
   attribution_source: z.enum(['link', 'code', 'servicing', 'buyer']).nullable(), attribution_conflict: z.boolean(),
   ordered_at: z.string(), credited_at: z.string(), period_id: id.nullable(), amount_minor: z.string(), tax_minor: z.string(),
-  currency: z.string(), volumes: volumesSchema, lines: z.array(orderLineView),
+  currency: z.string(), volumes: volumesSchema, lines: z.array(orderLineView), subscription_ref: z.string().nullable(),
+  original: z.object({
+    currency: z.string(), amount_minor: z.string(), tax_minor: z.string(), rate: z.string(), rate_valid_from: z.string(), rate_id: id,
+  }).nullable(),
 })
 const eventView = z.object({
   id, order_id: id, source_system: z.string(), source_event_id: z.string(), type: z.string(), occurred_at: z.string(),
   lines: z.array(z.object({ line_no: z.number(), quantity: z.number() })), refund_minor: z.string(), fee_minor: z.string(),
   equal_value: z.boolean(), volume_effect: z.object({ lines: z.array(z.object({ line_no: z.number(), volumes: volumesSchema })).optional(), total: volumesSchema.optional() }),
   period_id: id.nullable(), late: z.boolean(),
+  original: z.object({ refund_minor: z.string(), fee_minor: z.string(), currency: z.string() }).nullable(),
 })
 const lateItem = z.object({ id, original_period_id: id })
 
@@ -127,7 +157,7 @@ export const publicOrderSchemas = {
   eventCreated: z.object({ data: z.object({ event: eventView, late: z.boolean() }), meta: z.object({}) }),
   eventReplayed: z.object({ data: z.object({ event: eventView, replayed: z.literal(true) }), meta: z.object({}) }),
   held: z.object({
-    data: z.object({ held: z.object({ inbound_event_id: id, reason: z.enum(['UNKNOWN_SKU', 'ORDER_NOT_FOUND']), skus: z.array(z.string()).optional() }) }),
+    data: z.object({ held: z.object({ inbound_event_id: id, reason: z.enum(HOLD_REASONS), skus: z.array(z.string()).optional() }) }),
     meta: z.object({}),
   }),
 }

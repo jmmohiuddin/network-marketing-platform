@@ -8,7 +8,7 @@ import { envelope, parse } from '../../lib/http.js'
 import { decodeCursor, pageQuery, toPage } from '../../lib/pagination.js'
 import { getSetting } from '../ten/index.js'
 import { participantInScope } from './access.js'
-import { CONTACT_FIELDS, maskContact, type Contact } from './contact.js'
+import { CONTACT_FIELDS, maskContact, type Contact, type ContactField } from './contact.js'
 import { typeCode } from './schemas.js'
 
 const READ = 'participant.read'
@@ -20,7 +20,11 @@ const listQuery = z.strictObject({
   type_code: typeCode.optional(),
   ...pageQuery,
 })
-const unmaskBody = z.strictObject({ fields: z.array(z.enum(CONTACT_FIELDS)).min(1).max(3).refine((f) => new Set(f).size === f.length, 'unique') })
+// D-V1A-06: account holder names are unmasked like contact fields.
+const UNMASK_FIELDS = [...CONTACT_FIELDS, 'account_holders'] as const
+const unmaskBody = z.strictObject({
+  fields: z.array(z.enum(UNMASK_FIELDS)).min(1).max(UNMASK_FIELDS.length).refine((f) => new Set(f).size === f.length, 'unique'),
+})
 const cursorSchema = z.tuple([z.iso.datetime({ offset: true }), z.uuid()])
 /** D-B5-18: a pseudonymised participant reads as "Erased participant <external_ref>" (its name is gone). */
 const DISPLAY_NAME = `CASE WHEN p.pseudonymised_at IS NULL THEN p.display_name ELSE 'Erased participant ' || p.external_ref END AS display_name`
@@ -58,7 +62,8 @@ async function listParticipants(tx: Tx, scope: readonly string[] | null, query: 
 // duplicate_hold: a review is open and holds new positions (hold_activation) or a position is still pending (SC-09).
 async function participantDetail(tx: Tx, id: string) {
   const { rows } = await tx.query<{ contact: Contact | null } & Record<string, unknown>>(
-    `SELECT p.id, p.external_ref, p.account_type, jsonb_build_object('id', m.id, 'code', m.code) AS market, ${DISPLAY_NAME},
+    `SELECT p.id, p.external_ref, p.account_type, coalesce(jsonb_array_length(p.account_holders), 0) AS account_holders_count,
+            jsonb_build_object('id', m.id, 'code', m.code) AS market, ${DISPLAY_NAME},
             p.pseudonymised_at, p.contact, p.status,
             CASE WHEN x.id IS NULL THEN NULL ELSE jsonb_build_object('id', x.id, 'external_ref', x.external_ref) END AS merged_into,
             p.enrolled_at,
@@ -111,11 +116,13 @@ export function registerParticipantReadRoutes(app: FastifyInstance): void {
     return envelope(await inTenant(request, async (tx) => {
       await participantInScope(tx, id, scope)
       assertStepUp(request)
-      const { rows } = await tx.query<{ contact: Contact | null }>('SELECT contact FROM participant WHERE id = $1', [id])
-      const contact = Object.fromEntries(fields.map((field) => [field, rows[0]!.contact?.[field] ?? null]))
+      const { rows } = await tx.query<{ contact: Contact | null; account_holders: unknown }>(
+        'SELECT contact, account_holders FROM participant WHERE id = $1', [id])
+      const contactFields = fields.filter((field): field is ContactField => field !== 'account_holders')
+      const contact = Object.fromEntries(contactFields.map((field) => [field, rows[0]!.contact?.[field] ?? null]))
       // Field names only: the values never reach the audit log.
       await recordAudit(tx, { action: 'PARTICIPANT.UNMASKED', objectType: 'participant', objectId: id, after: { participant_id: id, fields } })
-      return { contact }
+      return fields.includes('account_holders') ? { contact, account_holders: rows[0]!.account_holders } : { contact }
     }))
   })
 }

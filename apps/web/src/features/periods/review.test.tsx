@@ -31,7 +31,7 @@ const RUN: RunDetail = {
   id: 'run-m2', period_id: 'per-m2', state: 'calculated', progress: null, totals: { gross_minor: '4700', line_count: 3, payee_count: 2 }, error: null,
   inputs_hash: 'in1', lines_hash: 'li1', engine_version: '0.2.0', prepared_by: { id: ANALYST.user.id, display_name: 'Ann Analyst' }, review_opened_at: null,
   commit_requested_at: null, commit_requested_by: null, finished_at: '2026-10-02T10:00:00.000Z', committed_at: null,
-  plan_version: { id: 'v1', plan: { id: 'pl1', name: 'DE core' }, version: 1 }, snapshot: { known_at: '2026-10-02T09:59:00.000Z', row_counts: { orders: 5, order_events: 1 } },
+  plan_version: { id: 'v1', plan: { id: 'pl1', name: 'DE core' }, version: 1 }, provisional: null, true_up: null, credit_awards_minor: '0', snapshot: { known_at: '2026-10-02T09:59:00.000Z', row_counts: { orders: 5, order_events: 1 } },
 }
 const REVIEW: RunReview = {
   comparison: null,

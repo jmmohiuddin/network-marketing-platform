@@ -19,6 +19,7 @@ import { useResource } from '../../../lib/use-resource'
 import { useIdempotencyKey } from '../resource'
 import type { BreachContact, MarketView, TenantDetail } from '../types'
 import { MetaGrid, MONO, NOTE, SECTION_CARD, SectionTitle } from '../ui'
+import { OffboardingPanel } from './offboarding-panel'
 import { RequestSessionDialog } from './request-session-dialog'
 
 const MARKET_COLUMNS: readonly DataTableColumn<MarketView>[] = [
@@ -108,7 +109,7 @@ function Actions({ tenant, onStep }: { readonly tenant: TenantDetail; readonly o
   )
 }
 
-/** SC-39 tenant: metadata, markets and job health; provisioning approval, go-live, support session request. */
+/** SC-39 tenant: metadata, markets and job health; provisioning approval, go-live, support session request, offboarding. */
 export function TenantDetailPage({ tenantId }: { readonly tenantId: string }) {
   const api = useApi()
   const toast = useToast()
@@ -147,6 +148,7 @@ export function TenantDetailPage({ tenantId }: { readonly tenantId: string }) {
         />
       </section>
       <DataTable caption={countLabel(detail.markets.length, 'market')} columns={MARKET_COLUMNS} rows={detail.markets} rowKey={(market) => market.id} empty={{ title: 'No markets.' }} />
+      {detail.state !== 'provisioning' && <OffboardingPanel tenant={detail} onChanged={tenant.reload} />}
       {detail.state !== 'provisioning' && <BreachContacts tenantId={detail.id} />}
       {step === 'approve' && <ApproveDialog tenant={detail} onClose={() => setStep(null)} onDone={done} />}
       {step === 'session' && <RequestSessionDialog tenant={detail} onClose={() => setStep(null)} onRequested={() => setStep(null)} />}

@@ -97,7 +97,7 @@ describe('SC-12 words', () => {
   })
 
   it('offers the committed and the latest run of a period once each', () => {
-    expect(runChoices({ committed_run_id: RUN, latest_run: { id: RUN, state: 'committed', gross_minor: null, finished_at: null } })).toEqual([{ value: RUN, label: 'Committed run' }])
+    expect(runChoices({ committed_run_id: RUN, latest_run: { id: RUN, state: 'committed', gross_minor: null, finished_at: null, true_up_runs: 0 } })).toEqual([{ value: RUN, label: 'Committed run' }])
     expect(runChoices({ committed_run_id: null, latest_run: null })).toEqual([])
   })
 })

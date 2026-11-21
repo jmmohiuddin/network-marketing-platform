@@ -11,6 +11,7 @@ import { engineSettings, storedInput } from './inputs.js'
 import { consumeLate, LATE_ITEMS_OF_CALENDAR, restatementOrigins } from './late.js'
 import { loadPeriod, lockRunKey, periodInScope, settingsVersionAt } from './period.js'
 import { assertRunnable } from './preflight.js'
+import { provisionalOrigins, provisionalRefusal } from './provisional.js'
 import { outputsOf, totalsOf, writeRunOutput } from './results.js'
 import { buildSnapshot, chainInputs, planFor, rowCounts, SnapshotCorrupt, storeSnapshot, type StoredInstruction } from './snapshot.js'
 
@@ -87,7 +88,9 @@ export async function requestRun(tx: Tx, periodId: string, runRequestId: string,
     `INSERT INTO run (tenant_id, period_id, run_request_id, plan_version_id, settings_version_id, engine_version, prepared_by)
      VALUES (app_tenant_id(), $1, $2, $3, $4, $5, app_user_id()) RETURNING id`,
     [periodId, runRequestId, version[0]!.id, settingsVersionId, ENGINE_VERSION],
-  )
+  ).catch((error: unknown) => {
+    throw provisionalRefusal(error) ?? error
+  })
   const runId = rows[0]!.id
   await tx.query(`UPDATE period SET state = 'calculating' WHERE id = $1`, [periodId])
   await recordAudit(tx, {
@@ -131,8 +134,13 @@ export async function prepareRun(tx: Tx, runId: string): Promise<RunInput | null
   const plan = await planFor(tx, row.plan_version_id, period.calendar_id, period.starts_us)
   const settings = await engineSettings(tx, row.settings_version_id)
   const chain = await chainInputs(tx, period, plan)
-  const late = await consumeLate(tx, runId, period, settings.roundingMode)
-  const adjustments = [...late.origins, ...(await restatementOrigins(tx, period)), ...(await manualOrigins(tx, period.id))]
+  // D-V1A-02: a provisional calendar takes no late, clawback or restatement origins (its final period credits every order).
+  const provisional = period.provisional_for_calendar_id !== null
+  const late = provisional ? { origins: [], itemIds: [] } : await consumeLate(tx, runId, period, settings.roundingMode)
+  const adjustments = [
+    ...late.origins, ...(provisional ? [] : await restatementOrigins(tx, period)), ...(await manualOrigins(tx, period.id)),
+    ...(await provisionalOrigins(tx, runId, period)),
+  ]
   const receivables = await receivablesOf(tx, period.market_id)
   const loaded = await buildSnapshot(tx, period, { snapshotId: randomUUID(), chain, adjustments, receivables })
   await storeSnapshot(tx, loaded, { periodId: period.id, priorRunId: chain.priorRunId, rowCounts: rowCounts(loaded, late.itemIds) })

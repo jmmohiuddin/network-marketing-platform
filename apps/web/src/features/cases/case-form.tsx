@@ -35,7 +35,8 @@ export interface CaseProposal {
 interface CaseFormProps {
   readonly idPrefix: string
   readonly info: CaseTypeInfo
-  readonly prepare: () => CaseProposal
+  /** Receives the chosen reason code ('' while none): a transfer's legal basis depends on it. */
+  readonly prepare: (reason: string) => CaseProposal
   /** Body paths of payload fields -> field ids, for VALIDATION_FAILED issues. */
   readonly fieldIds: Readonly<Record<string, string>>
   readonly submitLabel: string
@@ -51,6 +52,8 @@ interface CaseFormProps {
   readonly evidence?: 'required' | 'optional' | 'none'
   /** The reason field's label ("Category" for a grievance). */
   readonly reasonFieldLabel?: string
+  /** Fields that depend on the chosen reason, shown under it (a transfer's legal basis). */
+  readonly details?: (reason: string) => ReactNode
   readonly children: ReactNode
 }
 
@@ -67,7 +70,7 @@ function explained(error: unknown): unknown {
  */
 export function CaseForm({
   idPrefix, info, prepare, fieldIds, submitLabel, statement = true, statementHelper = 'Why the change is needed; kept with the case.', explain = (error) => error, initialReason = '', evidence: evidenceRule = 'required',
-  reasonFieldLabel = 'Reason', children,
+  reasonFieldLabel = 'Reason', details, children,
 }: CaseFormProps) {
   const api = useApi()
   const router = useRouter()
@@ -91,7 +94,7 @@ export function CaseForm({
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    const proposal = prepare()
+    const proposal = prepare(chosenReason)
     const own = {
       [ids.reason]: opened === null && chosenReason === '' ? `Choose a ${reasonFieldLabel.toLowerCase()}.` : null,
       [ids.evidence]: evidenceRule === 'required' && evidence.file === null ? 'Choose the evidence file.' : null,
@@ -142,6 +145,7 @@ export function CaseForm({
       <fieldset className="flex flex-col gap-space-md min-w-0" disabled={opened !== null}>
         {children}
         <Select id={ids.reason} label={reasonFieldLabel} placeholder={`Choose a ${reasonFieldLabel.toLowerCase()}`} value={chosenReason} options={reasonOptions} error={errors[ids.reason]} onChange={(event) => setReason(event.target.value)} />
+        {details?.(chosenReason)}
         {statement && <TextAreaField id={ids.note} label="Statement" optional helper={statementHelper} maxLength={NOTE_MAX} value={note} onChange={setNote} />}
       </fieldset>
       {evidenceRule === 'none' ? null : limits.error !== null ? <LoadFailure error={limits.error} onRetry={limits.reload} section />

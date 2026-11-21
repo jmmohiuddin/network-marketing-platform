@@ -86,7 +86,7 @@ describe('GET /v1/inbound-events (exception queue)', () => {
 
     expect(held.json().data).toEqual([expect.objectContaining({ state: 'held', hold_reason: 'UNKNOWN_SKU', hold_ref: 'SKU-X', attempts: 1 })])
     expect(held.json().data[0]).not.toHaveProperty('payload')
-    expect(rejected.json().data).toEqual([expect.objectContaining({ result: { error: { code: 'CURRENCY_MISMATCH' } } })])
+    expect(rejected.json().data).toEqual([expect.objectContaining({ result: { error: { code: 'FX_POLICY_NOT_CONFIGURED' } } })])
     expect((await get('/v1/inbound-events', globexAdmin)).json().data).toEqual([])
     expect((await get('/v1/inbound-events', payout)).statusCode).toBe(403)
     expect((await get('/v1/inbound-events', ieAnalyst)).json().error.code).toBe('SCOPE_NOT_HELD') // C-B2-23: no market on inbound events

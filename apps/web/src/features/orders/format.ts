@@ -48,12 +48,33 @@ export const ATTRIBUTION_LABELS: Readonly<Record<AttributionSource, string>> = {
 
 export const EVENT_LABELS: Readonly<Record<string, string>> = {
   refund: 'Refund', return: 'Return', exchange: 'Exchange', chargeback: 'Chargeback', chargeback_reversed: 'Chargeback reversed',
-  cancelled: 'Cancelled', renewal_failed: 'Renewal failed',
+  cancelled: 'Cancelled', renewal_failed: 'Subscription renewal failed', subscription_cancelled: 'Subscription cancelled',
+  dispute_lost: 'Dispute lost (chargeback stands)',
 }
+
+/** D-V1A-05: events recorded for the timeline only (no volume or pay effect). */
+export const RECORD_ONLY_EVENTS = new Set(['renewal_failed', 'subscription_cancelled', 'dispute_lost'])
 
 export const HOLD_LABELS: Readonly<Record<string, string>> = {
   UNKNOWN_SKU: 'Unknown SKU (no volumes yet)', ORDER_NOT_FOUND: 'Order not received yet',
+  SUBSCRIPTION_NOT_FOUND: 'No order with this subscription yet', FX_RATE_MISSING: 'No exchange rate for the pair yet',
+  FX_RATE_STALE: 'Exchange rate older than the allowed age',
 }
+
+/** A held event's reason with its reference; FX holds name the pair ("USD:EUR" -> "USD → EUR"). */
+export function holdText(reason: string, ref: string | null): string {
+  const label = HOLD_LABELS[reason] ?? reason
+  if (ref === null) return label
+  return `${label}: ${reason.startsWith('FX_') ? ref.replace(':', ' → ') : ref}`
+}
+
+/** The ISO 4217 decimals of a currency (CHF 2, JPY 0), from the platform's currency data; no amount passes through it. */
+export function currencyDigits(currency: string): number {
+  return new Intl.NumberFormat('en', { style: 'currency', currency }).resolvedOptions().maximumFractionDigits ?? 2
+}
+
+/** "1.0412000000" -> "1.0412": a 10-dp rate trimmed for display only. */
+export const rateText = (rate: string): string => (rate.includes('.') ? rate.replace(/0+$/, '').replace(/\.$/, '') : rate)
 
 /**
  * Why an order or event write was refused (PLAN B2 API-10, API-11, C-B2-20, and the storefront mapping codes of
@@ -88,6 +109,10 @@ const REFUSAL_LABELS: Readonly<Record<string, string>> = {
   AMOUNT_INVALID: 'A line amount after discounts is negative',
   AMOUNT_PRECISION: 'An amount has more decimals than the market currency',
   VALIDATION_FAILED: 'The order or event is not valid',
+  CURRENCY_UNKNOWN: 'The currency is not an ISO 4217 currency',
+  FX_POLICY_NOT_CONFIGURED: 'The maximum exchange-rate age is not set',
+  SETTING_NOT_CONFIGURED: 'The rounding mode for conversions is not set',
+  DISPUTE_CLOSED: 'The chargeback already has an outcome',
 }
 
 /** A refusal code in words (BUG-075). */

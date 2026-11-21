@@ -28,7 +28,7 @@ import { PRIVACY_REQUESTS_PATH, type PrivacyPayload, type PrivacyRequestDetail }
 import { EffectPreview } from './effect-preview'
 import { MONEY_CASE_TYPES, payeeLink, useCaseMarket } from './money-effects'
 import {
-  actorName, caseTypeInfo, contributorsOf, EVENT_LABELS, inSentence, instantText, isLive, KIND_LABELS, openerText, OUTCOME_LABELS, personName, reasonLabel,
+  actorName, caseTypeInfo, contributorsOf, DOCUMENT_KIND_LABELS, EVENT_LABELS, inSentence, instantText, isLive, KIND_LABELS, openerText, OUTCOME_LABELS, personName, reasonLabel,
   SIGNAL_LABELS, STATE_BADGES, STATE_LABELS, type CaseTypeInfo,
 } from './format'
 import { DocumentLink } from '../markets/gate-inspector'
@@ -71,6 +71,9 @@ function PayloadFacts({ record }: { readonly record: CaseDetail }) {
       <>
         <Fact label="New owner"><ParticipantLink id={payload.to_participant_id} /></Fact>
         <Fact label="Effective from">{instantText(payload.effective_from, formatDateTime)}</Fact>
+        {payload.legal_basis !== undefined && (
+          <Fact label="Legal basis">{DOCUMENT_KIND_LABELS[payload.legal_basis.document_kind] ?? payload.legal_basis.document_kind} · <span className="font-data-mono-sm text-data-mono-sm">{payload.legal_basis.reference}</span></Fact>
+        )}
       </>
     )
   }
@@ -219,7 +222,7 @@ export function CaseDetailPage({ caseId }: { readonly caseId: string }) {
 function CaseView({ record, info, reload }: { readonly record: CaseDetail; readonly info: CaseTypeInfo; readonly reload: () => void }) {
   const api = useApi()
   const toast = useToast()
-  const { me, can, readOnly } = useSession()
+  const { me, can, readOnly, supportReadOnly } = useSession()
   const [dialog, setDialog] = useState<CaseDialog | null>(null)
   const [problem, setProblem] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
@@ -227,8 +230,11 @@ function CaseView({ record, info, reload }: { readonly record: CaseDetail; reado
   const myId = me.user.id
   const preparing = record.state === 'open'
   const live = isLive(record)
-  const canCreate = !readOnly && can(info.create)
-  const canDecide = !readOnly && can(info.decide)
+  // A read-only tenant still answers data-subject requests through the privacy case (C-V1A-18, the API's CASE_ACTION allowlist);
+  // evidence stays hidden because its upload (POST /v1/documents) is refused.
+  const writable = record.type === 'privacy' ? !supportReadOnly : !readOnly
+  const canCreate = writable && can(info.create)
+  const canDecide = writable && can(info.decide)
   const firstApprover = record.first_approval?.approver.id === myId
   const involved = contributorsOf(record).has(myId) || firstApprover
   async function submit() {
@@ -309,7 +315,7 @@ function CaseView({ record, info, reload }: { readonly record: CaseDetail; reado
             </dl>
             {record.type === 'duplicate' && <LinkButton className="self-start" icon="compare" href={`/cases/duplicates?case=${record.id}`}>Compare side by side</LinkButton>}
           </section>
-          <Evidence record={record} canAdd={preparing && canCreate && takesEvidence} onAdded={reload} myId={myId} />
+          <Evidence record={record} canAdd={preparing && canCreate && !readOnly && takesEvidence} onAdded={reload} myId={myId} />
           <Timeline record={record} myId={myId} />
         </div>
         <div className="lg:col-span-5 flex flex-col gap-space-md min-w-0">

@@ -28,13 +28,15 @@ export interface PrivacyRequestRow {
   readonly deadline_configured: boolean
 }
 
-/** prv_erasure_blockers (0506): what defers an erasure (D-B5-18). */
+/** prv_erasure_blockers (0506, 0804): what defers an erasure (D-B5-18, D-V1A-08). */
 export type ErasureBlocker =
   | { readonly reason: 'open_payable'; readonly market_id: string; readonly amount_minor: string }
   | { readonly reason: 'payout_in_flight'; readonly count: number }
   | { readonly reason: 'payout_hold'; readonly hold_id: string }
   | { readonly reason: 'open_case'; readonly case_id: string; readonly type: string }
   | { readonly reason: 'open_run'; readonly run_id: string }
+  | { readonly reason: 'legal_hold'; readonly hold_id: string }
+  | { readonly reason: 'credits_outstanding'; readonly market_id: string; readonly credit_type_id: string; readonly amount_minor: string }
 
 /** The sealed requester, unsealed for the DPO (each read audited). */
 export interface Requester {
@@ -89,4 +91,60 @@ export interface PrivacyPayload {
   readonly participant_id?: string
   readonly retention_basis?: string
   readonly corrections?: readonly string[]
+}
+
+export const LEGAL_HOLDS_PATH = '/v1/legal-holds'
+
+/** GET /v1/legal-holds item (D-V1A-08): the reason is shown to holders of legal_hold.manage or privacy.manage only. */
+export interface LegalHold {
+  readonly id: string
+  readonly participant: { readonly id: string; readonly external_ref: string }
+  readonly market_id: string
+  readonly reason: string
+  readonly placed_by: { readonly id: string; readonly display_name: string | null }
+  readonly placed_at: string
+  readonly released_by: { readonly id: string; readonly display_name: string | null } | null
+  readonly released_at: string | null
+}
+
+export const RETENTION_SCHEDULES_PATH = '/v1/retention/schedules'
+export const RETENTION_RUNS_PATH = '/v1/retention/runs'
+export type DataClass = 'privacy_request' | 'terminated_participant'
+
+type UserRef = { readonly id: string; readonly display_name: string | null }
+
+/** GET /v1/retention/schedules item (D-V1A-08); market null = every market without its own schedule. */
+export interface RetentionSchedule {
+  readonly id: string
+  readonly data_class: DataClass
+  readonly market: { readonly id: string; readonly code: string } | null
+  readonly retain_days: number
+  readonly basis: string
+  readonly effective_from: string
+  readonly state: 'proposed' | 'approved' | 'rejected'
+  readonly in_force: boolean
+  readonly proposed_by: UserRef
+  readonly proposed_at: string
+  readonly approver: UserRef | null
+  readonly decided_at: string | null
+}
+
+/** GET /v1/retention/schedules/:id/preview: the cron's dry run, nothing written. */
+export interface RetentionPreview {
+  readonly due: number
+  readonly held: number
+  readonly sample: readonly { readonly object_type: 'participant' | 'privacy_request'; readonly object_id: string; readonly ref: string }[]
+}
+
+/** GET /v1/retention/runs item: one application of one schedule. */
+export interface RetentionRun {
+  readonly id: string
+  readonly schedule_id: string
+  readonly data_class: DataClass
+  readonly started_at: string
+  readonly finished_at: string
+  readonly due: number
+  readonly applied: number
+  readonly held: number
+  readonly deferred: number
 }

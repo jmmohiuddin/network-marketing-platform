@@ -189,7 +189,9 @@ describe('BUG-003 session integrity', () => {
 })
 
 describe('BUG-004 sessions of closed accounts', () => {
-  test('auth_find_session does not return the session of a user who is not active, or of an archived tenant', async () => {
+  // C-V1A-9 (0805): an archived tenant stays readable, so a session opened after the archive resolves (archiving revokes
+  // the sessions that were live, test below).
+  test('auth_find_session does not return the session of a user who is not active; an archived tenant\'s new session resolves', async () => {
     const archivedTenant = await createTenant({ state: 'archived' })
     const closed = [
       { userId: (await createUser({ tenantId: tenant.id, state: 'deactivated' })).id, tenantId: tenant.id },
@@ -206,7 +208,7 @@ describe('BUG-004 sessions of closed accounts', () => {
 
     const found = await Promise.all(sessions.map((session) => find(session.tokenHash)))
 
-    expect(found.map((result) => result.rowCount)).toEqual([0, 0, 0])
+    expect(found.map((result) => result.rowCount)).toEqual([0, 0, 1])
   })
 
   test('deactivating a user or archiving a tenant revokes their live sessions in the same transaction', async () => {

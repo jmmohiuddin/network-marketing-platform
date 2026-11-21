@@ -11,6 +11,7 @@ export const orderFilters = {
   purpose: z.enum(['resale', 'personal', 'unspecified', 'customer']).optional(), buyer_id: z.uuid().optional(),
   attributed_position_id: z.uuid().optional(), period_id: z.uuid().optional(), late: z.literal('true').transform(() => true).optional(),
   flag: z.enum(['purpose_missing', 'attribution_conflict']).optional(),
+  q: z.string().min(1).max(100).optional(),
 }
 
 export const ORDER_SORTS = ['credited_at_desc', 'credited_at_asc', 'amount_desc', 'amount_asc'] as const
@@ -39,6 +40,7 @@ export interface OrderListRow {
   readonly tax: string
   readonly currency: string
   readonly volumes: Record<string, string>
+  readonly subscription_ref: string | null
   readonly events: number
   readonly late: boolean
 }

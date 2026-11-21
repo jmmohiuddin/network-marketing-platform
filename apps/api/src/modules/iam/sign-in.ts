@@ -55,8 +55,8 @@ interface FoundUser {
   participant_active: boolean
 }
 
-// Tenants that are being provisioned or are archived have no staff sign-in.
-const CLOSED_TENANT_STATES = new Set(['provisioning', 'archived'])
+// Tenants that are being provisioned have no staff sign-in; an archived tenant's users sign in and read (D-V1A-07).
+const CLOSED_TENANT_STATES = new Set(['provisioning'])
 
 // A portal account's key is separate from a staff account with the same email (D-B5-03): its lockout never locks the other.
 const accountKeyOf = (realm: Realm, tenantSlug: string | null, email: string) =>

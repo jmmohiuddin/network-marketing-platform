@@ -17,7 +17,7 @@ import { usePortal } from './shell'
 
 export function LanguagePage() {
   const api = useApi()
-  const { me, words, refresh } = usePortal()
+  const { me, words, readOnly, refresh } = usePortal()
   const { t, locale } = words
   const [chosen, setChosen] = useState<Locale>(me.locale)
   const [busy, setBusy] = useState(false)
@@ -72,7 +72,7 @@ export function LanguagePage() {
         </fieldset>
         {failure !== null && <Banner tone="danger" title={t('language.not_saved')}>{errorText(failure, t)}</Banner>}
         {saved && <p role="status" className="font-body-lg text-body-lg text-on-surface">{t('language.saved')}</p>}
-        <Button type="submit" variant="primary" size="lg" loading={busy} data-testid="primary-action">{t('language.save')}</Button>
+        {!readOnly && <Button type="submit" variant="primary" size="lg" loading={busy} data-testid="primary-action">{t('language.save')}</Button>}
       </form>
     </>
   )

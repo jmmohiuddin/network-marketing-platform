@@ -155,6 +155,7 @@ describe('T-BM-33 explanation texts in German (D-BM-11, AC-DIST7-4)', () => {
 
 const line = (positionRef: string, amount: string, rule = 'rank_bonus', origin: string | null = null): StatementLine => ({
   id: randomUUID(), position_id: `pos-${positionRef}`, position_ref: positionRef, rule_key: rule, amount_minor: amount, origin_type: origin, original_period_id: null,
+  original_period: null,
 })
 
 describe('T-B5-10 statement builder', () => {

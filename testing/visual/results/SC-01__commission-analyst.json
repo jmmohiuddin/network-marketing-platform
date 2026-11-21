@@ -1,12 +1,12 @@
 {
-  "when": "2026-11-19T11:02:18.379Z",
+  "when": "2026-11-21T09:01:39.996Z",
   "screenId": "SC-01",
   "stitch": "sc_01_periods_runs_analyst_home",
   "module": "periods",
   "screen": "periods-runs",
   "route": "/periods",
   "role": "commission-analyst",
-  "url": "http://127.0.0.1:3100/periods",
+  "url": "http://127.0.0.1:3100/periods?calendar=6d5cec87-543d-4cd3-9098-43bf13151139",
   "self": false,
   "patched": [],
   "viewports": [
@@ -15,10 +15,10 @@
       "screenshot": "testing/ui-screenshots/app/periods/periods-runs/commission-analyst/1440x900.png",
       "reference": "testing/ui-screenshots/reference/sc_01_periods_runs_analyst_home/1440x900.png",
       "diffImage": "testing/ui-screenshots/app/periods/periods-runs/commission-analyst/1440x900.diff.png",
-      "mismatchPercent": 6.93,
-      "diffPixels": 138029,
+      "mismatchPercent": 7,
+      "diffPixels": 183794,
       "referenceSize": "1440x1383",
-      "actualSize": "1440x1340",
+      "actualSize": "1440x1824",
       "landmarks": [
         {
           "landmark": "header",
@@ -65,7 +65,7 @@
         {
           "landmark": "page",
           "stitchText": "SC-01 REGULATORY AUDIT CONFORMANT Deterministic Engine v2026",
-          "appText": "DE corePeriods and runsCalculate each period after its cut-o",
+          "appText": "BE advancesPeriods and runsCalculate each period after its c",
           "status": "match",
           "severity": "none",
           "props": [
@@ -284,7 +284,7 @@
         {
           "landmark": "card",
           "stitchText": "Target Period 2026-M10 October 2026 Monthly Close CALCULATED",
-          "appText": "Target periodNov 1, 2026 – Nov 30, 2026radio_button_unchecke",
+          "appText": "Target periodOct 26, 2026 – Oct 31, 2026radio_button_uncheck",
           "status": "match",
           "severity": "none",
           "props": [
@@ -315,10 +315,10 @@
       "screenshot": "testing/ui-screenshots/app/periods/periods-runs/commission-analyst/1280x800.png",
       "reference": "testing/ui-screenshots/reference/sc_01_periods_runs_analyst_home/1280x800.png",
       "diffImage": "testing/ui-screenshots/app/periods/periods-runs/commission-analyst/1280x800.diff.png",
-      "mismatchPercent": 6.8,
-      "diffPixels": 136790,
+      "mismatchPercent": 7.58,
+      "diffPixels": 198200,
       "referenceSize": "1280x1571",
-      "actualSize": "1280x1404",
+      "actualSize": "1280x2042",
       "landmarks": [
         {
           "landmark": "header",
@@ -365,7 +365,7 @@
         {
           "landmark": "page",
           "stitchText": "SC-01 REGULATORY AUDIT CONFORMANT Deterministic Engine v2026",
-          "appText": "DE corePeriods and runsCalculate each period after its cut-o",
+          "appText": "BE advancesPeriods and runsCalculate each period after its c",
           "status": "match",
           "severity": "none",
           "props": [
@@ -584,7 +584,7 @@
         {
           "landmark": "card",
           "stitchText": "Target Period 2026-M10 October 2026 Monthly Close CALCULATED",
-          "appText": "Target periodNov 1, 2026 – Nov 30, 2026radio_button_unchecke",
+          "appText": "Target periodOct 26, 2026 – Oct 31, 2026radio_button_uncheck",
           "status": "match",
           "severity": "none",
           "props": [
@@ -615,15 +615,15 @@
       "screenshot": "testing/ui-screenshots/app/periods/periods-runs/commission-analyst/768x1024.png",
       "reference": "testing/ui-screenshots/reference/sc_01_periods_runs_analyst_home/768x1024.png",
       "diffImage": "testing/ui-screenshots/app/periods/periods-runs/commission-analyst/768x1024.diff.png",
-      "mismatchPercent": 6.27,
-      "diffPixels": 123788,
+      "mismatchPercent": 7.16,
+      "diffPixels": 141462,
       "referenceSize": "768x2572",
-      "actualSize": "768x1624",
+      "actualSize": "768x2308",
       "landmarks": [
         {
           "landmark": "page",
           "stitchText": "SC-01 REGULATORY AUDIT CONFORMANT Deterministic Engine v2026",
-          "appText": "DE corePeriods and runsCalculate each period after its cut-o",
+          "appText": "BE advancesPeriods and runsCalculate each period after its c",
           "status": "match",
           "severity": "none",
           "props": [
@@ -842,7 +842,7 @@
         {
           "landmark": "card",
           "stitchText": "Target Period 2026-M10 October 2026 Monthly Close CALCULATED",
-          "appText": "Target periodNov 1, 2026 – Nov 30, 2026radio_button_unchecke",
+          "appText": "Target periodOct 26, 2026 – Oct 31, 2026radio_button_uncheck",
           "status": "match",
           "severity": "none",
           "props": [
@@ -873,15 +873,15 @@
       "screenshot": "testing/ui-screenshots/app/periods/periods-runs/commission-analyst/390x844.png",
       "reference": "testing/ui-screenshots/reference/sc_01_periods_runs_analyst_home/390x844.png",
       "diffImage": "testing/ui-screenshots/app/periods/periods-runs/commission-analyst/390x844.diff.png",
-      "mismatchPercent": 3.69,
-      "diffPixels": 104377,
+      "mismatchPercent": 4.37,
+      "diffPixels": 123727,
       "referenceSize": "541x5229",
-      "actualSize": "390x2760",
+      "actualSize": "390x4498",
       "landmarks": [
         {
           "landmark": "page",
           "stitchText": "SC-01 REGULATORY AUDIT CONFORMANT Deterministic Engine v2026",
-          "appText": "DE corePeriods and runsCalculate each period after its cut-o",
+          "appText": "BE advancesPeriods and runsCalculate each period after its c",
           "status": "match",
           "severity": "none",
           "props": [
@@ -1100,7 +1100,7 @@
         {
           "landmark": "card",
           "stitchText": "Target Period 2026-M10 October 2026 Monthly Close CALCULATED",
-          "appText": "Target periodNov 1, 2026 – Nov 30, 2026radio_button_unchecke",
+          "appText": "Target periodOct 26, 2026 – Oct 31, 2026radio_button_uncheck",
           "status": "match",
           "severity": "none",
           "props": [

@@ -2,6 +2,7 @@ import type { FastifyBaseLogger } from 'fastify'
 import { z } from 'zod'
 import { isLocale, message, type Locale, type MessageParams } from '../../lib/locale.js'
 import { formatMinor } from '../pay/index.js'
+import { minorUnitOf } from '../ten/index.js'
 import { MAIL_CATALOGUES } from './mail-catalogue.js'
 
 // D-B5-14 email templates, rendered from the row's params at send time in the row's locale (D-BM-11: notification.locale,
@@ -78,7 +79,10 @@ const TEMPLATES: Readonly<Record<string, Template<unknown>>> = {
   'bank_detail.changed': define({
     params: z.object({ masked: z.string(), previous_masked: z.string().nullable(), cooling_off_until: iso }),
     render: (p, r) => [
-      r.t('bank_detail.changed.text', { previous: p.previous_masked ?? r.t('bank_detail.changed.none'), masked: p.masked }),
+      // BUG-141: a first account is "set", not changed "from none".
+      p.previous_masked === null
+        ? r.t('bank_detail.changed.first', { masked: p.masked })
+        : r.t('bank_detail.changed.text', { previous: p.previous_masked, masked: p.masked }),
       r.t('bank_detail.changed.starts', { until: zonedTime(p.cooling_off_until, r.timeZone, r.locale) }),
       r.t('bank_detail.changed.warning'),
     ],
@@ -96,6 +100,21 @@ const TEMPLATES: Readonly<Record<string, Template<unknown>>> = {
   'tax_form.available': define({
     params: z.object({ tax_year: z.number().int(), form_type: z.string(), form_id: z.uuid() }),
     render: (p, r) => [r.t('tax_form.available.text', { form_type: p.form_type, tax_year: p.tax_year })],
+  }),
+  // D-V1A-03: the params SQL notify_credit_expiring writes; expires_on is the market date the lot lapses at its end.
+  'credit.expiring': define({
+    params: z.object({
+      credit_type_code: z.string(), credit_type_name: z.string(), amount_minor: minor, expires_on: z.iso.date(),
+      currency: z.string().refine((code) => minorUnitOf(code) !== undefined, 'an ISO 4217 currency'),
+    }),
+    render: (p, r) => [
+      r.t('credit.expiring.text', {
+        name: p.credit_type_name,
+        amount: amount({ amount_minor: p.amount_minor, currency: p.currency, minor_unit: minorUnitOf(p.currency)! }, r.locale),
+        date: new Intl.DateTimeFormat(r.locale, { dateStyle: 'medium', timeZone: 'UTC' }).format(new Date(`${p.expires_on}T00:00:00Z`)),
+      }),
+      r.t('credit.expiring.note'),
+    ],
   }),
 }
 

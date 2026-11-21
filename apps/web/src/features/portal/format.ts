@@ -44,6 +44,18 @@ export function formatDecimal(value: string, locale: Locale): string {
   return `${sign}${new Intl.NumberFormat(locale).format(BigInt(whole))}${fraction === undefined ? '' : `${separator}${fraction}`}`
 }
 
+// shortcut: the browser's (CLDR) fraction digits stand in for the ISO 4217 minor unit of a foreign order currency; they
+// differ for a few currencies (e.g. IQD), so send the minor unit with each conversion if such a currency is accepted.
+/** The minor unit of a currency code (2 for CHF, 0 for JPY). */
+export function currencyMinorUnit(currency: string): number {
+  return new Intl.NumberFormat('en', { style: 'currency', currency }).resolvedOptions().maximumFractionDigits ?? 2
+}
+
+/** An exchange rate's 10-dp string without trailing zeros, for display only ("1.0412000000" -> "1.0412"). */
+export function rateDigits(rate: string): string {
+  return rate.includes('.') ? rate.replace(/0+$/, '').replace(/\.$/, '') : rate
+}
+
 /** A decimal money amount ("8.00", "-0.125") in the currency's style with its own fraction digits: "8,00 €" (de), "€8.00" (en). */
 export function formatDecimalMoney(value: string, currency: string, locale: Locale): string {
   const match = DECIMAL_TEXT.exec(value)

@@ -25,7 +25,7 @@ describe('T-BM-33 COMP catalogue completeness (AC-DIST7-3)', () => {
     // Records over the unions: a new cap method, rounding mode or origin kind fails the typecheck until it is listed here.
     const methods: Record<Extract<TraceStep, { step: 'cap' }>['method'], true> = { proportional: true, priority: true, per_person: true }
     const modes: Record<RoundingMode, true> = { half_up: true, half_even: true }
-    const origins: Record<Exclude<OriginKind, 'none'>, true> = { late_order: true, refund: true, manual: true, restatement: true }
+    const origins: Record<Exclude<OriginKind, 'none'>, true> = { late_order: true, refund: true, manual: true, restatement: true, provisional: true }
     const built = [
       ...Object.keys(methods).map((k) => `explanation.cap_method.${k}`),
       ...Object.keys(modes).map((k) => `explanation.rounding.${k}`),

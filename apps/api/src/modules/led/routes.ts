@@ -39,7 +39,7 @@ const mappingBody = z.strictObject({ gl_code: z.string().regex(/^[A-Za-z0-9._:][
 const exportBody = z.strictObject({ period_id: z.uuid() })
 const idCursor = z.uuid()
 /** `at` is a timestamptz as PostgreSQL prints it (ISO DateStyle); anything else would reach `::timestamptz` and fail. */
-const timeCursor = z.object({ at: z.string().regex(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(\.\d{1,6})?[+-]\d{2}(:\d{2}){0,2}$/), id: z.uuid() })
+export const timeCursor = z.object({ at: z.string().regex(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(\.\d{1,6})?[+-]\d{2}(:\d{2}){0,2}$/), id: z.uuid() })
 const receivableCursor = z.object({ market_id: z.uuid(), participant_id: z.uuid() })
 const entriesCursor = timeCursor.extend({ sort: z.enum(ENTRY_SORTS) })
 
@@ -50,7 +50,7 @@ const scopeOf = (request: FastifyRequest, permission: Permission) => marketScope
 /** A key acts on every market (its minter held ledger.export for all markets). */
 const exportScope = (request: FastifyRequest) => (request.apiKey === undefined ? scopeOf(request, 'ledger.export') : null)
 /** Time-ordered pages: the cursor is (timestamp text, id) of the last row (plus `extra`); the timestamp text is not shown. */
-function timePage<T extends { at: string; id: string }>(rows: readonly T[], limit: number, extra: Record<string, string> = {}) {
+export function timePage<T extends { at: string; id: string }>(rows: readonly T[], limit: number, extra: Record<string, string> = {}) {
   const page = toPage(rows, limit, (row) => ({ at: row.at, id: row.id, ...extra }))
   return envelope(page.data.map(({ at: _at, ...row }) => row), page.meta)
 }

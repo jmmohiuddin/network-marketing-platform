@@ -40,7 +40,7 @@ export function participantBadge(status: 'active' | 'merged'): Badge {
   return status === 'active' ? { state: 'active', label: 'Active' } : { state: 'superseded', label: 'Merged' }
 }
 
-export const ACCOUNT_TYPES = { individual: 'Individual', joint: 'Joint', entity: 'Entity' } as const
+export const ACCOUNT_TYPES = { individual: 'Individual', joint: 'Joint', entity: 'Business' } as const
 
 const SERVICING_SOURCES: Readonly<Record<string, string>> = {
   enrolment: 'At enrolment', first_order: 'First order', manual: 'Changed by staff', reassignment: 'Reassigned on termination', migration: 'Migrated',

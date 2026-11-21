@@ -9,6 +9,7 @@ import { shellRedirect, type Me } from '../lib/me'
 import { supportFrameOf, type SupportSessionFrame } from '../lib/support-session'
 import { SessionContext, useMe } from '../lib/session'
 import { Avatar } from './avatar'
+import { Banner } from './banner'
 import { FOCUS_RING } from './button'
 import { Icon } from './icon'
 import { SignOutButton } from './sign-out-button'
@@ -102,6 +103,9 @@ function TopBar({ me, framed, menuOpen, onMenu, signOutRealm }: {
   )
 }
 
+/** D-V1A-07 (PLAN V1-A §5): shown, not dismissable, while the tenant is read-only; write controls are hidden (useSession). */
+const READ_ONLY_NOTICE = 'This account is archived: you can read and export, not change data.'
+
 function ShellLayout({ me, frame, pathname, children }: {
   readonly me: Me
   readonly frame: SupportSessionFrame | null
@@ -129,6 +133,9 @@ function ShellLayout({ me, frame, pathname, children }: {
       <div className="lg:pl-14 xl:pl-52">
         <main ref={main} id="main" tabIndex={-1} className={`w-full ${framed ? 'pt-20' : 'pt-12'} min-h-screen bg-background focus:outline-none`}>
           <div className="flex flex-col w-full px-space-lg pt-space-md pb-space-2xl gap-space-md">
+            {me.tenant?.read_only === true && (
+              <div data-testid="read-only-notice"><Banner tone="info">{READ_ONLY_NOTICE}</Banner></div>
+            )}
             {current === undefined ? <NotAvailable /> : children}
           </div>
         </main>

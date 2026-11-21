@@ -23,12 +23,12 @@ const keys = async (roles: BaseRoleName[]) => {
 }
 
 describe('GET /v1/me navigation (PLAN B4 section 2.6)', () => {
-  test('ledger opens with ledger.read, payouts and reconciliation with payout.read, cases with the B4 case types', async () => {
+  test('ledger opens with ledger.read, credit.read or fx.*, payouts and reconciliation with payout.read, cases with the B4 case types', async () => {
     expect(await keys(['Payout officer'])).toEqual(expect.arrayContaining(['ledger', 'payouts', 'reconciliation', 'cases']))
     expect(await keys(['Commission analyst'])).toEqual(expect.arrayContaining(['ledger', 'cases']))
     expect(await keys(['Commission analyst'])).not.toContain('payouts')
     expect(await keys(['Finance approver'])).toEqual(expect.arrayContaining(['ledger', 'payouts', 'reconciliation', 'cases']))
-    expect(await keys(['Support agent'])).not.toContain('ledger')
+    expect(await keys(['Support agent'])).toContain('ledger') // V1-A credit.read: the Credits tab
     expect(await keys(['Plan administrator'])).not.toContain('ledger')
   })
 
@@ -36,6 +36,10 @@ describe('GET /v1/me navigation (PLAN B4 section 2.6)', () => {
     expect(await keys(['DPO'])).toEqual(expect.arrayContaining(['privacy', 'cases']))
     expect(await keys(['Executive read-only'])).not.toContain('privacy')
     expect(await keys(['Executive read-only'])).not.toContain('cases')
+  })
+
+  test('V1-A: the Compliance officer reaches the legal-holds tab of privacy through legal_hold.manage', async () => {
+    expect(await keys(['Compliance officer'])).toContain('privacy')
   })
 
   test('B6: the overview opens with dashboard.exec, migration with migration.manage or migration.signoff', async () => {

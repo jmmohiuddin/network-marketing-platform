@@ -4,7 +4,7 @@ import { formatDateTime, formatDateTimeIn } from '../../lib/format'
 import type { Market } from '../../lib/markets'
 import { decimal } from '../data/format'
 import { minorToDecimal, moneyText } from '../orders/format'
-import type { Blocker, PeriodRow, PeriodState, RunException, RunState } from './types'
+import type { Blocker, Calendar, PeriodRow, PeriodState, RunException, RunState } from './types'
 
 /** "Oct 1, 2026 – Oct 31, 2026" in the calendar's zone ([starts_at, ends_at): the end day is the one before ends_at). */
 export function periodName(startsAt: string, endsAt: string, timeZone: string): string {
@@ -69,6 +69,15 @@ export function blockerText(blocker: Blocker): string {
 const BLOCKER_LABELS: Readonly<Record<string, string>> = {
   BEFORE_CUTOFF: 'Before cut-off', PLAN_VERSION_MISSING: 'No plan version', PRIOR_PERIOD_OPEN: 'Previous period not committed',
   PRIOR_STATE_MISSING: 'Prior state not migrated', SYNC_BEHIND: 'Order sync behind',
+  // D-V1A-02 provisional refusals (409/422 of POST runs, also listed as blockers).
+  PROVISIONAL_RUN_OPEN: 'Advance runs inside not committed', FINAL_PERIOD_COMMITTED: 'Final period already committed',
+  PROVISIONAL_PLAN_MISMATCH: 'Final calendar in another plan', PROVISIONAL_CREDIT_RULE: 'Advance rule pays in credits',
+}
+
+/** A Calculate refusal's title: the refusal code in words when it is a known blocker. */
+export function refusalTitle(error: unknown): string {
+  const label = error instanceof ApiError ? BLOCKER_LABELS[error.code] : undefined
+  return label === undefined ? 'The calculation was refused' : `The calculation was refused: ${label}`
 }
 
 /** A blocker as a short label for chips and table cells (the sentence is blockerText); an unknown code shows its sentence. */
@@ -78,7 +87,10 @@ export const blockerLabel = (blocker: Blocker): string => BLOCKER_LABELS[blocker
 export const listedBlockers = (period: Pick<PeriodRow, 'blockers'>): readonly Blocker[] => period.blockers.filter((blocker) => blocker.code !== 'PERIOD_COMMITTED')
 
 /** Blockers that no click can clear now: the Calculate button is not offered for them. */
-const STRUCTURAL = new Set(['PERIOD_COMMITTED', 'BEFORE_CUTOFF', 'PLAN_VERSION_MISSING', 'PRIOR_PERIOD_OPEN', 'PRIOR_STATE_MISSING'])
+const STRUCTURAL = new Set([
+  'PERIOD_COMMITTED', 'BEFORE_CUTOFF', 'PLAN_VERSION_MISSING', 'PRIOR_PERIOD_OPEN', 'PRIOR_STATE_MISSING', 'FINAL_PERIOD_COMMITTED', 'PROVISIONAL_PLAN_MISMATCH',
+  'PROVISIONAL_CREDIT_RULE',
+])
 
 /**
  * Calculate (or re-run) is offered for an open or calculated period whose only blockers can clear at any moment
@@ -113,7 +125,7 @@ export const REPLAY_LABELS: Readonly<Record<string, string>> = {
 }
 
 export const ORIGIN_LABELS: Readonly<Record<string, string>> = {
-  late_transaction: 'Late transaction', clawback: 'Clawback', manual: 'Manual adjustment', restatement: 'Restatement',
+  late_transaction: 'Late transaction', clawback: 'Clawback', manual: 'Manual adjustment', restatement: 'Restatement', provisional: 'Advance paid',
 }
 
 export const originLabel = (origin: string | null): string => (origin === null ? 'Regular' : ORIGIN_LABELS[origin] ?? origin)
@@ -127,6 +139,7 @@ const SUPERSEDED_CAUSES: Readonly<Record<string, string>> = {
   adjustments_changed: 'A manual adjustment for this period was approved after this run was calculated',
   origins_consumed: 'A restatement this run carries was already committed with another run',
   settlement_missing: 'This run was calculated before the ledger existed',
+  provisional_changed: 'An advance run inside this period was committed or replaced after this run was calculated',
 }
 
 /** 409 RUN_SUPERSEDED with its reason in words; any other error is returned unchanged. */
@@ -135,4 +148,14 @@ export function supersededText(error: unknown): unknown {
   const reason = (error.details as { reason?: unknown } | null)?.reason
   const cause = typeof reason === 'string' && Object.hasOwn(SUPERSEDED_CAUSES, reason) ? SUPERSEDED_CAUSES[reason] : undefined
   return cause === undefined ? error : new ApiError(error.status, error.code, `${cause}: run it again.`, error.details, error.requestId)
+}
+
+/**
+ * D-V1A-02 calendar tab badge: "Provisional → <final>" for a calendar paying advances, "Final for: <names>" for a
+ * calendar that trues advances up; null for an ordinary calendar.
+ */
+export function calendarBadge(calendar: Pick<Calendar, 'provisional_for' | 'provisional_calendars'>): string | null {
+  if (calendar.provisional_for !== null) return `Provisional → ${calendar.provisional_for.name}`
+  const advances = calendar.provisional_calendars
+  return advances.length === 0 ? null : `Final for: ${advances.map((item) => item.name).join(', ')}`
 }

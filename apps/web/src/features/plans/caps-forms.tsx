@@ -52,6 +52,8 @@ interface SaveRule {
   readonly ordinal: number
   readonly reversal: string | null
   readonly calendar: string
+  /** A pool's stored credit type (D-V1A-03), kept: the pool form does not edit it. */
+  readonly creditType: string | null
 }
 
 /** PUT …/rules/:key with If-Match; the form shows refusals itself. */
@@ -65,7 +67,7 @@ function useRuleSave(onSaved: () => void) {
     setFailure(null)
     try {
       await api.put(`${versionApi(rule.scope.plan.id, rule.scope.version.version)}/rules/${rule.key}`, {
-        kind: rule.kind, params: rule.params, ordinal: rule.ordinal, reversal_policy: rule.reversal, calendar_id: rule.calendar === '' ? null : rule.calendar,
+        kind: rule.kind, params: rule.params, ordinal: rule.ordinal, reversal_policy: rule.reversal, calendar_id: rule.calendar === '' ? null : rule.calendar, credit_type_code: rule.creditType,
       }, { headers: ifMatch(rule.scope.version) })
       toast({ message: `${rule.kind === 'cap' ? 'Cap' : 'Pool'} ${rule.key} saved.` })
       onSaved()
@@ -150,7 +152,7 @@ export function CapForm({ scope, cap, ordinal, onDone }: { readonly scope: Draft
     if (Object.keys(found).length > 0) return
     const base = baseKind === 'measure' ? { kind: 'measure', measure } : { kind: 'order_structure', first, second, secondShareAbove: { num: Number(num), den: Number(den) }, firstMultiplier: multiplier }
     const params = { scope: bonusKeys, base, rate, method: method === 'priority' ? { type: 'priority', reduce: bonusKeys } : { type: method }, residue: 'breakage' }
-    void save({ scope, key, kind: 'cap', params, ordinal, reversal: null, calendar })
+    void save({ scope, key, kind: 'cap', params, ordinal, reversal: null, calendar, creditType: null })
   }
   return (
     <FormCard icon="tune" title={cap === null ? 'New cap' : `Cap ${cap.rule_key}`} note="A ceiling on the bonuses in its scope, applied after participant limits."
@@ -269,7 +271,7 @@ export function PoolForm({ scope, pool, onDone }: { readonly scope: DraftScope; 
         : { type, ladder, parts: filled.map((r) => ({ rank: r.rank, share: r.value })) }
     const [eligibleLadder, eligibleRank] = eligible.split('|')
     const params = { sourceKind: 'pool', eligibleIf: eligible === '' ? null : { ladder: eligibleLadder, rank: eligibleRank }, baseMeasure, rate, allocation }
-    void save({ scope, key, kind: 'pay.pool', params, ordinal: pool?.ordinal ?? 0, reversal, calendar: pool?.calendar_id ?? '' })
+    void save({ scope, key, kind: 'pay.pool', params, ordinal: pool?.ordinal ?? 0, reversal, calendar: pool?.calendar_id ?? '', creditType: pool?.credit_type_code ?? null })
   }
   return (
     <FormCard icon="pie_chart" title={pool === null ? 'New pool' : `Pool ${pool.rule_key}`} note="A share of a market total, divided among qualifying payees."

@@ -539,9 +539,12 @@ describe('privacy (D-B5-16..19)', () => {
       'SELECT * FROM prv_personal_data_map() ORDER BY 1, 2')
     const exported = await value<Record<string, unknown>>('SELECT prv_personal_data($1)', [seed.participantId])
 
-    // Beyond the keys, the jsonb columns listing participants (PLAN B-MKT section 1.3).
-    const lists = map.filter((row) => row.table_name === 'tax_form_generation' && row.column_name === 'held')
-    expect(lists).toEqual([expect.objectContaining({ section: null, reason: expect.any(String) })])
+    // Beyond the keys, the columns holding personal data or participant lists (PLAN B-MKT 1.3, V1-A 1.7), the key-writable
+    // actor without a key (V1-A 1.1) and the offboarding users kept past the tenant's purge (0807).
+    const NON_KEYS = ['credit_redemption.created_by', 'legal_hold.reason', 'participant.account_holders', 'retention_run.items',
+      'tax_form_generation.held', 'tenant_offboarding.closed_by', 'tenant_offboarding.confirmed_by']
+    const lists = map.filter((row) => NON_KEYS.includes(`${row.table_name}.${row.column_name}`))
+    expect(lists.map((row) => `${row.table_name}.${row.column_name}`)).toEqual(NON_KEYS)
     expect(map.filter((row) => !lists.includes(row)).map(({ table_name, column_name }) => ({ table_name, column_name }))).toEqual(keys)
     expect(map.filter((row) => (row.section === null) === (row.reason === null))).toEqual([])
     expect(Object.keys(exported).sort()).toEqual([...new Set(map.flatMap((row) => row.section ?? []))].sort())

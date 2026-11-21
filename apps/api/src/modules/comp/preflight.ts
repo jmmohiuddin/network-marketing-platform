@@ -2,6 +2,7 @@ import type { Tx } from '@nmp/db'
 import { ApiError } from '../../lib/errors.js'
 import { syncHealth } from '../int/index.js'
 import { previousPeriod, type PeriodRow } from './period.js'
+import { provisionalBlockers } from './provisional.js'
 import { withholdingInstructions } from './snapshot.js'
 
 // §2.4 run preflight (one function for POST /v1/periods/:id/runs and the blockers of GET /v1/periods) and the sync
@@ -69,7 +70,7 @@ const CLOSED = ['committed', 'paid', 'closed']
 
 /** Every reason the period cannot be calculated now, in §2.4 order (empty = a run may be requested). */
 export async function preflight(tx: Tx, period: PeriodRow, sync?: MarketSync): Promise<Blocker[]> {
-  const blockers: Blocker[] = []
+  const blockers: Blocker[] = await provisionalBlockers(tx, period)
   if (CLOSED.includes(period.state)) blockers.push(blocker(409, 'PERIOD_COMMITTED', 'The period is already committed.'))
   if (!period.cut_off_passed) blockers.push(blocker(422, 'BEFORE_CUTOFF', 'The period has not reached its cut-off yet.', { ends_at: period.ends_at }))
   const { rows } = await tx.query<{ version: string | null }>('SELECT plan_version_for_period($1) AS version', [period.id])

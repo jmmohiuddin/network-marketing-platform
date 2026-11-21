@@ -14,6 +14,7 @@ import {
   renderBaseRoleSeed,
   renderBaseRoleUpdate,
   requiresMfa,
+  V1A_UPDATED_BASE_ROLES,
 } from './permissions.js'
 
 const MIGRATION_0007 = new URL('../../../../packages/db/migrations/0007_iam_api.sql', import.meta.url)
@@ -24,23 +25,24 @@ const MIGRATION_0405 = new URL('../../../../packages/db/migrations/0405_b4_base_
 const MIGRATION_0505 = new URL('../../../../packages/db/migrations/0505_b5_base_roles_settings.sql', import.meta.url)
 const MIGRATION_0606 = new URL('../../../../packages/db/migrations/0606_b6_roles_privacy.sql', import.meta.url)
 const MIGRATION_0703 = new URL('../../../../packages/db/migrations/0703_bmkt_base_roles.sql', import.meta.url)
+const MIGRATION_0806 = new URL('../../../../packages/db/migrations/0806_v1a_base_roles.sql', import.meta.url)
 
 // TS-36 fixture (SDD-10 matrix, SEC-25 names, E-ADR-09). Changing a role's permissions must change this table.
 const MATRIX: Readonly<Record<string, string>> = {
   'Tenant admin':
-    'user.manage settings.manage import.manage mapping.edit mapping.approve compliance.read audit.read vendor_access.decide market.manage integration.manage participant.read order.read product.manage integration.read ledger.export export.full',
+    'user.manage settings.manage import.manage mapping.edit mapping.approve compliance.read audit.read vendor_access.decide market.manage integration.manage participant.read order.read product.manage integration.read ledger.export export.full tenant.offboard',
   'Commission analyst':
-    'compliance.read participant.read genealogy.read case.genealogy.read order.read late.manage integration.read plan.read period.read run.execute run.review trace.read restatement.request case.restatement.read ledger.read case.adjustment.read case.adjustment.create case.write_off.read case.write_off.create case.dispute.read case.dispute.approve',
+    'compliance.read participant.read genealogy.read case.genealogy.read order.read late.manage integration.read plan.read period.read run.execute run.review trace.read restatement.request case.restatement.read ledger.read case.adjustment.read case.adjustment.create case.write_off.read case.write_off.create case.dispute.read case.dispute.approve credit.read fx.manage',
   'Plan administrator': 'compliance.read plan.read plan.edit plan.simulate period.read guardrail.read',
   'Finance approver':
-    'compliance.read participant.unmask plan.activate settings.approve participant.read order.read plan.read period.read run.review run.commit trace.read restatement.approve case.restatement.read ledger.read ledger.export payout.read payout.approve tax.manage case.adjustment.read case.adjustment.approve case.write_off.read case.write_off.create case.write_off.approve case.returned_payment.read case.dispute.read migration.signoff period.close tax.read tax.forms',
+    'compliance.read participant.unmask plan.activate settings.approve participant.read order.read plan.read period.read run.review run.commit trace.read restatement.approve case.restatement.read ledger.read ledger.export payout.read payout.approve tax.manage case.adjustment.read case.adjustment.approve case.write_off.read case.write_off.create case.write_off.approve case.returned_payment.read case.dispute.read migration.signoff period.close tax.read tax.forms credit.read credit.manage fx.manage fx.approve',
   'Payout officer':
-    'participant.unmask participant.read ledger.read payout.read payout.prepare payout.reconcile payout.hold case.bank_detail.read case.returned_payment.read case.returned_payment.create',
+    'participant.unmask participant.read ledger.read payout.read payout.prepare payout.reconcile payout.hold case.bank_detail.read case.returned_payment.read case.returned_payment.create credit.read',
   'Compliance officer':
-    'mapping.approve compliance.read snapshot.create export audit.read market.signoff participant.read participant.terminate participant_type.approve agreement.publish genealogy.read case.genealogy.read case.genealogy.approve case.duplicate.read case.duplicate.approve order.read plan.read plan.approve period.read run.review trace.read restatement.request case.restatement.read guardrail.read override.approve ledger.read payout.read payout.hold case.adjustment.read case.write_off.read case.bank_detail.read case.bank_detail.approve case.dispute.read tax.read case.grievance.read case.grievance.create case.grievance.approve register.read',
+    'mapping.approve compliance.read snapshot.create export audit.read market.signoff participant.read participant.terminate participant_type.approve agreement.publish genealogy.read case.genealogy.read case.genealogy.approve case.duplicate.read case.duplicate.approve order.read plan.read plan.approve period.read run.review trace.read restatement.request case.restatement.read guardrail.read override.approve ledger.read payout.read payout.hold case.adjustment.read case.write_off.read case.bank_detail.read case.bank_detail.approve case.dispute.read tax.read case.grievance.read case.grievance.create case.grievance.approve register.read case.transfer.approve legal_hold.manage',
   'Support agent':
-    'participant.read participant.manage genealogy.read case.genealogy.read case.genealogy.create case.duplicate.read case.duplicate.create servicing.manage order.read period.read run.review trace.read case.bank_detail.read case.bank_detail.create case.dispute.read case.grievance.read case.grievance.create',
-  DPO: 'compliance.read audit.read participant.unmask participant.read privacy.manage',
+    'participant.read participant.manage genealogy.read case.genealogy.read case.genealogy.create case.duplicate.read case.duplicate.create servicing.manage order.read period.read run.review trace.read case.bank_detail.read case.bank_detail.create case.dispute.read case.grievance.read case.grievance.create credit.read',
+  DPO: 'compliance.read audit.read participant.unmask participant.read privacy.manage legal_hold.manage',
   'Implementation consultant': 'import.manage mapping.edit plan.read plan.edit plan.simulate period.read migration.manage',
   'Executive read-only': 'compliance.read plan.read period.read dashboard.exec',
   Integration: '',
@@ -51,24 +53,26 @@ const MFA_ROLES = ['Tenant admin', 'Finance approver', 'Payout officer', 'Compli
 const PRIVILEGED_ROLES = ['Tenant admin', 'Finance approver', 'Compliance officer', 'DPO']
 
 describe('permission catalogue (TS-36 fixture)', () => {
-  test('lists exactly the release A permissions, participant.unmask, plan.activate and the B1..B-MKT additions', () => {
+  test('lists exactly the release A permissions, participant.unmask, plan.activate and the B1..V1-A additions', () => {
     expect([...PERMISSIONS].sort()).toEqual([
       'agreement.publish', 'audit.read', 'case.adjustment.approve', 'case.adjustment.create', 'case.adjustment.read',
       'case.bank_detail.approve', 'case.bank_detail.create', 'case.bank_detail.read', 'case.dispute.approve',
       'case.dispute.read', 'case.duplicate.approve',
       'case.duplicate.create', 'case.duplicate.read', 'case.genealogy.approve', 'case.genealogy.create',
       'case.genealogy.read', 'case.grievance.approve', 'case.grievance.create', 'case.grievance.read', 'case.restatement.read',
-      'case.returned_payment.create', 'case.returned_payment.read',
-      'case.write_off.approve', 'case.write_off.create', 'case.write_off.read', 'compliance.read', 'dashboard.exec', 'export',
-      'export.full', 'genealogy.read', 'guardrail.read', 'import.manage', 'integration.manage', 'integration.read', 'late.manage',
-      'ledger.export', 'ledger.read', 'mapping.approve', 'mapping.edit', 'market.manage', 'market.signoff', 'migration.manage',
+      'case.returned_payment.create', 'case.returned_payment.read', 'case.transfer.approve',
+      'case.write_off.approve', 'case.write_off.create', 'case.write_off.read', 'compliance.read', 'credit.manage', 'credit.read',
+      'dashboard.exec', 'export',
+      'export.full', 'fx.approve', 'fx.manage', 'genealogy.read', 'guardrail.read', 'import.manage', 'integration.manage',
+      'integration.read', 'late.manage', 'ledger.export', 'ledger.read', 'legal_hold.manage', 'mapping.approve', 'mapping.edit',
+      'market.manage', 'market.signoff', 'migration.manage',
       'migration.signoff', 'order.read',
       'override.approve', 'participant.manage', 'participant.read', 'participant.terminate', 'participant.unmask',
       'participant_type.approve', 'payout.approve', 'payout.hold', 'payout.prepare', 'payout.read', 'payout.reconcile',
       'period.close', 'period.read', 'plan.activate', 'plan.approve', 'plan.edit', 'plan.read', 'plan.simulate', 'privacy.manage',
       'product.manage', 'register.read', 'restatement.approve', 'restatement.request', 'run.commit', 'run.execute', 'run.review',
-      'servicing.manage', 'settings.approve', 'settings.manage', 'snapshot.create', 'tax.forms', 'tax.manage', 'tax.read', 'trace.read',
-      'user.manage', 'vendor_access.decide',
+      'servicing.manage', 'settings.approve', 'settings.manage', 'snapshot.create', 'tax.forms', 'tax.manage', 'tax.read',
+      'tenant.offboard', 'trace.read', 'user.manage', 'vendor_access.decide',
     ])
   })
 
@@ -99,6 +103,14 @@ describe('permission catalogue (TS-36 fixture)', () => {
     for (const permission of ['tax.read', 'case.grievance.read', 'case.grievance.create', 'case.grievance.approve', 'register.read'] as const) {
       expect(isPrivileged([permission])).toBe(false)
     }
+  })
+
+  test('V1-A credit and FX decisions, legal holds, offboarding and transfers are privileged; reads and FX proposals are not', () => {
+    for (const permission of ['credit.manage', 'fx.approve', 'legal_hold.manage', 'tenant.offboard', 'case.transfer.approve'] as const) {
+      expect(isPrivileged([permission])).toBe(true)
+    }
+    for (const permission of ['credit.read', 'fx.manage'] as const) expect(isPrivileged([permission])).toBe(false)
+    expect(isPrivileged(BASE_ROLES.find((role) => role.name === 'Commission analyst')!.permissions)).toBe(false)
   })
 
   test('B2 deciding, terminating, publishing and privacy permissions are privileged; reads and filing are not', () => {
@@ -180,13 +192,22 @@ describe('permission catalogue (TS-36 fixture)', () => {
     expect(updated).toEqual([...B6_UPDATED_BASE_ROLES])
   })
 
-  test('migration 0703 brings exactly the B-MKT-changed base roles to the catalogue', () => {
-    expect(readFileSync(MIGRATION_0703, 'utf8')).toContain(renderBaseRoleUpdate(BMKT_UPDATED_BASE_ROLES))
+  test('migration 0703 updates exactly the B-MKT-changed base roles', () => {
+    const updated = readFileSync(MIGRATION_0703, 'utf8').split('\n')
+      .flatMap((line) => /^UPDATE role SET permissions .* name = '([^']+)';$/.exec(line)?.[1] ?? [])
+
+    // The permissions B-MKT wrote are pinned by the last-update test below (V1-A extends all three).
+    expect(updated).toEqual([...BMKT_UPDATED_BASE_ROLES])
   })
 
-  test('0007, then 0106, 0206, 0304, 0405, 0505, 0606 and 0703 equals the catalogue: each role as its last migration leaves it', () => {
+  test('migration 0806 brings exactly the V1-A-changed base roles to the catalogue', () => {
+    expect(readFileSync(MIGRATION_0806, 'utf8')).toContain(renderBaseRoleUpdate(V1A_UPDATED_BASE_ROLES))
+  })
+
+  test('0007, then 0106, 0206, 0304, 0405, 0505, 0606, 0703 and 0806 equals the catalogue: each role as its last migration leaves it', () => {
     const lastUpdate = new Map<string, string>()
-    for (const file of [MIGRATION_0106, MIGRATION_0206, MIGRATION_0304, MIGRATION_0405, MIGRATION_0505, MIGRATION_0606, MIGRATION_0703]) {
+    for (const file of [MIGRATION_0106, MIGRATION_0206, MIGRATION_0304, MIGRATION_0405, MIGRATION_0505, MIGRATION_0606, MIGRATION_0703,
+      MIGRATION_0806]) {
       for (const line of readFileSync(file, 'utf8').split('\n')) {
         const name = /^UPDATE role .* name = '([^']+)';$/.exec(line)?.[1]
         if (name !== undefined) lastUpdate.set(name, line)

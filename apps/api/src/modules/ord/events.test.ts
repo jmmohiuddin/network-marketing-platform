@@ -176,7 +176,7 @@ describe('POST /v1/order-events (API-11)', () => {
     const { source_order_id: ref } = await order()
     const refused = async (overrides: Record<string, unknown>) => (await post(eventBody(ref, overrides))).json().error.code
 
-    expect(await refused({ type: 'renewal_failed' })).toBe('EVENT_TYPE_NOT_SUPPORTED')
+    expect(await refused({ type: 'renewal_failed', refund_minor: '1' })).toBe('VALIDATION_FAILED') // T-V1A-30: no amounts
     expect(await refused({ type: 'return' })).toBe('LINES_REQUIRED')
     expect(await refused({ lines: [{ line_no: 9, quantity: 1 }] })).toBe('LINE_UNKNOWN')
     expect(await refused({ type: 'chargeback_reversed', reverses_source_event_id: 'none' })).toBe('EVENT_NOT_FOUND')

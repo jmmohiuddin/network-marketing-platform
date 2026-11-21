@@ -13,7 +13,9 @@ import { useToast } from '../../components/toast'
 import { ApiError, isApiError } from '../../lib/api'
 import { countLabel } from '../../lib/format'
 import { errorMessage, fieldErrors } from '../../lib/messages'
+import { useResource } from '../../lib/use-resource'
 import { CODE_BLOCK } from '../admin/ui'
+import type { CreditType } from '../ledger/types'
 import { isBonus, kindLabel, passBadge, PASSES, REVERSAL_LABELS, RULE_KINDS, versionApi, versionPage } from './format'
 import type { PlanSummary, Rule, VersionView } from './types'
 import { CAPTION, CARD, H2, ifMatch, MONO, NOTE, RefusalBanner, reloadedIfStale } from './ui'
@@ -40,6 +42,8 @@ interface RuleForm {
   readonly reversal: string
   readonly calendar: string
   readonly ordinal: string
+  /** '' = paid in cash. */
+  readonly credit: string
 }
 
 const formOf = (rule: Rule | null): RuleForm => ({
@@ -49,7 +53,24 @@ const formOf = (rule: Rule | null): RuleForm => ({
   reversal: rule?.reversal_policy ?? '',
   calendar: rule?.calendar_id ?? '',
   ordinal: String(rule?.ordinal ?? 0),
+  credit: rule?.credit_type_code ?? '',
 })
+
+/**
+ * SC-04 "Pay in credits" (D-V1A-03): pay rules only; options are the active credit types (GET /v1/credit-types, which
+ * plan.edit holders read). A stored code stays offered even when inactive or not loaded, so saving never drops it unasked.
+ */
+function CreditTypeSelect({ value, onChange }: { readonly value: string; readonly onChange: (value: string) => void }) {
+  const types = useResource<CreditType[]>('/v1/credit-types', { active: 'true' })
+  const options = (types.data ?? []).map((type) => ({ value: type.code, label: `${type.name} (${type.code})` }))
+  const kept = value !== '' && !options.some((option) => option.value === value) ? [{ value, label: value }] : []
+  const helper = types.error !== null ? 'The credit types could not be loaded; the rule keeps the one it has.'
+    : 'Lines of this rule become credit awards in the market currency, not cash.'
+  return (
+    <Select id="rule-credit" label="Pay in credits" value={value} helper={helper} disabled={types.data === null}
+      options={[{ value: '', label: 'No: pay in cash' }, ...kept, ...options]} onChange={(event) => onChange(event.target.value)} />
+  )
+}
 
 /** The key of a rule, cap or pool: the pattern, and on create a key no rule of the draft has (PUT …/rules/:key replaces that rule). */
 export function ruleKeyIssue(key: string, rules: readonly Rule[], creating: boolean): string | null {
@@ -104,6 +125,7 @@ function RuleDrawer({ scope, rule, onClose }: { readonly scope: DraftScope; read
         kind: form.kind, params: checked.params, ordinal: Number(form.ordinal),
         reversal_policy: isBonus(form.kind) && form.reversal !== '' ? form.reversal : null,
         calendar_id: form.calendar === '' ? null : form.calendar,
+        credit_type_code: isBonus(form.kind) && form.credit !== '' ? form.credit : null,
       }
       const { data } = await api.put<{ guardrails: { new_decisions: readonly unknown[] } }>(`${versionApi(scope.plan.id, scope.version.version)}/rules/${form.key}`, body, { headers: ifMatch(scope.version) })
       const decisions = data.guardrails.new_decisions.length
@@ -145,6 +167,7 @@ function RuleDrawer({ scope, rule, onClose }: { readonly scope: DraftScope; read
           <Select id="rule-reversal" label="Reversal policy" value={form.reversal} placeholder="Choose how refunds reverse it"
             options={Object.entries(REVERSAL_LABELS).map(([value, label]) => ({ value, label }))} onChange={(event) => set('reversal')(event.target.value)} />
         )}
+        {isBonus(form.kind) && !structured && <CreditTypeSelect value={form.credit} onChange={set('credit')} />}
         <Select id="rule-calendar" label="Calendar" value={form.calendar} helper="A rule scoped to one calendar runs only in that calendar's runs."
           options={[{ value: '', label: 'Every plan calendar' }, ...scope.plan.calendars.map((c) => ({ value: c.id, label: `${c.name} (${c.market_code})` }))]} onChange={(event) => set('calendar')(event.target.value)} />
         <TextInput id="rule-ordinal" label="Ordinal" inputMode="numeric" value={form.ordinal} error={issues.ordinal} helper="Order among rules of the same pass; overlapping caps need different ordinals." onChange={(event) => set('ordinal')(event.target.value)} />
@@ -168,6 +191,7 @@ function RuleItem({ rule, scope, errors, onEdit, onDelete }: { readonly rule: Ru
           <span className="font-body-sm text-body-sm font-semibold text-on-surface">{kindLabel(rule.kind)}</span>
           {rule.extension && <span className="px-2 py-0.5 rounded bg-primary-fixed text-primary text-[11px] font-semibold">Extension</span>}
           {calendar !== undefined && <span className="px-2 py-0.5 rounded bg-surface-container text-secondary text-[11px] font-semibold">{calendar.name}</span>}
+          {rule.credit_type_code !== null && <span className="px-2 py-0.5 rounded bg-surface-container text-secondary text-[11px] font-semibold">Paid in credits: {rule.credit_type_code}</span>}
         </div>
         {scope.canEdit && (
           <div className="flex items-center gap-space-xs">

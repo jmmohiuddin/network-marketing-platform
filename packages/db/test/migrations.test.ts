@@ -49,13 +49,19 @@ const B6_TABLES = [
 ]
 // PLAN B-MKT section 1 (pack_rule is a platform table without tenant_id).
 const BMKT_TABLES = ['pack_rule', 'tax_line', 'tax_form_generation', 'tax_form']
+// PLAN V1-A section 1.
+const V1A_TABLES = [
+  'credit_type', 'credit_award', 'credit_redemption', 'credit_lot_event', 'fx_rate_batch', 'fx_rate', 'retention_schedule',
+  'legal_hold', 'retention_run', 'tenant_offboarding',
+]
 const INSERT_ONLY_TABLES = [
   'audit.audit_event', 'audit.vendor_event', 'outbox_event', 'approval', 'tenant_setting_version',
   'market_checklist_entry', 'case_event', 'case_evidence', 'document', 'participant_signal', 'agreement_version',
   'agreement_acceptance', 'position_status_history', 'order_line', 'order_event', 'plan_market', 'plan_calendar',
   'guardrail_decision', 'run_snapshot', 'result_line', 'qualification_state', 'sim_result_line',
   'ledger_account', 'journal_entry', 'posting', 'journal_export', 'run_settlement', 'bank_detail_request',
-  'sandbox_provider_payment', 'privacy_export', 'plan_version_filing', 'tax_line',
+  'sandbox_provider_payment', 'privacy_export', 'plan_version_filing', 'tax_line', 'credit_award', 'credit_redemption',
+  'credit_lot_event', 'fx_rate', 'retention_run',
 ]
 // market_references (0105, 0204, AC-TEN2-3) counts every table with a key to market under these names, plus 'grants'
 // (market_ids arrays carry no key) and 'connectors' (the commerce rows of provider_config).
@@ -67,11 +73,12 @@ const MARKET_REFERENCES: Record<string, string> = {
   plan_market: 'plans', ledger_account: 'ledger_accounts', journal_entry: 'journal_entries', gl_account_map: 'gl_mappings',
   journal_export: 'journal_exports', payout_batch: 'payout_batches', payout_hold: 'payout_holds',
   plan_version_filing: 'filings', migration: 'migrations', tax_form_generation: 'tax_form_generations', tax_form: 'tax_forms',
+  credit_award: 'credit_awards', credit_redemption: 'credit_redemptions', retention_schedule: 'retention_schedules',
 }
 // PLAN B1 1.1 (FR-TEN-003). The TEN settings registry pins its money-affecting keys against money_setting_keys().
 const MONEY_SETTING_KEYS = [
   'money.rounding_mode', 'money.clawback_policy', 'payouts.market_policy', 'payouts.bank_detail_cooling_off_hours',
-  'adjustments.policy', 'write_offs.policy',
+  'adjustments.policy', 'write_offs.policy', 'fx.max_rate_age_days',
 ]
 // PLAN B2 1.7 (D-B2-08): every key whose change needs an approval; the registry pins it against approverPermission.
 const APPROVAL_SETTING_KEYS = [
@@ -141,6 +148,8 @@ const POLICIES_BEYOND_TENANT_ISOLATION: Policy[] = [
     ['privacy_request', 'subject_participant_id'], ['user_account', 'participant_id'], ['payout_batch_line', 'participant_id'],
     // D-BM-13: the payee's own tax lines and year-end forms.
     ['tax_line', 'payee_participant_id'], ['tax_form', 'participant_id'],
+    // PLAN V1-A 1.1: the payee's own credit awards and redemptions.
+    ['credit_award', 'payee_participant_id'], ['credit_redemption', 'participant_id'],
   ] as const).map(([table, column]): Policy => portalSelf(table, `(${column} = app_participant_id())`)),
   // 0506: the portal session's own sessions and sign-in codes, the origins of its own lines, the evidence of its own cases.
   portalSelf('session', '(user_id = app_user_id())'),
@@ -151,8 +160,12 @@ const POLICIES_BEYOND_TENANT_ISOLATION: Policy[] = [
   ...['payout_hold', 'payout_batch'].map((table): Policy => [table, 'portal_hidden', '*!', '(app_participant_id() IS NULL)', '(app_participant_id() IS NULL)']),
   // D-B6-13: B6 tables holding one participant's data or every exported field, and saved views.
   ...['data_export', 'data_export_file', 'saved_view', 'migration_opening_balance', 'migration_opening_state', 'parallel_run_difference',
-    'tax_form_generation']
+    'tax_form_generation',
+    // PLAN V1-A: lot events, legal holds (never shown to their subject), retention logs, offboarding.
+    'credit_lot_event', 'legal_hold', 'retention_run', 'tenant_offboarding']
     .map((table): Policy => [table, 'portal_hidden', '*!', '(app_participant_id() IS NULL)', '(app_participant_id() IS NULL)']),
+  // D-V1A-07: the vendor realm requests, archives, purges and restores offboardings (tenant_offboarding_guard pins how).
+  ['tenant_offboarding', 'vendor_manage', '*', VENDOR, VENDOR],
   portalSelf('case_file', "((payload ->> 'participant_id'::text) = (app_participant_id())::text)"),
   portalSelf('case_event', "(EXISTS ( SELECT 1 FROM case_file c WHERE ((c.id = case_event.case_id) AND ((c.payload ->> 'participant_id'::text) = (app_participant_id())::text))))"),
   portalSelf('posting', '(EXISTS ( SELECT 1 FROM ledger_account a WHERE ((a.id = posting.account_id) AND (a.payee_participant_id = app_participant_id()))))'),
@@ -168,6 +181,10 @@ const KEYS_WITHOUT_TENANT_ID = [
   'saved_view_shared_role_id_fkey', // base roles have no tenant: trigger saved_view_role_in_tenant
   'session_user_id_realm_fkey', // realm match; session_tenant_id_user_id_fkey carries the tenant
   'support_session_requester_id_fkey', // a vendor user: policy vendor_request
+  'tenant_offboarding_archived_by_fkey', // a vendor user: tenant_offboarding_guard
+  'tenant_offboarding_purge_approved_by_fkey', // a vendor user: tenant_offboarding_guard
+  'tenant_offboarding_purge_requested_by_fkey', // a vendor user: tenant_offboarding_guard
+  'tenant_offboarding_requested_by_fkey', // a vendor user: tenant_offboarding_guard
   'user_invitation_user_id_fkey', // vendor invitations have no tenant: policy vendor_invitations (0042)
 ]
 
@@ -183,7 +200,7 @@ describe('migrations', () => {
     expect(again).toEqual([])
   })
 
-  test('create every release A table, the engineering additions and the B1..B-MKT tables', async () => {
+  test('create every release A table, the engineering additions and the B1..V1-A tables', async () => {
     const { rows } = await getOwnerPool().query<{ name: string }>(
       `SELECT CASE schemaname WHEN 'public' THEN tablename ELSE schemaname || '.' || tablename END AS name
        FROM pg_tables WHERE schemaname IN ('public', 'audit')`,
@@ -191,7 +208,7 @@ describe('migrations', () => {
 
     expect(rows.map((row) => row.name).sort()).toEqual(
       [...RELEASE_A_TABLES, ...ENGINEERING_TABLES, ...B1_TABLES, ...B2_TABLES, ...B3_TABLES, ...B4_TABLES, ...B5_TABLES, ...B6_TABLES,
-        ...BMKT_TABLES, 'schema_migration']
+        ...BMKT_TABLES, ...V1A_TABLES, 'schema_migration']
         .sort(),
     )
   })

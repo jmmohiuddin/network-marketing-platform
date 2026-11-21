@@ -3,6 +3,7 @@ import { withSystem } from '@nmp/db'
 import type { FastifyInstance, FastifyReply, FastifyRequest, preHandlerAsyncHookHandler } from 'fastify'
 import type { ApiKeyCaller } from '../../lib/db.js'
 import { ApiError } from '../../lib/errors.js'
+import { assertTenantWritable } from '../../lib/tenant-state.js'
 import { API_KEY_BEARER } from '../../lib/web-security.js'
 import { hashToken, TOKEN_PATTERN, type RateTier } from './api-keys.js'
 import type { ApiScope } from './api-scopes.js'
@@ -52,13 +53,16 @@ interface FoundKey {
   scopes: string[]
   rate_tier: RateTier
   ip_allow: string[] | null
+  /** D-V1A-07: a key of a confirmed (offboarding) tenant still resolves, read-only; an archived tenant's key does not. */
+  tenant_read_only: boolean
 }
 
 async function findKey(token: string): Promise<FoundKey | null> {
   if (!TOKEN_PATTERN.test(token)) return null
   const { rows } = await withSystem((tx) =>
     tx.query<FoundKey>(
-      'SELECT id, tenant_id, service_account_id, scopes, rate_tier, ip_allow::text[] AS ip_allow FROM auth_find_api_key($1)',
+      `SELECT id, tenant_id, service_account_id, scopes, rate_tier, ip_allow::text[] AS ip_allow, tenant_read_only(tenant_id)
+       FROM auth_find_api_key($1)`,
       [hashToken(token)],
     ),
   )
@@ -104,6 +108,7 @@ async function authenticateKey(app: FastifyInstance, request: FastifyRequest, re
   if (!key.scopes.includes(scope)) {
     throw new ApiError(403, 'SCOPE_MISSING', `This API key does not have the scope ${scope}.`, { scope })
   }
+  await assertTenantWritable(request, key.tenant_read_only)
   await withSystem((tx) => tx.query('SELECT auth_touch_api_key($1)', [key.id]))
 }
 

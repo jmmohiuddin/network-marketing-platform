@@ -55,3 +55,9 @@ _Agent: database. Read before every task; update after every task. Keep concise 
 - Migrations 0700-0703; packages/db test/bmkt-guards.test.ts (T-BM-01/10/20/22/24/25/34, TK-B6-18), test/fixtures/in-2026-0.ts (IN rows, test only), seed rows for tax_line/tax_form_generation/tax_form + seed pack rows, list pins (migrations, isolation), b5 erasure clears locale.
 - apps/api: permissions (+test), lib/locale.ts (+test T-BM-30), me-routes (+test), support exclusions (+test), ERASURE_CLEARED, export-model, seed.ts (+test).
 - Verified on nmp_test_2: packages/db 17 files / 341 tests; apps/api 123 files / 3654 tests (3 pins fixed after the full run: permission sort order, 0606 test now pins names only, mfa /v1/me list + tax nav; affected files re-run green); typecheck (api + web) clean.
+
+## V1-A schema (2026-11-21)
+- Migrations 0800-0806 (10 tables), test/v1a-guards.test.ts (15 tests), seed/isolation/migrations/b5/session-integrity pins; contract files: permissions (+test), api-scopes, support exclusions, settings registry (+role-matrix row), ERASURE_CLEARED, export-model, engine OriginType, seed.ts (+test).
+
+## V1-A review fixes (2026-11-21)
+- 0807_v1a_review_fixes.sql (new, not edited in place: parallel slots had 0800-0806 applied): 10 findings fixed, regressions in v1a-guards (+1 credit test, provisional/order/account/retention/offboarding asserts incl. a catalogue-wide dangling-FK scan after tenant_purge), b6 int_due_full_exports archived, b5 map NON_KEYS, migrations FK list.

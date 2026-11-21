@@ -375,3 +375,36 @@ describe('My data', () => {
     expect(await screen.findByText('A request of this kind is already in progress.')).toBeTruthy()
   })
 })
+
+describe('read-only tenant (D-V1A-07): write controls hidden, the data-subject request form stays (C-V1A-18)', () => {
+  const readOnly = portalMe({ tenant: { slug: 'acme', legal_name: 'Acme Ltd', read_only: true } })
+  const notice = { id: 'n1', template: 'statement.ready', topic: 'statement', mandatory: false, created_at: '2026-09-02T08:00:00.000Z', read_at: null,
+    params: { run_id: RUN, starts_at: '2026-08-01T00:00:00.000Z', ends_at: '2026-09-01T00:00:00.000Z', net_minor: '2300', currency: 'EUR', minor_unit: 2 } }
+
+  it('hides payment, tax, language and notification changes', async () => {
+    const payment = renderPortal(<PaymentDetailsPage />, paymentRoutes(() => ok({})), readOnly)
+    expect(await screen.findByText('DE•• 3000')).toBeTruthy()
+    expect(await screen.findByText('•••• 6789')).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Change bank details' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Change tax profile' })).toBeNull()
+    payment.unmount()
+    const language = renderPortal(<LanguagePage />, fetchByRoute({}), readOnly)
+    expect((screen.getByRole('radio', { name: /English/ }) as HTMLInputElement).checked).toBe(true)
+    expect(screen.queryByRole('button', { name: 'Save language' })).toBeNull()
+    language.unmount()
+    renderPortal(<NotificationsPage />, fetchByRoute({
+      'GET /v1/me/notifications': () => page([notice]),
+      'GET /v1/me/notification-preferences': () => ok([{ topic: 'statement', email: true, mandatory: false }]),
+    }), readOnly, 1)
+    expect(await screen.findByText('Statement ready')).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Mark all read' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Mark read: Statement ready' })).toBeNull()
+    fireEvent.click(screen.getByRole('radio', { name: 'Channels' }))
+    expect((await screen.findByRole('switch', { name: 'Statements' }) as HTMLInputElement).disabled).toBe(true)
+  })
+
+  it('keeps the data-subject request form', async () => {
+    renderPortal(<MyDataPage />, fetchByRoute({ 'GET /v1/me/privacy-requests': () => ok([]) }), readOnly)
+    expect(await screen.findByRole('button', { name: 'Send request' })).toBeTruthy()
+  })
+})

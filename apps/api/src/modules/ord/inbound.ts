@@ -9,7 +9,7 @@ import { creditingEvent } from './order-checks.js'
 import { processOrder } from './order-ingest.js'
 import type { AttemptRefs, Outcome } from './outcome.js'
 import { asRefusal, Refusal, refusalBody } from './refusal.js'
-import type { EventInput, OrderInput } from './schemas.js'
+import type { EventInput, HoldReason, OrderInput } from './schemas.js'
 import { eventView, orderFacts } from './views.js'
 
 // D-B2-11: one inbound_event per order or event write, deduplicated by its natural key within its source.
@@ -72,6 +72,17 @@ async function creditingTimeChanged(tx: Tx, submission: Submission, existing: { 
 }
 
 const orderKey = (input: { source_system: string; source_order_id: string }) => `order:${input.source_system}:${input.source_order_id}`
+const subscriptionKey = (system: string, ref: string) => `subscription:${system}:${ref}`
+
+/**
+ * The lock an attempt holds to its commit (E-ORD-01): an event's order, or its subscription (D-V1A-05); an order's
+ * subscription, so a subscription event held meanwhile is seen by the order's release.
+ */
+function attemptLock(submission: Submission): string | null {
+  const { input } = submission
+  if (input.subscription_ref !== undefined) return subscriptionKey(input.source_system, input.subscription_ref)
+  return submission.kind === 'event' ? orderKey({ source_system: input.source_system, source_order_id: input.source_order_id! }) : null
+}
 
 export function naturalKey(submission: Submission): string {
   return submission.kind === 'order'
@@ -109,9 +120,8 @@ async function lockKey(tx: Tx, source: string, key: string): Promise<void> {
  * ingested meanwhile is then seen committed, or finds this event's held row when it releases awaiting events.
  */
 async function attempt(tx: Tx, submission: Submission, refs: AttemptRefs, ctx: IngestContext, before?: () => Promise<void>): Promise<Outcome | Refusal> {
-  if (submission.kind === 'event') {
-    await lockKey(tx, submission.source, orderKey(submission.input))
-  }
+  const lock = attemptLock(submission)
+  if (lock !== null) await lockKey(tx, submission.source, lock)
   await tx.query('SAVEPOINT ingest_attempt')
   try {
     if (before !== undefined) await before()
@@ -206,18 +216,44 @@ export async function reattempt(tx: Tx, row: HeldRow, ctx: IngestContext): Promi
 const HELD_COLUMNS = 'id, source, idempotency_key, payload, payload_hash, attempts'
 
 /**
- * E-ORD-01: events held ORDER_NOT_FOUND for an order that just arrived are processed now, oldest first. A row locked by a
- * retry or re-delivery is skipped: that transaction waits for this order's key lock (attempt) and then finds the order.
+ * Processes again, oldest first, the rows held for one of `reasons` with one of `refs` (of `source`, or any); returns
+ * how many were processed. A row locked by a retry or re-delivery is skipped: that transaction processes it itself.
+ * Each attempt runs in its savepoint; a row still failing stays held with its new reason (or is rejected).
+ */
+async function release(
+  tx: Tx, reasons: readonly HoldReason[], refs: readonly string[], source: string | null, ctx: IngestContext,
+): Promise<number> {
+  const { rows } = await tx.query<HeldRow>(
+    `SELECT ${HELD_COLUMNS} FROM inbound_event
+     WHERE state = 'held' AND hold_reason = ANY ($1) AND hold_ref = ANY ($2) AND ($3::text IS NULL OR source = $3)
+     ORDER BY received_at, id FOR UPDATE SKIP LOCKED`,
+    [reasons, refs, source],
+  )
+  let processed = 0
+  for (const row of rows) if ((await reattempt(tx, row, ctx)).state === 'processed') processed += 1
+  return processed
+}
+
+/**
+ * E-ORD-01 / D-V1A-05: events held ORDER_NOT_FOUND for an order that just arrived, and SUBSCRIPTION_NOT_FOUND for its
+ * subscription, are processed now (the attempt's key lock made them visible).
  */
 async function releaseAwaiting(tx: Tx, submission: Submission, ctx: IngestContext): Promise<void> {
   if (submission.kind !== 'order') return
-  const { rows } = await tx.query<HeldRow>(
-    `SELECT ${HELD_COLUMNS} FROM inbound_event
-     WHERE state = 'held' AND hold_reason = 'ORDER_NOT_FOUND' AND source = $1 AND hold_ref = $2
-     ORDER BY received_at, id FOR UPDATE SKIP LOCKED`,
-    [submission.source, submission.input.source_order_id],
-  )
-  for (const row of rows) await reattempt(tx, row, ctx)
+  await release(tx, ['ORDER_NOT_FOUND'], [submission.input.source_order_id], submission.source, ctx)
+  const ref = submission.input.subscription_ref
+  if (ref !== undefined) await release(tx, ['SUBSCRIPTION_NOT_FOUND'], [ref], submission.source, ctx)
+}
+
+/**
+ * ORD facade (PLAN V1-A 4.1): processes again the rows held for `reasons` with `refs` (an FX approval releases
+ * FX_RATE_MISSING / FX_RATE_STALE of its 'BASE:QUOTE' pairs) in the caller's transaction; returns how many were processed.
+ * shortcut: a held order with a subscription waits on its subscription lock after the caller audited; a concurrent order
+ * of that subscription waiting on the audit lock is a deadlock PostgreSQL breaks by failing one of them (rare, retried by
+ * the caller); take the subscription lock with a try if it shows up in practice.
+ */
+export function releaseHeld(tx: Tx, reasons: readonly HoldReason[], refs: readonly string[], ctx: IngestContext): Promise<number> {
+  return release(tx, reasons, refs, null, ctx)
 }
 
 async function replay(tx: Tx, kind: Submission['kind'], result: Record<string, string>): Promise<StoredResponse> {

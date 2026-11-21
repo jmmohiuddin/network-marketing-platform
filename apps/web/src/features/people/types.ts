@@ -4,6 +4,14 @@ export const PARTICIPANTS_PATH = '/v1/participants'
 
 export type PositionStatus = 'pending' | 'active' | 'suspended' | 'terminated'
 export type ContactField = 'email' | 'phone' | 'address'
+/** D-V1A-06: the plan's business account is stored as `entity`. */
+export type AccountType = 'individual' | 'joint' | 'entity'
+export type HolderRole = 'joint_holder' | 'authorised_signatory'
+/** One account holder or signatory, read only through the audited unmask. */
+export interface AccountHolder {
+  readonly name: string
+  readonly role: HolderRole
+}
 export type Contact = Partial<Record<ContactField, string | null>>
 
 /** GET /v1/participants item. */
@@ -32,7 +40,9 @@ export interface OwnedPosition {
 export interface ParticipantDetail {
   readonly id: string
   readonly external_ref: string
-  readonly account_type: 'individual' | 'joint' | 'entity'
+  /** null for records kept before V1-A without a type. */
+  readonly account_type: AccountType | null
+  readonly account_holders_count: number
   readonly market: { readonly id: string; readonly code: string }
   /** "Erased participant <external_ref>" once pseudonymised (D-B5-18). */
   readonly display_name: string | null

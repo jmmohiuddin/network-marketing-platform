@@ -34,6 +34,9 @@ const TENANT_ID_TABLES = [
   'migration_opening_state', 'parallel_run', 'parallel_run_difference',
   // PLAN B-MKT section 1
   'tax_line', 'tax_form_generation', 'tax_form',
+  // PLAN V1-A section 1 (tenant_offboarding last: the vendor realm reads it, in this order)
+  'credit_type', 'credit_award', 'credit_redemption', 'credit_lot_event', 'fx_rate_batch', 'fx_rate', 'retention_schedule',
+  'legal_hold', 'retention_run', 'tenant_offboarding',
 ]
 // Platform tables (no tenant): every realm reads them, none writes them (pack-rules.test.ts).
 const PLATFORM_TABLES = ['guardrail_rule', 'tax_rule', 'pack_rule']
@@ -42,8 +45,8 @@ const USER_OWNED_TABLES = ['password_credential', 'mfa_credential']
 const TENANT_TABLES = ['tenant', ...TENANT_ID_TABLES, ...USER_OWNED_TABLES]
 // Tables that also hold vendor-owned rows after the seed (platform roles, vendor users and their sessions).
 const VENDOR_TABLES = ['user_account', 'role', 'session', 'password_credential', 'audit.vendor_event']
-// All the vendor realm may read of a tenant: metadata, markets and support sessions.
-const VENDOR_READABLE_TENANT_TABLES = ['tenant', 'market', 'support_session']
+// All the vendor realm may read of a tenant: metadata, markets, support sessions and offboardings.
+const VENDOR_READABLE_TENANT_TABLES = ['tenant', 'market', 'support_session', 'tenant_offboarding']
 
 type Probe = [table: string, where: string, value: string]
 type Run = (fn: (tx: Tx) => Promise<string[]>) => Promise<string[]>

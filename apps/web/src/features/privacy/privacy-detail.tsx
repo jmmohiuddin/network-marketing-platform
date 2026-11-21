@@ -162,7 +162,7 @@ export function PrivacyRequestPage({ requestId }: { readonly requestId: string }
 }
 
 function RequestView({ request, reload }: { readonly request: PrivacyRequestDetail; readonly reload: () => void }) {
-  const { readOnly } = useSession()
+  const { supportReadOnly } = useSession()
   const caseRecord = useResource<CaseRecord>(`/v1/cases/${request.case_id}`)
   const markets = useResource<Market[]>(MARKETS_PATH)
   const [dialog, setDialog] = useState<'verify' | 'corrections' | null>(null)
@@ -198,10 +198,10 @@ function RequestView({ request, reload }: { readonly request: PrivacyRequestDeta
             ]} />
           </RecordCard>
           <Requester request={request} />
-          {request.type === 'correction' && <CorrectionsCard request={request} onEdit={open && !readOnly ? () => setDialog('corrections') : undefined} />}
+          {request.type === 'correction' && <CorrectionsCard request={request} onEdit={open && !supportReadOnly ? () => setDialog('corrections') : undefined} />}
         </div>
         <div className="lg:col-span-5 flex flex-col gap-space-md min-w-0">
-          <Verification request={request} onVerify={request.verified_at === null && open && !readOnly ? () => setDialog('verify') : undefined} />
+          <Verification request={request} onVerify={request.verified_at === null && open && !supportReadOnly ? () => setDialog('verify') : undefined} />
           {/* Erasure: the pre-submit blockers only once the case is read without a preview, so the two statements never alternate. */}
           {caseRecord.error !== null && <ErrorState section message={errorMessage(caseRecord.error)} onRetry={caseRecord.reload} />}
           {caseRecord.loading && request.type === 'erasure' && <LoadingState label="Loading the erasure preview" />}

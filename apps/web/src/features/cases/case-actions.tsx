@@ -22,7 +22,7 @@ import type { DocumentLimits } from '../markets/types'
 import { MARKETS_PATH, type Market } from '../../lib/markets'
 import { erasureRefusal } from '../privacy/format'
 import type { PrivacyPayload } from '../privacy/types'
-import { caseTypeLabel, personName, type CaseTypeInfo } from './format'
+import { caseTypeLabel, personName, readinessText, type CaseTypeInfo } from './format'
 import type { CaseDetail, CaseRecord } from './types'
 
 const NOTE_MAX = 2000
@@ -43,6 +43,10 @@ interface DialogProps {
  */
 export function decisionRefusal(error: unknown): unknown {
   if (!(error instanceof ApiError)) return error
+  if (error.code === 'NEW_OWNER_NOT_READY') {
+    const missing = (error.details as { missing?: readonly string[] } | null)?.missing ?? []
+    return new ApiError(error.status, error.code, `${readinessText(missing)} Nothing was decided.`, error.details, error.requestId)
+  }
   const busy = error.code === 'LEDGER_BUSY' || (error.code === 'PERIOD_NOT_OPEN' && (error.details as { state?: string } | null)?.state === 'busy')
   if (!busy) return error
   return new ApiError(error.status, error.code, 'Another posting or commit is using this market right now, so nothing was decided. Decide the case again in a moment.', error.details, error.requestId)

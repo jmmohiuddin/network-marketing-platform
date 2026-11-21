@@ -11,6 +11,14 @@ export interface Calendar {
   readonly cutoff_time_zone: string
   readonly market: { readonly id: string; readonly code: string }
   readonly plan: { readonly id: string; readonly name: string } | null
+  /** D-V1A-02 (PLAN V1-A 2.5): the final calendar this one pays advances for, and the provisional calendars of this one. */
+  readonly provisional_for: CalendarRef | null
+  readonly provisional_calendars: readonly CalendarRef[]
+}
+
+export interface CalendarRef {
+  readonly id: string
+  readonly name: string
 }
 
 /** §2.4 preflight refusal, as a blocker of the period. */
@@ -28,7 +36,10 @@ export interface PeriodRow {
   readonly cut_off_passed: boolean
   readonly state: PeriodState
   readonly committed_run_id: string | null
-  readonly latest_run: { readonly id: string; readonly state: RunState; readonly gross_minor: string | null; readonly finished_at: string | null } | null
+  /** true_up_runs: the provisional runs the latest run trues up (D-V1A-02; 0 outside final calendars). */
+  readonly latest_run: {
+    readonly id: string; readonly state: RunState; readonly gross_minor: string | null; readonly finished_at: string | null; readonly true_up_runs: number
+  } | null
   readonly blockers: readonly Blocker[]
   readonly late: { readonly pending: number; readonly decided: number }
   /** D-B6-04: set once the period is closed (user id). */
@@ -119,6 +130,12 @@ export interface RunDetail {
   /** B4: the journal entry posted at commit (null without lines or before commit). */
   readonly journal_entry_id?: string | null
   readonly plan_version: PlanVersionRef
+  /** D-V1A-02: a run of a provisional period names the final period that trues it up. */
+  readonly provisional: { readonly final_period_id: string | null; readonly final_calendar_id: string } | null
+  /** A final run: the provisional runs it trues up and the Σ of their offsets. */
+  readonly true_up: { readonly provisional_run_ids: readonly string[]; readonly offsets_minor: string } | null
+  /** D-V1A-03: Σ of the run's credit awards (not cash). */
+  readonly credit_awards_minor: string
   readonly snapshot: { readonly known_at: string; readonly row_counts: Readonly<Record<string, number>> } | null
 }
 
@@ -219,4 +236,36 @@ export interface ReplayResult {
 export interface CommitRequest {
   readonly commit_requested_at: string
   readonly eligible_approvers: readonly EligibleApprover[]
+}
+
+/** GET /v1/runs/:id/true-up (payees cursor-paged). */
+export interface TrueUp {
+  readonly final_period: { readonly id: string; readonly starts_at: string; readonly ends_at: string }
+  readonly provisional_runs: readonly {
+    readonly run_id: string
+    readonly period_id: string
+    readonly starts_at: string
+    readonly ends_at: string
+    readonly committed_at: string
+    readonly gross_minor: string
+  }[]
+  readonly payees: readonly {
+    readonly participant: { readonly id: string; readonly external_ref: string }
+    readonly final_minor: string
+    readonly provisional_minor: string
+    readonly true_up_minor: string
+  }[]
+  readonly totals: { readonly final_minor: string; readonly provisional_minor: string; readonly true_up_minor: string }
+}
+
+/** GET /v1/runs/:id/credit-awards rows (meta.totals per credit type). */
+export interface CreditAward {
+  readonly id: string
+  readonly participant: { readonly id: string; readonly external_ref: string }
+  readonly position_ref: string
+  readonly rule_key: string
+  readonly credit_type: { readonly code: string; readonly name: string }
+  readonly amount_minor: string
+  readonly expiry_days: number | null
+  readonly taxable: boolean
 }

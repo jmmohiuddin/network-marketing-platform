@@ -8,7 +8,7 @@ import { bankVersionContext } from './lib/bank-crypto.js'
 import { open } from './lib/secret-box.js'
 import {
   assertSeedable, E2E_FIXTURE_PACK, E2E_TAX_PACK, migrationFixtureFiles, seed, seedFixtureMarket, seedFixtureMigrationMarket, seedFixturePack,
-  seedFixturePlanMarket, writeMigrationFixtureFiles,
+  seedFixtureAdvancesMarket, seedFixtureOffboardTenant, seedFixturePlanMarket, writeMigrationFixtureFiles,
 } from './seed.js'
 
 closePoolsAfterAll()
@@ -40,8 +40,8 @@ describe('seed', () => {
 
     const markets = await ownerRows('SELECT code, state FROM market ORDER BY code')
 
-    expect(users).toHaveLength(30)
-    expect(credentials).toEqual([{ passwords: 30, factors: 2 }]) // written as their own users; only vendors have a factor
+    expect(users).toHaveLength(34)
+    expect(credentials).toEqual([{ passwords: 34, factors: 2 }]) // written as their own users; only vendors have a factor
     expect(users.filter((user) => user.realm === 'vendor')).toEqual([
       { email: 'operator@vendor.example', realm: 'vendor', mfa_enrolled: true },
       { email: 'operator2@vendor.example', realm: 'vendor', mfa_enrolled: true },
@@ -53,6 +53,7 @@ describe('seed', () => {
     expect(grants).toEqual([
       { name: 'Commission analyst', approved: false },
       { name: 'Compliance officer', approved: true },
+      { name: 'Compliance officer', approved: true }, // compliance2 (V1-A): related party of BE-E
       { name: 'DPO', approved: true }, // privileged since B2 (privacy.manage): a second admin's approval
       { name: 'DPO', approved: true }, // dpo2: B5 privacy decisions need a second DPO
       { name: 'Executive read-only', approved: false },
@@ -63,6 +64,7 @@ describe('seed', () => {
       { name: 'Payout officer', approved: false }, // payout2 (BUG-111): the result file is imported by someone other than its batch's preparer
       { name: 'Plan administrator', approved: false },
       { name: 'Support agent', approved: false },
+      { name: 'Support agent', approved: false }, // support2 (V1-A): a second participant.manage holder
       { name: 'Tenant admin', approved: false },
       { name: 'Tenant admin', approved: false },
     ])
@@ -258,6 +260,64 @@ describe('seed', () => {
     await expect(seedFixtureMigrationMarket('nmp_e2e')).rejects.toThrow('not nmp_e2e')
   })
 
+  test('the e2e fixture market BE: weekly advances nested in BE monthly, participants, orders, credits, FX, offboard tenant; idempotent', async () => {
+    await resetApiDb()
+    const database = (await ownerRows<{ name: string }>('SELECT current_database() AS name'))[0]!.name
+    await seed(testConfig({ NODE_ENV: 'test' }), undefined, () => undefined)
+    const { secretKey } = testConfig({ NODE_ENV: 'test' })
+    await seedFixturePack(database)
+    for (let pass = 0; pass < 2; pass += 1) {
+      await seedFixtureAdvancesMarket(database, secretKey, 'fixture-hash')
+      await seedFixtureOffboardTenant(database, 'fixture-hash')
+    }
+    const periods = await ownerRows<{ calendar: string; span: string; final: string | null }>(
+      `SELECT c.name AS calendar, to_char(p.starts_at AT TIME ZONE 'Europe/Brussels', 'MM-DD') || '/' || to_char(p.ends_at AT TIME ZONE 'Europe/Brussels', 'MM-DD') AS span,
+              (SELECT to_char(f.starts_at AT TIME ZONE 'Europe/Brussels', 'MM') FROM period f WHERE f.id = provisional_final_period(p.id)) AS final
+       FROM period p JOIN calendar c ON c.id = p.calendar_id WHERE c.name LIKE 'BE %' ORDER BY c.name, p.starts_at`)
+
+    expect(periods.filter((p) => p.calendar === 'BE monthly').map((p) => p.span)).toEqual(['10-01/11-01', '11-01/12-01', '12-01/01-01'])
+    expect(periods.filter((p) => p.calendar === 'BE weekly advances').map((p) => `${p.span}:${p.final}`)).toEqual([
+      '10-05/10-12:10', '10-12/10-19:10', '10-19/10-26:10', '10-26/11-01:10', '11-01/11-02:11', '11-02/11-09:11', '11-09/11-16:11',
+      '11-16/11-23:11', '11-23/11-30:11', '11-30/12-01:11', '12-01/12-07:12', '12-07/12-14:12', '12-14/12-21:12', '12-21/12-28:12',
+      '12-28/01-01:12',
+    ])
+    expect(await ownerRows(
+      `SELECT o.source_order_id AS ref, b.external_ref AS buyer, o.amount_minor::int AS amount, to_char(p.starts_at AT TIME ZONE 'Europe/Brussels', 'MM') AS month
+       FROM sales_order o JOIN participant b ON b.id = o.buyer_id JOIN period p ON p.id = o.period_id WHERE o.source_order_id LIKE 'O-BE-%' ORDER BY 1`,
+    )).toEqual([
+      { ref: 'O-BE-1', buyer: 'BE-A', amount: 10000, month: '10' }, { ref: 'O-BE-2', buyer: 'BE-A', amount: 5000, month: '10' },
+      { ref: 'O-BE-3', buyer: 'BE-A', amount: 3000, month: '10' }, { ref: 'O-BE-4', buyer: 'BE-B', amount: 20000, month: '10' },
+    ])
+    expect(await ownerRows(
+      `SELECT x.external_ref AS ref, bool_and(p.status = 'terminated') AS terminated,
+              EXISTS (SELECT 1 FROM tax_profile t WHERE t.participant_id = x.id AND t.tax_id_sealed IS NOT NULL) AS taxed,
+              EXISTS (SELECT 1 FROM bank_detail_version v WHERE v.participant_id = x.id) AS banked,
+              EXISTS (SELECT 1 FROM legal_hold h WHERE h.participant_id = x.id AND h.released_at IS NULL) AS held
+       FROM participant x JOIN position_ownership o ON o.participant_id = x.id JOIN position p ON p.id = o.position_id
+       WHERE x.external_ref LIKE 'BE-%' GROUP BY x.id ORDER BY 1`,
+    )).toEqual([
+      { ref: 'BE-A', terminated: false, taxed: true, banked: true, held: false }, { ref: 'BE-B', terminated: false, taxed: true, banked: true, held: false },
+      { ref: 'BE-C', terminated: false, taxed: true, banked: true, held: false }, { ref: 'BE-D', terminated: false, taxed: false, banked: false, held: false },
+      { ref: 'BE-E', terminated: false, taxed: true, banked: true, held: false }, { ref: 'BE-R1', terminated: true, taxed: false, banked: false, held: false },
+      { ref: 'BE-R2', terminated: true, taxed: false, banked: false, held: true },
+    ])
+    expect(await ownerRows(`SELECT realm, locale FROM user_account WHERE email = 'be-c@example.test'`)).toEqual([{ realm: 'portal', locale: 'en' }])
+    expect(await ownerRows(
+      `SELECT r.type, r.outcome, r.closed_at, r.requester_sealed IS NOT NULL AS sealed FROM privacy_request r JOIN participant x ON x.id = r.subject_participant_id
+       WHERE x.external_ref = 'BE-R1'`)).toEqual([{ type: 'access', outcome: 'fulfilled', closed_at: new Date('2025-10-01T00:00:00Z'), sealed: true }])
+    expect(await ownerRows(`SELECT code, expiry_days, expiry_notice_days, taxable, unit_value_minor FROM credit_type`))
+      .toEqual([{ code: 'PRODUCT_CREDIT', expiry_days: 30, expiry_notice_days: 7, taxable: false, unit_value_minor: '100' }])
+    expect(await ownerRows(`SELECT base, quote, rate::text AS rate FROM fx_rate ORDER BY base`)).toEqual([
+      { base: 'CHF', quote: 'EUR', rate: '1.0412000000' }, { base: 'USD', quote: 'EUR', rate: '0.9200000000' },
+    ])
+    expect(await ownerRows(
+      `SELECT v.settings -> 'fx.max_rate_age_days' AS age FROM tenant_setting_version v JOIN tenant t ON t.id = v.tenant_id
+       WHERE t.slug = 'acme' ORDER BY v.version DESC LIMIT 1`)).toEqual([{ age: 45 }])
+    expect(await ownerRows(`SELECT t.state, m.code, u.email FROM tenant t JOIN market m ON m.tenant_id = t.id JOIN user_account u ON u.tenant_id = t.id
+      WHERE t.slug = 'offboard'`)).toEqual([{ state: 'live', code: 'OB', email: 'admin@offboard.test' }])
+    await expect(seedFixtureAdvancesMarket('nmp_e2e', secretKey, 'x')).rejects.toThrow('not nmp_e2e')
+  })
+
   test('the migration files: months M-3..M-1, the cycle variant, opening balances summing to 950', async () => {
     const files = migrationFixtureFiles({ m3: '2026-08', m2: '2026-09', m1: '2026-10' })
     const dir = await mkdtemp(join(tmpdir(), 'nmp-b6-migration-'))
@@ -307,7 +367,7 @@ describe('seed', () => {
 
     expect(lines.filter((line) => line.startsWith('vendor TOTP: otpauth://'))).toHaveLength(2)
     expect(lines.some((line) => line.startsWith('password of the accounts created now: '))).toBe(true)
-    expect(lines.filter((line) => line.startsWith('acme: '))).toHaveLength(14)
+    expect(lines.filter((line) => line.startsWith('acme: '))).toHaveLength(16)
   })
 
   test('seeds only a server on this machine: Unix socket or loopback, never a remote host named like a local database', () => {

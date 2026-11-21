@@ -19,7 +19,7 @@ vi.mock('next/navigation', () => ({
 const AT = '2026-11-17T09:00:00.000Z'
 const MARKET = { id: 'm1', code: 'DE', name: 'Germany', currency: 'EUR', state: 'live', market_pack: 'x', time_zone: 'Europe/Berlin', languages: ['de'], minor_unit: 2 }
 const DETAIL: ParticipantDetail = {
-  id: 'p1', external_ref: 'DE-B', account_type: 'individual', market: { id: 'm1', code: 'DE' }, display_name: null, contact_masked: null, status: 'active',
+  id: 'p1', external_ref: 'DE-B', account_type: 'individual', account_holders_count: 0, market: { id: 'm1', code: 'DE' }, display_name: null, contact_masked: null, status: 'active',
   merged_into: null, enrolled_at: AT, types: [], agreements: [], positions: [], duplicate_hold: false,
 }
 const SUPPORT = adminMe({ permissions: ['participant.read', 'case.bank_detail.read', 'case.bank_detail.create'] })

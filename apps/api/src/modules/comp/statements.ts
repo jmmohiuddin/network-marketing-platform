@@ -12,7 +12,7 @@ import type { Texts } from './messages.js'
 // policies of a portal transaction are the backstop).
 // shortcut: statements derived per request, add a cached projection when a statement read exceeds 300 ms p95.
 
-export type OriginKind = 'none' | 'late_order' | 'refund' | 'manual' | 'restatement'
+export type OriginKind = 'none' | 'late_order' | 'refund' | 'manual' | 'restatement' | 'provisional'
 
 export interface StatementLine {
   readonly id: string
@@ -22,6 +22,8 @@ export interface StatementLine {
   readonly amount_minor: string
   readonly origin_type: string | null
   readonly original_period_id: string | null
+  /** Market-zone days of the original period (last included day), for lines with one. */
+  readonly original_period: { readonly starts_on: string; readonly ends_on: string } | null
 }
 
 export interface Settlement {
@@ -39,7 +41,7 @@ export interface StatementWithholding { readonly rule_id: string; readonly rate:
 /** A line's origin as the distributor reads it (late order or refund by the sign of a late or clawback line). */
 export function originKind(originType: string | null, amountMinor: bigint): OriginKind {
   if (originType === null) return 'none'
-  if (originType === 'manual' || originType === 'restatement') return originType
+  if (originType === 'manual' || originType === 'restatement' || originType === 'provisional') return originType
   return amountMinor < 0n ? 'refund' : 'late_order'
 }
 
@@ -61,6 +63,7 @@ export function buildStatement(
         rule_key: ruleKey, rule_name: ruleName(ruleKey), total_minor: sum(ofRule.map((l) => BigInt(l.amount_minor))).toString(),
         lines: ofRule.map((l) => ({
           id: l.id, amount_minor: l.amount_minor, origin_kind: originKind(l.origin_type, BigInt(l.amount_minor)), original_period_id: l.original_period_id,
+          original_period: l.original_period,
         })),
       }
     })
@@ -169,10 +172,12 @@ async function payoutStatus(tx: Tx, participantId: string, run: StatementRow) {
 export async function statementDetail(tx: Tx, participantId: string, runId: string, log: FastifyBaseLogger) {
   const run = await committedRun(tx, participantId, runId)
   const { rows: lines } = await tx.query<StatementLine>(
-    `SELECT l.id, l.payee_position_id AS position_id, x.position_ref, l.rule_key, l.amount_minor::text, l.origin_type, l.original_period_id
-     FROM result_line l JOIN position x ON x.id = l.payee_position_id
+    `SELECT l.id, l.payee_position_id AS position_id, x.position_ref, l.rule_key, l.amount_minor::text, l.origin_type, l.original_period_id,
+            CASE WHEN o.id IS NOT NULL THEN jsonb_build_object('starts_on', (o.starts_at AT TIME ZONE $3)::date::text,
+              'ends_on', ((o.ends_at - interval '1 microsecond') AT TIME ZONE $3)::date::text) END AS original_period
+     FROM result_line l JOIN position x ON x.id = l.payee_position_id LEFT JOIN period o ON o.id = l.original_period_id
      WHERE l.run_id = $1 AND l.payee_participant_id = $2 ORDER BY x.position_ref, l.payee_position_id, l.rule_key, l.id`,
-    [runId, participantId],
+    [runId, participantId, run.time_zone],
   )
   const { rows: settlement } = await tx.query<Settlement>(
     `SELECT gross_minor::text, netted_minor::text, withheld_minor::text, net_payable_minor::text FROM run_settlement
@@ -189,7 +194,43 @@ export async function statementDetail(tx: Tx, participantId: string, runId: stri
     log.error({ runId, participantId, summary: body.summary }, 'statement invariant failed: net <> gross - withheld - clawback + adjustment')
     throw new ApiError(500, 'INVARIANT_FAILED', 'This statement does not add up; it has been reported.')
   }
-  return { ...head(run), ...body, payout: await payoutStatus(tx, participantId, run), disclosure_url: null }
+  return {
+    ...head(run), ...body, credit_awards: await creditAwards(tx, participantId, run), conversions: await conversions(tx, participantId, run),
+    payout: await payoutStatus(tx, participantId, run), disclosure_url: null,
+  }
+}
+
+/**
+ * D-V1A-03: the participant's credit awards of the run, not cash and not in the summary; a lot expires at the end of
+ * its commit day (market zone) + expiry_days (credit_lots), so expires_on is known once committed.
+ */
+async function creditAwards(tx: Tx, participantId: string, run: StatementRow) {
+  const { rows } = await tx.query(
+    `SELECT jsonb_build_object('code', t.code, 'name', t.name) AS credit_type, a.amount_minor::text, a.currency,
+            CASE WHEN a.expiry_days IS NOT NULL THEN ((r.committed_at AT TIME ZONE $3)::date + a.expiry_days)::text END AS expires_on, a.taxable
+     FROM credit_award a JOIN credit_type t ON t.id = a.credit_type_id JOIN run r ON r.id = a.run_id
+     WHERE a.run_id = $1 AND a.payee_participant_id = $2 ORDER BY t.code, a.payee_position_id, a.rule_key`,
+    [run.run_id, participantId, run.time_zone],
+  )
+  return rows
+}
+
+/**
+ * D-V1A-04: orders credited in the run's period to a position the participant owned when it was credited, converted
+ * at ingestion: original amount and currency, the rate and its valid_from, and the amount in the market currency.
+ */
+async function conversions(tx: Tx, participantId: string, run: StatementRow) {
+  const { rows } = await tx.query(
+    `SELECT o.source_order_id AS order_ref, (o.ordered_at AT TIME ZONE $3)::date::text AS ordered_on, o.original_currency,
+            o.original_amount_minor::text, f.rate::text AS rate, f.valid_from AS rate_valid_from, o.amount_minor::text AS converted_amount_minor,
+            o.currency
+     FROM sales_order o JOIN fx_rate f ON f.id = o.fx_rate_id JOIN period p ON p.id = $2
+     WHERE o.market_id = $4 AND o.credited_at >= p.starts_at AND o.credited_at < p.ends_at
+       AND gen_owner_at(o.attributed_position_id, o.credited_at) = $1
+     ORDER BY o.ordered_at, o.id`,
+    [participantId, run.period_id, run.time_zone, run.market_id],
+  )
+  return rows
 }
 
 const CSV_HEADER = ['record', 'position_ref', 'rule_key', 'line_id', 'origin_kind', 'original_period_id', 'amount', 'currency']

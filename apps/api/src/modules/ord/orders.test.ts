@@ -185,7 +185,9 @@ describe('T-B2-23 validation matrix: refusals are persisted, body-shape failures
 
     await expectRefused(orderBody({ market: 'XX' }), 422, 'MARKET_NOT_LIVE')
     await expectRefused(orderBody({ market: 'DE' }), 422, 'MARKET_NOT_LIVE') // TS-50 (order part)
-    await expectRefused(orderBody({ currency: 'EUR' }), 422, 'CURRENCY_MISMATCH')
+    // V1-A: CURRENCY_MISMATCH is retired, another currency is converted (D-V1A-04) once its policy is set
+    await expectRefused(orderBody({ currency: 'EUR' }), 422, 'FX_POLICY_NOT_CONFIGURED')
+    await expectRefused(orderBody({ currency: 'XTS' }), 422, 'CURRENCY_UNKNOWN')
     await expectRefused(orderBody({ amount_minor: '2999' }), 422, 'TOTALS_MISMATCH')
     await expectRefused(orderBody({ lines }), 422, 'LINE_NUMBERS_INVALID')
     await expectRefused(orderBody({ ordered_at: future, paid_at: future }), 422, 'TIMESTAMP_IN_FUTURE')

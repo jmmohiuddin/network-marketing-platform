@@ -201,7 +201,7 @@ describe('SC-18 statement (server-rendered, T-BM-35)', () => {
     const refund = statement({
       positions: [{
         position_id: 'x', position_ref: 'DE-A-1', paid_as: [], total_minor: '-1000',
-        bonuses: [{ rule_key: 'retail', rule_name: null, total_minor: '-1000', lines: [{ id: LINE, amount_minor: '-1000', origin_kind: 'refund', original_period_id: 'p-2' }] }],
+        bonuses: [{ rule_key: 'retail', rule_name: null, total_minor: '-1000', lines: [{ id: LINE, amount_minor: '-1000', origin_kind: 'refund', original_period_id: 'p-2', original_period: { starts_on: '2026-08-01', ends_on: '2026-08-31' } }] }],
       }],
       summary: { gross_minor: '0', adjustment_minor: '-1000', clawback_minor: '-1000', withheld_minor: '0', withholding: null, net_minor: '0' },
       payout: { instructions: [], blockers: [{ reason: 'bank_detail_cooling_off', until: '2026-09-10T10:00:00.000Z' }] },
@@ -218,7 +218,7 @@ describe('SC-18 statement (server-rendered, T-BM-35)', () => {
   it('renders the statement core as static German HTML: net, gross, withholding with rate and basis, lines, payout, CSV link', async () => {
     const german = statement({
       summary: { gross_minor: '520000', adjustment_minor: '0', clawback_minor: '0', withheld_minor: '0', withholding: { rule_id: 'r', rate: '0.000000', rate_basis: 'no_duty' }, net_minor: '520000' },
-      positions: [{ ...statement().positions[0]!, total_minor: '520000', bonuses: [{ rule_key: 'unilevel', rule_name: null, total_minor: '520000', lines: [{ id: LINE, amount_minor: '520000', origin_kind: 'none', original_period_id: null }] }] }],
+      positions: [{ ...statement().positions[0]!, total_minor: '520000', bonuses: [{ rule_key: 'unilevel', rule_name: null, total_minor: '520000', lines: [{ id: LINE, amount_minor: '520000', origin_kind: 'none', original_period_id: null, original_period: null }] }] }],
     })
     const container = await renderServer(() => StatementPage({ runId: RUN }), serverRoutes({
       [`GET /v1/me/statements/${RUN}`]: () => ok(german), 'GET /v1/me/disputes': () => page([]),
@@ -289,6 +289,21 @@ describe('SC-18 statement (server-rendered, T-BM-35)', () => {
     panel = screen.getByRole('complementary', { name: 'Line explanation' })
     expect(within(panel).getByText('Dispute under review')).toBeTruthy()
     expect(within(panel).queryByRole('link', { name: 'Dispute this line' })).toBeNull()
+  })
+
+  it('offers no dispute on a read-only tenant, neither the link nor the form (D-V1A-07)', async () => {
+    const readOnly = portalMe({ tenant: { slug: 'acme', legal_name: 'Acme Ltd', read_only: true } })
+    await renderServer(() => StatementPage({ runId: RUN, lineId: LINE }), serverRoutes({
+      [`GET /v1/me/statements/${RUN}`]: () => ok(statement()),
+      'GET /v1/me/disputes': () => page([]),
+      [`GET /v1/me/statement-lines/${LINE}/explanation`]: () => ok(EXPLANATION),
+    }, readOnly))
+    expect(within(screen.getByRole('complementary', { name: 'Line explanation' })).queryByRole('link', { name: 'Dispute this line' })).toBeNull()
+    const fetchMock = fetchByRoute({})
+    renderPortal(<DisputePage runId={RUN} lineId={LINE} />, fetchMock, readOnly)
+    expect(screen.getByRole('heading', { level: 1, name: 'Dispute this line' })).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Send dispute' })).toBeNull()
+    expect(fetchMock).not.toHaveBeenCalled()
   })
 
   it('hides the dispute link and says so when the dispute states could not be loaded', async () => {
