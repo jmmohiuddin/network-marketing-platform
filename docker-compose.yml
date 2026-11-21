@@ -74,6 +74,20 @@ services:
     depends_on: [api]
     mem_limit: 512m
 
+  # Static landing pages for phoyev.com and network.phoyev.com (site/). No image build: files are mounted from /opt/nmp/site.
+  # Not in deploy.sh's `up` list on purpose: it is started once by hand and never restarts with app deploys.
+  site:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    command: ["caddy", "run", "--config", "/etc/caddy/Caddyfile"]
+    volumes:
+      - ./site/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./site/phoyev.com:/srv/phoyev.com:ro
+      - ./site/network.phoyev.com:/srv/network.phoyev.com:ro
+    ports:
+      - "${SITE_BIND:-172.16.1.1}:${SITE_PORT:-6601}:80"
+    mem_limit: 64m
+
 volumes:
   pgdata:
   appdata:

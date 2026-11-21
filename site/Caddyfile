@@ -1,0 +1,31 @@
+# Serves the two static landing pages. The shared VPS Caddy terminates HTTPS and proxies here (172.16.1.1:6601),
+# keeping the original Host header. Roots are fixed per host (no Host-derived paths).
+# The pages are Stitch exports: Tailwind CDN script + inline scripts, Google Fonts, Stitch-hosted images, hence the CSP.
+{
+	auto_https off
+	admin off
+}
+
+:80 {
+	@agency host phoyev.com www.phoyev.com
+	@network host network.phoyev.com
+
+	handle @agency {
+		root * /srv/phoyev.com
+		file_server
+	}
+	handle @network {
+		root * /srv/network.phoyev.com
+		file_server
+	}
+	handle {
+		respond "Not found" 404
+	}
+
+	header {
+		Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https://lh3.googleusercontent.com; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'"
+		X-Content-Type-Options nosniff
+		X-Frame-Options DENY
+		Referrer-Policy strict-origin-when-cross-origin
+	}
+}

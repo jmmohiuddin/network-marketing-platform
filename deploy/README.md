@@ -14,6 +14,28 @@ The VPS's shared Caddy (`/opt/voltix/infra/production/Caddyfile`) terminates HTT
 5. Repo secrets `VPS_HOST`, `VPS_USER` (root), `VPS_SSH_KEY` (the private half).
 6. Caddy site block for the domain → `reverse_proxy 172.16.1.1:6600`; validate, then `docker exec voltix-prod-caddy-1 caddy reload --config /etc/caddy/Caddyfile`.
 
+## Landing pages (phoyev.com, network.phoyev.com)
+`site/` holds two static Stitch pages served by the `site` compose service on `172.16.1.1:6601` (not part of `deploy.sh`; start once with `docker compose up -d site`). Copy `site/` and `docker-compose.yml` to `/opt/nmp/` by hand (the CI key cannot). Edit a page, scp it, no restart needed.
+- `phoyev.com`, `www.phoyev.com` → whole host to `172.16.1.1:6601` (agency page).
+- `network.phoyev.com` → `/` exactly to `6601` (partner page), everything else to the app on `6600`.
+- DNS: A record `network` → the VPS IP at the DNS host. App cut-over: `.env` `DOMAIN=network.phoyev.com` (feeds `WEB_URL`), recreate `api`, add the domain to Firebase authorized domains. Sessions are host-only, so everyone signs in again.
+
+Caddy blocks (validate, then reload the shared Caddy as above):
+```
+phoyev.com, www.phoyev.com {
+	reverse_proxy 172.16.1.1:6601
+}
+network.phoyev.com {
+	@landing path /
+	handle @landing {
+		reverse_proxy 172.16.1.1:6601
+	}
+	handle {
+		reverse_proxy 172.16.1.1:6600
+	}
+}
+```
+
 ## First sign-in
 No accounts exist. Create the first vendor operator (prints a one-time password-set link; mails are not sent anywhere):
 `docker compose exec -e NMP_ALLOW_VENDOR_BOOTSTRAP=yes api /app/node_modules/.bin/tsx src/scripts/create-vendor-user.ts --email you@example.com --i-understand`
