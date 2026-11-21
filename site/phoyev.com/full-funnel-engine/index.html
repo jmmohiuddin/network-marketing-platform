@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+
+<html lang="en"><head><title>Full-Funnel Engine | PHOYEV</title><meta name="description" content="The four-stage conversion engine in depth: deliverables, tools, timeline and FAQ."/><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%278%27 fill=%27%239d4edd%27/%3E%3Ctext x=%2716%27 y=%2723%27 font-size=%2720%27 font-family=%27sans-serif%27 font-weight=%27700%27 text-anchor=%27middle%27 fill=%27white%27%3EP%3C/text%3E%3C/svg%3E"/><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_standard" name="shell-type"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base { html, body { margin: 0; padding: 0; } body { overscroll-behavior: none; } main > :first-child { margin-top: 0 !important; } main > :last-child { margin-bottom: 0 !important; } } ::-webkit-scrollbar { display: none; }</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "background": "#fef7ff", "on-tertiary-fixed": "#3a0032", "on-primary": "#ffffff", "primary-fixed-dim": "#e0b6ff", "on-primary-fixed-variant": "#6a0baa", "outline-variant": "#d0c2d5", "surface": "#ffffff", "inverse-on-surface": "#f6edff", "primary-fixed": "#f2daff", "inverse-surface": "#332e3f", "surface-container": "#f4eaff", "on-secondary-fixed": "#211b00", "surface-container-lowest": "#ffffff", "on-tertiary": "#ffffff", "surface-variant": "#e8def6", "on-secondary-fixed-variant": "#524600", "on-secondary": "#ffffff", "tertiary": "#ab0295", "on-primary-fixed": "#2e004e", "secondary-container": "#fcdf46", "on-primary-container": "#fffdff", "on-error": "#ffffff", "surface-container-low": "#f8f7fc", "on-background": "#1e1929", "on-surface-variant": "#4d4353", "on-tertiary-fixed-variant": "#850074", "on-surface": "#1e1929", "surface-tint": "#8433c4", "tertiary-fixed": "#ffd7ef", "inverse-primary": "#e0b6ff", "on-error-container": "#93000a", "primary": "#8231c2", "secondary-fixed-dim": "#e2c62d", "error": "#ba1a1a", "error-container": "#ffdad6", "tertiary-fixed-dim": "#ffade6", "surface-container-high": "#eee4fc", "on-tertiary-container": "#fffdff", "secondary": "#6d5e00", "surface-dim": "#e0d6ed", "tertiary-container": "#ca30b0", "secondary-fixed": "#ffe24c", "outline": "#998d9e", "on-secondary-container": "#726200", "primary-container": "#9d4edd", "surface-bright": "#fef7ff", "surface-container-highest": "#e8def6" }, "borderRadius": { "DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem" }, "spacing": { "space-xl": "2.5rem", "space-lg": "1.5rem", "space-xs": "0.25rem", "margin-mobile": "1.25rem", "space-md": "1rem", "space-sm": "0.5rem", "gutter": "1.5rem", "gutter-mobile": "1rem", "margin": "3rem" }, "fontFamily": { "headline-lg-mobile": [ "Space Grotesk" ], "headline-lg": [ "Space Grotesk" ], "label-sm": [ "JetBrains Mono" ], "headline-sm": [ "Space Grotesk" ], "body-lg": [ "Geist" ], "headline-md": [ "Space Grotesk" ], "body-md": [ "Geist" ], "display-mobile": [ "Space Grotesk" ], "title-lg": [ "Space Grotesk" ], "label-md": [ "JetBrains Mono" ], "body-sm": [ "Geist" ], "display": [ "Space Grotesk" ] }, "fontSize": { "headline-lg-mobile": [ "32px", { "lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600" } ], "headline-lg": [ "48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "600" } ], "label-sm": [ "11px", { "lineHeight": "16px", "letterSpacing": "0.08em", "fontWeight": "500" } ], "headline-sm": [ "24px", { "lineHeight": "32px", "letterSpacing": "0em", "fontWeight": "500" } ], "body-lg": [ "18px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "400" } ], "headline-md": [ "32px", { "lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600" } ], "body-md": [ "16px", { "lineHeight": "24px", "letterSpacing": "0em", "fontWeight": "400" } ], "display-mobile": [ "44px", { "lineHeight": "52px", "letterSpacing": "-0.02em", "fontWeight": "700" } ], "title-lg": [ "20px", { "lineHeight": "28px", "letterSpacing": "0em", "fontWeight": "500" } ], "label-md": [ "13px", { "lineHeight": "18px", "letterSpacing": "0.06em", "fontWeight": "500" } ], "body-sm": [ "14px", { "lineHeight": "20px", "letterSpacing": "0em", "fontWeight": "400" } ], "display": [ "72px", { "lineHeight": "80px", "letterSpacing": "-0.03em", "fontWeight": "700" } ] } } } };</script></head><body class="bg-surface font-body-md text-body-md text-on-surface antialiased"><header class="fixed top-0 left-0 w-full z-50 bg-surface/85 backdrop-blur-xl shadow-[0_1px_8px_rgba(22,17,33,0.04)]"><div class="h-20 max-w-[1440px] mx-auto px-margin flex items-center justify-between"><div class="flex items-center gap-space-md"><a class="flex items-center gap-space-sm group" data-path="services" href="/"><div class="w-9 h-9 rounded-xl bg-primary-container flex items-center justify-center shadow-[0_4px_14px_rgba(157,78,221,0.25)]"><span class="material-symbols-outlined text-on-primary-container text-[20px]">token</span></div><span class="font-headline-sm text-headline-sm tracking-tight text-on-surface font-bold">PHOYEV</span></a><div class="hidden xl:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-container-high"><span class="w-1.5 h-1.5 rounded-full bg-primary-container animate-pulse"></span><span class="font-label-sm text-label-sm uppercase tracking-wider text-primary">UV ENGINE ACTIVE</span></div></div><nav class="hidden lg:flex items-center gap-space-xs" data-active-classes="bg-surface-container-high text-primary font-medium rounded-xl"><a class="px-3.5 py-2 font-body-sm text-body-sm text-on-surface-variant hover:text-on-surface transition-colors" data-path="services" href="/#services">Services</a><a class="px-3.5 py-2 font-body-sm text-body-sm text-on-surface-variant hover:text-on-surface transition-colors" data-path="proven-results" href="/proven-results/">Proven Results</a><a class="px-3.5 py-2 font-body-sm text-body-sm text-on-surface-variant hover:text-on-surface transition-colors" data-path="case-studies" href="/case-studies/">Case Studies</a><a aria-current="page" class="px-3.5 py-2 transition-colors bg-surface-container-high text-primary font-medium rounded-xl" data-path="full-funnel-engine" href="/full-funnel-engine/">Full-Funnel Engine</a><a class="px-3.5 py-2 font-body-sm text-body-sm text-on-surface-variant hover:text-on-surface transition-colors" data-path="pricing" href="/pricing/">Pricing</a><a class="px-3.5 py-2 font-body-sm text-body-sm text-on-surface-variant hover:text-on-surface transition-colors" data-path="about" href="/about/">About</a></nav><div class="flex items-center gap-space-md"><a class="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-xl text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low transition-all font-label-md text-label-md" data-path="client-portal" href="/contact/"><span class="material-symbols-outlined text-[18px]">lock_open</span><span>Client Portal</span></a><a class="inline-flex items-center gap-2 px-space-md py-2.5 rounded-xl bg-secondary-container hover:bg-secondary-fixed text-on-secondary-fixed font-headline-sm text-label-md transition-all shadow-[0_2px_8px_rgba(252,223,70,0.35)]" data-path="book-growth-audit" href="/contact/"><span class="material-symbols-outlined text-[18px]">bolt</span><span>Book Growth Audit</span></a><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="w-full pt-20 bg-surface"><div class="flex flex-col w-full">
+<!-- System Diagnostic Floating Banner -->
+<section class="relative w-full overflow-hidden bg-surface py-space-xl">
+<!-- Ambient Violet Glow Spot (contained) -->
+<div class="absolute -top-32 left-1/2 -translate-x-1/2 w-[850px] h-[450px] bg-gradient-to-b from-primary-fixed/35 via-surface-variant/20 to-transparent blur-3xl pointer-events-none rounded-full"></div>
+<div class="max-w-[1440px] mx-auto px-margin relative z-10">
+<!-- Top Meta Breadcrumb / Status -->
+<div class="flex flex-wrap items-center justify-between gap-4 mb-space-lg">
+<div class="inline-flex items-center gap-2.5 px-3 py-1.5 rounded-full bg-surface-container-high shadow-sm">
+<span class="w-2 h-2 rounded-full bg-primary animate-ping"></span>
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-primary font-semibold">Proprietary Acquisition Architecture</span>
+<span class="text-outline font-label-sm text-label-sm">|</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">ENGINE V4.8 - LIVE STATE</span>
+</div>
+<div class="flex items-center gap-space-sm font-label-sm text-label-sm text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px] text-primary">terminal</span>
+<span>LATENCY: <strong class="text-on-surface font-semibold">18ms</strong></span>
+<span class="text-outline">/</span>
+<span>ROAS CORRELATION: <strong class="text-on-surface font-semibold">99.4%</strong></span>
+</div>
+</div>
+<!-- Hero Headline Block (Asymmetric Grid) -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter items-end mb-space-xl">
+<div class="lg:col-span-8">
+<h1 class="font-display text-display text-on-surface tracking-tight leading-[1.04] mb-space-md">
+            The Full-Funnel Engine: <br/>
+<span class="bg-gradient-to-r from-primary to-primary-container bg-clip-text text-transparent">Turn Attention</span> Into Audited Pipeline.
+          </h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl leading-relaxed">
+            Most agencies build isolated pieces that leak cash at every seam. We engineer a closed-loop cybernetic system where hook production, algorithmic media spend, zero-friction web funnels, and CRM closing protocols compound continuously.
+          </p>
+</div>
+<div class="lg:col-span-4 flex flex-col sm:flex-row lg:flex-col gap-3 justify-end">
+<div class="p-space-md rounded-xl bg-surface-container-low shadow-sm">
+<div class="flex items-center justify-between mb-2">
+<span class="font-label-sm text-label-sm uppercase text-on-surface-variant">Aggregate Pipeline Velocity</span>
+<span class="px-2 py-0.5 rounded-full bg-secondary-container text-on-secondary-fixed font-label-sm text-label-sm font-semibold">+412% ARR</span>
+</div>
+<div class="w-full bg-surface-variant h-2 rounded-full overflow-hidden">
+<div class="bg-primary h-full w-[88%] rounded-full"></div>
+</div>
+<div class="flex justify-between items-center mt-2 font-label-sm text-label-sm text-on-surface-variant">
+<span>Calibrated Attribution</span>
+<span class="text-primary font-medium">90-Day Scaling Cohort</span>
+</div>
+</div>
+<a class="inline-flex items-center justify-center gap-2 px-space-lg py-3 rounded-xl bg-primary text-on-primary hover:bg-primary-container transition-all shadow-md font-headline-sm text-label-md font-semibold" href="#interactive-schematic">
+<span class="material-symbols-outlined text-[20px]">account_tree</span>
+<span>Explore Engine Blueprint</span>
+</a>
+</div>
+</div>
+<!-- Interactive System Diagram Teaser Card -->
+<div class="w-full rounded-xl bg-surface-container-low p-space-lg md:p-space-xl shadow-lg relative overflow-hidden" id="interactive-schematic">
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-space-lg">
+<div>
+<div class="flex items-center gap-2 mb-1">
+<span class="px-2 py-0.5 rounded-full bg-primary-fixed text-on-primary-fixed font-label-sm text-label-sm font-semibold">TOPOLOGY MAP</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">FEEDBACK LOOP SYNCHRONIZATION</span>
+</div>
+<h2 class="font-headline-sm text-headline-sm font-bold text-on-surface">Closed-Loop Acquisition Circuit</h2>
+</div>
+<!-- Interactive Node Selector Tabs -->
+<div class="flex flex-wrap items-center gap-2 p-1.5 rounded-xl bg-surface shadow-sm" id="engine-tabs">
+<button class="tab-btn px-3 py-1.5 rounded-lg font-label-sm text-label-sm transition-all bg-primary text-on-primary font-semibold shadow-sm" data-idx="0" onclick="activateEngineTab(0)" type="button">01. Creative Lab</button>
+<button class="tab-btn px-3 py-1.5 rounded-lg font-label-sm text-label-sm transition-all text-on-surface-variant hover:text-on-surface" data-idx="1" onclick="activateEngineTab(1)" type="button">02. Paid Media</button>
+<button class="tab-btn px-3 py-1.5 rounded-lg font-label-sm text-label-sm transition-all text-on-surface-variant hover:text-on-surface" data-idx="2" onclick="activateEngineTab(2)" type="button">03. Nurture Funnel</button>
+<button class="tab-btn px-3 py-1.5 rounded-lg font-label-sm text-label-sm transition-all text-on-surface-variant hover:text-on-surface" data-idx="3" onclick="activateEngineTab(3)" type="button">04. Sales Close</button>
+</div>
+</div>
+<!-- Node Dynamic Preview Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter items-center pt-space-md">
+<!-- Interactive Diagram Visual Screen -->
+<div class="lg:col-span-7 bg-surface rounded-xl p-space-md shadow-sm relative overflow-hidden">
+<div class="flex items-center justify-between pb-3 mb-4 bg-surface-container-high/50 -mx-space-md -mt-space-md px-space-md pt-space-sm">
+<div class="flex items-center gap-2">
+<span class="w-3 h-3 rounded-full bg-error"></span>
+<span class="w-3 h-3 rounded-full bg-secondary-container"></span>
+<span class="w-3 h-3 rounded-full bg-primary-container"></span>
+<span class="font-label-sm text-label-sm text-on-surface-variant ml-2">SIMULATED FEEDBACK PIPELINE</span>
+</div>
+<span class="font-label-sm text-label-sm text-primary font-semibold flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">sync_alt</span> 100% TELEMETRY
+              </span>
+</div>
+<!-- SVG Data Highway Architecture -->
+<div class="relative w-full h-[260px] flex items-center justify-center">
+<svg class="w-full h-full text-outline-variant" fill="none" viewbox="0 0 680 240">
+<!-- Circuit Tracks -->
+<path d="M 60 120 L 220 120" stroke="currentColor" stroke-dasharray="4 4" stroke-width="2"></path>
+<path d="M 220 120 L 400 120" stroke="currentColor" stroke-dasharray="4 4" stroke-width="2"></path>
+<path d="M 400 120 L 580 120" stroke="currentColor" stroke-dasharray="4 4" stroke-width="2"></path>
+<path d="M 580 120 C 640 120, 640 210, 340 210 C 80 210, 60 180, 60 120" stroke="currentColor" stroke-dasharray="6 6" stroke-width="2"></path>
+<!-- Nodes -->
+<!-- Node 1 -->
+<g class="transition-transform hover:scale-105 cursor-pointer" onclick="activateEngineTab(0)">
+<circle class="fill-surface stroke-primary" cx="60" cy="120" r="32" stroke-width="3"></circle>
+<circle class="fill-primary-fixed" cx="60" cy="120" r="16"></circle>
+<text fill="#8231c2" font-family="JetBrains Mono" font-size="12" font-weight="700" text-anchor="middle" x="60" y="125">01</text>
+<text fill="#1e1929" font-family="Space Grotesk" font-size="12" font-weight="600" text-anchor="middle" x="60" y="70">HOOKS</text>
+</g>
+<!-- Node 2 -->
+<g class="transition-transform hover:scale-105 cursor-pointer" onclick="activateEngineTab(1)">
+<circle class="fill-surface stroke-primary-container" cx="230" cy="120" r="32" stroke-width="3"></circle>
+<circle class="fill-surface-variant" cx="230" cy="120" r="16"></circle>
+<text fill="#9d4edd" font-family="JetBrains Mono" font-size="12" font-weight="700" text-anchor="middle" x="230" y="125">02</text>
+<text fill="#1e1929" font-family="Space Grotesk" font-size="12" font-weight="600" text-anchor="middle" x="230" y="70">AMPLIFY</text>
+</g>
+<!-- Node 3 -->
+<g class="transition-transform hover:scale-105 cursor-pointer" onclick="activateEngineTab(2)">
+<circle class="fill-surface stroke-primary" cx="410" cy="120" r="32" stroke-width="3"></circle>
+<circle class="fill-primary-fixed" cx="410" cy="120" r="16"></circle>
+<text fill="#8231c2" font-family="JetBrains Mono" font-size="12" font-weight="700" text-anchor="middle" x="410" y="125">03</text>
+<text fill="#1e1929" font-family="Space Grotesk" font-size="12" font-weight="600" text-anchor="middle" x="410" y="70">NURTURE</text>
+</g>
+<!-- Node 4 -->
+<g class="transition-transform hover:scale-105 cursor-pointer" onclick="activateEngineTab(3)">
+<circle class="fill-secondary-container stroke-on-surface" cx="590" cy="120" r="32" stroke-width="2"></circle>
+<circle class="fill-surface" cx="590" cy="120" r="16"></circle>
+<text fill="#211b00" font-family="JetBrains Mono" font-size="12" font-weight="700" text-anchor="middle" x="590" y="125">04</text>
+<text fill="#1e1929" font-family="Space Grotesk" font-size="12" font-weight="600" text-anchor="middle" x="590" y="70">CLOSE</text>
+</g>
+<!-- Pulse indicator on feedback loop -->
+<circle class="fill-primary animate-pulse" cx="340" cy="210" r="6"></circle>
+<text fill="#8231c2" font-family="JetBrains Mono" font-size="10" text-anchor="middle" x="340" y="235">AUDITED PIPELINE ATTRIBUTION BACK-FEED</text>
+</svg>
+</div>
+<div class="grid grid-cols-3 gap-2 pt-2 text-center">
+<div class="p-2 rounded-lg bg-surface-container-low">
+<p class="font-label-sm text-label-sm text-on-surface-variant">Daily Hook Throughput</p>
+<p class="font-headline-sm text-title-lg font-bold text-on-surface">3-5 Variants</p>
+</div>
+<div class="p-2 rounded-lg bg-surface-container-low">
+<p class="font-label-sm text-label-sm text-on-surface-variant">Server CAPI Match</p>
+<p class="font-headline-sm text-title-lg font-bold text-primary">94.8% High</p>
+</div>
+<div class="p-2 rounded-lg bg-surface-container-low">
+<p class="font-label-sm text-label-sm text-on-surface-variant">Lander Speed Index</p>
+<p class="font-headline-sm text-title-lg font-bold text-on-surface">0.84s Cold</p>
+</div>
+</div>
+</div>
+<!-- Dynamic Panel Text Detail -->
+<div class="lg:col-span-5 flex flex-col justify-between h-full space-y-4">
+<div class="bg-surface rounded-xl p-space-lg shadow-sm" id="tab-content-panel">
+<div class="flex items-center gap-2 mb-2">
+<span class="px-2 py-0.5 rounded-full bg-primary-fixed text-primary font-label-sm text-label-sm font-semibold" id="tab-step-badge">STAGE 01 SELECTED</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant" id="tab-latency-badge">FEED SPEED: REAL-TIME</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm font-bold text-on-surface mb-2" id="tab-title">Creator Hooks &amp; 4K Cinema Assets</h3>
+<p class="font-body-md text-body-md text-on-surface-variant mb-space-md" id="tab-description">
+                We eliminate creative fatigue before it starves ad accounts. By pairing UGC creator networks with studio-rendered 3D animations and viral psychological pain-point mapping, our Hook Matrix tests 40+ variations each month.
+              </p>
+<div class="space-y-2">
+<div class="flex items-center justify-between text-body-sm font-body-sm py-1 bg-surface-container-low px-3 rounded-lg">
+<span class="text-on-surface-variant">Core Output</span>
+<span class="font-semibold text-on-surface" id="tab-metric-1">40+ Modular Cuts / Mo</span>
+</div>
+<div class="flex items-center justify-between text-body-sm font-body-sm py-1 bg-surface-container-low px-3 rounded-lg">
+<span class="text-on-surface-variant">Primary Metric</span>
+<span class="font-semibold text-primary" id="tab-metric-2">3-Sec Thumbstop &gt; 42%</span>
+</div>
+</div>
+</div>
+<div class="p-space-md rounded-xl bg-surface-container-high/60 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-xl bg-primary flex items-center justify-center text-on-primary">
+<span class="material-symbols-outlined text-[20px]">insights</span>
+</div>
+<div>
+<p class="font-label-md text-label-md font-bold text-on-surface">Audit Engine Ready</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Verify leakages across your existing stack</p>
+</div>
+</div>
+<a class="px-3.5 py-2 rounded-xl bg-surface text-on-surface font-label-md text-label-md font-semibold shadow-sm hover:bg-surface-variant transition-colors" href="#timeline-section">
+                View Rollout
+              </a>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Detailed 4-Step Conversion Journey Section -->
+<section class="w-full bg-surface-container-low py-space-xl">
+<div class="max-w-[1440px] mx-auto px-margin">
+<!-- Section Header -->
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-space-xl">
+<div class="max-w-2xl">
+<div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-surface-container-high text-primary font-label-sm text-label-sm uppercase mb-space-sm font-semibold">
+<span class="material-symbols-outlined text-[16px]">account_tree</span>
+            Deconstructed Methodology
+          </div>
+<h2 class="font-headline-lg text-headline-lg font-bold text-on-surface tracking-tight">
+            The 4-Step Conversion Journey In-Depth
+          </h2>
+<p class="font-body-lg text-body-lg text-on-surface-variant mt-2">
+            No vanity clicks. No disconnected creative silos. Every stage is engineered with strict cryptographic attribution and conversion physics.
+          </p>
+</div>
+<div class="hidden lg:flex items-center gap-3">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Scroll through stages</span>
+<div class="w-8 h-8 rounded-full bg-surface flex items-center justify-center text-on-surface shadow-sm">
+<span class="material-symbols-outlined text-[18px]">south</span>
+</div>
+</div>
+</div>
+<!-- Stage Cards Stack (Asymmetric & Rich) -->
+<div class="space-y-space-xl">
+<!-- Stage 01 -->
+<div class="rounded-xl bg-surface p-space-lg md:p-space-xl shadow-md transition-all hover:shadow-xl">
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter items-center">
+<!-- Left Narrative & Details -->
+<div class="lg:col-span-7 space-y-space-md">
+<div class="flex flex-wrap items-center gap-3">
+<span class="w-10 h-10 rounded-xl bg-primary text-on-primary font-label-md text-label-md flex items-center justify-center font-bold">01</span>
+<span class="px-3 py-1 rounded-full bg-surface-container-high text-primary font-label-sm text-label-sm font-semibold uppercase tracking-wider">STAGE 01 // TOP OF FUNNEL</span>
+<span class="text-on-surface-variant font-label-sm text-label-sm">AVG RETENTION: +180 SEC</span>
+</div>
+<h3 class="font-headline-md text-headline-md font-bold text-on-surface">
+                Audience Hook &amp; Cinema-Grade Content Creation
+              </h3>
+<p class="font-body-lg text-body-lg text-on-surface-variant leading-relaxed">
+                Generic stock b-roll and amateurish UGC are dead. We architect high-concept creative hooks using high-fidelity 4K founder-led video ads, 3D motion renders, and emotional tension frameworks modeled after psychological pain points.
+              </p>
+<!-- Deliverables & Tech Chips -->
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+<div class="p-space-md rounded-xl bg-surface-container-low">
+<p class="font-label-sm text-label-sm uppercase text-primary font-semibold mb-2 flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px]">inventory_2</span> Monthly Deliverables
+                  </p>
+<ul class="space-y-1.5 font-body-sm text-body-sm text-on-surface">
+<li class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-primary"></span>40+ modular video ad cuts &amp; variations</li>
+<li class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-primary"></span>Multi-angle founder script matrix</li>
+<li class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-primary"></span>Bi-weekly rapid hook testing sprints</li>
+</ul>
+</div>
+<div class="p-space-md rounded-xl bg-surface-container-low">
+<p class="font-label-sm text-label-sm uppercase text-on-surface-variant font-semibold mb-2 flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px]">code</span> Toolchain &amp; Tech Stack
+                  </p>
+<div class="flex flex-wrap gap-1.5">
+<span class="px-2.5 py-1 rounded-lg bg-surface text-on-surface font-label-sm text-label-sm shadow-sm font-medium">DaVinci Resolve Studio</span>
+<span class="px-2.5 py-1 rounded-lg bg-surface text-on-surface font-label-sm text-label-sm shadow-sm font-medium">Premiere Pro</span>
+<span class="px-2.5 py-1 rounded-lg bg-surface text-on-surface font-label-sm text-label-sm shadow-sm font-medium">Figma Design System</span>
+<span class="px-2.5 py-1 rounded-lg bg-primary-fixed text-primary font-label-sm text-label-sm font-semibold">PHOYEV Hook Engine</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Visual Display (Rich Media Placeholder) -->
+<div class="lg:col-span-5 relative">
+<div class="rounded-xl overflow-hidden shadow-lg bg-surface-container">
+<img class="w-full h-80 object-cover" data-alt="Futuristic film studio production set with high-end RED camera on a motorized gimbal, ambient neon ultraviolet rim lighting, high-contrast daylight cinematic mood, crisp violet highlights and editorial video editing timeline UI overlaid on modern monitors." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDgtdP96eQq13isdZ8ZyFDkCZmr9iOLkdTbTMt5GYIpjVLZAqIFzs1GWGa_-u92PTNVdTa8RIWMj2OfIpbTpTOi55gBCKtyu4VEtKLdFc54v0FEQ3A74Ba79HvKmxQX3eOBi7kYG99wy-E7mZsLVTbvtHHFzbUiqjz2uUxplN0s4nn14PFUJpszDInvBTyTSMOFw2ZLoQREPzCynuCbKLpkP0155pAW9o12AdbU9t4"/>
+<div class="p-space-md bg-surface flex items-center justify-between">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-primary text-[20px]">movie</span>
+<div>
+<p class="font-label-md text-label-md font-bold text-on-surface">Modular Cut #047</p>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Hook Variant: 'The Enterprise Bottleneck'</p>
+</div>
+</div>
+<span class="px-2 py-1 rounded-full bg-secondary-container text-on-secondary-fixed font-label-sm text-label-sm font-bold">ROAS 4.3x</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Stage 02 -->
+<div class="rounded-xl bg-surface p-space-lg md:p-space-xl shadow-md transition-all hover:shadow-xl">
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter items-center">
+<!-- Left Visual Display -->
+<div class="lg:col-span-5 order-2 lg:order-1 relative">
+<div class="rounded-xl overflow-hidden shadow-lg bg-surface-container-high p-space-md">
+<div class="flex items-center justify-between pb-3 mb-3 bg-surface rounded-lg px-3 py-2">
+<span class="font-label-sm text-label-sm font-bold text-on-surface flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px] text-primary">ssid_chart</span> CAPI Attribution Feed
+                  </span>
+<span class="font-label-sm text-label-sm text-primary font-semibold">99.2% Matched</span>
+</div>
+<!-- Custom Inline Sparkline & Bar Chart Component -->
+<div class="bg-surface rounded-lg p-space-md shadow-sm mb-3">
+<div class="flex justify-between items-baseline mb-2">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Blended CAC vs Meta/Google Spend</span>
+<span class="font-headline-sm text-title-lg font-bold text-on-surface">-38.4% CAC</span>
+</div>
+<svg class="w-full h-24 overflow-visible" viewbox="0 0 300 80">
+<defs>
+<lineargradient id="violetGrad" x1="0" x2="0" y1="0" y2="1">
+<stop offset="0%" stop-color="#9d4edd" stop-opacity="0.3"></stop>
+<stop offset="100%" stop-color="#9d4edd" stop-opacity="0.0"></stop>
+</lineargradient>
+</defs>
+<path d="M 0,60 Q 40,55 80,45 T 160,35 T 240,15 T 300,8 L 300,80 L 0,80 Z" fill="url(#violetGrad)"></path>
+<path d="M 0,60 Q 40,55 80,45 T 160,35 T 240,15 T 300,8" fill="none" stroke="#8231c2" stroke-width="2.5"></path>
+<circle class="fill-secondary-container stroke-on-surface" cx="300" cy="8" r="4" stroke-width="1.5"></circle>
+</svg>
+</div>
+<div class="grid grid-cols-2 gap-2 text-center">
+<div class="p-2 rounded bg-surface">
+<span class="font-label-sm text-label-sm text-on-surface-variant block">Meta Dayparting</span>
+<span class="font-headline-sm text-label-md font-bold text-on-surface">Auto-Scaled</span>
+</div>
+<div class="p-2 rounded bg-surface">
+<span class="font-label-sm text-label-sm text-on-surface-variant block">Search Intent Score</span>
+<span class="font-headline-sm text-label-md font-bold text-primary">9.8 / 10</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Narrative & Details -->
+<div class="lg:col-span-7 order-1 lg:order-2 space-y-space-md">
+<div class="flex flex-wrap items-center gap-3">
+<span class="w-10 h-10 rounded-xl bg-primary-container text-on-primary font-label-md text-label-md flex items-center justify-center font-bold">02</span>
+<span class="px-3 py-1 rounded-full bg-surface-container-high text-primary font-label-sm text-label-sm font-semibold uppercase tracking-wider">STAGE 02 // PAID MEDIA ENGINE</span>
+<span class="text-on-surface-variant font-label-sm text-label-sm">ATTRIBUTION INTEGRITY: HIGH</span>
+</div>
+<h3 class="font-headline-md text-headline-md font-bold text-on-surface">
+                Algorithmic Amplification &amp; Multi-Channel Pacing
+              </h3>
+<p class="font-body-lg text-body-lg text-on-surface-variant leading-relaxed">
+                We don’t rely on black-box ad manager defaults. We run proprietary server-side Conversions API (CAPI) infrastructure, dynamic budget pacing algorithms, and cross-channel attribution matrices to aggressively push winner creatives on Meta, Google Search/PMax, TikTok, and YouTube.
+              </p>
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+<div class="p-space-md rounded-xl bg-surface-container-low">
+<p class="font-label-sm text-label-sm uppercase text-primary font-semibold mb-2 flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px]">tune</span> Core Deliverables
+                  </p>
+<ul class="space-y-1.5 font-body-sm text-body-sm text-on-surface">
+<li class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-primary"></span>Automated dayparting &amp; dynamic bids</li>
+<li class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-primary"></span>Multi-touch attribution reconciliation</li>
+<li class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-primary"></span>Custom script monitoring &amp; stop-losses</li>
+</ul>
+</div>
+<div class="p-space-md rounded-xl bg-surface-container-low">
+<p class="font-label-sm text-label-sm uppercase text-on-surface-variant font-semibold mb-2 flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px]">memory</span> Ad Tech Framework
+                  </p>
+<div class="flex flex-wrap gap-1.5">
+<span class="px-2.5 py-1 rounded-lg bg-surface text-on-surface font-label-sm text-label-sm shadow-sm font-medium">Meta Ads CAPI</span>
+<span class="px-2.5 py-1 rounded-lg bg-surface text-on-surface font-label-sm text-label-sm shadow-sm font-medium">Google PMax &amp; Search</span>
+<span class="px-2.5 py-1 rounded-lg bg-surface text-on-surface font-label-sm text-label-sm shadow-sm font-medium">Triple Whale</span>
+<span class="px-2.5 py-1 rounded-lg bg-primary-fixed text-primary font-label-sm text-label-sm font-semibold">Northbeam Server</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Stage 03 -->
+<div class="rounded-xl bg-surface p-space-lg md:p-space-xl shadow-md transition-all hover:shadow-xl">
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter items-center">
+<!-- Left Narrative & Details -->
+<div class="lg:col-span-7 space-y-space-md">
+<div class="flex flex-wrap items-center gap-3">
+<span class="w-10 h-10 rounded-xl bg-primary text-on-primary font-label-md text-label-md flex items-center justify-center font-bold">03</span>
+<span class="px-3 py-1 rounded-full bg-surface-container-high text-primary font-label-sm text-label-sm font-semibold uppercase tracking-wider">STAGE 03 // CONVERSION ARCHITECTURE</span>
+<span class="text-on-surface-variant font-label-sm text-label-sm">SPEED: SUB-1.2S COLD LOAD</span>
+</div>
+<h3 class="font-headline-md text-headline-md font-bold text-on-surface">
+                Frictionless Nurture Funnel &amp; CRO Engineering
+              </h3>
+<p class="font-body-lg text-body-lg text-on-surface-variant leading-relaxed">
+                Traffic without conversion engineering is arson. We construct custom headless Next.js landing environments with pre-call indoctrination video experiences, interactive ROI calculators, and multi-step micro-qualifiers that actively weed out unqualified tire-kickers.
+              </p>
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+<div class="p-space-md rounded-xl bg-surface-container-low">
+<p class="font-label-sm text-label-sm uppercase text-primary font-semibold mb-2 flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px]">web</span> Funnel Assets
+                  </p>
+<ul class="space-y-1.5 font-body-sm text-body-sm text-on-surface">
+<li class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-primary"></span>2 bespoke high-converting landers / month</li>
+<li class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-primary"></span>Continuous A/B split-testing framework</li>
+<li class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-primary"></span>Self-segmenting qualification questionnaires</li>
+</ul>
+</div>
+<div class="p-space-md rounded-xl bg-surface-container-low">
+<p class="font-label-sm text-label-sm uppercase text-on-surface-variant font-semibold mb-2 flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px]">speed</span> Web Tooling
+                  </p>
+<div class="flex flex-wrap gap-1.5">
+<span class="px-2.5 py-1 rounded-lg bg-surface text-on-surface font-label-sm text-label-sm shadow-sm font-medium">Next.js Edge</span>
+<span class="px-2.5 py-1 rounded-lg bg-surface text-on-surface font-label-sm text-label-sm shadow-sm font-medium">Tailwind CSS</span>
+<span class="px-2.5 py-1 rounded-lg bg-surface text-on-surface font-label-sm text-label-sm shadow-sm font-medium">Vercel Enterprise</span>
+<span class="px-2.5 py-1 rounded-lg bg-primary-fixed text-primary font-label-sm text-label-sm font-semibold">PostHog Analytics</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Visual Display (Landing Page Mockup) -->
+<div class="lg:col-span-5 relative">
+<div class="rounded-xl overflow-hidden shadow-lg bg-surface-container">
+<img class="w-full h-80 object-cover" data-alt="Modern clean software engineering workspace displaying clean UI code on dual vertical monitors, illuminated by subtle soft ambient purple desk lighting, sharp architectural lines, a minimal daylight studio desk setup with crisp high-contrast design aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAGCZeKPsk6EcZUJUH85uNLIPSpCM_AAV7QFoderCISyAgN0Ub0-syjlzlWIznICuaTC2VDXvg_GppyLUff-Uj8BM026JKjqg1MHMUP_Tz4LdNeblYKjTS-Az5GHk3JTqlPc3tfc0F8GilbF4WWu-V172FH7H8rz9jbxDtebvqMwP1wRNps5T6_wIqeVBiLxIAMEKxL9Il07z1TvEedf797a8ebSxgu_2N7cb95sQU"/>
+<div class="p-space-md bg-surface flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-full bg-primary animate-pulse"></span>
+<span class="font-label-md text-label-md font-bold text-on-surface">Lander Speed Diagnostic</span>
+</div>
+<span class="font-label-sm text-label-sm text-primary font-semibold">PageSpeed: 99 / 100</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Stage 04 -->
+<div class="rounded-xl bg-surface p-space-lg md:p-space-xl shadow-md transition-all hover:shadow-xl">
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter items-center">
+<!-- Left Visual Display (Pipeline Automation UI Card) -->
+<div class="lg:col-span-5 order-2 lg:order-1 relative">
+<div class="rounded-xl bg-surface-container-high p-space-md shadow-md space-y-3">
+<div class="p-space-md rounded-xl bg-surface shadow-sm">
+<div class="flex items-center justify-between mb-2">
+<span class="font-label-sm text-label-sm text-on-surface-variant font-semibold">CRM LEAD INGESTION LATENCY</span>
+<span class="px-2 py-0.5 rounded-full bg-primary-fixed text-primary font-label-sm text-label-sm font-bold">58 SECONDS</span>
+</div>
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-xl bg-secondary-container flex items-center justify-center text-on-secondary-fixed">
+<span class="material-symbols-outlined text-[20px]">bolt</span>
+</div>
+<div>
+<p class="font-headline-sm text-label-md font-bold text-on-surface">Enterprise Lead Auto-Routed</p>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Round-robin calendar sync triggered</p>
+</div>
+</div>
+</div>
+<div class="p-space-md rounded-xl bg-surface shadow-sm space-y-2">
+<p class="font-label-sm text-label-sm text-on-surface-variant font-semibold">AUTOMATED PROTOCOLS EXECUTED</p>
+<div class="flex items-center justify-between font-body-sm text-body-sm text-on-surface">
+<span class="flex items-center gap-1.5"><span class="material-symbols-outlined text-[16px] text-primary">sms</span> SMS Briefing Sequence</span>
+<span class="text-primary font-bold">DELIVERED</span>
+</div>
+<div class="flex items-center justify-between font-body-sm text-body-sm text-on-surface">
+<span class="flex items-center gap-1.5"><span class="material-symbols-outlined text-[16px] text-primary">smart_display</span> Pre-Call Case Indoctrination</span>
+<span class="text-primary font-bold">89% WATCHED</span>
+</div>
+<div class="flex items-center justify-between font-body-sm text-body-sm text-on-surface">
+<span class="flex items-center gap-1.5"><span class="material-symbols-outlined text-[16px] text-primary">event_available</span> Show-Up Rate Guarantee</span>
+<span class="text-on-surface font-bold">88.4% ATTEND</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Narrative & Details -->
+<div class="lg:col-span-7 order-1 lg:order-2 space-y-space-md">
+<div class="flex flex-wrap items-center gap-3">
+<span class="w-10 h-10 rounded-xl bg-secondary-container text-on-secondary-fixed font-label-md text-label-md flex items-center justify-center font-bold">04</span>
+<span class="px-3 py-1 rounded-full bg-surface-container-high text-primary font-label-sm text-label-sm font-semibold uppercase tracking-wider">STAGE 04 // BOTTOM OF FUNNEL</span>
+<span class="text-on-surface-variant font-label-sm text-label-sm">SHOW-UP RATE: ~88%</span>
+</div>
+<h3 class="font-headline-md text-headline-md font-bold text-on-surface">
+                Automated Deal Closing &amp; Sales Pipelines
+              </h3>
+<p class="font-body-lg text-body-lg text-on-surface-variant leading-relaxed">
+                Leads don’t sit in inboxes decaying. Within 90 seconds of form completion, our automated infrastructure qualifies, routes, initiates dual-channel SMS/Email confirmation, and delivers personalized pre-call objection busters straight to the prospect.
+              </p>
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+<div class="p-space-md rounded-xl bg-surface-container-low">
+<p class="font-label-sm text-label-sm uppercase text-primary font-semibold mb-2 flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px]">sync</span> Automated Workflows
+                  </p>
+<ul class="space-y-1.5 font-body-sm text-body-sm text-on-surface">
+<li class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-primary"></span>Sub-90-second CRM routing &amp; rep notification</li>
+<li class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-primary"></span>Behavior-triggered pre-call video drip</li>
+<li class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-primary"></span>Sales battle-cards generated per lead profile</li>
+</ul>
+</div>
+<div class="p-space-md rounded-xl bg-surface-container-low">
+<p class="font-label-sm text-label-sm uppercase text-on-surface-variant font-semibold mb-2 flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px]">hub</span> CRM Stack Integration
+                  </p>
+<div class="flex flex-wrap gap-1.5">
+<span class="px-2.5 py-1 rounded-lg bg-surface text-on-surface font-label-sm text-label-sm shadow-sm font-medium">HubSpot Enterprise</span>
+<span class="px-2.5 py-1 rounded-lg bg-surface text-on-surface font-label-sm text-label-sm shadow-sm font-medium">Close CRM</span>
+<span class="px-2.5 py-1 rounded-lg bg-surface text-on-surface font-label-sm text-label-sm shadow-sm font-medium">Twilio SMS Gateway</span>
+<span class="px-2.5 py-1 rounded-lg bg-primary-fixed text-primary font-label-sm text-label-sm font-semibold">Make.com Webhooks</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- System Implementation Timeline Section -->
+<section class="w-full bg-surface py-space-xl" id="timeline-section">
+<div class="max-w-[1440px] mx-auto px-margin">
+<!-- Section Title -->
+<div class="max-w-2xl mb-space-xl">
+<div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-surface-container-high text-primary font-label-sm text-label-sm uppercase mb-space-sm font-semibold">
+<span class="material-symbols-outlined text-[16px]">schedule</span>
+          Precision Deployment Schedule
+        </div>
+<h2 class="font-headline-lg text-headline-lg font-bold text-on-surface tracking-tight">
+          System Implementation Timeline
+        </h2>
+<p class="font-body-lg text-body-lg text-on-surface-variant mt-2">
+          From contract signing to live acquisition traffic in 21 days. Every milestone is audited, documented, and stress-tested before spend unlocks.
+        </p>
+</div>
+<!-- Horizontal Step Process (Timeline) -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-gutter relative">
+<!-- Week 1 -->
+<div class="p-space-lg rounded-xl bg-surface-container-low shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow">
+<div>
+<div class="flex items-center justify-between mb-4">
+<span class="font-label-sm text-label-sm text-primary font-bold px-2.5 py-1 rounded-lg bg-primary-fixed">WEEK 01</span>
+<span class="material-symbols-outlined text-on-surface-variant text-[20px]">security</span>
+</div>
+<h4 class="font-headline-sm text-title-lg font-bold text-on-surface mb-2">Audit &amp; Infrastructure</h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+              Full tracking diagnostic, CAPI gateway installation, conversion pixel hygiene, and historical creative data audit.
+            </p>
+</div>
+<div class="mt-space-md pt-3 bg-surface-variant/40 rounded-lg p-2.5">
+<span class="font-label-sm text-label-sm text-on-surface font-semibold block">Milestone 01</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Zero-loss server attribution live.</span>
+</div>
+</div>
+<!-- Week 2 -->
+<div class="p-space-lg rounded-xl bg-surface-container-low shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow">
+<div>
+<div class="flex items-center justify-between mb-4">
+<span class="font-label-sm text-label-sm text-primary font-bold px-2.5 py-1 rounded-lg bg-primary-fixed">WEEK 02</span>
+<span class="material-symbols-outlined text-on-surface-variant text-[20px]">movie_edit</span>
+</div>
+<h4 class="font-headline-sm text-title-lg font-bold text-on-surface mb-2">Creative &amp; Lander Sprint</h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+              First batch of 40+ modular video ads filmed and rendered; custom Next.js landing pages deployed to staging.
+            </p>
+</div>
+<div class="mt-space-md pt-3 bg-surface-variant/40 rounded-lg p-2.5">
+<span class="font-label-sm text-label-sm text-on-surface font-semibold block">Milestone 02</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Assets approved &amp; staged.</span>
+</div>
+</div>
+<!-- Week 3 -->
+<div class="p-space-lg rounded-xl bg-surface-container-low shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow">
+<div>
+<div class="flex items-center justify-between mb-4">
+<span class="font-label-sm text-label-sm text-primary font-bold px-2.5 py-1 rounded-lg bg-primary-fixed">WEEK 03</span>
+<span class="material-symbols-outlined text-on-surface-variant text-[20px]">rocket_launch</span>
+</div>
+<h4 class="font-headline-sm text-title-lg font-bold text-on-surface mb-2">Traffic Launch &amp; Pacing</h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+              Omnichannel campaign launch across primary networks. Algorithmic dayparting begins collecting initial thumbstop signals.
+            </p>
+</div>
+<div class="mt-space-md pt-3 bg-surface-variant/40 rounded-lg p-2.5">
+<span class="font-label-sm text-label-sm text-on-surface font-semibold block">Milestone 03</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">First audited leads flowing.</span>
+</div>
+</div>
+<!-- Week 4 -->
+<div class="p-space-lg rounded-xl bg-surface-container-low shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow">
+<div>
+<div class="flex items-center justify-between mb-4">
+<span class="font-label-sm text-label-sm text-primary font-bold px-2.5 py-1 rounded-lg bg-primary-fixed">WEEK 04</span>
+<span class="material-symbols-outlined text-on-surface-variant text-[20px]">autorenew</span>
+</div>
+<h4 class="font-headline-sm text-title-lg font-bold text-on-surface mb-2">First Optimization Loop</h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+              Cut losing hooks, double down on winning video concepts, adjust lander micro-steps based on initial session recordings.
+            </p>
+</div>
+<div class="mt-space-md pt-3 bg-surface-variant/40 rounded-lg p-2.5">
+<span class="font-label-sm text-label-sm text-on-surface font-semibold block">Milestone 04</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Target CAC corridor achieved.</span>
+</div>
+</div>
+<!-- Month 2+ -->
+<div class="p-space-lg rounded-xl bg-surface-container-high shadow-md flex flex-col justify-between hover:shadow-lg transition-shadow">
+<div>
+<div class="flex items-center justify-between mb-4">
+<span class="font-label-sm text-label-sm text-on-secondary-fixed font-bold px-2.5 py-1 rounded-lg bg-secondary-container">MONTH 02+</span>
+<span class="material-symbols-outlined text-primary text-[20px]">trending_up</span>
+</div>
+<h4 class="font-headline-sm text-title-lg font-bold text-on-surface mb-2">Compound Scaling</h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+              Aggressive vertical and horizontal budget scaling. Channel diversification into secondary networks (YouTube/Search PMax).
+            </p>
+</div>
+<div class="mt-space-md pt-3 bg-surface rounded-lg p-2.5">
+<span class="font-label-sm text-label-sm text-primary font-semibold block">Sustained Velocity</span>
+<span class="font-body-sm text-body-sm text-on-surface">Weekly testing cadences.</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- FAQ Accordion Section -->
+<section class="w-full bg-surface-container-low py-space-xl">
+<div class="max-w-[1440px] mx-auto px-margin">
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter">
+<!-- Left FAQ Header -->
+<div class="lg:col-span-4">
+<div class="sticky top-28 space-y-space-md">
+<div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-surface-container-high text-primary font-label-sm text-label-sm uppercase font-semibold">
+<span class="material-symbols-outlined text-[16px]">help_center</span>
+              Architecture FAQ
+            </div>
+<h2 class="font-headline-lg text-headline-lg font-bold text-on-surface tracking-tight">
+              Technical Clarity Before We Build.
+            </h2>
+<p class="font-body-lg text-body-lg text-on-surface-variant">
+              Everything you need to know about our data integrity, intellectual property guarantees, and budget constraints.
+            </p>
+<div class="p-space-md rounded-xl bg-surface shadow-sm">
+<p class="font-label-sm text-label-sm text-on-surface-variant font-semibold">NEED BESPOKE ENTERPRISE SCOPING?</p>
+<p class="font-body-sm text-body-sm text-on-surface mt-1 mb-3">Our engineering leads are available for bilateral architecture reviews.</p>
+<a class="inline-flex items-center gap-1.5 font-label-md text-label-md text-primary font-bold hover:underline" data-path="book-growth-audit" href="/contact/">
+<span>Request Custom Blueprint</span>
+<span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+</a>
+</div>
+</div>
+</div>
+<!-- Right Accordion List -->
+<div class="lg:col-span-8 space-y-4" id="faq-accordion-group">
+<!-- Item 1 -->
+<div class="faq-item rounded-xl bg-surface p-space-md md:p-space-lg shadow-sm transition-all">
+<button class="faq-toggle w-full flex items-center justify-between text-left gap-4" onclick="toggleFaq(this)" type="button">
+<span class="font-headline-sm text-title-lg font-bold text-on-surface">
+                Do we retain 100% ownership of our ad accounts, creative assets, and landers?
+              </span>
+<div class="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center text-primary shrink-0 transition-transform">
+<span class="material-symbols-outlined text-[20px] faq-chevron">expand_more</span>
+</div>
+</button>
+<div class="faq-content hidden pt-space-md text-on-surface-variant font-body-md text-body-md leading-relaxed">
+              Absolutely. You own everything permanently. All campaigns are run directly inside your existing or freshly provisioned Business Managers, Google Ad accounts, and CRM instances. All Figma files, Next.js code repositories, raw 4K footage cuts, and Zapier/Make webhooks belong entirely to your company from day one.
+            </div>
+</div>
+<!-- Item 2 -->
+<div class="faq-item rounded-xl bg-surface p-space-md md:p-space-lg shadow-sm transition-all">
+<button class="faq-toggle w-full flex items-center justify-between text-left gap-4" onclick="toggleFaq(this)" type="button">
+<span class="font-headline-sm text-title-lg font-bold text-on-surface">
+                How does server-side CAPI tracking solve post-iOS14 signal degradation?
+              </span>
+<div class="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center text-primary shrink-0 transition-transform">
+<span class="material-symbols-outlined text-[20px] faq-chevron">expand_more</span>
+</div>
+</button>
+<div class="faq-content hidden pt-space-md text-on-surface-variant font-body-md text-body-md leading-relaxed">
+              Browser-based tracking pixels lose between 30% and 55% of conversion events due to ad blockers, private relay, and Safari cookie expiration policies. By routing telemetry through an isolated cloud server directly to Meta and Google conversion APIs, we bypass browser restrictions completely. This restores 95%+ event match accuracy, giving ad algorithm networks clean signals to optimize CPM and target higher-intent buyers.
+            </div>
+</div>
+<!-- Item 3 -->
+<div class="faq-item rounded-xl bg-surface p-space-md md:p-space-lg shadow-sm transition-all">
+<button class="faq-toggle w-full flex items-center justify-between text-left gap-4" onclick="toggleFaq(this)" type="button">
+<span class="font-headline-sm text-title-lg font-bold text-on-surface">
+                What is the minimum monthly media spend required to deploy the engine?
+              </span>
+<div class="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center text-primary shrink-0 transition-transform">
+<span class="material-symbols-outlined text-[20px] faq-chevron">expand_more</span>
+</div>
+</button>
+<div class="faq-content hidden pt-space-md text-on-surface-variant font-body-md text-body-md leading-relaxed">
+              Because our system deploys 40+ creative assets and multi-step custom funnels, we require a minimum monthly ad budget of $15,000 to feed sufficient statistical sample sizes to the algorithms during the initial calibration cycle. Most clients scale rapidly into the $50,000 to $250,000+ monthly range once the closed loop confirms target payback metrics.
+            </div>
+</div>
+<!-- Item 4 -->
+<div class="faq-item rounded-xl bg-surface p-space-md md:p-space-lg shadow-sm transition-all">
+<button class="faq-toggle w-full flex items-center justify-between text-left gap-4" onclick="toggleFaq(this)" type="button">
+<span class="font-headline-sm text-title-lg font-bold text-on-surface">
+                How quickly does the PHOYEV team integrate with our internal sales department?
+              </span>
+<div class="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center text-primary shrink-0 transition-transform">
+<span class="material-symbols-outlined text-[20px] faq-chevron">expand_more</span>
+</div>
+</button>
+<div class="faq-content hidden pt-space-md text-on-surface-variant font-body-md text-body-md leading-relaxed">
+              During Week 1, our automation architects establish a private Slack or Teams bridge directly with your sales managers and account executives. We configure live CRM webhook alerts, show-up calendar triggers, and deliver weekly deal-quality audits so marketing and sales operate as a synchronized, single pipeline unit.
+            </div>
+</div>
+<!-- Item 5 -->
+<div class="faq-item rounded-xl bg-surface p-space-md md:p-space-lg shadow-sm transition-all">
+<button class="faq-toggle w-full flex items-center justify-between text-left gap-4" onclick="toggleFaq(this)" type="button">
+<span class="font-headline-sm text-title-lg font-bold text-on-surface">
+                Can the engine integrate with our existing custom backend or ERP?
+              </span>
+<div class="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center text-primary shrink-0 transition-transform">
+<span class="material-symbols-outlined text-[20px] faq-chevron">expand_more</span>
+</div>
+</button>
+<div class="faq-content hidden pt-space-md text-on-surface-variant font-body-md text-body-md leading-relaxed">
+              Yes. Because our funnel architecture is built on headless Next.js and serverless cloud functions, we can push encrypted payloads directly to custom PostgreSQL databases, enterprise SAP or Salesforce instances, or proprietary internal billing systems via secure webhooks.
+            </div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Final High-Impact Conversion CTA Section -->
+<section class="w-full bg-surface py-space-xl relative overflow-hidden">
+<div class="max-w-[1440px] mx-auto px-margin">
+<div class="relative rounded-xl bg-gradient-to-br from-surface-container-high via-surface-container to-surface-container-low p-space-lg md:p-space-xl overflow-hidden shadow-xl">
+<!-- Subtle Ambient Ring Glow -->
+<div class="absolute -right-20 -bottom-20 w-96 h-96 rounded-full bg-primary/15 blur-3xl pointer-events-none"></div>
+<div class="relative z-10 max-w-3xl space-y-space-md">
+<div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-surface text-primary font-label-sm text-label-sm font-semibold shadow-sm">
+<span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+            LIMITED Q2 SCALE ALLOCATIONS REMAINING
+          </div>
+<h2 class="font-display text-headline-lg md:text-display text-on-surface tracking-tight leading-[1.08]">
+            Ready to deploy the PHOYEV Engine for your brand?
+          </h2>
+<p class="font-body-lg text-body-lg text-on-surface-variant leading-relaxed">
+            Stop stitching together fragmented freelancers and siloed ad agencies. Book a 45-minute growth diagnostic where we review your current funnel telemetry and present an audited scaling blueprint.
+          </p>
+<div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 pt-space-sm">
+<a class="inline-flex items-center justify-center gap-2.5 px-space-xl py-3.5 rounded-xl bg-secondary-container hover:bg-secondary-fixed text-on-secondary-fixed font-headline-sm text-title-lg font-bold transition-all shadow-[0_4px_16px_rgba(252,223,70,0.4)]" data-path="book-growth-audit" href="/contact/">
+<span class="material-symbols-outlined text-[22px]">calendar_month</span>
+<span>Schedule Strategy Session</span>
+</a>
+<a class="inline-flex items-center justify-center gap-2 px-space-lg py-3.5 rounded-xl bg-surface hover:bg-surface-container-high text-on-surface font-label-md text-label-md font-semibold transition-all shadow-sm" data-path="case-studies" href="/case-studies/">
+<span class="material-symbols-outlined text-[20px]">visibility</span>
+<span>View Live Case Studies</span>
+</a>
+</div>
+<div class="flex flex-wrap items-center gap-space-md pt-space-sm font-label-sm text-label-sm text-on-surface-variant">
+<span class="flex items-center gap-1.5"><span class="material-symbols-outlined text-[16px] text-primary">verified</span> Verified Pipeline Guarantee</span>
+<span class="flex items-center gap-1.5"><span class="material-symbols-outlined text-[16px] text-primary">lock</span> Mutual NDA Protected</span>
+<span class="flex items-center gap-1.5"><span class="material-symbols-outlined text-[16px] text-primary">speed</span> 21-Day Go-Live Horizon</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+</div>
+<script>
+  // Dynamic Tab Switcher for Engine Architecture Overview
+  const engineTabData = [
+    {
+      badge: "STAGE 01 SELECTED",
+      title: "Creator Hooks & 4K Cinema Assets",
+      desc: "We eliminate creative fatigue before it starves ad accounts. By pairing UGC creator networks with studio-rendered 3D animations and viral psychological pain-point mapping, our Hook Matrix tests 40+ variations each month.",
+      metric1: "40+ Modular Cuts / Mo",
+      metric2: "3-Sec Thumbstop > 42%"
+    },
+    {
+      badge: "STAGE 02 SELECTED",
+      title: "Algorithmic Amplification & Media Pacing",
+      desc: "Server-side CAPI routing feeds real purchase and conversion signals directly back into Meta, Google PMax, and TikTok algorithm bids, isolating hyper-profitable dayparting windows.",
+      metric1: "CAPI Signal Match: 95%+",
+      metric2: "Blended CAC Reduction: -38%"
+    },
+    {
+      badge: "STAGE 03 SELECTED",
+      title: "Frictionless Nurture & CRO Engineering",
+      desc: "Sub-1.2 second headless Next.js landers armed with interactive ROI calculators and multi-step qualifier mechanisms that convert cold curiosity into qualified, eager opportunities.",
+      metric1: "Lander Load: <1.2s Edge",
+      metric2: "Conversion Rate Lift: +64%"
+    },
+    {
+      badge: "STAGE 04 SELECTED",
+      title: "Automated Deal Closing & Sales Pipelines",
+      desc: "Instant 90-second CRM assignment, calendar synchronizations, dual SMS/Email confirmation sequences, and pre-call objection-busting video briefings to ensure an 88%+ show-up rate.",
+      metric1: "Response Time: <90 Sec",
+      metric2: "Meeting Show-Up: 88.4%"
+    }
+  ];
+
+  function activateEngineTab(idx) {
+    const data = engineTabData[idx];
+    if (!data) return;
+
+    document.getElementById("tab-step-badge").textContent = data.badge;
+    document.getElementById("tab-title").textContent = data.title;
+    document.getElementById("tab-description").textContent = data.desc;
+    document.getElementById("tab-metric-1").textContent = data.metric1;
+    document.getElementById("tab-metric-2").textContent = data.metric2;
+
+    const buttons = document.querySelectorAll("#engine-tabs .tab-btn");
+    buttons.forEach((btn, bIdx) => {
+      if (bIdx === idx) {
+        btn.className = "tab-btn px-3 py-1.5 rounded-lg font-label-sm text-label-sm transition-all bg-primary text-on-primary font-semibold shadow-sm";
+      } else {
+        btn.className = "tab-btn px-3 py-1.5 rounded-lg font-label-sm text-label-sm transition-all text-on-surface-variant hover:text-on-surface";
+      }
+    });
+  }
+
+  // FAQ Accordion Interaction
+  function toggleFaq(button) {
+    const item = button.closest(".faq-item");
+    const content = item.querySelector(".faq-content");
+    const chevron = item.querySelector(".faq-chevron");
+    const isOpen = !content.classList.contains("hidden");
+
+    // Close all FAQs in group
+    document.querySelectorAll(".faq-item").forEach(other => {
+      other.querySelector(".faq-content").classList.add("hidden");
+      const c = other.querySelector(".faq-chevron");
+      if (c) c.textContent = "expand_more";
+    });
+
+    // Toggle selected
+    if (!isOpen) {
+      content.classList.remove("hidden");
+      chevron.textContent = "expand_less";
+    }
+  }
+</script></main><footer class="w-full bg-surface-container-low"><div class="max-w-[1440px] mx-auto px-margin pt-space-xl pb-space-lg"><div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-gutter mb-space-xl"><div class="lg:col-span-5 flex flex-col items-start"><div class="flex items-center gap-space-sm mb-space-md"><div class="w-8 h-8 rounded-xl bg-primary-container flex items-center justify-center"><span class="material-symbols-outlined text-on-primary-container text-[18px]">token</span></div><span class="font-headline-sm text-headline-sm font-bold text-on-surface">PHOYEV</span></div><p class="font-body-md text-body-md text-on-surface-variant max-w-md mb-space-lg">High-octane full-funnel digital marketing, cinema-grade performance video, precision paid acquisition, and proprietary conversion systems built for exponential enterprise returns.</p><div class="flex flex-wrap items-center gap-2"><span class="px-2.5 py-1 rounded-full bg-surface-container-high font-label-sm text-label-sm text-on-surface-variant uppercase">Google Premier Partner</span><span class="px-2.5 py-1 rounded-full bg-surface-container-high font-label-sm text-label-sm text-on-surface-variant uppercase">Meta Badged Partner</span><span class="px-2.5 py-1 rounded-full bg-surface-container-high font-label-sm text-label-sm text-on-surface-variant uppercase">TikTok Marketing Partner</span></div></div><div class="lg:col-span-2"><p class="font-label-md text-label-md text-on-surface font-semibold uppercase tracking-wider mb-space-md">Services Engine</p><ul class="space-y-space-sm font-body-sm text-body-sm text-on-surface-variant"><li><a class="hover:text-primary transition-colors" data-path="services" href="/#services">Omnichannel Paid Acquisition</a></li><li><a class="hover:text-primary transition-colors" data-path="services" href="/#services">Cinema Performance Video</a></li><li><a class="hover:text-primary transition-colors" data-path="services" href="/#services">CRO &amp; Funnel Engineering</a></li><li><a class="hover:text-primary transition-colors" data-path="services" href="/#services">Retention &amp; Lifecycle LTV</a></li><li><a class="hover:text-primary transition-colors" data-path="services" href="/#services">Sales Acquisition Systems</a></li></ul></div><div class="lg:col-span-2"><p class="font-label-md text-label-md text-on-surface font-semibold uppercase tracking-wider mb-space-md">Company</p><ul class="space-y-space-sm font-body-sm text-body-sm text-on-surface-variant"><li><a class="hover:text-primary transition-colors" data-path="case-studies" href="/case-studies/">Case Studies</a></li><li><a class="hover:text-primary transition-colors" data-path="proven-results" href="/proven-results/">Verified Results Metric</a></li><li><a class="hover:text-primary transition-colors" data-path="full-funnel-engine" href="/full-funnel-engine/">Full-Funnel Blueprint</a></li><li><a class="hover:text-primary transition-colors" data-path="pricing" href="/pricing/">Investment &amp; Pricing</a></li><li><a class="hover:text-primary transition-colors" data-path="about" href="/about/">About Leadership</a></li></ul></div><div class="lg:col-span-3"><p class="font-label-md text-label-md text-on-surface font-semibold uppercase tracking-wider mb-space-md">Quarterly Alpha</p><p class="font-body-sm text-body-sm text-on-surface-variant mb-space-md">Direct intelligence briefing on algorithmic shifts, scaling paradigms, and conversion architecture.</p><form class="flex items-center gap-2" data-lead="newsletter"><input type="text" name="hp" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;opacity:0"/><input class="w-full px-3.5 py-2.5 rounded-xl bg-surface text-on-surface placeholder:text-outline font-body-sm text-body-sm focus:outline-none focus:ring-2 focus:ring-primary/20" placeholder="executive@enterprise.com" type="email" name="email" required/><button class="px-space-md py-2.5 rounded-xl bg-primary hover:bg-primary-container text-on-primary font-label-md text-label-md transition-all" type="submit">Join</button></form></div></div><div class="pt-space-md flex flex-col md:flex-row items-center justify-between gap-space-md"><p class="font-label-sm text-label-sm text-on-surface-variant">© 2025 PHOYEV Growth Systems Inc. All rights reserved.</p><div class="flex items-center gap-space-md font-label-sm text-label-sm text-on-surface-variant"><a class="hover:text-on-surface transition-colors" data-path="privacy-framework" href="/contact/">Privacy Framework</a><a class="hover:text-on-surface transition-colors" data-path="terms-of-service" href="/contact/">Terms of Service</a><a class="hover:text-on-surface transition-colors" data-path="security-protocols" href="/contact/">Security Protocols</a></div></div></div></footer><script src="/assets/lead.js" defer></script></body></html>

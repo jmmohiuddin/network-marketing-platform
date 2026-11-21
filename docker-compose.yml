@@ -74,6 +74,22 @@ services:
     depends_on: [api]
     mem_limit: 512m
 
+  # Lead capture for the agency pages (site/leads): POST /api/lead -> /data/leads.jsonl. Reach it only through the site service.
+  leads:
+    image: node:22-alpine
+    restart: unless-stopped
+    command: ["node", "/app/server.mjs"]
+    user: "0:0"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    environment:
+      LEADS_FILE: /data/leads.jsonl
+    volumes:
+      - ./site/leads:/app:ro
+      - leadsdata:/data
+    mem_limit: 64m
+
   # Static landing pages for phoyev.com and network.phoyev.com (site/). No image build: files are mounted from /opt/nmp/site.
   # Not in deploy.sh's `up` list on purpose: it is started once by hand and never restarts with app deploys.
   site:
@@ -87,7 +103,9 @@ services:
     ports:
       - "${SITE_BIND:-172.16.1.1}:${SITE_PORT:-6601}:80"
     mem_limit: 64m
+    depends_on: [leads]
 
 volumes:
   pgdata:
   appdata:
+  leadsdata:
