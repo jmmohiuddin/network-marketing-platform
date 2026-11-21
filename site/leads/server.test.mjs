@@ -4,7 +4,7 @@ import assert from 'node:assert/strict'
 import { mkdtemp, readFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { createLeadServer, parseLead, rateLimited } from './server.mjs'
+import { createLeadServer, parseLead, rateLimited, sweepRateLimit, trackedClients } from './server.mjs'
 
 const NOW = new Date('2026-11-21T12:00:00Z')
 
@@ -45,4 +45,12 @@ test('server stores a lead from JSON and a form post, and refuses a bad one', as
   } finally {
     server.close()
   }
+})
+
+test('rate limit memory is bounded: sweep drops idle clients and the cap evicts the oldest', () => {
+  const t0 = 5_000_000
+  for (let i = 0; i < 10_050; i++) rateLimited(`1.1.${i >> 8}.${i & 255}`, t0)
+  assert.ok(trackedClients() <= 10_000, `tracked ${trackedClients()}`)
+  sweepRateLimit(t0 + 61_000)
+  assert.equal(trackedClients(), 0)
 })

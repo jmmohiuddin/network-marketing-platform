@@ -2,21 +2,44 @@
 // No dependencies. shortcut: in-memory rate limit and no e-mail notification; add SMTP/webhook when volume needs it.
 import { createServer } from 'node:http'
 import { appendFile } from 'node:fs/promises'
+import { isIP } from 'node:net'
 import { pathToFileURL } from 'node:url'
 
 const MAX_BODY_BYTES = 8 * 1024
 const RATE_WINDOW_MS = 60_000
 const RATE_MAX = 5
+const MAX_TRACKED_IPS = 10_000
 const FIELD_LIMITS = { name: 120, email: 200, company: 160, url: 200, spend: 60, bottleneck: 60, message: 2000, source: 60 }
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
 
 const hits = new Map()
 
+/** Drops clients whose last hit is older than the window. */
+export function sweepRateLimit(now = Date.now()) {
+  for (const [ip, times] of hits) if (now - times[times.length - 1] >= RATE_WINDOW_MS) hits.delete(ip)
+}
+
+export function trackedClients() {
+  return hits.size
+}
+
 export function rateLimited(ip, now = Date.now()) {
+  if (!hits.has(ip) && hits.size >= MAX_TRACKED_IPS) {
+    sweepRateLimit(now)
+    // Still full of live clients: evict the oldest (Map keeps insertion order) so memory stays bounded.
+    if (hits.size >= MAX_TRACKED_IPS) hits.delete(hits.keys().next().value)
+  }
   const recent = (hits.get(ip) ?? []).filter((t) => now - t < RATE_WINDOW_MS)
   recent.push(now)
+  hits.delete(ip) // re-insert so the most recently active client is last in eviction order
   hits.set(ip, recent)
   return recent.length > RATE_MAX
+}
+
+/** Client address from Caddy's X-Forwarded-For, accepted only when it is a valid IP; else the socket address. */
+function clientIp(req) {
+  const forwarded = String(req.headers['x-forwarded-for'] ?? '').split(',')[0].trim()
+  return isIP(forwarded) ? forwarded : req.socket.remoteAddress ?? 'unknown'
 }
 
 /** Returns { lead } or { error }. A filled honeypot ("hp") is accepted silently as { lead: null }. Name is optional (the home audit form has none). */
@@ -49,10 +72,12 @@ function send(res, status, body) {
 }
 
 export function createLeadServer(leadsFile) {
+  const sweeper = setInterval(sweepRateLimit, RATE_WINDOW_MS)
+  sweeper.unref()
   return createServer(async (req, res) => {
     if (req.method !== 'POST' || req.url !== '/api/lead') return send(res, 404, { error: 'Not found' })
     // Caddy sets X-Forwarded-For; the container port is private, so the header is trusted.
-    const ip = String(req.headers['x-forwarded-for'] ?? req.socket.remoteAddress).split(',')[0].trim()
+    const ip = clientIp(req)
     if (rateLimited(ip)) return send(res, 429, { error: 'Too many requests, try again in a minute' })
     try {
       const text = await readBody(req)
