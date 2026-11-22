@@ -7,6 +7,7 @@ import { sendIdempotent } from '../../lib/idempotency.js'
 import { decodeCursor, pageQuery, toPage } from '../../lib/pagination.js'
 import { loggingSecondPersonRefusals } from '../iam/index.js'
 import { vendorIdempotency } from '../support/index.js'
+import { moveOffboarding, OFFBOARDING_STEPS, requestOffboarding, vendorOffboardingView, type OffboardingStep } from './offboarding.js'
 import { approveProvisioning, createTenant, goLive } from './provisioning.js'
 import { getTenant, listTenants } from './tenants.js'
 
@@ -49,6 +50,9 @@ const createBody = z.strictObject({
 })
 const listQuery = z.strictObject({ ...pageQuery, state: z.enum(['provisioning', 'implementation', 'live', 'archived']).optional() })
 const idParams = z.object({ id: z.uuid() })
+const offboardingBody = z.strictObject({ reason: z.string().trim().min(1).max(500) })
+const archiveBody = z.strictObject({ export_id: z.uuid() })
+const noBody = z.strictObject({}).optional()
 
 const vendor = { preHandler: [requireRealm('vendor')] }
 // Second-person steps (FR-TEN-001 approval, go-live) confirm with a fresh second factor (MVP_A C-4).
@@ -65,7 +69,7 @@ export function registerOpsRoutes(app: FastifyInstance): void {
 
   app.get('/v1/tenants/:id', vendor, async (request) => {
     const { id } = parse(idParams, request.params)
-    return envelope(await inVendor(request, (tx) => getTenant(tx, id)))
+    return envelope(await inVendor(request, async (tx) => ({ ...(await getTenant(tx, id)), offboarding: await vendorOffboardingView(tx, id) })))
   })
 
   app.post('/v1/tenants', vendor, async (request, reply) => {
@@ -92,4 +96,28 @@ export function registerOpsRoutes(app: FastifyInstance): void {
     const { id } = parse(idParams, request.params)
     return envelope(await loggingSecondPersonRefusals(request, { objectType: 'tenant', objectId: id }, () => goLive(request, id)))
   })
+
+  registerOffboardingRoutes(app)
+}
+
+/** FR-TEN-005 vendor side (D-V1A-07, SC-39): request, archive, restore, purge request and approval, cancel. */
+function registerOffboardingRoutes(app: FastifyInstance): void {
+  app.post('/v1/tenants/:id/offboarding', approver, async (request, reply) => {
+    const { id } = parse(idParams, request.params)
+    const { reason } = parse(offboardingBody, request.body)
+    const result = await requestOffboarding(request, id, reason, vendorIdempotency(request))
+    return sendIdempotent(reply, { statusCode: 201, body: envelope(result.offboarding), replayed: result.replayed })
+  })
+
+  // The tenant may cancel too (POST /v1/offboarding/cancel); the vendor's cancel needs no second factor (it undoes nothing).
+  const steps = Object.keys(OFFBOARDING_STEPS) as OffboardingStep[]
+  for (const step of steps) {
+    app.post(`/v1/tenants/:id/offboarding/${step}`, step === 'cancel' ? vendor : approver, async (request) => {
+      const { id } = parse(idParams, request.params)
+      const exportId = step === 'archive' ? parse(archiveBody, request.body).export_id : undefined
+      if (step !== 'archive') parse(noBody, request.body)
+      return envelope(await loggingSecondPersonRefusals(request, { objectType: 'tenant', objectId: id }, () =>
+        moveOffboarding(request, id, step, exportId)))
+    })
+  }
 }

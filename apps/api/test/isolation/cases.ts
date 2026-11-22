@@ -7,7 +7,7 @@ import { IBAN } from '../../src/modules/pay/test-support.js'
 import { GOLDEN_EXPECTED, GOLDEN_INPUT, personal } from '../../src/modules/pln/test-support.js'
 import type { CallOptions } from '../helpers/index.js'
 import {
-  DRAFT_MARKET_CODE, DRAFT_VERSION, EXPORT_TABLE, PACK, PASSWORD, RECORDABLE_ITEM, RULE_KEY, STATE_ITEM, SUPPORT_SCOPE, TAX_YEAR, type Targets,
+  CREDIT_TYPE_CODE, DRAFT_MARKET_CODE, DRAFT_VERSION, EXPORT_TABLE, PACK, PASSWORD, RECORDABLE_ITEM, RULE_KEY, STATE_ITEM, SUPPORT_SCOPE, TAX_YEAR, type Targets,
 } from './seed.js'
 
 /**
@@ -604,6 +604,56 @@ export const ROUTE_CASES: Readonly<Record<string, RouteCase>> = {
   'GET /v1/registers/delisted/export': { ...object('tenant', (t) => get(`/v1/registers/delisted/export?market_id=${t.taxMarket}`)), inSession: 403 },
   // IAM B-MKT (PLAN B-MKT 2.5): a tenant-B member sets its own language.
   'PUT /v1/me/locale': portal('own', () => json('PUT', '/v1/me/locale', { locale: 'en' }), 200),
+  // LED V1-A (PLAN V1-A 2.1, 2.2): tenant A's market, participant, credit type and batch name nothing in tenant B; redemptions take keys only.
+  'GET /v1/credit-types': collection('tenant', () => get('/v1/credit-types')),
+  'POST /v1/credit-types': named(422, 'MARKET_NOT_FOUND', (t) => json('POST', '/v1/credit-types', {
+    code: CREDIT_TYPE_CODE, name: 'Isolation credit', taxable: false, redemption_scope: { markets: [t.compMarket] },
+  }, true)),
+  'PATCH /v1/credit-types/:id': object('tenant', (t) =>
+    json('PATCH', `/v1/credit-types/${t.creditType}`, { expected_updated_at: PAST, name: 'Renamed in isolation' })),
+  'GET /v1/credits/balances': object('tenant', (t) => get(`/v1/credits/balances?market_id=${t.compMarket}`)),
+  'GET /v1/credits/lots': object('tenant', (t) =>
+    get(`/v1/credits/lots?participant_id=${t.participant}&credit_type_id=${t.creditType}&market_id=${t.peopleMarket}`)),
+  'GET /v1/credits/redemptions': collection('tenant', () => get('/v1/credits/redemptions?limit=50')),
+  'POST /v1/credit-redemptions': keyOnly((t) => json('POST', '/v1/credit-redemptions', {
+    source_redemption_id: `r-${t.order}`, participant_external_ref: 'NL-PAYEE', market: 'NL', credit_type: CREDIT_TYPE_CODE, amount_minor: '1', occurred_at: PAST,
+  }, true)),
+  'GET /v1/fx-rates': collection('tenant', () => get('/v1/fx-rates?limit=50')),
+  // fx.manage and fx.approve are excluded from support sessions; ledger.read still reads the rates.
+  'GET /v1/fx-rate-batches': { ...collection('tenant', () => get('/v1/fx-rate-batches?limit=50')), inSession: 403 },
+  // Tenant B's own batch: tenant A's pair and validity start are free there.
+  'POST /v1/fx-rate-batches': own('tenant', 201, () => json('POST', '/v1/fx-rate-batches', {
+    source: 'Isolation bank', rows: [{ base: 'CHF', quote: 'EUR', rate: '1.0412000000', valid_from: '2026-11-01T00:00:00Z' }],
+  }, true)),
+  'POST /v1/fx-rate-batches/:id/decision': object('tenant', (t) => json('POST', `/v1/fx-rate-batches/${t.fxBatch}/decision`, { decision: 'reject' }, true)),
+  // COMP V1-A (PLAN V1-A 2.4): tenant A's run is no final run (422 in its session), and unknown in tenant B.
+  'GET /v1/runs/:id/true-up': { ...object('tenant', (t) => get(`/v1/runs/${t.run}/true-up`)), inSession: 422 },
+  'GET /v1/runs/:id/credit-awards': object('tenant', (t) => get(`/v1/runs/${t.run}/credit-awards`)),
+  // TEN / OPS V1-A (PLAN V1-A 2.5, 2.6): tenant.offboard is excluded from support sessions; tenant B has no offboarding open.
+  'GET /v1/offboarding': { ...collection('tenant', () => get('/v1/offboarding')), inSession: 403 },
+  'POST /v1/offboarding/confirm': own('tenant', 409, () =>
+    json('POST', '/v1/offboarding/confirm', { retention_basis: 'Isolation basis', retention_months: 12, acknowledged_warnings: [] })),
+  'POST /v1/offboarding/cancel': own('tenant', 409, () => json('POST', '/v1/offboarding/cancel')),
+  'POST /v1/tenants/:id/offboarding': vendor((t) => json('POST', `/v1/tenants/${t.tenant}/offboarding`, withReason(), true)),
+  'POST /v1/tenants/:id/offboarding/archive': vendor((t) => json('POST', `/v1/tenants/${t.tenant}/offboarding/archive`, { export_id: t.fullExport })),
+  'POST /v1/tenants/:id/offboarding/restore': vendor((t) => json('POST', `/v1/tenants/${t.tenant}/offboarding/restore`)),
+  'POST /v1/tenants/:id/offboarding/purge-request': vendor((t) => json('POST', `/v1/tenants/${t.tenant}/offboarding/purge-request`)),
+  'POST /v1/tenants/:id/offboarding/purge-approve': vendor((t) => json('POST', `/v1/tenants/${t.tenant}/offboarding/purge-approve`)),
+  'POST /v1/tenants/:id/offboarding/cancel': vendor((t) => json('POST', `/v1/tenants/${t.tenant}/offboarding/cancel`)),
+  // PAR V1-A (PLAN V1-A 2.7)
+  'PUT /v1/participants/:id/account': object('tenant', (t) => json('PUT', `/v1/participants/${t.participant}/account`, { account_type: 'individual' })),
+  // PRV V1-A (PLAN V1-A 2.8): privacy.manage and legal_hold.manage are excluded from support sessions.
+  'GET /v1/retention/schedules': { ...collection('tenant', () => get('/v1/retention/schedules')), inSession: 403 },
+  'POST /v1/retention/schedules': named(422, 'VALIDATION_FAILED', (t) => json('POST', '/v1/retention/schedules', {
+    data_class: 'terminated_participant', market_id: t.compMarket, retain_days: 30, basis: 'Isolation basis', effective_from: '2099-01-01',
+  }, true)),
+  'POST /v1/retention/schedules/:id/decision': object('tenant', (t) =>
+    json('POST', `/v1/retention/schedules/${t.retentionSchedule}/decision`, { decision: 'reject' }, true)),
+  'GET /v1/retention/schedules/:id/preview': { ...object('tenant', (t) => get(`/v1/retention/schedules/${t.retentionSchedule}/preview`)), inSession: 403 },
+  'GET /v1/retention/runs': { ...collection('tenant', () => get('/v1/retention/runs?limit=50')), inSession: 403 },
+  'GET /v1/legal-holds': { ...collection('tenant', () => get('/v1/legal-holds')), inSession: 403 },
+  'POST /v1/legal-holds': named(422, 'PARTICIPANT_NOT_FOUND', (t) => json('POST', '/v1/legal-holds', withReason({ participant_id: t.participant }), true)),
+  'POST /v1/legal-holds/:id/release': object('tenant', (t) => json('POST', `/v1/legal-holds/${t.legalHold}/release`)),
 }
 
 /** The case of a route; Fastify's HEAD routes run their GET handler, so they take the GET case with method HEAD. */

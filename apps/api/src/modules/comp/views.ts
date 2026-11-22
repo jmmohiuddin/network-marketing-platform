@@ -24,7 +24,10 @@ async function calendars(tx: Tx, scope: readonly string[] | null) {
   const { rows } = await tx.query(
     `SELECT c.id, c.name, c.cadence, c.cutoff_time_zone, jsonb_build_object('id', m.id, 'code', m.code) AS market,
             (SELECT jsonb_build_object('id', pl.id, 'name', pl.name) FROM plan_calendar pc JOIN plan pl ON pl.id = pc.plan_id
-             WHERE pc.calendar_id = c.id) AS plan
+             WHERE pc.calendar_id = c.id) AS plan,
+            (SELECT jsonb_build_object('id', f.id, 'name', f.name) FROM calendar f WHERE f.id = c.provisional_for_calendar_id) AS provisional_for,
+            coalesce((SELECT jsonb_agg(jsonb_build_object('id', x.id, 'name', x.name) ORDER BY x.name, x.id)
+                      FROM calendar x WHERE x.provisional_for_calendar_id = c.id), '[]') AS provisional_calendars
      FROM calendar c JOIN market m ON m.id = c.market_id WHERE ${IN_SCOPE} ORDER BY m.code, c.name, c.id`,
     [scope],
   )
@@ -57,7 +60,8 @@ const lateOf = (counts: Map<string, LateCounts>, id: string): LateCounts => coun
 export async function listPeriods(tx: Tx, scope: readonly string[] | null, filter: PeriodFilter, after: PeriodCursor | undefined, limit: number) {
   const { rows } = await tx.query<PeriodRow & { latest_run: unknown }>(
     `SELECT ${PERIOD_COLUMNS},
-            (SELECT jsonb_build_object('id', r.id, 'state', r.state, 'gross_minor', r.totals ->> 'gross_minor', 'finished_at', r.finished_at)
+            (SELECT jsonb_build_object('id', r.id, 'state', r.state, 'gross_minor', r.totals ->> 'gross_minor', 'finished_at', r.finished_at,
+                                       'true_up_runs', (SELECT count(DISTINCT o.provisional_run_id)::int FROM adjustment_origin o WHERE o.run_id = r.id))
              FROM run r WHERE r.period_id = p.id ORDER BY r.created_at DESC, r.id DESC LIMIT 1) AS latest_run
      ${PERIOD_FROM}
      WHERE ${IN_SCOPE} AND ($2::uuid IS NULL OR p.calendar_id = $2) AND ($3::text IS NULL OR p.state = $3)
@@ -160,8 +164,15 @@ export async function runDetail(tx: Tx, id: string, scope: readonly string[] | n
             jsonb_build_object('id', v.id, 'plan', jsonb_build_object('id', pl.id, 'name', pl.name), 'version', v.version) AS plan_version,
             (SELECT jsonb_build_object('known_at', s.known_at, 'row_counts', s.row_counts - 'late_item_ids')
              FROM run_snapshot s WHERE s.id = r.snapshot_id) AS snapshot,
-            (SELECT e.id FROM journal_entry e WHERE e.origin_type = 'run' AND e.origin_id = r.id) AS journal_entry_id
+            (SELECT e.id FROM journal_entry e WHERE e.origin_type = 'run' AND e.origin_id = r.id) AS journal_entry_id,
+            CASE WHEN c.provisional_for_calendar_id IS NOT NULL THEN jsonb_build_object('final_period_id', provisional_final_period(p.id),
+              'final_calendar_id', c.provisional_for_calendar_id) END AS provisional,
+            (SELECT jsonb_build_object('provisional_run_ids', jsonb_agg(DISTINCT o.provisional_run_id ORDER BY o.provisional_run_id),
+                                       'offsets_minor', sum(o.amount_minor)::text)
+             FROM adjustment_origin o WHERE o.run_id = r.id AND o.provisional_run_id IS NOT NULL HAVING count(*) > 0) AS true_up,
+            (SELECT coalesce(sum(a.amount_minor), 0)::text FROM credit_award a WHERE a.run_id = r.id) AS credit_awards_minor
      FROM run r JOIN user_account u ON u.id = r.prepared_by JOIN plan_version v ON v.id = r.plan_version_id JOIN plan pl ON pl.id = v.plan_id
+     JOIN period p ON p.id = r.period_id JOIN calendar c ON c.id = p.calendar_id
      WHERE r.id = $1`,
     [id],
   )

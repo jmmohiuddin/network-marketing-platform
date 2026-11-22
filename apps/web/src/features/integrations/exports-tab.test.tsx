@@ -78,6 +78,20 @@ describe('SC-13 Exports tab (FR-INT-003)', () => {
     expect(headerOf(init, 'Idempotency-Key')).toBeTruthy()
   })
 
+  it('keeps Run export now for a read-only tenant: the final full export of offboarding (D-V1A-07)', async () => {
+    renderAs(adminMe({ ...ADMIN, tenant: { ...ADMIN.tenant!, read_only: true } }), <IntegrationsPage />, routes())
+    expect(await screen.findByRole('button', { name: 'Run export now' })).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Change schedule' })).toBeNull()
+  })
+
+  it('shows the export id with a copy button in the drawer, for the vendor archive step (SC-39)', async () => {
+    navigation.search = `tab=exports&export=${X}`
+    renderAs(ADMIN, <IntegrationsPage />, routes({ [`GET /v1/exports/${X}`]: () => ok(DETAIL) }))
+    const id = await within(await screen.findByRole('dialog', { name: 'Full data export' })).findByTestId('export-id')
+    expect(id.textContent).toContain(X)
+    expect(within(id).getByRole('button', { name: 'Copy export id' })).toBeTruthy()
+  })
+
   it('opens ?export= with the manifest, per-file downloads, the signature, key id and public key', async () => {
     navigation.search = `tab=exports&export=${X}`
     const gzip = new Response(new Uint8Array([31, 139]), { status: 200, headers: { 'content-type': 'application/gzip' } })

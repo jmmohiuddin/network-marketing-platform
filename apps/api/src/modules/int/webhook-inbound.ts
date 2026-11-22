@@ -6,6 +6,7 @@ import { runInTenant, SYSTEM_ACTOR_ID } from '../../lib/db.js'
 import { ApiError, notFound } from '../../lib/errors.js'
 import { envelope } from '../../lib/http.js'
 import type { StoredResponse } from '../../lib/idempotency.js'
+import { assertTenantWritableIn } from '../../lib/tenant-state.js'
 import { creditingEvent, eventInput, orderInput, receive, recordRejected, Refusal, type IngestContext, type Submission } from '../ord/index.js'
 import { connectorForWebhook, markConnectorOk } from '../pay/index.js'
 import { getMarket } from '../ten/index.js'
@@ -105,6 +106,7 @@ async function handle(app: FastifyInstance, request: FastifyRequest): Promise<St
   // The store is the actor: a system transaction in the connector's tenant (D-B2-14).
   const actor = { actorType: 'system' as const, requestId: request.id, supportSessionId: null }
   return runInTenant({ tenantId: connector.tenantId, userId: SYSTEM_ACTOR_ID }, actor, async (tx) => {
+    await assertTenantWritableIn(tx, request, connector.tenantId) // D-V1A-07: after the signature, so a stranger learns nothing
     const market = (await getMarket(tx, connector.marketId))!
     // D-B6-05: the crediting event of the plan version in force at the order's time; none -> ORD refuses the order.
     const orderedAt = orderedAtOf(connector.provider, body)

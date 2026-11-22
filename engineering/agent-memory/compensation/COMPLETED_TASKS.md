@@ -2,6 +2,8 @@
 
 _Agent: compensation. Read before every task; update after every task. Keep concise — facts and decisions, not transcripts._
 
+## V1-A BE1 — provisional runs + true-up, credit awards (engine/COMP/PLN), statement additions, AC-S1-2 re-bench (2026-11-21) — DONE (AC-S1-2 not met)
+
 ## B2 BE2 — GEN module: tree/search/positions/status/downline, rebuild job, 3 case types (2026-11-17) — DONE
 
 ## B engine contracts — @nmp/engine package, types, money, tree, pipeline, fixtures (2026-11-13) — DONE

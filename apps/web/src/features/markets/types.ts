@@ -16,6 +16,9 @@ export interface Calendar {
   readonly cutoff_time_zone: string
   readonly first_period_start: string
   readonly periods: { readonly count: number; readonly first_starts_at: string | null; readonly last_ends_at: string | null; readonly open: number }
+  /** D-V1A-02: the final calendar this one pays advances for, and the provisional calendars of this one. */
+  readonly provisional_for: { readonly id: string; readonly name: string } | null
+  readonly provisional_calendars: readonly { readonly id: string; readonly name: string }[]
 }
 
 export interface Period {

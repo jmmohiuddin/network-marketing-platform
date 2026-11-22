@@ -7,6 +7,7 @@ import { loadConfig, type Config } from './config.js'
 import { registerErrorHandling } from './lib/errors.js'
 import type { ApiModule } from './lib/module.js'
 import { resolveAuth } from './lib/session.js'
+import { registerTenantReadOnlyGuard } from './lib/tenant-state.js'
 import { registerCsrfCheck, registerRateLimit } from './lib/web-security.js'
 import { googleFirebaseKeys } from './modules/iam/index.js'
 import { defaultModules } from './modules/index.js'
@@ -66,6 +67,7 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
   })
   // A vendor user inside an approved support session works in that tenant's realm (FR-IAM-005).
   registerSupportSessionAccess(app)
+  registerTenantReadOnlyGuard(app)
   await registerRateLimit(app)
   for (const module of options.modules ?? defaultModules) {
     await app.register(async (scope) => {

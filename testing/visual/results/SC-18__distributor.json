@@ -1,12 +1,12 @@
 {
-  "when": "2026-11-20T16:21:52.605Z",
+  "when": "2026-11-21T09:04:00.468Z",
   "screenId": "SC-18",
   "stitch": "sc_18_distributor_statement_line_explanation",
   "module": "portal",
   "screen": "statement",
   "route": "/portal/earnings/[id]",
   "role": "distributor",
-  "url": "http://127.0.0.1:3100/portal/earnings/7e4d3a6f-a80e-40c8-a1f1-94f17f43d073",
+  "url": "http://127.0.0.1:3100/portal/earnings/68cb5630-ede9-45d0-8748-e4d7b6c311e1",
   "self": false,
   "patched": [],
   "viewports": [
@@ -15,15 +15,15 @@
       "screenshot": "testing/ui-screenshots/app/portal/statement/distributor/1440x900.png",
       "reference": "testing/ui-screenshots/reference/sc_18_distributor_statement_line_explanation/1440x900.png",
       "diffImage": "testing/ui-screenshots/app/portal/statement/distributor/1440x900.diff.png",
-      "mismatchPercent": 5.55,
-      "diffPixels": 141176,
+      "mismatchPercent": 5.63,
+      "diffPixels": 143172,
       "referenceSize": "1440x1767",
-      "actualSize": "1440x900",
+      "actualSize": "1440x968",
       "landmarks": [
         {
           "landmark": "page",
           "stitchText": "arrow_back Statement 2026-M10 Elena Gomez · POS-01948 pictur",
-          "appText": "Abrechnung 01.10.2026 – 31.10.2026DE-A · P-1downloadCSV heru",
+          "appText": "Statement Oct 1, 2026 – Oct 31, 2026BE-B · P-5downloadDownlo",
           "status": "mismatch",
           "severity": "high",
           "props": [
@@ -56,7 +56,7 @@
         {
           "landmark": "title",
           "stitchText": "Earnings",
-          "appText": "Abrechnung 01.10.2026 – 31.10.2026",
+          "appText": "Statement Oct 1, 2026 – Oct 31, 2026",
           "status": "match",
           "severity": "none",
           "props": [
@@ -101,7 +101,7 @@
         {
           "landmark": "sectionHeading",
           "stitchText": "Reconciliation Ledger",
-          "appText": "So setzt sich der Nettobetrag zusammen",
+          "appText": "How the net amount adds up",
           "status": "match",
           "severity": "none",
           "props": [
@@ -140,7 +140,7 @@
         {
           "landmark": "card",
           "stitchText": "Committed & Disbursed Settled: Nov 1, 2026 04:12 UTC Batch #",
-          "appText": "Nettobetrag23,00 €Für diese Abrechnung wurde noch keine Ausz",
+          "appText": "Net amount€16.00No payout has been made for this statement y",
           "status": "match",
           "severity": "none",
           "props": [
@@ -171,15 +171,15 @@
       "screenshot": "testing/ui-screenshots/app/portal/statement/distributor/1280x800.png",
       "reference": "testing/ui-screenshots/reference/sc_18_distributor_statement_line_explanation/1280x800.png",
       "diffImage": "testing/ui-screenshots/app/portal/statement/distributor/1280x800.diff.png",
-      "mismatchPercent": 4.94,
-      "diffPixels": 114194,
+      "mismatchPercent": 4.95,
+      "diffPixels": 114377,
       "referenceSize": "1280x1806",
-      "actualSize": "1280x808",
+      "actualSize": "1280x968",
       "landmarks": [
         {
           "landmark": "page",
           "stitchText": "arrow_back Statement 2026-M10 Elena Gomez · POS-01948 pictur",
-          "appText": "Abrechnung 01.10.2026 – 31.10.2026DE-A · P-1downloadCSV heru",
+          "appText": "Statement Oct 1, 2026 – Oct 31, 2026BE-B · P-5downloadDownlo",
           "status": "mismatch",
           "severity": "high",
           "props": [
@@ -212,7 +212,7 @@
         {
           "landmark": "title",
           "stitchText": "Earnings",
-          "appText": "Abrechnung 01.10.2026 – 31.10.2026",
+          "appText": "Statement Oct 1, 2026 – Oct 31, 2026",
           "status": "match",
           "severity": "none",
           "props": [
@@ -257,7 +257,7 @@
         {
           "landmark": "sectionHeading",
           "stitchText": "Reconciliation Ledger",
-          "appText": "So setzt sich der Nettobetrag zusammen",
+          "appText": "How the net amount adds up",
           "status": "match",
           "severity": "none",
           "props": [
@@ -296,7 +296,7 @@
         {
           "landmark": "card",
           "stitchText": "Committed & Disbursed Settled: Nov 1, 2026 04:12 UTC Batch #",
-          "appText": "Nettobetrag23,00 €Für diese Abrechnung wurde noch keine Ausz",
+          "appText": "Net amount€16.00No payout has been made for this statement y",
           "status": "match",
           "severity": "none",
           "props": [
@@ -327,15 +327,15 @@
       "screenshot": "testing/ui-screenshots/app/portal/statement/distributor/768x1024.png",
       "reference": "testing/ui-screenshots/reference/sc_18_distributor_statement_line_explanation/768x1024.png",
       "diffImage": "testing/ui-screenshots/app/portal/statement/distributor/768x1024.diff.png",
-      "mismatchPercent": 7.86,
-      "diffPixels": 108998,
+      "mismatchPercent": 8.05,
+      "diffPixels": 111605,
       "referenceSize": "768x1806",
       "actualSize": "768x1024",
       "landmarks": [
         {
           "landmark": "page",
           "stitchText": "arrow_back Statement 2026-M10 Elena Gomez · POS-01948 pictur",
-          "appText": "Abrechnung 01.10.2026 – 31.10.2026DE-A · P-1downloadCSV heru",
+          "appText": "Statement Oct 1, 2026 – Oct 31, 2026BE-B · P-5downloadDownlo",
           "status": "mismatch",
           "severity": "high",
           "props": [
@@ -368,7 +368,7 @@
         {
           "landmark": "title",
           "stitchText": "Earnings",
-          "appText": "Abrechnung 01.10.2026 – 31.10.2026",
+          "appText": "Statement Oct 1, 2026 – Oct 31, 2026",
           "status": "match",
           "severity": "none",
           "props": [
@@ -413,7 +413,7 @@
         {
           "landmark": "sectionHeading",
           "stitchText": "Reconciliation Ledger",
-          "appText": "So setzt sich der Nettobetrag zusammen",
+          "appText": "How the net amount adds up",
           "status": "match",
           "severity": "none",
           "props": [
@@ -452,7 +452,7 @@
         {
           "landmark": "card",
           "stitchText": "Committed & Disbursed Settled: Nov 1, 2026 04:12 UTC Batch #",
-          "appText": "Nettobetrag23,00 €Für diese Abrechnung wurde noch keine Ausz",
+          "appText": "Net amount€16.00No payout has been made for this statement y",
           "status": "match",
           "severity": "none",
           "props": [
@@ -483,15 +483,15 @@
       "screenshot": "testing/ui-screenshots/app/portal/statement/distributor/390x844.png",
       "reference": "testing/ui-screenshots/reference/sc_18_distributor_statement_line_explanation/390x844.png",
       "diffImage": "testing/ui-screenshots/app/portal/statement/distributor/390x844.diff.png",
-      "mismatchPercent": 7.74,
-      "diffPixels": 63108,
+      "mismatchPercent": 8.07,
+      "diffPixels": 65785,
       "referenceSize": "390x2091",
-      "actualSize": "390x988",
+      "actualSize": "390x1148",
       "landmarks": [
         {
           "landmark": "header",
           "stitchText": "AuditLedger•Apex HealthDistributor Homenotificationsperson",
-          "appText": "arrow_backAcme Direct LtdProvisionendashboardStartreceipt_lo",
+          "appText": "arrow_backAcme Direct LtdEarningsdashboardHomereceipt_longEa",
           "status": "match",
           "severity": "none",
           "props": [
@@ -512,7 +512,7 @@
         {
           "landmark": "page",
           "stitchText": "arrow_back Statement 2026-M10 Elena Gomez · POS-01948 pictur",
-          "appText": "Abrechnung 01.10.2026 – 31.10.2026DE-A · P-1downloadCSV heru",
+          "appText": "Statement Oct 1, 2026 – Oct 31, 2026BE-B · P-5downloadDownlo",
           "status": "mismatch",
           "severity": "high",
           "props": [
@@ -545,7 +545,7 @@
         {
           "landmark": "title",
           "stitchText": "Earnings",
-          "appText": "Abrechnung 01.10.2026 – 31.10.2026",
+          "appText": "Statement Oct 1, 2026 – Oct 31, 2026",
           "status": "match",
           "severity": "none",
           "props": [
@@ -590,7 +590,7 @@
         {
           "landmark": "sectionHeading",
           "stitchText": "Reconciliation Ledger",
-          "appText": "So setzt sich der Nettobetrag zusammen",
+          "appText": "How the net amount adds up",
           "status": "match",
           "severity": "none",
           "props": [
@@ -629,7 +629,7 @@
         {
           "landmark": "card",
           "stitchText": "Committed & Disbursed Settled: Nov 1, 2026 04:12 UTC Batch #",
-          "appText": "Nettobetrag23,00 €Für diese Abrechnung wurde noch keine Ausz",
+          "appText": "Net amount€16.00No payout has been made for this statement y",
           "status": "match",
           "severity": "none",
           "props": [

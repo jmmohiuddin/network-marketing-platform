@@ -217,7 +217,7 @@ describe('CapsPage (SC-05)', () => {
     await user.click(within(form).getByRole('button', { name: 'Save cap' }))
     expect(await screen.findByText('Cap ceiling saved.')).toBeTruthy()
     expect(bodyOf(callsTo(fetchMock, 'PUT', `${VERSION_PATH}/rules/ceiling`)[0]![1])).toEqual({
-      kind: 'cap', ordinal: 0, reversal_policy: null, calendar_id: null,
+      kind: 'cap', ordinal: 0, reversal_policy: null, calendar_id: null, credit_type_code: null,
       params: { scope: ['pool_bonus', 'unilevel'], base: { kind: 'measure', measure: 'pv' }, rate: '0.10', method: { type: 'priority', reduce: ['pool_bonus', 'unilevel'] }, residue: 'breakage' },
     })
   })

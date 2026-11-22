@@ -27,6 +27,7 @@ function tenant(overrides: Partial<TenantDetail> = {}): TenantDetail {
     id: 't1', slug: 'acme', legal_name: 'Acme Ltd', region: 'eu', isolation_tier: 'pooled', state: 'provisioning', dpa_document_id: DPA,
     created_at: '2026-11-01T10:00:00.000Z', job_health: { queued: 2, running: 0, failed: 1 },
     markets: [{ id: 'm1', code: 'DE', currency: 'EUR', minor_unit: 2, time_zone: 'Europe/Berlin', languages: ['de'], market_pack: 'de-2026', state: 'live' }],
+    offboarding: null,
     ...overrides,
   }
 }

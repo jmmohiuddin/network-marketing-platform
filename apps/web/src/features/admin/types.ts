@@ -1,4 +1,5 @@
 // Response shapes of the admin and vendor routes (apps/api/src/modules/{iam,ten,aud,support,ops,prv}). Dates are ISO strings.
+import type { OffboardingBlocker, OffboardingState } from './offboarding'
 
 /** GET /v1/users (iam/users.ts UserView). */
 export interface UserRole {
@@ -152,6 +153,19 @@ export interface MarketView {
   readonly state: string
 }
 
+/** GET /v1/tenants/:id offboarding (D-V1A-07, SC-39): the latest record with blocker counts, never ids of tenant data. */
+export interface VendorOffboarding {
+  readonly id: string
+  readonly state: OffboardingState
+  readonly requested_at: string
+  readonly confirmed_at: string | null
+  readonly archived_at: string | null
+  readonly retain_until: string | null
+  readonly purge_requested_by: string | null
+  readonly blockers: readonly OffboardingBlocker[]
+}
+
 export interface TenantDetail extends TenantView {
   readonly markets: readonly MarketView[]
+  readonly offboarding: VendorOffboarding | null
 }

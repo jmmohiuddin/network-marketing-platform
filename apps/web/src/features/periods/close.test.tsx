@@ -19,7 +19,7 @@ vi.mock('next/navigation', () => ({
 const CAL = '00000000-0000-4000-8000-0000000ca1e0'
 const ZONE = 'Europe/Berlin'
 const MARKET = { id: 'm1', code: 'DE', name: 'Germany', currency: 'EUR', state: 'live', market_pack: 'e2e-fixture', time_zone: ZONE, languages: ['de'], minor_unit: 2 }
-const CALENDAR: Calendar = { id: CAL, name: 'DE monthly', cadence: 'monthly', cutoff_time_zone: ZONE, market: { id: 'm1', code: 'DE' }, plan: { id: 'pl1', name: 'DE core' } }
+const CALENDAR: Calendar = { id: CAL, name: 'DE monthly', cadence: 'monthly', cutoff_time_zone: ZONE, market: { id: 'm1', code: 'DE' }, plan: { id: 'pl1', name: 'DE core' }, provisional_for: null, provisional_calendars: [] }
 const FINANCE = adminMe({ permissions: ['period.read', 'period.close'] })
 const READER = adminMe({ permissions: ['period.read'] })
 

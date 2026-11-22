@@ -8,6 +8,7 @@ import {
 import { createCasModule } from '../cas/index.js'
 import { grievanceEscalationJob } from './grievance-escalation.js'
 import { cplCaseTypes, cplModule } from './index.js'
+import { GRIEVANCE_CSV_HEADER, grievanceCsvRow, type GrievanceRow } from './registers.js'
 
 // PLAN B-MKT FR-CPL-013: T-BM-21 grievance case type, T-BM-22 escalation cron (TS-68 grievance part), T-BM-23 grievance
 // register and export, T-BM-24 delisted register routes and export. Pack rows are TEST FIXTURES (the product ships none).
@@ -291,6 +292,26 @@ describe('T-BM-23 grievance register and export (AC-CPL13-4)', () => {
     await capped.close()
     expect([refused.statusCode, refused.json().error.code]).toEqual([422, 'EXPORT_ROW_CAP_EXCEEDED'])
     expect(await auditActions(tenantA)).toContain('EXPORT.REFUSED')
+  })
+})
+
+describe('BUG-139: the CSV prints the register\'s state words and escalated as true/false', () => {
+  const row = (state: string, escalated: string[]): GrievanceRow => ({
+    case_id: 'c', market_id: 'm', subject: { type: 'market', id: 'm', external_ref: null }, category: 'x', channel: 'email', external_ref: null,
+    received_at: 'r', ack_due_at: 'a', acknowledged_at: null, resolution_due_at: 'd', resolved_at: null, outcome: null, state,
+    ack_overdue: false, resolution_overdue: false, escalated, rule_id: 'rule',
+  })
+  const column = (name: (typeof GRIEVANCE_CSV_HEADER)[number]) => GRIEVANCE_CSV_HEADER.indexOf(name)
+
+  test.each([
+    ['open', 'open'], ['submitted', 'submitted'], ['approved', 'resolved_upheld'], ['rejected', 'resolved_not_upheld'], ['withdrawn', 'withdrawn'],
+  ])('state %s is written %s', (state, word) => {
+    expect(grievanceCsvRow(row(state, []))[column('state')]).toBe(word)
+  })
+
+  test('escalated is true once a deadline escalated, false otherwise (never empty)', () => {
+    expect(grievanceCsvRow(row('open', []))[column('escalated')]).toBe(false)
+    expect(grievanceCsvRow(row('open', ['acknowledgement']))[column('escalated')]).toBe(true)
   })
 })
 

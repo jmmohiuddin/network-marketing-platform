@@ -11,6 +11,7 @@ import { Checkbox, Select, TextInput } from '../../components/form-field'
 import { KpiCard } from '../../components/kpi-card'
 import { PageHeader } from '../../components/page-header'
 import { NotAvailable } from '../../components/states'
+import { TabPanel, Tabs } from '../../components/tabs'
 import { StatusBadge } from '../../components/status-badge'
 import { useToast } from '../../components/toast'
 import { formatDateTime } from '../../lib/format'
@@ -18,8 +19,11 @@ import { useSession } from '../../lib/session'
 import { useResource, type Query } from '../../lib/use-resource'
 import { emailError, requiredError } from '../../lib/validation'
 import { FormDialog, TextAreaField } from '../admin/form-dialog'
+import { useTabParam } from '../admin/page-states'
 import { tableError, usePagedList } from '../admin/resource'
 import { CHANNEL_LABELS, deadlineOf, referenceOf, REQUEST_TYPES, STATE_BADGES, STATE_LABELS, TYPE_HELP, TYPE_LABELS, type Deadline } from './format'
+import { LegalHoldsTab } from './legal-holds-tab'
+import { RetentionTab } from './retention-tab'
 import { PRIVACY_REQUESTS_PATH, type PrivacyRequestDetail, type PrivacyRequestRow, type RequestState, type RequestType } from './types'
 
 const MONO = 'font-data-mono-sm text-data-mono-sm'
@@ -145,15 +149,51 @@ function RequestTable({ query, now, escalateDays }: { readonly query: Query; rea
   )
 }
 
-/** SC-15 Privacy requests (FR-PRV-001, PLAN B5 §5): KPIs, filters in the URL, the request table with its deadline indicator. */
+const ID_PREFIX = 'privacy'
+const TABS = [
+  { id: 'requests', label: 'Requests', permissions: ['privacy.manage'] },
+  { id: 'retention', label: 'Retention', permissions: ['privacy.manage'] },
+  { id: 'holds', label: 'Legal holds', permissions: ['privacy.manage', 'legal_hold.manage'] },
+] as const
+
+/**
+ * SC-15 Privacy (FR-PRV-001/003, PLAN B5 §5, V1-A §5): tabs in the URL (?tab=requests|retention|holds). Requests and
+ * retention need privacy.manage; legal holds also open with legal_hold.manage.
+ */
 export function PrivacyRequestsPage() {
-  const { can, readOnly } = useSession()
+  const { can, supportReadOnly } = useSession()
+  const tabs = TABS.filter((entry) => entry.permissions.some((permission) => can(permission)))
+  const [tab, selectTab] = useTabParam(tabs)
+  const [recording, setRecording] = useState(false)
+  if (tabs.length === 0) return <NotAvailable />
+  return (
+    <>
+      <PageHeader
+        title="Privacy requests"
+        summary="Data-subject requests from the portal, the public form and staff, retention schedules and legal holds. Every decision is taken by a second person."
+        actions={tab === 'requests' && !supportReadOnly && <Button variant="primary" icon="add_circle" data-testid="primary-action" onClick={() => setRecording(true)}>Record a request</Button>}
+      />
+      <div>
+        <Tabs label="Privacy" idPrefix={ID_PREFIX} tabs={tabs} selected={tab} onSelect={selectTab} />
+        <TabPanel idPrefix={ID_PREFIX} tabId={tab}>
+          <div className="flex flex-col gap-space-md">
+            {tab === 'requests' && <RequestsTab />}
+            {tab === 'retention' && <RetentionTab />}
+            {tab === 'holds' && <LegalHoldsTab />}
+          </div>
+        </TabPanel>
+      </div>
+      {recording && <RecordRequestDialog onClose={() => setRecording(false)} />}
+    </>
+  )
+}
+
+/** The request list: KPIs, filters in the URL, the request table with its deadline indicator. */
+function RequestsTab() {
   const params = useSearchParams()
   const router = useRouter()
   const pathname = usePathname()
   const escalateDays = useEscalateDays()
-  const [recording, setRecording] = useState(false)
-  if (!can('privacy.manage')) return <NotAvailable />
   const now = Date.now()
   const update = (changes: Readonly<Record<string, string | null>>) => {
     const next = new URLSearchParams(params)
@@ -175,11 +215,6 @@ export function PrivacyRequestsPage() {
   const query: Query = { state: state === '' ? undefined : state, type: type === '' ? undefined : type, overdue: overdue ? 'true' : undefined }
   return (
     <>
-      <PageHeader
-        title="Privacy requests"
-        summary="Data-subject requests from the portal, the public form and staff. Verify the requester, submit the case with its retention basis; another DPO decides."
-        actions={!readOnly && <Button variant="primary" icon="add_circle" data-testid="primary-action" onClick={() => setRecording(true)}>Record a request</Button>}
-      />
       <PrivacyKpis now={now} escalateDays={escalateDays} />
       <FiltersBar label="Filter privacy requests" chips={chips} onClear={() => update(Object.fromEntries(FILTER_KEYS.map((key) => [key, null])))}>
         <Select label="State" value={state} options={[{ value: '', label: 'All states' }, ...STATES.map((value) => ({ value, label: STATE_LABELS[value] }))]} onChange={(event) => update({ state: event.target.value })} />
@@ -187,7 +222,6 @@ export function PrivacyRequestsPage() {
         <Checkbox label="Overdue only" checked={overdue} onChange={(event) => update({ overdue: event.target.checked ? 'true' : null })} />
       </FiltersBar>
       <RequestTable key={JSON.stringify(query)} query={query} now={now} escalateDays={escalateDays} />
-      {recording && <RecordRequestDialog onClose={() => setRecording(false)} />}
     </>
   )
 }

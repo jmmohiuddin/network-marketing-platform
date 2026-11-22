@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+
+<html lang="en"><head><title>Staff sign-in | PHOYEV portal design preview</title><meta name="robots" content="noindex,nofollow"><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_blank" name="shell-type"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&amp;family=Plus+Jakarta+Sans:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{colors:{"surface-container-lowest":"#ffffff","on-surface-variant":"#44474e","tertiary-fixed":"#dbe1ff","error-container":"#ffdad6","secondary":"#385da2","success-base":"#16A34A","surface-container-high":"#ebe7ec","secondary-container":"#90b3fe","on-secondary-fixed-variant":"#1c4589","secondary-fixed":"#d8e2ff","surface-container-highest":"#e5e1e7","focus-ring":"#3B82F6","on-background":"#1c1b1f","on-primary-container":"#7a90bc","surface-tint":"#495e87","on-tertiary":"#ffffff","surface-container":"#f1ecf2","sso-google-bg":"#F0F4FF","text-muted":"#64748B","surface":"#fdf8fd","on-secondary-container":"#1a4387","on-surface":"#1c1b1f","primary-container":"#0f284e","primary-fixed":"#d7e2ff","tertiary":"#00113b","border-subtle":"#E2E7F6","text-subtle":"#94A3B8","on-tertiary-fixed":"#00174b","inverse-primary":"#b1c7f6","on-error-container":"#93000a","on-error":"#ffffff","inverse-surface":"#313034","on-tertiary-fixed-variant":"#003ea8","focus-ring-glow":"rgba(59, 130, 246, 0.2)","inverse-on-surface":"#f4eff5","primary":"#001332","on-primary":"#ffffff","on-secondary":"#ffffff","surface-canvas":"#F8F9FE","on-tertiary-container":"#5f8aff","surface-bright":"#fdf8fd","primary-fixed-dim":"#b1c7f6","surface-card":"#FFFFFF","outline":"#74777f","error":"#ba1a1a","surface-variant":"#e5e1e7","secondary-fixed-dim":"#aec6ff","background":"#fdf8fd","on-primary-fixed-variant":"#31476e","tertiary-fixed-dim":"#b4c5ff","surface-container-low":"#f7f2f8","surface-dim":"#ddd9de","on-secondary-fixed":"#001a42","border-strong":"#CBD5E1","tertiary-container":"#002367","on-primary-fixed":"#001b3f","sso-google-border":"#D8E2FC","error-base":"#DC2626","outline-variant":"#c4c6cf"},borderRadius:{DEFAULT:"0.25rem",lg:"0.5rem",xl:"0.75rem",full:"9999px"},spacing:{"space-xl":"2rem",margin:"1.5rem","space-2xl":"2.5rem","margin-desktop":"3rem",gutter:"1.25rem","space-xs":"0.25rem","space-sm":"0.5rem","space-md":"1rem","space-lg":"1.5rem"},fontFamily:{"headline-xl-mobile":["Plus Jakarta Sans"],"body-lg":["Inter"],"headline-sm":["Plus Jakarta Sans"],"headline-xl":["Plus Jakarta Sans"],"label-md":["Inter"],"button-text":["Plus Jakarta Sans"],"body-md":["Inter"],"label-sm":["Inter"],"body-sm":["Inter"],"headline-lg":["Plus Jakarta Sans"],eyebrow:["Plus Jakarta Sans"]},fontSize:{"headline-xl-mobile":["26px",{lineHeight:"34px",letterSpacing:"-0.015em",fontWeight:"700"}],"body-lg":["15px",{lineHeight:"22px",fontWeight:"400"}],"headline-sm":["18px",{lineHeight:"24px",fontWeight:"600"}],"headline-xl":["32px",{lineHeight:"40px",letterSpacing:"-0.02em",fontWeight:"700"}],"label-md":["13px",{lineHeight:"18px",letterSpacing:"0.02em",fontWeight:"600"}],"button-text":["14px",{lineHeight:"20px",letterSpacing:"0.01em",fontWeight:"600"}],"body-md":["14px",{lineHeight:"20px",fontWeight:"400"}],"label-sm":["11px",{lineHeight:"16px",letterSpacing:"0.04em",fontWeight:"600"}],"body-sm":["12px",{lineHeight:"18px",fontWeight:"400"}],"headline-lg":["24px",{lineHeight:"32px",letterSpacing:"-0.01em",fontWeight:"600"}],eyebrow:["12px",{lineHeight:"16px",letterSpacing:"0.08em",fontWeight:"700"}]}}}}</script></head><body class="bg-surface-canvas font-body-md text-on-surface min-h-screen relative flex flex-col justify-between selection:bg-secondary-fixed selection:text-on-secondary-fixed"><div class="pointer-events-none fixed inset-0 z-0 overflow-hidden"><div class="absolute -top-40 left-1/2 -translate-x-1/2 w-[800px] h-[450px] bg-secondary-container/20 rounded-full blur-[120px]"></div><div class="absolute -bottom-40 left-1/2 -translate-x-1/2 w-[700px] h-[350px] bg-tertiary-fixed/30 rounded-full blur-[140px]"></div></div><header class="relative z-10 w-full bg-surface-container-lowest/80 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.03)]"><div class="h-16 w-full max-w-7xl mx-auto px-margin lg:px-margin-desktop flex items-center justify-between"><div class="flex items-center gap-space-md"><div class="flex items-center gap-space-sm bg-surface-container px-space-md py-1.5 rounded-full text-primary"><span class="material-symbols-outlined text-[18px]">verified_user</span><span class="font-eyebrow text-eyebrow tracking-widest text-primary uppercase">Phoyev</span><span class="hidden sm:inline-block w-1 h-1 rounded-full bg-outline-variant"></span><span class="hidden sm:inline-block font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Staff Gateway</span></div></div><div class="flex items-center gap-space-lg"><div class="hidden md:flex items-center gap-space-xs px-space-sm py-1 rounded-full bg-surface-container-low text-on-surface-variant"><span class="w-2 h-2 rounded-full bg-success-base animate-pulse"></span><span class="font-label-sm text-label-sm text-on-surface-variant">System Status: Operational</span></div><nav class="hidden sm:flex items-center gap-space-md" data-active-classes="bg-secondary-container text-on-secondary-container font-semibold rounded-lg"><a class="font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors" data-path="help-and-support" href="#">Help &amp; Support</a><a class="font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors" data-path="security-center" href="#">Security Center</a></nav><div class="flex items-center gap-space-xs text-text-muted"><span class="material-symbols-outlined text-[20px]">lock</span></div></div></div></header><main class="relative z-10 flex-1 flex flex-col justify-center items-center py-space-xl px-margin"><div class="flex flex-col w-full items-center justify-center my-auto">
+<div class="w-full max-w-[460px] mx-auto">
+<!-- Trust Indicator Pills -->
+<div class="flex items-center justify-between px-space-xs mb-space-md text-text-muted">
+<div class="flex items-center gap-1.5 bg-surface-container/60 backdrop-blur-md px-2.5 py-1 rounded-full text-on-surface-variant font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[14px] text-secondary">verified_user</span>
+<span>Phoyev SSO Gateway</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="inline-flex items-center gap-1 text-text-muted font-label-sm text-label-sm">
+<span class="w-1.5 h-1.5 rounded-full bg-success-base"></span>
+          SAML 2.0 &amp; MFA
+        </span>
+</div>
+</div>
+<!-- Main Card -->
+<div class="bg-surface-card rounded-xl shadow-[0_20px_45px_-12px_rgba(15,40,78,0.08),0_1px_3px_0_rgba(15,40,78,0.04)] p-6 sm:p-space-2xl relative overflow-hidden">
+<!-- Top Accent Line -->
+<div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-secondary via-primary-container to-secondary-container"></div>
+<!-- Header Section -->
+<div class="mb-space-lg">
+<div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-secondary-fixed/50 text-on-secondary-fixed mb-space-md">
+<span class="material-symbols-outlined text-[15px] text-secondary" style="font-variation-settings: 'FILL' 1;">lock</span>
+<span class="font-eyebrow text-eyebrow tracking-wider uppercase">Staff Sign-In</span>
+</div>
+<h1 class="font-headline-lg text-headline-lg text-primary tracking-tight mb-space-xs">
+          Sign in to your company
+        </h1>
+<p class="font-body-md text-body-md text-text-muted leading-relaxed">
+          Enter your company's sign-in name, your email address and your password.
+        </p>
+</div>
+<!-- Form -->
+<form class="space-y-space-md" id="auth-form" onsubmit="event.preventDefault();">
+<!-- Field 1: Company -->
+<div>
+<div class="flex items-center justify-between mb-space-xs">
+<label class="font-label-md text-label-md text-primary tracking-wide uppercase" for="company-input">
+              Company
+            </label>
+<span class="font-body-sm text-body-sm text-text-subtle">e.g. acme</span>
+</div>
+<div class="relative flex items-center">
+<span class="material-symbols-outlined absolute left-3.5 text-text-subtle pointer-events-none text-[20px] transition-colors group-focus-within:text-secondary">domain</span>
+<input class="w-full h-11 pl-11 pr-4 bg-surface-container-low rounded-lg font-body-md text-body-md text-on-surface placeholder:text-text-subtle focus:bg-surface-card focus:outline-none focus:ring-2 focus:ring-focus-ring/80 transition-all duration-150" id="company-input" name="company" placeholder="acme" required="" type="text"/>
+</div>
+<p class="mt-1.5 font-body-sm text-body-sm text-text-muted flex items-center gap-1">
+<span>Your company's sign-in name, for example acme.</span>
+</p>
+</div>
+<!-- Field 2: Email -->
+<div>
+<label class="block font-label-md text-label-md text-primary tracking-wide uppercase mb-space-xs" for="email-input">
+            Email Address
+          </label>
+<div class="relative flex items-center">
+<span class="material-symbols-outlined absolute left-3.5 text-text-subtle pointer-events-none text-[20px]">alternate_email</span>
+<input class="w-full h-11 pl-11 pr-4 bg-surface-container-low rounded-lg font-body-md text-body-md text-on-surface placeholder:text-text-subtle focus:bg-surface-card focus:outline-none focus:ring-2 focus:ring-focus-ring/80 transition-all duration-150" id="email-input" name="email" placeholder="name@company.com" required="" type="email"/>
+</div>
+</div>
+<!-- Field 3: Password -->
+<div>
+<div class="flex items-center justify-between mb-space-xs">
+<label class="font-label-md text-label-md text-primary tracking-wide uppercase" for="password-input">
+              Password
+            </label>
+<a class="font-label-md text-label-md text-secondary hover:text-primary transition-colors focus:outline-none focus:underline" href="#">
+              Forgot password?
+            </a>
+</div>
+<div class="relative flex items-center">
+<span class="material-symbols-outlined absolute left-3.5 text-text-subtle pointer-events-none text-[20px]">key</span>
+<input class="w-full h-11 pl-11 pr-11 bg-surface-container-low rounded-lg font-body-md text-body-md text-on-surface placeholder:text-text-subtle focus:bg-surface-card focus:outline-none focus:ring-2 focus:ring-focus-ring/80 transition-all duration-150" id="password-input" name="password" placeholder="••••••••••••" required="" type="password"/>
+<button aria-label="Toggle password visibility" class="absolute right-3.5 text-text-muted hover:text-on-surface flex items-center justify-center focus:outline-none p-1 transition-colors" id="password-toggle-btn" type="button">
+<span class="material-symbols-outlined text-[20px]" id="password-toggle-icon">visibility_off</span>
+</button>
+</div>
+</div>
+<!-- Primary CTA -->
+<button class="w-full h-11 mt-space-sm bg-primary-container text-on-primary font-button-text text-button-text rounded-lg flex items-center justify-center gap-2 hover:bg-tertiary-container active:scale-[0.99] transition-all duration-150 shadow-sm shadow-primary-container/20 focus:outline-none focus:ring-2 focus:ring-focus-ring focus:ring-offset-2" type="submit">
+<span>Sign in</span>
+<span class="material-symbols-outlined text-[18px]">login</span>
+</button>
+</form>
+<!-- Divider -->
+<div class="relative my-space-lg flex items-center justify-center">
+<div class="absolute inset-0 flex items-center">
+<div class="w-full h-[1px] bg-surface-container-highest"></div>
+</div>
+<div class="relative bg-surface-card px-3">
+<span class="font-label-sm text-label-sm tracking-wider uppercase text-text-subtle font-semibold">OR</span>
+</div>
+</div>
+<!-- Secondary SSO Auth -->
+<div class="space-y-space-md">
+<button class="w-full h-11 bg-sso-google-bg hover:bg-secondary-fixed/50 active:bg-secondary-fixed text-primary font-button-text text-button-text rounded-lg flex items-center justify-center gap-3 transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-secondary-container" type="button">
+<!-- Official Google "G" Icon SVG -->
+<svg class="w-4 h-4 flex-shrink-0" viewbox="0 0 24 24">
+<path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"></path>
+<path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"></path>
+<path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05"></path>
+<path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335"></path>
+</svg>
+<span>Continue with Google</span>
+</button>
+<!-- Tertiary Auth: Firebase Accordion -->
+<div class="pt-space-xs">
+<button aria-expanded="false" class="w-full flex items-center justify-between text-secondary hover:text-primary transition-colors py-1 focus:outline-none group" id="firebase-toggle-btn" type="button">
+<span class="flex items-center gap-1.5 font-label-md text-label-md">
+<span class="material-symbols-outlined text-[18px] transition-transform duration-200" id="firebase-chevron">keyboard_arrow_right</span>
+<span>Use a Firebase email account</span>
+</span>
+<span class="font-label-sm text-label-sm bg-surface-container px-2 py-0.5 rounded text-on-surface-variant opacity-80 group-hover:opacity-100">
+              Dev &amp; Staging
+            </span>
+</button>
+<!-- Expandable Section -->
+<div class="hidden mt-space-sm pl-6 pr-2 py-3 bg-surface-container-low rounded-lg space-y-space-sm transition-all" id="firebase-panel">
+<p class="font-body-sm text-body-sm text-text-muted">
+              Signing in via legacy or custom domain Firebase Auth credentials.
+            </p>
+<div class="flex gap-2">
+<input class="w-full h-9 px-3 bg-surface-card rounded text-body-sm font-body-sm text-on-surface placeholder:text-text-subtle focus:outline-none focus:ring-1 focus:ring-secondary" placeholder="firebase-user@phoyev.internal" type="email"/>
+<button class="px-3 h-9 bg-secondary text-on-secondary rounded text-button-text font-button-text hover:bg-primary transition-colors flex items-center justify-center flex-shrink-0" type="button">
+                Proceed
+              </button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Security Footnote -->
+<div class="mt-space-lg text-center px-4">
+<div class="flex items-center justify-center gap-1.5 text-text-muted font-body-sm text-body-sm">
+<span class="material-symbols-outlined text-[16px] text-success-base">lock</span>
+<span>Protected by enterprise end-to-end encryption &amp; single sign-on security</span>
+</div>
+<div class="mt-space-xs flex justify-center items-center gap-4 text-text-subtle font-label-sm text-label-sm">
+<span>SSO Ready</span>
+<span>•</span>
+<span>SAML 2.0</span>
+<span>•</span>
+<span>SCIM Provisioning</span>
+</div>
+</div>
+</div>
+</div>
+<script>
+  // Password Visibility Toggle
+  const pwdInput = document.getElementById('password-input');
+  const pwdBtn = document.getElementById('password-toggle-btn');
+  const pwdIcon = document.getElementById('password-toggle-icon');
+
+  if (pwdBtn && pwdInput && pwdIcon) {
+    pwdBtn.addEventListener('click', () => {
+      const isPassword = pwdInput.getAttribute('type') === 'password';
+      pwdInput.setAttribute('type', isPassword ? 'text' : 'password');
+      pwdIcon.textContent = isPassword ? 'visibility' : 'visibility_off';
+    });
+  }
+
+  // Firebase Accordion Toggle
+  const fbBtn = document.getElementById('firebase-toggle-btn');
+  const fbPanel = document.getElementById('firebase-panel');
+  const fbChevron = document.getElementById('firebase-chevron');
+
+  if (fbBtn && fbPanel && fbChevron) {
+    fbBtn.addEventListener('click', () => {
+      const isExpanded = fbBtn.getAttribute('aria-expanded') === 'true';
+      fbBtn.setAttribute('aria-expanded', !isExpanded);
+      fbPanel.classList.toggle('hidden');
+      fbChevron.style.transform = isExpanded ? 'rotate(0deg)' : 'rotate(90deg)';
+    });
+  }
+</script></main><footer class="relative z-10 w-full bg-surface-container-lowest/70 backdrop-blur-md"><div class="max-w-7xl mx-auto px-margin lg:px-margin-desktop py-space-md flex flex-col sm:flex-row items-center justify-between gap-space-md"><div class="flex items-center gap-space-md text-text-muted"><div class="flex items-center gap-space-xs font-label-sm text-label-sm"><span class="material-symbols-outlined text-[16px] text-success-base">shield</span><span>SOC 2 Type II Certified</span></div><span class="text-border-strong">•</span><div class="flex items-center gap-space-xs font-label-sm text-label-sm"><span class="material-symbols-outlined text-[16px] text-secondary">verified</span><span>ISO/IEC 27001</span></div></div><div class="flex items-center gap-space-lg"><nav class="flex items-center gap-space-md" data-active-classes="text-primary font-bold"><a class="font-label-sm text-label-sm text-on-surface-variant hover:text-on-surface transition-colors" data-path="privacy-policy" href="#">Privacy Policy</a><a class="font-label-sm text-label-sm text-on-surface-variant hover:text-on-surface transition-colors" data-path="terms-of-service" href="#">Terms of Service</a><a class="font-label-sm text-label-sm text-on-surface-variant hover:text-on-surface transition-colors" data-path="compliance-portal" href="#">Compliance Portal</a></nav><span class="font-body-sm text-body-sm text-text-subtle">© 2025 Phoyev Inc.</span></div></div></footer><div id="design-preview-pill" style="position:fixed;left:12px;bottom:12px;z-index:2147483647;display:flex;gap:8px;align-items:center;padding:8px 12px;border-radius:999px;background:#001332;color:#fff;font:600 12px/1.2 Inter,system-ui,sans-serif;box-shadow:0 4px 16px rgba(0,0,0,.25)"><a href="/portal-designs/" style="color:#fff;text-decoration:none">&larr; All designs</a><span style="opacity:.6">|</span><span style="font-weight:500">Design preview &middot; sample data, not the live app</span></div></body></html>

@@ -29,8 +29,10 @@ export function useMe(): MeState {
 export interface Session {
   readonly me: Me
   readonly can: (permission: string) => boolean
-  /** A vendor user inside a support session: every write control is hidden (the API refuses writes too). */
+  /** A vendor user inside a support session, or a read-only tenant (D-V1A-07): every write control is hidden (the API refuses writes too). */
   readonly readOnly: boolean
+  /** A vendor support session only: hides the writes a read-only tenant may still make (C-V1A-18 data-subject requests, final export; the API allowlist). */
+  readonly supportReadOnly: boolean
 }
 
 export const SessionContext = createContext<Me | null>(null)
@@ -39,5 +41,6 @@ export const SessionContext = createContext<Me | null>(null)
 export function useSession(): Session {
   const me = use(SessionContext)
   if (me === null) throw new Error('useSession is only available inside AppShell')
-  return { me, can: (permission) => me.permissions.includes(permission), readOnly: supportFrameOf(me) !== null }
+  const supportReadOnly = supportFrameOf(me) !== null
+  return { me, can: (permission) => me.permissions.includes(permission), readOnly: supportReadOnly || me.tenant?.read_only === true, supportReadOnly }
 }

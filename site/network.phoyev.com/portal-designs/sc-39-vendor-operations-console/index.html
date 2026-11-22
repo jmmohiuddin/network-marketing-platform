@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+
+<html lang="en"><head><title>SC-39 Vendor operations console | PHOYEV portal design preview</title><meta name="robots" content="noindex,nofollow"><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_dashboard" name="shell-type"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&amp;family=Plus+Jakarta+Sans:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={"darkMode":"class","theme":{"extend":{"colors":{"inverse-on-surface":"#f4eff5","sso-google-border":"#D8E2FC","text-muted":"#64748B","secondary-fixed-dim":"#aec6ff","error":"#ba1a1a","on-tertiary-fixed":"#00174b","primary":"#001332","tertiary-fixed":"#dbe1ff","secondary-container":"#90b3fe","surface-canvas":"#F8F9FE","outline":"#74777f","on-secondary-container":"#1a4387","on-tertiary":"#ffffff","surface-container-lowest":"#ffffff","on-error":"#ffffff","on-surface-variant":"#44474e","error-base":"#DC2626","focus-ring-glow":"rgba(59, 130, 246, 0.2)","surface-container-highest":"#e5e1e7","on-primary-fixed-variant":"#31476e","on-secondary-fixed-variant":"#1c4589","surface-variant":"#e5e1e7","surface-container":"#f1ecf2","background":"#fdf8fd","focus-ring":"#3B82F6","primary-fixed":"#d7e2ff","border-strong":"#CBD5E1","tertiary-fixed-dim":"#b4c5ff","on-surface":"#1c1b1f","inverse-surface":"#313034","on-background":"#1c1b1f","sso-google-bg":"#F0F4FF","surface-dim":"#ddd9de","primary-fixed-dim":"#b1c7f6","on-tertiary-container":"#5f8aff","surface-bright":"#fdf8fd","primary-container":"#0f284e","surface":"#fdf8fd","tertiary":"#00113b","surface-container-low":"#f7f2f8","text-subtle":"#94A3B8","error-container":"#ffdad6","outline-variant":"#c4c6cf","inverse-primary":"#b1c7f6","on-error-container":"#93000a","border-subtle":"#E2E7F6","on-primary-fixed":"#001b3f","success-base":"#16A34A","on-primary-container":"#7a90bc","secondary-fixed":"#d8e2ff","surface-tint":"#495e87","on-primary":"#ffffff","tertiary-container":"#002367","surface-container-high":"#ebe7ec","on-secondary":"#ffffff","on-tertiary-fixed-variant":"#003ea8","on-secondary-fixed":"#001a42","surface-card":"#FFFFFF","secondary":"#385da2"},"borderRadius":{"DEFAULT":"0.25rem","lg":"0.5rem","xl":"0.75rem","full":"9999px"},"spacing":{"space-sm":"0.5rem","space-xl":"2rem","margin":"1.5rem","space-md":"1rem","space-lg":"1.5rem","margin-desktop":"3rem","space-2xl":"2.5rem","gutter":"1.25rem","space-xs":"0.25rem"},"fontFamily":{"headline-xl":["Plus Jakarta Sans"],"headline-xl-mobile":["Plus Jakarta Sans"],"body-md":["Inter"],"headline-lg":["Plus Jakarta Sans"],"body-lg":["Inter"],"label-md":["Inter"],"label-sm":["Inter"],"body-sm":["Inter"],"eyebrow":["Plus Jakarta Sans"],"headline-sm":["Plus Jakarta Sans"],"button-text":["Plus Jakarta Sans"]},"fontSize":{"headline-xl":["32px",{"lineHeight":"40px","letterSpacing":"-0.02em","fontWeight":"700"}],"headline-xl-mobile":["26px",{"lineHeight":"34px","letterSpacing":"-0.015em","fontWeight":"700"}],"body-md":["14px",{"lineHeight":"20px","fontWeight":"400"}],"headline-lg":["24px",{"lineHeight":"32px","letterSpacing":"-0.01em","fontWeight":"600"}],"body-lg":["15px",{"lineHeight":"22px","fontWeight":"400"}],"label-md":["13px",{"lineHeight":"18px","letterSpacing":"0.02em","fontWeight":"600"}],"label-sm":["11px",{"lineHeight":"16px","letterSpacing":"0.04em","fontWeight":"600"}],"body-sm":["12px",{"lineHeight":"18px","fontWeight":"400"}],"eyebrow":["12px",{"lineHeight":"16px","letterSpacing":"0.08em","fontWeight":"700"}],"headline-sm":["18px",{"lineHeight":"24px","fontWeight":"600"}],"button-text":["14px",{"lineHeight":"20px","letterSpacing":"0.01em","fontWeight":"600"}]}}}}</script></head><body class="bg-surface-canvas font-body-md text-body-md text-on-surface antialiased"><aside class="fixed left-0 top-0 h-full w-72 bg-surface-card z-50 flex flex-col justify-between shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="flex flex-col"><div class="h-16 px-space-lg flex items-center gap-space-sm bg-surface-card"><div class="w-8 h-8 rounded-lg bg-primary-container flex items-center justify-center text-on-primary"><span class="material-symbols-outlined text-[20px]">shield_lock</span></div><div class="flex flex-col"><span class="font-headline-sm text-headline-sm text-primary tracking-tight">PHOYEV</span><span class="font-eyebrow text-eyebrow text-secondary uppercase tracking-widest">Vendor Ops</span></div></div><div class="px-space-md py-space-sm"><div class="p-space-sm bg-surface-container-low rounded-lg flex flex-col gap-space-xs"><div class="flex items-center justify-between"><span class="font-label-sm text-label-sm uppercase tracking-wider text-text-muted">Posture</span><span class="inline-flex items-center gap-1 font-label-sm text-label-sm text-on-secondary-container bg-secondary-container/40 px-2 py-0.5 rounded-full"><span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>Zero Data Access</span></div><p class="font-body-sm text-body-sm text-text-muted">SOC 2 Type II strict T1/T4 boundary enforcement active.</p></div></div><nav class="flex flex-col gap-1 px-space-md py-space-sm mt-space-xs" data-active-classes="bg-primary-container text-on-primary font-button-text text-button-text rounded-lg"><a aria-current="page" class="flex items-center gap-space-sm px-space-md py-space-sm transition-all bg-primary-container text-on-primary font-button-text text-button-text rounded-lg" data-path="vendor-dashboard" href="#"><span class="material-symbols-outlined text-[20px]">space_dashboard</span><span class="font-label-md text-label-md">Overview</span></a><a class="flex items-center gap-space-sm px-space-md py-space-sm rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="tenant-provisioning" href="#"><span class="material-symbols-outlined text-[20px]">corporate_fare</span><span class="font-label-md text-label-md">Tenant Provisioning</span></a><a class="flex items-center gap-space-sm px-space-md py-space-sm rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="support-session-approvals" href="#"><span class="material-symbols-outlined text-[20px]">vpn_key</span><span class="font-label-md text-label-md">Session Approvals</span></a><a class="flex items-center gap-space-sm px-space-md py-space-sm rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="market-packs" href="#"><span class="material-symbols-outlined text-[20px]">inventory_2</span><span class="font-label-md text-label-md">Market Packs</span></a><a class="flex items-center gap-space-sm px-space-md py-space-sm rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="infrastructure-audit" href="#"><span class="material-symbols-outlined text-[20px]">verified_user</span><span class="font-label-md text-label-md">Audit Log</span></a></nav></div><div class="p-space-md flex flex-col gap-space-sm"><div class="p-space-sm bg-surface-canvas rounded-lg flex items-center justify-between"><div class="flex items-center gap-2"><span class="material-symbols-outlined text-text-muted text-[18px]">timer</span><span class="font-label-sm text-label-sm text-text-muted">SESSION TTL</span></div><span class="font-label-md text-label-md text-primary font-semibold">44:12</span></div><div class="flex items-center justify-between pt-space-xs"><div class="flex items-center gap-2"><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div><div class="flex flex-col"><span class="font-label-md text-label-md text-on-surface font-semibold">Operator #81</span><span class="font-body-sm text-body-sm text-text-muted">Tier 4 Ops</span></div></div><a class="text-on-surface-variant hover:text-error transition-colors p-1" data-path="operator-auth" href="#" title="Revoke &amp; Exit"><span class="material-symbols-outlined text-[20px]">logout</span></a></div></div></aside><div class="pl-72"><header class="fixed top-0 left-72 right-0 h-16 bg-surface-card/90 backdrop-blur-xl z-40 shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="w-full h-full px-space-lg flex items-center justify-between"><div class="flex items-center gap-space-md"><span class="font-eyebrow text-eyebrow text-on-primary-container bg-primary-fixed/60 px-2.5 py-1 rounded-full">INFRA CONSOLE</span><div class="hidden md:flex items-center gap-space-sm"><span class="inline-flex items-center gap-1.5 font-label-sm text-label-sm text-on-surface"><span class="w-2 h-2 rounded-full bg-success-base"></span>SOC 2 Enforced</span><span class="text-border-strong font-body-sm text-body-sm">•</span><span class="font-label-sm text-label-sm text-text-muted">Zone: US-East-1 Isolation Shell</span></div></div><div class="flex items-center gap-space-md"><div class="hidden sm:flex items-center gap-space-xs px-3 py-1.5 bg-surface-canvas rounded-lg"><span class="material-symbols-outlined text-text-muted text-[18px]">alarm</span><span class="font-label-sm text-label-sm text-text-muted">Session expires in:</span><span class="font-label-md text-label-md text-primary">44m 12s</span></div><button class="flex items-center justify-center w-9 h-9 rounded-lg hover:bg-surface-container text-on-surface-variant transition-colors"><span class="material-symbols-outlined text-[20px]">notifications</span></button><button class="flex items-center justify-center w-9 h-9 rounded-lg hover:bg-surface-container text-on-surface-variant transition-colors"><span class="material-symbols-outlined text-[20px]">help</span></button><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="w-full pt-16 bg-surface-canvas min-h-screen"><div class="flex flex-col w-full">
+<!-- Security Posture Alert Banner -->
+<div class="w-full bg-primary text-on-primary px-space-lg py-2.5 shadow-sm flex flex-wrap items-center justify-between gap-space-sm relative overflow-hidden">
+<div class="flex items-center gap-space-sm z-10">
+<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-primary-container text-on-primary-fixed font-label-sm text-label-sm tracking-wide">
+<span class="w-1.5 h-1.5 rounded-full bg-success-base"></span>
+        ZERO STANDING ACCESS
+      </span>
+<span class="font-label-md text-label-md tracking-tight">Phoyev Global Vendor Console · Multi-Tenant Control Plane · SOC-2 Type II Attested</span>
+</div>
+<div class="flex items-center gap-space-md text-text-subtle font-body-sm text-body-sm z-10">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[16px] text-on-secondary-container">shield</span>FR-IAM-005 Enforced</span>
+<span class="hidden lg:inline text-on-primary-container/40">|</span>
+<span class="hidden lg:flex items-center gap-1"><span class="material-symbols-outlined text-[16px] text-on-primary-container">lock_clock</span>Tenant Dual-Key Approval Required</span>
+</div>
+<div class="absolute -right-10 -bottom-10 w-48 h-48 rounded-full bg-secondary-container/10 pointer-events-none blur-2xl"></div>
+</div>
+<div class="p-space-lg flex flex-col gap-space-lg max-w-[1720px] mx-auto w-full">
+<!-- Top KPI Grid: Fleet Health & Security Controls -->
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-space-md">
+<!-- Card 1: Active Tenants -->
+<div class="bg-surface-card rounded-xl p-space-md shadow-sm relative overflow-hidden flex flex-col justify-between">
+<div class="flex items-start justify-between">
+<div class="flex flex-col">
+<span class="font-eyebrow text-eyebrow text-text-muted uppercase">Fleet Scope (FR-TEN-001)</span>
+<div class="flex items-baseline gap-space-xs mt-1">
+<span class="font-headline-xl text-headline-xl text-primary font-bold">18</span>
+<span class="font-label-md text-label-md text-text-muted">Live Tenants</span>
+</div>
+</div>
+<div class="w-10 h-10 rounded-lg bg-surface-container-low flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[22px]">domain</span>
+</div>
+</div>
+<div class="mt-space-md pt-space-xs flex items-center justify-between text-text-muted">
+<span class="font-body-sm text-body-sm">Acme, VeloHealth, Lumina +15</span>
+<span class="inline-flex items-center gap-1 font-label-sm text-label-sm text-success-base">
+<span class="material-symbols-outlined text-[14px]">check_circle</span>All Healthy
+          </span>
+</div>
+</div>
+<!-- Card 2: Healthy Sync Pipelines -->
+<div class="bg-surface-card rounded-xl p-space-md shadow-sm relative overflow-hidden flex flex-col justify-between">
+<div class="flex items-start justify-between">
+<div class="flex flex-col">
+<span class="font-eyebrow text-eyebrow text-text-muted uppercase">Sync Ingestion Bus</span>
+<div class="flex items-baseline gap-space-xs mt-1">
+<span class="font-headline-xl text-headline-xl text-primary font-bold">100%</span>
+<span class="font-label-md text-label-md text-text-muted">Operational</span>
+</div>
+</div>
+<div class="w-10 h-10 rounded-lg bg-surface-container-low flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined text-[22px]">swap_horiz</span>
+</div>
+</div>
+<div class="mt-space-md pt-space-xs flex items-center justify-between">
+<div class="flex items-center gap-1.5">
+<svg class="w-16 h-3 text-secondary" fill="none" viewbox="0 0 64 12">
+<path d="M0 6 Q 16 0, 32 6 T 64 6" fill="none" stroke="currentColor" stroke-width="2"></path>
+</svg>
+<span class="font-body-sm text-body-sm text-text-muted">Median P95</span>
+</div>
+<span class="font-label-md text-label-md text-primary font-semibold">24ms Latency</span>
+</div>
+</div>
+<!-- Card 3: Active Support Sessions -->
+<div class="bg-surface-card rounded-xl p-space-md shadow-sm relative overflow-hidden flex flex-col justify-between">
+<div class="flex items-start justify-between">
+<div class="flex flex-col">
+<span class="font-eyebrow text-eyebrow text-text-muted uppercase">Active Audited Access</span>
+<div class="flex items-baseline gap-space-xs mt-1">
+<span class="font-headline-xl text-headline-xl text-primary font-bold">1</span>
+<span class="font-label-md text-label-md text-secondary font-semibold">Live Session</span>
+</div>
+</div>
+<div class="w-10 h-10 rounded-lg bg-secondary-container/30 flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined text-[22px]" style="font-variation-settings: 'FILL' 1;">timer</span>
+</div>
+</div>
+<div class="mt-space-md pt-space-xs flex items-center justify-between">
+<span class="font-body-sm text-body-sm text-text-muted truncate max-w-[140px]">Acme Nutrition Inc.</span>
+<span class="inline-flex items-center gap-1 font-label-sm text-label-sm text-on-secondary-container bg-secondary-container/40 px-2 py-0.5 rounded-full">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary animate-pulse"></span>01h 42m left
+          </span>
+</div>
+</div>
+<!-- Card 4: Pending Session Approvals -->
+<div class="bg-surface-card rounded-xl p-space-md shadow-sm relative overflow-hidden flex flex-col justify-between">
+<div class="flex items-start justify-between">
+<div class="flex flex-col">
+<span class="font-eyebrow text-eyebrow text-text-muted uppercase">Approval Queue (FR-OPS-001)</span>
+<div class="flex items-baseline gap-space-xs mt-1">
+<span class="font-headline-xl text-headline-xl text-primary font-bold">2</span>
+<span class="font-label-md text-label-md text-text-muted">Awaiting Customer</span>
+</div>
+</div>
+<div class="w-10 h-10 rounded-lg bg-surface-container-low flex items-center justify-center text-text-muted">
+<span class="material-symbols-outlined text-[22px]">hourglass_top</span>
+</div>
+</div>
+<div class="mt-space-md pt-space-xs flex items-center justify-between">
+<span class="font-body-sm text-body-sm text-text-muted">Dual-Key Signature</span>
+<span class="font-label-sm text-label-sm text-primary font-semibold">T4 Sign-off Req</span>
+</div>
+</div>
+</div>
+<!-- Active Support Session Lockout Header (FR-IAM-005 Compliance Banner) -->
+<div class="w-full bg-surface-card rounded-xl p-space-md shadow-sm flex flex-col lg:flex-row items-start lg:items-center justify-between gap-space-md relative overflow-hidden">
+<div class="flex items-start gap-space-md z-10">
+<div class="w-10 h-10 rounded-lg bg-primary-container text-on-primary flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[22px]">videocam</span>
+</div>
+<div class="flex flex-col">
+<div class="flex items-center gap-2">
+<span class="font-headline-sm text-headline-sm text-primary">Live Read-Only Support Session Active</span>
+<span class="px-2 py-0.5 rounded-full bg-error-container text-on-error-container font-label-sm text-label-sm font-semibold">RECORDING ACTIVE</span>
+</div>
+<p class="font-body-sm text-body-sm text-text-muted mt-0.5">
+            Operator <span class="text-on-surface font-semibold">#81 (Ops)</span> joined <span class="text-on-surface font-semibold">Acme Nutrition Inc. (TEN-0814)</span>. Approved by Sarah Jenkins (Finance Admin). Immutable session telemetry logging to tamper-proof S3 Vault.
+          </p>
+</div>
+</div>
+<div class="flex items-center gap-space-sm shrink-0 w-full lg:w-auto justify-end z-10">
+<button class="px-4 py-2 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface font-button-text text-button-text transition-colors flex items-center gap-1.5" onclick="document.getElementById('sessionBanner').classList.toggle('hidden')">
+<span class="material-symbols-outlined text-[18px]">visibility</span>
+          Inspect Telemetry
+        </button>
+<button class="px-4 py-2 rounded-lg bg-error-base hover:bg-error text-on-error font-button-text text-button-text shadow-sm transition-all flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[18px]">block</span>
+          Revoke Session
+        </button>
+</div>
+</div>
+<!-- Dynamic Session Inspector Banner (Collapsible Drawer / Preview) -->
+<div class="hidden bg-primary text-on-primary rounded-xl p-space-md shadow-lg transition-all" id="sessionBanner">
+<div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-space-md pb-space-sm">
+<div class="flex items-center gap-3">
+<span class="w-3 h-3 rounded-full bg-error-base animate-ping"></span>
+<span class="font-label-md text-label-md uppercase tracking-wider text-secondary-fixed">LIVE SESSION RECORDING FRAME: SESSION-814-TX9</span>
+</div>
+<div class="flex items-center gap-space-sm font-body-sm text-body-sm text-text-subtle">
+<span>Started: Today 14:02:11 UTC</span>
+<span>•</span>
+<span>Hash: 8b19e2...00fa</span>
+</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-space-sm pt-space-sm text-body-sm text-body-sm">
+<div class="bg-primary-container p-space-sm rounded-lg flex flex-col gap-1">
+<span class="font-eyebrow text-eyebrow text-on-primary-container uppercase">Access Scope</span>
+<span class="text-on-primary font-semibold">Tier 4 Metadata Read-Only</span>
+<span class="text-text-subtle font-body-sm text-body-sm">Zero access to customer PII or raw payout tokens.</span>
+</div>
+<div class="bg-primary-container p-space-sm rounded-lg flex flex-col gap-1">
+<span class="font-eyebrow text-eyebrow text-on-primary-container uppercase">Tenant Dual-Key Signer</span>
+<span class="text-on-primary font-semibold">Sarah Jenkins (Admin #41)</span>
+<span class="text-text-subtle font-body-sm text-body-sm">Authorized for 120 minutes via WebAuthn token.</span>
+</div>
+<div class="bg-primary-container p-space-sm rounded-lg flex flex-col gap-1">
+<span class="font-eyebrow text-eyebrow text-on-primary-container uppercase">Remaining Grant TTL</span>
+<span class="text-secondary-fixed font-semibold font-headline-sm text-headline-sm">01:42:04</span>
+<span class="text-text-subtle font-body-sm text-body-sm">Automated cryptographic kill switch armed.</span>
+</div>
+</div>
+</div>
+<!-- Main Command & Filter Bar -->
+<div class="bg-surface-card rounded-xl p-space-md shadow-sm flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-space-md">
+<!-- Search & Filters -->
+<div class="flex flex-wrap items-center gap-space-sm flex-1">
+<div class="relative min-w-[260px] flex-1 max-w-md">
+<span class="material-symbols-outlined absolute left-3 top-2.5 text-text-muted text-[20px]">search</span>
+<input class="w-full h-11 pl-10 pr-4 bg-surface-canvas rounded-lg text-on-surface font-body-md text-body-md placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-focus-ring transition-all" placeholder="Search tenant name, ID, or deployment hash..." type="text"/>
+</div>
+<!-- Region Selector -->
+<div class="relative">
+<select class="h-11 px-3.5 bg-surface-canvas rounded-lg text-on-surface font-body-md text-body-md appearance-none pr-8 focus:outline-none focus:ring-2 focus:ring-focus-ring cursor-pointer transition-all">
+<option>All Regions (US, EU, APAC, CA)</option>
+<option>US-East (Virginia)</option>
+<option>US-West (Oregon)</option>
+<option>EU-Frankfurt (eu-central-1)</option>
+<option>CA-Central (Montreal)</option>
+</select>
+<span class="material-symbols-outlined absolute right-2.5 top-3 text-text-muted text-[18px] pointer-events-none">expand_more</span>
+</div>
+<!-- Status Filter -->
+<div class="relative">
+<select class="h-11 px-3.5 bg-surface-canvas rounded-lg text-on-surface font-body-md text-body-md appearance-none pr-8 focus:outline-none focus:ring-2 focus:ring-focus-ring cursor-pointer transition-all">
+<option>All Statuses</option>
+<option>Live Tier 1</option>
+<option>Live Tier 2</option>
+<option>Onboarding / Staging</option>
+<option>Maintenance Window</option>
+</select>
+<span class="material-symbols-outlined absolute right-2.5 top-3 text-text-muted text-[18px] pointer-events-none">expand_more</span>
+</div>
+</div>
+<!-- Main Action Buttons -->
+<div class="flex items-center gap-space-sm shrink-0">
+<button class="h-11 px-4 rounded-lg bg-surface-container-high hover:bg-surface-variant text-on-surface font-button-text text-button-text flex items-center gap-1.5 transition-colors" onclick="document.getElementById('provisionModal').classList.remove('hidden')">
+<span class="material-symbols-outlined text-[18px]">add_box</span>
+          Provision Tenant
+        </button>
+<button class="h-11 px-5 rounded-lg bg-primary-container hover:bg-primary text-on-primary font-button-text text-button-text shadow-sm hover:shadow transition-all flex items-center gap-2" onclick="document.getElementById('sessionModal').classList.remove('hidden')">
+<span class="material-symbols-outlined text-[18px]">vpn_key</span>
+          Request Support Session
+        </button>
+</div>
+</div>
+<!-- Fleet Tenant Operations Layout (Grid: Table + Side Audit Feed) -->
+<div class="grid grid-cols-1 xl:grid-cols-12 gap-space-lg">
+<!-- Tenant Table (9 cols on xl) -->
+<div class="xl:col-span-8 bg-surface-card rounded-xl shadow-sm overflow-hidden flex flex-col">
+<div class="px-space-md py-space-sm bg-surface-card flex items-center justify-between">
+<div class="flex items-center gap-space-sm">
+<span class="font-headline-sm text-headline-sm text-primary">Fleet Tenants</span>
+<span class="px-2 py-0.5 rounded-full bg-surface-container text-text-muted font-label-sm text-label-sm">4 showing of 18</span>
+</div>
+<button class="text-text-muted hover:text-primary p-1 rounded transition-colors" title="Refresh Table">
+<span class="material-symbols-outlined text-[20px]">refresh</span>
+</button>
+</div>
+<div class="overflow-x-auto w-full">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-canvas font-label-sm text-label-sm text-text-muted uppercase tracking-wider">
+<th class="py-3 px-space-md">Tenant Organization</th>
+<th class="py-3 px-space-md">Region &amp; Tier</th>
+<th class="py-3 px-space-md">Job Queue / Health</th>
+<th class="py-3 px-space-md">Core Version</th>
+<th class="py-3 px-space-md">Session Status</th>
+<th class="py-3 px-space-md text-right">Actions</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-surface-container font-body-md text-body-md text-on-surface">
+<!-- Tenant 1: Acme Nutrition Inc. -->
+<tr class="hover:bg-surface-container-low transition-colors group">
+<td class="py-4 px-space-md">
+<div class="flex items-center gap-space-sm">
+<div class="w-9 h-9 rounded-lg bg-primary-container text-on-primary font-headline-sm text-headline-sm flex items-center justify-center font-bold">
+                      A
+                    </div>
+<div class="flex flex-col">
+<span class="font-label-md text-label-md text-on-surface group-hover:text-primary font-semibold">Acme Nutrition Inc.</span>
+<span class="font-label-sm text-label-sm text-text-muted font-mono">TEN-0814</span>
+</div>
+</div>
+</td>
+<td class="py-4 px-space-md">
+<div class="flex flex-col">
+<span class="font-body-md text-body-md text-on-surface">US-East</span>
+<span class="font-label-sm text-label-sm text-secondary font-semibold">Live Tier 1</span>
+</div>
+</td>
+<td class="py-4 px-space-md">
+<div class="flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-success-base"></span>
+<span class="font-body-sm text-body-sm text-on-surface">Healthy (0 lag)</span>
+</div>
+</td>
+<td class="py-4 px-space-md">
+<span class="px-2 py-0.5 rounded bg-surface-canvas text-text-muted font-mono font-label-sm text-label-sm">v2.14.0-prod</span>
+</td>
+<td class="py-4 px-space-md">
+<div class="flex flex-col">
+<span class="inline-flex items-center gap-1 font-label-sm text-label-sm text-secondary font-semibold">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>Read-Only Active
+                    </span>
+<span class="font-body-sm text-body-sm text-text-muted truncate max-w-[130px]">Auth: Sarah Jenkins</span>
+</div>
+</td>
+<td class="py-4 px-space-md text-right">
+<button class="px-3 py-1.5 rounded-lg bg-secondary text-on-secondary font-button-text text-button-text shadow-sm hover:opacity-95 transition-opacity inline-flex items-center gap-1" onclick="document.getElementById('sessionBanner').classList.remove('hidden')">
+<span class="material-symbols-outlined text-[16px]">login</span>
+                    Join Active
+                  </button>
+</td>
+</tr>
+<!-- Tenant 2: VeloHealth Global -->
+<tr class="hover:bg-surface-container-low transition-colors group">
+<td class="py-4 px-space-md">
+<div class="flex items-center gap-space-sm">
+<div class="w-9 h-9 rounded-lg bg-secondary-container text-on-secondary-container font-headline-sm text-headline-sm flex items-center justify-center font-bold">
+                      V
+                    </div>
+<div class="flex flex-col">
+<span class="font-label-md text-label-md text-on-surface group-hover:text-primary font-semibold">VeloHealth Global</span>
+<span class="font-label-sm text-label-sm text-text-muted font-mono">TEN-0902</span>
+</div>
+</div>
+</td>
+<td class="py-4 px-space-md">
+<div class="flex flex-col">
+<span class="font-body-md text-body-md text-on-surface">EU-Frankfurt</span>
+<span class="font-label-sm text-label-sm text-secondary font-semibold">Live Tier 1</span>
+</div>
+</td>
+<td class="py-4 px-space-md">
+<div class="flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-success-base"></span>
+<span class="font-body-sm text-body-sm text-on-surface">Healthy</span>
+</div>
+</td>
+<td class="py-4 px-space-md">
+<span class="px-2 py-0.5 rounded bg-surface-canvas text-text-muted font-mono font-label-sm text-label-sm">v2.14.0-prod</span>
+</td>
+<td class="py-4 px-space-md">
+<span class="font-body-sm text-body-sm text-text-muted">No active session</span>
+</td>
+<td class="py-4 px-space-md text-right">
+<button class="px-3 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface font-button-text text-button-text transition-colors inline-flex items-center gap-1" onclick="openRequestModal('TEN-0902', 'VeloHealth Global')">
+<span class="material-symbols-outlined text-[16px]">vpn_key</span>
+                    Request
+                  </button>
+</td>
+</tr>
+<!-- Tenant 3: Apex Nutraceuticals -->
+<tr class="hover:bg-surface-container-low transition-colors group">
+<td class="py-4 px-space-md">
+<div class="flex items-center gap-space-sm">
+<div class="w-9 h-9 rounded-lg bg-surface-container-high text-on-surface font-headline-sm text-headline-sm flex items-center justify-center font-bold">
+                      A
+                    </div>
+<div class="flex flex-col">
+<span class="font-label-md text-label-md text-on-surface group-hover:text-primary font-semibold">Apex Nutraceuticals</span>
+<span class="font-label-sm text-label-sm text-text-muted font-mono">TEN-0744</span>
+</div>
+</div>
+</td>
+<td class="py-4 px-space-md">
+<div class="flex flex-col">
+<span class="font-body-md text-body-md text-on-surface">US-West</span>
+<span class="font-label-sm text-label-sm text-text-muted font-semibold">Live Tier 2</span>
+</div>
+</td>
+<td class="py-4 px-space-md">
+<div class="flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-success-base"></span>
+<span class="font-body-sm text-body-sm text-on-surface">Healthy</span>
+</div>
+</td>
+<td class="py-4 px-space-md">
+<span class="px-2 py-0.5 rounded bg-surface-canvas text-text-muted font-mono font-label-sm text-label-sm">v2.13.9</span>
+</td>
+<td class="py-4 px-space-md">
+<span class="font-body-sm text-body-sm text-text-muted">No active session</span>
+</td>
+<td class="py-4 px-space-md text-right">
+<button class="px-3 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface font-button-text text-button-text transition-colors inline-flex items-center gap-1" onclick="openRequestModal('TEN-0744', 'Apex Nutraceuticals')">
+<span class="material-symbols-outlined text-[16px]">vpn_key</span>
+                    Request
+                  </button>
+</td>
+</tr>
+<!-- Tenant 4: Lumina Living Co -->
+<tr class="hover:bg-surface-container-low transition-colors group">
+<td class="py-4 px-space-md">
+<div class="flex items-center gap-space-sm">
+<div class="w-9 h-9 rounded-lg bg-surface-container text-text-muted font-headline-sm text-headline-sm flex items-center justify-center font-bold">
+                      L
+                    </div>
+<div class="flex flex-col">
+<span class="font-label-md text-label-md text-on-surface group-hover:text-primary font-semibold">Lumina Living Co</span>
+<span class="font-label-sm text-label-sm text-text-muted font-mono">TEN-1105</span>
+</div>
+</div>
+</td>
+<td class="py-4 px-space-md">
+<div class="flex flex-col">
+<span class="font-body-md text-body-md text-on-surface">CA-Central</span>
+<span class="font-label-sm text-label-sm text-secondary font-semibold">Onboarding</span>
+</div>
+</td>
+<td class="py-4 px-space-md">
+<div class="flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-secondary-container animate-pulse"></span>
+<span class="font-body-sm text-body-sm text-text-muted">Running Init</span>
+</div>
+</td>
+<td class="py-4 px-space-md">
+<span class="px-2 py-0.5 rounded bg-surface-canvas text-secondary font-mono font-label-sm text-label-sm">v2.14.0-rc2</span>
+</td>
+<td class="py-4 px-space-md">
+<span class="font-body-sm text-body-sm text-text-muted">Pending Init</span>
+</td>
+<td class="py-4 px-space-md text-right">
+<button class="px-3 py-1.5 rounded-lg bg-primary text-on-primary font-button-text text-button-text shadow-sm hover:bg-primary-container transition-colors inline-flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">inventory_2</span>
+                    Provision Pack
+                  </button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="p-space-md bg-surface-canvas flex items-center justify-between text-body-sm text-body-sm text-text-muted">
+<span>FR-TEN-005 Data Boundary: Tenant isolated relational DB replicas.</span>
+<div class="flex items-center gap-2">
+<button class="px-2.5 py-1 bg-surface-card rounded text-on-surface font-label-sm text-label-sm disabled:opacity-40" disabled="">Previous</button>
+<span class="font-label-sm text-label-sm text-on-surface">Page 1 of 5</span>
+<button class="px-2.5 py-1 bg-surface-card rounded text-on-surface font-label-sm text-label-sm hover:bg-surface-container transition-colors">Next</button>
+</div>
+</div>
+</div>
+<!-- Right Column: Security Audits & Session Controls (4 cols on xl) -->
+<div class="xl:col-span-4 flex flex-col gap-space-lg">
+<!-- Live Audit Trail Log -->
+<div class="bg-surface-card rounded-xl p-space-md shadow-sm flex flex-col">
+<div class="flex items-center justify-between pb-space-sm">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-[20px]">verified</span>
+<span class="font-headline-sm text-headline-sm text-primary">Immutable Audit Feed</span>
+</div>
+<span class="font-label-sm text-label-sm text-text-muted font-mono">LIVE CHURN</span>
+</div>
+<div class="flex flex-col gap-space-md mt-space-sm divide-y divide-surface-container">
+<div class="pt-space-xs flex items-start gap-space-sm">
+<div class="w-2 h-2 rounded-full bg-secondary mt-1.5 shrink-0"></div>
+<div class="flex flex-col flex-1">
+<span class="font-label-sm text-label-sm text-on-surface">TEN-0814: Operator #81 Elevation</span>
+<span class="font-body-sm text-body-sm text-text-muted">Dual-key signature verified by Acme Admin Sarah Jenkins. TTL set to 2 hours.</span>
+<span class="font-label-sm text-label-sm text-text-subtle font-mono mt-0.5">14:02:11 UTC · SHA256: e80f4...</span>
+</div>
+</div>
+<div class="pt-space-sm flex items-start gap-space-sm">
+<div class="w-2 h-2 rounded-full bg-text-subtle mt-1.5 shrink-0"></div>
+<div class="flex flex-col flex-1">
+<span class="font-label-sm text-label-sm text-on-surface">TEN-0902: Session Request Submitted</span>
+<span class="font-body-sm text-body-sm text-text-muted">Operator #14 requested Read-Only access for schema migration validation.</span>
+<span class="font-label-sm text-label-sm text-text-subtle font-mono mt-0.5">13:45:00 UTC · Pending Customer</span>
+</div>
+</div>
+<div class="pt-space-sm flex items-start gap-space-sm">
+<div class="w-2 h-2 rounded-full bg-error-base mt-1.5 shrink-0"></div>
+<div class="flex flex-col flex-1">
+<span class="font-label-sm text-label-sm text-on-surface">TEN-0612: Session Auto-Terminated</span>
+<span class="font-body-sm text-body-sm text-text-muted">TTL reached (120m). Cryptographic keys shredded. 100% video stream archived.</span>
+<span class="font-label-sm text-label-sm text-text-subtle font-mono mt-0.5">12:30:19 UTC · Clean Egress</span>
+</div>
+</div>
+</div>
+<div class="mt-space-md pt-space-sm">
+<button class="w-full py-2 bg-surface-canvas hover:bg-surface-container rounded-lg text-primary font-button-text text-button-text transition-colors flex items-center justify-center gap-1.5">
+<span class="material-symbols-outlined text-[18px]">receipt_long</span>
+              Export SIEM Audit Logs
+            </button>
+</div>
+</div>
+<!-- Infrastructure Posture & Market Pack Status -->
+<div class="bg-surface-card rounded-xl p-space-md shadow-sm flex flex-col justify-between">
+<div class="flex flex-col">
+<div class="flex items-center justify-between">
+<span class="font-headline-sm text-headline-sm text-primary">Isolation Boundary Guard</span>
+<span class="material-symbols-outlined text-success-base text-[20px]">security</span>
+</div>
+<p class="font-body-sm text-body-sm text-text-muted mt-1">
+              Phoyev zero standing access policy prevents any engineer from accessing customer tenant data without cryptographic authorization.
+            </p>
+<div class="mt-space-md p-space-sm bg-surface-container-low rounded-lg flex flex-col gap-2">
+<div class="flex items-center justify-between font-label-sm text-label-sm">
+<span class="text-text-muted uppercase">Egress Enclave Policy</span>
+<span class="text-on-surface font-semibold">T1 / T4 Locked</span>
+</div>
+<div class="w-full bg-surface-container h-2 rounded-full overflow-hidden">
+<div class="bg-success-base h-full w-full"></div>
+</div>
+<span class="font-body-sm text-body-sm text-text-muted">0 egress anomalies detected in last 24h</span>
+</div>
+</div>
+<div class="mt-space-md pt-space-sm flex items-center justify-between text-body-sm text-body-sm text-text-muted">
+<span>Market Packs Ready</span>
+<span class="font-label-md text-label-md text-primary font-semibold">9 Distribution Modules</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- MODAL: Request Support Session (PRD-02 / FR-IAM-005) -->
+<div class="fixed inset-0 z-50 bg-primary/60 backdrop-blur-sm flex items-center justify-center p-space-md hidden" id="sessionModal">
+<div class="bg-surface-card w-full max-w-xl rounded-xl shadow-2xl overflow-hidden flex flex-col">
+<!-- Modal Header -->
+<div class="px-space-lg py-space-md bg-surface-canvas flex items-center justify-between">
+<div class="flex items-center gap-space-sm">
+<div class="w-8 h-8 rounded-lg bg-primary-container text-on-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-[18px]">vpn_key</span>
+</div>
+<div class="flex flex-col">
+<span class="font-headline-sm text-headline-sm text-primary">Request Time-Bounded Support Session</span>
+<span class="font-label-sm text-label-sm text-text-muted">FR-IAM-005 Dual-Key Access Elevation Workflow</span>
+</div>
+</div>
+<button class="w-8 h-8 rounded-lg hover:bg-surface-container text-on-surface-variant flex items-center justify-center transition-colors" onclick="document.getElementById('sessionModal').classList.add('hidden')">
+<span class="material-symbols-outlined text-[20px]">close</span>
+</button>
+</div>
+<!-- Modal Body -->
+<form class="p-space-lg flex flex-col gap-space-md" onsubmit="event.preventDefault(); document.getElementById('sessionModal').classList.add('hidden');">
+<!-- Target Tenant Selector -->
+<div class="flex flex-col gap-1">
+<label class="font-label-md text-label-md text-on-surface">Target Customer Tenant</label>
+<div class="relative">
+<select class="w-full h-11 px-3.5 bg-surface-canvas rounded-lg text-on-surface font-body-md text-body-md appearance-none pr-8 focus:outline-none focus:ring-2 focus:ring-focus-ring cursor-pointer transition-all" id="modalTenantSelect">
+<option value="TEN-0902">VeloHealth Global (TEN-0902) · EU-Frankfurt</option>
+<option value="TEN-0744">Apex Nutraceuticals (TEN-0744) · US-West</option>
+<option value="TEN-1105">Lumina Living Co (TEN-1105) · CA-Central</option>
+<option value="TEN-0814">Acme Nutrition Inc. (TEN-0814) · Active Session Exists</option>
+</select>
+<span class="material-symbols-outlined absolute right-2.5 top-3 text-text-muted text-[18px] pointer-events-none">expand_more</span>
+</div>
+</div>
+<!-- Operational Reason Input -->
+<div class="flex flex-col gap-1">
+<label class="font-label-md text-label-md text-on-surface">Operational Reason &amp; Ticket Reference</label>
+<textarea class="w-full p-3 bg-surface-canvas rounded-lg text-on-surface font-body-md text-body-md placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-focus-ring transition-all" placeholder="e.g. Assist with Nov 2026 Monthly rerun validation (Ticket #OPS-4902)" rows="2"></textarea>
+<span class="font-body-sm text-body-sm text-text-muted">This explanation is dispatched directly to the tenant's primary admin for review.</span>
+</div>
+<!-- Requested Role Scope -->
+<div class="flex flex-col gap-1">
+<label class="font-label-md text-label-md text-on-surface">Requested Role Scope</label>
+<div class="grid grid-cols-2 gap-space-sm">
+<label class="flex items-center gap-space-xs p-3 rounded-lg bg-surface-canvas hover:bg-surface-container cursor-pointer transition-colors">
+<input checked="" class="text-primary focus:ring-0" name="role_scope" type="radio"/>
+<div class="flex flex-col">
+<span class="font-label-md text-label-md text-on-surface">Read-Only Support</span>
+<span class="font-body-sm text-body-sm text-text-muted">Metrics &amp; config view only</span>
+</div>
+</label>
+<label class="flex items-center gap-space-xs p-3 rounded-lg bg-surface-canvas hover:bg-surface-container cursor-pointer transition-colors">
+<input class="text-primary focus:ring-0" name="role_scope" type="radio"/>
+<div class="flex flex-col">
+<span class="font-label-md text-label-md text-on-surface">Config Operator</span>
+<span class="font-body-sm text-body-sm text-text-muted">Requires second T4 approval</span>
+</div>
+</label>
+</div>
+</div>
+<!-- Session Duration Slider (2 Hours Max) -->
+<div class="flex flex-col gap-2">
+<div class="flex items-center justify-between">
+<label class="font-label-md text-label-md text-on-surface">Session Duration</label>
+<span class="font-label-md text-label-md text-secondary font-semibold" id="sliderVal">2 Hours (Strict Maximum)</span>
+</div>
+<input class="w-full accent-primary cursor-pointer" max="120" min="15" oninput="document.getElementById('sliderVal').innerText = (this.value &gt;= 60 ? (this.value/60) + ' Hour' + (this.value &gt; 60 ? 's' : '') : this.value + ' Minutes') + (this.value == 120 ? ' (Strict Maximum)' : '')" step="15" type="range" value="120"/>
+<div class="flex justify-between font-label-sm text-label-sm text-text-muted">
+<span>15m</span>
+<span>30m</span>
+<span>60m</span>
+<span>90m</span>
+<span>120m (Limit)</span>
+</div>
+</div>
+<!-- Tenant Designated Approver Notice -->
+<div class="p-space-sm bg-surface-container-low rounded-lg flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-[20px]">person_check</span>
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-text-muted uppercase">Tenant Designated Approver</span>
+<span class="font-label-md text-label-md text-on-surface font-semibold">Sarah Jenkins · Finance Admin</span>
+</div>
+</div>
+<span class="font-label-sm text-label-sm text-secondary bg-secondary-container/40 px-2 py-0.5 rounded-full">WebAuthn Ready</span>
+</div>
+<!-- Modal Footer Actions -->
+<div class="flex items-center justify-end gap-space-sm pt-space-sm">
+<button class="px-4 py-2 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface font-button-text text-button-text transition-colors" onclick="document.getElementById('sessionModal').classList.add('hidden')" type="button">
+            Cancel
+          </button>
+<button class="px-5 py-2 rounded-lg bg-primary-container hover:bg-primary text-on-primary font-button-text text-button-text shadow-sm transition-all flex items-center gap-1.5" type="submit">
+<span class="material-symbols-outlined text-[18px]">send</span>
+            Dispatch Elevation Request
+          </button>
+</div>
+</form>
+</div>
+</div>
+<!-- MODAL: Provision New Tenant (PRD-02 / FR-TEN-001) -->
+<div class="fixed inset-0 z-50 bg-primary/60 backdrop-blur-sm flex items-center justify-center p-space-md hidden" id="provisionModal">
+<div class="bg-surface-card w-full max-w-xl rounded-xl shadow-2xl overflow-hidden flex flex-col">
+<div class="px-space-lg py-space-md bg-surface-canvas flex items-center justify-between">
+<div class="flex items-center gap-space-sm">
+<div class="w-8 h-8 rounded-lg bg-secondary text-on-secondary flex items-center justify-center">
+<span class="material-symbols-outlined text-[18px]">corporate_fare</span>
+</div>
+<div class="flex flex-col">
+<span class="font-headline-sm text-headline-sm text-primary">Provision Dedicated Tenant</span>
+<span class="font-label-sm text-label-sm text-text-muted">Multi-Tenant Control Plane Isolation Builder</span>
+</div>
+</div>
+<button class="w-8 h-8 rounded-lg hover:bg-surface-container text-on-surface-variant flex items-center justify-center transition-colors" onclick="document.getElementById('provisionModal').classList.add('hidden')">
+<span class="material-symbols-outlined text-[20px]">close</span>
+</button>
+</div>
+<form class="p-space-lg flex flex-col gap-space-md" onsubmit="event.preventDefault(); document.getElementById('provisionModal').classList.add('hidden');">
+<div class="flex flex-col gap-1">
+<label class="font-label-md text-label-md text-on-surface">Legal Organization Entity</label>
+<input class="h-11 px-3 bg-surface-canvas rounded-lg text-on-surface font-body-md text-body-md placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-focus-ring transition-all" placeholder="e.g. Apex Biotech Group LLC" required="" type="text"/>
+</div>
+<div class="grid grid-cols-2 gap-space-sm">
+<div class="flex flex-col gap-1">
+<label class="font-label-md text-label-md text-on-surface">Cloud Deployment Enclave</label>
+<select class="h-11 px-3 bg-surface-canvas rounded-lg text-on-surface font-body-md text-body-md focus:outline-none focus:ring-2 focus:ring-focus-ring cursor-pointer">
+<option>AWS us-east-1 (N. Virginia)</option>
+<option>AWS eu-central-1 (Frankfurt)</option>
+<option>AWS ca-central-1 (Montreal)</option>
+<option>AWS ap-southeast-1 (Singapore)</option>
+</select>
+</div>
+<div class="flex flex-col gap-1">
+<label class="font-label-md text-label-md text-on-surface">Service Level Tier</label>
+<select class="h-11 px-3 bg-surface-canvas rounded-lg text-on-surface font-body-md text-body-md focus:outline-none focus:ring-2 focus:ring-focus-ring cursor-pointer">
+<option>Tier 1 Enterprise (Multi-AZ HA)</option>
+<option>Tier 2 Scale (Standard HA)</option>
+<option>Staging / Sandbox</option>
+</select>
+</div>
+</div>
+<div class="flex flex-col gap-1">
+<label class="font-label-md text-label-md text-on-surface">Base Market Packs (FR-OPS-001)</label>
+<div class="p-space-sm bg-surface-canvas rounded-lg flex flex-col gap-2">
+<label class="flex items-center gap-2 font-body-sm text-body-sm text-on-surface cursor-pointer">
+<input checked="" class="rounded text-primary focus:ring-0" type="checkbox"/>
+<span>North America Direct Sales (US/CA Comp Engine)</span>
+</label>
+<label class="flex items-center gap-2 font-body-sm text-body-sm text-on-surface cursor-pointer">
+<input checked="" class="rounded text-primary focus:ring-0" type="checkbox"/>
+<span>Global Tax &amp; Currency Module (VAT/GST multi-ledger)</span>
+</label>
+<label class="flex items-center gap-2 font-body-sm text-body-sm text-on-surface cursor-pointer">
+<input class="rounded text-primary focus:ring-0" type="checkbox"/>
+<span>EU Cross-Border Affiliate Settlement Gateway</span>
+</label>
+</div>
+</div>
+<div class="p-space-sm bg-surface-container-low rounded-lg flex items-start gap-2">
+<span class="material-symbols-outlined text-secondary text-[18px] shrink-0 mt-0.5">verified_user</span>
+<span class="font-body-sm text-body-sm text-text-muted">
+            New tenants are created with strict zero standing vendor access. KMS customer-managed keys will be generated automatically.
+          </span>
+</div>
+<div class="flex items-center justify-end gap-space-sm pt-space-sm">
+<button class="px-4 py-2 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface font-button-text text-button-text transition-colors" onclick="document.getElementById('provisionModal').classList.add('hidden')" type="button">
+            Cancel
+          </button>
+<button class="px-5 py-2 rounded-lg bg-primary text-on-primary font-button-text text-button-text shadow-sm hover:bg-primary-container transition-all flex items-center gap-1.5" type="submit">
+<span class="material-symbols-outlined text-[18px]">rocket_launch</span>
+            Initiate Enclave Build
+          </button>
+</div>
+</form>
+</div>
+</div>
+</div>
+<script>
+  function openRequestModal(tenantId, tenantName) {
+    const select = document.getElementById('modalTenantSelect');
+    if (select) {
+      for (let i = 0; i < select.options.length; i++) {
+        if (select.options[i].value === tenantId) {
+          select.selectedIndex = i;
+          break;
+        }
+      }
+    }
+    document.getElementById('sessionModal').classList.remove('hidden');
+  }
+</script></main></div><div id="design-preview-pill" style="position:fixed;left:12px;bottom:12px;z-index:2147483647;display:flex;gap:8px;align-items:center;padding:8px 12px;border-radius:999px;background:#001332;color:#fff;font:600 12px/1.2 Inter,system-ui,sans-serif;box-shadow:0 4px 16px rgba(0,0,0,.25)"><a href="/portal-designs/" style="color:#fff;text-decoration:none">&larr; All designs</a><span style="opacity:.6">|</span><span style="font-weight:500">Design preview &middot; sample data, not the live app</span></div></body></html>

@@ -19,7 +19,7 @@ vi.mock('next/navigation', () => ({
 
 const CAL = '00000000-0000-4000-8000-0000000ca1e0'
 const MARKET = { id: 'm1', code: 'DE', name: 'Germany', currency: 'EUR', state: 'live', market_pack: 'e2e-fixture', time_zone: 'Europe/Berlin', languages: ['de'], minor_unit: 2 }
-const CALENDAR: Calendar = { id: CAL, name: 'DE monthly', cadence: 'monthly', cutoff_time_zone: 'Europe/Berlin', market: { id: 'm1', code: 'DE' }, plan: { id: 'pl1', name: 'DE core' } }
+const CALENDAR: Calendar = { id: CAL, name: 'DE monthly', cadence: 'monthly', cutoff_time_zone: 'Europe/Berlin', market: { id: 'm1', code: 'DE' }, plan: { id: 'pl1', name: 'DE core' }, provisional_for: null, provisional_calendars: [] }
 const ZONE = 'Europe/Berlin'
 const ANALYST = adminMe({ permissions: ['period.read', 'run.execute', 'run.review', 'late.manage', 'restatement.request'] })
 const READER = adminMe({ permissions: ['period.read'] })
@@ -32,7 +32,7 @@ function period(id: string, month: number, overrides: Partial<PeriodRow> = {}): 
   return { id, calendar_id: CAL, starts_at: start, ends_at: end, cut_off_passed: true, state: 'open', committed_run_id: null, latest_run: null, blockers: [], late: { pending: 0, decided: 0 }, closed_at: null, closed_by: null, ...overrides }
 }
 
-const M3 = period('per-m3', 7, { state: 'committed', committed_run_id: 'run-m3', latest_run: { id: 'run-m3', state: 'committed', gross_minor: '4700', finished_at: '2026-09-02T10:00:00.000Z' }, late: { pending: 1, decided: 0 }, blockers: [{ code: 'PERIOD_COMMITTED', message: 'The period is already committed.', details: {} }] })
+const M3 = period('per-m3', 7, { state: 'committed', committed_run_id: 'run-m3', latest_run: { id: 'run-m3', state: 'committed', gross_minor: '4700', finished_at: '2026-09-02T10:00:00.000Z', true_up_runs: 0 }, late: { pending: 1, decided: 0 }, blockers: [{ code: 'PERIOD_COMMITTED', message: 'The period is already committed.', details: {} }] })
 const M2 = period('per-m2', 8, { blockers: [SYNC] })
 const M1 = period('per-m1', 9, { blockers: [{ code: 'PRIOR_PERIOD_OPEN', message: 'Commit the previous period of this calendar first.', details: {} }] })
 const NOW = period('per-m0', 10, { cut_off_passed: false, blockers: [{ code: 'BEFORE_CUTOFF', message: 'The period has not reached its cut-off yet.', details: {} }] })
@@ -110,7 +110,7 @@ describe('PeriodsPage (SC-01)', () => {
     expect(document.body.textContent).not.toMatch(/SYNC_BEHIND|BEFORE_CUTOFF|PRIOR_PERIOD_OPEN/)
     const calculate = screen.getByRole('button', { name: `Calculate ${name}` })
     await userEvent.click(calculate)
-    expect(await screen.findByText('The calculation was refused')).toBeTruthy()
+    expect(await screen.findByText('The calculation was refused: Order sync behind')).toBeTruthy()
     await userEvent.click(calculate)
     const ids = callsTo(fetchMock, 'POST', '/v1/periods/per-m2/runs').map(([, init]) => headerOf(init, 'run-request-id'))
     expect(ids).toHaveLength(2)
@@ -173,8 +173,8 @@ describe('PeriodsPage (SC-01)', () => {
   })
 
   it('opens the review of a calculated target as the one primary action', async () => {
-    const calculated = period('per-m2', 8, { state: 'calculated', latest_run: { id: 'run-m2', state: 'calculated', gross_minor: '4700', finished_at: '2026-10-02T10:00:00.000Z' } })
-    renderAs(ANALYST, <PeriodsPage />, routes([NOW, calculated, M3], { 'GET /v1/runs/run-m2': () => ok({ id: 'run-m2', period_id: 'per-m2', state: 'calculated', progress: null, totals: null, error: null, inputs_hash: 'h', lines_hash: 'l', engine_version: '0.2.0', prepared_by: { id: 'u', display_name: 'Ann Analyst' }, review_opened_at: null, commit_requested_at: null, commit_requested_by: null, finished_at: null, committed_at: null, plan_version: { id: 'v', plan: { id: 'pl1', name: 'DE core' }, version: 1 }, snapshot: null }) }))
+    const calculated = period('per-m2', 8, { state: 'calculated', latest_run: { id: 'run-m2', state: 'calculated', gross_minor: '4700', finished_at: '2026-10-02T10:00:00.000Z', true_up_runs: 0 } })
+    renderAs(ANALYST, <PeriodsPage />, routes([NOW, calculated, M3], { 'GET /v1/runs/run-m2': () => ok({ id: 'run-m2', period_id: 'per-m2', state: 'calculated', progress: null, totals: null, error: null, inputs_hash: 'h', lines_hash: 'l', engine_version: '0.2.0', prepared_by: { id: 'u', display_name: 'Ann Analyst' }, review_opened_at: null, commit_requested_at: null, commit_requested_by: null, finished_at: null, committed_at: null, plan_version: { id: 'v', plan: { id: 'pl1', name: 'DE core' }, version: 1 }, provisional: null, true_up: null, credit_awards_minor: '0', snapshot: null }) }))
     const primary = await screen.findByTestId('primary-action')
     expect(primary.textContent).toContain('Open review')
     expect(primary.getAttribute('href')).toBe('/periods/per-m2/runs/run-m2/review')

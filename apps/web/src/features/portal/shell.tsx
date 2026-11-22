@@ -25,6 +25,8 @@ export interface Portal {
   readonly zone: string
   /** The effective locale's words and formats in the market zone. */
   readonly words: L10n
+  /** D-V1A-07: offboarding confirmed or archived; write controls are hidden (the API refuses them with TENANT_READ_ONLY), the data-subject request form stays (C-V1A-18). */
+  readonly readOnly: boolean
   /** Unread inbox notices (null while unknown). */
   readonly unread: number | null
   /** Renders the server parts again (unread count, language). */
@@ -74,7 +76,7 @@ export function PortalShell({ me, locale, catalogue, unread, children }: {
   const profile = me.participant!
   const zone = profile.market.time_zone
   const words = useMemo(() => l10n(locale, zone, translate(catalogue, locale)), [locale, zone, catalogue])
-  const portal: Portal = { me, profile, zone, words, unread, refresh: router.refresh }
+  const portal: Portal = { me, profile, zone, words, readOnly: me.tenant?.read_only === true, unread, refresh: router.refresh }
   return (
     <PortalContext value={portal}>
       <ShellLayout portal={portal} pathname={pathname}>{children}</ShellLayout>
@@ -124,6 +126,12 @@ function ShellLayout({ portal, pathname, children }: { readonly portal: Portal; 
       </header>
       <main ref={main} id="portal-main" tabIndex={-1} className="flex-1 w-full px-margin-mobile pt-[calc(4rem+env(safe-area-inset-top,0px))] pb-[calc(6rem+env(safe-area-inset-bottom,0px))] md:pb-space-xl focus:outline-none">
         <div className="mx-auto w-full sm:max-w-[600px] md:max-w-[720px] lg:has-[[data-side-panel]]:max-w-[1104px] flex flex-col gap-space-md py-space-md">
+          {portal.readOnly && (
+            // D-V1A-07: not dismissable while the account is read-only (the API refuses changes with TENANT_READ_ONLY).
+            <p role="status" data-testid="read-only-notice" className="flex items-start gap-space-xs p-space-sm rounded-lg bg-primary-fixed text-primary font-body-sm text-body-sm">
+              <Icon name="info" size={18} className="shrink-0 mt-0.5" />{t('shell.read_only')}
+            </p>
+          )}
           {children}
         </div>
       </main>

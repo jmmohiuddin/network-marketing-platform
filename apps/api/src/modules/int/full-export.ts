@@ -238,6 +238,9 @@ async function expireOld(tx: Tx): Promise<void> {
   const { rows } = await tx.query<{ id: string }>(
     `UPDATE data_export SET state = 'expired'
      WHERE state = 'completed' AND id NOT IN (SELECT id FROM data_export WHERE state = 'completed' ORDER BY created_at DESC, id DESC LIMIT $1)
+       -- C-V1A-12: the export an open or archived offboarding names is pinned.
+       AND id NOT IN (SELECT o.export_id FROM tenant_offboarding o
+                      WHERE o.export_id IS NOT NULL AND o.state NOT IN ('purged', 'cancelled', 'restored'))
      RETURNING id`,
     [FULL_EXPORTS_KEPT],
   )

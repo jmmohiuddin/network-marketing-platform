@@ -15,13 +15,15 @@ import { LoadFailure, useTabParam } from '../admin/page-states'
 import { tableError, usePagedList } from '../admin/resource'
 import { MONO, NOTE, ROW_ACTIONS } from '../admin/ui'
 import type { PositionView } from '../genealogy/types'
-import { ACCOUNT_TYPES, parentOrigin, participantBadge, participantName, positionBadge, rangeText, servicingSource } from './format'
+import { parentOrigin, participantBadge, participantName, positionBadge, rangeText, servicingSource } from './format'
 import { ContactEmailDialog, ServicerDialog, StatusDialog, statusChoices, TypeDialog, UnmaskDialog } from './record-dialogs'
 import { PARTICIPANTS_PATH, type ContactField, type OwnedPosition, type ParticipantDetail, type ServicedCustomer, type ServicingEntry } from './types'
 import { BalancesTab, BankingTab, HoldsTab, TaxTab } from './finance-tabs'
 import { Facts, RecordCard } from './ui'
 import { PortalAccess } from './portal-access'
 import { Banner } from '../../components/banner'
+import { AccountCard, AccountDialog, HoldersDialog } from './account'
+import { LegalHoldChip } from './legal-hold-chip'
 
 const ID_PREFIX = 'participant'
 const TABS = [
@@ -47,7 +49,7 @@ export function currentType(detail: Pick<ParticipantDetail, 'types'>, now: numbe
 }
 
 type Dialog =
-  | { readonly kind: 'unmask' | 'type' | 'servicer' | 'contact' }
+  | { readonly kind: 'unmask' | 'type' | 'servicer' | 'contact' | 'account' | 'holders' }
   | { readonly kind: 'status'; readonly position: OwnedPosition }
 
 function Overview({ detail, onUnmask, onRecordEmail }: { readonly detail: ParticipantDetail; readonly onUnmask?: () => void; readonly onRecordEmail?: () => void }) {
@@ -63,7 +65,6 @@ function Overview({ detail, onUnmask, onRecordEmail }: { readonly detail: Partic
       <Facts items={[
         { label: 'Name', value: detail.display_name ?? 'Not recorded' },
         { label: 'External reference', value: <span className={MONO}>{detail.external_ref}</span> },
-        { label: 'Account', value: ACCOUNT_TYPES[detail.account_type] },
         { label: 'Market', value: <span className={MONO}>{detail.market.code}</span> },
         { label: 'Enrolled', value: <span className={MONO}>{formatDateTime(detail.enrolled_at)}</span> },
         { label: 'Status', value: <StatusBadge {...participantBadge(detail.status)} /> },
@@ -255,6 +256,7 @@ export function ParticipantRecord({ participantId }: { readonly participantId: s
           <StatusBadge {...participantBadge(detail.status)} />
           {detail.duplicate_hold && <StatusBadge state="under_review" label="Duplicate review" />}
           {erased && <StatusBadge state="retired" label="Personal data erased" />}
+          {(can('legal_hold.manage') || can('privacy.manage')) && <LegalHoldChip participantId={detail.id} />}
         </span>}
         summary={`${detail.market.code} · ${type === null ? 'No type in force' : `${type.name} (${type.code})`} · enrolled ${formatDateTime(detail.enrolled_at)}`}
         actions={<>
@@ -275,6 +277,9 @@ export function ParticipantRecord({ participantId }: { readonly participantId: s
               )}
               <Overview detail={detail} onUnmask={write('participant.unmask') && available.length > 0 && !erased ? () => setDialog({ kind: 'unmask' }) : undefined}
                 onRecordEmail={write('participant.manage') && !available.includes('email') && !erased && detail.merged_into === null ? () => setDialog({ kind: 'contact' }) : undefined} />
+              <AccountCard detail={detail}
+                onEdit={write('participant.manage') && !erased && detail.merged_into === null ? () => setDialog({ kind: 'account' }) : undefined}
+                onShowHolders={write('participant.unmask') && detail.account_holders_count > 0 && !erased ? () => setDialog({ kind: 'holders' }) : undefined} />
               {/* Remounted when an e-mail is recorded, so a refused invitation's message does not outlive its cause. */}
               <PortalAccess key={detail.contact_masked?.email ?? 'no-email'} participantId={detail.id} erased={erased} />
             </div>
@@ -295,6 +300,8 @@ export function ParticipantRecord({ participantId }: { readonly participantId: s
       {dialog?.kind === 'status' && <StatusDialog position={dialog.position} choices={choicesOf(dialog.position)} onClose={close} onDone={changed} />}
       {dialog?.kind === 'type' && <TypeDialog participantId={detail.id} currentCode={type?.code ?? null} onClose={close} onDone={changed} />}
       {dialog?.kind === 'servicer' && <ServicerDialog customerId={detail.id} onClose={close} onDone={changed} />}
+      {dialog?.kind === 'account' && <AccountDialog detail={detail} onClose={close} onDone={changed} />}
+      {dialog?.kind === 'holders' && <HoldersDialog participantId={detail.id} onClose={close} />}
       {dialog?.kind === 'contact' && <ContactEmailDialog participantId={detail.id} onClose={close} onDone={changed} />}
     </>
   )

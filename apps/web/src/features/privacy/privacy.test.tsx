@@ -87,6 +87,11 @@ describe('SC-15 privacy requests list', () => {
     expect(screen.getByText(/Not found or not available/)).toBeTruthy()
   })
 
+  it('offers Record a request to a read-only tenant (C-V1A-18)', async () => {
+    renderAs(adminMe({ ...DPO, tenant: { ...DPO.tenant!, read_only: true } }), <PrivacyRequestsPage />, listRoutes())
+    expect(await screen.findByRole('button', { name: 'Record a request' })).toBeTruthy()
+  })
+
   it('records a request received by staff and opens it', async () => {
     const fetchMock = listRoutes({ 'POST /v1/privacy-requests': () => ok(detail({ id: 'new-1' }), 201) })
     renderAs(DPO, <PrivacyRequestsPage />, fetchMock)
@@ -190,6 +195,13 @@ describe('SC-15 privacy request detail', () => {
     await userEvent.click(within(dialog).getByRole('button', { name: 'Save corrected values' }))
     expect(await screen.findByText('Corrected values saved. They apply when the case is approved.')).toBeTruthy()
     expect(bodyOf(callsTo(fetchMock, 'PUT', `/v1/privacy-requests/${ID}/corrections`)[0]![1])).toEqual({ contact: { phone: '+49 30 1234' } })
+  })
+
+  it('keeps record, verify and corrections for a read-only tenant: the tenant still answers data-subject requests (C-V1A-18)', async () => {
+    const readOnly = adminMe({ ...DPO, tenant: { ...DPO.tenant!, read_only: true } })
+    renderAs(readOnly, <PrivacyRequestPage requestId={ID} />, detailRoutes(detail({ type: 'correction' })))
+    expect(await screen.findByRole('button', { name: 'Verify identity' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Enter corrected values' })).toBeTruthy()
   })
 
   it('reads a non-UUID id as not available without asking the API', () => {

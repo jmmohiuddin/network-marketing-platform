@@ -14,6 +14,7 @@ import { LoadFailure } from '../page-states'
 import type { BreachContact } from '../types'
 import { NOTE, NoticeCard, SECTION_CARD, SectionTitle } from '../ui'
 import { AgreementsSection } from './agreements'
+import { OffboardingCard } from './offboarding-card'
 import { BreachContactsDialog } from './breach-contacts-dialog'
 import { ChangeRequestsSection } from './change-requests'
 import { POLICY_KEYS, valueText, type PolicyKey } from './labels'
@@ -80,6 +81,10 @@ const B6_ROWS: readonly { readonly key: PolicyKey; readonly title: string; reado
   { key: 'plan.filing_requirements', title: 'Plan filing requirements', description: 'The markets where a plan change needs a recorded filing before its version is scheduled. Changes wait for a market sign-off holder.', whenUnset: 'No market requires a filing: plan versions are scheduled without one.' },
   { key: 'exports.full_schedule', title: 'Full data export schedule', description: 'How often a signed export of all your data is generated, in UTC. Changes ask for your authenticator code.', whenUnset: 'Manual exports only: run one from Integrations, Exports.' },
 ]
+/** PLAN V1-A §5 SC-29: the D-V1A-10 key (no default is shipped). */
+const V1A_ROWS: readonly { readonly key: PolicyKey; readonly title: string; readonly description: string; readonly whenUnset: string }[] = [
+  { key: 'fx.max_rate_age_days', title: 'Exchange-rate age limit', description: 'How old the exchange rate in force at an order’s time may be before the order is held. Changes wait for a Finance approver and ask for your authenticator code.', whenUnset: 'Orders in another currency are refused until set.' },
+]
 /** Keys the API refuses to write (SETTING_RETIRED): shown, never offered for a new version. */
 const RETIRED_KEYS: readonly string[] = [...B2_ROWS.filter((row) => row.retired === true).map((row) => row.key), 'money.clawback_policy']
 
@@ -99,6 +104,7 @@ export function SettingsPage() {
   return (
     <>
       <PageHeader title="Settings" summary="Participant types and the agreement versions of each market." />
+      <OffboardingCard />
       {sections}
     </>
   )
@@ -157,6 +163,7 @@ function PolicySettings({ children }: { readonly children: ReactNode }) {
   const b4Rows = rowsOf(B4_ROWS)
   const b5Rows = rowsOf(B5_ROWS)
   const b6Rows = rowsOf(B6_ROWS)
+  const v1aRows = rowsOf(V1A_ROWS)
   const values = Object.fromEntries(Object.entries(view?.values ?? {}).map(([key, setting]) => [key, setting?.value]))
   return (
     <>
@@ -172,6 +179,7 @@ function PolicySettings({ children }: { readonly children: ReactNode }) {
       <NoticeCard icon="shield_with_heart" title="Every change is a new version">
         Each version records its reason, author and the moment it takes effect; a date is never in the past. Money policy changes wait for a Finance approver who did not request them.
       </NoticeCard>
+      <OffboardingCard />
       {settings.loading && <LoadingState label="Loading settings" />}
       {view !== null && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-space-lg items-start">
@@ -362,6 +370,19 @@ function PolicySettings({ children }: { readonly children: ReactNode }) {
           <p className={NOTE}>Where a plan change must be filed with an authority first, and when a full export of your data is generated. The product ships no default value for either.</p>
           <ul className="flex flex-col gap-space-md">
             {b6Rows.map((row) => (
+              <SettingRow key={row.key} title={row.title} description={row.description} whenUnset={row.whenUnset} entry={row.entry}
+                show={(value: unknown) => <PolicyValue name={row.key} value={value} />}
+                onChange={versionOf(row.key)} />
+            ))}
+          </ul>
+        </section>
+      )}
+      {v1aRows.length > 0 && (
+        <section className={SECTION_CARD} aria-labelledby="fx-policy-title" data-testid="fx-policy">
+          <SectionTitle id="fx-policy-title" icon="currency_exchange" title="Currency conversion" />
+          <p className={NOTE}>Orders in another currency are converted once, when they are recorded, with the approved rate in force at their time. The product ships no default age limit.</p>
+          <ul className="flex flex-col gap-space-md">
+            {v1aRows.map((row) => (
               <SettingRow key={row.key} title={row.title} description={row.description} whenUnset={row.whenUnset} entry={row.entry}
                 show={(value: unknown) => <PolicyValue name={row.key} value={value} />}
                 onChange={versionOf(row.key)} />

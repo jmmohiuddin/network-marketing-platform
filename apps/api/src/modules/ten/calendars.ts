@@ -5,7 +5,7 @@ import { ApiError, notFound } from '../../lib/errors.js'
 import type { Envelope } from '../../lib/http.js'
 import { decodeCursor, toPage } from '../../lib/pagination.js'
 import { invalidField } from './market-validation.js'
-import { pgCode } from './pg.js'
+import { pgCode, pgDetail } from './pg.js'
 import { inScope } from './scope.js'
 import { recordStructureChange } from './structure.js'
 
@@ -20,7 +20,12 @@ export interface CalendarView {
   cutoff_time_zone: string
   first_period_start: string
   periods: { count: number; first_starts_at: Date | null; last_ends_at: Date | null; open: number }
+  /** D-V1A-02: the final calendar this one pays advances for, and the provisional calendars of this one. */
+  provisional_for: CalendarRef | null
+  provisional_calendars: CalendarRef[]
 }
+
+interface CalendarRef { id: string; name: string }
 
 interface CalendarRow {
   id: string
@@ -34,19 +39,25 @@ interface CalendarRow {
   first_starts_at: Date | null
   last_ends_at: Date | null
   open: number
+  provisional_for: CalendarRef | null
+  provisional_calendars: CalendarRef[]
 }
 
 const CALENDAR_SELECT = `
   SELECT c.id, c.market_id, m.code, c.name, c.cadence, c.cutoff_time_zone,
          to_char(c.first_period_start, 'YYYY-MM-DD') AS first_period_start, count(p.id)::int AS count,
          min(p.starts_at) AS first_starts_at, max(p.ends_at) AS last_ends_at,
-         (count(p.id) FILTER (WHERE p.state = 'open'))::int AS open
+         (count(p.id) FILTER (WHERE p.state = 'open'))::int AS open,
+         (SELECT jsonb_build_object('id', f.id, 'name', f.name) FROM calendar f WHERE f.id = c.provisional_for_calendar_id) AS provisional_for,
+         coalesce((SELECT jsonb_agg(jsonb_build_object('id', x.id, 'name', x.name) ORDER BY x.name, x.id)
+                   FROM calendar x WHERE x.provisional_for_calendar_id = c.id), '[]') AS provisional_calendars
   FROM calendar c JOIN market m ON m.id = c.market_id LEFT JOIN period p ON p.calendar_id = c.id`
 
 const toView = (row: CalendarRow): CalendarView => ({
   id: row.id, market: { id: row.market_id, code: row.code }, name: row.name, cadence: row.cadence,
   cutoff_time_zone: row.cutoff_time_zone, first_period_start: row.first_period_start,
   periods: { count: row.count, first_starts_at: row.first_starts_at, last_ends_at: row.last_ends_at, open: row.open },
+  provisional_for: row.provisional_for, provisional_calendars: row.provisional_calendars,
 })
 
 export async function listCalendars(tx: Tx, scope: readonly string[] | null, marketId: string | undefined): Promise<CalendarView[]> {
@@ -87,26 +98,79 @@ const SERIES = `
            coalesce(($3::date + 1)::timestamp, greatest(c.first, (now() AT TIME ZONE c.tz)::date) + $2::int * c.step) AS until_local
     FROM c),
   series AS (
-    SELECT b.tz, b.step, d FROM bounds b, generate_series(b.from_local, b.until_local - interval '1 day', b.step) AS d)`
+    SELECT d AT TIME ZONE b.tz AS starts_at, (d + b.step) AT TIME ZONE b.tz AS ends_at
+    FROM bounds b, generate_series(b.from_local, b.until_local - interval '1 day', b.step) AS d)`
+
+// D-V1A-02 (C-V1A-17): a provisional calendar's boundaries are its own grid (first period start + k steps, local) and
+// every boundary of its final calendar; consecutive boundaries form one period, so a step crossing a final boundary
+// becomes two periods. Periods start from the end of the last generated one, before the same horizon as above, and
+// never end past the final calendar's last generated period.
+const PROVISIONAL_SERIES = `
+  WITH c AS (
+    SELECT id, cutoff_time_zone AS tz, first_period_start AS first, provisional_for_calendar_id AS final_id,
+           CASE cadence WHEN 'monthly' THEN interval '1 month' ELSE interval '7 days' END AS step
+    FROM calendar WHERE id = $1),
+  bounds AS (
+    SELECT c.*,
+           coalesce((SELECT max(p.ends_at) FROM period p WHERE p.calendar_id = c.id), c.first::timestamp AT TIME ZONE c.tz) AS from_at,
+           coalesce(($3::date + 1)::timestamp, greatest(c.first, (now() AT TIME ZONE c.tz)::date) + $2::int * c.step)
+             AT TIME ZONE c.tz AS until_at,
+           (SELECT max(f.ends_at) FROM period f WHERE f.calendar_id = c.final_id) AS final_end
+    FROM c),
+  points AS (
+    SELECT d AT TIME ZONE b.tz AS at FROM bounds b, generate_series(b.first::timestamp, b.final_end AT TIME ZONE b.tz, b.step) AS d
+    UNION SELECT f.starts_at FROM bounds b JOIN period f ON f.calendar_id = b.final_id
+    UNION SELECT b.final_end FROM bounds b),
+  cut AS (
+    SELECT p.at AS starts_at, lead(p.at) OVER (ORDER BY p.at) AS ends_at
+    FROM points p, bounds b WHERE p.at >= b.from_at AND p.at <= b.final_end),
+  series AS (SELECT x.starts_at, x.ends_at FROM cut x, bounds b WHERE x.ends_at IS NOT NULL AND x.starts_at < b.until_at)`
 
 export type Horizon = { readonly periodsAhead: number } | { readonly through: string }
 
 /** Generates the calendar's open periods up to the horizon (idempotent: existing periods are kept). */
 async function generatePeriods(tx: Tx, calendarId: string, horizon: Horizon): Promise<number> {
   const params = 'periodsAhead' in horizon ? [calendarId, horizon.periodsAhead, null] : [calendarId, null, horizon.through]
-  const { rows } = await tx.query<{ count: number }>(`${SERIES} SELECT count(*)::int AS count FROM series`, params)
+  const { rows: calendars } = await tx.query<{ provisional: boolean }>(
+    'SELECT provisional_for_calendar_id IS NOT NULL AS provisional FROM calendar WHERE id = $1', [calendarId],
+  )
+  const series = calendars[0]!.provisional ? PROVISIONAL_SERIES : SERIES
+  const { rows } = await tx.query<{ count: number }>(`${series} SELECT count(*)::int AS count FROM series`, params)
   const count = rows[0]!.count
   if (count > GENERATION_LIMIT) {
     throw new ApiError(422, 'GENERATION_LIMIT', `One request generates at most ${GENERATION_LIMIT} periods.`, { requested: count, limit: GENERATION_LIMIT })
   }
-  const inserted = await tx.query(
-    `${SERIES}
-     INSERT INTO period (tenant_id, calendar_id, starts_at, ends_at)
-     SELECT app_tenant_id(), $1, d AT TIME ZONE tz, (d + step) AT TIME ZONE tz FROM series
-     ON CONFLICT DO NOTHING`,
-    params,
+  try {
+    const inserted = await tx.query(
+      `${series}
+       INSERT INTO period (tenant_id, calendar_id, starts_at, ends_at)
+       SELECT app_tenant_id(), $1, starts_at, ends_at FROM series
+       ON CONFLICT DO NOTHING`,
+      params,
+    )
+    return inserted.rowCount ?? 0
+  } catch (error) {
+    if (pgDetail(error) === 'periods_not_nested') throw provisionalTargetInvalid('periods_not_nested')
+    throw error
+  }
+}
+
+const provisionalTargetInvalid = (reason: 'other_market' | 'target_provisional' | 'periods_not_nested'): ApiError =>
+  new ApiError(422, 'PROVISIONAL_TARGET_INVALID', 'A provisional calendar pays advances for a final calendar of its market whose periods contain its own.', { reason })
+
+/** 422 unless the final calendar exists, is in the same market, is not provisional itself and starts no later than this one. */
+async function assertProvisionalTarget(tx: Tx, input: NewCalendar, finalId: string): Promise<void> {
+  const { rows } = await tx.query<{ market_id: string; provisional: boolean; nested: boolean | null }>(
+    `SELECT f.market_id, f.provisional_for_calendar_id IS NOT NULL AS provisional,
+            (SELECT min(p.starts_at) FROM period p WHERE p.calendar_id = f.id) <= ($2::date::timestamp AT TIME ZONE $3) AS nested
+     FROM calendar f WHERE f.id = $1`,
+    [finalId, input.first_period_start, input.cutoff_time_zone],
   )
-  return inserted.rowCount ?? 0
+  const target = rows[0]
+  if (target === undefined) throw new ApiError(422, 'CALENDAR_NOT_FOUND', 'No such calendar.', { field: 'provisional_for_calendar_id' })
+  if (target.market_id !== input.market_id) throw provisionalTargetInvalid('other_market')
+  if (target.provisional) throw provisionalTargetInvalid('target_provisional')
+  if (target.nested !== true) throw provisionalTargetInvalid('periods_not_nested')
 }
 
 export interface NewCalendar {
@@ -116,6 +180,7 @@ export interface NewCalendar {
   readonly cutoff_time_zone: string
   readonly first_period_start: string
   readonly periods_ahead: number
+  readonly provisional_for_calendar_id?: string | undefined
   readonly reason: string
 }
 
@@ -132,12 +197,14 @@ export async function createCalendar(tx: Tx, scope: readonly string[] | null, in
     throw invalidField('first_period_start', 'a monthly calendar starts on the first day of a month')
   }
   await assertKnownZone(tx, input.cutoff_time_zone)
+  const provisionalFor = input.provisional_for_calendar_id ?? null
+  if (provisionalFor !== null) await assertProvisionalTarget(tx, input, provisionalFor)
   let id: string
   try {
     const { rows } = await tx.query<{ id: string }>(
-      `INSERT INTO calendar (tenant_id, market_id, name, cadence, cutoff_time_zone, first_period_start, created_by)
-       VALUES (app_tenant_id(), $1, $2, $3, $4, $5, current_setting('app.user_id')::uuid) RETURNING id`,
-      [input.market_id, input.name, input.cadence, input.cutoff_time_zone, input.first_period_start],
+      `INSERT INTO calendar (tenant_id, market_id, name, cadence, cutoff_time_zone, first_period_start, provisional_for_calendar_id, created_by)
+       VALUES (app_tenant_id(), $1, $2, $3, $4, $5, $6, current_setting('app.user_id')::uuid) RETURNING id`,
+      [input.market_id, input.name, input.cadence, input.cutoff_time_zone, input.first_period_start, provisionalFor],
     )
     id = rows[0]!.id
   } catch (error) {
@@ -147,7 +214,10 @@ export async function createCalendar(tx: Tx, scope: readonly string[] | null, in
   const generated = await generatePeriods(tx, id, { periodsAhead: input.periods_ahead })
   await recordAudit(tx, {
     action: 'CALENDAR.CREATED', objectType: 'calendar', objectId: id,
-    after: { market_id: input.market_id, name: input.name, cadence: input.cadence, cutoff_time_zone: input.cutoff_time_zone, generated },
+    after: {
+      market_id: input.market_id, name: input.name, cadence: input.cadence, cutoff_time_zone: input.cutoff_time_zone,
+      provisional_for: provisionalFor, generated,
+    },
     reason: input.reason,
   })
   await recordStructureChange(tx, input.reason)

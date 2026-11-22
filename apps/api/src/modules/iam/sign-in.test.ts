@@ -71,14 +71,14 @@ describe('POST /v1/auth/sessions (tenant realm)', () => {
     }
   })
 
-  test('deactivated users and archived tenants cannot sign in', async () => {
+  test('deactivated users cannot sign in; an archived tenant\'s users still do, to read and export (D-V1A-07)', async () => {
     const archived = await createTenant({ state: 'archived' })
     const deactivated = await createSignedInUser({ tenantId: acme.id, mfa: 'none', passwordHash })
     const inArchived = await createSignedInUser({ tenantId: archived.id, mfa: 'none', passwordHash })
     await ownerRows(`UPDATE user_account SET state = 'deactivated' WHERE id = $1`, [deactivated.id])
 
     expect((await signIn(acme.slug, deactivated.email)).statusCode).toBe(401)
-    expect((await signIn(archived.slug, inArchived.email)).statusCode).toBe(401)
+    expect((await signIn(archived.slug, inArchived.email)).statusCode).toBe(201)
   })
 
   test('AC-35.2: five failures lock the account; the sixth attempt is refused even with the right password', async () => {

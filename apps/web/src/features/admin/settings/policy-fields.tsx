@@ -32,6 +32,8 @@ const PRECEDENCE_FIELDS = ['first', 'second', 'third'] as const
 const COOLING_OFF_MAX_HOURS = 2160
 const SHARED_MAX = 1000
 const DAYS_MAX = 3650
+/** The API's bound on fx.max_rate_age_days (ten/settings.ts). */
+const FX_RATE_AGE_MAX_DAYS = 366
 const REMINDER_MAX_DAYS = 365
 /** Whole minor units, as the API's bigint strings. */
 const MINOR = /^(0|[1-9]\d{0,17})$/
@@ -195,6 +197,10 @@ export function policyValue(key: PolicyKey, draft: Draft): Built {
     }
     case 'payouts.dormant_after_days': {
       const age = whole(draft, 'value', 1, DAYS_MAX, 'the days')
+      return built(age.number, [age.error])
+    }
+    case 'fx.max_rate_age_days': {
+      const age = whole(draft, 'value', 1, FX_RATE_AGE_MAX_DAYS, 'the days')
       return built(age.number, [age.error])
     }
     case 'payouts.provider_review_reminder_days': {
@@ -387,6 +393,7 @@ export function PolicyFields({ policyKey, draft, errors, onChange }: PolicyField
     case 'payouts.bank_detail_cooling_off_hours': return input('value', 'Cooling-off hours', `0 to ${COOLING_OFF_MAX_HOURS}. A new bank account is left out of payout batches for this long after its approval.`)
     case 'payouts.shared_account_threshold': return input('value', 'Payees sharing one account', `1 to ${SHARED_MAX}. A bank-detail change shared by this many payees is flagged to its approver.`)
     case 'payouts.dormant_after_days': return input('value', 'Days unpaid', `1 to ${DAYS_MAX}. Payables unpaid this long are listed as dormant.`)
+    case 'fx.max_rate_age_days': return input('value', 'Maximum rate age (days)', `1 to ${FX_RATE_AGE_MAX_DAYS}. An order in another currency is converted with the rate in force at its time; a rate older than this holds the order until a newer rate is approved.`)
     case 'payouts.provider_review_reminder_days': return input('value', 'Days before the review date', `1 to ${REMINDER_MAX_DAYS}. Market managers are reminded this long before a payout provider's review is due.`)
     case 'adjustments.policy':
       return (

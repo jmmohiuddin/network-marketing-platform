@@ -1,14 +1,17 @@
-import { randomUUID } from 'node:crypto'
+import { createHmac, randomUUID } from 'node:crypto'
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { LightMyRequestResponse } from 'fastify'
 import { afterAll, beforeAll, describe, expect, test, vi } from 'vitest'
 import { BASE_ROLES, PERMISSIONS } from '../../src/lib/permissions.js'
+import { READ_ONLY_ALLOWLIST } from '../../src/lib/tenant-state.js'
 import { portalMember } from '../../src/modules/iam/portal-test-support.js'
 import { SUPPORT_SESSION_HEADER } from '../../src/modules/support/index.js'
 import { multipartBody, tinyFiles } from '../../src/modules/imp/test-support.js'
+import { apiKey, asKey } from '../../src/modules/ord/test-support.js'
 import { activeType, CUSTOMER, DISTRIBUTOR, enrolled } from '../../src/modules/par/test-support.js'
+import { webhook } from '../../src/modules/pay/test-support.js'
 import {
   baseRoleId, buildTestApp, call, closePoolsAfterAll, createMarket, createPortalUser, createSignedInUser, ownerRows, resetApiDb, type TestUser,
 } from '../helpers/index.js'
@@ -435,5 +438,78 @@ describe('T-B5-40: tenant A\'s portal session on every other route (AC-IAM7-4: 4
     const response = await send(seeded.portal, { method: 'GET', url: '/v1/me/statements' })
 
     expect(response.statusCode).toBe(200)
+  })
+})
+
+// PLAN V1-A 2.5 / AC-TEN5-2 allowlist: the writes a read-only tenant still makes (auth, the final export, calling the
+// offboarding off, the data-subject routes of C-V1A-18). Vendor-realm routes are not the tenant's writes.
+const READ_ONLY_ALLOWED = [
+  'DELETE /v1/auth/sessions/current', 'POST /v1/auth/firebase-sessions', 'POST /v1/auth/invitations/accept', 'POST /v1/auth/mfa/totp',
+  'POST /v1/auth/mfa/totp/confirm', 'POST /v1/auth/portal-codes', 'POST /v1/auth/portal-firebase-sessions', 'POST /v1/auth/portal-sessions',
+  'POST /v1/auth/sessions', 'POST /v1/auth/sessions/current/mfa', 'POST /v1/auth/sessions/current/reauth', 'POST /v1/auth/sessions/current/step-up',
+  'POST /v1/auth/vendor-firebase-sessions', 'POST /v1/auth/vendor-sessions', 'POST /v1/exports', 'POST /v1/me/privacy-requests',
+  'POST /v1/offboarding/cancel', 'POST /v1/privacy-requests', 'POST /v1/privacy-requests/:id/verify', 'POST /v1/public/privacy-requests',
+  'PUT /v1/privacy-requests/:id/corrections',
+]
+
+describe('T-V1A-60: tenant A read-only (offboarding confirmed): every other write is 409 TENANT_READ_ONLY', () => {
+  const writes = routes.filter((route) => UNSAFE.has(route.split(' ')[0]!) && caseOf(route)?.access !== 'vendor')
+  const allowlisted = (route: string) => READ_ONLY_ALLOWLIST.some((allowed) => allowed.test(route))
+  const CONNECTOR_SECRET = `isolation-secret-${randomUUID()}`
+  let token: string
+  let offboarding: string
+
+  beforeAll(async () => {
+    // Before the confirmation (both are writes): a key for the key-only routes and a known connector secret to sign with.
+    token = await apiKey(app, seeded.owner, ['orders:write', 'credits:write'])
+    const rotated = await send(seeded.owner, {
+      method: 'POST', url: `/v1/connectors/${targets.connector}/rotate-secret`, body: { webhook_secret: CONNECTOR_SECRET },
+    })
+    expect(rotated.statusCode, rotated.body).toBe(200)
+    // FIXTURE: the offboarding confirmed (D-V1A-07), as the owner writes it; cancelled again after the sweep.
+    const [row] = await ownerRows<{ id: string }>(
+      `INSERT INTO tenant_offboarding (tenant_id, state, reason, previous_state, requested_by, confirmed_by, confirmed_at, retention_basis,
+         retention_months, acknowledged_warnings)
+       VALUES ($1, 'confirmed', 'isolation', 'live', $2, $2, now(), 'isolation', 12, '{}') RETURNING id`, [seeded.a.id, seeded.owner.id])
+    offboarding = row!.id
+  })
+
+  afterAll(async () => {
+    await ownerRows(`UPDATE tenant_offboarding SET state = 'cancelled', closed_by = $2, closed_at = now() WHERE id = $1`, [offboarding, seeded.owner.id])
+  })
+
+  /** Tenant A's caller of the route: its portal session, its key, a valid signature, or the owner's staff session. */
+  function sendAsTenantA(route: string, routeCase: RouteCase): Promise<LightMyRequestResponse> {
+    const request = routeCase.request(targets)
+    if (routeCase.access === 'portal') return send(seeded.portal, request)
+    if (routeCase.access === 'key') return asKey(app, token, request.url, request.body)
+    if (route === 'POST /v1/webhooks/providers/:providerConfigId') return webhook(app, targets.payoutProvider, { type: 'payout.settled' })
+    if (route === 'POST /v1/connectors/:id/webhooks') {
+      const raw = JSON.stringify({ id: 1 })
+      const signature = createHmac('sha256', CONNECTOR_SECRET).update(raw).digest('base64')
+      return app.inject({
+        method: 'POST', url: request.url, payload: raw,
+        headers: { 'content-type': 'application/json', 'x-shopify-hmac-sha256': signature, 'x-shopify-topic': 'orders/paid' },
+      })
+    }
+    return send(seeded.owner, request)
+  }
+
+  test('the allowlist is exactly the auth, final export, offboarding cancel and data-subject writes', () => {
+    expect(writes.filter(allowlisted)).toEqual([...READ_ONLY_ALLOWED].sort())
+  })
+
+  test.each(writes.filter((route) => !allowlisted(route)))('%s', async (route) => {
+    const response = await sendAsTenantA(route, caseFor(route))
+
+    expect(outcome(response)).toBe('409 TENANT_READ_ONLY')
+  })
+
+  test('reads keep working, and /v1/me says the tenant is read-only', async () => {
+    const read = await send(seeded.owner, { method: 'GET', url: '/v1/participants?limit=1' })
+    const me = await send(seeded.owner, { method: 'GET', url: '/v1/me' })
+
+    expect(read.statusCode).toBe(200)
+    expect(me.json().data.tenant).toMatchObject({ read_only: true })
   })
 })

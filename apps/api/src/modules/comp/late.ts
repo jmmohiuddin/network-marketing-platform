@@ -141,6 +141,8 @@ function originsFor(
   const share = (measure: string | null): Fraction =>
     event === null ? { num: 1n, den: 1n } : reversedShare(sourceOf(input.plan, measure), order, event, ofOrder)
   const sign = event === null || event.type === 'chargeback_reversed' ? 1n : -1n
+  // shortcut: credit awards are never adjusted after award (the engine's lines are cash only, so award rules get no late,
+  // clawback or restatement origin), upgrade when a plan document defines credit reversal (PLAN V1-A section 8).
   return lines.flatMap((line) => {
     if (line.origin !== null || line.reversalPolicy !== 'order_line' || line.trace.raw === 0n) return []
     const part = partOf(line, orderId, share)

@@ -8,7 +8,9 @@ import { request as httpRequest } from 'node:http'
 import { request as httpsRequest } from 'node:https'
 import { brotliDecompressSync, gunzipSync } from 'node:zlib'
 
-const STATEMENT_TRANSFER_BUDGET_BYTES = 150 * 1024
+// E-ADR-51 / D-V1A-11 (needs product confirmation): the App Router floor is 149.3 KB, so the 150 KB TS-30 gate became
+// 190 KB cold excluding fonts, with content readable <= 3 s on 1.6 Mbit/s / 300 ms RTT and the core readable without scripts.
+const STATEMENT_TRANSFER_BUDGET_BYTES = 190 * 1024
 const FONT = /\.(woff2?|ttf|otf|eot)(\?|$)/i
 const TAG = /<(script|link)\b([^>]*)>/gi
 const ATTRIBUTE = /([a-zA-Z-]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>]+)))?/g

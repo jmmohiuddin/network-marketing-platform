@@ -43,7 +43,7 @@ const AGREEMENT: AgreementVersion = {
 
 function detail(overrides: Partial<ParticipantDetail> = {}): ParticipantDetail {
   return {
-    id: 'p1', external_ref: 'B-1', account_type: 'individual', market: { id: 'm1', code: 'NL' }, display_name: 'Bea Builder',
+    id: 'p1', external_ref: 'B-1', account_type: 'individual', account_holders_count: 0, market: { id: 'm1', code: 'NL' }, display_name: 'Bea Builder',
     contact_masked: { email: 'b•••@e•••.com', phone: '•••• 4912' }, status: 'active', merged_into: null, enrolled_at: AT,
     types: [{ type: { id: 't1', code: 'DIST', name: 'Distributor' }, valid_from: '2026-01-01T00:00:00.000Z', valid_to: null }],
     agreements: [{ version: { id: 'av1', label: 'NL v1' }, accepted_at: AT, evidence: { channel: 'web', reference: 'R-1' } }],

@@ -1,5 +1,6 @@
 import type { ApiModule } from '../../lib/module.js'
 import { registerLaunchRoutes, registerMarketRoutes } from './market-routes.js'
+import { registerOffboardingRoutes } from './offboarding.js'
 import { registerSettingsRoutes } from './routes.js'
 
 /**
@@ -12,6 +13,7 @@ export const tenModule: ApiModule = {
     registerSettingsRoutes(app)
     registerMarketRoutes(app)
     registerLaunchRoutes(app)
+    registerOffboardingRoutes(app)
   },
 }
 
@@ -31,3 +33,4 @@ export { placementWidthFor, structuralRules, type StructuralRule, type Structura
 export { inScope } from './scope.js'
 export { recordStructureChange } from './structure.js'
 export { approveOrRefuse, decideWithSod } from './sod.js'
+export { minorUnitOf } from './iso4217.js'

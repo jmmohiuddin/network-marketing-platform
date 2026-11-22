@@ -39,7 +39,7 @@ export interface LedgerSummary {
 export interface JournalEntry {
   readonly id: string
   readonly event_type: string
-  readonly origin_type: 'run' | 'payout_instruction' | 'case' | 'migration'
+  readonly origin_type: 'run' | 'payout_instruction' | 'case' | 'migration' | 'credit_redemption' | 'credit_award'
   readonly origin_id: string
   readonly idempotency_key: string
   readonly period: PeriodBounds
@@ -144,4 +144,102 @@ export interface PayeeBalance {
   readonly payable_minor: string
   readonly in_transit_minor: string
   readonly receivable_minor: string
+}
+
+// API-23 credits and FX (PLAN V1-A 2.1, 2.2; apps/api/src/modules/led credit-types.ts, credits.ts, fx-rates.ts).
+
+export interface CreditScope {
+  readonly markets?: readonly string[]
+  readonly item_classes?: readonly string[]
+}
+
+/** GET /v1/credit-types rows (tenant-wide). */
+export interface CreditType {
+  readonly id: string
+  readonly code: string
+  readonly name: string
+  readonly unit_value_minor: string | null
+  readonly expiry_days: number | null
+  readonly expiry_notice_days: number | null
+  readonly redemption_scope: CreditScope | null
+  readonly taxable: boolean
+  readonly active: boolean
+  readonly updated_at: string
+}
+
+export interface CreditTypeRef {
+  readonly id: string
+  readonly code: string
+  readonly name: string
+}
+
+/** GET /v1/credits/balances rows (meta.totals per currency). */
+export interface CreditBalance {
+  readonly participant: { readonly id: string; readonly external_ref: string }
+  readonly credit_type: CreditTypeRef
+  readonly market_id: string
+  readonly currency: string
+  readonly balance_minor: string
+  readonly available_minor: string
+  readonly next_expiry: { readonly on: string; readonly amount_minor: string } | null
+}
+
+/** GET /v1/credits/lots rows: one award each. */
+export interface CreditLot {
+  readonly award_id: string
+  readonly run_id: string
+  readonly committed_at: string
+  /** YYYY-MM-DD (date text from the API). */
+  readonly expires_on: string | null
+  readonly amount_minor: string
+  readonly remaining_minor: string
+  readonly notified_at: string | null
+  readonly expired_at: string | null
+}
+
+/** GET /v1/credits/redemptions rows. */
+export interface CreditRedemption {
+  readonly id: string
+  readonly participant: { readonly id: string; readonly external_ref: string }
+  readonly credit_type: CreditTypeRef
+  readonly amount_minor: string
+  readonly currency: string
+  readonly item_class: string | null
+  readonly occurred_at: string
+  readonly source_system: string
+  readonly source_redemption_id: string
+  readonly entry_id: string | null
+}
+
+/** GET /v1/fx-rates rows; rates are 10-dp decimal strings. */
+export interface FxRate {
+  readonly id: string
+  readonly base: string
+  readonly quote: string
+  readonly rate: string
+  readonly source: string
+  readonly valid_from: string
+  readonly batch_id: string
+  readonly in_force: boolean
+}
+
+export interface FxRateRow {
+  readonly base: string
+  readonly quote: string
+  readonly rate: string
+  readonly valid_from: string
+}
+
+export type FxBatchState = 'proposed' | 'approved' | 'rejected'
+
+/** GET /v1/fx-rate-batches rows and the POST/decision answers. */
+export interface FxBatch {
+  readonly id: string
+  readonly source: string
+  readonly rows: readonly FxRateRow[]
+  readonly state: FxBatchState
+  readonly proposed_by: { readonly id: string; readonly name: string }
+  readonly proposed_at: string
+  readonly decided_at: string | null
+  readonly approver: { readonly id: string; readonly name: string } | null
 }

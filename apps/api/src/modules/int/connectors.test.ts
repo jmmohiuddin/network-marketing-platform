@@ -279,6 +279,24 @@ describe('POST /v1/connectors/:id/webhooks (T-B2-26 signatures, T-B2-27 mapping)
       .toEqual([{ attribution_source: 'code', attributed_position_id: coded.positionId }])
   })
 
+  test('T-V1A-60: a read-only tenant\'s signed delivery is 409 TENANT_READ_ONLY after the signature check, nothing stored', async () => {
+    const vendor = await createSignedInUser({ tenantId: null })
+    // FIXTURE: the offboarding confirmed (D-V1A-07), as the owner writes it; cancelled again at the end.
+    const [offboarding] = await ownerRows<{ id: string }>(
+      `INSERT INTO tenant_offboarding (tenant_id, state, reason, previous_state, requested_by, confirmed_by, confirmed_at, retention_basis,
+         retention_months, acknowledged_warnings)
+       VALUES ($1, 'confirmed', 'r', 'live', $2, $3, now(), 'b', 12, '{}') RETURNING id`, [acme.id, vendor.id, shop.admin.id])
+    const before = (await inboundOf(shopify)).length
+
+    const unsigned = await deliver(shopify, 'shopify', 'orders/paid', shopifyOrder(), 'not-the-secret-at-all')
+    const signed = await deliver(shopify, 'shopify', 'orders/paid', shopifyOrder(), SECRET)
+    await ownerRows(`UPDATE tenant_offboarding SET state = 'cancelled', closed_by = $2, closed_at = now() WHERE id = $1`, [offboarding!.id, vendor.id])
+
+    expect(unsigned.json().error.code).toBe('SIGNATURE_INVALID')
+    expect([signed.statusCode, signed.json().error.code]).toEqual([409, 'TENANT_READ_ONLY'])
+    expect(await inboundOf(shopify)).toHaveLength(before)
+  })
+
   test('AC-ORD2-4: rotation replaces the secret; a withdrawn connector answers 404', async () => {
     const rotated = await call(app, { method: 'POST', url: `/v1/connectors/${woo}/rotate-secret`, as: shop.admin, body: { webhook_secret: 'woo_rotated_secret_0123456789' } })
     const oldSecret = await deliver(woo, 'woocommerce', 'order.created', { ...fixture('woocommerce-order'), id: (nextId += 1) }, WOO_SECRET)

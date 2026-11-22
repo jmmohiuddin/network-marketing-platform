@@ -26,9 +26,9 @@ const ORDER: OrderDetail = {
   id: 'o1', source_system: 'shop', source_order_id: 'ORD-1', market: { id: 'm1', code: 'NL' },
   buyer: { id: 'k', external_ref: 'K-1', display_name: 'Kim Customer' }, buyer_type: { code: 'RETAIL' }, purpose: 'customer', purpose_missing: false,
   attributed_position: { id: 'pos-c', position_ref: 'P-C' }, attribution_source: 'link', attribution_conflict: true, credited_at: CREDITED, period_id: null,
-  amount_minor: '123456', tax_minor: '0', currency: 'EUR', volumes: { pv: '140' }, ordered_at: CREDITED,
+  amount_minor: '123456', tax_minor: '0', currency: 'EUR', volumes: { pv: '140' }, ordered_at: CREDITED, subscription_ref: null, original: null,
   lines: [{ line_no: 1, sku: 'SKU-1', item_class: 'product', quantity: 2, amount_minor: '123456', volumes: { pv: '140' } }],
-  events: [{ id: 'e1', type: 'return', occurred_at: CREDITED, lines: [{ line_no: 1, quantity: 1 }], refund_minor: '61728', fee_minor: '0', equal_value: false, volume_effect: { total: { pv: '-70' } }, late: false }],
+  events: [{ id: 'e1', type: 'return', occurred_at: CREDITED, lines: [{ line_no: 1, quantity: 1 }], refund_minor: '61728', fee_minor: '0', equal_value: false, volume_effect: { total: { pv: '-70' } }, late: false, original: null, dispute_of_event_id: null }],
   late_transactions: [], source: { inbound_event_id: 'i1', received_at: CREDITED, source: 'api:shop' },
 }
 

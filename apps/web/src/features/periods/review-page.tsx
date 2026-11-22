@@ -29,6 +29,7 @@ import { ledgerPath } from '../ledger/format'
 import { hasResults, isFinished, isRunning, marketMoney, periodText, reviewPath, RUN_STATE_LABELS, signedMoney } from './format'
 import { LinesTable } from './lines-tab'
 import { AdjustmentsTab, ChangesTab, ExceptionsTab, MoversTab, VarianceTab } from './review-tabs'
+import { CreditAwardsTab, TrueUpTab } from './true-up-tab'
 import { useRunRequest } from './run-request'
 import type { CommitRequest, PeriodDetail, PeriodList, RunDetail, RunReview } from './types'
 
@@ -87,6 +88,10 @@ function Review({ run, period, label, zone, market, review, reload }: ReviewProp
   const lineReader = (can('tax.read') || can('run.review')) && review !== null
   const taxReader = can('tax.read') && review !== null
   const taxLines = useResource<unknown[]>(lineReader ? '/v1/tax/lines' : null, { run_id: run.id, limit: 1 })
+  // SC-02 advance banner: the final period's latest run review once it has results, else the final calendar.
+  const finalPeriodId = run.provisional?.final_period_id ?? null
+  const finalPeriod = useResource<PeriodDetail>(finalPeriodId === null ? null : `/v1/periods/${finalPeriodId}`)
+  const finalRun = finalPeriod.data?.runs[0]
   const withheld = (taxLines.meta.totals as { readonly withheld_minor: string } | undefined)?.withheld_minor ?? null
   const tabs = [
     { id: 'variance', label: 'Variance' },
@@ -96,6 +101,8 @@ function Review({ run, period, label, zone, market, review, reload }: ReviewProp
     { id: 'changes', label: 'What changed' },
     { id: 'adjustments', label: 'Adjustments', ...(review === null ? {} : { count: review.adjustments.reduce((sum, row) => sum + row.count, 0) }) },
     ...(taxReader && market !== undefined ? [{ id: 'withholding', label: 'Withholding' }] : []),
+    ...(run.true_up === null ? [] : [{ id: 'true-up', label: 'True-up' }]),
+    ...(BigInt(run.credit_awards_minor) > 0n ? [{ id: 'credit-awards', label: 'Credit awards' }] : []),
   ]
   const [tab, selectTab] = useTabParam(tabs)
   const write = (permission: string) => !readOnly && can(permission)
@@ -165,6 +172,14 @@ function Review({ run, period, label, zone, market, review, reload }: ReviewProp
           Committed {formatDateTime(run.committed_at)}. The results of this period are fixed; corrections go through a restatement.{run.journal_entry_id === null ? ' No journal entry was posted for this run: either no payee had a non-zero amount, or the run was committed before the ledger existed.' : ''}
         </Banner>
       )}
+      {run.provisional !== null && (
+        <Banner tone="info" title="Advance run"
+          action={finalPeriodId !== null && finalRun !== undefined && hasResults(finalRun.state)
+            ? <LinkButton icon="fact_check" href={reviewPath(finalPeriodId, finalRun.id)}>Open the final period&apos;s review</LinkButton>
+            : <LinkButton icon="calendar_month" href={`/periods?calendar=${run.provisional.final_calendar_id}`}>Open the final calendar</LinkButton>}>
+          This period pays advances. The final period containing it calculates the full amount and deducts what this run pays; its True-up tab shows the difference per payee.
+        </Banner>
+      )}
       {syncStale && <Banner tone="warning" title="Order sync is not current">Orders may be missing from this run. Acknowledge it in Exceptions before committing, or re-run once the sync recovers.</Banner>}
       {runs.error !== null && <Banner tone="danger" title="The re-run was refused">{errorMessage(runs.error)}</Banner>}
       {problem !== null && <Banner tone="danger">{problem}</Banner>}
@@ -194,6 +209,8 @@ function Review({ run, period, label, zone, market, review, reload }: ReviewProp
               {tab === 'changes' && <ChangesTab review={review} runId={run.id} version={run.plan_version.version} />}
               {tab === 'adjustments' && <AdjustmentsTab review={review} market={market} runId={run.id} ruleKeys={ruleKeys} />}
               {tab === 'withholding' && market !== undefined && <WithholdingTab market={market} runId={run.id} />}
+              {tab === 'true-up' && <TrueUpTab runId={run.id} market={market} zone={zone} />}
+              {tab === 'credit-awards' && <CreditAwardsTab runId={run.id} market={market} />}
             </TabPanel>
           </div>
         </>

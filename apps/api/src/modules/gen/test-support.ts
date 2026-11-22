@@ -1,7 +1,7 @@
 // TEST FIXTURE ONLY: genealogy rows for GEN integration tests. Rows another module owns (types, participants, settings,
 // periods, documents) are written through the owner pool; positions and relationships through the SQL contracts in
 // the tenant realm, as PAR enrolment and the case hooks write them. Never import this file from a module index.
-import { randomUUID } from 'node:crypto'
+import { randomBytes, randomUUID } from 'node:crypto'
 import type { Tx } from '@nmp/db'
 import { getOwnerPool } from '@nmp/db/testing'
 import fastify from 'fastify'
@@ -191,3 +191,20 @@ export function correct(by: TestUser, kind: Kind, child: string, parent: string,
   })
 }
 
+
+/**
+ * FIXTURE (D-V1A-06 readiness): a tax profile in force and a current bank detail of the participant, as the B4 change
+ * controls would leave them (owner insert: the TAX and PAY routes that create them are other modules' paths).
+ */
+export async function readyPayee(tenantId: string, participantId: string, createdBy: string): Promise<void> {
+  await ownerRows(
+    `INSERT INTO tax_profile (tenant_id, participant_id, residency, entity_type, valid_from, created_by)
+     VALUES ($1, $2, 'GB', 'individual', now() - interval '1 day', $3)`,
+    [tenantId, participantId, createdBy],
+  )
+  await ownerRows(
+    `INSERT INTO bank_detail_version (tenant_id, participant_id, scheme, details_sealed, fingerprint, masked, created_via, cooling_off_until)
+     VALUES ($1, $2, 'iban', 'sealed-fixture', $3, '•••• 0001', 'migration', now())`,
+    [tenantId, participantId, randomBytes(32)],
+  )
+}

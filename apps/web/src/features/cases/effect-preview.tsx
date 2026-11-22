@@ -75,6 +75,16 @@ function TransferEffect({ preview, live }: { readonly preview: TransferPreview; 
       <CheckLine ok={preview.to_type_can_hold_positions}>
         {preview.to_type_can_hold_positions ? "The new owner's type can hold positions." : "The new owner's type cannot hold positions: approval will be refused."}
       </CheckLine>
+      {preview.new_owner_ready !== undefined && (
+        <>
+          <CheckLine ok={preview.new_owner_ready.tax_profile}>
+            {preview.new_owner_ready.tax_profile ? 'The new owner has a tax profile in force.' : 'The new owner has no tax profile in force: approval will be refused.'}
+          </CheckLine>
+          <CheckLine ok={preview.new_owner_ready.bank_detail}>
+            {preview.new_owner_ready.bank_detail ? 'The new owner has bank details on record.' : 'The new owner has no bank details on record: approval will be refused.'}
+          </CheckLine>
+        </>
+      )}
     </div>
   )
 }

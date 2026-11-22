@@ -26,11 +26,17 @@ const UNIQUE_REFUSALS: Readonly<Record<string, [409, string, string]>> = {
   order_event: [409, 'EVENT_CONFLICT', 'This event was already received with a different body.'],
 }
 
+// D-V1A-05: one dispute outcome per chargeback (a concurrent reversal or dispute_lost lost the race).
+const DISPUTE_OUTCOME: [409 | 422, string, string] = [422, 'DISPUTE_CLOSED', 'The dispute of this chargeback was already won or lost.']
+
 /** The error as a refusal (a Refusal, or a mapped SQLSTATE), or null for anything else. */
 export function asRefusal(error: unknown): Refusal | null {
   if (error instanceof Refusal) return error
   const code = pgCode(error)
-  const mapped = code === '23505' ? UNIQUE_REFUSALS[(error as { table?: string }).table ?? ''] : SQLSTATE_REFUSALS[code ?? '']
+  const { table, constraint } = (error ?? {}) as { table?: string; constraint?: string }
+  const mapped = code === '23505'
+    ? (constraint === 'order_event_dispute_outcome' ? DISPUTE_OUTCOME : UNIQUE_REFUSALS[table ?? ''])
+    : SQLSTATE_REFUSALS[code ?? '']
   return mapped === undefined ? null : new Refusal(...mapped)
 }
 

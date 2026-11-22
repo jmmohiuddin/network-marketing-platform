@@ -101,12 +101,12 @@ interface SessionRow {
 interface UserRow {
   state: string
   mfa_enrolled: boolean
-  tenant_state: string | null
   participant_id: string | null
   /** Portal accounts: the participant is active and not pseudonymised (true otherwise). */
   participant_active: boolean
   /** Portal accounts: no owned position is anything but terminated (D-B5-06). */
   participant_terminated: boolean
+  tenant_read_only: boolean
 }
 
 interface GrantRow {
@@ -138,13 +138,14 @@ async function touch(tx: Tx, session: SessionRow, idleMinutes: number): Promise<
 
 async function loadUser(tx: Tx, userId: string): Promise<UserRow | undefined> {
   const { rows } = await tx.query<UserRow>(
-    `SELECT u.state, u.mfa_enrolled, t.state AS tenant_state, u.participant_id,
+    `SELECT u.state, u.mfa_enrolled, u.participant_id,
             u.participant_id IS NULL OR (p.status = 'active' AND p.pseudonymised_at IS NULL) AS participant_active,
             u.participant_id IS NOT NULL AND NOT EXISTS (
               SELECT 1 FROM position_ownership o JOIN position x ON x.id = o.position_id
               WHERE o.participant_id = u.participant_id AND o.valid_from <= now() AND (o.valid_to IS NULL OR o.valid_to > now())
-                AND x.status <> 'terminated') AS participant_terminated
-     FROM user_account u LEFT JOIN tenant t ON t.id = u.tenant_id
+                AND x.status <> 'terminated') AS participant_terminated,
+            u.tenant_id IS NOT NULL AND tenant_read_only(u.tenant_id) AS tenant_read_only
+     FROM user_account u
      LEFT JOIN participant p ON p.tenant_id = u.tenant_id AND p.id = u.participant_id
      WHERE u.id = $1`,
     [userId],
@@ -184,16 +185,18 @@ function buildAuth(session: SessionRow, user: UserRow, grants: GrantRow[]): Auth
     supportSessionId: null,
     participantId: realm === 'portal' ? user.participant_id : null,
     participantTerminated: realm === 'portal' && user.participant_terminated,
+    tenantReadOnly: user.tenant_read_only,
   }
 }
 
-// One transaction in the session's own realm: idle check, user still active, tenant not archived, roles.
+// One transaction in the session's own realm: idle check, user still active, roles. An archived tenant stays readable
+// (D-V1A-07): its sessions resolve read-only.
 // auth_find_session skips closed accounts and closing one revokes its sessions (0040); the user check here only
 // covers a deactivation or archival that commits while this request resolves.
 async function loadContext(tx: Tx, session: SessionRow, idleMinutes: number): Promise<AuthContext | null> {
   if (!(await touch(tx, session, idleMinutes))) return null
   const user = await loadUser(tx, session.user_id)
-  if (user === undefined || user.state !== 'active' || user.tenant_state === 'archived' || !user.participant_active) return null
+  if (user === undefined || user.state !== 'active' || !user.participant_active) return null
   const grants = session.realm === 'tenant' ? await loadGrants(tx, session.user_id) : []
   return buildAuth(session, user, grants)
 }

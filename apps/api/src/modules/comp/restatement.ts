@@ -43,6 +43,9 @@ const COMMITTED = ['committed', 'paid', 'closed']
 async function assertRestatable(tx: Tx, periodId: string, caseId: string | null): Promise<void> {
   await lockPeriodRestatements(tx, periodId)
   const period = await loadPeriod(tx, periodId)
+  if (period.provisional_for_calendar_id !== null) {
+    throw new ApiError(422, 'PROVISIONAL_RUN', 'A provisional run is trued up by its final period, never restated (D-V1A-02).')
+  }
   if (!COMMITTED.includes(period.state)) throw new ApiError(409, 'PERIOD_NOT_COMMITTED', 'Only a committed period can be restated.')
   const { rows } = await tx.query<{ id: string }>(
     `SELECT c.id FROM case_file c LEFT JOIN restatement s ON s.case_id = c.id

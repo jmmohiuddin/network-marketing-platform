@@ -21,12 +21,14 @@ export const B4_KEYS = [
 export const B5_KEYS = ['disputes.policy', 'privacy.policy', 'portal.customer_contact_visible'] as const
 /** PLAN B6 D-B6-17: filing requirements and the full export schedule; none has a default (DEC-14). */
 export const B6_KEYS = ['plan.filing_requirements', 'exports.full_schedule'] as const
+/** PLAN V1-A D-V1A-10: the age limit of an exchange rate; no default (DEC-14). */
+export const V1A_KEYS = ['fx.max_rate_age_days'] as const
 /** Keys the DPO approves (settings.ts approverPermission privacy.manage). */
 const DPO_APPROVED: readonly string[] = ['genealogy.visibility_policy', 'privacy.policy', 'portal.customer_contact_visible']
 /** B4 keys a Finance approver approves (settings.ts approverPermission settings.approve). */
-const B4_APPROVED: readonly string[] = ['payouts.market_policy', 'payouts.bank_detail_cooling_off_hours', 'adjustments.policy', 'write_offs.policy']
+const B4_APPROVED: readonly string[] = ['payouts.market_policy', 'payouts.bank_detail_cooling_off_hours', 'adjustments.policy', 'write_offs.policy', 'fx.max_rate_age_days']
 /** Keys changed through "Save new version with effective date". */
-export const POLICY_KEYS = [...MONEY_KEYS, 'plan.activation_notice_days', ...B2_KEYS, ...B4_KEYS, ...B5_KEYS, ...B6_KEYS] as const
+export const POLICY_KEYS = [...MONEY_KEYS, 'plan.activation_notice_days', ...B2_KEYS, ...B4_KEYS, ...B5_KEYS, ...B6_KEYS, ...V1A_KEYS] as const
 export type PolicyKey = (typeof POLICY_KEYS)[number]
 
 export interface Approval {
@@ -81,6 +83,7 @@ export const KEY_LABELS: Readonly<Record<string, string>> = {
   'portal.customer_contact_visible': 'Customer contact in the portal',
   'plan.filing_requirements': 'Plan filing requirements',
   'exports.full_schedule': 'Full data export schedule',
+  'fx.max_rate_age_days': 'Exchange-rate age limit',
   structure: 'Markets, brands and calendars',
 }
 
@@ -206,6 +209,8 @@ function b2ValueText(key: string, value: unknown, markets: readonly Market[] | u
     case 'payouts.dormant_after_days':
     case 'payouts.provider_review_reminder_days':
       return days(Number(value))
+    case 'fx.max_rate_age_days':
+      return `A rate older than ${days(Number(value))} at the order's time holds the order`
     case 'adjustments.policy':
       return `Second approver above ${minor(record.second_approver_above_minor)}; new accounts: ${days(Number(record.new_account_days))}; related accounts: ${word(record.related_account_action).toLowerCase()}`
     case 'write_offs.policy':

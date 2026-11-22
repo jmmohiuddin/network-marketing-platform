@@ -3,7 +3,7 @@ import '../../test/dom'
 import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
-import { apiError, json, noContent } from '../../test/fetch'
+import { apiError, json, noContent, ok } from '../../test/fetch'
 import { adminMe, bodyOf, callsTo, fetchByRoute, headerOf, renderAs } from '../admin/test-support'
 import { calendarErrors } from './calendar-dialogs'
 import { localBound, referencesText } from './format'
@@ -19,6 +19,7 @@ const FR: Market = { id: '0a000000-0000-4000-8000-000000000001', code: 'FR', nam
 const CAL: Calendar = {
   id: '0c000000-0000-4000-8000-000000000001', market: { id: FR.id, code: 'FR' }, name: 'FR monthly', cadence: 'monthly', cutoff_time_zone: 'Europe/Paris',
   first_period_start: '2027-01-01', periods: { count: 12, first_starts_at: '2026-12-31T23:00:00.000Z', last_ends_at: '2027-12-31T23:00:00.000Z', open: 12 },
+  provisional_for: null, provisional_calendars: [],
 }
 const DE: Market = { ...FR, id: '0a000000-0000-4000-8000-000000000002', code: 'DE', name: 'Germany', time_zone: 'Europe/Berlin', languages: ['de'] }
 const TENANT_ADMIN = { assignment_id: 'a1', role_id: 'r1', name: 'Tenant admin' }
@@ -122,6 +123,41 @@ describe('MarketsPage', () => {
     expect(bodyOf(callsTo(fetchMock, 'POST', '/v1/calendars')[0]![1])).toMatchObject({ periods_ahead: 12, cadence: 'monthly', first_period_start: '2027-01-01' })
   })
 
+  it('creates a provisional calendar for a final calendar of the market and words a target refusal (D-V1A-02)', async () => {
+    onTab('calendars')
+    const user = userEvent.setup()
+    const WEEKLY: Calendar = { ...CAL, id: '0c000000-0000-4000-8000-000000000002', name: 'FR weekly', cadence: 'weekly', provisional_for: { id: CAL.id, name: CAL.name } }
+    let refused = true
+    const fetchMock = routes({
+      'GET /v1/calendars': () => ok([{ ...CAL, provisional_calendars: [{ id: WEEKLY.id, name: WEEKLY.name }] }, WEEKLY]),
+      'POST /v1/calendars': () => {
+        if (!refused) return json(201, { data: { calendar: WEEKLY, generated: 5 }, meta: {} })
+        refused = false
+        return apiError(422, 'PROVISIONAL_TARGET_INVALID', 'invalid', { reason: 'periods_not_nested' })
+      },
+    })
+    renderAs(ADMIN, <MarketsPage />, fetchMock)
+    expect(await screen.findByText('Provisional for FR monthly')).toBeTruthy()
+    expect(screen.getByText('Final for: FR weekly')).toBeTruthy()
+    await user.click(screen.getByTestId('primary-action'))
+    const dialog = screen.getByRole('dialog', { name: 'Add calendar' })
+    await user.selectOptions(within(dialog).getByLabelText('Market'), FR.id)
+    const target = within(dialog).getByLabelText('Provisional for')
+    expect(within(target).getAllByRole('option').map((option) => option.textContent)).toEqual(['None: a final calendar', 'FR monthly'])
+    await user.selectOptions(target, CAL.id)
+    await user.type(within(dialog).getByLabelText('Name'), 'FR advances')
+    await user.selectOptions(within(dialog).getByLabelText('Cadence'), 'weekly')
+    await user.type(within(dialog).getByLabelText('Cut-off time zone'), 'Europe/Paris')
+    await user.type(within(dialog).getByLabelText('First period starts'), '2026-12-07')
+    await user.type(within(dialog).getByLabelText('Periods to generate'), '5')
+    await user.type(within(dialog).getByLabelText('Reason for the change'), 'Weekly advances')
+    await user.click(within(dialog).getByRole('button', { name: 'Add calendar' }))
+    expect((await within(dialog).findAllByText(/periods would not fall inside final periods/)).length).toBeGreaterThan(0)
+    await user.click(within(dialog).getByRole('button', { name: 'Add calendar' }))
+    expect(await screen.findByText('Calendar FR weekly created with 5 periods.')).toBeTruthy()
+    expect(bodyOf(callsTo(fetchMock, 'POST', '/v1/calendars')[1]![1])).toMatchObject({ provisional_for_calendar_id: CAL.id, cadence: 'weekly' })
+  })
+
   it('shows a calendar’s periods with local-time bounds and explains a committed-period refusal', async () => {
     onTab('calendars')
     const user = userEvent.setup()
@@ -207,7 +243,7 @@ describe('structure helpers', () => {
       'market-currency': 'Enter the three-letter currency code, for example EUR.',
       'market-languages': 'Enter at least one language, for example fr.',
     })
-    expect(calendarErrors({ market_id: 'm', name: 'n', cadence: 'monthly', cutoff_time_zone: 'Europe/Paris', first_period_start: '2027-01-15', periods_ahead: '0' })).toMatchObject({
+    expect(calendarErrors({ market_id: 'm', name: 'n', cadence: 'monthly', cutoff_time_zone: 'Europe/Paris', first_period_start: '2027-01-15', periods_ahead: '0', provisional_for: '' })).toMatchObject({
       'calendar-start': 'A monthly calendar starts on the first day of a month.',
       'calendar-ahead': 'Enter how many periods to generate, from 1 to 120.',
     })

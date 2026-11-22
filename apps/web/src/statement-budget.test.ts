@@ -10,7 +10,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 // stylesheets it references; nomodule scripts and fonts left out; the session cookie from NMP_BUDGET_COOKIE.
 const SCRIPT = fileURLToPath(new URL('../scripts/statement-budget.mjs', import.meta.url))
 const COOKIE = 'nmp_session=budget-test'
-const BIG = randomBytes(160 * 1024) // incompressible: over the 150 KB budget on its own
+const BIG = randomBytes(200 * 1024) // incompressible: over the 190 KB budget (E-ADR-51) on its own
 
 const page = (extra: string) => `<!doctype html><html><head>
 <link rel="stylesheet" href="/_next/static/app.css"><link rel="preload" as="font" href="/_next/media/icons.woff2" crossorigin>
@@ -57,7 +57,7 @@ describe('statement-budget.mjs (TS-30)', () => {
     requested.length = 0
     const { code, stdout } = await measure('/portal/earnings/run')
     expect(code).toBe(0)
-    expect(stdout).toMatch(/^PASS: .* KB transferred \(fonts excluded\), budget 150\.0 KB$/m)
+    expect(stdout).toMatch(/^PASS: .* KB transferred \(fonts excluded\), budget 190\.0 KB$/m)
     expect(requested.sort()).toEqual(['/_next/static/a.js', '/_next/static/app.css', '/portal/earnings/run'])
     const expected = ['/portal/earnings/run', '/_next/static/app.css', '/_next/static/a.js'].reduce((sum, path) => sum + gzipSync(FILES[path]!).length, 0)
     expect(stdout).toContain(`PASS: ${(expected / 1024).toFixed(1)} KB`)

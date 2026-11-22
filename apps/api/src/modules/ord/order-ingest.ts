@@ -5,6 +5,7 @@ import { enqueueOutbox } from '../../lib/outbox.js'
 import { attribute, attributionPrecedence, servicingFromFirstOrder, type Attribution } from './attribution.js'
 import { recordLate } from './late.js'
 import { assertOrderFacts, creditedAt, liveMarket, purposeOf, resolveBuyer, type Buyer, type Purpose } from './order-checks.js'
+import { conversionAt, convertMinor, type Conversion } from './fx.js'
 import type { AttemptRefs, Outcome } from './outcome.js'
 import { Refusal } from './refusal.js'
 import type { OrderInput } from './schemas.js'
@@ -16,7 +17,10 @@ interface PricedLine {
   readonly sku: string
   readonly item_class: string
   readonly quantity: number
+  /** In the market currency (converted when the order is in another currency). */
   readonly amount_minor: string
+  /** The amount as sent, when converted (D-V1A-04). */
+  readonly original_amount_minor: string | null
   readonly volumes: Volumes
   readonly source_line_id: string | null
 }
@@ -34,7 +38,10 @@ async function priceLines(tx: Tx, marketId: string, input: OrderInput, at: strin
   if (missing.length > 0) return { missing }
   return input.lines.map((line) => {
     const map = maps.get(line.sku)!
-    return { ...line, item_class: map.item_class, volumes: times(map.volumes, line.quantity), source_line_id: line.source_line_id ?? null }
+    return {
+      ...line, original_amount_minor: null, item_class: map.item_class, volumes: times(map.volumes, line.quantity),
+      source_line_id: line.source_line_id ?? null,
+    }
   })
 }
 
@@ -75,41 +82,69 @@ interface OrderFacts {
   readonly attribution: Attribution
   readonly creditedAt: string
   readonly lines: readonly PricedLine[]
+  readonly currency: string
+  /** Σ lines and the tax in the market currency. */
+  readonly amountMinor: string
+  readonly taxMinor: string
+  readonly conversion: Conversion | null
 }
 
 async function insertOrder(tx: Tx, f: OrderFacts): Promise<void> {
+  const converted = f.conversion !== null
   await tx.query(
     `INSERT INTO sales_order (id, tenant_id, source_system, source_order_id, market_id, buyer_id, buyer_type_id, purpose,
        purpose_missing, attributed_position_id, attribution_source, attribution_conflict, ordered_at, credited_at, period_id,
-       amount_minor, tax_minor, currency, payload_hash, inbound_event_id)
-     VALUES ($1, app_tenant_id(), $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, market_period_at($4, $13), $14, $15, $16, $17, $18)`,
+       amount_minor, tax_minor, currency, payload_hash, inbound_event_id, subscription_ref, original_currency, original_amount_minor,
+       original_tax_minor, fx_rate_id)
+     VALUES ($1, app_tenant_id(), $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, market_period_at($4, $13), $14, $15, $16, $17, $18,
+             $19, $20, $21, $22, $23)`,
     [f.refs.targetId, f.input.source_system, f.input.source_order_id, f.marketId, f.buyerId, f.buyer.type.type_id,
       f.purpose.purpose, f.purpose.missing, f.attribution.positionId, f.attribution.source, f.attribution.conflict,
-      f.input.ordered_at, f.creditedAt, f.input.amount_minor, f.input.tax_minor, f.input.currency, f.refs.hash, f.refs.inboundId],
+      f.input.ordered_at, f.creditedAt, f.amountMinor, f.taxMinor, f.currency, f.refs.hash, f.refs.inboundId, f.input.subscription_ref ?? null,
+      converted ? f.input.currency : null, converted ? f.input.amount_minor : null, converted ? f.input.tax_minor : null, f.conversion?.rateId ?? null],
   )
   await tx.query(
-    `INSERT INTO order_line (tenant_id, order_id, line_no, sku, item_class, quantity, amount_minor, volumes, source_line_id)
-     SELECT app_tenant_id(), $1, l.line_no, l.sku, l.item_class, l.quantity, l.amount_minor::bigint, l.volumes, l.source_line_id
-     FROM jsonb_to_recordset($2) AS l (line_no int, sku text, item_class text, quantity int, amount_minor text, volumes jsonb,
-                                       source_line_id text)`,
+    `INSERT INTO order_line (tenant_id, order_id, line_no, sku, item_class, quantity, amount_minor, original_amount_minor, volumes, source_line_id)
+     SELECT app_tenant_id(), $1, l.line_no, l.sku, l.item_class, l.quantity, l.amount_minor::bigint, l.original_amount_minor::bigint, l.volumes,
+            l.source_line_id
+     FROM jsonb_to_recordset($2) AS l (line_no int, sku text, item_class text, quantity int, amount_minor text, original_amount_minor text,
+                                       volumes jsonb, source_line_id text)`,
     [f.refs.targetId, JSON.stringify(f.lines)],
   )
+}
+
+/** D-V1A-04: each line and the tax converted once (rounded per amount); the order total is the sum of the converted lines. */
+function converted(lines: readonly PricedLine[], conversion: Conversion | null, input: OrderInput) {
+  if (conversion === null) return { lines, amountMinor: input.amount_minor, taxMinor: input.tax_minor }
+  const convertedLines = lines.map((line) => ({
+    ...line, amount_minor: convertMinor(BigInt(line.amount_minor), conversion).toString(), original_amount_minor: line.amount_minor,
+  }))
+  return {
+    lines: convertedLines,
+    amountMinor: convertedLines.reduce((total, line) => total + BigInt(line.amount_minor), 0n).toString(),
+    taxMinor: convertMinor(BigInt(input.tax_minor), conversion).toString(),
+  }
 }
 
 /** The facts of a valid order whose SKUs are all mapped, or held UNKNOWN_SKU (nothing written). */
 async function orderFactsOf(tx: Tx, input: OrderInput, refs: AttemptRefs, toleranceSeconds: number): Promise<OrderFacts | Outcome> {
   const market = await liveMarket(tx, input.market)
-  assertOrderFacts(input, market, toleranceSeconds)
+  assertOrderFacts(input, toleranceSeconds)
+  const conversion = input.currency === market.currency ? null : await conversionAt(tx, input.currency, market.currency, input.ordered_at)
+  if (conversion !== null && 'held' in conversion) return { state: 'held', reason: conversion.held, ref: conversion.ref }
   const at = await creditedAt(tx, input)
   const precedence = await attributionPrecedence(tx)
   await assertNotIngested(tx, input)
   const buyer = await resolveBuyer(tx, input, at)
   const purpose = await purposeOf(tx, input, buyer.type)
-  const lines = await priceLines(tx, market.id, input, at)
-  if ('missing' in lines) return { state: 'held', reason: 'UNKNOWN_SKU', ref: lines.missing.join(','), skus: lines.missing }
+  const priced = await priceLines(tx, market.id, input, at)
+  if ('missing' in priced) return { state: 'held', reason: 'UNKNOWN_SKU', ref: priced.missing.join(','), skus: priced.missing }
   const buyerId = await buyerIdOf(tx, buyer, input, market.id, at)
   const attribution = await attribute(tx, buyerId, buyer.type, input.attribution, precedence, at)
-  return { refs, input, marketId: market.id, buyerId, buyer, purpose, attribution, creditedAt: at, lines }
+  return {
+    refs, input, marketId: market.id, buyerId, buyer, purpose, attribution, creditedAt: at, currency: market.currency, conversion,
+    ...converted(priced, conversion, input),
+  }
 }
 
 /**
@@ -123,14 +158,14 @@ export async function processOrder(tx: Tx, input: OrderInput, refs: AttemptRefs,
   await servicingFromFirstOrder(tx, facts.buyerId, facts.buyer.type, facts.attribution.positionId, facts.creditedAt)
   const volumes = sum(facts.lines.map((line) => line.volumes))
   const late = await recordLate(tx, { orderId: refs.targetId }, facts.marketId, facts.creditedAt, {
-    volumes, amount_minor: input.amount_minor, attributed_position_id: facts.attribution.positionId,
+    volumes, amount_minor: facts.amountMinor, attributed_position_id: facts.attribution.positionId,
   })
   await recordAudit(tx, {
     action: 'ORDER.INGESTED', objectType: 'sales_order', objectId: refs.targetId,
     after: {
       inbound_event_id: refs.inboundId, market_id: facts.marketId, source_system: input.source_system, buyer_id: facts.buyerId,
       attributed_position_id: facts.attribution.positionId, attribution_source: facts.attribution.source,
-      late_transaction_ids: late.map((item) => item.id),
+      fx_rate_id: facts.conversion?.rateId ?? null, late_transaction_ids: late.map((item) => item.id),
     },
   })
   await enqueueOutbox(tx, {

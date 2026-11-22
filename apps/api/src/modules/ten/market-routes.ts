@@ -43,9 +43,10 @@ const calendarBody = z.strictObject({
   cutoff_time_zone: z.string().min(1).max(64),
   first_period_start: z.iso.date(),
   periods_ahead: z.number().int().min(1).max(120),
+  provisional_for_calendar_id: z.uuid().optional(),
   reason,
 })
-const CALENDAR_TIMING = ['market_id', 'cadence', 'cutoff_time_zone', 'first_period_start', 'periods_ahead'] as const
+const CALENDAR_TIMING = ['market_id', 'cadence', 'cutoff_time_zone', 'first_period_start', 'periods_ahead', 'provisional_for_calendar_id'] as const
 const calendarPatch = z.strictObject({ name: z.string().trim().min(1).max(100), reason })
 const calendarsQuery = z.strictObject({ market_id: z.uuid().optional() })
 const extendBody = z.strictObject({ through: z.iso.date(), reason })

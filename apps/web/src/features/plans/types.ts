@@ -45,6 +45,8 @@ export interface Rule {
   readonly depends_on: readonly string[]
   readonly reversal_policy: ReversalPolicy | null
   readonly calendar_id: string | null
+  /** D-V1A-03: a pay rule paid in this credit type instead of cash (null = cash). */
+  readonly credit_type_code: string | null
   readonly ordinal: number
   readonly extension: boolean
   readonly rendering: string

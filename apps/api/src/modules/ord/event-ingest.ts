@@ -3,10 +3,11 @@ import { recordAudit } from '../../lib/audit.js'
 import { envelope } from '../../lib/http.js'
 import { getSetting } from '../ten/index.js'
 import { recordLate } from './late.js'
+import { convertMinor, digitsOf, roundingMode } from './fx.js'
 import { assertNotFuture } from './order-checks.js'
 import type { AttemptRefs, Outcome } from './outcome.js'
 import { Refusal } from './refusal.js'
-import type { EventInput } from './schemas.js'
+import { NO_EFFECT_TYPES, type EventInput } from './schemas.js'
 import { eventView } from './views.js'
 import { perUnit, proportional, sum, times, type Volumes } from './volumes.js'
 
@@ -15,6 +16,10 @@ interface OrderRow {
   readonly market_id: string
   readonly credited_at: Date
   readonly attributed_position_id: string | null
+  readonly currency: string
+  /** A converted order's original currency and rate (D-V1A-04), else null. */
+  readonly original_currency: string | null
+  readonly rate: string | null
 }
 
 interface OrderLine {
@@ -31,14 +36,30 @@ interface EventLine {
   readonly quantity: number
 }
 
-// The order row lock serialises every event of one order (the DB quantity guard takes the same lock).
+// The order row lock serialises every event of one order (the DB quantity guard takes the same lock). A subscription
+// event attaches to the subscription's latest order (D-V1A-05).
 async function lockOrder(tx: Tx, input: EventInput): Promise<OrderRow | null> {
   const { rows } = await tx.query<OrderRow>(
-    `SELECT id, market_id, credited_at, attributed_position_id FROM sales_order
-     WHERE source_system = $1 AND source_order_id = $2 FOR UPDATE`,
-    [input.source_system, input.source_order_id],
+    `SELECT o.id, o.market_id, o.credited_at, o.attributed_position_id, o.currency, o.original_currency, f.rate::text AS rate
+     FROM sales_order o LEFT JOIN fx_rate f ON f.id = o.fx_rate_id
+     WHERE o.source_system = $1 AND ($2::text IS NULL OR o.source_order_id = $2) AND ($3::text IS NULL OR o.subscription_ref = $3)
+     ORDER BY o.ordered_at DESC, o.id DESC LIMIT 1 FOR UPDATE OF o`,
+    [input.source_system, input.source_order_id ?? null, input.subscription_ref ?? null],
   )
   return rows[0] ?? null
+}
+
+/** A converted order's refund and fee arrive in its original currency and are converted at the order's rate. */
+async function eventAmounts(tx: Tx, input: EventInput, order: OrderRow) {
+  if (order.original_currency === null || order.rate === null) return { refund: input.refund_minor, fee: input.fee_minor, original: null }
+  const conversion = {
+    rate: order.rate, baseDigits: digitsOf(order.original_currency), quoteDigits: digitsOf(order.currency), mode: await roundingMode(tx),
+  }
+  return {
+    refund: convertMinor(BigInt(input.refund_minor), conversion).toString(),
+    fee: convertMinor(BigInt(input.fee_minor), conversion).toString(),
+    original: { refund: input.refund_minor, fee: input.fee_minor },
+  }
 }
 
 async function orderLines(tx: Tx, orderId: string): Promise<OrderLine[]> {
@@ -61,15 +82,22 @@ interface ReversedChargeback {
   readonly volume_effect: VolumeEffect
 }
 
-async function reversedChargeback(tx: Tx, input: EventInput, orderId: string): Promise<ReversedChargeback> {
-  const { rows } = await tx.query<ReversedChargeback & { reversed: boolean }>(
-    `SELECT c.id, c.lines, c.volume_effect, EXISTS (SELECT 1 FROM order_event r WHERE r.reverses_event_id = c.id) AS reversed
+const DISPUTE_CLOSED = () => new Refusal(422, 'DISPUTE_CLOSED', 'The dispute of this chargeback was already won or lost.')
+
+/** The chargeback a reversal (dispute won) or a dispute_lost event names; one outcome per chargeback (BR-REV-06). */
+async function disputedChargeback(tx: Tx, input: EventInput, orderId: string, sourceEventId: string | undefined): Promise<ReversedChargeback> {
+  const { rows } = await tx.query<ReversedChargeback & { outcome: string | null }>(
+    `SELECT c.id, c.lines, c.volume_effect,
+       (SELECT r.type FROM order_event r WHERE r.reverses_event_id = c.id OR r.dispute_of_event_id = c.id LIMIT 1) AS outcome
      FROM order_event c WHERE c.source_system = $1 AND c.source_event_id = $2 AND c.order_id = $3 AND c.type = 'chargeback'`,
-    [input.source_system, input.reverses_source_event_id, orderId],
+    [input.source_system, sourceEventId, orderId],
   )
   const chargeback = rows[0]
-  if (chargeback === undefined) throw new Refusal(422, 'EVENT_NOT_FOUND', 'The chargeback this event reverses was not received for the order.')
-  if (chargeback.reversed) throw new Refusal(422, 'CHARGEBACK_ALREADY_REVERSED', 'The chargeback this event reverses was already reversed.')
+  if (chargeback === undefined) throw new Refusal(422, 'EVENT_NOT_FOUND', 'The chargeback this event names was not received for the order.')
+  if (chargeback.outcome === 'chargeback_reversed' && input.type === 'chargeback_reversed') {
+    throw new Refusal(422, 'CHARGEBACK_ALREADY_REVERSED', 'The chargeback this event reverses was already reversed.')
+  }
+  if (chargeback.outcome !== null) throw DISPUTE_CLOSED()
   return { id: chargeback.id, lines: chargeback.lines, volume_effect: chargeback.volume_effect }
 }
 
@@ -137,8 +165,11 @@ async function volumeEffect(tx: Tx, input: EventInput, eventLines: readonly Even
 }
 
 function assertEventShape(input: EventInput, toleranceSeconds: number): void {
-  if (input.type === 'renewal_failed') {
-    throw new Refusal(422, 'EVENT_TYPE_NOT_SUPPORTED', 'Subscription events (renewal_failed) are not supported yet.')
+  if (NO_EFFECT_TYPES.includes(input.type)) {
+    const field = input.lines !== undefined ? 'lines' : input.refund_minor !== '0' ? 'refund_minor' : input.fee_minor !== '0' ? 'fee_minor' : null
+    if (field !== null) {
+      throw new Refusal(422, 'VALIDATION_FAILED', `A ${input.type} event carries no lines and zero amounts.`, { field })
+    }
   }
   if ((input.type === 'return' || input.type === 'exchange') && input.lines === undefined) {
     throw new Refusal(422, 'LINES_REQUIRED', 'Returns and exchanges name their lines.')
@@ -150,21 +181,32 @@ function assertEventShape(input: EventInput, toleranceSeconds: number): void {
 export async function processEvent(tx: Tx, input: EventInput, refs: AttemptRefs, toleranceSeconds: number, fromStore: boolean): Promise<Outcome> {
   assertEventShape(input, toleranceSeconds)
   const order = await lockOrder(tx, input)
-  if (order === null) return { state: 'held', reason: 'ORDER_NOT_FOUND', ref: input.source_order_id }
+  if (order === null) {
+    return input.subscription_ref === undefined
+      ? { state: 'held', reason: 'ORDER_NOT_FOUND', ref: input.source_order_id! }
+      : { state: 'held', reason: 'SUBSCRIPTION_NOT_FOUND', ref: input.subscription_ref }
+  }
+  const noEffect = NO_EFFECT_TYPES.includes(input.type)
   const lines = await orderLines(tx, order.id)
-  const reversed = input.type === 'chargeback_reversed' ? await reversedChargeback(tx, input, order.id) : null
-  const eventLines = reversed?.lines ?? resolveLines(input, lines, fromStore)
+  const disputed = input.type === 'chargeback_reversed' || input.type === 'dispute_lost'
+    ? await disputedChargeback(tx, input, order.id, input.reverses_source_event_id ?? input.disputes_source_event_id)
+    : null
+  const reversed = input.type === 'chargeback_reversed' ? disputed : null
+  const eventLines = noEffect ? [] : reversed?.lines ?? resolveLines(input, lines, fromStore)
   assertWithinPurchased(input, eventLines, lines)
-  const effect = reversed === null ? await volumeEffect(tx, input, eventLines, lines) : negated(reversed.volume_effect)
+  const effect = noEffect ? {} : reversed === null ? await volumeEffect(tx, input, eventLines, lines) : negated(reversed.volume_effect)
+  const amounts = await eventAmounts(tx, input, order)
   await tx.query(
     `INSERT INTO order_event (id, tenant_id, order_id, source_system, source_event_id, type, occurred_at, lines, refund_minor,
-       fee_minor, equal_value, volume_effect, period_id, reverses_event_id, inbound_event_id)
-     VALUES ($1, app_tenant_id(), $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, market_period_at($12, $6), $13, $14)`,
+       fee_minor, equal_value, volume_effect, period_id, reverses_event_id, inbound_event_id, original_refund_minor, original_fee_minor,
+       dispute_of_event_id)
+     VALUES ($1, app_tenant_id(), $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, market_period_at($12, $6), $13, $14, $15, $16, $17)`,
     [refs.targetId, order.id, input.source_system, input.source_event_id, input.type, input.occurred_at, JSON.stringify(eventLines),
-      input.refund_minor, input.fee_minor, input.equal_value === true, effect, order.market_id, reversed?.id ?? null, refs.inboundId],
+      amounts.refund, amounts.fee, input.equal_value === true, effect, order.market_id, reversed?.id ?? null, refs.inboundId,
+      amounts.original?.refund ?? null, amounts.original?.fee ?? null, input.type === 'dispute_lost' ? disputed!.id : null],
   )
-  const amount = BigInt(input.refund_minor) * BigInt(input.type === 'chargeback_reversed' ? 1 : -1)
-  const late = await recordLate(tx, { eventId: refs.targetId }, order.market_id, order.credited_at, {
+  const amount = BigInt(amounts.refund) * BigInt(input.type === 'chargeback_reversed' ? 1 : -1)
+  const late = noEffect ? [] : await recordLate(tx, { eventId: refs.targetId }, order.market_id, order.credited_at, {
     volumes: effect.total ?? {}, amount_minor: amount.toString(), attributed_position_id: order.attributed_position_id,
   })
   await recordAudit(tx, {

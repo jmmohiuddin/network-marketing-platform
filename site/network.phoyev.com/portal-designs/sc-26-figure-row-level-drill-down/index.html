@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+
+<html lang="en"><head><title>SC-26 Figure drill-down | PHOYEV portal design preview</title><meta name="robots" content="noindex,nofollow"><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_dashboard" name="shell-type"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Plus+Jakarta+Sans:wght@500;600;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={"darkMode":"class","theme":{"extend":{"colors":{"sso-google-border":"#D8E2FC","on-primary":"#ffffff","on-secondary-fixed":"#001a42","on-tertiary-fixed":"#00174b","secondary-fixed-dim":"#aec6ff","outline-variant":"#c4c6cf","primary":"#001332","success-base":"#16A34A","surface-container":"#f1ecf2","on-primary-fixed-variant":"#31476e","border-strong":"#CBD5E1","error":"#ba1a1a","on-tertiary":"#ffffff","surface-card":"#FFFFFF","on-secondary-container":"#1a4387","error-container":"#ffdad6","inverse-surface":"#313034","on-primary-fixed":"#001b3f","tertiary-fixed":"#dbe1ff","surface-variant":"#e5e1e7","surface":"#fdf8fd","focus-ring":"#3B82F6","on-background":"#1c1b1f","outline":"#74777f","focus-ring-glow":"rgba(59, 130, 246, 0.2)","secondary-fixed":"#d8e2ff","tertiary-container":"#002367","on-surface":"#1c1b1f","tertiary-fixed-dim":"#b4c5ff","error-base":"#DC2626","tertiary":"#00113b","on-tertiary-fixed-variant":"#003ea8","on-secondary":"#ffffff","primary-container":"#0f284e","on-tertiary-container":"#5f8aff","border-subtle":"#E2E7F6","secondary":"#385da2","inverse-on-surface":"#f4eff5","primary-fixed":"#d7e2ff","on-surface-variant":"#44474e","surface-container-high":"#ebe7ec","surface-container-lowest":"#ffffff","on-secondary-fixed-variant":"#1c4589","text-subtle":"#94A3B8","surface-tint":"#495e87","surface-container-low":"#f7f2f8","background":"#fdf8fd","primary-fixed-dim":"#b1c7f6","surface-canvas":"#F8F9FE","on-error-container":"#93000a","secondary-container":"#90b3fe","surface-bright":"#fdf8fd","sso-google-bg":"#F0F4FF","on-error":"#ffffff","inverse-primary":"#b1c7f6","on-primary-container":"#7a90bc","text-muted":"#64748B","surface-dim":"#ddd9de","surface-container-highest":"#e5e1e7"},"borderRadius":{"DEFAULT":"0.25rem","lg":"0.5rem","xl":"0.75rem","full":"9999px"},"spacing":{"space-xl":"2rem","space-lg":"1.5rem","gutter":"1.25rem","margin-desktop":"3rem","margin":"1.5rem","space-2xl":"2.5rem","space-xs":"0.25rem","space-sm":"0.5rem","space-md":"1rem"},"fontFamily":{"headline-xl":["Plus Jakarta Sans"],"headline-xl-mobile":["Plus Jakarta Sans"],"headline-sm":["Plus Jakarta Sans"],"body-lg":["Inter"],"label-md":["Inter"],"button-text":["Plus Jakarta Sans"],"label-sm":["Inter"],"body-md":["Inter"],"body-sm":["Inter"],"headline-lg":["Plus Jakarta Sans"],"eyebrow":["Plus Jakarta Sans"]},"fontSize":{"headline-xl":["32px",{"lineHeight":"40px","letterSpacing":"-0.02em","fontWeight":"700"}],"headline-xl-mobile":["26px",{"lineHeight":"34px","letterSpacing":"-0.015em","fontWeight":"700"}],"headline-sm":["18px",{"lineHeight":"24px","fontWeight":"600"}],"body-lg":["15px",{"lineHeight":"22px","fontWeight":"400"}],"label-md":["13px",{"lineHeight":"18px","letterSpacing":"0.02em","fontWeight":"600"}],"button-text":["14px",{"lineHeight":"20px","letterSpacing":"0.01em","fontWeight":"600"}],"label-sm":["11px",{"lineHeight":"16px","letterSpacing":"0.04em","fontWeight":"600"}],"body-md":["14px",{"lineHeight":"20px","fontWeight":"400"}],"body-sm":["12px",{"lineHeight":"18px","fontWeight":"400"}],"headline-lg":["24px",{"lineHeight":"32px","letterSpacing":"-0.01em","fontWeight":"600"}],"eyebrow":["12px",{"lineHeight":"16px","letterSpacing":"0.08em","fontWeight":"700"}]}}}}</script></head><body class="bg-surface-canvas font-body-md text-on-surface antialiased"><header class="fixed top-0 left-0 right-0 h-12 z-50 bg-surface-card border-b border-border-strong flex items-center justify-between px-space-md shadow-[0_1px_3px_0_rgba(15,40,78,0.04)]"><div class="flex items-center gap-space-sm"><div class="flex items-center gap-1.5 pr-2.5 border-r border-border-strong"><div class="w-6 h-6 rounded bg-primary flex items-center justify-center text-on-primary font-headline-sm text-label-sm font-bold">P</div><span class="font-headline-sm text-body-md font-bold tracking-tight text-primary">Phoyev Portal</span></div><div class="flex items-center gap-1 px-2 py-0.5 rounded bg-surface-container-high border border-border-strong text-on-surface font-label-sm"><span class="material-symbols-outlined text-[13px] text-text-muted">corporate_fare</span><span class="font-semibold">Acme Nutrition Inc.</span></div><button class="flex items-center gap-1 px-1.5 py-0.5 rounded hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface font-label-sm border border-transparent hover:border-border-strong transition-all"><span class="material-symbols-outlined text-[14px]">public</span><span>US — USD ($)</span><span class="material-symbols-outlined text-[14px]">arrow_drop_down</span></button></div><div class="flex-1 max-w-[460px] mx-space-md"><div class="relative flex items-center w-full"><span class="material-symbols-outlined absolute left-2.5 text-text-muted text-[16px]">search</span><input class="w-full h-8 pl-8 pr-12 rounded bg-surface-canvas border border-border-strong font-body-sm text-on-surface placeholder:text-text-muted cursor-pointer hover:border-text-muted focus:outline-none focus:border-focus-ring focus:ring-1 focus:ring-focus-ring" placeholder="Search participant, order, period, rule..." readonly="" type="text"/><div class="absolute right-2 flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-surface-card border border-border-strong font-label-sm text-[10px] text-text-muted">⌘K</div></div></div><div class="flex items-center gap-space-md"><div class="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-surface-card border border-border-strong font-label-sm text-body-sm text-on-surface-variant"><span class="w-2 h-2 rounded-full bg-success-base ring-2 ring-success-base/20 animate-pulse"></span><span>All Systems Operational</span></div><button class="relative p-1 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high rounded transition-all"><span class="material-symbols-outlined text-[18px]">notifications</span><span class="absolute top-0.5 right-0.5 w-2 h-2 bg-error rounded-full ring-2 ring-surface-card"></span></button><a class="flex items-center gap-1 font-label-sm text-body-sm text-on-surface-variant hover:text-primary" href="#"><span class="material-symbols-outlined text-[16px]">help_outline</span><span>Help &amp; Docs</span></a><div class="h-4 w-px bg-border-strong"></div><div class="flex items-center gap-2 pl-0.5"><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center shrink-0"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div><div class="flex flex-col text-left"><span class="font-label-md text-label-sm text-on-surface leading-tight">Sarah Jenkins</span><span class="font-label-sm text-[10px] text-text-muted leading-tight">Commission Analyst / Finance Approver</span></div></div></div></header><aside class="fixed left-0 top-12 bottom-0 w-[208px] bg-surface-card border-r border-border-strong z-40 overflow-y-auto flex flex-col justify-between py-space-sm"><nav class="flex flex-col gap-3 px-2" data-active-classes="bg-primary text-on-primary font-semibold"><div class="flex flex-col gap-0.5"><div class="px-2 py-1 font-eyebrow text-[10px] text-text-muted tracking-wider uppercase">Periods &amp; Runs</div><a class="flex items-center gap-2 px-2 py-1.5 rounded font-label-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="periods-and-runs" href="#"><span class="material-symbols-outlined text-[16px]">event_repeat</span><span>Periods &amp; Runs</span><span class="ml-auto text-[10px] text-text-muted font-mono">SC-01</span></a><a class="flex items-center gap-2 px-2 py-1.5 rounded font-label-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="run-review" href="#"><span class="material-symbols-outlined text-[16px]">fact_check</span><span>Run Review</span><span class="ml-auto text-[10px] text-text-muted font-mono">SC-02</span></a><a class="flex items-center gap-2 px-2 py-1.5 rounded font-label-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="late-transactions" href="#"><span class="material-symbols-outlined text-[16px]">history_toggle_off</span><span>Late Transactions</span><span class="ml-auto text-[10px] text-text-muted font-mono">SC-32</span></a></div><div class="flex flex-col gap-0.5"><div class="px-2 py-1 font-eyebrow text-[10px] text-text-muted tracking-wider uppercase">Payouts &amp; Finance</div><a class="flex items-center gap-2 px-2 py-1.5 rounded font-label-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="payout-batches" href="#"><span class="material-symbols-outlined text-[16px]">payments</span><span>Payout Batches</span><span class="ml-auto text-[10px] text-text-muted font-mono">SC-03</span></a><a class="flex items-center gap-2 px-2 py-1.5 rounded font-label-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="ledger-and-accounting" href="#"><span class="material-symbols-outlined text-[16px]">account_balance</span><span>Ledger &amp; Accounting</span><span class="ml-auto text-[10px] text-text-muted font-mono">SC-33</span></a><a class="flex items-center gap-2 px-2 py-1.5 rounded font-label-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="reconciliation" href="#"><span class="material-symbols-outlined text-[16px]">rule</span><span>Reconciliation</span><span class="ml-auto text-[10px] text-text-muted font-mono">SC-34</span></a></div><div class="flex flex-col gap-0.5"><div class="px-2 py-1 font-eyebrow text-[10px] text-text-muted tracking-wider uppercase">Compensation Plans</div><a class="flex items-center gap-2 px-2 py-1.5 rounded font-label-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="plan-versions" href="#"><span class="material-symbols-outlined text-[16px]">schema</span><span>Plan Versions</span><span class="ml-auto text-[10px] text-text-muted font-mono">SC-04</span></a><a class="flex items-center gap-2 px-2 py-1.5 rounded font-label-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="caps-and-pools" href="#"><span class="material-symbols-outlined text-[16px]">toll</span><span>Caps &amp; Pools</span><span class="ml-auto text-[10px] text-text-muted font-mono">SC-05</span></a><a class="flex items-center gap-2 px-2 py-1.5 rounded font-label-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="simulation-and-golden-datasets" href="#"><span class="material-symbols-outlined text-[16px]">science</span><span>Simulation &amp; Golden</span><span class="ml-auto text-[10px] text-text-muted font-mono">SC-42</span></a><a class="flex items-center gap-2 px-2 py-1.5 rounded font-label-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="plan-change-workflow" href="#"><span class="material-symbols-outlined text-[16px]">route</span><span>Plan Change WF</span><span class="ml-auto text-[10px] text-text-muted font-mono">SC-44</span></a></div><div class="flex flex-col gap-0.5"><div class="px-2 py-1 font-eyebrow text-[10px] text-text-muted tracking-wider uppercase">People &amp; Structure</div><a class="flex items-center gap-2 px-2 py-1.5 rounded font-label-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="genealogy-explorer" href="#"><span class="material-symbols-outlined text-[16px]">account_tree</span><span>Genealogy Explorer</span><span class="ml-auto text-[10px] text-text-muted font-mono">SC-07</span></a><a class="flex items-center gap-2 px-2 py-1.5 rounded font-label-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="structure-and-cases" href="#"><span class="material-symbols-outlined text-[16px]">cases</span><span>Structure &amp; Cases</span><span class="ml-auto text-[10px] text-text-muted font-mono">SC-08</span></a><a class="flex items-center gap-2 px-2 py-1.5 rounded font-label-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="participants-360" href="#"><span class="material-symbols-outlined text-[16px]">badge</span><span>Participants 360</span><span class="ml-auto text-[10px] text-text-muted font-mono">SC-09</span></a></div><div class="flex flex-col gap-0.5"><div class="px-2 py-1 font-eyebrow text-[10px] text-text-muted tracking-wider uppercase">Compliance &amp; Audit</div><a class="flex items-center gap-2 px-2 py-1.5 rounded font-label-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="compliance-overview" href="#"><span class="material-symbols-outlined text-[16px]">verified_user</span><span>Compliance Overview</span><span class="ml-auto text-[10px] text-text-muted font-mono">SC-46</span></a><a class="flex items-center gap-2 px-2 py-1.5 rounded font-label-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="reports-r1-r5" href="#"><span class="material-symbols-outlined text-[16px]">description</span><span>Reports R1-R5</span><span class="ml-auto text-[10px] text-text-muted font-mono">SC-10</span></a><a class="flex items-center gap-2 px-2 py-1.5 rounded font-label-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="guardrails-log" href="#"><span class="material-symbols-outlined text-[16px]">shield</span><span>Guardrails Log</span><span class="ml-auto text-[10px] text-text-muted font-mono">SC-11</span></a></div><div class="flex flex-col gap-0.5"><div class="px-2 py-1 font-eyebrow text-[10px] text-text-muted tracking-wider uppercase">Settings</div><a class="flex items-center gap-2 px-2 py-1.5 rounded font-label-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="integrations-and-health" href="#"><span class="material-symbols-outlined text-[16px]">sync_alt</span><span>Integrations &amp; Health</span><span class="ml-auto text-[10px] text-text-muted font-mono">SC-13</span></a><a class="flex items-center gap-2 px-2 py-1.5 rounded font-label-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="users-and-sod-roles" href="#"><span class="material-symbols-outlined text-[16px]">admin_panel_settings</span><span>Users &amp; SoD Roles</span><span class="ml-auto text-[10px] text-text-muted font-mono">SC-28</span></a><a class="flex items-center gap-2 px-2 py-1.5 rounded font-label-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="tenant-settings" href="#"><span class="material-symbols-outlined text-[16px]">tune</span><span>Tenant Settings</span><span class="ml-auto text-[10px] text-text-muted font-mono">SC-29</span></a></div></nav><div class="px-3 pt-3 border-t border-border-strong text-[11px] text-text-muted font-mono flex items-center justify-between"><span>v2.14.0-prod</span><span class="flex items-center gap-1 text-success-base"><span class="w-1.5 h-1.5 rounded-full bg-success-base"></span>SYNC</span></div></aside><div class="pl-[208px]"><main class="pt-12 bg-surface-canvas min-h-screen"><div class="flex flex-col w-full">
+<!-- Top Command & Breadcrumb Strip -->
+<div class="px-space-md py-space-sm bg-surface-card shadow-sm flex flex-col gap-2">
+<div class="flex flex-wrap items-center justify-between gap-y-2">
+<!-- Breadcrumb Navigation -->
+<nav class="flex items-center gap-1.5 font-label-sm text-text-muted">
+<a class="hover:text-primary transition-colors flex items-center gap-1" href="#">
+<span class="material-symbols-outlined text-[14px]">verified_user</span>
+<span>Compliance &amp; Audit</span>
+</a>
+<span class="material-symbols-outlined text-[12px]">chevron_right</span>
+<a class="hover:text-primary transition-colors" href="#">Statutory Reports (SC-10)</a>
+<span class="material-symbols-outlined text-[12px]">chevron_right</span>
+<span class="text-on-surface font-semibold">Figure Drill-Down (SC-26)</span>
+<span class="material-symbols-outlined text-[12px]">chevron_right</span>
+<span class="px-1.5 py-0.5 rounded bg-primary text-on-primary font-mono text-[10px] tracking-wide font-bold">REPORT R1: 74.20%</span>
+</nav>
+<!-- Cryptographic Ledger Badges -->
+<div class="flex flex-wrap items-center gap-2">
+<div class="flex items-center gap-1.5 px-2 py-0.5 rounded bg-surface-container text-on-surface font-mono text-label-sm shadow-sm">
+<span class="material-symbols-outlined text-[13px] text-success-base">lock</span>
+<span class="font-bold">SOX-404 IMMUTABLE AUDIT TRAIL</span>
+</div>
+<div class="flex items-center gap-1.5 px-2 py-0.5 rounded bg-surface-container text-on-surface-variant font-mono text-label-sm">
+<span class="material-symbols-outlined text-[13px] text-secondary">fingerprint</span>
+<span class="text-text-muted">MERKLE ROOT:</span>
+<span class="font-bold text-on-surface hover:text-primary cursor-pointer" title="Click to copy full root SHA-256">0x8a92...f01e</span>
+</div>
+<div class="flex items-center gap-1 px-2 py-0.5 rounded bg-primary-container text-on-primary font-mono text-label-sm">
+<span class="material-symbols-outlined text-[13px]">event_available</span>
+<span>PERIOD: Nov 2026 Monthly (Committed Run #3)</span>
+</div>
+</div>
+</div>
+<!-- Main Title & Operational Buttons -->
+<div class="flex flex-col lg:flex-row lg:items-center justify-between gap-space-md pt-1 pb-0.5">
+<div class="flex flex-col">
+<h1 class="font-headline-lg text-headline-lg text-primary tracking-tight">SC-26: Figure Row-Level Drill-Down &amp; Transaction Ledger</h1>
+<p class="font-body-sm text-body-sm text-text-muted mt-0.5">
+          Row-level deterministic proof of orders, customer attribution, and resale verifications comprising Statutory Figure R1. Sums strictly reconcile to numerator and denominator totals.
+        </p>
+</div>
+<div class="flex flex-wrap items-center gap-2 shrink-0">
+<!-- Export Certified Audit Ledger Button -->
+<button class="flex items-center gap-1.5 px-3 py-2 rounded bg-surface-container-high hover:bg-surface-container hover:text-primary text-on-surface font-button-text text-button-text transition-all shadow-sm" id="btnExportLedger">
+<span class="material-symbols-outlined text-[16px]">file_download</span>
+<span>Export Certified Audit Ledger (.CSV)</span>
+</button>
+<!-- Inspect Merkle Inclusion Proof -->
+<button class="flex items-center gap-1.5 px-3 py-2 rounded bg-surface-container-high hover:bg-surface-container text-on-surface font-button-text text-button-text transition-all shadow-sm" id="btnMerkleProof">
+<span class="material-symbols-outlined text-[16px]">hub</span>
+<span>Inspect Merkle Inclusion Proof</span>
+</button>
+<!-- Generate Regulatory Affidavit Pack -->
+<button class="flex items-center gap-1.5 px-3.5 py-2 rounded bg-primary-container hover:bg-primary text-on-primary font-button-text text-button-text transition-all shadow-md" id="btnAffidavit">
+<span class="material-symbols-outlined text-[16px]">policy</span>
+<span>Generate Regulatory Affidavit Pack (.ZIP)</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Main Viewport Body -->
+<div class="p-space-md flex flex-col gap-space-md">
+<!-- Reconciled Control Totals & Formula Cards (Bento Strip) -->
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-space-sm">
+<!-- Card 1: Determinant Formula & Quotient -->
+<div class="p-4 rounded-lg bg-surface-card shadow-sm flex flex-col justify-between relative overflow-hidden">
+<div class="flex items-center justify-between pb-2">
+<span class="font-eyebrow text-eyebrow text-secondary uppercase tracking-wider">Statutory Figure R1</span>
+<span class="flex items-center gap-1 text-[11px] font-mono px-2 py-0.5 rounded-full bg-success-base/10 text-success-base font-bold">
+<span class="w-1.5 h-1.5 rounded-full bg-success-base"></span>
+            COMPLIANT (+4.20%)
+          </span>
+</div>
+<div class="flex items-baseline justify-between mt-1">
+<div class="font-headline-xl text-headline-xl text-primary font-bold tracking-tight">74.20%</div>
+<div class="font-label-sm text-body-sm text-text-muted font-mono">FTC 70.00% Floor</div>
+</div>
+<div class="mt-3 pt-2 text-[11px] font-mono text-text-muted flex flex-col gap-1">
+<div class="flex justify-between">
+<span>Numerator:</span>
+<span class="font-bold text-on-surface">$8,460,210.00 (112,408)</span>
+</div>
+<div class="flex justify-between">
+<span>Denominator:</span>
+<span class="font-bold text-on-surface">$11,402,150.00 (149,820)</span>
+</div>
+<div class="w-full bg-surface-container rounded-full h-1.5 mt-1 overflow-hidden">
+<div class="bg-success-base h-1.5 rounded-full" style="width: 74.2%;"></div>
+</div>
+</div>
+</div>
+<!-- Card 2: Numerator Breakdown Component A (Direct End-Consumers) -->
+<div class="p-4 rounded-lg bg-surface-card shadow-sm flex flex-col justify-between">
+<div class="flex items-center justify-between pb-2">
+<span class="font-eyebrow text-eyebrow text-text-muted uppercase tracking-wider">Component A · Direct Retail</span>
+<span class="material-symbols-outlined text-[16px] text-success-base">check_circle</span>
+</div>
+<div>
+<div class="font-headline-lg text-headline-lg text-on-surface font-semibold">$7,840,110.00</div>
+<div class="font-body-sm text-body-sm text-text-muted mt-0.5">104,118 verified orders (68.76% of GMV)</div>
+</div>
+<div class="mt-3 pt-2 flex items-center justify-between text-[11px] font-mono">
+<span class="px-1.5 py-0.5 rounded bg-surface-container text-on-surface-variant">Non-Distributor End-Users</span>
+<span class="text-success-base font-semibold">Included in Num.</span>
+</div>
+</div>
+<!-- Card 3: Numerator Breakdown Component B (Certified Resale Slips) -->
+<div class="p-4 rounded-lg bg-surface-card shadow-sm flex flex-col justify-between">
+<div class="flex items-center justify-between pb-2">
+<span class="font-eyebrow text-eyebrow text-text-muted uppercase tracking-wider">Component B · Resale Slips</span>
+<span class="material-symbols-outlined text-[16px] text-secondary">receipt_long</span>
+</div>
+<div>
+<div class="font-headline-lg text-headline-lg text-on-surface font-semibold">$620,100.00</div>
+<div class="font-body-sm text-body-sm text-text-muted mt-0.5">8,290 verified receipts (5.44% of GMV)</div>
+</div>
+<div class="mt-3 pt-2 flex items-center justify-between text-[11px] font-mono">
+<span class="px-1.5 py-0.5 rounded bg-surface-container text-on-surface-variant">&lt; 72h Window Validated</span>
+<span class="text-success-base font-semibold">Included in Num.</span>
+</div>
+</div>
+<!-- Card 4: Excluded Component C (Personal Consumption) -->
+<div class="p-4 rounded-lg bg-surface-card shadow-sm flex flex-col justify-between">
+<div class="flex items-center justify-between pb-2">
+<span class="font-eyebrow text-eyebrow text-error uppercase tracking-wider">Component C · Personal Use</span>
+<span class="material-symbols-outlined text-[16px] text-error">block</span>
+</div>
+<div>
+<div class="font-headline-lg text-headline-lg text-on-surface font-semibold">$2,941,940.00</div>
+<div class="font-body-sm text-body-sm text-text-muted mt-0.5">37,412 internal distributor orders (25.80%)</div>
+</div>
+<div class="mt-3 pt-2 flex items-center justify-between text-[11px] font-mono">
+<span class="px-1.5 py-0.5 rounded bg-error-container text-on-error-container">FR-CPL-004 Exclusion</span>
+<span class="text-error font-semibold">Excluded from Num.</span>
+</div>
+</div>
+</div>
+<!-- Population Cohort Selector & Multi-Factor Filters -->
+<div class="bg-surface-card rounded-lg shadow-sm p-4 flex flex-col gap-3">
+<!-- Population Tab Navigation -->
+<div class="flex flex-wrap items-center gap-2">
+<button class="px-3.5 py-2 rounded font-label-md text-label-md bg-surface-container-high text-on-surface hover:bg-surface-container transition-all flex items-center gap-1.5">
+<span>All Denominator Orders</span>
+<span class="px-1.5 py-0.2 rounded font-mono text-[10px] bg-surface-card text-text-muted">149,820 · $11.40M</span>
+</button>
+<button class="px-3.5 py-2 rounded font-label-md text-label-md bg-primary text-on-primary transition-all flex items-center gap-1.5 shadow-sm">
+<span class="material-symbols-outlined text-[15px] text-success-base">check_circle</span>
+<span>Numerator Rows — Direct &amp; Resale</span>
+<span class="px-1.5 py-0.2 rounded font-mono text-[10px] bg-primary-container text-on-primary font-bold">112,408 · $8.46M</span>
+</button>
+<button class="px-3.5 py-2 rounded font-label-md text-label-md bg-surface-container-high text-on-surface hover:bg-surface-container transition-all flex items-center gap-1.5">
+<span>Excluded Rows — Personal Consumption</span>
+<span class="px-1.5 py-0.2 rounded font-mono text-[10px] bg-surface-card text-text-muted">37,412 · $2.94M</span>
+</button>
+<button class="px-3.5 py-2 rounded font-label-md text-label-md bg-surface-container-high text-on-surface hover:bg-surface-container transition-all flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[15px] text-secondary">shuffle</span>
+<span>Audited SOX Sample Sub-Cohort</span>
+<span class="px-1.5 py-0.2 rounded font-mono text-[10px] bg-surface-card text-text-muted">n=500 Random</span>
+</button>
+</div>
+<!-- Filters & Quick Search Bar -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-2 pt-1 items-center">
+<!-- Live Search -->
+<div class="md:col-span-4 relative flex items-center">
+<span class="material-symbols-outlined absolute left-3 text-text-muted text-[16px]">search</span>
+<input class="w-full h-10 pl-9 pr-3 rounded bg-surface-canvas font-body-sm text-body-sm text-on-surface placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-focus-ring" id="orderTableSearch" placeholder="Search Order ID, Buyer Hash, Rep ID (#P-10045)..." type="text"/>
+</div>
+<!-- Ingestion Channel -->
+<div class="md:col-span-3">
+<div class="relative flex items-center">
+<span class="material-symbols-outlined absolute left-3 text-text-muted text-[16px]">hub</span>
+<select class="w-full h-10 pl-9 pr-8 rounded bg-surface-canvas font-body-sm text-body-sm text-on-surface appearance-none focus:outline-none focus:ring-2 focus:ring-focus-ring cursor-pointer">
+<option selected="">All Channels (Shopify, POS, EDI)</option>
+<option>Shopify US Direct E-Commerce</option>
+<option>Stripe POS Retail Flagships</option>
+<option>Mobile Certified Resale Ingest</option>
+<option>Wholesale B2B ERP Pipeline</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 text-text-muted text-[16px] pointer-events-none">arrow_drop_down</span>
+</div>
+</div>
+<!-- Statutory Classification -->
+<div class="md:col-span-3">
+<div class="relative flex items-center">
+<span class="material-symbols-outlined absolute left-3 text-text-muted text-[16px]">verified</span>
+<select class="w-full h-10 pl-9 pr-8 rounded bg-surface-canvas font-body-sm text-body-sm text-on-surface appearance-none focus:outline-none focus:ring-2 focus:ring-focus-ring cursor-pointer">
+<option selected="">All Numerator Types (Direct Retail + Resale)</option>
+<option>Direct Retail End-Consumer Only</option>
+<option>Certified Resale Slips Only (&lt;72h)</option>
+<option>Institutional B2B Verified End-User</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 text-text-muted text-[16px] pointer-events-none">arrow_drop_down</span>
+</div>
+</div>
+<!-- Reset & Export Count -->
+<div class="md:col-span-2 flex items-center justify-between md:justify-end gap-2">
+<span class="font-mono text-label-sm text-text-muted truncate">112,408 Rows Loaded</span>
+<button class="p-2 rounded hover:bg-surface-container-high text-on-surface-variant hover:text-primary transition-all" title="Reset Filters">
+<span class="material-symbols-outlined text-[18px]">restart_alt</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Main Workspace: Split Data Grid & Cryptographic Inspector -->
+<div class="grid grid-cols-1 xl:grid-cols-12 gap-space-md items-start">
+<!-- Primary Transaction Ledger Table (xl:col-span-8) -->
+<div class="xl:col-span-8 bg-surface-card rounded-lg shadow-sm overflow-hidden flex flex-col">
+<div class="p-3 bg-surface-container-low flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px] text-secondary">table_chart</span>
+<span class="font-headline-sm text-headline-sm text-primary">Row-Level Population Evidence</span>
+<span class="px-2 py-0.5 rounded-full bg-surface-container font-mono text-[10px] text-text-muted">PAGE 1 · ROWS 1–7</span>
+</div>
+<div class="flex items-center gap-2 text-label-sm text-text-muted font-mono">
+<span class="flex items-center gap-1 text-success-base">
+<span class="w-2 h-2 rounded-full bg-success-base animate-ping"></span>
+              Synchronized to Ledger
+            </span>
+</div>
+</div>
+<div class="overflow-x-auto w-full">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider font-mono">
+<th class="py-2.5 px-3">Order / Tx ID</th>
+<th class="py-2.5 px-3">Timestamp (UTC)</th>
+<th class="py-2.5 px-3">Buyer Classification</th>
+<th class="py-2.5 px-3">Servicing Rep</th>
+<th class="py-2.5 px-3">Channel</th>
+<th class="py-2.5 px-3 text-right">Net GMV</th>
+<th class="py-2.5 px-3">Cryptographic Leaf</th>
+<th class="py-2.5 px-3 text-center">Status</th>
+<th class="py-2.5 px-2 text-center">Action</th>
+</tr>
+</thead>
+<tbody class="font-body-sm text-body-sm text-on-surface" id="transactionRows">
+<!-- Row 1: Selected / Inspected -->
+<tr class="cursor-pointer bg-primary-container/10 transition-colors" data-order-id="#ORD-2026-98432">
+<td class="py-2.5 px-3 font-mono font-semibold text-primary whitespace-nowrap">
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px] text-primary">radio_button_checked</span>
+<span>#ORD-2026-98432</span>
+</div>
+</td>
+<td class="py-2.5 px-3 font-mono text-[11px] text-text-muted whitespace-nowrap">2026-11-28 14:24:48</td>
+<td class="py-2.5 px-3 whitespace-nowrap">
+<div class="flex flex-col">
+<span class="font-medium text-on-surface">Direct End-Consumer</span>
+<span class="text-[10px] text-text-muted font-mono">Guest Checkout · Denver, CO</span>
+</div>
+</td>
+<td class="py-2.5 px-3 whitespace-nowrap font-mono text-[11px]">
+<span class="text-primary font-semibold">Sarah Al-Mansoor</span>
+<span class="text-text-muted">(#P-10045)</span>
+</td>
+<td class="py-2.5 px-3 whitespace-nowrap text-[11px]">Shopify US Online</td>
+<td class="py-2.5 px-3 text-right font-mono font-bold text-on-surface whitespace-nowrap">$289.40</td>
+<td class="py-2.5 px-3 font-mono text-[11px] text-text-muted whitespace-nowrap" title="Full SHA-256: 0xa1b2c3d4e5f67890123456789abcdef0123456789abcdef0123456789abcdef0">
+<span class="px-1 py-0.5 rounded bg-surface-container">a1b2...8891</span>
+</td>
+<td class="py-2.5 px-3 text-center whitespace-nowrap">
+<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-success-base/10 text-success-base font-mono text-[10px] font-bold">
+<span class="material-symbols-outlined text-[12px]">check</span>
+                    R1 NUMERATOR
+                  </span>
+</td>
+<td class="py-2.5 px-2 text-center whitespace-nowrap">
+<button class="p-1 rounded hover:bg-surface-container text-primary font-label-sm" title="Inspect Row">
+<span class="material-symbols-outlined text-[16px]">visibility</span>
+</button>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-surface-container-high transition-colors" data-order-id="#ORD-2026-98425">
+<td class="py-2.5 px-3 font-mono font-semibold text-primary whitespace-nowrap">
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px] text-text-subtle">radio_button_unchecked</span>
+<span>#ORD-2026-98425</span>
+</div>
+</td>
+<td class="py-2.5 px-3 font-mono text-[11px] text-text-muted whitespace-nowrap">2026-11-28 14:19:12</td>
+<td class="py-2.5 px-3 whitespace-nowrap">
+<div class="flex flex-col">
+<span class="font-medium text-on-surface">Direct End-Consumer</span>
+<span class="text-[10px] text-text-muted font-mono">Repeat Customer #C-88102</span>
+</div>
+</td>
+<td class="py-2.5 px-3 whitespace-nowrap font-mono text-[11px]">
+<span class="text-primary font-semibold">Marcus Sterling</span>
+<span class="text-text-muted">(#P-10042)</span>
+</td>
+<td class="py-2.5 px-3 whitespace-nowrap text-[11px]">Shopify US Online</td>
+<td class="py-2.5 px-3 text-right font-mono font-bold text-on-surface whitespace-nowrap">$420.00</td>
+<td class="py-2.5 px-3 font-mono text-[11px] text-text-muted whitespace-nowrap">
+<span class="px-1 py-0.5 rounded bg-surface-container">f8e7...1049</span>
+</td>
+<td class="py-2.5 px-3 text-center whitespace-nowrap">
+<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-success-base/10 text-success-base font-mono text-[10px] font-bold">
+<span class="material-symbols-outlined text-[12px]">check</span>
+                    R1 NUMERATOR
+                  </span>
+</td>
+<td class="py-2.5 px-2 text-center whitespace-nowrap">
+<button class="p-1 rounded hover:bg-surface-container text-text-muted hover:text-primary font-label-sm" title="Inspect Row">
+<span class="material-symbols-outlined text-[16px]">visibility</span>
+</button>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-surface-container-high transition-colors" data-order-id="#ORD-2026-98418">
+<td class="py-2.5 px-3 font-mono font-semibold text-primary whitespace-nowrap">
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px] text-text-subtle">radio_button_unchecked</span>
+<span>#ORD-2026-98418</span>
+</div>
+</td>
+<td class="py-2.5 px-3 font-mono text-[11px] text-text-muted whitespace-nowrap">2026-11-28 14:10:02</td>
+<td class="py-2.5 px-3 whitespace-nowrap">
+<div class="flex flex-col">
+<span class="font-medium text-on-surface">Retail Walk-In POS</span>
+<span class="text-[10px] text-text-muted font-mono">Flagship Store Front</span>
+</div>
+</td>
+<td class="py-2.5 px-3 whitespace-nowrap font-mono text-[11px]">
+<span class="text-primary font-semibold">Wayne Bellingham</span>
+<span class="text-text-muted">(#P-12894)</span>
+</td>
+<td class="py-2.5 px-3 whitespace-nowrap text-[11px]">Stripe POS Flagship</td>
+<td class="py-2.5 px-3 text-right font-mono font-bold text-on-surface whitespace-nowrap">$140.00</td>
+<td class="py-2.5 px-3 font-mono text-[11px] text-text-muted whitespace-nowrap">
+<span class="px-1 py-0.5 rounded bg-surface-container">3b4c...9902</span>
+</td>
+<td class="py-2.5 px-3 text-center whitespace-nowrap">
+<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-success-base/10 text-success-base font-mono text-[10px] font-bold">
+<span class="material-symbols-outlined text-[12px]">check</span>
+                    R1 NUMERATOR
+                  </span>
+</td>
+<td class="py-2.5 px-2 text-center whitespace-nowrap">
+<button class="p-1 rounded hover:bg-surface-container text-text-muted hover:text-primary font-label-sm" title="Inspect Row">
+<span class="material-symbols-outlined text-[16px]">visibility</span>
+</button>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="hover:bg-surface-container-high transition-colors" data-order-id="#ORD-2026-98390">
+<td class="py-2.5 px-3 font-mono font-semibold text-primary whitespace-nowrap">
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px] text-text-subtle">radio_button_unchecked</span>
+<span>#ORD-2026-98390</span>
+</div>
+</td>
+<td class="py-2.5 px-3 font-mono text-[11px] text-text-muted whitespace-nowrap">2026-11-28 13:52:33</td>
+<td class="py-2.5 px-3 whitespace-nowrap">
+<div class="flex flex-col">
+<span class="font-medium text-secondary">Certified Resale Slip</span>
+<span class="text-[10px] text-text-muted font-mono">Receipt #RSL-8842 · Slip Att.</span>
+</div>
+</td>
+<td class="py-2.5 px-3 whitespace-nowrap font-mono text-[11px]">
+<span class="text-primary font-semibold">Elena Torres-Kim</span>
+<span class="text-text-muted">(#P-89104)</span>
+</td>
+<td class="py-2.5 px-3 whitespace-nowrap text-[11px]">Mobile Resale App</td>
+<td class="py-2.5 px-3 text-right font-mono font-bold text-on-surface whitespace-nowrap">$620.00</td>
+<td class="py-2.5 px-3 font-mono text-[11px] text-text-muted whitespace-nowrap">
+<span class="px-1 py-0.5 rounded bg-surface-container">7d8e...5521</span>
+</td>
+<td class="py-2.5 px-3 text-center whitespace-nowrap">
+<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-secondary/15 text-secondary font-mono text-[10px] font-bold">
+<span class="material-symbols-outlined text-[12px]">verified</span>
+                    R1 RESALE
+                  </span>
+</td>
+<td class="py-2.5 px-2 text-center whitespace-nowrap">
+<button class="p-1 rounded hover:bg-surface-container text-text-muted hover:text-primary font-label-sm" title="Inspect Row">
+<span class="material-symbols-outlined text-[16px]">visibility</span>
+</button>
+</td>
+</tr>
+<!-- Row 5 -->
+<tr class="hover:bg-surface-container-high transition-colors" data-order-id="#ORD-2026-98377">
+<td class="py-2.5 px-3 font-mono font-semibold text-primary whitespace-nowrap">
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px] text-text-subtle">radio_button_unchecked</span>
+<span>#ORD-2026-98377</span>
+</div>
+</td>
+<td class="py-2.5 px-3 font-mono text-[11px] text-text-muted whitespace-nowrap">2026-11-28 13:41:15</td>
+<td class="py-2.5 px-3 whitespace-nowrap">
+<div class="flex flex-col">
+<span class="font-medium text-on-surface">Subscription Auto-Ship</span>
+<span class="text-[10px] text-text-muted font-mono">Monthly Bundle Repeat</span>
+</div>
+</td>
+<td class="py-2.5 px-3 whitespace-nowrap font-mono text-[11px]">
+<span class="text-primary font-semibold">Lakshmi Patel</span>
+<span class="text-text-muted">(#P-55122)</span>
+</td>
+<td class="py-2.5 px-3 whitespace-nowrap text-[11px]">Shopify Recurring</td>
+<td class="py-2.5 px-3 text-right font-mono font-bold text-on-surface whitespace-nowrap">$185.50</td>
+<td class="py-2.5 px-3 font-mono text-[11px] text-text-muted whitespace-nowrap">
+<span class="px-1 py-0.5 rounded bg-surface-container">e7f8...3341</span>
+</td>
+<td class="py-2.5 px-3 text-center whitespace-nowrap">
+<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-success-base/10 text-success-base font-mono text-[10px] font-bold">
+<span class="material-symbols-outlined text-[12px]">check</span>
+                    R1 NUMERATOR
+                  </span>
+</td>
+<td class="py-2.5 px-2 text-center whitespace-nowrap">
+<button class="p-1 rounded hover:bg-surface-container text-text-muted hover:text-primary font-label-sm" title="Inspect Row">
+<span class="material-symbols-outlined text-[16px]">visibility</span>
+</button>
+</td>
+</tr>
+<!-- Row 6 -->
+<tr class="hover:bg-surface-container-high transition-colors" data-order-id="#ORD-2026-98350">
+<td class="py-2.5 px-3 font-mono font-semibold text-primary whitespace-nowrap">
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px] text-text-subtle">radio_button_unchecked</span>
+<span>#ORD-2026-98350</span>
+</div>
+</td>
+<td class="py-2.5 px-3 font-mono text-[11px] text-text-muted whitespace-nowrap">2026-11-28 13:15:00</td>
+<td class="py-2.5 px-3 whitespace-nowrap">
+<div class="flex flex-col">
+<span class="font-medium text-on-surface">Institutional B2B Client</span>
+<span class="text-[10px] text-text-muted font-mono">CrossFit Gyms LLC (End-User)</span>
+</div>
+</td>
+<td class="py-2.5 px-3 whitespace-nowrap font-mono text-[11px]">
+<span class="text-primary font-semibold">Marcus Sterling</span>
+<span class="text-text-muted">(#P-10042)</span>
+</td>
+<td class="py-2.5 px-3 whitespace-nowrap text-[11px]">Wholesale ERP EDI</td>
+<td class="py-2.5 px-3 text-right font-mono font-bold text-on-surface whitespace-nowrap">$1,150.00</td>
+<td class="py-2.5 px-3 font-mono text-[11px] text-text-muted whitespace-nowrap">
+<span class="px-1 py-0.5 rounded bg-surface-container">c1d2...4419</span>
+</td>
+<td class="py-2.5 px-3 text-center whitespace-nowrap">
+<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-success-base/10 text-success-base font-mono text-[10px] font-bold">
+<span class="material-symbols-outlined text-[12px]">check</span>
+                    R1 NUMERATOR
+                  </span>
+</td>
+<td class="py-2.5 px-2 text-center whitespace-nowrap">
+<button class="p-1 rounded hover:bg-surface-container text-text-muted hover:text-primary font-label-sm" title="Inspect Row">
+<span class="material-symbols-outlined text-[16px]">visibility</span>
+</button>
+</td>
+</tr>
+<!-- Row 7 -->
+<tr class="hover:bg-surface-container-high transition-colors" data-order-id="#ORD-2026-98312">
+<td class="py-2.5 px-3 font-mono font-semibold text-primary whitespace-nowrap">
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px] text-text-subtle">radio_button_unchecked</span>
+<span>#ORD-2026-98312</span>
+</div>
+</td>
+<td class="py-2.5 px-3 font-mono text-[11px] text-text-muted whitespace-nowrap">2026-11-28 12:48:20</td>
+<td class="py-2.5 px-3 whitespace-nowrap">
+<div class="flex flex-col">
+<span class="font-medium text-secondary">Certified Resale Slip</span>
+<span class="text-[10px] text-text-muted font-mono">Receipt #RSL-8839 · EPOS verified</span>
+</div>
+</td>
+<td class="py-2.5 px-3 whitespace-nowrap font-mono text-[11px]">
+<span class="text-primary font-semibold">David Chen</span>
+<span class="text-text-muted">(#P-10044)</span>
+</td>
+<td class="py-2.5 px-3 whitespace-nowrap text-[11px]">Mobile Resale App</td>
+<td class="py-2.5 px-3 text-right font-mono font-bold text-on-surface whitespace-nowrap">$310.00</td>
+<td class="py-2.5 px-3 font-mono text-[11px] text-text-muted whitespace-nowrap">
+<span class="px-1 py-0.5 rounded bg-surface-container">9a0b...7734</span>
+</td>
+<td class="py-2.5 px-3 text-center whitespace-nowrap">
+<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-secondary/15 text-secondary font-mono text-[10px] font-bold">
+<span class="material-symbols-outlined text-[12px]">verified</span>
+                    R1 RESALE
+                  </span>
+</td>
+<td class="py-2.5 px-2 text-center whitespace-nowrap">
+<button class="p-1 rounded hover:bg-surface-container text-text-muted hover:text-primary font-label-sm" title="Inspect Row">
+<span class="material-symbols-outlined text-[16px]">visibility</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Pagination Controls -->
+<div class="px-4 py-3 bg-surface-card flex flex-wrap items-center justify-between gap-2 shadow-[0_-1px_2px_rgba(0,0,0,0.02)]">
+<div class="flex items-center gap-2">
+<span class="font-body-sm text-body-sm text-text-muted">Showing</span>
+<span class="font-mono text-label-sm font-semibold text-on-surface">1–10</span>
+<span class="font-body-sm text-body-sm text-text-muted">of</span>
+<span class="font-mono text-label-sm font-semibold text-on-surface">112,408</span>
+<span class="font-body-sm text-body-sm text-text-muted">verified numerator records</span>
+</div>
+<div class="flex items-center gap-1">
+<button class="px-2.5 py-1 rounded bg-surface-container text-on-surface font-label-sm text-label-sm opacity-50 cursor-not-allowed">Previous</button>
+<button class="px-2.5 py-1 rounded bg-primary text-on-primary font-mono text-label-sm font-bold">1</button>
+<button class="px-2.5 py-1 rounded bg-surface-container hover:bg-surface-container-high text-on-surface font-mono text-label-sm">2</button>
+<button class="px-2.5 py-1 rounded bg-surface-container hover:bg-surface-container-high text-on-surface font-mono text-label-sm">3</button>
+<span class="px-1 text-text-muted font-mono">...</span>
+<button class="px-2.5 py-1 rounded bg-surface-container hover:bg-surface-container-high text-on-surface font-mono text-label-sm">11,241</button>
+<button class="px-2.5 py-1 rounded bg-surface-container hover:bg-surface-container-high text-on-surface font-label-sm text-label-sm">Next</button>
+</div>
+</div>
+</div>
+<!-- Detail Cryptographic Inspector & Statutory Evidence Panel (xl:col-span-4) -->
+<div class="xl:col-span-4 bg-surface-card rounded-lg shadow-sm flex flex-col overflow-hidden">
+<!-- Inspector Header -->
+<div class="p-3.5 bg-primary text-on-primary flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[20px] text-secondary-container">policy</span>
+<div class="flex flex-col">
+<span class="font-label-md text-label-md leading-tight">Cryptographic Row Inspector</span>
+<span class="font-mono text-[10px] text-on-primary-container leading-tight">INSPECTION TARGET: #ORD-2026-98432</span>
+</div>
+</div>
+<span class="px-2 py-0.5 rounded bg-success-base text-on-primary font-mono text-[10px] font-bold">VERIFIED</span>
+</div>
+<div class="p-4 flex flex-col gap-4">
+<!-- Order Snapshot -->
+<div class="p-3 rounded-lg bg-surface-container-low flex flex-col gap-2">
+<div class="flex items-center justify-between">
+<span class="font-eyebrow text-eyebrow text-text-muted uppercase">Line Item Breakdown</span>
+<span class="font-mono text-body-sm font-bold text-primary">$289.40 USD NET</span>
+</div>
+<div class="flex items-center gap-2">
+<div class="w-8 h-8 rounded bg-surface-container flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[18px]">shopping_bag</span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-md text-label-md text-on-surface">Whey Protein 5lb Bundle (SKU-WP-500)</span>
+<span class="font-body-sm text-body-sm text-text-muted">+ 1x Advanced BCAA Supplement (SKU-BC-200)</span>
+</div>
+</div>
+<div class="pt-1.5 flex items-center justify-between font-mono text-[11px] text-text-muted">
+<span>Gross: $313.28</span>
+<span>Tax (Excluded): $23.88</span>
+<span>Shipping: $0.00</span>
+</div>
+</div>
+<!-- Buyer Identity & Anti-Pirating Clearance -->
+<div class="flex flex-col gap-2">
+<span class="font-eyebrow text-eyebrow text-secondary uppercase tracking-wider">Buyer Verification Check (FR-CPL-001)</span>
+<div class="p-3 rounded-lg bg-surface-canvas flex flex-col gap-2 text-[12px]">
+<div class="flex justify-between items-center">
+<span class="text-text-muted font-mono">Tokenized Buyer Email:</span>
+<span class="font-mono font-medium text-on-surface">j***@gmail.com</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="text-text-muted font-mono">IP Geolocation / Delivery:</span>
+<span class="font-mono font-medium text-on-surface">Denver, CO (United States)</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="text-text-muted font-mono">Distributor Conflict Cross-Check:</span>
+<span class="text-success-base font-bold flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]">check_circle</span>
+                  NO MATCH (Non-Distributor)
+                </span>
+</div>
+<div class="text-[11px] text-text-muted mt-1 leading-snug">
+                Customer identity verified non-affiliated; address does not match any registered field distributor Tax ID or warehouse address.
+              </div>
+</div>
+</div>
+<!-- Servicing Distributor Attribution -->
+<div class="flex flex-col gap-2">
+<span class="font-eyebrow text-eyebrow text-secondary uppercase tracking-wider">Attribution Invariant Proof</span>
+<div class="p-3 rounded-lg bg-surface-canvas flex flex-col gap-2 text-[12px]">
+<div class="flex justify-between items-center">
+<span class="text-text-muted font-mono">Attributed Rep:</span>
+<span class="font-semibold text-primary">Sarah Al-Mansoor (#P-10045)</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="text-text-muted font-mono">Attribution Vector:</span>
+<span class="font-mono text-on-surface">URL Ref Tag <code class="bg-surface-container px-1 rounded">ref=sarah-m</code></span>
+</div>
+<div class="flex justify-between items-center">
+<span class="text-text-muted font-mono">Rep Standing:</span>
+<span class="text-success-base font-semibold">Active · Rank Diamond I</span>
+</div>
+</div>
+</div>
+<!-- Merkle Proof & SHA-256 Digest -->
+<div class="flex flex-col gap-1.5">
+<span class="font-eyebrow text-eyebrow text-secondary uppercase tracking-wider">Cryptographic Leaf Evidence</span>
+<div class="p-3 rounded-lg bg-primary text-on-primary font-mono text-[11px] flex flex-col gap-2">
+<div>
+<div class="text-on-primary-container text-[10px] uppercase">SHA-256 Row Hash:</div>
+<div class="break-all select-all font-bold text-secondary-fixed">0xa1b2c3d4e5f67890123456789abcdef0123456789abcdef0123456789abcdef0</div>
+</div>
+<div class="flex justify-between pt-1 text-[10px] text-on-primary-container">
+<span>Webhook: Shopify US (2.1s lat)</span>
+<span>Leaf #24,902 in Root</span>
+</div>
+</div>
+</div>
+<!-- Statutory Attestation Certificate -->
+<div class="p-3 rounded-lg bg-surface-container flex items-start gap-2 text-on-surface">
+<span class="material-symbols-outlined text-[18px] text-success-base shrink-0 mt-0.5">verified_user</span>
+<div class="flex flex-col text-[11px] leading-relaxed">
+<span class="font-semibold text-primary">Statutory Attestation Passed</span>
+<span class="text-text-muted">Meets all requirements of FTC Section 5 and PRD-01 / FR-CPL-006. Invariant cryptographically sealed in Run #3 snapshot #CPL-202611-04.</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Audit Footer & Security Governance Notice -->
+<div class="p-4 rounded-lg bg-surface-card shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-3 text-body-sm text-text-muted">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px] text-text-muted">security</span>
+<span>
+          Compliance Governance (FR-AUD-002): Any row-level inspection, filter state, or bulk download is cryptographically logged under tenant SOX ledger with actor <strong class="text-on-surface">Sarah Jenkins (Commission Analyst / Finance Approver)</strong>.
+        </span>
+</div>
+<div class="flex items-center gap-3 shrink-0 font-mono text-label-sm">
+<span class="flex items-center gap-1 text-success-base">
+<span class="w-2 h-2 rounded-full bg-success-base"></span>
+          Ingestion Node: Healthy (Cluster-US-East-1)
+        </span>
+</div>
+</div>
+</div>
+<!-- Interactive Modal / Slide-Out Dialog for Merkle Inclusion Proof -->
+<div class="fixed inset-0 bg-primary/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4" id="modalMerkle">
+<div class="w-full max-w-2xl bg-surface-card rounded-xl shadow-2xl overflow-hidden flex flex-col">
+<div class="p-4 bg-primary text-on-primary flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[20px] text-secondary-container">hub</span>
+<span class="font-headline-sm text-headline-sm">Merkle Inclusion Tree Proof (FR-AUD-002)</span>
+</div>
+<button class="p-1 rounded hover:bg-primary-container text-on-primary" id="btnCloseModal">
+<span class="material-symbols-outlined text-[18px]">close</span>
+</button>
+</div>
+<div class="p-6 flex flex-col gap-4 font-body-sm">
+<div class="p-3 rounded bg-surface-canvas text-on-surface font-mono text-[12px] flex flex-col gap-2">
+<div class="text-text-muted">Root Hash (November 2026 Monthly Run #3):</div>
+<div class="font-bold text-primary break-all">0x8a92f01eb0c8715421d6092bb454238e55e098492020e980f84a441e8c14f01e</div>
+</div>
+<div class="flex flex-col gap-2">
+<span class="font-label-md text-label-md text-on-surface font-semibold">Cryptographic Path Verification for #ORD-2026-98432:</span>
+<div class="flex flex-col gap-1.5 font-mono text-[11px]">
+<div class="p-2 rounded bg-surface-container flex justify-between items-center">
+<span class="text-text-muted">Leaf [24,902]:</span>
+<span class="text-primary font-semibold">0xa1b2c3d4e5f6...8891 (Order #ORD-2026-98432)</span>
+</div>
+<div class="flex justify-center text-text-muted">
+<span class="material-symbols-outlined text-[14px]">arrow_downward</span>
+</div>
+<div class="p-2 rounded bg-surface-container flex justify-between items-center">
+<span class="text-text-muted">Sibling Hash [L0-24903]:</span>
+<span class="text-on-surface">0x6e7f8a9b0c1d...3312</span>
+</div>
+<div class="flex justify-center text-text-muted">
+<span class="material-symbols-outlined text-[14px]">arrow_downward</span>
+</div>
+<div class="p-2 rounded bg-surface-container flex justify-between items-center">
+<span class="text-text-muted">Parent Node [L1-12451]:</span>
+<span class="text-on-surface">0xd5e6f708192a...9984</span>
+</div>
+<div class="flex justify-center text-text-muted">
+<span class="material-symbols-outlined text-[14px]">arrow_downward</span>
+</div>
+<div class="p-2 rounded bg-success-base/10 text-success-base font-bold flex justify-between items-center">
+<span>Status:</span>
+<span>VERIFIED · Exact Math Convergence to Period Merkle Root</span>
+</div>
+</div>
+</div>
+<div class="p-3 rounded bg-surface-container text-body-sm text-text-muted leading-relaxed">
+          This mathematical proof verifies that row #ORD-2026-98432 was included in the committed state at the time of report locking, and that the record has remained unaltered.
+        </div>
+<div class="flex justify-end gap-2 pt-2">
+<button class="px-4 py-2 rounded bg-surface-container-high hover:bg-surface-container text-on-surface font-button-text text-button-text" id="btnCloseModalBottom">Close Proof</button>
+<button class="px-4 py-2 rounded bg-primary text-on-primary font-button-text text-button-text flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px]">content_copy</span>
+<span>Copy Raw JSON Proof</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Interactive Modal for Export Modal Role Cap Warning -->
+<div class="fixed inset-0 bg-primary/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4" id="modalExport">
+<div class="w-full max-w-lg bg-surface-card rounded-xl shadow-2xl overflow-hidden flex flex-col">
+<div class="p-4 bg-primary text-on-primary flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[20px] text-secondary-container">file_download</span>
+<span class="font-headline-sm text-headline-sm">Certified Audit Ledger Export (.CSV)</span>
+</div>
+<button class="p-1 rounded hover:bg-primary-container text-on-primary" id="btnCloseExportModal">
+<span class="material-symbols-outlined text-[18px]">close</span>
+</button>
+</div>
+<div class="p-6 flex flex-col gap-4">
+<div class="p-3 rounded-lg bg-surface-container-low flex items-start gap-2.5">
+<span class="material-symbols-outlined text-[20px] text-secondary shrink-0">info</span>
+<div class="flex flex-col text-body-sm text-on-surface">
+<span class="font-semibold text-primary">Role Cap Notice (SOX-404 Compliance)</span>
+<span class="text-text-muted text-[12px] mt-0.5">
+              Live browser exports are capped at <strong>50,000 rows</strong> per session to prevent unauthorized exfiltration of consumer PII. The full population of 112,408 rows is available via Scheduled S3 Egress with multi-party authorization.
+            </span>
+</div>
+</div>
+<div class="flex flex-col gap-2 font-body-sm">
+<div class="flex justify-between py-1 border-b border-surface-container text-[12px]">
+<span class="text-text-muted">Target Population:</span>
+<span class="font-semibold text-primary">R1 Numerator Rows (112,408 records)</span>
+</div>
+<div class="flex justify-between py-1 border-b border-surface-container text-[12px]">
+<span class="text-text-muted">This Browser Batch:</span>
+<span class="font-semibold text-on-surface">Rows 1 to 50,000</span>
+</div>
+<div class="flex justify-between py-1 text-[12px]">
+<span class="text-text-muted">Signed By:</span>
+<span class="font-mono text-on-surface">Sarah Jenkins (s.jenkins@acmenutrition.com)</span>
+</div>
+</div>
+<div class="flex justify-end gap-2 pt-2">
+<button class="px-4 py-2 rounded bg-surface-container-high hover:bg-surface-container text-on-surface font-button-text text-button-text" id="btnCancelExport">Cancel</button>
+<button class="px-4 py-2 rounded bg-primary text-on-primary hover:bg-primary-container font-button-text text-button-text flex items-center gap-1.5 shadow-md">
+<span class="material-symbols-outlined text-[16px]">download</span>
+<span>Download Certified CSV (Batch 1)</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Interactive JavaScript for micro-interactions -->
+<script>
+    (function initSC26() {
+      // Modal Merkle Handlers
+      const btnMerkle = document.getElementById('btnMerkleProof');
+      const modalMerkle = document.getElementById('modalMerkle');
+      const btnCloseModal = document.getElementById('btnCloseModal');
+      const btnCloseModalBottom = document.getElementById('btnCloseModalBottom');
+
+      if (btnMerkle && modalMerkle) {
+        btnMerkle.addEventListener('click', () => modalMerkle.classList.remove('hidden'));
+      }
+      if (btnCloseModal && modalMerkle) {
+        btnCloseModal.addEventListener('click', () => modalMerkle.classList.add('hidden'));
+      }
+      if (btnCloseModalBottom && modalMerkle) {
+        btnCloseModalBottom.addEventListener('click', () => modalMerkle.classList.add('hidden'));
+      }
+
+      // Modal Export Handlers
+      const btnExport = document.getElementById('btnExportLedger');
+      const modalExport = document.getElementById('modalExport');
+      const btnCloseExportModal = document.getElementById('btnCloseExportModal');
+      const btnCancelExport = document.getElementById('btnCancelExport');
+
+      if (btnExport && modalExport) {
+        btnExport.addEventListener('click', () => modalExport.classList.remove('hidden'));
+      }
+      if (btnCloseExportModal && modalExport) {
+        btnCloseExportModal.addEventListener('click', () => modalExport.classList.add('hidden'));
+      }
+      if (btnCancelExport && modalExport) {
+        btnCancelExport.addEventListener('click', () => modalExport.classList.add('hidden'));
+      }
+
+      // Table Row Selection Interactive Behavior
+      const rows = document.querySelectorAll('#transactionRows tr');
+      rows.forEach(r => {
+        r.addEventListener('click', () => {
+          rows.forEach(other => {
+            other.classList.remove('bg-primary-container/10');
+            const icon = other.querySelector('.material-symbols-outlined');
+            if (icon && (icon.textContent === 'radio_button_checked' || icon.textContent === 'radio_button_unchecked')) {
+              icon.textContent = 'radio_button_unchecked';
+              icon.classList.remove('text-primary');
+              icon.classList.add('text-text-subtle');
+            }
+          });
+          r.classList.add('bg-primary-container/10');
+          const activeIcon = r.querySelector('.material-symbols-outlined');
+          if (activeIcon && (activeIcon.textContent === 'radio_button_checked' || activeIcon.textContent === 'radio_button_unchecked')) {
+            activeIcon.textContent = 'radio_button_checked';
+            activeIcon.classList.remove('text-text-subtle');
+            activeIcon.classList.add('text-primary');
+          }
+        });
+      });
+
+      // Search Filter Simulation
+      const searchInput = document.getElementById('orderTableSearch');
+      if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+          const val = e.target.value.toLowerCase();
+          rows.forEach(r => {
+            const txt = r.textContent.toLowerCase();
+            r.style.display = txt.includes(val) ? '' : 'none';
+          });
+        });
+      }
+    })();
+  </script>
+</div></main></div><div id="design-preview-pill" style="position:fixed;left:12px;bottom:12px;z-index:2147483647;display:flex;gap:8px;align-items:center;padding:8px 12px;border-radius:999px;background:#001332;color:#fff;font:600 12px/1.2 Inter,system-ui,sans-serif;box-shadow:0 4px 16px rgba(0,0,0,.25)"><a href="/portal-designs/" style="color:#fff;text-decoration:none">&larr; All designs</a><span style="opacity:.6">|</span><span style="font-weight:500">Design preview &middot; sample data, not the live app</span></div></body></html>

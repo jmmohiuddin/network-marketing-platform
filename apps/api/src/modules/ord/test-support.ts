@@ -152,3 +152,55 @@ export async function ordersTenant(app: FastifyInstance, tenantId: string, marke
   return { tenantId, marketId, admin, distributorType, retailType, token: await apiKey(app, admin, ['orders:write']) }
 }
 
+
+/** A live market in EUR (Europe/Brussels), for conversions into EUR (D-V1A-04). */
+export async function eurMarket(tenantId: string, code = 'BE'): Promise<string> {
+  const [market] = await ownerRows<{ id: string }>(
+    `INSERT INTO market (tenant_id, code, currency, minor_unit, time_zone, languages, market_pack, state)
+     VALUES ($1, $2, 'EUR', 2, 'Europe/Brussels', '{en}', 'none', 'live') RETURNING id`,
+    [tenantId, code],
+  )
+  return market!.id
+}
+
+/** Money settings in force now, one version per key with its approved change request (the money-key guard). */
+export async function moneySettings(tenantId: string, requesterId: string, approverId: string, values: Record<string, unknown>): Promise<void> {
+  for (const [key, value] of Object.entries(values)) {
+    await ownerRows(
+      `WITH r AS (SELECT gen_random_uuid() AS id),
+            a AS (INSERT INTO approval (tenant_id, object_type, object_id, preparer_id, approver_id, decision, decided_at, created_by)
+                  SELECT $1, 'setting_change_request', r.id, $4, $5, 'approved', now(), $5 FROM r RETURNING id, object_id),
+            v AS (INSERT INTO tenant_setting_version (tenant_id, version, effective_from, settings, reason, created_by, approval_id)
+                  SELECT $1, (SELECT coalesce(max(version), 0) + 1 FROM tenant_setting_version WHERE tenant_id = $1), now(),
+                         coalesce((SELECT settings FROM tenant_setting_version WHERE tenant_id = $1 ORDER BY version DESC LIMIT 1), '{}')
+                           || jsonb_build_object($2::text, $3::jsonb),
+                         'FIXTURE', $4, (SELECT id FROM a) RETURNING id)
+       INSERT INTO setting_change_request (id, tenant_id, key, value, effective_from, reason, base_version, state, requested_by, decided_by, decided_at,
+         approval_id, version_id)
+       SELECT a.object_id, $1, $2, $3::jsonb, now(), 'FIXTURE', 0, 'approved', $4, $5, now(), a.id, v.id FROM a, v`,
+      [tenantId, key, JSON.stringify(value), requesterId, approverId],
+    )
+  }
+}
+
+/** FIXTURE: an approved FX batch of `rows` (proposed by proposerId, approved by approverId) and its rates. */
+export async function approvedRates(
+  tenantId: string, proposerId: string, approverId: string, rows: readonly { base: string; quote: string; rate: string; valid_from: string }[],
+): Promise<void> {
+  const [batch] = await ownerRows<{ id: string }>(
+    `INSERT INTO fx_rate_batch (tenant_id, source, rows, proposed_by) VALUES ($1, 'fixture', $2, $3) RETURNING id`,
+    [tenantId, JSON.stringify(rows), proposerId],
+  )
+  await ownerRows(
+    `WITH a AS (INSERT INTO approval (tenant_id, object_type, object_id, preparer_id, approver_id, decision, decided_at, created_by)
+                VALUES ($1, 'fx_rate_batch', $2, $3, $4, 'approved', now(), $4) RETURNING id)
+     UPDATE fx_rate_batch SET state = 'approved', approval_id = (SELECT id FROM a), decided_at = now() WHERE id = $2`,
+    [tenantId, batch!.id, proposerId, approverId],
+  )
+  await ownerRows(
+    `INSERT INTO fx_rate (tenant_id, batch_id, base, quote, rate, source, valid_from)
+     SELECT $1, $2, r ->> 'base', r ->> 'quote', (r ->> 'rate')::numeric, 'fixture', (r ->> 'valid_from')::timestamptz
+     FROM jsonb_array_elements($3::jsonb) r`,
+    [tenantId, batch!.id, JSON.stringify(rows)],
+  )
+}

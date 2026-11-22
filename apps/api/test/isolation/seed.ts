@@ -62,6 +62,8 @@ export const TAX_MARKET_CODE = 'FR'
 export const TAX_YEAR = 2025
 /** A table of tenant A's full data export (one file per table). */
 export const EXPORT_TABLE = 'participant'
+/** V1-A: tenant A's credit type code (free in tenant B). */
+export const CREDIT_TYPE_CODE = 'CANARY_CREDIT'
 const DISTRIBUTOR_TYPE = 'DIST'
 const CUSTOMER_TYPE = 'CUST'
 /** B2 settings without an approver (PLAN B2 2.1), values chosen by the suite. */
@@ -175,6 +177,11 @@ export interface Targets {
   readonly taxMarket: string
   readonly taxRun: string
   readonly taxForm: string
+  /** V1-A: a credit type, a proposed FX rate batch, a proposed retention schedule and a legal hold on the root participant. */
+  readonly creditType: string
+  readonly fxBatch: string
+  readonly retentionSchedule: string
+  readonly legalHold: string
   /** Tenant B's slug: tenant A's credentials are tried against it. */
   readonly otherSlug: string
 }
@@ -691,6 +698,30 @@ async function seedB6(app: FastifyInstance, owner: TestUser, consultant: TestUse
   }
 }
 
+/**
+ * PLAN V1-A 6 (seedV1A): a credit type, a proposed FX batch, a retention schedule proposed from tomorrow, and on the
+ * root participant a joint account and a legal hold.
+ */
+async function seedV1A(app: FastifyInstance, owner: TestUser, participant: string) {
+  const write = (what: string, url: string, body: unknown) =>
+    send(app, 201, what, { method: 'POST', url, as: owner, body, idempotencyKey: true }).then((created) => created.data.id as string)
+  const tomorrow = new Date(Date.now() + 86_400_000).toISOString().slice(0, 10)
+  await send(app, 200, 'account', {
+    method: 'PUT', url: `/v1/participants/${participant}/account`, as: owner,
+    body: { account_type: 'joint', holders: [{ name: 'Canary Holder', role: 'joint_holder' }] },
+  })
+  return {
+    creditType: await write('credit type', '/v1/credit-types', { code: CREDIT_TYPE_CODE, name: 'Canary credit', expiry_days: 30, expiry_notice_days: 7, taxable: false }),
+    fxBatch: await write('fx batch', '/v1/fx-rate-batches', {
+      source: 'Canary bank', rows: [{ base: 'CHF', quote: 'EUR', rate: '1.0412000000', valid_from: '2026-11-01T00:00:00Z' }],
+    }),
+    retentionSchedule: await write('retention schedule', '/v1/retention/schedules', {
+      data_class: 'terminated_participant', market_id: null, retain_days: 3650, basis: 'Canary basis', effective_from: tomorrow,
+    }),
+    legalHold: await write('legal hold', '/v1/legal-holds', { participant_id: participant, reason }),
+  }
+}
+
 /** Seeds tenant A through the API; the database must have been reset (resetApiDb) and the app built with every module. */
 export async function seedTenants(app: FastifyInstance): Promise<Seeded> {
   const a = await createTenant()
@@ -725,11 +756,12 @@ export async function seedTenants(app: FastifyInstance): Promise<Seeded> {
   const freeDocument = await document(app, owner)
   const { portal, ...portalTargets } = await seedPortal(app, a.id, compensation.resultLine)
   const bmkt = await seedBMkt(app, owner)
+  const v1a = await seedV1A(app, owner, genealogy.participant)
   const b6 = await seedB6(app, owner, consultant, world, ledger.journalExport)
   const targets: Targets = {
     tenant: a.id, email: owner.email, ...people, ...imports, ...snapshot, export: exported.data.id as string, supportSession,
     market: MARKET_CODE, ...structure, changeRequest, ...launch, ...integrations, ...genealogy, ...orders, ...compensation, ...payouts, ...ledger,
-    relatedParty: related.data.id as string, freeDocument, ...portalTargets, ...bmkt, ...b6,
+    relatedParty: related.data.id as string, freeDocument, ...portalTargets, ...bmkt, ...v1a, ...b6,
     settingsVersion: await latestSettingsVersion(a.id), otherSlug: b.slug,
   }
   return { a, b, owner, consultant, vendor, portal, targets }
@@ -751,7 +783,7 @@ export function phantomOf(targets: Targets): Targets {
     payoutProvider: id(), payoutBatch: id(), payoutException: id(), payoutPayee: id(), payoutHold: id(), relatedParty: id(),
     ledgerAccount: id(), journalEntry: id(), journalExport: id(), portalParticipant: id(), portalEmail: `nobody-${id()}@nowhere.example`,
     dispute: id(), privacyRequest: id(), notification: id(), migration: id(), parallelRun: id(), difference: id(), fullExport: id(),
-    savedView: id(), taxMarket: id(), taxRun: id(), taxForm: id(),
+    savedView: id(), taxMarket: id(), taxRun: id(), taxForm: id(), creditType: id(), fxBatch: id(), retentionSchedule: id(), legalHold: id(),
   }
 }
 

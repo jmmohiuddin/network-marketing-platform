@@ -113,7 +113,8 @@ describe('year-end statements (T-BM-11, AC-18.2, AC-TAX3-1, AC-TAX3-2)', () => {
     expect((await generate(otherFinance)).statusCode).toBe(404)
     expect((await year(otherFinance)).statusCode).toBe(404)
     const outOfRange = await year(finance, '', at.marketId, 1999)
-    expect([outOfRange.statusCode, outOfRange.json().error.code]).toEqual([400, 'VALIDATION_FAILED'])
+    expect([outOfRange.statusCode, outOfRange.json().error.code, outOfRange.json().error.details.field]).toEqual([422, 'VALIDATION_FAILED', 'tax_year']) // TK-BM-16
+    expect((await generate(finance, { market_id: at.marketId, tax_year: 2101 })).statusCode).toBe(422)
     expect((await generate(finance, { market_id: at.marketId, tax_year: '2025' })).json().error.code).toBe('VALIDATION_FAILED')
     expect((await generate(finance, { market_id: at.marketId, tax_year: 2025 }, 'no spaces allowed')).json().error.code).toBe('IDEMPOTENCY_KEY_REQUIRED')
     expect((await year(portal)).json().error.code).toBe('REALM_FORBIDDEN')

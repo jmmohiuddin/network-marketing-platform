@@ -155,7 +155,8 @@ export function explainLine(input: ExplanationInput, texts: Texts) {
     ...(rounding === null ? [] : [t('explanation.rounded', { mode: t(`explanation.rounding.${rounding.mode}`), before: decimal(rounding.before), after: decimal(rounding.after) })]),
     ...(origin === null ? [] : [origin.original_period === null
       ? t('explanation.origin', { kind: t(`explanation.origin_kind.${origin.kind}`) })
-      : t('explanation.origin_of', { kind: t(`explanation.origin_kind.${origin.kind}`), ...span(origin.original_period) })]),
+      : origin.kind === 'provisional' ? t('explanation.origin_provisional', span(origin.original_period))
+        : t('explanation.origin_of', { kind: t(`explanation.origin_kind.${origin.kind}`), ...span(origin.original_period) })]),
     t('explanation.amount', { amount: decimal(amount), currency: input.line.currency }),
   ]
   return {

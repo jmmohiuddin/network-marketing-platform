@@ -20,7 +20,7 @@ export const READER = person('00000000-0000-4000-8000-000000000104', 'Rey Reader
 export function rule(overrides: Partial<Rule> = {}): Rule {
   return {
     rule_key: 'pv', kind: 'volume.personal', pass: '1', params: { unit: 'currency' }, depends_on: [], reversal_policy: null, calendar_id: null,
-    ordinal: 0, extension: false, rendering: 'Personal volume of all orders, excluding no item class', ...overrides,
+    credit_type_code: null, ordinal: 0, extension: false, rendering: 'Personal volume of all orders, excluding no item class', ...overrides,
   }
 }
 

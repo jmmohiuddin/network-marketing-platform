@@ -94,7 +94,13 @@ function brandColumns(writable: boolean, open: (next: Open) => void): DataTableC
 
 function calendarColumns(editable: Editable, open: (next: Open) => void): DataTableColumn<Calendar>[] {
   return [
-    { key: 'name', header: 'Calendar', cell: (row) => <span className="font-semibold text-on-surface">{row.name}</span> },
+    { key: 'name', header: 'Calendar', cell: (row) => (
+      <span className="flex flex-col">
+        <span className="font-semibold text-on-surface">{row.name}</span>
+        {row.provisional_for !== null && <span className="font-caption text-caption text-secondary">Provisional for {row.provisional_for.name}</span>}
+        {row.provisional_calendars.length > 0 && <span className="font-caption text-caption text-secondary">Final for: {row.provisional_calendars.map((item) => item.name).join(', ')}</span>}
+      </span>
+    ) },
     { key: 'market', header: 'Market', cell: (row) => <span className="font-data-mono-sm text-data-mono-sm">{row.market.code}</span> },
     { key: 'cadence', header: 'Cadence', cell: (row) => (row.cadence === 'monthly' ? 'Monthly' : 'Weekly') },
     { key: 'zone', header: 'Cut-off time zone', cell: (row) => row.cutoff_time_zone },
@@ -184,7 +190,7 @@ export function MarketsPage() {
       </div>
       {open?.kind === 'market' && <MarketDialog market={open.market} onClose={close} onSaved={saved} />}
       {open?.kind === 'brand' && <BrandDialog brand={open.brand} onClose={close} onSaved={saved} />}
-      {open?.kind === 'calendar' && <CalendarDialog markets={editableMarkets}onClose={close} onSaved={saved} />}
+      {open?.kind === 'calendar' && <CalendarDialog markets={editableMarkets} calendars={rowsOf(calendars)} onClose={close} onSaved={saved} />}
       {open?.kind === 'rename-calendar' && <RenameCalendarDialog calendar={open.calendar} onClose={close} onSaved={saved} />}
       {open?.kind === 'extend' && <ExtendDialog calendar={open.calendar} onClose={close} onSaved={saved} />}
       {open?.kind === 'periods' && <PeriodsDrawer calendar={open.calendar} onClose={close} />}

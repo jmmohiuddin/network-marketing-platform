@@ -86,3 +86,11 @@ _Agent: database. Read before every task; update after every task. Keep concise 
 - Web integrator: label for ERASURE_CLEARED 'user_account.locale' (features/privacy/format.ts); market references nouns for tax_form_generations / tax_forms.
 - lib/locale message() has a trailing log parameter (PLAN 1.9 signature had none).
 - nmp_dev / nmp_e2e / nmp_test not migrated to 0703 (only nmp_test_2); nmp_e2e needs reset + seed:e2e (TK-B6-15).
+
+## V1-A (2026-11-21)
+- Seed: plan "BE advances" not seeded (needs PLN credit_type_code shape); no e2e integration key exists in seed.ts to extend with credits:write (QA mints one).
+- PRODUCT DECISION (0807): erasure now keeps the export pinned by an archived offboarding (D-V1A-07/C-V1A-12), so an erased subject's data stays in that final export until tenant_purge; alternative is to defer the erasure (PV001 'offboarding_export'). Erasure after confirmation (export not yet named) still expires completed exports: the vendor makes a new one.
+- BE3 (apps/api int/full-export.ts expireOld): FULL_EXPORTS_KEPT expiry does not skip the pinned offboarding export (exports stay allowed while archived); filter `id NOT IN (export_id of tenant_offboarding state NOT IN cancelled/restored/purged)`.
+- 0807 revoked tenant_set_offboarding_state from nmp_app (the archive/restore trigger runs it as owner); tenant_read_only answers only system, vendor or the tenant's own realm (42501 otherwise).
+- credit_lots replay shortcut: a lot committed by a tx that started before a redemption's tx counts as available to it on replay.
+- NO_COMMITTED_PERIOD path of credit_expire_due not covered by a DB test (needs a closed attribution period).

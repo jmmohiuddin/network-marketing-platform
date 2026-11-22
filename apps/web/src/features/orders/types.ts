@@ -26,6 +26,20 @@ export interface OrderRow {
   readonly tax_minor: string
   readonly currency: string
   readonly volumes: Volumes
+  /** D-V1A-05: the subscription a renewal order belongs to. */
+  readonly subscription_ref: string | null
+  /** D-V1A-04: what the source sent when its currency was not the market's; amounts above are converted. */
+  readonly original: OriginalAmounts | null
+}
+
+export interface OriginalAmounts {
+  readonly currency: string
+  readonly amount_minor: string
+  readonly tax_minor: string
+  /** 10-dp decimal string. */
+  readonly rate: string
+  readonly rate_valid_from: string
+  readonly rate_id: string
 }
 
 /** GET /v1/orders rows: the order plus its order time, event count and late flag. */
@@ -54,6 +68,10 @@ export interface OrderEvent {
   readonly equal_value: boolean
   readonly volume_effect: { readonly lines?: readonly { readonly line_no: number; readonly volumes: Volumes }[]; readonly total?: Volumes }
   readonly late: boolean
+  /** On a converted order: the refund and fee as sent, in the order's original currency. */
+  readonly original: { readonly refund_minor: string; readonly fee_minor: string; readonly currency: string } | null
+  /** dispute_lost: the chargeback event (same order) it closes. */
+  readonly dispute_of_event_id: string | null
 }
 
 export interface EffectEstimate {

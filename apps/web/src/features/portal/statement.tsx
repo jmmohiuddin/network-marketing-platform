@@ -6,12 +6,12 @@ import { StatusBadge } from '../../components/status-badge'
 import { ApiError } from '../../lib/api'
 import { CAPTION, CARD, Failure, linePath, MONO, PAGE_TITLE, Section, statementPath, TEXT_LINK, TILE } from './blocks'
 import {
-  blockerText, disputeBadge, formatMoney, instructionLabel, isoDay, keyLabel, originText, paidAsText, rankText, withholdingLabel,
-  withholdingNote, type L10n,
+  blockerText, currencyMinorUnit, disputeBadge, formatMoney, instructionLabel, isoDay, keyLabel, originText, paidAsText, rankText, rateDigits,
+  withholdingLabel, withholdingNote, type L10n,
 } from './format'
 import { portalSession, serverGet, settle } from './i18n/server'
 import { ExplanationFrame } from './statement-sheet'
-import type { Dispute, DisputeState, Explanation, PortalProfile, Statement } from './types'
+import type { Dispute, DisputeState, Explanation, PortalProfile, Statement, StatementLine } from './types'
 import { DownloadLink } from './download-link'
 
 // SC-18 statement detail (sc_18), server-rendered so its core reads without scripts (D-BM-12, T-BM-35): status, net as
@@ -52,7 +52,7 @@ export async function StatementPage({ runId, lineId }: { readonly runId: string;
       <ExplanationFrame title={t('explanation.title')} closeLabel={t('explanation.close')} closeHref={statementPath(runId)}>
         {explanation instanceof ApiError
           ? <Failure error={explanation} t={t} section retry={retry} />
-          : <LineExplanation explanation={explanation.data} statement={statement.data} profile={profile} words={words}
+          : <LineExplanation explanation={explanation.data} statement={statement.data} profile={profile} words={words} readOnly={session.me.tenant?.read_only === true}
             dispute={disputes instanceof ApiError ? undefined : byLine.get(lineId) ?? null} failure={failure} />}
       </ExplanationFrame>
     </div>
@@ -90,6 +90,8 @@ function StatementBody({ statement, profile, disputes, notice, words }: {
       <Reconciliation statement={statement} words={words} />
       {notice}
       <Lines statement={statement} disputes={disputes} words={words} />
+      <CreditAwards statement={statement} words={words} />
+      <Conversions statement={statement} words={words} />
     </>
   )
 }
@@ -161,6 +163,79 @@ function Row({ label, value, note = null, testId }: { readonly label: string; re
   )
 }
 
+/** A line's origin in words; an advance (D-V1A-02) names the period it paid and that the final amount deducts it. */
+function lineOrigin(line: StatementLine, words: L10n): string | null {
+  const { t } = words
+  if (line.origin_kind === 'provisional' && line.original_period !== null) {
+    const { starts_on, ends_on } = line.original_period
+    const period = starts_on === ends_on ? words.date(starts_on) : `${words.date(starts_on)} – ${words.date(ends_on)}`
+    return t('statement.advance_for', { period })
+  }
+  const origin = originText(line.origin_kind, t)
+  return origin === null || line.original_period_id === null ? origin : t('statement.origin_earlier', { origin })
+}
+
+/** D-V1A-03: rewards in kind of this run, outside the net amount; expiry known once committed. */
+function CreditAwards({ statement, words }: { readonly statement: Statement; readonly words: L10n }) {
+  const { t } = words
+  if (statement.credit_awards.length === 0) return null
+  return (
+    <Section title={t('statement.credits')} icon="redeem" testId="credit-awards">
+      <p className={CAPTION}>{t('statement.credits_intro', { currency: statement.market.currency })}</p>
+      <ul className="flex flex-col gap-2">
+        {statement.credit_awards.map((award, index) => (
+          <li key={`${award.credit_type.code}-${index}`} className={`${TILE} flex items-center justify-between gap-space-sm flex-wrap`}>
+            <span className="flex flex-col min-w-0">
+              <span className="font-body-lg text-body-lg font-medium text-on-surface break-words">{award.credit_type.name}</span>
+              <span className={CAPTION}>
+                {award.expires_on === null ? t('statement.credit_no_expiry') : t('statement.credit_expires', { date: words.date(award.expires_on) })}
+                {award.taxable ? ` · ${t('statement.credit_taxable')}` : ''}
+              </span>
+            </span>
+            <span className="font-data-mono-md text-data-mono-md font-bold text-on-surface">{formatMoney(award.amount_minor, award.currency, currencyMinorUnit(award.currency), words.locale)}</span>
+          </li>
+        ))}
+      </ul>
+    </Section>
+  )
+}
+
+/** D-V1A-04: own orders of the period in another currency: original amount, the rate and its date, the converted amount. */
+function Conversions({ statement, words }: { readonly statement: Statement; readonly words: L10n }) {
+  const { t, locale } = words
+  if (statement.conversions.length === 0) return null
+  const head = 'py-1.5 pr-2 text-left font-caption text-caption uppercase tracking-wider text-on-surface-variant font-medium'
+  const cell = 'py-1.5 pr-2 align-top break-words'
+  return (
+    <Section title={t('statement.conversions')} icon="currency_exchange" testId="conversions">
+      <p className={CAPTION}>{t('statement.conversions_intro')}</p>
+      <table className="w-full table-fixed font-body-sm text-body-sm text-on-surface">
+        <thead>
+          <tr className="border-b border-surface-container">
+            <th scope="col" className={head}>{t('statement.conversion_order')}</th>
+            <th scope="col" className={`${head} text-right`}>{t('statement.conversion_original')}</th>
+            <th scope="col" className={`${head} text-right`}>{t('statement.conversion_rate')}</th>
+            <th scope="col" className={`${head} text-right pr-0`}>{t('statement.conversion_converted')}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {statement.conversions.map((row) => (
+            <tr key={`${row.order_ref}-${row.ordered_on}`} className="border-b border-surface-container last:border-b-0">
+              <th scope="row" className={`${cell} text-left font-normal`}>
+                <span className={`${MONO} block`}>{row.order_ref}</span>
+                <span className={CAPTION}>{words.date(row.ordered_on)}</span>
+              </th>
+              <td className={`${cell} text-right ${MONO}`}>{formatMoney(row.original_amount_minor, row.original_currency, currencyMinorUnit(row.original_currency), locale)}</td>
+              <td className={`${cell} text-right ${MONO}`}>{t('statement.conversion_rate_of', { rate: words.decimal(rateDigits(row.rate)), date: words.day(row.rate_valid_from) })}</td>
+              <td className={`${cell} text-right pr-0 ${MONO} font-semibold`}>{words.money(row.converted_amount_minor, statement.market)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </Section>
+  )
+}
+
 /** Lines per position (one position: no grouping level) and bonus, each with "How calculated". */
 function Lines({ statement, disputes, words }: { readonly statement: Statement; readonly disputes: ReadonlyMap<string, Dispute>; readonly words: L10n }) {
   const { t } = words
@@ -180,14 +255,14 @@ function Lines({ statement, disputes, words }: { readonly statement: Statement; 
                 </div>
                 <ul className="flex flex-col">
                   {bonus.lines.map((line) => {
-                    const origin = originText(line.origin_kind, t)
+                    const origin = lineOrigin(line, words)
                     const dispute = disputes.get(line.id)
                     const badge = dispute === undefined ? null : disputeBadge(dispute.state, t)
                     return (
                       <li key={line.id} className="flex items-center justify-between gap-space-sm flex-wrap border-t border-surface-container first:border-t-0">
                         <span className="flex items-center gap-space-xs flex-wrap">
                           <span className={`${MONO} text-on-surface`}>{money(line.amount_minor)}</span>
-                          {origin !== null && <span className={CAPTION}>{line.original_period_id === null ? origin : t('statement.origin_earlier', { origin })}</span>}
+                          {origin !== null && <span className={CAPTION}>{origin}</span>}
                           {badge !== null && <StatusBadge state={badge.state} label={badge.label} />}
                         </span>
                         <Link href={linePath(statement.run_id, line.id)} prefetch={false} className={TEXT_LINK}
@@ -220,7 +295,7 @@ function Lines({ statement, disputes, words }: { readonly statement: Statement; 
 }
 
 /** API-29 explanation: sources aggregated per level (no other person named), steps, rounding, origin; dispute state. */
-function LineExplanation({ explanation: data, statement, profile, dispute, failure, words }: {
+function LineExplanation({ explanation: data, statement, profile, dispute, failure, words, readOnly }: {
   readonly explanation: Explanation
   readonly statement: Statement
   readonly profile: PortalProfile
@@ -229,6 +304,8 @@ function LineExplanation({ explanation: data, statement, profile, dispute, failu
   /** Shown in place of the dispute link when the dispute states could not be loaded. */
   readonly failure: ReactNode
   readonly words: L10n
+  /** A read-only tenant (D-V1A-07) takes no new dispute. */
+  readonly readOnly: boolean
 }) {
   const { t, locale } = words
   const minorUnit = statement.market.minor_unit
@@ -302,7 +379,7 @@ function LineExplanation({ explanation: data, statement, profile, dispute, failu
         </div>
       )}
       {dispute === undefined && failure}
-      {dispute !== undefined && !profile.terminated && (dispute === null || DECIDED.has(dispute.state)) && (
+      {dispute !== undefined && !profile.terminated && !readOnly && (dispute === null || DECIDED.has(dispute.state)) && (
         <LinkButton href={`${linePath(statement.run_id, data.line_id)}/dispute`} variant="destructive" size="lg" icon="flag">{t('dispute.title')}</LinkButton>
       )}
     </div>

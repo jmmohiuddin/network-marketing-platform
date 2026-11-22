@@ -2,6 +2,12 @@
 
 _Agent: compensation. Read before every task; update after every task. Keep concise — facts and decisions, not transcripts._
 
+## V1-A BE1 (2026-11-21)
+- Integrator: GET /v1/runs/:id/true-up and GET /v1/runs/:id/credit-awards (run.review) need isolation cases + role-matrix probes.
+- PLAN 2.4 "staff and portal statement routes": only the portal statement route exists in COMP; the additions are on /v1/me/statements/:runId.
+- AC-S1-2 (2M) not met; deferred-trace/columnar rework not built (see SPIKE_REPORT §10, amendment proposal AP-V1A-12 in the ADR log).
+- Simulations ignore credit awards (sim_result_line is cash only); parallel-run comparisons therefore omit award rules.
+
 ## B3 review fixes (2026-11-18)
 - ESCALATED (architect + records): S-1 engine OOM at 500k/2M positions with 4 GB heap (~16 KB RSS/position, packages/engine/results/s1-bench.json); TS-29 / NFR-PERF-04/05 not met; re-plan engine memory (per-line trace objects, input graph) and D-B3-21 worker sizing before COMP relies on in-process runs.
 - Architect decision needed: new versions copy the base version's incoming transitions (PLAN 2.1); they satisfy TRANSITION_MISSING silently.

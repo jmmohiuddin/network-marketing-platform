@@ -60,7 +60,7 @@ export function PaymentDetailsPage() {
 type Confirm = () => Promise<boolean>
 
 function BankSection({ bank, confirm, onChanged }: { readonly bank: BankDetails; readonly confirm: Confirm; readonly onChanged: () => void }) {
-  const { words } = usePortal()
+  const { words, readOnly } = usePortal()
   const { t } = words
   const [editing, setEditing] = useState(false)
   const current = bank.current
@@ -98,7 +98,7 @@ function BankSection({ bank, confirm, onChanged }: { readonly bank: BankDetails;
           )}
         {editing
           ? <BankChange confirm={confirm} onCancel={() => setEditing(false)} onDone={() => { setEditing(false); onChanged() }} />
-          : bank.pending_review === null && (
+          : bank.pending_review === null && !readOnly && (
             <>
               <Button variant="primary" size="lg" icon="edit" onClick={() => setEditing(true)} data-testid="primary-action">{t('payment.change_bank')}</Button>
               <p className={CAPTION}>{t('payment.password_first')}</p>
@@ -180,7 +180,7 @@ function BankChange({ confirm, onCancel, onDone }: { readonly confirm: Confirm; 
 }
 
 function TaxSection({ tax, confirm, onChanged }: { readonly tax: TaxProfile; readonly confirm: Confirm; readonly onChanged: () => void }) {
-  const { words } = usePortal()
+  const { words, readOnly } = usePortal()
   const { t } = words
   const [editing, setEditing] = useState(false)
   const current = tax.current
@@ -198,7 +198,7 @@ function TaxSection({ tax, confirm, onChanged }: { readonly tax: TaxProfile; rea
         )}
       {editing
         ? <TaxChange tax={tax} confirm={confirm} onCancel={() => setEditing(false)} onDone={() => { setEditing(false); onChanged() }} />
-        : <Button size="lg" icon="edit" onClick={() => setEditing(true)}>{current === null ? t('payment.add_tax') : t('payment.change_tax')}</Button>}
+        : !readOnly && <Button size="lg" icon="edit" onClick={() => setEditing(true)}>{current === null ? t('payment.add_tax') : t('payment.change_tax')}</Button>}
     </Section>
   )
 }

@@ -84,9 +84,10 @@ export function isExtension(r: Pick<RuleRow, 'kind' | 'params'>): boolean {
 
 /** minorDigits: the first plan market's digits, so volumes and amounts render as units (BUG-090). */
 export function ruleView(r: RuleRow, minorDigits: number | null): Record<string, unknown> {
+  const { award, ...params } = r.params as { award?: { creditType: string } }
   return {
-    rule_key: r.rule_key, kind: r.kind, pass: r.pass, params: r.params, depends_on: r.depends_on, reversal_policy: r.reversal_policy,
-    calendar_id: r.calendar_id, ordinal: r.ordinal, extension: isExtension(r), rendering: renderRule(engineRule(r), { minorDigits: minorDigits ?? undefined }),
+    rule_key: r.rule_key, kind: r.kind, pass: r.pass, params, credit_type_code: award?.creditType ?? null, depends_on: r.depends_on,
+    reversal_policy: r.reversal_policy, calendar_id: r.calendar_id, ordinal: r.ordinal, extension: isExtension(r), rendering: renderRule(engineRule(r), { minorDigits: minorDigits ?? undefined }),
   }
 }
 

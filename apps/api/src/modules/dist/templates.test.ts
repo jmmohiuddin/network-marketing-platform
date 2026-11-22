@@ -62,6 +62,26 @@ describe('T-BM-32 localised e-mails (AC-DIST7-4)', () => {
     expect(renderNotification('tax_form.available', params, 'de', 'UTC', WEB, log).text).toContain('Steuerübersicht FX-1 für das Steuerjahr 2026')
   })
 
+  test('BUG-141: a first bank account is "set" (no previous account named), a change names both, in en and de', () => {
+    const first = { masked: '•••• 3201', previous_masked: null, cooling_off_until: '2026-11-22T09:00:00.000Z' }
+    expect(renderNotification('bank_detail.changed', first, 'en', 'UTC', WEB, log).text).toContain('Your payout bank details were set to •••• 3201.')
+    const german = renderNotification('bank_detail.changed', first, 'de', 'UTC', WEB, log).text
+    expect(german).toContain('Ihre Bankdaten für Auszahlungen wurden auf •••• 3201 festgelegt.')
+    expect(german).not.toContain('keinem')
+    const changed = renderNotification('bank_detail.changed', { ...first, previous_masked: '•••• 1111' }, 'de', 'UTC', WEB, log).text
+    expect(changed).toContain('von •••• 1111 auf •••• 3201 geändert')
+  })
+
+  test('credit.expiring (D-V1A-03) renders the SQL params in en and de, never as a cash balance', () => {
+    const params = { credit_type_code: 'PRODUCT_CREDIT', credit_type_name: 'Product credit', amount_minor: '900', currency: 'EUR', expires_on: '2026-12-05' }
+    const en = renderNotification('credit.expiring', params, 'en', 'Europe/Brussels', WEB, log)
+    expect(en).toMatchObject({ subject: 'Some of your credits expire soon', text: expect.stringContaining('Your Product credit credits of 9.00 EUR expire on Dec 5, 2026.') })
+    const de = renderNotification('credit.expiring', params, 'de', 'Europe/Brussels', WEB, log)
+    expect(de.text).toContain('Ihre Gutschriften „Product credit“ über 9,00 EUR verfallen am 05.12.2026.')
+    expect(`${en.text}${de.text}`.toLowerCase()).not.toMatch(/wallet|guthaben/)
+    expect(() => renderNotification('credit.expiring', { ...params, currency: 'XXQ' }, 'en', 'UTC', WEB, log)).toThrow()
+  })
+
   test('a locale without a catalogue renders in English and is logged', () => {
     const warn = vi.spyOn(log, 'warn')
     const mail = renderNotification('dispute.updated', {}, 'nl', 'UTC', WEB, log)

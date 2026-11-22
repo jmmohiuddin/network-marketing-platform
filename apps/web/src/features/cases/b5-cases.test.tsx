@@ -192,6 +192,22 @@ describe('SC-06 privacy cases (D-B5-16..18)', () => {
     expect(callsTo(fetchMock, 'POST', `/v1/cases/${CASE_ID}/submit`)).toHaveLength(1)
   })
 
+  it('lets a read-only tenant submit and decide a privacy case, not other cases (C-V1A-18, the API CASE_ACTION allowlist)', async () => {
+    const readOnly = <T extends typeof DPO>(me: T) => adminMe({ ...me, tenant: { ...me.tenant!, read_only: true } })
+    const openMock = routes(privacy({}))
+    const open = renderAs(readOnly(DPO), <CaseDetailPage caseId={CASE_ID} />, openMock)
+    expect(await screen.findByRole('button', { name: 'Submit for decision' })).toBeTruthy()
+    expect(callsTo(openMock, 'GET', '/v1/documents/limits')).toHaveLength(0) // no evidence form: its upload (POST /v1/documents) is refused
+    open.unmount()
+    const submitted = privacy({ state: 'submitted', submitted_by: DPO.user.id, submitted_at: CREATED, eligible_approvers: [{ user_id: DPO2.user.id, display_name: 'Dan DPO', email: 'dan@acme.example' }] })
+    const decide = renderAs(readOnly(DPO2), <CaseDetailPage caseId={CASE_ID} />, routes(submitted))
+    expect(await screen.findByRole('button', { name: 'Approve' })).toBeTruthy()
+    decide.unmount()
+    renderAs(readOnly(ANALYST), <CaseDetailPage caseId={CASE_ID} />, routes(caseOf({})))
+    expect(await screen.findByText('Volume missing')).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Start review' })).toBeNull()
+  })
+
   it('keeps a failed read of the request inside the submit dialog: Try again reads it, Close leaves, and Submit opens it again', async () => {
     let reads = 0
     const fetchMock = routes(privacy({}), {

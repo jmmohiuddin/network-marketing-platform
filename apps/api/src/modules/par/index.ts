@@ -1,5 +1,6 @@
 import type { ApiModule } from '../../lib/module.js'
 import type { CaseTypeDefinition } from '../cas/index.js'
+import { registerAccountRoutes } from './accounts.js'
 import { registerAgreementRoutes } from './agreements.js'
 import { DUPLICATE_CASE_TYPE } from './duplicate-case.js'
 import { registerParticipantReadRoutes } from './participants.js'
@@ -9,7 +10,7 @@ import { registerParticipantWriteRoutes } from './participant-writes.js'
 /**
  * Participants (PAR, FR-PAR-001/002/003/006): participant types with approval, participants with masked contact,
  * enrolment (positions, sponsor and placement through the GEN SQL contracts), agreement versions and acceptances,
- * hashed duplicate signals and the duplicate case type.
+ * hashed duplicate signals and the duplicate case type; account types and holders (FR-PAR-004).
  */
 export const parModule: ApiModule = {
   name: 'par',
@@ -18,6 +19,7 @@ export const parModule: ApiModule = {
     registerParticipantReadRoutes(app)
     registerParticipantWriteRoutes(app)
     registerAgreementRoutes(app)
+    registerAccountRoutes(app)
   },
 }
 

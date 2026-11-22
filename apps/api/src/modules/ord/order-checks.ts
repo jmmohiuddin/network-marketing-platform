@@ -17,11 +17,8 @@ export async function liveMarket(tx: Tx, code: string): Promise<MarketView> {
   return market
 }
 
-/** Currency, line numbers, totals and timestamps (no later than now + the configured tolerance). */
-export function assertOrderFacts(input: OrderInput, market: MarketView, toleranceSeconds: number): void {
-  if (input.currency !== market.currency) {
-    throw new Refusal(422, 'CURRENCY_MISMATCH', 'The order currency is not the market currency.', { expected: market.currency })
-  }
+/** Line numbers, totals (in the order's own currency) and timestamps (no later than now + the configured tolerance). */
+export function assertOrderFacts(input: OrderInput, toleranceSeconds: number): void {
   if (new Set(input.lines.map((line) => line.line_no)).size !== input.lines.length) {
     throw new Refusal(422, 'LINE_NUMBERS_INVALID', 'Each line number may appear once.')
   }

@@ -37,7 +37,8 @@ export interface PortalProfile {
  * second factor is pending.
  */
 export interface PortalMe extends Omit<Me, 'tenant' | 'roles' | 'permissions' | 'support_session'> {
-  readonly tenant: { readonly slug: string; readonly legal_name: string } | null
+  /** read_only (D-V1A-07): offboarding confirmed or archived; the shell shows the read-only notice. */
+  readonly tenant: { readonly slug: string; readonly legal_name: string; readonly read_only?: boolean } | null
   readonly participant: PortalProfile | null
   /** D-BM-11: the effective locale, the locales the participant's market offers (endonyms) and the market default. */
   readonly locale: Locale
@@ -73,13 +74,37 @@ export interface LadderRank {
   readonly rank: string | null
 }
 
-export type OriginKind = 'none' | 'late_order' | 'refund' | 'manual' | 'restatement'
+export type OriginKind = 'none' | 'late_order' | 'refund' | 'manual' | 'restatement' | 'provisional'
 
 export interface StatementLine {
   readonly id: string
   readonly amount_minor: string
   readonly origin_kind: OriginKind
   readonly original_period_id: string | null
+  /** The earlier period in the market zone (YYYY-MM-DD, both days included); an advance line names the week it paid. */
+  readonly original_period: { readonly starts_on: string; readonly ends_on: string } | null
+}
+
+/** D-V1A-03: a non-cash reward of the run, valued in the market currency; never part of the net amount. */
+export interface CreditAward {
+  readonly credit_type: { readonly code: string; readonly name: string }
+  readonly amount_minor: string
+  readonly currency: string
+  readonly expires_on: string | null
+  readonly taxable: boolean
+}
+
+/** D-V1A-04: an own order of the period recorded in another currency, converted once at ingestion. */
+export interface Conversion {
+  readonly order_ref: string
+  readonly ordered_on: string
+  readonly original_currency: string
+  readonly original_amount_minor: string
+  /** 10-dp decimal string. */
+  readonly rate: string
+  readonly rate_valid_from: string
+  readonly converted_amount_minor: string
+  readonly currency: string
 }
 
 export interface Blocker {
@@ -97,6 +122,8 @@ export interface Statement extends Omit<StatementSummary, 'net_minor' | 'payout_
     readonly total_minor: string
   }[]
   readonly person_total_minor: string
+  readonly credit_awards: readonly CreditAward[]
+  readonly conversions: readonly Conversion[]
   readonly summary: {
     readonly gross_minor: string
     readonly adjustment_minor: string

@@ -1,11 +1,11 @@
 // Permission catalogue and base roles (E-ADR-09). One typed source: migration 0007 seeded the release A base roles
-// (RELEASE_A_BASE_ROLES_SEED, frozen), migrations 0106 (B1), 0206 (B2), 0304 (B3), 0405 (B4), 0505 (B5), 0606 (B6) and 0703 (B-MKT) bring the roles each increment
+// (RELEASE_A_BASE_ROLES_SEED, frozen), migrations 0106 (B1), 0206 (B2), 0304 (B3), 0405 (B4), 0505 (B5), 0606 (B6), 0703 (B-MKT) and 0806 (V1-A) bring the roles each increment
 // changed to BASE_ROLES (renderBaseRoleUpdate, renderBaseRoleMfaUpdate), and permissions.test.ts pins the files, the
 // catalogue and the TS-36 role matrix.
 
 /**
  * Every role permission in release A (SECURITY_IAM_TENANCY 4.3, API 7) plus participant.unmask and plan.activate, and
- * the B1..B-MKT additions (PLAN B1..B6 and B-MKT section 3). Portal accounts hold none (D-B5-02).
+ * the B1..V1-A additions (PLAN B1..B6, B-MKT and V1-A section 3). Portal accounts hold none (D-B5-02).
  */
 export const PERMISSIONS = [
   'import.manage',
@@ -88,6 +88,13 @@ export const PERMISSIONS = [
   'case.grievance.create',
   'case.grievance.approve',
   'register.read',
+  'credit.read',
+  'credit.manage',
+  'fx.manage',
+  'fx.approve',
+  'legal_hold.manage',
+  'tenant.offboard',
+  'case.transfer.approve',
 ] as const
 
 export type Permission = (typeof PERMISSIONS)[number]
@@ -127,6 +134,11 @@ export const PRIVILEGED_PERMISSIONS: readonly Permission[] = [
   'migration.signoff',
   'period.close',
   'tax.forms',
+  'credit.manage',
+  'fx.approve',
+  'legal_hold.manage',
+  'tenant.offboard',
+  'case.transfer.approve',
 ]
 
 // SEC-03: privileged roles and anyone who can unmask sensitive fields use MFA; a bank-detail change request needs a
@@ -163,7 +175,7 @@ export const BASE_ROLES: readonly BaseRole[] = [
     permissions: [
       'user.manage', 'settings.manage', 'import.manage', 'mapping.edit', 'mapping.approve', 'compliance.read',
       'audit.read', 'vendor_access.decide', 'market.manage', 'integration.manage', 'participant.read', 'order.read',
-      'product.manage', 'integration.read', 'ledger.export', 'export.full',
+      'product.manage', 'integration.read', 'ledger.export', 'export.full', 'tenant.offboard',
     ],
     mfaRequired: true,
   },
@@ -173,7 +185,7 @@ export const BASE_ROLES: readonly BaseRole[] = [
       'compliance.read', 'participant.read', 'genealogy.read', 'case.genealogy.read', 'order.read', 'late.manage',
       'integration.read', 'plan.read', 'period.read', 'run.execute', 'run.review', 'trace.read', 'restatement.request',
       'case.restatement.read', 'ledger.read', 'case.adjustment.read', 'case.adjustment.create', 'case.write_off.read',
-      'case.write_off.create', 'case.dispute.read', 'case.dispute.approve',
+      'case.write_off.create', 'case.dispute.read', 'case.dispute.approve', 'credit.read', 'fx.manage',
     ],
     mfaRequired: false,
   },
@@ -190,6 +202,7 @@ export const BASE_ROLES: readonly BaseRole[] = [
       'ledger.read', 'ledger.export', 'payout.read', 'payout.approve', 'tax.manage', 'case.adjustment.read',
       'case.adjustment.approve', 'case.write_off.read', 'case.write_off.create', 'case.write_off.approve',
       'case.returned_payment.read', 'case.dispute.read', 'migration.signoff', 'period.close', 'tax.read', 'tax.forms',
+      'credit.read', 'credit.manage', 'fx.manage', 'fx.approve',
     ],
     mfaRequired: true,
   },
@@ -197,7 +210,7 @@ export const BASE_ROLES: readonly BaseRole[] = [
     name: 'Payout officer',
     permissions: [
       'participant.unmask', 'participant.read', 'ledger.read', 'payout.read', 'payout.prepare', 'payout.reconcile',
-      'payout.hold', 'case.bank_detail.read', 'case.returned_payment.read', 'case.returned_payment.create',
+      'payout.hold', 'case.bank_detail.read', 'case.returned_payment.read', 'case.returned_payment.create', 'credit.read',
     ],
     mfaRequired: true,
   },
@@ -210,7 +223,8 @@ export const BASE_ROLES: readonly BaseRole[] = [
       'plan.read', 'plan.approve', 'period.read', 'run.review', 'trace.read', 'restatement.request', 'case.restatement.read',
       'guardrail.read', 'override.approve', 'ledger.read', 'payout.read', 'payout.hold', 'case.adjustment.read',
       'case.write_off.read', 'case.bank_detail.read', 'case.bank_detail.approve', 'case.dispute.read', 'tax.read',
-      'case.grievance.read', 'case.grievance.create', 'case.grievance.approve', 'register.read',
+      'case.grievance.read', 'case.grievance.create', 'case.grievance.approve', 'register.read', 'case.transfer.approve',
+      'legal_hold.manage',
     ],
     mfaRequired: true,
   },
@@ -220,13 +234,13 @@ export const BASE_ROLES: readonly BaseRole[] = [
       'participant.read', 'participant.manage', 'genealogy.read', 'case.genealogy.read', 'case.genealogy.create',
       'case.duplicate.read', 'case.duplicate.create', 'servicing.manage', 'order.read', 'period.read', 'run.review',
       'trace.read', 'case.bank_detail.read', 'case.bank_detail.create', 'case.dispute.read', 'case.grievance.read',
-      'case.grievance.create',
+      'case.grievance.create', 'credit.read',
     ],
     mfaRequired: true,
   },
   {
     name: 'DPO',
-    permissions: ['compliance.read', 'audit.read', 'participant.unmask', 'participant.read', 'privacy.manage'],
+    permissions: ['compliance.read', 'audit.read', 'participant.unmask', 'participant.read', 'privacy.manage', 'legal_hold.manage'],
     mfaRequired: true,
   },
   {
@@ -283,6 +297,11 @@ export const B6_UPDATED_BASE_ROLES: readonly BaseRoleName[] = [
 
 /** The base roles whose permissions B-MKT changed (PLAN B-MKT section 3); migration 0703 updates exactly these. */
 export const BMKT_UPDATED_BASE_ROLES: readonly BaseRoleName[] = ['Finance approver', 'Compliance officer', 'Support agent']
+
+/** The base roles whose permissions V1-A changed (PLAN V1-A section 3); migration 0806 updates exactly these. */
+export const V1A_UPDATED_BASE_ROLES: readonly BaseRoleName[] = [
+  'Tenant admin', 'Finance approver', 'Commission analyst', 'Payout officer', 'Support agent', 'Compliance officer', 'DPO',
+]
 
 /** The SQL that brings the named base roles to their BASE_ROLES permissions. */
 export function renderBaseRoleUpdate(names: readonly BaseRoleName[]): string {

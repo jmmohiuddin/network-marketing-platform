@@ -14,10 +14,11 @@ import { formatDateTime } from '../../lib/format'
 import { errorMessage } from '../../lib/messages'
 import { useSession } from '../../lib/session'
 import { useResource } from '../../lib/use-resource'
+import { requiredError } from '../../lib/validation'
 import { fromLocalInput } from '../admin/format'
 import { LEG_OPTIONS } from '../people/format'
 import { CaseForm, type CaseProposal } from './case-form'
-import { caseTypeInfo, KIND_LABELS, utcToday, type CaseTypeInfo } from './format'
+import { caseTypeInfo, DOCUMENT_KIND_LABELS, KIND_LABELS, LEGAL_BASIS_KINDS, utcToday, type CaseTypeInfo } from './format'
 import { nodeName, ParticipantPicker, PositionPicker } from './pickers'
 import { positionPath } from './refs'
 import type { ParticipantRow, PositionDetail, TreeKind, TreeNode } from './types'
@@ -143,31 +144,64 @@ function RelationshipForm({ initial }: { readonly initial: TreeNode | null }) {
   )
 }
 
-const TRANSFER_FIELDS = { to_participant_id: 'tr-owner', effective_from: 'tr-date', 'payload.to_participant_id': 'tr-owner', 'payload.effective_from': 'tr-date' }
+const TRANSFER_FIELDS = {
+  to_participant_id: 'tr-owner', effective_from: 'tr-date', 'payload.to_participant_id': 'tr-owner', 'payload.effective_from': 'tr-date',
+  legal_basis: 'tr-kind', 'legal_basis.document_kind': 'tr-kind', 'legal_basis.reference': 'tr-ref',
+  'payload.legal_basis': 'tr-kind', 'payload.legal_basis.document_kind': 'tr-kind', 'payload.legal_basis.reference': 'tr-ref',
+}
+/** The API's limit on a legal-basis reference. */
+const REFERENCE_MAX = 100
 
-/** Ownership transfer (transfer, PLAN B2 2.4): the position keeps its place, its owner changes. */
+/**
+ * Ownership transfer (transfer, PLAN B2 2.4, V1-A D-V1A-06): the position keeps its place, its owner changes; the legal
+ * basis names a document allowed for the reason, the evidence file is required, a Compliance officer decides.
+ */
 function TransferForm({ initial }: { readonly initial: TreeNode | null }) {
   const [position, setPosition] = useState<TreeNode | null>(initial)
   const [owner, setOwner] = useState<ParticipantRow | null>(null)
   const [effectiveFrom, setEffectiveFrom] = useState(utcToday)
+  const [kind, setKind] = useState('')
+  const [reference, setReference] = useState('')
   const [errors, setErrors] = useState<Readonly<Record<string, string | null>>>({})
-  function prepare(): CaseProposal {
+  const allowedKinds = (reason: string) => LEGAL_BASIS_KINDS[reason] ?? []
+  function prepare(reason: string): CaseProposal {
+    const chosenKind = allowedKinds(reason).includes(kind) ? kind : ''
     const found: Record<string, string | null> = {
       'tr-position': position === null ? 'Choose the position to transfer.' : null,
       'tr-owner': owner === null ? 'Choose the new owner.' : null,
       'tr-date': effectiveFrom === '' || effectiveFrom < utcToday() ? 'Choose today (UTC) or a later date.' : null,
+      'tr-kind': reason === '' ? null : chosenKind === '' ? 'Choose the document that grounds the transfer.' : null,
+      'tr-ref': requiredError('the document reference', reference),
     }
     setErrors(found)
     const items = Object.entries(found).flatMap(([fieldId, message]) => (message === null ? [] : [{ fieldId, message }]))
-    return { items, subjectType: 'position', subjectId: position?.position_id ?? null, payload: { to_participant_id: owner?.id, effective_from: effectiveFrom } }
+    return {
+      items, subjectType: 'position', subjectId: position?.position_id ?? null,
+      payload: { to_participant_id: owner?.id, effective_from: effectiveFrom, legal_basis: { document_kind: chosenKind, reference: reference.trim() } },
+    }
+  }
+  const legalBasis = (reason: string) => {
+    const kinds = allowedKinds(reason)
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-space-md">
+        <Select id="tr-kind" label="Legal basis" placeholder={reason === '' ? 'Choose the reason first' : 'Choose the document'} disabled={reason === ''}
+          value={kinds.includes(kind) ? kind : ''} error={errors['tr-kind']} helper="The documents allowed for the chosen reason."
+          options={kinds.map((value) => ({ value, label: DOCUMENT_KIND_LABELS[value] ?? value }))} onChange={(event) => setKind(event.target.value)} />
+        <TextInput id="tr-ref" label="Document reference" helper="For example the court file or registry number." maxLength={REFERENCE_MAX}
+          value={reference} error={errors['tr-ref']} onChange={(event) => setReference(event.target.value)} />
+      </div>
+    )
   }
   return (
-    <CaseForm idPrefix="tr" info={typeOf('transfer')} prepare={prepare} fieldIds={TRANSFER_FIELDS} submitLabel="Open ownership transfer case">
+    <CaseForm idPrefix="tr" info={typeOf('transfer')} prepare={prepare} fieldIds={TRANSFER_FIELDS} submitLabel="Open ownership transfer case" details={legalBasis}>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-space-md bg-surface-container-low p-space-sm rounded border border-outline-variant">
         <PositionPicker id="tr-position" label="Position to transfer" kind="sponsor" chosen={position} onChoose={setPosition} error={errors['tr-position']} />
         <ParticipantPicker id="tr-owner" label="New owner" chosen={owner} onChoose={setOwner} error={errors['tr-owner']} />
       </div>
       <TextInput id="tr-date" type="date" label="Effective from (UTC date)" helper="Today or later." min={utcToday()} value={effectiveFrom} error={errors['tr-date']} onChange={(event) => setEffectiveFrom(event.target.value)} />
+      <Banner tone="info" title="Evidence is required">
+        Attach the document named as the legal basis: a transfer without evidence cannot be submitted. The new owner needs a tax profile in force and bank details on record before a Compliance officer, not related to either owner, can approve it.
+      </Banner>
     </CaseForm>
   )
 }
@@ -196,7 +230,8 @@ export function GenealogyCasePage() {
   const { can, readOnly } = useSession()
   const params = useSearchParams()
   if (readOnly || !can('case.genealogy.create')) return <NotAvailable />
-  const tab = params.get('tab') === 'transfer' ? 'transfer' : 'change'
+  // ?kind=transfer is the PLAN §5 deep link; the tabs link with ?tab=.
+  const tab = params.get('tab') === 'transfer' || params.get('kind') === 'transfer' ? 'transfer' : 'change'
   return (
     <>
       <PageHeader

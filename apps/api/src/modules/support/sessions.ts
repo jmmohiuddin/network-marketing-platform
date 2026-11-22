@@ -34,6 +34,8 @@ const SUPPORT_EXCLUDED_PERMISSIONS = [
   'export.full', 'migration.manage', 'migration.signoff', 'period.close',
   // PLAN B-MKT section 1.9: tax forms, registers, recording and deciding grievances stay with the tenant (grievance reads stay requestable).
   'tax.forms', 'register.read', 'case.grievance.create', 'case.grievance.approve',
+  // PLAN V1-A section 1.9: credits, FX, legal holds, offboarding and ownership-transfer decisions stay with the tenant.
+  'credit.manage', 'fx.manage', 'fx.approve', 'legal_hold.manage', 'tenant.offboard', 'case.transfer.approve',
 ] as const satisfies readonly Permission[]
 export const scopePermission = z.enum(PERMISSIONS).exclude(SUPPORT_EXCLUDED_PERMISSIONS)
 export type ScopePermission = z.infer<typeof scopePermission>

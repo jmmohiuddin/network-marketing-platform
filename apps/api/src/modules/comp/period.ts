@@ -12,6 +12,8 @@ export const us = (column: string): string => `(extract(epoch FROM ${column}) * 
 export interface PeriodRow {
   readonly id: string
   readonly calendar_id: string
+  /** D-V1A-02: the final calendar this period's calendar advances; null for a final (ordinary) calendar. */
+  readonly provisional_for_calendar_id: string | null
   readonly market_id: string
   readonly currency: string
   readonly minor_unit: number
@@ -28,7 +30,7 @@ export interface PeriodRow {
   readonly close_journal_export_id: string | null
 }
 
-export const PERIOD_COLUMNS = `p.id, p.calendar_id, c.market_id, m.currency, m.minor_unit::int AS minor_unit, p.starts_at, p.ends_at,
+export const PERIOD_COLUMNS = `p.id, p.calendar_id, c.provisional_for_calendar_id, c.market_id, m.currency, m.minor_unit::int AS minor_unit, p.starts_at, p.ends_at,
   ${us('p.starts_at')} AS starts_us, ${us('p.ends_at')} AS ends_us, p.state, p.committed_run_id, now() >= p.ends_at AS cut_off_passed,
   p.closed_at, p.closed_by, p.close_note, p.close_journal_export_id`
 export const PERIOD_FROM = 'FROM period p JOIN calendar c ON c.id = p.calendar_id JOIN market m ON m.id = c.market_id'

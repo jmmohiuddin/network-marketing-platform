@@ -13,12 +13,16 @@ const ORDER_COLUMNS = `
   CASE WHEN o.attributed_position_id IS NULL THEN NULL
        ELSE jsonb_build_object('id', p.id, 'position_ref', p.position_ref) END AS attributed_position,
   o.attribution_source, o.attribution_conflict, o.credited_at, o.period_id, o.amount_minor, o.tax_minor, o.currency,
-  ${VOLUME_TOTALS} AS volumes`
+  ${VOLUME_TOTALS} AS volumes, o.subscription_ref,
+  (SELECT jsonb_build_object('currency', o.original_currency, 'amount_minor', o.original_amount_minor::text, 'tax_minor',
+     o.original_tax_minor::text, 'rate', f.rate::text, 'rate_valid_from', json_instant(f.valid_from), 'rate_id', f.id)
+   FROM fx_rate f WHERE f.id = o.fx_rate_id) AS original`
 const ORDER_FROM = `
   FROM sales_order o JOIN market m ON m.id = o.market_id JOIN participant b ON b.id = o.buyer_id
   JOIN participant_type t ON t.id = o.buyer_type_id LEFT JOIN position p ON p.id = o.attributed_position_id`
 const LINES = `(SELECT jsonb_agg(jsonb_build_object('line_no', l.line_no, 'sku', l.sku, 'item_class', l.item_class,
-    'quantity', l.quantity, 'amount_minor', l.amount_minor::text, 'volumes', l.volumes, 'source_line_id', l.source_line_id)
+    'quantity', l.quantity, 'amount_minor', l.amount_minor::text, 'original_amount_minor', l.original_amount_minor::text,
+    'volumes', l.volumes, 'source_line_id', l.source_line_id)
     ORDER BY l.line_no) FROM order_line l WHERE l.order_id = o.id)`
 
 /** The order as fixed at ingestion (key responses: ids and refs, no personal data). */
@@ -34,8 +38,11 @@ export async function orderFacts(tx: Tx, id: string): Promise<Record<string, unk
 }
 
 const EVENT_COLUMNS = `e.id, e.order_id, e.source_system, e.source_event_id, e.type, e.occurred_at, e.lines,
-  e.refund_minor, e.fee_minor, e.equal_value, e.volume_effect, e.period_id,
-  EXISTS (SELECT 1 FROM late_transaction x WHERE x.order_event_id = e.id) AS late`
+  e.refund_minor, e.fee_minor, e.equal_value, e.volume_effect, e.period_id, e.dispute_of_event_id,
+  EXISTS (SELECT 1 FROM late_transaction x WHERE x.order_event_id = e.id) AS late,
+  (SELECT jsonb_build_object('refund_minor', e.original_refund_minor::text, 'fee_minor', e.original_fee_minor::text,
+     'currency', so.original_currency)
+   FROM sales_order so WHERE so.id = e.order_id AND e.original_refund_minor IS NOT NULL) AS original`
 
 export async function eventView(tx: Tx, id: string): Promise<Record<string, unknown>> {
   const { rows } = await tx.query(`SELECT ${EVENT_COLUMNS} FROM order_event e WHERE e.id = $1`, [id])
@@ -76,6 +83,8 @@ export interface OrderFilter {
   readonly flag?: 'purpose_missing' | 'attribution_conflict' | undefined
   readonly from?: string | undefined
   readonly to?: string | undefined
+  /** An order's source_order_id or subscription_ref, exactly. */
+  readonly q?: string | undefined
 }
 
 /** The sort value of the last row (ISO instant or minor units) and its id. */
@@ -98,17 +107,18 @@ export const sortValueOf = (sort: OrderSort, row: OrderListRow): string =>
 
 const LATE_ORDER = 'EXISTS (SELECT 1 FROM late_transaction x WHERE x.order_id = o.id)'
 
-// $1 scope, $2..$11 filters; credited_at in [from, to).
+// $1 scope, $2..$12 filters; credited_at in [from, to).
 const FILTERS = `($1::uuid[] IS NULL OR o.market_id = ANY ($1)) AND ($2::uuid IS NULL OR o.market_id = $2)
   AND ($3::text IS NULL OR o.source_system = $3) AND ($4::text IS NULL OR o.purpose = $4)
   AND ($5::uuid IS NULL OR o.buyer_id = $5) AND ($6::uuid IS NULL OR o.attributed_position_id = $6)
   AND ($7::uuid IS NULL OR o.period_id = $7) AND ($8::boolean IS NULL OR ${LATE_ORDER})
   AND ($9::text IS NULL OR ($9 = 'purpose_missing' AND o.purpose_missing) OR ($9 = 'attribution_conflict' AND o.attribution_conflict))
-  AND ($10::timestamptz IS NULL OR o.credited_at >= $10) AND ($11::timestamptz IS NULL OR o.credited_at < $11)`
+  AND ($10::timestamptz IS NULL OR o.credited_at >= $10) AND ($11::timestamptz IS NULL OR o.credited_at < $11)
+  AND ($12::text IS NULL OR o.source_order_id = $12 OR o.subscription_ref = $12)`
 
 function filterParams(scope: readonly string[] | null, f: OrderFilter): unknown[] {
   return [scope, f.market_id ?? null, f.source_system ?? null, f.purpose ?? null, f.buyer_id ?? null,
-    f.attributed_position_id ?? null, f.period_id ?? null, f.late === true ? true : null, f.flag ?? null, f.from ?? null, f.to ?? null]
+    f.attributed_position_id ?? null, f.period_id ?? null, f.late === true ? true : null, f.flag ?? null, f.from ?? null, f.to ?? null, f.q ?? null]
 }
 
 /** GET /v1/orders and its export: in the sort's order, then id; at most limit + 1 rows (the + 1 tells a next page or an export over the cap). */
@@ -123,8 +133,8 @@ export async function listOrders(
        round(o.amount_minor / 10::numeric ^ m.minor_unit, m.minor_unit::int)::text AS amount,
        round(o.tax_minor / 10::numeric ^ m.minor_unit, m.minor_unit::int)::text AS tax
      ${ORDER_FROM}
-     WHERE ${FILTERS} AND ($12::${type} IS NULL OR (${key}, o.id) ${direction === 'DESC' ? '<' : '>'} ($12::${type}, $13::uuid))
-     ORDER BY ${key} ${direction}, o.id ${direction} LIMIT $14`,
+     WHERE ${FILTERS} AND ($13::${type} IS NULL OR (${key}, o.id) ${direction === 'DESC' ? '<' : '>'} ($13::${type}, $14::uuid))
+     ORDER BY ${key} ${direction}, o.id ${direction} LIMIT $15`,
     [...filterParams(scope, filter), after?.value ?? null, after?.id ?? null, limit + 1],
   )
   return rows

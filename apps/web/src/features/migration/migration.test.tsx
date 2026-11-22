@@ -73,7 +73,7 @@ describe('migration format', () => {
   it('offers cutover periods of the batch market within the batch months', () => {
     expect(monthIn('2026-09-30T22:00:00.000Z', 'Europe/Vienna')).toBe('2026-10')
     const list = {
-      calendars: [{ id: 'cal-at', name: 'AT monthly', cadence: 'monthly', cutoff_time_zone: 'Europe/Vienna', market: { id: MARKET.id, code: 'AT' }, plan: null }],
+      calendars: [{ id: 'cal-at', name: 'AT monthly', cadence: 'monthly', cutoff_time_zone: 'Europe/Vienna', market: { id: MARKET.id, code: 'AT' }, plan: null, provisional_for: null, provisional_calendars: [] }],
       periods: [
         { ...CUTOVER, calendar_id: 'cal-at', cut_off_passed: true, state: 'open' as const, committed_run_id: null, latest_run: null, blockers: [], late: { pending: 0, decided: 0 }, closed_at: null, closed_by: null },
         { ...CUTOVER, id: 'per-next', starts_at: '2026-10-31T23:00:00.000Z', ends_at: '2026-11-30T23:00:00.000Z', calendar_id: 'cal-at', cut_off_passed: false, state: 'open' as const, committed_run_id: null, latest_run: null, blockers: [], late: { pending: 0, decided: 0 }, closed_at: null, closed_by: null },
@@ -87,7 +87,7 @@ describe('migration format', () => {
   it('works out the cutover month in the market zone, as the server checks it, not the calendar cut-off zone', () => {
     // Midnight 1 August in Vienna is still July in UTC: the server (market zone) accepts it as a month of the batch.
     const list = {
-      calendars: [{ id: 'cal-utc', name: 'AT monthly UTC cut-off', cadence: 'monthly', cutoff_time_zone: 'UTC', market: { id: MARKET.id, code: 'AT' }, plan: null }],
+      calendars: [{ id: 'cal-utc', name: 'AT monthly UTC cut-off', cadence: 'monthly', cutoff_time_zone: 'UTC', market: { id: MARKET.id, code: 'AT' }, plan: null, provisional_for: null, provisional_calendars: [] }],
       periods: [{ ...CUTOVER, id: 'per-aug', starts_at: '2026-07-31T22:00:00.000Z', ends_at: '2026-08-31T22:00:00.000Z', calendar_id: 'cal-utc', cut_off_passed: true, state: 'open' as const, committed_run_id: null, latest_run: null, blockers: [], late: { pending: 0, decided: 0 }, closed_at: null, closed_by: null }],
     }
     expect(cutoverChoices({ market: 'AT', period_from: '2026-08', period_to: '2026-10' }, MARKET, list).map((c) => c.value)).toEqual(['per-aug'])
@@ -111,7 +111,7 @@ describe('SC-16 migrations list', () => {
       'GET /v1/imports': (query) => (query.get('kind') === 'migration' && query.get('state') === 'loaded'
         ? ok([{ id: 'batch-1', kind: 'migration', market: 'AT', period_from: '2026-08', period_to: '2026-10' }]) : ok([])),
       'GET /v1/periods': () => ok({
-        calendars: [{ id: 'cal-at', name: 'AT monthly', cadence: 'monthly', cutoff_time_zone: 'Europe/Vienna', market: { id: MARKET.id, code: 'AT' }, plan: null }],
+        calendars: [{ id: 'cal-at', name: 'AT monthly', cadence: 'monthly', cutoff_time_zone: 'Europe/Vienna', market: { id: MARKET.id, code: 'AT' }, plan: null, provisional_for: null, provisional_calendars: [] }],
         periods: [{ ...CUTOVER, calendar_id: 'cal-at', cut_off_passed: true, committed_run_id: null, latest_run: null, blockers: [], late: { pending: 0, decided: 0 }, closed_at: null, closed_by: null }],
       }),
       'POST /v1/migrations': () => ok(migration(), 201),

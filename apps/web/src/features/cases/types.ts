@@ -83,6 +83,8 @@ export interface RelationshipPayload {
 export interface TransferPayload {
   readonly to_participant_id: string
   readonly effective_from: string
+  /** D-V1A-06: required for new cases; transfers filed before V1-A have none. */
+  readonly legal_basis?: { readonly document_kind: string; readonly reference: string }
 }
 
 export type DuplicateOutcome = 'merge' | 'allow' | 'terminate'
@@ -119,6 +121,8 @@ export interface TransferPreview {
   readonly from_owner: ParticipantRef | null
   readonly to_owner: ParticipantRef | null
   readonly to_type_can_hold_positions: boolean
+  /** D-V1A-06: approval is refused (NEW_OWNER_NOT_READY) while either is missing; absent on previews stored before V1-A. */
+  readonly new_owner_ready?: { readonly tax_profile: boolean; readonly bank_detail: boolean }
 }
 
 export interface DuplicatePreview {

@@ -29,7 +29,7 @@ import { ColumnChooser, ListExport, type ColumnOption } from '../views/list-tool
 import { SavedViewsBar, type SavedView } from '../views/saved-views'
 
 const ID_PREFIX = 'orders'
-const FILTERS = ['market_id', 'source_system', 'purpose', 'flag', 'late', 'from', 'to'] as const
+const FILTERS = ['q', 'market_id', 'source_system', 'purpose', 'flag', 'late', 'from', 'to'] as const
 type Filter = (typeof FILTERS)[number]
 type Filters = Readonly<Record<Filter, string>>
 /** URL keys of the list's state: an opening without any of them gets the user's default view (a shared ?order= link keeps its inspector). */
@@ -74,7 +74,7 @@ const text = (value: unknown): string | null => (typeof value === 'string' && va
 function viewParams(view: SavedView): Record<string, string | null> {
   const f = view.filters
   return {
-    market_id: text(f.market_id), source_system: text(f.source_system), purpose: text(f.purpose), flag: text(f.flag),
+    q: text(f.q), market_id: text(f.market_id), source_system: text(f.source_system), purpose: text(f.purpose), flag: text(f.flag),
     late: f.late === 'true' || f.late === true ? 'true' : null, from: dayOf(f.from), to: dayOf(f.to, -1),
     sort: view.sort, columns: view.columns.join(','), view: view.id, order: null,
   }
@@ -83,7 +83,7 @@ function viewParams(view: SavedView): Record<string, string | null> {
 const PURPOSE_OPTIONS = [{ value: '', label: 'Any purpose' }, ...Object.entries(PURPOSE_LABELS).map(([value, label]) => ({ value, label }))]
 const FLAG_OPTIONS = [{ value: '', label: 'Any' }, { value: 'purpose_missing', label: 'Purpose missing' }, { value: 'attribution_conflict', label: 'Attribution conflict' }]
 const FILTER_LABELS: Readonly<Record<Filter, string>> = {
-  market_id: 'Market', source_system: 'Source', purpose: 'Purpose', flag: 'Flag', late: 'Late', from: 'Credited from', to: 'Credited to',
+  q: 'Order or subscription', market_id: 'Market', source_system: 'Source', purpose: 'Purpose', flag: 'Flag', late: 'Late', from: 'Credited from', to: 'Credited to',
 }
 
 /** A local calendar day as the instant it starts; `to` is exclusive, so the day after the chosen end. */
@@ -96,6 +96,7 @@ function dayStart(day: string, plusDays = 0): string | undefined {
 
 function apiQuery(filters: Filters): Query {
   return {
+    q: filters.q.trim() || undefined,
     market_id: filters.market_id || undefined,
     source_system: filters.source_system || undefined,
     purpose: filters.purpose || undefined,
@@ -248,6 +249,7 @@ function OrdersTab({ filters, update, selected, opening }: {
           setDraft(Object.fromEntries(FILTERS.map((key) => [key, ''])) as Filters)
           update({ ...Object.fromEntries(FILTERS.map((key) => [key, null])), order: null, view: null })
         }} actions={<Button type="submit" icon="filter_list">Apply filters</Button>}>
+          <TextInput label="Order or subscription reference" type="search" icon="search" maxLength={100} helper="The exact source order id or subscription reference." value={draft.q} onChange={(event) => set('q', event.target.value)} />
           <Select label="Market" value={draft.market_id} options={[{ value: '', label: 'All markets' }, ...(markets.data ?? []).map((market) => ({ value: market.id, label: marketName(market) }))]} onChange={(event) => set('market_id', event.target.value)} />
           <TextInput label="Source system" value={draft.source_system} onChange={(event) => set('source_system', event.target.value)} />
           <Select label="Purpose" value={draft.purpose} options={PURPOSE_OPTIONS} onChange={(event) => set('purpose', event.target.value)} />

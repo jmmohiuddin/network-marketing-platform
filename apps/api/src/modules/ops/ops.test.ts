@@ -232,7 +232,7 @@ describe('GET /v1/tenants (vendor console, AC-57.1)', () => {
     expect(page2.json().data[0].slug > page1.json().data[0].slug).toBe(true)
     expect(provisioning.json().data.map((row: { id: string }) => row.id)).toContain(tenant.id)
     expect(provisioning.json().data.every((row: { state: string }) => row.state === 'provisioning')).toBe(true)
-    expect(Object.keys(detail.json().data).sort()).toEqual([...METADATA_KEYS, 'markets'].sort())
+    expect(Object.keys(detail.json().data).sort()).toEqual([...METADATA_KEYS, 'markets', 'offboarding'].sort())
   })
 
   test('tenant users and unverified vendor users reach no console route; an unknown tenant is 404', async () => {

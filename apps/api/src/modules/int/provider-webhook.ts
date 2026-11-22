@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import { runInTenant, SYSTEM_ACTOR_ID } from '../../lib/db.js'
 import { ApiError, notFound } from '../../lib/errors.js'
+import { assertTenantWritableIn } from '../../lib/tenant-state.js'
 import { providerForWebhook, receiveProviderWebhook } from '../pay/index.js'
 import { signatureValid } from './webhook-inbound.js'
 
@@ -36,8 +37,10 @@ export function registerProviderWebhook(app: FastifyInstance): void {
         throw new ApiError(401, 'SIGNATURE_INVALID', 'The webhook signature does not match, or its timestamp is more than five minutes away.')
       }
       const actor = { actorType: 'system' as const, requestId: request.id, supportSessionId: null }
-      const result = await runInTenant({ tenantId: provider.tenantId, userId: SYSTEM_ACTOR_ID }, actor, (tx) =>
-        receiveProviderWebhook(tx, request, { providerId: parsed.data.providerConfigId, eventId, raw }))
+      const result = await runInTenant({ tenantId: provider.tenantId, userId: SYSTEM_ACTOR_ID }, actor, async (tx) => {
+        await assertTenantWritableIn(tx, request, provider.tenantId) // D-V1A-07: after the signature
+        return receiveProviderWebhook(tx, request, { providerId: parsed.data.providerConfigId, eventId, raw })
+      })
       reply.code(result.statusCode)
       return result.body
     })

@@ -42,7 +42,7 @@ export function NotificationsPage() {
 
 function Inbox() {
   const api = useApi()
-  const { words, unread, refresh } = usePortal()
+  const { words, readOnly, unread, refresh } = usePortal()
   const { t } = words
   const list = useShownList<Notice[]>('/v1/me/notifications', {}, SHOW_FIRST)
   const [read, setRead] = useState<ReadonlySet<string>>(new Set())
@@ -77,7 +77,7 @@ function Inbox() {
     <section aria-label={t('notifications.inbox')} className="flex flex-col gap-space-sm">
       <div className="flex items-center justify-between gap-space-sm">
         <span className={CAPTION} role="status">{unread === null ? '' : unread === 0 || allRead ? t('notifications.all_read') : t('notifications.unread', { count: unread })}</span>
-        <Button size="lg" variant="tertiary" loading={busy} disabled={allRead || unread === 0} onClick={markAll}>{t('notifications.mark_all')}</Button>
+        {!readOnly && <Button size="lg" variant="tertiary" loading={busy} disabled={allRead || unread === 0} onClick={markAll}>{t('notifications.mark_all')}</Button>}
       </div>
       {error !== null && <p role="alert" className="font-body-sm text-body-sm text-error">{error}</p>}
       <ul className="flex flex-col gap-space-sm" data-testid="card">
@@ -99,7 +99,7 @@ function Inbox() {
                 {notView.href !== null && notView.linkLabel !== null && (
                   <Link href={notView.href} className={TEXT_LINK}>{notView.linkLabel} <Icon name="chevron_right" size={16} /></Link>
                 )}
-                {!done && <Button size="lg" variant="tertiary" disabled={busy} onClick={() => markOne(notice.id)} aria-label={t('notifications.mark_read_of', { title: notView.title })}>{t('notifications.mark_read')}</Button>}
+                {!done && !readOnly && <Button size="lg" variant="tertiary" disabled={busy} onClick={() => markOne(notice.id)} aria-label={t('notifications.mark_read_of', { title: notView.title })}>{t('notifications.mark_read')}</Button>}
               </div>
             </li>
           )
@@ -112,7 +112,7 @@ function Inbox() {
 
 function Channels() {
   const api = useApi()
-  const { t } = usePortal().words
+  const { words: { t }, readOnly } = usePortal()
   const preferences = useResource<Preference[]>('/v1/me/notification-preferences')
   const [saved, setSaved] = useState<readonly Preference[] | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -140,7 +140,7 @@ function Channels() {
         <div className="flex flex-col gap-space-xs">
           {rows.filter((row) => !row.mandatory).map((row) => (
             <Switch key={row.topic} label={words(row.topic).label} description={words(row.topic).description} checked={row.email === true}
-              stateLabels={onOff} onChange={(checked) => void change(row.topic, checked)} />
+              stateLabels={onOff} onChange={(checked) => void change(row.topic, checked)} locked={readOnly ? words(row.topic).description : undefined} />
           ))}
         </div>
       </Section>

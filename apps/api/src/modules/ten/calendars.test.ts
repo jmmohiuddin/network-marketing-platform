@@ -184,3 +184,90 @@ describe('PATCH and DELETE /v1/calendars/:id (AC-TEN2-5)', () => {
     expect(calendarDeleteRefusal(Object.assign(new Error('x'), { code: '23505' }))).toBeNull()
   })
 })
+
+describe('provisional calendars (D-V1A-02, C-V1A-17)', () => {
+  const day = (iso: string) => iso.slice(0, 10)
+  const spans = (list: Period[]) => list.map((period) => `${day(period.starts_at)}/${day(period.ends_at)}`)
+  let finalId: string
+
+  beforeAll(async () => {
+    const final = await create(admin, {
+      market_id: fr, name: 'FR final', cadence: 'monthly', cutoff_time_zone: 'UTC', first_period_start: `${YEAR}-10-01`, periods_ahead: 3,
+    })
+    finalId = final.json().data.calendar.id
+  })
+
+  test('weekly advances cut at the final month ends, never past the final calendar; views name both sides; extension keeps nesting', async () => {
+    const response = await create(admin, {
+      market_id: fr, name: 'FR weekly advances', cadence: 'weekly', cutoff_time_zone: 'UTC', first_period_start: `${YEAR}-10-05`,
+      periods_ahead: 30, provisional_for_calendar_id: finalId,
+    })
+    const id = response.json().data.calendar.id
+
+    expect(response.statusCode).toBe(201)
+    expect(response.json().data.calendar).toMatchObject({ provisional_for: { id: finalId, name: 'FR final' }, provisional_calendars: [] })
+    expect(spans(await periods(id))).toEqual([
+      `${YEAR}-10-05/${YEAR}-10-12`, `${YEAR}-10-12/${YEAR}-10-19`, `${YEAR}-10-19/${YEAR}-10-26`, `${YEAR}-10-26/${YEAR}-11-01`,
+      `${YEAR}-11-01/${YEAR}-11-02`, `${YEAR}-11-02/${YEAR}-11-09`, `${YEAR}-11-09/${YEAR}-11-16`, `${YEAR}-11-16/${YEAR}-11-23`,
+      `${YEAR}-11-23/${YEAR}-11-30`, `${YEAR}-11-30/${YEAR}-12-01`, `${YEAR}-12-01/${YEAR}-12-07`, `${YEAR}-12-07/${YEAR}-12-14`,
+      `${YEAR}-12-14/${YEAR}-12-21`, `${YEAR}-12-21/${YEAR}-12-28`, `${YEAR}-12-28/${YEAR + 1}-01-01`,
+    ])
+    const final = (await call(app, { method: 'GET', url: `/v1/calendars?market_id=${fr}`, as: admin })).json().data
+      .find((calendar: { id: string }) => calendar.id === finalId)
+    expect(final).toMatchObject({ provisional_for: null, provisional_calendars: [{ id, name: 'FR weekly advances' }] })
+    expect(await auditActions(acme.id)).toContain('CALENDAR.CREATED')
+
+    const extend = (calendar: string, through: string) =>
+      call(app, { method: 'POST', url: `/v1/calendars/${calendar}/periods`, as: admin, body: { through, reason: 'r' }, idempotencyKey: true })
+    expect((await extend(id, `${YEAR + 1}-03-01`)).json().data.generated).toBe(0) // the final calendar ends on Jan 1
+    await extend(finalId, `${YEAR + 1}-01-01`)
+    expect((await extend(id, `${YEAR + 1}-03-01`)).json().data.generated).toBe(5)
+    expect(spans(await periods(id)).slice(-5)).toEqual([
+      `${YEAR + 1}-01-01/${YEAR + 1}-01-04`, `${YEAR + 1}-01-04/${YEAR + 1}-01-11`, `${YEAR + 1}-01-11/${YEAR + 1}-01-18`,
+      `${YEAR + 1}-01-18/${YEAR + 1}-01-25`, `${YEAR + 1}-01-25/${YEAR + 1}-02-01`,
+    ])
+  })
+
+  test('refusals: unknown or foreign calendar, other market, provisional target, starting before the final calendar; field is immutable', async () => {
+    const usFinal = (await create(admin, {
+      market_id: us, name: 'US final', cadence: 'monthly', cutoff_time_zone: 'UTC', first_period_start: `${YEAR}-10-01`, periods_ahead: 1,
+    })).json().data.calendar.id
+    const provisional = (await create(admin, {
+      market_id: fr, name: 'FR second advances', cadence: 'weekly', cutoff_time_zone: 'UTC', first_period_start: `${YEAR}-10-01`,
+      periods_ahead: 1, provisional_for_calendar_id: finalId,
+    })).json().data.calendar.id
+    const attempt = (as: TestUser, body: Record<string, unknown>) => create(as, {
+      market_id: fr, name: `x ${Math.random()}`, cadence: 'weekly', cutoff_time_zone: 'UTC', first_period_start: `${YEAR}-10-05`, periods_ahead: 1, ...body,
+    })
+    const refusal = async (response: Awaited<ReturnType<typeof attempt>>) => [response.statusCode, response.json().error.code, response.json().error.details]
+
+    expect(await refusal(await attempt(admin, { provisional_for_calendar_id: '00000000-0000-4000-8000-000000000000' })))
+      .toEqual([422, 'CALENDAR_NOT_FOUND', { field: 'provisional_for_calendar_id' }])
+    expect(await refusal(await attempt(admin, { provisional_for_calendar_id: usFinal }))).toEqual([422, 'PROVISIONAL_TARGET_INVALID', { reason: 'other_market' }])
+    expect(await refusal(await attempt(admin, { provisional_for_calendar_id: provisional }))).toEqual([422, 'PROVISIONAL_TARGET_INVALID', { reason: 'target_provisional' }])
+    expect(await refusal(await attempt(admin, { provisional_for_calendar_id: finalId, first_period_start: `${YEAR}-09-28` })))
+      .toEqual([422, 'PROVISIONAL_TARGET_INVALID', { reason: 'periods_not_nested' }])
+    const patch = await call(app, { method: 'PATCH', url: `/v1/calendars/${provisional}`, as: admin, body: { provisional_for_calendar_id: null, reason: 'r' } })
+    expect(patch.json().error).toMatchObject({ code: 'CALENDAR_TIMING_IMMUTABLE', details: { fields: ['provisional_for_calendar_id'] } })
+  })
+
+  test('cross-tenant: another tenant\'s calendar id is unknown (422 CALENDAR_NOT_FOUND)', async () => {
+    const globexMarket = await createMarket(globexAdmin.tenantId!, 'DE')
+    const response = await create(globexAdmin, {
+      market_id: globexMarket, name: 'G weekly', cadence: 'weekly', cutoff_time_zone: 'UTC', first_period_start: `${YEAR}-10-05`,
+      periods_ahead: 1, provisional_for_calendar_id: finalId,
+    })
+
+    expect([response.statusCode, response.json().error.code]).toEqual([422, 'CALENDAR_NOT_FOUND'])
+  })
+
+  test('a direct period insert that crosses a final boundary is refused by the guard (periods_not_nested)', async () => {
+    const provisional = (await call(app, { method: 'GET', url: `/v1/calendars?market_id=${fr}`, as: admin })).json().data
+      .find((calendar: { name: string }) => calendar.name === 'FR weekly advances').id
+
+    await expect(ownerRows(
+      `INSERT INTO period (tenant_id, calendar_id, starts_at, ends_at) VALUES ($1, $2, $3, $4)`,
+      [acme.id, provisional, `${YEAR + 1}-01-28T00:00:00Z`, `${YEAR + 1}-02-04T00:00:00Z`],
+    )).rejects.toMatchObject({ code: '23514', detail: 'periods_not_nested' })
+  })
+})

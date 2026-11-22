@@ -83,6 +83,7 @@ const SETTING_READERS: Readonly<Record<SettingKey, Needs>> = {
   // PLAN B6 D-B6-17.
   'plan.filing_requirements': any('settings.manage', 'plan.read'),
   'exports.full_schedule': any('settings.manage', 'export.full'),
+  'fx.max_rate_age_days': any('settings.manage', 'fx.manage', 'fx.approve', 'ledger.read'),
 }
 const SETTING_KEYS = Object.keys(SETTING_READERS) as SettingKey[]
 const MAPPING_READERS = any('import.manage', 'mapping.edit', 'mapping.approve')
@@ -132,6 +133,9 @@ const MIGRATION = `/v1/migrations/${NOWHERE}`
 const TAX_READ = all('tax.read')
 const TAX_FORMS = all('tax.forms')
 const TAX_YEAR = `market_id=${NOWHERE}&tax_year=2025`
+const CREDIT_READ = all('credit.read')
+const OFFBOARD = all('tenant.offboard')
+const PRIVACY = all('privacy.manage')
 const DIFFERENCE = `${MIGRATION}/parallel-runs/${NOWHERE}/differences/${NOWHERE}`
 // D-B6-09: a migration batch or mapping also needs migration.manage. The market exists nowhere (422) and the If-Match is stale
 // (409): refused once past the permission checks, nothing is written.
@@ -548,6 +552,40 @@ const PROBES: Readonly<Record<string, readonly Probe[]>> = {
   'GET /v1/registers/delisted/export': [read(all('register.read'), '/v1/registers/delisted/export?unknown=1')],
   // IAM B-MKT (PLAN B-MKT 2.5): portal sessions only.
   'PUT /v1/me/locale': [probe(nobody, 'PUT', '/v1/me/locale', {})],
+  // LED V1-A (PLAN V1-A 2.1, 2.2, section 3): credits need credit.read / credit.manage, FX fx.manage / fx.approve; redemptions take keys only.
+  'GET /v1/credit-types': [read(any('credit.read', 'plan.edit'), '/v1/credit-types')],
+  'POST /v1/credit-types': [probe(all('credit.manage'), 'POST', '/v1/credit-types', {})],
+  'PATCH /v1/credit-types/:id': [probe(all('credit.manage'), 'PATCH', `/v1/credit-types/${NOWHERE}`, {})],
+  'GET /v1/credits/balances': [read(CREDIT_READ, '/v1/credits/balances')],
+  'GET /v1/credits/lots': [read(CREDIT_READ, `/v1/credits/lots?participant_id=${NOWHERE}&credit_type_id=${NOWHERE}&market_id=${NOWHERE}`)],
+  'GET /v1/credits/redemptions': [read(CREDIT_READ, '/v1/credits/redemptions')],
+  'POST /v1/credit-redemptions': [probe(nobody, 'POST', '/v1/credit-redemptions', {})],
+  'GET /v1/fx-rates': [read(any('ledger.read', 'fx.manage', 'fx.approve'), '/v1/fx-rates')],
+  'GET /v1/fx-rate-batches': [read(any('fx.manage', 'fx.approve'), '/v1/fx-rate-batches')],
+  'POST /v1/fx-rate-batches': [probe(all('fx.manage'), 'POST', '/v1/fx-rate-batches', {})],
+  'POST /v1/fx-rate-batches/:id/decision': [probe(all('fx.approve'), 'POST', `/v1/fx-rate-batches/${NOWHERE}/decision`, {})],
+  // COMP V1-A (PLAN V1-A 2.4)
+  'GET /v1/runs/:id/true-up': [read(all('run.review'), `${RUN}/true-up`)],
+  'GET /v1/runs/:id/credit-awards': [read(all('run.review'), `${RUN}/credit-awards`)],
+  // TEN / OPS V1-A (PLAN V1-A 2.5, 2.6): tenant.offboard over all markets; the vendor steps are vendor realm only. Tenant A has
+  // no offboarding open, so cancel is 409 once past the permission.
+  'GET /v1/offboarding': [read(OFFBOARD, '/v1/offboarding')],
+  'POST /v1/offboarding/confirm': [probe(OFFBOARD, 'POST', '/v1/offboarding/confirm', {})],
+  'POST /v1/offboarding/cancel': [probe(OFFBOARD, 'POST', '/v1/offboarding/cancel')],
+  'POST /v1/tenants/:id/offboarding': [probe(nobody, 'POST', `/v1/tenants/${NOWHERE}/offboarding`, {})],
+  ...Object.fromEntries(['archive', 'restore', 'purge-request', 'purge-approve', 'cancel'].map((step) =>
+    [`POST /v1/tenants/:id/offboarding/${step}`, [probe(nobody, 'POST', `/v1/tenants/${NOWHERE}/offboarding/${step}`, {})]])),
+  // PAR V1-A (PLAN V1-A 2.7)
+  'PUT /v1/participants/:id/account': [probe(PARTICIPANT_MANAGE, 'PUT', `/v1/participants/${NOWHERE}/account`, {})],
+  // PRV V1-A (PLAN V1-A 2.8): schedules need privacy.manage; holds are read with either permission and written with legal_hold.manage.
+  'GET /v1/retention/schedules': [read(PRIVACY, '/v1/retention/schedules')],
+  'POST /v1/retention/schedules': [probe(PRIVACY, 'POST', '/v1/retention/schedules', {})],
+  'POST /v1/retention/schedules/:id/decision': [probe(PRIVACY, 'POST', `/v1/retention/schedules/${NOWHERE}/decision`, {})],
+  'GET /v1/retention/schedules/:id/preview': [read(PRIVACY, `/v1/retention/schedules/${NOWHERE}/preview`)],
+  'GET /v1/retention/runs': [read(PRIVACY, '/v1/retention/runs')],
+  'GET /v1/legal-holds': [read(any('legal_hold.manage', 'privacy.manage'), '/v1/legal-holds')],
+  'POST /v1/legal-holds': [probe(all('legal_hold.manage'), 'POST', '/v1/legal-holds', {})],
+  'POST /v1/legal-holds/:id/release': [probe(all('legal_hold.manage'), 'POST', `/v1/legal-holds/${NOWHERE}/release`)],
 }
 
 /** Fastify's HEAD routes run their GET handler: they take the GET probes with method HEAD. */

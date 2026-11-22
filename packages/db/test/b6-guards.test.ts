@@ -367,6 +367,9 @@ describe('full data export (section 1.3)', () => {
     expect(await due()).not.toContain(tenant.id)
     await setSetting('exports.full_schedule', { cadence: 'daily', hour_utc: 0 })
     expect(await due()).toContain(tenant.id)
+    await owner(`UPDATE tenant SET state = 'archived' WHERE id = $1`, [tenant.id]) // V1-A 1.6: crons skip archived tenants
+    expect(await due()).not.toContain(tenant.id)
+    await owner(`UPDATE tenant SET state = 'live' WHERE id = $1`, [tenant.id])
     await expect(rows('SELECT * FROM int_due_full_exports()')).rejects.toMatchObject(NOT_ALLOWED)
     const scheduled = await withTenant(a, (tx) => insertRow(tx, 'data_export', { tenant_id: tenant.id, trigger: 'schedule', model_version: 1 }))
     expect(await due()).not.toContain(tenant.id)

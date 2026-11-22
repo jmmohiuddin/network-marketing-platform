@@ -8,8 +8,10 @@ import { idempotent, sendIdempotent } from '../../lib/idempotency.js'
 import { decodeCursor, encodeCursor, pageQuery, toPage } from '../../lib/pagination.js'
 import type { Permission } from '../../lib/permissions.js'
 import { decideWithSod } from '../ten/index.js'
+import { runCreditAwards } from './awards.js'
 import { commitRun, requestCommit } from './commit.js'
 import { linesCsv, listLines, lineTrace, replayRun } from './lines.js'
+import { trueUp } from './provisional.js'
 import { positionQualification } from './qualification.js'
 import { restatementDetail, restatementLines } from './restatement.js'
 import { reviewRun, runTransitions } from './review.js'
@@ -30,7 +32,7 @@ const periodCursor = z.object({ starts_at: z.string(), id: z.uuid() })
 const ruleKey = z.string().regex(/^[a-z][a-z0-9_]{0,63}$/)
 const linesQuery = z.strictObject({
   ...pageQuery, payee_participant_id: z.uuid().optional(), payee_position_id: z.uuid().optional(), rule_key: ruleKey.optional(),
-  origin_type: z.enum(['late_transaction', 'clawback', 'manual', 'restatement']).optional(), format: z.enum(['json', 'csv']).default('json'),
+  origin_type: z.enum(['late_transaction', 'clawback', 'manual', 'restatement', 'provisional']).optional(), format: z.enum(['json', 'csv']).default('json'),
 })
 const reviewQuery = z.strictObject({ compare_run_id: z.uuid().optional() })
 const commitBody = z.strictObject({ acknowledged_exceptions: z.array(z.string().min(1).max(200)).max(10_000).default([]) })
@@ -101,6 +103,26 @@ export function registerRunRoutes(app: FastifyInstance): void {
     const { id: runId } = parse(id, request.params)
     const query = parse(reviewQuery, request.query)
     return envelope(await inTenant(request, (tx) => reviewRun(tx, currentAuth(request), runId, query.compare_run_id, scopeOf(request, 'run.review'))))
+  })
+
+  // D-V1A-02 (AC-COMP11-7): final, advances paid and true-up per payee of a final run; payees cursor-paged.
+  app.get('/v1/runs/:id/true-up', guard('run.review'), async (request) => {
+    const { id: runId } = parse(id, request.params)
+    const query = parse(z.strictObject(pageQuery), request.query)
+    const after = decodeCursor(query.cursor, z.uuid())
+    const result = await inTenant(request, (tx) => trueUp(tx, runId, scopeOf(request, 'run.review'), after, query.limit))
+    const page = toPage(result.payees, query.limit, (payee) => payee.participant.id)
+    return envelope({ ...result, payees: page.data }, page.meta)
+  })
+
+  // D-V1A-03: the run's credit awards (not cash) with totals per credit type.
+  app.get('/v1/runs/:id/credit-awards', guard('run.review'), async (request) => {
+    const { id: runId } = parse(id, request.params)
+    const query = parse(z.strictObject(pageQuery), request.query)
+    const after = decodeCursor(query.cursor, z.uuid())
+    const { rows, totals } = await inTenant(request, (tx) => runCreditAwards(tx, runId, scopeOf(request, 'run.review'), after, query.limit))
+    const page = toPage(rows, query.limit, (row) => row.id)
+    return envelope(page.data, { ...page.meta, totals })
   })
 
   app.get('/v1/runs/:id/transitions', guard('run.review'), async (request) => {

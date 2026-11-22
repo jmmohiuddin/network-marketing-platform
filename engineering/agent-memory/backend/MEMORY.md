@@ -2,6 +2,8 @@
 
 _Agent: backend. Read before every task; update after every task. Keep concise — facts and decisions, not transcripts._
 
+## 2026-11-21 — V1-A BE1 (compensation package): details in agent-memory/compensation/MEMORY.md (provisional runs, credit awards, PLN credit_type_code, statements, AC-S1-2 re-bench).
+
 ## State after T-A02/T-A03/T-A04 + API foundation (2026-11-12)
 - `apps/api`: Fastify 5 app with modules iam, ten, aud; 139 tests after review fixes R1 (`pnpm vitest run apps/api`), tsc clean.
 - Migrations owned: 0007_iam_api.sql (base roles, role_grant_request, user_invitation, auth_find_invitation, system_tenant_ids), 0008_job_queue.sql (pg-boss 10.4 schema v24). 0009 unused.
@@ -565,3 +567,12 @@ _Agent: backend. Read before every task; update after every task. Keep concise �
 - Grievance case type: excludedApprovers = staff_related_users(subject_id) for subject_type participant, [] for market.
 - Commit gate comp/commit.ts withholdingGate: under the market periods lock, readSnapshot().withholding (?? []) vs withholdingInstructions(period) by stringifyEngineJson; mismatch -> 409 RUN_SUPERSEDED {reason: 'withholding_changed'}. Shortcut left: an earlier-tax-date run of another calendar committed AFTER this one is still not counted.
 - 0705_bmkt_ledger_withheld_tenant.sql: tax_ledger_withheld joins journal_entry on the market's tenant. Test: owner-called SQL with a forged other-tenant entry (key must be 'run:'||origin_id, journal_entry_key_is_origin).
+
+## 2026-11-21 — V1-A API integrator
+- No new module: V1-A routes live in existing modules (led credits/fx, comp true-up/credit-awards, ten offboarding, ops vendor offboarding, par account, prv retention/holds); jobs already in ledModule/prvModule `jobs`. modules/index.ts unchanged.
+- Isolation seed `seedV1A` (before seedB6): root participant's account joint (1 holder), credit type CANARY_CREDIT (export CREDIT_TYPE_CODE; expiry needs expiry_notice_days too), proposed FX batch CHF→EUR, retention schedule proposed from tomorrow (terminated_participant, all markets), legal hold on the root participant. Targets += creditType, fxBatch, retentionSchedule, legalHold.
+- Cases: fx-rate-batches GET, offboarding GET, retention/legal-hold GETs inSession 403 (fx.*, tenant.offboard, privacy.manage, legal_hold.manage excluded); true-up inSession 422 (seeded run is no final run); decisions need Idempotency-Key; credit-redemptions keyOnly.
+- T-V1A-60 registry = last describe of isolation.test.ts: tenant A made read-only by a FIXTURE confirmed tenant_offboarding row (cancelled in afterAll); key (orders:write+credits:write) minted and connector secret rotated BEFORE; every non-vendor write route outside READ_ONLY_ALLOWLIST → 409 TENANT_READ_ONLY (portal session, key, signed Shopify/provider webhooks, owner session); allowlisted registered routes asserted against an explicit list (READ_ONLY_ALLOWED). New write route: either it is 409 or add it to that list deliberately.
+- nmp_dev migrated through 0807. Port 4000 was free (var/e2e-api.pid stale); smoke on :4000 → V1-A routes 401, unknown 404, credit-redemptions bad key 401 API_KEY_INVALID; stopped by PID (tsx parent + child).
+- Contract follow-ups fixed in stale tests (D-V1A-07): archived tenant's users sign in (sign-in.test 201) and keep reading (app.test BUG-004 [401, 200]); GET /v1/tenants/:id + `offboarding` (ops.test). Web mirror apps/web/src/features/admin/format.ts BASE_ROLE_PERMISSIONS + labels for the 7 V1-A permissions. Two test-only tsc fixes (gen/cases.test transferTo legal_basis, ops/offboarding.test counts tuple).
+- Verified: full suite 267 files / 6081 tests on nmp_test_2: 4 failures, all fixed above and re-run green (6 files); root + web typecheck exit 0.

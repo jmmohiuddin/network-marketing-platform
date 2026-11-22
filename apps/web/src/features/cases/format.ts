@@ -25,7 +25,8 @@ const FINANCE = { deciderRole: 'Finance approver' }
 export const CASE_TYPES: readonly CaseTypeInfo[] = [
   { type: 'genealogy_change', label: 'Genealogy change', plural: 'Genealogy changes', ...GENEALOGY, reasonCodes: ['PARTICIPANT_REQUEST', 'ENROLMENT_ERROR', 'COMPANY_DECISION'] },
   { type: 'genealogy_correction', label: 'Genealogy correction', plural: 'Corrections', ...GENEALOGY, reasonCodes: ['DATA_ENTRY_ERROR', 'MIGRATION_ERROR', 'DISPUTE_RESOLUTION'] },
-  { type: 'transfer', label: 'Ownership transfer', plural: 'Transfers', ...GENEALOGY, reasonCodes: ['SUCCESSION', 'SALE', 'DIVORCE', 'CORPORATE_RESTRUCTURE'] },
+  // D-V1A-06 (C-V1A-8): a Compliance officer decides transfers with case.transfer.approve.
+  { type: 'transfer', label: 'Ownership transfer', plural: 'Transfers', ...GENEALOGY, decide: 'case.transfer.approve', reasonCodes: ['SUCCESSION', 'SALE', 'DIVORCE', 'CORPORATE_RESTRUCTURE'] },
   {
     type: 'restatement', label: 'Restatement', plural: 'Restatements', read: 'case.restatement.read', create: 'restatement.request',
     decide: 'restatement.approve', deciderRole: 'Finance approver',
@@ -206,4 +207,24 @@ export function utcToday(now: Date = new Date()): string {
 /** The cases a user may read (tabs of SC-06), by permission. */
 export function readableTypes(can: (permission: string) => boolean): readonly CaseTypeInfo[] {
   return CASE_TYPES.filter((info) => can(info.read))
+}
+
+/** D-V1A-06: the documents that ground a transfer, per reason code (apps/api gen/transfer-case.ts LEGAL_BASIS_KINDS). */
+export const LEGAL_BASIS_KINDS: Readonly<Record<string, readonly string[]>> = {
+  SUCCESSION: ['death_certificate', 'will_or_probate', 'court_order'],
+  DIVORCE: ['court_order', 'settlement_agreement'],
+  SALE: ['sale_agreement', 'court_order'],
+  CORPORATE_RESTRUCTURE: ['registry_extract', 'court_order'],
+}
+
+export const DOCUMENT_KIND_LABELS: Readonly<Record<string, string>> = {
+  death_certificate: 'Death certificate', will_or_probate: 'Will or grant of probate', court_order: 'Court order',
+  settlement_agreement: 'Settlement agreement', sale_agreement: 'Sale agreement', registry_extract: 'Company registry extract',
+}
+
+const READINESS_LABELS: Readonly<Record<string, string>> = { tax_profile: 'a tax profile in force', bank_detail: 'bank details on record' }
+
+/** 422 NEW_OWNER_NOT_READY {missing} in words; other errors unchanged. */
+export function readinessText(missing: readonly string[]): string {
+  return `The new owner still needs ${missing.map((item) => READINESS_LABELS[item] ?? item).join(' and ')} (recorded through the usual change controls) before the transfer can be approved.`
 }

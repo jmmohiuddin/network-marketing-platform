@@ -196,14 +196,15 @@ describe('GET /v1/me', () => {
     expect(body.permissions).toEqual([
       'agreement.publish', 'audit.read', 'case.adjustment.read', 'case.bank_detail.approve', 'case.bank_detail.read',
       'case.dispute.read', 'case.duplicate.approve', 'case.duplicate.read', 'case.genealogy.approve', 'case.genealogy.read',
-      'case.grievance.approve', 'case.grievance.create', 'case.grievance.read', 'case.restatement.read', 'case.write_off.read', 'compliance.read', 'export', 'genealogy.read', 'guardrail.read', 'ledger.read', 'mapping.approve',
+      'case.grievance.approve', 'case.grievance.create', 'case.grievance.read', 'case.restatement.read', 'case.transfer.approve', 'case.write_off.read',
+      'compliance.read', 'export', 'genealogy.read', 'guardrail.read', 'ledger.read', 'legal_hold.manage', 'mapping.approve',
       'market.signoff', 'order.read', 'override.approve', 'participant.read', 'participant.terminate', 'participant_type.approve',
       'payout.hold', 'payout.read', 'period.read', 'plan.approve', 'plan.read', 'register.read', 'restatement.request', 'run.review',
       'snapshot.create', 'tax.read', 'trace.read',
     ])
     expect(body.navigation.map((entry: { key: string }) => entry.key)).toEqual(
       ['compliance', 'audit', 'settings', 'markets', 'people', 'genealogy', 'cases', 'orders', 'periods', 'plans', 'guardrails', 'ledger', 'tax', 'payouts',
-        'reconciliation'],
+        'reconciliation', 'privacy'],
     )
   })
 
@@ -226,7 +227,7 @@ describe('GET /v1/me', () => {
     }
 
     expect(await keys(['Commission analyst'])).toEqual(expect.arrayContaining(['integrations', 'people', 'genealogy', 'cases', 'orders', 'late']))
-    expect(await keys(['Support agent'])).toEqual(['people', 'genealogy', 'cases', 'orders', 'periods'])
+    expect(await keys(['Support agent'])).toEqual(['people', 'genealogy', 'cases', 'orders', 'periods', 'ledger']) // V1-A credit.read: Credits tab
     expect(await keys(['DPO'])).toEqual(expect.arrayContaining(['settings', 'people']))
     expect(await keys(['Payout officer'])).not.toContain('late')
   })

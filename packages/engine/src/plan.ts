@@ -49,7 +49,8 @@ const DAY_US = 86_400_000_000n
 // ---------------------------------------- parameter schemas ----------------------------------------
 
 type Check = (v: unknown, path: string, out: PlanIssue[]) => void
-type Fields = readonly (readonly [string, Check])[]
+/** [name, check] or [name, check, 'optional']: an optional field may be absent (never null). */
+type Fields = readonly (readonly [string, Check] | readonly [string, Check, 'optional'])[]
 
 const isRecord = (v: unknown): v is Readonly<Record<string, unknown>> => typeof v === 'object' && v !== null && !Array.isArray(v)
 const at = (path: string, field: string): string => (path === '' ? field : `${path}.${field}`)
@@ -84,9 +85,9 @@ const refuse = (code: string, message: string): Check => (_, p, o) => issue(o, p
 /** Exactly these fields. Own keys are only tested for membership and reported sorted, so their order cannot matter. */
 const obj = (fields: Fields): Check => (v, p, o) => {
   if (!isRecord(v)) return issue(o, p, 'FIELD_INVALID', 'must be an object')
-  for (const [name, check] of fields) {
+  for (const [name, check, optional] of fields) {
     if (Object.hasOwn(v, name)) check(v[name], at(p, name), o)
-    else issue(o, at(p, name), 'FIELD_REQUIRED', 'is required')
+    else if (optional === undefined) issue(o, at(p, name), 'FIELD_REQUIRED', 'is required')
   }
   const known = fields.map(([name]) => name)
   for (const name of Reflect.ownKeys(v).filter((k): k is string => typeof k === 'string').sort()) {
@@ -116,7 +117,12 @@ const requirement = tagged('kind', [
   ['rank', [['rank', rankRef]]],
   ['expression', [['expr', expr('bool')]]],
 ])
-const bonus = (fields: Fields): Fields => [['sourceKind', oneOf('retail_sale', 'downline_volume', 'enrolment_order', 'pool', 'match', 'clawback', 'other')], ['eligibleIf', nullable(rankRef)], ...fields]
+/** D-V1A-03: a pay rule may pay in a credit type (code as credit_type.code); absent = cash. */
+const award = obj([['creditType', str(/^[A-Z][A-Z0-9_]{1,31}$/, 'a credit type code')]])
+const bonus = (fields: Fields): Fields => [
+  ['sourceKind', oneOf('retail_sale', 'downline_volume', 'enrolment_order', 'pool', 'match', 'clawback', 'other')], ['eligibleIf', nullable(rankRef)],
+  ['award', award, 'optional'], ...fields,
+]
 
 const PARAMS: Readonly<Record<RuleKind, Fields>> = {
   'volume.personal': [
@@ -679,7 +685,8 @@ function bonusText(b: BonusRule, minorText: MinorText): string {
     }
   })()
   const policy = b.reversalPolicy === 'order_line' ? 'order line' : b.reversalPolicy === 'restatement' ? 'restatement' : 'not set'
-  return `${body}; reversal: ${policy}; paid to ${b.eligibleIf ? `holders of ${rankText(b.eligibleIf)}` : 'every earner'}`
+  const credits = b.award === undefined ? '' : `; paid in credits ${b.award.creditType}, not in cash`
+  return `${body}; reversal: ${policy}; paid to ${b.eligibleIf ? `holders of ${rankText(b.eligibleIf)}` : 'every earner'}${credits}`
 }
 
 function itemText(item: Item, rule: PlanRuleInput, minorText: MinorText): string {

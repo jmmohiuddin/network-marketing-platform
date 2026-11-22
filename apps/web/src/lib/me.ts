@@ -3,7 +3,9 @@ import { defaultHome, MFA_ENROL_PATH, MFA_VERIFY_PATH, PORTAL_HOME_PATH, withNex
 /** GET /v1/me (iam/me-routes.ts). */
 export interface Me {
   readonly user: { readonly id: string; readonly email: string; readonly display_name: string | null }
-  readonly tenant: { readonly id: string; readonly slug: string; readonly legal_name: string; readonly region: string; readonly state: string } | null
+  readonly tenant: { readonly id: string; readonly slug: string; readonly legal_name: string; readonly region: string; readonly state: string
+    /** D-V1A-07: offboarding confirmed or archived: reads and the final export only (sent by the API since V1-A). */
+    readonly read_only?: boolean } | null
   readonly realm: Realm
   readonly roles: readonly { readonly assignment_id: string; readonly role_id: string; readonly name: string; readonly market_ids: readonly string[] | null }[]
   readonly permissions: readonly string[]

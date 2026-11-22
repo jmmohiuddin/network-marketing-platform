@@ -75,6 +75,8 @@ const PRIVACY_ITEM_LABELS: Readonly<Record<string, string>> = {
   run_snapshot: 'Calculation inputs', journal_entry: 'Journal entries', posting: 'Ledger postings', payout_instruction: 'Payouts',
   'bank_detail fingerprints': 'Bank detail fingerprints', 'tax_profile.residency': 'Tax residency', 'tax_profile.entity_type': 'Tax entity type',
   notification: 'Notifications', case_file: 'Cases', audit: 'Audit log',
+  tax_lines: 'Tax lines (withholding per run)', tax_forms: 'Year-end tax statements', account_holders: 'Account holders',
+  credit_awards: 'Non-cash reward awards', credit_redemptions: 'Non-cash reward redemptions', 'participant.account_holders': 'Account holder names',
 }
 
 export function privacyItemLabel(id: string): string {
@@ -114,6 +116,11 @@ export function blockerText(blocker: ErasureBlocker, markets: readonly Market[] 
     case 'payout_hold': return 'A payout hold (legal hold) is in place on the member.'
     case 'open_case': return `A ${caseTypeLabel(blocker.type).toLowerCase()} case about the member is still open.`
     case 'open_run': return 'A calculation with results for the member is waiting to be committed.'
+    case 'legal_hold': return 'A legal hold is active on the member.'
+    case 'credits_outstanding': {
+      const market = markets?.find((candidate) => candidate.id === blocker.market_id)
+      return `${marketMoney(blocker.amount_minor, market)} of unexpired non-cash rewards is still owed to the member${market === undefined ? '' : ` in ${market.code}`}.`
+    }
   }
 }
 

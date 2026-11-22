@@ -80,6 +80,7 @@ describe('GET /v1/api-keys/options', () => {
         { scope: 'orders:write', description: 'Send orders and order events', personal_data: false, permissions: ['integration.manage'] },
         { scope: 'ledger:export', description: 'Create and download GL journal exports', personal_data: false, permissions: ['ledger.export'] },
         { scope: 'exports:full', description: 'Create and download full data exports', personal_data: true, permissions: ['export.full'] },
+        { scope: 'credits:write', description: 'Record credit redemptions', personal_data: true, permissions: ['credit.manage'] },
       ],
       rate_tiers: [{ tier: 'standard', requests_per_minute: 120 }, { tier: 'high', requests_per_minute: 1200 }],
       max_grace_minutes: 10_080,
@@ -230,7 +231,7 @@ describe('keys are tenant-wide: minting and rotating need all-markets scope', ()
     expect(API_SCOPES.filter((entry) => entry.scope !== 'compliance:read').map(({ scope, permissions }) => [scope, permissions]))
       .toEqual([
         ['participants:write', ['integration.manage', 'participant.manage', 'servicing.manage']], ['orders:write', ['integration.manage']],
-        ['ledger:export', ['ledger.export']], ['exports:full', ['export.full']],
+        ['ledger:export', ['ledger.export']], ['exports:full', ['export.full']], ['credits:write', ['credit.manage']],
       ])
     expect(refused.json().error).toMatchObject({ code: 'SCOPE_NOT_HELD', details: { permission: 'integration.manage' } })
     expect(ordersOnly.statusCode).toBe(201)
