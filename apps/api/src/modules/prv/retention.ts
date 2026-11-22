@@ -104,11 +104,26 @@ async function decide(tx: Tx, request: FastifyRequest, id: string, body: z.infer
   return { statusCode: 200, body: envelope(await scheduleView(tx, id)) }
 }
 
-/** AC-PRV3-2 dry run: the same SQL as the cron, nothing written. */
+/**
+ * AC-PRV3-2 dry run: the cron's candidates, nothing written. An all-markets schedule is visible to every privacy.manage
+ * holder (VISIBLE), so a holder scoped to some markets sees only the items of those markets (D-V1A-09): a participant
+ * by its market, a request by its subject's market. A request without a subject belongs to no market, so only a holder
+ * over all markets sees it.
+ */
+const PREVIEW_ITEMS = `
+  SELECT d.object_type, d.object_id, d.ref, d.held FROM prv_retention_candidates($1) d
+  WHERE $3::uuid[] IS NULL
+     OR (d.object_type = 'participant' AND EXISTS (SELECT 1 FROM participant x WHERE x.id = d.object_id AND x.market_id = ANY ($3)))
+     OR (d.object_type = 'privacy_request' AND EXISTS (
+          SELECT 1 FROM privacy_request r JOIN participant x ON x.id = r.subject_participant_id
+          WHERE r.id = d.object_id AND x.market_id = ANY ($3)))
+  ORDER BY d.object_type, d.object_id LIMIT $2`
+
 async function preview(tx: Tx, request: FastifyRequest, id: string) {
+  const scope = scopeOf(request)
   await scheduleOf(tx, request, id)
   const { rows } = await tx.query<{ object_type: string; object_id: string; ref: string; held: boolean }>(
-    'SELECT object_type, object_id, ref, held FROM prv_retention_due($1, $2)', [id, RETENTION_RUN_ITEMS_MAX],
+    PREVIEW_ITEMS, [id, RETENTION_RUN_ITEMS_MAX, scope],
   )
   const due = rows.filter((row) => !row.held)
   return {
