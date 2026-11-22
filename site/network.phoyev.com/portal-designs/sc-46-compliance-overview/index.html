@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+
+<html lang="en"><head><title>SC-46 Compliance overview (overlay home) | PHOYEV portal design preview</title><meta name="robots" content="noindex,nofollow"><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_dashboard" name="shell-type"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Plus+Jakarta+Sans:wght@500;600;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={"darkMode":"class","theme":{"extend":{"colors":{"sso-google-border":"#D8E2FC","on-primary":"#ffffff","on-secondary-fixed":"#001a42","on-tertiary-fixed":"#00174b","secondary-fixed-dim":"#aec6ff","outline-variant":"#c4c6cf","primary":"#001332","success-base":"#16A34A","surface-container":"#f1ecf2","on-primary-fixed-variant":"#31476e","border-strong":"#CBD5E1","error":"#ba1a1a","on-tertiary":"#ffffff","surface-card":"#FFFFFF","on-secondary-container":"#1a4387","error-container":"#ffdad6","inverse-surface":"#313034","on-primary-fixed":"#001b3f","tertiary-fixed":"#dbe1ff","surface-variant":"#e5e1e7","surface":"#fdf8fd","focus-ring":"#3B82F6","on-background":"#1c1b1f","outline":"#74777f","focus-ring-glow":"rgba(59, 130, 246, 0.2)","secondary-fixed":"#d8e2ff","tertiary-container":"#002367","on-surface":"#1c1b1f","tertiary-fixed-dim":"#b4c5ff","error-base":"#DC2626","tertiary":"#00113b","on-tertiary-fixed-variant":"#003ea8","on-secondary":"#ffffff","primary-container":"#0f284e","on-tertiary-container":"#5f8aff","border-subtle":"#E2E7F6","secondary":"#385da2","inverse-on-surface":"#f4eff5","primary-fixed":"#d7e2ff","on-surface-variant":"#44474e","surface-container-high":"#ebe7ec","surface-container-lowest":"#ffffff","on-secondary-fixed-variant":"#1c4589","text-subtle":"#94A3B8","surface-tint":"#495e87","surface-container-low":"#f7f2f8","background":"#fdf8fd","primary-fixed-dim":"#b1c7f6","surface-canvas":"#F8F9FE","on-error-container":"#93000a","secondary-container":"#90b3fe","surface-bright":"#fdf8fd","sso-google-bg":"#F0F4FF","on-error":"#ffffff","inverse-primary":"#b1c7f6","on-primary-container":"#7a90bc","text-muted":"#64748B","surface-dim":"#ddd9de","surface-container-highest":"#e5e1e7"},"borderRadius":{"DEFAULT":"0.25rem","lg":"0.5rem","xl":"0.75rem","full":"9999px"},"spacing":{"space-xl":"2rem","space-lg":"1.5rem","gutter":"1.25rem","margin-desktop":"3rem","margin":"1.5rem","space-2xl":"2.5rem","space-xs":"0.25rem","space-sm":"0.5rem","space-md":"1rem"},"fontFamily":{"headline-xl":["Plus Jakarta Sans"],"headline-xl-mobile":["Plus Jakarta Sans"],"headline-sm":["Plus Jakarta Sans"],"body-lg":["Inter"],"label-md":["Inter"],"button-text":["Plus Jakarta Sans"],"label-sm":["Inter"],"body-md":["Inter"],"body-sm":["Inter"],"headline-lg":["Plus Jakarta Sans"],"eyebrow":["Plus Jakarta Sans"]},"fontSize":{"headline-xl":["32px",{"lineHeight":"40px","letterSpacing":"-0.02em","fontWeight":"700"}],"headline-xl-mobile":["26px",{"lineHeight":"34px","letterSpacing":"-0.015em","fontWeight":"700"}],"headline-sm":["18px",{"lineHeight":"24px","fontWeight":"600"}],"body-lg":["15px",{"lineHeight":"22px","fontWeight":"400"}],"label-md":["13px",{"lineHeight":"18px","letterSpacing":"0.02em","fontWeight":"600"}],"button-text":["14px",{"lineHeight":"20px","letterSpacing":"0.01em","fontWeight":"600"}],"label-sm":["11px",{"lineHeight":"16px","letterSpacing":"0.04em","fontWeight":"600"}],"body-md":["14px",{"lineHeight":"20px","fontWeight":"400"}],"body-sm":["12px",{"lineHeight":"18px","fontWeight":"400"}],"headline-lg":["24px",{"lineHeight":"32px","letterSpacing":"-0.01em","fontWeight":"600"}],"eyebrow":["12px",{"lineHeight":"16px","letterSpacing":"0.08em","fontWeight":"700"}]}}}}</script></head><body class="bg-surface-canvas font-body-md text-on-surface antialiased"><header class="fixed top-0 left-0 right-0 h-12 z-50 bg-surface-card border-b border-border-strong flex items-center justify-between px-space-md shadow-[0_1px_3px_0_rgba(15,40,78,0.04)]"><div class="flex items-center gap-space-sm"><div class="flex items-center gap-1.5 pr-2.5 border-r border-border-strong"><div class="w-6 h-6 rounded bg-primary flex items-center justify-center text-on-primary font-headline-sm text-label-sm font-bold">P</div><span class="font-headline-sm text-body-md font-bold tracking-tight text-primary">Phoyev Portal</span></div><div class="flex items-center gap-1 px-2 py-0.5 rounded bg-surface-container-high border border-border-strong text-on-surface font-label-sm"><span class="material-symbols-outlined text-[13px] text-text-muted">corporate_fare</span><span class="font-semibold">Acme Nutrition Inc.</span></div><button class="flex items-center gap-1 px-1.5 py-0.5 rounded hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface font-label-sm border border-transparent hover:border-border-strong transition-all"><span class="material-symbols-outlined text-[14px]">public</span><span>US — USD ($)</span><span class="material-symbols-outlined text-[14px]">arrow_drop_down</span></button></div><div class="flex-1 max-w-[460px] mx-space-md"><div class="relative flex items-center w-full"><span class="material-symbols-outlined absolute left-2.5 text-text-muted text-[16px]">search</span><input class="w-full h-8 pl-8 pr-12 rounded bg-surface-canvas border border-border-strong font-body-sm text-on-surface placeholder:text-text-muted cursor-pointer hover:border-text-muted focus:outline-none focus:border-focus-ring focus:ring-1 focus:ring-focus-ring" placeholder="Search participant, order, period, rule..." readonly="" type="text"/><div class="absolute right-2 flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-surface-card border border-border-strong font-label-sm text-[10px] text-text-muted">⌘K</div></div></div><div class="flex items-center gap-space-md"><div class="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-surface-card border border-border-strong font-label-sm text-body-sm text-on-surface-variant"><span class="w-2 h-2 rounded-full bg-success-base ring-2 ring-success-base/20 animate-pulse"></span><span>All Systems Operational</span></div><button class="relative p-1 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high rounded transition-all"><span class="material-symbols-outlined text-[18px]">notifications</span><span class="absolute top-0.5 right-0.5 w-2 h-2 bg-error rounded-full ring-2 ring-surface-card"></span></button><a class="flex items-center gap-1 font-label-sm text-body-sm text-on-surface-variant hover:text-primary" href="#"><span class="material-symbols-outlined text-[16px]">help_outline</span><span>Help &amp; Docs</span></a><div class="h-4 w-px bg-border-strong"></div><div class="flex items-center gap-2 pl-0.5"><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center shrink-0"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div><div class="flex flex-col text-left"><span class="font-label-md text-label-sm text-on-surface leading-tight">Sarah Jenkins</span><span class="font-label-sm text-[10px] text-text-muted leading-tight">Commission Analyst / Finance Approver</span></div></div></div></header><aside class="fixed left-0 top-12 bottom-0 w-[208px] bg-surface-card border-r border-border-strong z-40 overflow-y-auto flex flex-col justify-between py-space-sm"><nav class="flex flex-col gap-3 px-2" data-active-classes="bg-primary text-on-primary font-semibold"><div class="flex flex-col gap-0.5"><div class="px-2 py-1 font-eyebrow text-[10px] text-text-muted tracking-wider uppercase">Periods &amp; Runs</div><a class="flex items-center gap-2 px-2 py-1.5 rounded font-label-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="periods-and-runs" href="#"><span class="material-symbols-outlined text-[16px]">event_repeat</span><span>Periods &amp; Runs</span><span class="ml-auto text-[10px] text-text-muted font-mono">SC-01</span></a><a class="flex items-center gap-2 px-2 py-1.5 rounded font-label-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="run-review" href="#"><span class="material-symbols-outlined text-[16px]">fact_check</span><span>Run Review</span><span class="ml-auto text-[10px] text-text-muted font-mono">SC-02</span></a><a class="flex items-center gap-2 px-2 py-1.5 rounded font-label-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="late-transactions" href="#"><span class="material-symbols-outlined text-[16px]">history_toggle_off</span><span>Late Transactions</span><span class="ml-auto text-[10px] text-text-muted font-mono">SC-32</span></a></div><div class="flex flex-col gap-0.5"><div class="px-2 py-1 font-eyebrow text-[10px] text-text-muted tracking-wider uppercase">Payouts &amp; Finance</div><a class="flex items-center gap-2 px-2 py-1.5 rounded font-label-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="payout-batches" href="#"><span class="material-symbols-outlined text-[16px]">payments</span><span>Payout Batches</span><span class="ml-auto text-[10px] text-text-muted font-mono">SC-03</span></a><a class="flex items-center gap-2 px-2 py-1.5 rounded font-label-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="ledger-and-accounting" href="#"><span class="material-symbols-outlined text-[16px]">account_balance</span><span>Ledger &amp; Accounting</span><span class="ml-auto text-[10px] text-text-muted font-mono">SC-33</span></a><a class="flex items-center gap-2 px-2 py-1.5 rounded font-label-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="reconciliation" href="#"><span class="material-symbols-outlined text-[16px]">rule</span><span>Reconciliation</span><span class="ml-auto text-[10px] text-text-muted font-mono">SC-34</span></a></div><div class="flex flex-col gap-0.5"><div class="px-2 py-1 font-eyebrow text-[10px] text-text-muted tracking-wider uppercase">Compensation Plans</div><a class="flex items-center gap-2 px-2 py-1.5 rounded font-label-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="plan-versions" href="#"><span class="material-symbols-outlined text-[16px]">schema</span><span>Plan Versions</span><span class="ml-auto text-[10px] text-text-muted font-mono">SC-04</span></a><a class="flex items-center gap-2 px-2 py-1.5 rounded font-label-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="caps-and-pools" href="#"><span class="material-symbols-outlined text-[16px]">toll</span><span>Caps &amp; Pools</span><span class="ml-auto text-[10px] text-text-muted font-mono">SC-05</span></a><a class="flex items-center gap-2 px-2 py-1.5 rounded font-label-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="simulation-and-golden-datasets" href="#"><span class="material-symbols-outlined text-[16px]">science</span><span>Simulation &amp; Golden</span><span class="ml-auto text-[10px] text-text-muted font-mono">SC-42</span></a><a class="flex items-center gap-2 px-2 py-1.5 rounded font-label-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="plan-change-workflow" href="#"><span class="material-symbols-outlined text-[16px]">route</span><span>Plan Change WF</span><span class="ml-auto text-[10px] text-text-muted font-mono">SC-44</span></a></div><div class="flex flex-col gap-0.5"><div class="px-2 py-1 font-eyebrow text-[10px] text-text-muted tracking-wider uppercase">People &amp; Structure</div><a class="flex items-center gap-2 px-2 py-1.5 rounded font-label-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="genealogy-explorer" href="#"><span class="material-symbols-outlined text-[16px]">account_tree</span><span>Genealogy Explorer</span><span class="ml-auto text-[10px] text-text-muted font-mono">SC-07</span></a><a class="flex items-center gap-2 px-2 py-1.5 rounded font-label-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="structure-and-cases" href="#"><span class="material-symbols-outlined text-[16px]">cases</span><span>Structure &amp; Cases</span><span class="ml-auto text-[10px] text-text-muted font-mono">SC-08</span></a><a class="flex items-center gap-2 px-2 py-1.5 rounded font-label-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="participants-360" href="#"><span class="material-symbols-outlined text-[16px]">badge</span><span>Participants 360</span><span class="ml-auto text-[10px] text-text-muted font-mono">SC-09</span></a></div><div class="flex flex-col gap-0.5"><div class="px-2 py-1 font-eyebrow text-[10px] text-text-muted tracking-wider uppercase">Compliance &amp; Audit</div><a class="flex items-center gap-2 px-2 py-1.5 rounded font-label-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="compliance-overview" href="#"><span class="material-symbols-outlined text-[16px]">verified_user</span><span>Compliance Overview</span><span class="ml-auto text-[10px] text-text-muted font-mono">SC-46</span></a><a class="flex items-center gap-2 px-2 py-1.5 rounded font-label-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="reports-r1-r5" href="#"><span class="material-symbols-outlined text-[16px]">description</span><span>Reports R1-R5</span><span class="ml-auto text-[10px] text-text-muted font-mono">SC-10</span></a><a class="flex items-center gap-2 px-2 py-1.5 rounded font-label-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="guardrails-log" href="#"><span class="material-symbols-outlined text-[16px]">shield</span><span>Guardrails Log</span><span class="ml-auto text-[10px] text-text-muted font-mono">SC-11</span></a></div><div class="flex flex-col gap-0.5"><div class="px-2 py-1 font-eyebrow text-[10px] text-text-muted tracking-wider uppercase">Settings</div><a class="flex items-center gap-2 px-2 py-1.5 rounded font-label-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="integrations-and-health" href="#"><span class="material-symbols-outlined text-[16px]">sync_alt</span><span>Integrations &amp; Health</span><span class="ml-auto text-[10px] text-text-muted font-mono">SC-13</span></a><a class="flex items-center gap-2 px-2 py-1.5 rounded font-label-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="users-and-sod-roles" href="#"><span class="material-symbols-outlined text-[16px]">admin_panel_settings</span><span>Users &amp; SoD Roles</span><span class="ml-auto text-[10px] text-text-muted font-mono">SC-28</span></a><a class="flex items-center gap-2 px-2 py-1.5 rounded font-label-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="tenant-settings" href="#"><span class="material-symbols-outlined text-[16px]">tune</span><span>Tenant Settings</span><span class="ml-auto text-[10px] text-text-muted font-mono">SC-29</span></a></div></nav><div class="px-3 pt-3 border-t border-border-strong text-[11px] text-text-muted font-mono flex items-center justify-between"><span>v2.14.0-prod</span><span class="flex items-center gap-1 text-success-base"><span class="w-1.5 h-1.5 rounded-full bg-success-base"></span>SYNC</span></div></aside><div class="pl-[208px]"><main class="pt-12 bg-surface-canvas min-h-screen"><div class="flex flex-col w-full">
+<!-- Active Navigation Script to strictly enforce SC-46 highlighted state in App Shell -->
+<script>
+    (function highlightNav() {
+      const navLinks = document.querySelectorAll('aside nav a[data-path]');
+      navLinks.forEach(link => {
+        if (link.getAttribute('data-path') === 'compliance-overview') {
+          link.classList.remove('text-on-surface-variant', 'hover:bg-surface-container-high', 'hover:text-on-surface');
+          link.classList.add('bg-primary', 'text-on-primary', 'font-semibold', 'shadow-sm');
+          const badge = link.querySelector('span:last-child');
+          if (badge) badge.classList.replace('text-text-muted', 'text-on-primary/80');
+        }
+      });
+    })();
+  </script>
+<!-- Main Body Content Area -->
+<div class="p-space-lg max-w-[1560px] mx-auto space-y-6">
+<!-- Top Breadcrumb & Period Context Bar -->
+<div class="flex flex-wrap items-center justify-between gap-3 text-body-sm text-text-muted">
+<div class="flex items-center gap-2">
+<span class="flex items-center gap-1 font-label-md text-text-muted">
+<span class="material-symbols-outlined text-[16px]">gavel</span>
+          Compliance Architecture
+        </span>
+<span class="text-border-strong font-mono">/</span>
+<span class="flex items-center gap-1 font-label-md text-primary font-semibold">
+<span class="material-symbols-outlined text-[16px] text-primary">verified_user</span>
+          SC-46 Compliance Overview
+        </span>
+<span class="text-border-strong font-mono">/</span>
+<span class="px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface-variant font-label-sm">
+          Mode: Statutory Oversight &amp; Analytics
+        </span>
+</div>
+<div class="flex items-center gap-3">
+<div class="flex items-center gap-1.5 px-2.5 py-1 rounded bg-surface-card border border-border-subtle shadow-sm">
+<span class="w-2 h-2 rounded-full bg-secondary ring-2 ring-secondary/20"></span>
+<span class="font-label-sm text-text-muted uppercase tracking-wider">Tenant Scope:</span>
+<span class="font-label-md text-primary font-bold">Acme Nutrition Inc.</span>
+</div>
+<div class="flex items-center gap-1.5 px-2.5 py-1 rounded bg-surface-card border border-border-subtle shadow-sm">
+<span class="material-symbols-outlined text-[15px] text-text-muted">calendar_today</span>
+<span class="font-label-sm text-text-muted uppercase tracking-wider">Operating Cycle:</span>
+<span class="font-label-md text-primary font-semibold">November 2026 (Monthly)</span>
+</div>
+</div>
+</div>
+<!-- Top Action & Status Bar Header -->
+<div class="bg-surface-card rounded-xl p-space-lg border border-border-subtle shadow-[0_1px_3px_0_rgba(15,40,78,0.04)] flex flex-col xl:flex-row xl:items-center xl:justify-between gap-6">
+<div class="space-y-1.5 max-w-3xl">
+<div class="flex items-center gap-2.5">
+<h1 class="font-headline-lg text-headline-lg text-primary tracking-tight">Compliance Overview &amp; Statutory Overlay</h1>
+<span class="px-2.5 py-0.5 rounded-full bg-success-base/10 text-success-base font-label-sm font-semibold tracking-wide border border-success-base/20">
+            AUDIT-READY
+          </span>
+</div>
+<p class="font-body-md text-text-muted leading-relaxed">
+          Audit-ready attestation of multi-level compensation against US FTC, DSA, and state statutory benchmarks derived strictly from immutable transaction facts.
+        </p>
+</div>
+<!-- Action Cluster -->
+<div class="flex flex-wrap items-center gap-2.5">
+<button class="h-10 px-3.5 rounded bg-surface-card hover:bg-surface-container-high border border-border-strong text-primary font-button-text text-button-text transition-all flex items-center gap-1.5 shadow-sm active:scale-[0.99]">
+<span class="material-symbols-outlined text-[17px]">file_upload</span>
+<span>Import Transactions (SC-24)</span>
+</button>
+<button class="h-10 px-3.5 rounded bg-surface-card hover:bg-surface-container-high border border-border-strong text-primary font-button-text text-button-text transition-all flex items-center gap-1.5 shadow-sm active:scale-[0.99]">
+<span class="material-symbols-outlined text-[17px]">compare_arrows</span>
+<span>Compare Periods</span>
+<span class="text-label-sm text-text-muted font-normal">(Oct vs Nov)</span>
+</button>
+<button class="h-10 px-3.5 rounded bg-surface-card hover:bg-surface-container-high border border-border-strong text-primary font-button-text text-button-text transition-all flex items-center gap-1.5 shadow-sm active:scale-[0.99]">
+<span class="material-symbols-outlined text-[17px]">folder_zip</span>
+<span>Export Package (.PDF/.ZIP)</span>
+</button>
+<button class="h-10 px-4 rounded bg-primary hover:bg-primary-container text-on-primary font-button-text text-button-text transition-all flex items-center gap-2 shadow-[0_4px_12px_rgba(15,40,78,0.18)] active:scale-[0.99]">
+<span class="material-symbols-outlined text-[18px]">photo_camera</span>
+<span>Generate Statutory Snapshot</span>
+</button>
+</div>
+</div>
+<!-- Snapshot Integrity & Provenance Strip -->
+<div class="bg-surface-card rounded-xl p-4 border border-border-subtle shadow-sm flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+<div class="flex flex-wrap items-center gap-3">
+<div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface-container-lowest border border-border-strong shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)]">
+<span class="material-symbols-outlined text-secondary text-[18px]">verified</span>
+<span class="font-label-sm text-primary font-bold tracking-wide">SNAPSHOT #CPL-202611-04</span>
+<span class="px-1.5 py-0.2 rounded text-[10px] bg-primary text-on-primary font-mono uppercase tracking-wider">COMMITTED &amp; ATTESTED</span>
+</div>
+<div class="h-4 w-px bg-border-strong hidden sm:block"></div>
+<div class="flex items-center gap-2 text-body-sm text-on-surface">
+<span class="flex items-center gap-1 text-success-base font-semibold">
+<span class="material-symbols-outlined text-[16px]">sync_saved_locally</span>
+            100% Ingestion Parity
+          </span>
+<span class="text-text-subtle">·</span>
+<span class="font-mono font-medium">142,509</span>
+<span class="text-text-muted">Inbound Orders Reconciled</span>
+<span class="text-text-subtle">·</span>
+<span class="text-text-muted">Zero Synthetic Anomalies</span>
+</div>
+</div>
+<div class="flex flex-wrap items-center gap-4 text-label-sm text-text-muted font-mono bg-surface-canvas px-3 py-1.5 rounded-md border border-border-subtle">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[15px] text-text-muted">schedule</span>
+<span>As-of Nov 30, 2026 23:59 UTC</span>
+</div>
+<span class="text-border-strong">|</span>
+<div class="flex items-center gap-1.5" title="SHA-256 Merkle Leaf Verification Hash">
+<span class="material-symbols-outlined text-[15px] text-secondary">tag</span>
+<span class="text-primary font-semibold">Merkle:</span>
+<span>0x8a92...f01e</span>
+</div>
+<span class="text-border-strong">|</span>
+<div class="flex items-center gap-1 font-body-sm text-on-surface-variant font-sans">
+<span class="material-symbols-outlined text-[15px] text-text-muted">account_balance</span>
+<span>CCO &amp; Outside Regulatory Counsel</span>
+</div>
+</div>
+</div>
+<!-- 5 Master Compliance Headline Metric Cards (R1 to R5) -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+<!-- R1: Retail-Customer Sales Ratio -->
+<div class="bg-surface-card rounded-xl p-space-md border border-border-subtle shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow relative overflow-hidden group">
+<div class="absolute top-0 left-0 right-0 h-1 bg-success-base"></div>
+<div>
+<div class="flex items-center justify-between gap-1 mb-2">
+<span class="font-eyebrow text-eyebrow text-secondary uppercase tracking-wider">Report R-1</span>
+<span class="px-2 py-0.5 rounded-full bg-success-base/10 text-success-base font-label-sm flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-success-base"></span>
+              Compliant
+            </span>
+</div>
+<h2 class="font-headline-sm text-body-md text-primary font-bold line-clamp-1">Retail-Customer Sales Ratio</h2>
+<div class="mt-3 flex items-baseline gap-2">
+<span class="font-headline-xl text-headline-xl text-primary font-bold tracking-tight font-mono">74.2%</span>
+<span class="font-label-sm text-success-base font-semibold">+4.2% buf</span>
+</div>
+<div class="mt-1 text-label-sm text-text-muted">
+            Statutory Target: <span class="text-primary font-semibold font-mono">≥ 70.0%</span>
+<span class="text-[10px] block text-text-subtle font-sans">FTC 70% Amway/Koscot Rule</span>
+</div>
+<!-- Progress bar -->
+<div class="mt-3 space-y-1">
+<div class="w-full bg-surface-container-high h-2 rounded-full overflow-hidden flex relative">
+<div class="bg-success-base h-full rounded-full" style="width: 74.2%;"></div>
+<div class="absolute left-[70%] top-0 bottom-0 w-0.5 bg-primary/70" title="Statutory Benchmark: 70%"></div>
+</div>
+<div class="flex justify-between text-[10px] font-mono text-text-muted">
+<span>Cust: $8.46M</span>
+<span>GMV: $11.40M</span>
+</div>
+</div>
+</div>
+<div class="pt-3 mt-4 border-t border-border-subtle flex items-center justify-between">
+<a class="font-label-sm text-secondary hover:text-primary flex items-center gap-1 font-semibold group-hover:translate-x-0.5 transition-transform" data-path="reports-r1-r5" href="#">
+            Open Report &amp; Drill-Down (SC-10) →
+          </a>
+</div>
+</div>
+<!-- R2: Personal-Use vs Resale Volume -->
+<div class="bg-surface-card rounded-xl p-space-md border border-border-subtle shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow relative overflow-hidden group">
+<div class="absolute top-0 left-0 right-0 h-1 bg-success-base"></div>
+<div>
+<div class="flex items-center justify-between gap-1 mb-2">
+<span class="font-eyebrow text-eyebrow text-secondary uppercase tracking-wider">Report R-2</span>
+<span class="px-2 py-0.5 rounded-full bg-success-base/10 text-success-base font-label-sm flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-success-base"></span>
+              Safe Ceiling
+            </span>
+</div>
+<h2 class="font-headline-sm text-body-md text-primary font-bold line-clamp-1">Personal-Use vs Resale Vol</h2>
+<div class="mt-3 flex items-baseline gap-2">
+<span class="font-headline-xl text-headline-xl text-primary font-bold tracking-tight font-mono">18.6%</span>
+<span class="font-label-sm text-text-muted">internal vol</span>
+</div>
+<div class="mt-1 text-label-sm text-text-muted">
+            Internal Ceiling: <span class="text-primary font-semibold font-mono">≤ 25.0%</span>
+<span class="text-[10px] block text-text-subtle font-sans">Non-compensable threshold</span>
+</div>
+<!-- Progress bar -->
+<div class="mt-3 space-y-1">
+<div class="w-full bg-surface-container-high h-2 rounded-full overflow-hidden flex relative">
+<div class="bg-secondary h-full rounded-full" style="width: 74.4%;"></div>
+<div class="absolute left-[100%] top-0 bottom-0 w-0.5 bg-error" title="Statutory Ceiling: 25% max"></div>
+</div>
+<div class="flex justify-between text-[10px] font-mono text-text-muted">
+<span>Personal: 18.6%</span>
+<span class="text-text-muted">2 flagged &gt;50%</span>
+</div>
+</div>
+</div>
+<div class="pt-3 mt-4 border-t border-border-subtle flex items-center justify-between">
+<a class="font-label-sm text-secondary hover:text-primary flex items-center gap-1 font-semibold group-hover:translate-x-0.5 transition-transform" data-path="reports-r1-r5" href="#">
+            Open Report &amp; Drill-Down (SC-10) →
+          </a>
+</div>
+</div>
+<!-- R3: Multi-Level Payout Source Mix -->
+<div class="bg-surface-card rounded-xl p-space-md border border-border-subtle shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow relative overflow-hidden group">
+<div class="absolute top-0 left-0 right-0 h-1 bg-success-base"></div>
+<div>
+<div class="flex items-center justify-between gap-1 mb-2">
+<span class="font-eyebrow text-eyebrow text-secondary uppercase tracking-wider">Report R-3</span>
+<span class="px-2 py-0.5 rounded-full bg-success-base/10 text-success-base font-label-sm flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-success-base"></span>
+              100% Verified
+            </span>
+</div>
+<h2 class="font-headline-sm text-body-md text-primary font-bold line-clamp-1">Payout Source Mix (End-User)</h2>
+<div class="mt-3 flex items-baseline gap-2">
+<span class="font-headline-xl text-headline-xl text-primary font-bold tracking-tight font-mono">82.4%</span>
+<span class="font-label-sm text-success-base font-semibold">End-User</span>
+</div>
+<div class="mt-1 text-label-sm text-text-muted">
+            Burnett Standard: <span class="text-primary font-semibold font-mono">0% Recruitment</span>
+<span class="text-[10px] block text-text-subtle font-sans">Zero Headhunting Incentives</span>
+</div>
+<!-- Progress bar -->
+<div class="mt-3 space-y-1">
+<div class="w-full bg-surface-container-high h-2 rounded-full overflow-hidden flex">
+<div class="bg-primary h-full" style="width: 82.4%;" title="End-User Sales: 82.4%"></div>
+<div class="bg-surface-tint h-full" style="width: 17.6%;" title="Wholesale Rep Margin: 17.6%"></div>
+</div>
+<div class="flex justify-between text-[10px] font-mono text-text-muted">
+<span>82.4% End-User</span>
+<span>17.6% Margin</span>
+</div>
+</div>
+</div>
+<div class="pt-3 mt-4 border-t border-border-subtle flex items-center justify-between">
+<a class="font-label-sm text-secondary hover:text-primary flex items-center gap-1 font-semibold group-hover:translate-x-0.5 transition-transform" data-path="reports-r1-r5" href="#">
+            Open Report &amp; Drill-Down (SC-10) →
+          </a>
+</div>
+</div>
+<!-- R4: Active Distributors with Customer Purchases -->
+<div class="bg-surface-card rounded-xl p-space-md border border-border-subtle shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow relative overflow-hidden group">
+<div class="absolute top-0 left-0 right-0 h-1 bg-success-base"></div>
+<div>
+<div class="flex items-center justify-between gap-1 mb-2">
+<span class="font-eyebrow text-eyebrow text-secondary uppercase tracking-wider">Report R-4</span>
+<span class="px-2 py-0.5 rounded-full bg-success-base/10 text-success-base font-label-sm flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-success-base"></span>
+              Healthy
+            </span>
+</div>
+<h2 class="font-headline-sm text-body-md text-primary font-bold line-clamp-1">Active Rep Customer Activity</h2>
+<div class="mt-3 flex items-baseline gap-2">
+<span class="font-headline-xl text-headline-xl text-primary font-bold tracking-tight font-mono">91.8%</span>
+<span class="font-label-sm text-success-base font-semibold">+11.8%</span>
+</div>
+<div class="mt-1 text-label-sm text-text-muted">
+            Activity Floor: <span class="text-primary font-semibold font-mono">≥ 80.0%</span>
+<span class="text-[10px] block text-text-subtle font-sans">≥1 Retail Order Required</span>
+</div>
+<!-- Progress bar -->
+<div class="mt-3 space-y-1">
+<div class="w-full bg-surface-container-high h-2 rounded-full overflow-hidden flex relative">
+<div class="bg-success-base h-full rounded-full" style="width: 91.8%;"></div>
+<div class="absolute left-[80%] top-0 bottom-0 w-0.5 bg-primary" title="Minimum 80% Requirement"></div>
+</div>
+<div class="flex justify-between text-[10px] font-mono text-text-muted">
+<span>91.8% Active</span>
+<span>12,408 / 13,516 Reps</span>
+</div>
+</div>
+</div>
+<div class="pt-3 mt-4 border-t border-border-subtle flex items-center justify-between">
+<a class="font-label-sm text-secondary hover:text-primary flex items-center gap-1 font-semibold group-hover:translate-x-0.5 transition-transform" data-path="reports-r1-r5" href="#">
+            Open Report &amp; Drill-Down (SC-10) →
+          </a>
+</div>
+</div>
+<!-- R5: Net Earnings & Zero-Band Transparency -->
+<div class="bg-surface-card rounded-xl p-space-md border border-border-subtle shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow relative overflow-hidden group">
+<div class="absolute top-0 left-0 right-0 h-1 bg-secondary"></div>
+<div>
+<div class="flex items-center justify-between gap-1 mb-2">
+<span class="font-eyebrow text-eyebrow text-secondary uppercase tracking-wider">Report R-5</span>
+<span class="px-2 py-0.5 rounded-full bg-primary/10 text-primary font-label-sm flex items-center gap-1 font-semibold">
+<span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+              Full Cohort
+            </span>
+</div>
+<h2 class="font-headline-sm text-body-md text-primary font-bold line-clamp-1">Earnings Transparency Band</h2>
+<div class="mt-3 flex items-baseline gap-2">
+<span class="font-headline-xl text-headline-xl text-primary font-bold tracking-tight font-mono">$466.50</span>
+<span class="font-label-sm text-text-muted">median</span>
+</div>
+<div class="mt-1 text-label-sm text-text-muted">
+            Zero-Earner Band: <span class="text-primary font-semibold font-mono">44.8%</span>
+<span class="text-[10px] block text-text-subtle font-sans">Full Inactive Ingestion Included</span>
+</div>
+<!-- Mini distribution visualization -->
+<div class="mt-3 space-y-1">
+<div class="w-full bg-surface-container-high h-2 rounded-full overflow-hidden flex">
+<div class="bg-text-subtle h-full" style="width: 44.8%;" title="$0 Band: 44.8%"></div>
+<div class="bg-secondary-container h-full" style="width: 32.2%;" title="$1-$1k: 32.2%"></div>
+<div class="bg-secondary h-full" style="width: 17.0%;" title="$1k-$10k: 17.0%"></div>
+<div class="bg-primary h-full" style="width: 6.0%;" title="&gt;$10k: 6.0%"></div>
+</div>
+<div class="flex justify-between text-[10px] font-mono text-text-muted">
+<span>$0 (44.8%)</span>
+<span>Audit Clear</span>
+</div>
+</div>
+</div>
+<div class="pt-3 mt-4 border-t border-border-subtle flex items-center justify-between">
+<a class="font-label-sm text-secondary hover:text-primary flex items-center gap-1 font-semibold group-hover:translate-x-0.5 transition-transform" data-path="reports-r1-r5" href="#">
+            Open Report &amp; Drill-Down (SC-10) →
+          </a>
+</div>
+</div>
+</div>
+<!-- Operational Split Layout: 65% Left (Coverage & Invariant Gates) vs 35% Right (Attestation & Ledger) -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+<!-- LEFT COLUMN (65% -> 8 of 12 cols in LG) -->
+<div class="lg:col-span-8 space-y-6">
+<!-- Section 1: Data Coverage & Pipeline Ingestion Integrity -->
+<div class="bg-surface-card rounded-xl border border-border-subtle shadow-sm overflow-hidden">
+<div class="p-space-md border-b border-border-subtle bg-surface-canvas/50 flex flex-wrap items-center justify-between gap-4">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-primary text-[20px]">hub</span>
+<div>
+<h3 class="font-headline-sm text-body-md text-primary font-bold">Data Coverage &amp; Connector Pipeline Integrity</h3>
+<p class="font-body-sm text-text-muted">Continuous transaction ingestion verified through upstream cryptographic ledger hashes.</p>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<span class="px-2.5 py-1 rounded bg-surface-card border border-border-strong text-on-surface font-mono text-label-sm">
+                Sync Latency: <strong class="text-success-base">14ms</strong>
+</span>
+<a class="font-label-sm text-secondary hover:text-primary font-semibold flex items-center gap-0.5" data-path="integrations-and-health" href="#">
+<span>View Mappings</span>
+<span class="material-symbols-outlined text-[14px]">arrow_forward</span>
+</a>
+</div>
+</div>
+<!-- Table of Ingested Sources -->
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="border-b border-border-subtle bg-surface-card font-label-sm text-text-muted uppercase tracking-wider">
+<th class="py-2.5 px-4">Ingestion Connector</th>
+<th class="py-2.5 px-4">Channel Type</th>
+<th class="py-2.5 px-4 text-right">Raw Records</th>
+<th class="py-2.5 px-4 text-right">Reconciled Vol</th>
+<th class="py-2.5 px-4">Verification State</th>
+<th class="py-2.5 px-4 text-right">Health Check</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-border-subtle text-body-sm font-body-sm">
+<!-- Shopify US Storefront -->
+<tr class="hover:bg-surface-canvas/60 transition-colors">
+<td class="py-3 px-4 flex items-center gap-2.5 font-label-md text-primary font-semibold">
+<span class="w-6 h-6 rounded bg-emerald-50 text-success-base flex items-center justify-center font-bold text-[11px]">S</span>
+                    Shopify US Storefront
+                  </td>
+<td class="py-3 px-4 text-text-muted">Direct Retail / Web Checkout</td>
+<td class="py-3 px-4 text-right font-mono text-on-surface">94,312</td>
+<td class="py-3 px-4 text-right font-mono font-medium text-primary">$7,891,420.10</td>
+<td class="py-3 px-4">
+<span class="inline-flex items-center gap-1 text-success-base font-label-sm font-semibold">
+<span class="material-symbols-outlined text-[14px]">check_circle</span>
+                      100% Verified (0 drops)
+                    </span>
+</td>
+<td class="py-3 px-4 text-right font-mono text-[11px] text-text-muted">0.00% err</td>
+</tr>
+<!-- Stripe POS Retailing -->
+<tr class="hover:bg-surface-canvas/60 transition-colors">
+<td class="py-3 px-4 flex items-center gap-2.5 font-label-md text-primary font-semibold">
+<span class="w-6 h-6 rounded bg-indigo-50 text-secondary flex items-center justify-center font-bold text-[11px]">P</span>
+                    Stripe POS Retailing
+                  </td>
+<td class="py-3 px-4 text-text-muted">Physical Terminal / Events</td>
+<td class="py-3 px-4 text-right font-mono text-on-surface">18,124</td>
+<td class="py-3 px-4 text-right font-mono font-medium text-primary">$1,241,830.00</td>
+<td class="py-3 px-4">
+<span class="inline-flex items-center gap-1 text-success-base font-label-sm font-semibold">
+<span class="material-symbols-outlined text-[14px]">check_circle</span>
+                      Synced &amp; Cleared
+                    </span>
+</td>
+<td class="py-3 px-4 text-right font-mono text-[11px] text-text-muted">0.00% err</td>
+</tr>
+<!-- Modern Treasury ACH -->
+<tr class="hover:bg-surface-canvas/60 transition-colors">
+<td class="py-3 px-4 flex items-center gap-2.5 font-label-md text-primary font-semibold">
+<span class="w-6 h-6 rounded bg-sky-50 text-primary-container flex items-center justify-center font-bold text-[11px]">M</span>
+                    Modern Treasury ACH
+                  </td>
+<td class="py-3 px-4 text-text-muted">Direct Debit Settlements</td>
+<td class="py-3 px-4 text-right font-mono text-on-surface">12,650</td>
+<td class="py-3 px-4 text-right font-mono font-medium text-primary">$942,110.50</td>
+<td class="py-3 px-4">
+<span class="inline-flex items-center gap-1 text-success-base font-label-sm font-semibold">
+<span class="material-symbols-outlined text-[14px]">check_circle</span>
+                      Bank Ledger Matched
+                    </span>
+</td>
+<td class="py-3 px-4 text-right font-mono text-[11px] text-text-muted">0.00% err</td>
+</tr>
+<!-- Wholesale ERP Bridge -->
+<tr class="hover:bg-surface-canvas/60 transition-colors">
+<td class="py-3 px-4 flex items-center gap-2.5 font-label-md text-primary font-semibold">
+<span class="w-6 h-6 rounded bg-slate-100 text-on-surface flex items-center justify-center font-bold text-[11px]">E</span>
+                    Wholesale ERP Bridge
+                  </td>
+<td class="py-3 px-4 text-text-muted">Distributor Kit Orders / EDI</td>
+<td class="py-3 px-4 text-right font-mono text-on-surface">17,423</td>
+<td class="py-3 px-4 text-right font-mono font-medium text-primary">$1,324,639.40</td>
+<td class="py-3 px-4">
+<span class="inline-flex items-center gap-1 text-success-base font-label-sm font-semibold">
+<span class="material-symbols-outlined text-[14px]">check_circle</span>
+                      ERP Ledger Matched
+                    </span>
+</td>
+<td class="py-3 px-4 text-right font-mono text-[11px] text-text-muted">0.00% err</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Data Quality Warning Alert Callout -->
+<div class="p-3.5 m-4 rounded-lg bg-surface-container-low border border-border-subtle flex items-start gap-3">
+<span class="material-symbols-outlined text-secondary text-[20px] mt-0.5">info</span>
+<div class="flex-1 text-body-sm">
+<span class="font-label-md text-primary font-semibold">Late Transaction Inquiries Queued:</span>
+<span class="text-on-surface-variant">2 late order adjustments ($142.00 total) are held in SC-32 Restatement Arbitration. Statutory analysis verifies <strong>zero statistical impact</strong> on November 2026 ratios (buffer &gt; 4.2%).</span>
+</div>
+<a class="font-label-sm text-secondary hover:text-primary font-semibold shrink-0" data-path="late-transactions" href="#">Review SC-32 →</a>
+</div>
+</div>
+<!-- Section 2: Regulatory Invariant Gate Checklist -->
+<div class="bg-surface-card rounded-xl border border-border-subtle shadow-sm overflow-hidden">
+<div class="p-space-md border-b border-border-subtle bg-surface-canvas/50 flex flex-wrap items-center justify-between gap-4">
+<div>
+<h3 class="font-headline-sm text-body-md text-primary font-bold">Statutory Invariant Gate Checks</h3>
+<p class="font-body-sm text-text-muted">Autonomous rule verification verified against US Federal and State multi-level marketing code requirements.</p>
+</div>
+<span class="px-2.5 py-0.5 rounded-full bg-success-base/10 text-success-base font-label-sm font-bold border border-success-base/20">
+              5 of 5 Gates Passed
+            </span>
+</div>
+<div class="divide-y divide-border-subtle">
+<!-- Item 1: FTC 70% Rule -->
+<div class="p-4 flex items-start justify-between gap-4 hover:bg-surface-canvas/40 transition-colors">
+<div class="flex items-start gap-3">
+<div class="w-8 h-8 rounded-full bg-success-base/10 text-success-base flex items-center justify-center shrink-0 mt-0.5">
+<span class="material-symbols-outlined text-[18px]">verified</span>
+</div>
+<div>
+<div class="flex items-center gap-2">
+<h4 class="font-headline-sm text-body-md text-primary font-bold">FTC 70% Amway/Koscot Retail Rule</h4>
+<span class="px-1.5 py-0.5 rounded bg-surface-container text-on-surface-variant font-label-sm text-[10px] font-mono">16 CFR Part 437</span>
+</div>
+<p class="font-body-sm text-text-muted mt-0.5">
+                    Requires that at least 70% of total rewarded sales volume be consumed by non-distributor retail patrons. Current November calculated attestation: <strong>74.2%</strong>.
+                  </p>
+</div>
+</div>
+<div class="text-right shrink-0">
+<span class="font-label-sm text-success-base font-bold bg-success-base/10 px-2 py-0.5 rounded inline-block">PASS</span>
+<span class="block text-[11px] font-mono text-text-muted mt-1">+4.2% Headroom</span>
+</div>
+</div>
+<!-- Item 2: DSA Anti-Pyramid Verification -->
+<div class="p-4 flex items-start justify-between gap-4 hover:bg-surface-canvas/40 transition-colors">
+<div class="flex items-start gap-3">
+<div class="w-8 h-8 rounded-full bg-success-base/10 text-success-base flex items-center justify-center shrink-0 mt-0.5">
+<span class="material-symbols-outlined text-[18px]">verified</span>
+</div>
+<div>
+<div class="flex items-center gap-2">
+<h4 class="font-headline-sm text-body-md text-primary font-bold">DSA Anti-Pyramid &amp; Compensation Floor</h4>
+<span class="px-1.5 py-0.5 rounded bg-surface-container text-on-surface-variant font-label-sm text-[10px] font-mono">DSA Code of Ethics §3.1</span>
+</div>
+<p class="font-body-sm text-text-muted mt-0.5">
+                    Prohibits inventory loading and guarantees bonus calculations are tied to bona fide consumer purchases rather than distributor head-counts.
+                  </p>
+</div>
+</div>
+<div class="text-right shrink-0">
+<span class="font-label-sm text-success-base font-bold bg-success-base/10 px-2 py-0.5 rounded inline-block">PASS</span>
+<span class="block text-[11px] font-mono text-text-muted mt-1">Zero Headcount Payout</span>
+</div>
+</div>
+<!-- Item 3: State Disclosures (CA/TX/FL) -->
+<div class="p-4 flex items-start justify-between gap-4 hover:bg-surface-canvas/40 transition-colors">
+<div class="flex items-start gap-3">
+<div class="w-8 h-8 rounded-full bg-success-base/10 text-success-base flex items-center justify-center shrink-0 mt-0.5">
+<span class="material-symbols-outlined text-[18px]">verified</span>
+</div>
+<div>
+<div class="flex items-center gap-2">
+<h4 class="font-headline-sm text-body-md text-primary font-bold">CA, TX &amp; FL State Statutory Disclosure Cohorts</h4>
+<span class="px-1.5 py-0.5 rounded bg-surface-container text-on-surface-variant font-label-sm text-[10px] font-mono">CA B&amp;P §17537.1 / FL Ch. 559</span>
+</div>
+<p class="font-body-sm text-text-muted mt-0.5">
+                    State disclosure tables updated with mandatory non-earner cohort distribution (including 44.8% inactive representations) for legal consumer protection.
+                  </p>
+</div>
+</div>
+<div class="text-right shrink-0">
+<span class="font-label-sm text-success-base font-bold bg-success-base/10 px-2 py-0.5 rounded inline-block">PASS</span>
+<span class="block text-[11px] font-mono text-text-muted mt-1">Tables Certified</span>
+</div>
+</div>
+<!-- Item 4: 90% Buyback Guarantee -->
+<div class="p-4 flex items-start justify-between gap-4 hover:bg-surface-canvas/40 transition-colors">
+<div class="flex items-start gap-3">
+<div class="w-8 h-8 rounded-full bg-success-base/10 text-success-base flex items-center justify-center shrink-0 mt-0.5">
+<span class="material-symbols-outlined text-[18px]">verified</span>
+</div>
+<div>
+<div class="flex items-center gap-2">
+<h4 class="font-headline-sm text-body-md text-primary font-bold">Wholesale Inventory Buyback 90% Reserve Guarantee</h4>
+<span class="px-1.5 py-0.5 rounded bg-surface-container text-on-surface-variant font-label-sm text-[10px] font-mono">Uniform Sales Practice §4</span>
+</div>
+<p class="font-body-sm text-text-muted mt-0.5">
+                    Escrow reserve verified at 100% required funding for unconsumed distributor inventory return guarantees within 12 months of resignation.
+                  </p>
+</div>
+</div>
+<div class="text-right shrink-0">
+<span class="font-label-sm text-success-base font-bold bg-success-base/10 px-2 py-0.5 rounded inline-block">PASS</span>
+<span class="block text-[11px] font-mono text-text-muted mt-1">$450,000 Reserved</span>
+</div>
+</div>
+<!-- Item 5: Zero-Recruitment Bonus Audit -->
+<div class="p-4 flex items-start justify-between gap-4 hover:bg-surface-canvas/40 transition-colors">
+<div class="flex items-start gap-3">
+<div class="w-8 h-8 rounded-full bg-success-base/10 text-success-base flex items-center justify-center shrink-0 mt-0.5">
+<span class="material-symbols-outlined text-[18px]">verified</span>
+</div>
+<div>
+<div class="flex items-center gap-2">
+<h4 class="font-headline-sm text-body-md text-primary font-bold">Zero-Recruitment Compensation Structure Audit</h4>
+<span class="px-1.5 py-0.5 rounded bg-surface-container text-on-surface-variant font-label-sm text-[10px] font-mono">Burnett-Compliant Matrix</span>
+</div>
+<p class="font-body-sm text-text-muted mt-0.5">
+                    Plan rules verified via symbolic code compilation in SC-04. Absolute absence of sponsorship rewards uncoupled from customer item receipt.
+                  </p>
+</div>
+</div>
+<div class="text-right shrink-0">
+<span class="font-label-sm text-success-base font-bold bg-success-base/10 px-2 py-0.5 rounded inline-block">PASS</span>
+<span class="block text-[11px] font-mono text-text-muted mt-1">Rule Engine Clear</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- RIGHT COLUMN (35% -> 4 of 12 cols in LG) -->
+<div class="lg:col-span-4 space-y-6">
+<!-- Legal Sign-off & Counsel Attestation -->
+<div class="bg-surface-card rounded-xl border border-border-subtle p-space-md shadow-sm relative overflow-hidden">
+<div class="flex items-center justify-between pb-3 border-b border-border-subtle mb-3">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[20px]">assignment_turned_in</span>
+<h3 class="font-headline-sm text-body-md text-primary font-bold">Official Statutory Attestation</h3>
+</div>
+<span class="material-symbols-outlined text-secondary text-[18px]" title="Secured Electronic Signature">lock</span>
+</div>
+<div class="space-y-3 text-body-sm">
+<p class="text-text-muted leading-relaxed">
+              This digital snapshot and its statutory calculations have been verified and sealed for period closing under full external regulatory oversight.
+            </p>
+<div class="p-3 bg-surface-canvas rounded-lg border border-border-subtle space-y-2">
+<div class="flex items-start justify-between gap-2">
+<div>
+<span class="font-label-sm text-text-muted uppercase tracking-wider block text-[10px]">Outside Counsel</span>
+<span class="font-label-md text-primary font-bold">Miller &amp; Hart Regulatory LLP</span>
+</div>
+<span class="px-2 py-0.5 rounded bg-emerald-50 text-success-base font-label-sm font-semibold text-[10px] border border-success-base/20">
+                  COUNSEL SIGNED
+                </span>
+</div>
+<div class="text-[11px] text-text-muted space-y-0.5 font-mono">
+<div>Signer: Jonathan Miller, Esq.</div>
+<div>Signed Date: Nov 28, 2026, 17:42 EST</div>
+<div class="text-[10px] text-text-subtle truncate">Cert ID: MH-2026-NUTR-883921-FTC</div>
+</div>
+</div>
+<div class="p-3 bg-surface-canvas rounded-lg border border-border-subtle space-y-2">
+<div class="flex items-start justify-between gap-2">
+<div>
+<span class="font-label-sm text-text-muted uppercase tracking-wider block text-[10px]">Attesting Officer</span>
+<span class="font-label-md text-primary font-bold">Elena Rostova, CCO</span>
+</div>
+<span class="px-2 py-0.5 rounded bg-emerald-50 text-success-base font-label-sm font-semibold text-[10px] border border-success-base/20">
+                  INTERNAL ATTESTED
+                </span>
+</div>
+<div class="text-[11px] text-text-muted space-y-0.5 font-mono">
+<div>Title: Chief Compliance Officer</div>
+<div>Attestation Date: Nov 30, 2026, 21:15 UTC</div>
+<div class="text-[10px] text-text-subtle truncate">DocuSeal: DS-ACM-202611-CCO-991</div>
+</div>
+</div>
+<div class="pt-2 flex flex-col gap-2">
+<button class="w-full h-9 rounded bg-surface-container-high hover:bg-surface-variant text-primary font-button-text text-button-text flex items-center justify-center gap-1.5 transition-colors border border-border-strong">
+<span class="material-symbols-outlined text-[16px]">verified</span>
+<span>View Full Signature Packet (.PDF)</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Snapshot Archive & Version History -->
+<div class="bg-surface-card rounded-xl border border-border-subtle p-space-md shadow-sm">
+<div class="flex items-center justify-between pb-3 border-b border-border-subtle mb-3">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[20px]">history_edu</span>
+<h3 class="font-headline-sm text-body-md text-primary font-bold">Snapshot Archive &amp; Merkle Chain</h3>
+</div>
+<span class="font-mono text-label-sm text-text-muted">4 Archived</span>
+</div>
+<p class="font-body-sm text-text-muted mb-3">
+            Prior cycle snapshots committed to immutable audit storage with cryptographic root signatures.
+          </p>
+<div class="space-y-2.5">
+<!-- Oct 2026 -->
+<div class="p-2.5 rounded-lg border border-border-subtle hover:bg-surface-canvas transition-colors flex items-center justify-between">
+<div>
+<div class="flex items-center gap-1.5">
+<span class="font-label-md text-primary font-semibold">Oct 2026 Monthly</span>
+<span class="px-1.5 py-0.2 rounded bg-surface-container text-on-surface-variant text-[10px] font-mono font-medium">v1.0</span>
+</div>
+<div class="font-mono text-[10px] text-text-muted">Hash: 0x93bd...c411 · 73.8% Retail</div>
+</div>
+<button class="p-1 rounded hover:bg-surface-container-high text-secondary hover:text-primary transition-colors" title="Download Oct Archive">
+<span class="material-symbols-outlined text-[18px]">download</span>
+</button>
+</div>
+<!-- Sept 2026 -->
+<div class="p-2.5 rounded-lg border border-border-subtle hover:bg-surface-canvas transition-colors flex items-center justify-between">
+<div>
+<div class="flex items-center gap-1.5">
+<span class="font-label-md text-primary font-semibold">Sept 2026 Monthly</span>
+<span class="px-1.5 py-0.2 rounded bg-surface-container text-on-surface-variant text-[10px] font-mono font-medium">v1.0</span>
+</div>
+<div class="font-mono text-[10px] text-text-muted">Hash: 0x4a12...8e29 · 75.1% Retail</div>
+</div>
+<button class="p-1 rounded hover:bg-surface-container-high text-secondary hover:text-primary transition-colors" title="Download Sept Archive">
+<span class="material-symbols-outlined text-[18px]">download</span>
+</button>
+</div>
+<!-- Aug 2026 -->
+<div class="p-2.5 rounded-lg border border-border-subtle hover:bg-surface-canvas transition-colors flex items-center justify-between">
+<div>
+<div class="flex items-center gap-1.5">
+<span class="font-label-md text-primary font-semibold">Aug 2026 Monthly</span>
+<span class="px-1.5 py-0.2 rounded bg-surface-container text-on-surface-variant text-[10px] font-mono font-medium">v1.0</span>
+</div>
+<div class="font-mono text-[10px] text-text-muted">Hash: 0x7c99...31f2 · 72.9% Retail</div>
+</div>
+<button class="p-1 rounded hover:bg-surface-container-high text-secondary hover:text-primary transition-colors" title="Download Aug Archive">
+<span class="material-symbols-outlined text-[18px]">download</span>
+</button>
+</div>
+<!-- July 2026 -->
+<div class="p-2.5 rounded-lg border border-border-subtle hover:bg-surface-canvas transition-colors flex items-center justify-between">
+<div>
+<div class="flex items-center gap-1.5">
+<span class="font-label-md text-primary font-semibold">July 2026 Monthly</span>
+<span class="px-1.5 py-0.2 rounded bg-surface-container text-on-surface-variant text-[10px] font-mono font-medium">v1.0</span>
+</div>
+<div class="font-mono text-[10px] text-text-muted">Hash: 0x1f08...bb44 · 71.4% Retail</div>
+</div>
+<button class="p-1 rounded hover:bg-surface-container-high text-secondary hover:text-primary transition-colors" title="Download July Archive">
+<span class="material-symbols-outlined text-[18px]">download</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Quick Regulatory Shortcuts -->
+<div class="bg-surface-card rounded-xl border border-border-subtle p-space-md shadow-sm">
+<h3 class="font-label-md text-text-muted uppercase tracking-wider text-[11px] mb-3">Statutory Investigation Tools</h3>
+<div class="flex flex-col gap-2">
+<a class="p-2.5 rounded-lg bg-surface-canvas hover:bg-surface-container-high transition-colors flex items-center justify-between group border border-border-subtle" data-path="reports-r1-r5" href="#">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-[18px]">description</span>
+<span class="font-label-md text-primary font-semibold">Open SC-10 Full Report Suite</span>
+</div>
+<span class="material-symbols-outlined text-text-muted text-[16px] group-hover:translate-x-1 transition-transform">arrow_forward</span>
+</a>
+<a class="p-2.5 rounded-lg bg-surface-canvas hover:bg-surface-container-high transition-colors flex items-center justify-between group border border-border-subtle" data-path="reconciliation" href="#">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-[18px]">table_rows</span>
+<span class="font-label-md text-primary font-semibold">Drill-Down to Order Evidence (SC-26)</span>
+</div>
+<span class="material-symbols-outlined text-text-muted text-[16px] group-hover:translate-x-1 transition-transform">arrow_forward</span>
+</a>
+<a class="p-2.5 rounded-lg bg-surface-canvas hover:bg-surface-container-high transition-colors flex items-center justify-between group border border-border-subtle" data-path="integrations-and-health" href="#">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-[18px]">sync_alt</span>
+<span class="font-label-md text-primary font-semibold">Manage Ingestion Mappings (SC-25)</span>
+</div>
+<span class="material-symbols-outlined text-text-muted text-[16px] group-hover:translate-x-1 transition-transform">arrow_forward</span>
+</a>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div></main></div><div id="design-preview-pill" style="position:fixed;left:12px;bottom:12px;z-index:2147483647;display:flex;gap:8px;align-items:center;padding:8px 12px;border-radius:999px;background:#001332;color:#fff;font:600 12px/1.2 Inter,system-ui,sans-serif;box-shadow:0 4px 16px rgba(0,0,0,.25)"><a href="/portal-designs/" style="color:#fff;text-decoration:none">&larr; All designs</a><span style="opacity:.6">|</span><span style="font-weight:500">Design preview &middot; sample data, not the live app</span></div></body></html>

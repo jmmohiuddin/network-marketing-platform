@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+
+<html lang="en"><head><title>SC-01 Periods and runs (analyst home) | PHOYEV portal design preview</title><meta name="robots" content="noindex,nofollow"><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_dashboard" name="shell-type"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Plus+Jakarta+Sans:wght@500;600;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={"darkMode":"class","theme":{"extend":{"colors":{"sso-google-border":"#D8E2FC","on-primary":"#ffffff","on-secondary-fixed":"#001a42","on-tertiary-fixed":"#00174b","secondary-fixed-dim":"#aec6ff","outline-variant":"#c4c6cf","primary":"#001332","success-base":"#16A34A","surface-container":"#f1ecf2","on-primary-fixed-variant":"#31476e","border-strong":"#CBD5E1","error":"#ba1a1a","on-tertiary":"#ffffff","surface-card":"#FFFFFF","on-secondary-container":"#1a4387","error-container":"#ffdad6","inverse-surface":"#313034","on-primary-fixed":"#001b3f","tertiary-fixed":"#dbe1ff","surface-variant":"#e5e1e7","surface":"#fdf8fd","focus-ring":"#3B82F6","on-background":"#1c1b1f","outline":"#74777f","focus-ring-glow":"rgba(59, 130, 246, 0.2)","secondary-fixed":"#d8e2ff","tertiary-container":"#002367","on-surface":"#1c1b1f","tertiary-fixed-dim":"#b4c5ff","error-base":"#DC2626","tertiary":"#00113b","on-tertiary-fixed-variant":"#003ea8","on-secondary":"#ffffff","primary-container":"#0f284e","on-tertiary-container":"#5f8aff","border-subtle":"#E2E7F6","secondary":"#385da2","inverse-on-surface":"#f4eff5","primary-fixed":"#d7e2ff","on-surface-variant":"#44474e","surface-container-high":"#ebe7ec","surface-container-lowest":"#ffffff","on-secondary-fixed-variant":"#1c4589","text-subtle":"#94A3B8","surface-tint":"#495e87","surface-container-low":"#f7f2f8","background":"#fdf8fd","primary-fixed-dim":"#b1c7f6","surface-canvas":"#F8F9FE","on-error-container":"#93000a","secondary-container":"#90b3fe","surface-bright":"#fdf8fd","sso-google-bg":"#F0F4FF","on-error":"#ffffff","inverse-primary":"#b1c7f6","on-primary-container":"#7a90bc","text-muted":"#64748B","surface-dim":"#ddd9de","surface-container-highest":"#e5e1e7"},"borderRadius":{"DEFAULT":"0.25rem","lg":"0.5rem","xl":"0.75rem","full":"9999px"},"spacing":{"space-xl":"2rem","space-lg":"1.5rem","gutter":"1.25rem","margin-desktop":"3rem","margin":"1.5rem","space-2xl":"2.5rem","space-xs":"0.25rem","space-sm":"0.5rem","space-md":"1rem"},"fontFamily":{"headline-xl":["Plus Jakarta Sans"],"headline-xl-mobile":["Plus Jakarta Sans"],"headline-sm":["Plus Jakarta Sans"],"body-lg":["Inter"],"label-md":["Inter"],"button-text":["Plus Jakarta Sans"],"label-sm":["Inter"],"body-md":["Inter"],"body-sm":["Inter"],"headline-lg":["Plus Jakarta Sans"],"eyebrow":["Plus Jakarta Sans"]},"fontSize":{"headline-xl":["32px",{"lineHeight":"40px","letterSpacing":"-0.02em","fontWeight":"700"}],"headline-xl-mobile":["26px",{"lineHeight":"34px","letterSpacing":"-0.015em","fontWeight":"700"}],"headline-sm":["18px",{"lineHeight":"24px","fontWeight":"600"}],"body-lg":["15px",{"lineHeight":"22px","fontWeight":"400"}],"label-md":["13px",{"lineHeight":"18px","letterSpacing":"0.02em","fontWeight":"600"}],"button-text":["14px",{"lineHeight":"20px","letterSpacing":"0.01em","fontWeight":"600"}],"label-sm":["11px",{"lineHeight":"16px","letterSpacing":"0.04em","fontWeight":"600"}],"body-md":["14px",{"lineHeight":"20px","fontWeight":"400"}],"body-sm":["12px",{"lineHeight":"18px","fontWeight":"400"}],"headline-lg":["24px",{"lineHeight":"32px","letterSpacing":"-0.01em","fontWeight":"600"}],"eyebrow":["12px",{"lineHeight":"16px","letterSpacing":"0.08em","fontWeight":"700"}]}}}}</script></head><body class="bg-surface-canvas font-body-md text-on-surface antialiased"><header class="fixed top-0 left-0 right-0 h-12 z-50 bg-surface-card border-b border-border-strong flex items-center justify-between px-space-md shadow-[0_1px_3px_0_rgba(15,40,78,0.04)]"><div class="flex items-center gap-space-sm"><div class="flex items-center gap-1.5 pr-2.5 border-r border-border-strong"><div class="w-6 h-6 rounded bg-primary flex items-center justify-center text-on-primary font-headline-sm text-label-sm font-bold">P</div><span class="font-headline-sm text-body-md font-bold tracking-tight text-primary">Phoyev Portal</span></div><div class="flex items-center gap-1 px-2 py-0.5 rounded bg-surface-container-high border border-border-strong text-on-surface font-label-sm"><span class="material-symbols-outlined text-[13px] text-text-muted">corporate_fare</span><span class="font-semibold">Acme Nutrition Inc.</span></div><button class="flex items-center gap-1 px-1.5 py-0.5 rounded hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface font-label-sm border border-transparent hover:border-border-strong transition-all"><span class="material-symbols-outlined text-[14px]">public</span><span>US — USD ($)</span><span class="material-symbols-outlined text-[14px]">arrow_drop_down</span></button></div><div class="flex-1 max-w-[460px] mx-space-md"><div class="relative flex items-center w-full"><span class="material-symbols-outlined absolute left-2.5 text-text-muted text-[16px]">search</span><input class="w-full h-8 pl-8 pr-12 rounded bg-surface-canvas border border-border-strong font-body-sm text-on-surface placeholder:text-text-muted cursor-pointer hover:border-text-muted focus:outline-none focus:border-focus-ring focus:ring-1 focus:ring-focus-ring" placeholder="Search participant, order, period, rule..." readonly="" type="text"/><div class="absolute right-2 flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-surface-card border border-border-strong font-label-sm text-[10px] text-text-muted">⌘K</div></div></div><div class="flex items-center gap-space-md"><div class="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-surface-card border border-border-strong font-label-sm text-body-sm text-on-surface-variant"><span class="w-2 h-2 rounded-full bg-success-base ring-2 ring-success-base/20 animate-pulse"></span><span>All Systems Operational</span></div><button class="relative p-1 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high rounded transition-all"><span class="material-symbols-outlined text-[18px]">notifications</span><span class="absolute top-0.5 right-0.5 w-2 h-2 bg-error rounded-full ring-2 ring-surface-card"></span></button><a class="flex items-center gap-1 font-label-sm text-body-sm text-on-surface-variant hover:text-primary" href="#"><span class="material-symbols-outlined text-[16px]">help_outline</span><span>Help &amp; Docs</span></a><div class="h-4 w-px bg-border-strong"></div><div class="flex items-center gap-2 pl-0.5"><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center shrink-0"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div><div class="flex flex-col text-left"><span class="font-label-md text-label-sm text-on-surface leading-tight">Sarah Jenkins</span><span class="font-label-sm text-[10px] text-text-muted leading-tight">Commission Analyst / Finance Approver</span></div></div></div></header><aside class="fixed left-0 top-12 bottom-0 w-[208px] bg-surface-card border-r border-border-strong z-40 overflow-y-auto flex flex-col justify-between py-space-sm"><nav class="flex flex-col gap-3 px-2" data-active-classes="bg-primary text-on-primary font-semibold"><div class="flex flex-col gap-0.5"><div class="px-2 py-1 font-eyebrow text-[10px] text-text-muted tracking-wider uppercase">Periods &amp; Runs</div><a aria-current="page" class="flex items-center gap-2 px-2 py-1.5 rounded transition-all bg-primary text-on-primary font-semibold" data-path="periods-and-runs" href="#"><span class="material-symbols-outlined text-[16px]">event_repeat</span><span>Periods &amp; Runs</span><span class="ml-auto text-[10px] text-text-muted font-mono">SC-01</span></a><a class="flex items-center gap-2 px-2 py-1.5 rounded font-label-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="run-review" href="#"><span class="material-symbols-outlined text-[16px]">fact_check</span><span>Run Review</span><span class="ml-auto text-[10px] text-text-muted font-mono">SC-02</span></a><a class="flex items-center gap-2 px-2 py-1.5 rounded font-label-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="late-transactions" href="#"><span class="material-symbols-outlined text-[16px]">history_toggle_off</span><span>Late Transactions</span><span class="ml-auto text-[10px] text-text-muted font-mono">SC-32</span></a></div><div class="flex flex-col gap-0.5"><div class="px-2 py-1 font-eyebrow text-[10px] text-text-muted tracking-wider uppercase">Payouts &amp; Finance</div><a class="flex items-center gap-2 px-2 py-1.5 rounded font-label-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="payout-batches" href="#"><span class="material-symbols-outlined text-[16px]">payments</span><span>Payout Batches</span><span class="ml-auto text-[10px] text-text-muted font-mono">SC-03</span></a><a class="flex items-center gap-2 px-2 py-1.5 rounded font-label-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="ledger-and-accounting" href="#"><span class="material-symbols-outlined text-[16px]">account_balance</span><span>Ledger &amp; Accounting</span><span class="ml-auto text-[10px] text-text-muted font-mono">SC-33</span></a><a class="flex items-center gap-2 px-2 py-1.5 rounded font-label-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="reconciliation" href="#"><span class="material-symbols-outlined text-[16px]">rule</span><span>Reconciliation</span><span class="ml-auto text-[10px] text-text-muted font-mono">SC-34</span></a></div><div class="flex flex-col gap-0.5"><div class="px-2 py-1 font-eyebrow text-[10px] text-text-muted tracking-wider uppercase">Compensation Plans</div><a class="flex items-center gap-2 px-2 py-1.5 rounded font-label-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="plan-versions" href="#"><span class="material-symbols-outlined text-[16px]">schema</span><span>Plan Versions</span><span class="ml-auto text-[10px] text-text-muted font-mono">SC-04</span></a><a class="flex items-center gap-2 px-2 py-1.5 rounded font-label-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="caps-and-pools" href="#"><span class="material-symbols-outlined text-[16px]">toll</span><span>Caps &amp; Pools</span><span class="ml-auto text-[10px] text-text-muted font-mono">SC-05</span></a><a class="flex items-center gap-2 px-2 py-1.5 rounded font-label-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="simulation-and-golden-datasets" href="#"><span class="material-symbols-outlined text-[16px]">science</span><span>Simulation &amp; Golden</span><span class="ml-auto text-[10px] text-text-muted font-mono">SC-42</span></a><a class="flex items-center gap-2 px-2 py-1.5 rounded font-label-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="plan-change-workflow" href="#"><span class="material-symbols-outlined text-[16px]">route</span><span>Plan Change WF</span><span class="ml-auto text-[10px] text-text-muted font-mono">SC-44</span></a></div><div class="flex flex-col gap-0.5"><div class="px-2 py-1 font-eyebrow text-[10px] text-text-muted tracking-wider uppercase">People &amp; Structure</div><a class="flex items-center gap-2 px-2 py-1.5 rounded font-label-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="genealogy-explorer" href="#"><span class="material-symbols-outlined text-[16px]">account_tree</span><span>Genealogy Explorer</span><span class="ml-auto text-[10px] text-text-muted font-mono">SC-07</span></a><a class="flex items-center gap-2 px-2 py-1.5 rounded font-label-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="structure-and-cases" href="#"><span class="material-symbols-outlined text-[16px]">cases</span><span>Structure &amp; Cases</span><span class="ml-auto text-[10px] text-text-muted font-mono">SC-08</span></a><a class="flex items-center gap-2 px-2 py-1.5 rounded font-label-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="participants-360" href="#"><span class="material-symbols-outlined text-[16px]">badge</span><span>Participants 360</span><span class="ml-auto text-[10px] text-text-muted font-mono">SC-09</span></a></div><div class="flex flex-col gap-0.5"><div class="px-2 py-1 font-eyebrow text-[10px] text-text-muted tracking-wider uppercase">Compliance &amp; Audit</div><a class="flex items-center gap-2 px-2 py-1.5 rounded font-label-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="compliance-overview" href="#"><span class="material-symbols-outlined text-[16px]">verified_user</span><span>Compliance Overview</span><span class="ml-auto text-[10px] text-text-muted font-mono">SC-46</span></a><a class="flex items-center gap-2 px-2 py-1.5 rounded font-label-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="reports-r1-r5" href="#"><span class="material-symbols-outlined text-[16px]">description</span><span>Reports R1-R5</span><span class="ml-auto text-[10px] text-text-muted font-mono">SC-10</span></a><a class="flex items-center gap-2 px-2 py-1.5 rounded font-label-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="guardrails-log" href="#"><span class="material-symbols-outlined text-[16px]">shield</span><span>Guardrails Log</span><span class="ml-auto text-[10px] text-text-muted font-mono">SC-11</span></a></div><div class="flex flex-col gap-0.5"><div class="px-2 py-1 font-eyebrow text-[10px] text-text-muted tracking-wider uppercase">Settings</div><a class="flex items-center gap-2 px-2 py-1.5 rounded font-label-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="integrations-and-health" href="#"><span class="material-symbols-outlined text-[16px]">sync_alt</span><span>Integrations &amp; Health</span><span class="ml-auto text-[10px] text-text-muted font-mono">SC-13</span></a><a class="flex items-center gap-2 px-2 py-1.5 rounded font-label-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="users-and-sod-roles" href="#"><span class="material-symbols-outlined text-[16px]">admin_panel_settings</span><span>Users &amp; SoD Roles</span><span class="ml-auto text-[10px] text-text-muted font-mono">SC-28</span></a><a class="flex items-center gap-2 px-2 py-1.5 rounded font-label-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="tenant-settings" href="#"><span class="material-symbols-outlined text-[16px]">tune</span><span>Tenant Settings</span><span class="ml-auto text-[10px] text-text-muted font-mono">SC-29</span></a></div></nav><div class="px-3 pt-3 border-t border-border-strong text-[11px] text-text-muted font-mono flex items-center justify-between"><span>v2.14.0-prod</span><span class="flex items-center gap-1 text-success-base"><span class="w-1.5 h-1.5 rounded-full bg-success-base"></span>SYNC</span></div></aside><div class="pl-[208px]"><main class="pt-12 bg-surface-canvas min-h-screen"><div class="max-w-[1440px] mx-auto px-6 py-6"><div class="flex flex-col w-full">
+<!-- Title, Context Chip & Primary Workflow Actions -->
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-space-md mb-space-lg">
+<div class="flex flex-col gap-1">
+<div class="flex items-center gap-2">
+<h1 class="font-headline-lg text-headline-lg text-primary">Periods and Runs</h1>
+<div class="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-sso-google-bg text-on-secondary-container font-label-sm">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+<span>Operating Calendar 2026</span>
+</div>
+</div>
+<p class="font-body-md text-body-md text-text-muted">
+        Operate commission periods, monitor connector sync lag, and execute calculation runs through the governed lifecycle.
+      </p>
+</div>
+<div class="flex flex-wrap items-center gap-2">
+<a class="flex items-center gap-1 px-3 py-2 rounded bg-surface-container-high hover:bg-surface-container-highest text-on-surface font-button-text text-button-text transition-all" data-path="late-transactions" href="#">
+<span class="material-symbols-outlined text-[16px] text-text-muted">history_toggle_off</span>
+<span>View Late Queue</span>
+<span class="ml-1 px-1.5 py-0.2 rounded-full bg-error-container text-on-error-container font-label-sm">14</span>
+</a>
+<a class="flex items-center gap-1 px-3 py-2 rounded bg-surface-container-high hover:bg-surface-container-highest text-on-surface font-button-text text-button-text transition-all" data-path="payout-batches" href="#">
+<span class="material-symbols-outlined text-[16px] text-text-muted">payments</span>
+<span>Open Payout Batches</span>
+</a>
+<button class="flex items-center gap-1 px-3 py-2 rounded bg-surface-container hover:bg-surface-container-highest text-on-surface font-button-text text-button-text transition-all" id="open-replay-modal">
+<span class="material-symbols-outlined text-[16px] text-text-muted">replay</span>
+<span>Replay Run</span>
+</button>
+<button class="flex items-center gap-1.5 px-4 py-2 rounded bg-primary-container hover:bg-primary text-on-primary font-button-text text-button-text shadow-sm hover:shadow transition-all active:scale-[0.99]" id="calc-run-btn">
+<span class="material-symbols-outlined text-[18px]">play_circle</span>
+<span>Calculate Run</span>
+</button>
+</div>
+</div>
+<!-- Sync Health Banner -->
+<div class="w-full bg-surface-card rounded-lg p-space-md shadow-sm mb-space-lg flex flex-col md:flex-row md:items-center justify-between gap-3">
+<div class="flex items-start md:items-center gap-3">
+<div class="w-8 h-8 rounded bg-success-base/10 text-success-base flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[18px]">cloud_done</span>
+</div>
+<div class="flex flex-col md:flex-row md:items-center gap-1 md:gap-3">
+<div class="font-label-md text-label-md text-on-surface flex items-center gap-1.5">
+<span>Connector Pipeline Integrity</span>
+<span class="inline-block w-1.5 h-1.5 rounded-full bg-success-base"></span>
+</div>
+<div class="font-body-sm text-body-sm text-text-muted flex flex-wrap items-center gap-2">
+<span>Shopify US <strong class="text-on-surface font-semibold font-mono">2m ago · Healthy</strong></span>
+<span class="text-text-subtle">·</span>
+<span>Stripe Payments <strong class="text-on-surface font-semibold font-mono">Synced · Realtime</strong></span>
+<span class="text-text-subtle">·</span>
+<span>ERP Bridge <strong class="text-on-surface font-semibold font-mono">4m ago</strong></span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-2 text-right">
+<span class="font-label-sm text-label-sm text-success-base bg-success-base/10 px-2.5 py-1 rounded">All connectors clean. Safe to calculate.</span>
+<button class="text-text-muted hover:text-on-surface p-1 rounded" title="Refresh sync status">
+<span class="material-symbols-outlined text-[16px]">sync</span>
+</button>
+</div>
+</div>
+<!-- Governed Lifecycle Strip (UI-04 §3.9) -->
+<div class="w-full bg-surface-card rounded-lg p-space-lg shadow-sm mb-space-lg">
+<div class="flex items-center justify-between mb-4">
+<div class="flex items-center gap-2">
+<span class="font-eyebrow text-eyebrow text-text-muted uppercase tracking-wider">Governed Period Lifecycle</span>
+<span class="font-label-sm text-label-sm text-primary font-semibold font-mono">NOV 2026 MONTHLY RUN #3</span>
+</div>
+<span class="font-label-sm text-label-sm text-text-muted">Target Instruct Date: Dec 05, 2026</span>
+</div>
+<!-- Stepper Track -->
+<div class="grid grid-cols-2 md:grid-cols-7 gap-2">
+<!-- Step 1: Open (Past) -->
+<div class="flex flex-col gap-1 p-2 rounded bg-surface-container-low">
+<div class="flex items-center gap-1.5 text-success-base font-label-sm">
+<span class="material-symbols-outlined text-[16px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span class="font-semibold">1. Open</span>
+</div>
+<div class="font-body-sm text-[11px] text-text-muted leading-tight">Oct 01 – Nov 30</div>
+<span class="font-label-sm text-[10px] text-text-subtle uppercase">Settled</span>
+</div>
+<!-- Step 2: Ingestion Cut-off (Done) -->
+<div class="flex flex-col gap-1 p-2 rounded bg-surface-container-low">
+<div class="flex items-center gap-1.5 text-success-base font-label-sm">
+<span class="material-symbols-outlined text-[16px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span class="font-semibold">2. Cut-off</span>
+</div>
+<div class="font-body-sm text-[11px] text-text-muted leading-tight">Nov 30, 23:59 UTC</div>
+<span class="font-label-sm text-[10px] text-text-subtle uppercase">Locked at source</span>
+</div>
+<!-- Step 3: Calculated (Active Step) -->
+<div class="flex flex-col gap-1 p-2 rounded bg-primary text-on-primary shadow-sm ring-1 ring-primary">
+<div class="flex items-center gap-1.5 font-label-sm">
+<span class="material-symbols-outlined text-[16px] text-secondary-fixed">pending_actions</span>
+<span class="font-semibold text-on-primary">3. Calculated</span>
+</div>
+<div class="font-body-sm text-[11px] text-primary-fixed leading-tight">Run completed 14:18</div>
+<span class="font-label-sm text-[10px] text-secondary-fixed-dim uppercase font-semibold">Active State</span>
+</div>
+<!-- Step 4: Run Review -->
+<div class="flex flex-col gap-1 p-2 rounded bg-surface-container">
+<div class="flex items-center gap-1.5 text-on-surface font-label-sm">
+<span class="material-symbols-outlined text-[16px] text-secondary">fact_check</span>
+<span class="font-semibold">4. Run Review</span>
+</div>
+<div class="font-body-sm text-[11px] text-text-muted leading-tight">Pending sign-off</div>
+<span class="font-label-sm text-[10px] text-text-subtle uppercase">Awaiting Action</span>
+</div>
+<!-- Step 5: Committed (Locked) -->
+<div class="flex flex-col gap-1 p-2 rounded bg-surface-container-low opacity-80">
+<div class="flex items-center gap-1.5 text-text-muted font-label-sm">
+<span class="material-symbols-outlined text-[16px]">lock</span>
+<span class="font-semibold">5. Committed</span>
+</div>
+<div class="font-body-sm text-[11px] text-text-muted leading-tight">Dual-key seal</div>
+<span class="font-label-sm text-[10px] text-text-subtle uppercase">Next Stage</span>
+</div>
+<!-- Step 6: Instructed -->
+<div class="flex flex-col gap-1 p-2 rounded bg-surface-container-low opacity-70">
+<div class="flex items-center gap-1.5 text-text-muted font-label-sm">
+<span class="material-symbols-outlined text-[16px]">outbox</span>
+<span class="font-semibold">6. Instructed</span>
+</div>
+<div class="font-body-sm text-[11px] text-text-muted leading-tight">ACH/SEPA export</div>
+<span class="font-label-sm text-[10px] text-text-subtle uppercase">Pending</span>
+</div>
+<!-- Step 7: Paid -->
+<div class="flex flex-col gap-1 p-2 rounded bg-surface-container-low opacity-70">
+<div class="flex items-center gap-1.5 text-text-muted font-label-sm">
+<span class="material-symbols-outlined text-[16px]">verified</span>
+<span class="font-semibold">7. Paid</span>
+</div>
+<div class="font-body-sm text-[11px] text-text-muted leading-tight">Treasury match</div>
+<span class="font-label-sm text-[10px] text-text-subtle uppercase">Terminal</span>
+</div>
+</div>
+</div>
+<!-- KPI Cards (4-across) -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-space-md mb-space-lg">
+<!-- Active Payees -->
+<div class="bg-surface-card rounded-lg p-space-md shadow-sm flex flex-col justify-between">
+<div class="flex items-center justify-between text-text-muted mb-2">
+<span class="font-label-sm text-label-sm uppercase tracking-wider">Active Payees</span>
+<span class="material-symbols-outlined text-[18px]">group</span>
+</div>
+<div>
+<div class="font-headline-xl text-headline-xl text-primary font-mono tracking-tight">14,820</div>
+<div class="flex items-center gap-1 mt-1 font-label-sm text-label-sm text-success-base">
+<span class="material-symbols-outlined text-[14px]">trending_up</span>
+<span>+3.2%</span>
+<span class="text-text-muted font-normal">vs prior period (14,360)</span>
+</div>
+</div>
+<div class="mt-3 pt-2 text-[11px] text-text-muted flex justify-between font-mono">
+<span>Field: 13,910</span>
+<span>Corporate: 910</span>
+</div>
+</div>
+<!-- Total Commission Calculated -->
+<div class="bg-surface-card rounded-lg p-space-md shadow-sm flex flex-col justify-between">
+<div class="flex items-center justify-between text-text-muted mb-2">
+<span class="font-label-sm text-label-sm uppercase tracking-wider">Total Commission</span>
+<span class="material-symbols-outlined text-[18px]">account_balance_wallet</span>
+</div>
+<div>
+<div class="font-headline-xl text-headline-xl text-primary font-mono tracking-tight">$1,842,910.45</div>
+<div class="flex items-center gap-1 mt-1 font-label-sm text-label-sm text-success-base">
+<span class="material-symbols-outlined text-[14px]">arrow_upward</span>
+<span>+1.8%</span>
+<span class="text-text-muted font-normal">vs Oct actuals ($1.81M)</span>
+</div>
+</div>
+<div class="mt-3 pt-2 text-[11px] text-text-muted flex justify-between font-mono">
+<span>Base: $1.41M</span>
+<span>Pools: $432.9K</span>
+</div>
+</div>
+<!-- Inbound Orders Processed -->
+<div class="bg-surface-card rounded-lg p-space-md shadow-sm flex flex-col justify-between">
+<div class="flex items-center justify-between text-text-muted mb-2">
+<span class="font-label-sm text-label-sm uppercase tracking-wider">Inbound Orders Processed</span>
+<span class="material-symbols-outlined text-[18px]">receipt_long</span>
+</div>
+<div>
+<div class="font-headline-xl text-headline-xl text-primary font-mono tracking-tight">142,509</div>
+<div class="flex items-center gap-1 mt-1 font-label-sm text-label-sm text-on-surface-variant">
+<span class="material-symbols-outlined text-[14px] text-secondary">payments</span>
+<span class="font-semibold text-primary font-mono">$11.4M GMV</span>
+<span class="text-text-muted font-normal">in calculation scope</span>
+</div>
+</div>
+<div class="mt-3 pt-2 text-[11px] text-text-muted flex justify-between font-mono">
+<span>0 dropped records</span>
+<span class="text-success-base">100% matched</span>
+</div>
+</div>
+<!-- Unresolved Exceptions -->
+<div class="bg-surface-card rounded-lg p-space-md shadow-sm flex flex-col justify-between">
+<div class="flex items-center justify-between text-text-muted mb-2">
+<span class="font-label-sm text-label-sm uppercase tracking-wider">Unresolved Exceptions</span>
+<span class="material-symbols-outlined text-[18px] text-error">warning</span>
+</div>
+<div>
+<div class="font-headline-xl text-headline-xl text-error font-mono tracking-tight">12</div>
+<div class="flex items-center gap-1 mt-1 font-body-sm text-body-sm text-on-surface">
+<span class="font-semibold text-error">4 late orders</span>
+<span class="text-text-subtle">·</span>
+<span class="text-text-muted">8 missing tax profiles</span>
+</div>
+</div>
+<div class="mt-3 pt-2 text-[11px] flex justify-between items-center">
+<span class="text-text-muted font-mono">Audit severity: Medium</span>
+<a class="text-secondary font-label-sm hover:underline" data-path="late-transactions" href="#">Resolve →</a>
+</div>
+</div>
+</div>
+<!-- Operational Section: Run Stages Breakdown & Table Layout -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-space-lg">
+<!-- Left Column: Master Periods Table (8 cols) -->
+<div class="lg:col-span-8 flex flex-col bg-surface-card rounded-lg shadow-sm">
+<div class="p-space-md flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-surface-card rounded-t-lg">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-[20px]">calendar_view_month</span>
+<span class="font-headline-sm text-headline-sm text-on-surface">Period Management</span>
+</div>
+<div class="flex items-center gap-2">
+<div class="flex items-center gap-1 bg-surface-container px-2 py-1 rounded">
+<span class="font-label-sm text-label-sm text-text-muted">Filter:</span>
+<select class="bg-transparent text-on-surface font-label-sm outline-none cursor-pointer">
+<option>All Calendars (Monthly &amp; Weekly)</option>
+<option>Monthly Only</option>
+<option>Weekly Only</option>
+<option>Committed Only</option>
+</select>
+</div>
+<button class="p-1 rounded hover:bg-surface-container text-text-muted" title="Download CSV ledger export">
+<span class="material-symbols-outlined text-[18px]">download</span>
+</button>
+</div>
+</div>
+<!-- Periods Table (Strict tabular numbers, no standard table borders, subtle rows) -->
+<div class="overflow-x-auto">
+<table class="w-full text-left font-body-sm text-body-sm">
+<thead class="bg-surface-container-low text-text-muted font-label-sm uppercase tracking-wider text-[11px]">
+<tr>
+<th class="py-3 px-4">Period / Calendar</th>
+<th class="py-3 px-3">Date Range</th>
+<th class="py-3 px-3">Status</th>
+<th class="py-3 px-3">Cut-off Time</th>
+<th class="py-3 px-3">Sync Health</th>
+<th class="py-3 px-3 text-right">Last Run Total</th>
+<th class="py-3 px-3 text-right">Variance</th>
+<th class="py-3 px-4 text-right">Action</th>
+</tr>
+</thead>
+<tbody class="divide-none text-on-surface">
+<!-- Row 1: November 2026 Monthly (Active calculated) -->
+<tr class="h-11 bg-sso-google-bg/30 hover:bg-sso-google-bg/60 transition-colors">
+<td class="py-2.5 px-4 font-semibold text-primary">
+<div class="flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-secondary"></span>
+<span>November 2026 Monthly</span>
+</div>
+</td>
+<td class="py-2.5 px-3 text-text-muted font-mono text-[12px]">Nov 01 - Nov 30</td>
+<td class="py-2.5 px-3">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded font-label-sm text-[11px] bg-secondary-fixed text-on-secondary-fixed font-semibold">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+                  Calculated
+                </span>
+</td>
+<td class="py-2.5 px-3 text-text-muted font-mono text-[12px]">Nov 30, 23:59 UTC</td>
+<td class="py-2.5 px-3">
+<div class="flex items-center gap-1 text-success-base text-[11px]">
+<span class="material-symbols-outlined text-[14px]">check_circle</span>
+<span>100% Synced</span>
+</div>
+</td>
+<td class="py-2.5 px-3 text-right font-mono font-semibold text-primary">$1,842,910.45</td>
+<td class="py-2.5 px-3 text-right font-mono text-success-base font-semibold">+1.8%</td>
+<td class="py-2.5 px-4 text-right">
+<a class="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-primary text-on-primary hover:bg-primary-container font-label-sm text-[12px] transition-all" data-path="run-review" href="#">
+<span>Review Run</span>
+<span class="material-symbols-outlined text-[14px]">arrow_forward</span>
+</a>
+</td>
+</tr>
+<!-- Row 2: Week 48 (2026) Weekly -->
+<tr class="h-11 hover:bg-surface-container-low transition-colors">
+<td class="py-2.5 px-4 font-medium text-on-surface">Week 48 (2026) Weekly</td>
+<td class="py-2.5 px-3 text-text-muted font-mono text-[12px]">Nov 24 - Nov 30</td>
+<td class="py-2.5 px-3">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded font-label-sm text-[11px] bg-surface-container-high text-on-surface-variant font-medium">
+<span class="material-symbols-outlined text-[12px]">lock</span>
+                  Committed
+                </span>
+</td>
+<td class="py-2.5 px-3 text-text-muted font-mono text-[12px]">Nov 30, 23:59 UTC</td>
+<td class="py-2.5 px-3">
+<div class="flex items-center gap-1 text-text-muted text-[11px]">
+<span class="material-symbols-outlined text-[14px]">inventory_2</span>
+<span>Archived</span>
+</div>
+</td>
+<td class="py-2.5 px-3 text-right font-mono text-on-surface">$312,410.00</td>
+<td class="py-2.5 px-3 text-right font-mono text-text-muted">0.0%</td>
+<td class="py-2.5 px-4 text-right">
+<button class="inline-flex items-center gap-1 px-2 py-1 rounded hover:bg-surface-container text-text-muted hover:text-on-surface font-label-sm text-[12px]">
+<span>View Run</span>
+</button>
+</td>
+</tr>
+<!-- Row 3: Week 47 (2026) Weekly -->
+<tr class="h-11 hover:bg-surface-container-low transition-colors">
+<td class="py-2.5 px-4 font-medium text-on-surface">Week 47 (2026) Weekly</td>
+<td class="py-2.5 px-3 text-text-muted font-mono text-[12px]">Nov 17 - Nov 23</td>
+<td class="py-2.5 px-3">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded font-label-sm text-[11px] bg-surface-container-high text-on-surface-variant font-medium">
+<span class="material-symbols-outlined text-[12px]">lock</span>
+                  Committed
+                </span>
+</td>
+<td class="py-2.5 px-3 text-text-muted font-mono text-[12px]">Nov 23, 23:59 UTC</td>
+<td class="py-2.5 px-3">
+<div class="flex items-center gap-1 text-text-muted text-[11px]">
+<span class="material-symbols-outlined text-[14px]">inventory_2</span>
+<span>Archived</span>
+</div>
+</td>
+<td class="py-2.5 px-3 text-right font-mono text-on-surface">$298,120.10</td>
+<td class="py-2.5 px-3 text-right font-mono text-text-muted">-0.4%</td>
+<td class="py-2.5 px-4 text-right">
+<button class="inline-flex items-center gap-1 px-2 py-1 rounded hover:bg-surface-container text-text-muted hover:text-on-surface font-label-sm text-[12px]">
+<span>View Run</span>
+</button>
+</td>
+</tr>
+<!-- Row 4: October 2026 Monthly -->
+<tr class="h-11 hover:bg-surface-container-low transition-colors">
+<td class="py-2.5 px-4 font-medium text-on-surface">October 2026 Monthly</td>
+<td class="py-2.5 px-3 text-text-muted font-mono text-[12px]">Oct 01 - Oct 31</td>
+<td class="py-2.5 px-3">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded font-label-sm text-[11px] bg-surface-container-high text-on-surface-variant font-medium">
+<span class="material-symbols-outlined text-[12px]">lock</span>
+                  Committed
+                </span>
+</td>
+<td class="py-2.5 px-3 text-text-muted font-mono text-[12px]">Oct 31, 23:59 UTC</td>
+<td class="py-2.5 px-3">
+<div class="flex items-center gap-1 text-text-muted text-[11px]">
+<span class="material-symbols-outlined text-[14px]">verified</span>
+<span>Paid / Reconciled</span>
+</div>
+</td>
+<td class="py-2.5 px-3 text-right font-mono text-on-surface">$1,810,240.00</td>
+<td class="py-2.5 px-3 text-right font-mono text-text-muted">+2.1%</td>
+<td class="py-2.5 px-4 text-right">
+<button class="inline-flex items-center gap-1 px-2 py-1 rounded hover:bg-surface-container text-secondary font-label-sm text-[12px]">
+<span>Request Restatement</span>
+</button>
+</td>
+</tr>
+<!-- Row 5: December 2026 Monthly -->
+<tr class="h-11 hover:bg-surface-container-low transition-colors">
+<td class="py-2.5 px-4 font-medium text-on-surface">December 2026 Monthly</td>
+<td class="py-2.5 px-3 text-text-muted font-mono text-[12px]">Dec 01 - Dec 31</td>
+<td class="py-2.5 px-3">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded font-label-sm text-[11px] bg-success-base/10 text-success-base font-semibold">
+<span class="w-1.5 h-1.5 rounded-full bg-success-base animate-pulse"></span>
+                  Open
+                </span>
+</td>
+<td class="py-2.5 px-3 text-text-muted font-mono text-[12px]">In 19 days</td>
+<td class="py-2.5 px-3">
+<div class="flex items-center gap-1 text-secondary text-[11px] font-semibold">
+<span class="material-symbols-outlined text-[14px]">sync</span>
+<span>Sync Live</span>
+</div>
+</td>
+<td class="py-2.5 px-3 text-right font-mono text-text-subtle">—</td>
+<td class="py-2.5 px-3 text-right font-mono text-text-subtle">—</td>
+<td class="py-2.5 px-4 text-right">
+<button class="inline-flex items-center gap-1 px-2 py-1 rounded hover:bg-surface-container text-text-muted hover:text-on-surface font-label-sm text-[12px]">
+<span>Configure</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="p-space-md bg-surface-card rounded-b-lg flex flex-col sm:flex-row items-center justify-between text-[12px] text-text-muted gap-2">
+<div class="font-mono">Showing 5 of 24 operating periods (Calendar Year 2026)</div>
+<div class="flex items-center gap-1">
+<button class="px-2 py-1 rounded bg-surface-container text-text-muted" disabled="">Previous</button>
+<button class="px-2 py-1 rounded bg-primary text-on-primary font-bold">1</button>
+<button class="px-2 py-1 rounded hover:bg-surface-container text-on-surface">2</button>
+<button class="px-2 py-1 rounded hover:bg-surface-container text-on-surface">3</button>
+<button class="px-2 py-1 rounded hover:bg-surface-container text-on-surface">Next</button>
+</div>
+</div>
+</div>
+<!-- Right Column: Current Run Execution Stages & Audit Trace (4 cols) -->
+<div class="lg:col-span-4 flex flex-col gap-space-md">
+<!-- Current Run Calculation Stages -->
+<div class="bg-surface-card rounded-lg p-space-md shadow-sm">
+<div class="flex items-center justify-between mb-3 pb-2 bg-surface-card">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-[18px]">account_tree</span>
+<span class="font-headline-sm text-label-md text-primary font-bold uppercase tracking-wider">Run Stages Breakdown</span>
+</div>
+<span class="font-label-sm text-label-sm text-success-base bg-success-base/10 px-2 py-0.5 rounded font-mono">100% COMPLETE</span>
+</div>
+<p class="font-body-sm text-body-sm text-text-muted mb-4">
+          November 2026 Monthly · Run ID: <span class="font-mono text-on-surface font-semibold">RUN-202611-3</span>
+</p>
+<div class="space-y-4">
+<!-- Stage 1 -->
+<div class="flex flex-col gap-1.5 p-2.5 rounded bg-surface-container-low">
+<div class="flex items-center justify-between text-[12px]">
+<span class="font-label-md text-on-surface font-semibold">Stage 1: Order Ingestion &amp; Qualifying</span>
+<span class="font-mono text-success-base font-bold">100%</span>
+</div>
+<div class="w-full bg-surface-container h-1.5 rounded-full overflow-hidden">
+<div class="bg-success-base h-full rounded-full" style="width: 100%;"></div>
+</div>
+<div class="flex items-center justify-between text-[11px] text-text-muted font-mono">
+<span>142,509 orders ingested</span>
+<span>12.4s elapsed</span>
+</div>
+</div>
+<!-- Stage 2 -->
+<div class="flex flex-col gap-1.5 p-2.5 rounded bg-surface-container-low">
+<div class="flex items-center justify-between text-[12px]">
+<span class="font-label-md text-on-surface font-semibold">Stage 2: Rank &amp; Title Evaluation</span>
+<span class="font-mono text-success-base font-bold">100%</span>
+</div>
+<div class="w-full bg-surface-container h-1.5 rounded-full overflow-hidden">
+<div class="bg-success-base h-full rounded-full" style="width: 100%;"></div>
+</div>
+<div class="flex items-center justify-between text-[11px] text-text-muted font-mono">
+<span>14,820 entities evaluated</span>
+<span>8.9s elapsed</span>
+</div>
+</div>
+<!-- Stage 3 -->
+<div class="flex flex-col gap-1.5 p-2.5 rounded bg-surface-container-low">
+<div class="flex items-center justify-between text-[12px]">
+<span class="font-label-md text-on-surface font-semibold">Stage 3: Multi-Level Bonus Ladders</span>
+<span class="font-mono text-success-base font-bold">100%</span>
+</div>
+<div class="w-full bg-surface-container h-1.5 rounded-full overflow-hidden">
+<div class="bg-success-base h-full rounded-full" style="width: 100%;"></div>
+</div>
+<div class="flex items-center justify-between text-[11px] text-text-muted font-mono">
+<span>584,102 legs calculated</span>
+<span>24.1s elapsed</span>
+</div>
+</div>
+<!-- Stage 4 -->
+<div class="flex flex-col gap-1.5 p-2.5 rounded bg-surface-container-low">
+<div class="flex items-center justify-between text-[12px]">
+<span class="font-label-md text-on-surface font-semibold">Stage 4: Cap &amp; Pool Limits Applied</span>
+<span class="font-mono text-success-base font-bold">100%</span>
+</div>
+<div class="w-full bg-surface-container h-1.5 rounded-full overflow-hidden">
+<div class="bg-success-base h-full rounded-full" style="width: 100%;"></div>
+</div>
+<div class="flex items-center justify-between text-[11px] text-text-muted font-mono">
+<span>4 global pools capped</span>
+<span>3.2s elapsed</span>
+</div>
+</div>
+</div>
+<div class="mt-4 pt-3 flex items-center justify-between font-label-sm text-[12px]">
+<span class="text-text-muted">Total execution time: <strong class="text-on-surface font-mono">48.6s</strong></span>
+<a class="text-secondary font-semibold hover:underline" data-path="run-review" href="#">Full Trace →</a>
+</div>
+</div>
+<!-- Quick Action / Guardrail Checklist Note -->
+<div class="bg-surface-card rounded-lg p-space-md shadow-sm">
+<div class="flex items-center gap-2 mb-2">
+<span class="material-symbols-outlined text-[18px] text-primary">verified_user</span>
+<span class="font-label-md text-label-md text-primary font-semibold">Pre-Flight Review Guardrails</span>
+</div>
+<p class="font-body-sm text-body-sm text-text-muted mb-3">
+          All system guardrails passed cleanly. Finance reviewer Sarah Jenkins is currently assigned to dual-key signoff.
+        </p>
+<ul class="text-[12px] space-y-2 text-on-surface">
+<li class="flex items-center gap-2">
+<span class="material-symbols-outlined text-success-base text-[16px]">check_circle</span>
+<span>Zero orphan lineage IDs detected</span>
+</li>
+<li class="flex items-center gap-2">
+<span class="material-symbols-outlined text-success-base text-[16px]">check_circle</span>
+<span>All pool percentages sum exactly to 100%</span>
+</li>
+<li class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-[16px]">info</span>
+<span>14 late transactions queued for next cycle</span>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<!-- Replay / Recalculation Drawer Modal (Interactive component via inline JS) -->
+<div class="fixed inset-0 z-50 bg-inverse-surface/40 backdrop-blur-sm hidden flex items-center justify-center p-4" id="replay-modal">
+<div class="bg-surface-card rounded-xl max-w-lg w-full p-space-xl shadow-xl flex flex-col gap-4">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[24px]">replay</span>
+<h2 class="font-headline-sm text-headline-sm text-primary">Replay Commission Run</h2>
+</div>
+<button class="text-text-muted hover:text-on-surface p-1 rounded" id="close-replay-modal">
+<span class="material-symbols-outlined text-[20px]">close</span>
+</button>
+</div>
+<p class="font-body-md text-body-md text-text-muted">
+        Executing a replay will recalculate the targeted period using updated genealogy or late transaction inclusions. A new immutable snapshot hash will be generated.
+      </p>
+<div class="flex flex-col gap-3">
+<div>
+<label class="font-label-sm text-label-sm text-on-surface mb-1 block">Target Operating Period</label>
+<div class="p-2.5 rounded bg-surface-container font-label-md text-primary font-semibold">
+            November 2026 Monthly (Active Calculated)
+          </div>
+</div>
+<div>
+<label class="font-label-sm text-label-sm text-on-surface mb-1 block">Replay Mode</label>
+<div class="grid grid-cols-2 gap-2">
+<label class="p-3 rounded bg-surface-container flex flex-col gap-1 cursor-pointer hover:bg-surface-container-high">
+<input checked="" class="accent-primary" name="replay_mode" type="radio"/>
+<span class="font-label-md text-primary font-bold">Standard Replay</span>
+<span class="font-body-sm text-[11px] text-text-muted">Includes settled + verified late orders</span>
+</label>
+<label class="p-3 rounded bg-surface-container flex flex-col gap-1 cursor-pointer hover:bg-surface-container-high">
+<input class="accent-primary" name="replay_mode" type="radio"/>
+<span class="font-label-md text-primary font-bold">Shadow Run</span>
+<span class="font-body-sm text-[11px] text-text-muted">Runs simulation without touching ledger</span>
+</label>
+</div>
+</div>
+<div class="p-3 rounded bg-sso-google-bg text-on-secondary-container font-body-sm text-[12px] flex items-start gap-2">
+<span class="material-symbols-outlined text-[16px] mt-0.5">lock_clock</span>
+<span>Dual-key validation required: Sarah Jenkins (Commission Analyst). Notification will be routed to VP Finance once execution finishes.</span>
+</div>
+</div>
+<div class="flex items-center justify-end gap-2 pt-2">
+<button class="px-4 py-2 rounded bg-surface-container hover:bg-surface-container-high text-on-surface font-button-text text-button-text" id="cancel-replay-btn">
+          Cancel
+        </button>
+<button class="flex items-center gap-1.5 px-4 py-2 rounded bg-primary text-on-primary hover:bg-primary-container font-button-text text-button-text transition-all" id="execute-replay-btn">
+<span class="material-symbols-outlined text-[16px]">sync</span>
+<span>Start Execution</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Interactive Feedback Overlay / Notification Toast -->
+<div class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none" id="toast-notification">
+<div class="bg-primary text-on-primary px-4 py-3 rounded-lg shadow-xl flex items-center gap-3">
+<span class="material-symbols-outlined text-success-base text-[20px]">check_circle</span>
+<div class="flex flex-col">
+<span class="font-label-md text-label-md text-on-primary font-semibold" id="toast-title">Calculation Triggered</span>
+<span class="font-body-sm text-body-sm text-primary-fixed" id="toast-body">Pipeline running across 14,820 entities.</span>
+</div>
+</div>
+</div>
+</div>
+<script>
+  (function initPeriodsView() {
+    const replayModal = document.getElementById('replay-modal');
+    const openReplayBtn = document.getElementById('open-replay-modal');
+    const closeReplayBtn = document.getElementById('close-replay-modal');
+    const cancelReplayBtn = document.getElementById('cancel-replay-btn');
+    const executeReplayBtn = document.getElementById('execute-replay-btn');
+    const calcRunBtn = document.getElementById('calc-run-btn');
+    const toast = document.getElementById('toast-notification');
+    const toastTitle = document.getElementById('toast-title');
+    const toastBody = document.getElementById('toast-body');
+
+    function showToast(title, message) {
+      if (!toast) return;
+      toastTitle.textContent = title;
+      toastBody.textContent = message;
+      toast.classList.remove('translate-y-20', 'opacity-0', 'pointer-events-none');
+      setTimeout(() => {
+        toast.classList.add('translate-y-20', 'opacity-0', 'pointer-events-none');
+      }, 3500);
+    }
+
+    if (openReplayBtn && replayModal) {
+      openReplayBtn.addEventListener('click', () => {
+        replayModal.classList.remove('hidden');
+      });
+    }
+
+    const closeModal = () => {
+      if (replayModal) replayModal.classList.add('hidden');
+    };
+
+    if (closeReplayBtn) closeReplayBtn.addEventListener('click', closeModal);
+    if (cancelReplayBtn) cancelReplayBtn.addEventListener('click', closeModal);
+
+    if (executeReplayBtn) {
+      executeReplayBtn.addEventListener('click', () => {
+        closeModal();
+        showToast('Replay Initiated', 'November 2026 Monthly replay run started in background worker.');
+      });
+    }
+
+    if (calcRunBtn) {
+      calcRunBtn.addEventListener('click', () => {
+        showToast('Calculation Triggered', 'Pipeline started. Verifying upstream cut-off and connector health.');
+      });
+    }
+  })();
+</script></div></main></div><div id="design-preview-pill" style="position:fixed;left:12px;bottom:12px;z-index:2147483647;display:flex;gap:8px;align-items:center;padding:8px 12px;border-radius:999px;background:#001332;color:#fff;font:600 12px/1.2 Inter,system-ui,sans-serif;box-shadow:0 4px 16px rgba(0,0,0,.25)"><a href="/portal-designs/" style="color:#fff;text-decoration:none">&larr; All designs</a><span style="opacity:.6">|</span><span style="font-weight:500">Design preview &middot; sample data, not the live app</span></div></body></html>

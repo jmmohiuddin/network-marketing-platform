@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+
+<html lang="en"><head><title>SC-42 Simulation results and golden datasets | PHOYEV portal design preview</title><meta name="robots" content="noindex,nofollow"><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_dashboard" name="shell-type"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Plus+Jakarta+Sans:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{colors:{"on-secondary-fixed-variant":"#1c4589","surface-container-lowest":"#ffffff","surface-card":"#FFFFFF","surface-dim":"#ddd9de","surface-container":"#f1ecf2","border-strong":"#CBD5E1","secondary-container":"#90b3fe","primary":"#001332","tertiary-container":"#002367","inverse-primary":"#b1c7f6","error":"#ba1a1a","surface":"#fdf8fd","surface-container-high":"#ebe7ec","tertiary-fixed-dim":"#b4c5ff","surface-container-highest":"#e5e1e7","sso-google-bg":"#F0F4FF","on-secondary":"#ffffff","outline-variant":"#c4c6cf","tertiary-fixed":"#dbe1ff","on-tertiary-fixed-variant":"#003ea8","on-primary":"#ffffff","tertiary":"#00113b","sso-google-border":"#D8E2FC","on-tertiary-container":"#5f8aff","primary-container":"#0f284e","error-container":"#ffdad6","on-tertiary":"#ffffff","on-error-container":"#93000a","secondary":"#385da2","on-error":"#ffffff","inverse-surface":"#313034","surface-tint":"#495e87","on-secondary-container":"#1a4387","secondary-fixed":"#d8e2ff","on-primary-fixed":"#001b3f","surface-canvas":"#F8F9FE","outline":"#74777f","on-background":"#1c1b1f","surface-variant":"#e5e1e7","background":"#fdf8fd","secondary-fixed-dim":"#aec6ff","on-primary-container":"#7a90bc","on-secondary-fixed":"#001a42","success-base":"#16A34A","primary-fixed-dim":"#b1c7f6","focus-ring":"#3B82F6","error-base":"#DC2626","primary-fixed":"#d7e2ff","inverse-on-surface":"#f4eff5","text-muted":"#64748B","border-subtle":"#E2E7F6","on-tertiary-fixed":"#00174b","on-surface":"#1c1b1f","surface-bright":"#fdf8fd","on-surface-variant":"#44474e","surface-container-low":"#f7f2f8","on-primary-fixed-variant":"#31476e","text-subtle":"#94A3B8","focus-ring-glow":"rgba(59, 130, 246, 0.2)"},borderRadius:{"DEFAULT":"0.25rem","lg":"0.5rem","xl":"0.75rem","full":"9999px"},spacing:{"space-md":"1rem","space-xs":"0.25rem","space-2xl":"2.5rem","space-lg":"1.5rem","space-xl":"2rem","margin-desktop":"3rem","space-sm":"0.5rem","gutter":"1.25rem","margin":"1.5rem"},fontFamily:{"label-md":["Inter"],"eyebrow":["Plus Jakarta Sans"],"body-sm":["Inter"],"body-md":["Inter"],"label-sm":["Inter"],"headline-xl-mobile":["Plus Jakarta Sans"],"headline-xl":["Plus Jakarta Sans"],"headline-sm":["Plus Jakarta Sans"],"button-text":["Plus Jakarta Sans"],"headline-lg":["Plus Jakarta Sans"],"body-lg":["Inter"]},fontSize:{"label-md":["13px",{lineHeight:"18px",letterSpacing:"0.02em",fontWeight:"600"}],"eyebrow":["12px",{lineHeight:"16px",letterSpacing:"0.08em",fontWeight:"700"}],"body-sm":["12px",{lineHeight:"18px",fontWeight:"400"}],"body-md":["14px",{lineHeight:"20px",fontWeight:"400"}],"label-sm":["11px",{lineHeight:"16px",letterSpacing:"0.04em",fontWeight:"600"}],"headline-xl-mobile":["26px",{lineHeight:"34px",letterSpacing:"-0.015em",fontWeight:"700"}],"headline-xl":["32px",{lineHeight:"40px",letterSpacing:"-0.02em",fontWeight:"700"}],"headline-sm":["18px",{lineHeight:"24px",fontWeight:"600"}],"button-text":["14px",{lineHeight:"20px",letterSpacing:"0.01em",fontWeight:"600"}],"headline-lg":["24px",{lineHeight:"32px",letterSpacing:"-0.01em",fontWeight:"600"}],"body-lg":["15px",{lineHeight:"22px",fontWeight:"400"}]}}}}</script></head><body class="bg-surface-canvas font-body-md text-on-surface antialiased"><header class="fixed top-0 left-0 right-0 h-16 bg-surface-container-lowest/90 backdrop-blur-xl z-50 shadow-[0_1px_8px_rgba(15,40,78,0.04)]"><div class="h-16 w-full px-space-lg flex items-center justify-between gap-space-md"><div class="flex items-center gap-space-lg"><div class="flex items-center gap-space-sm"><div class="w-8 h-8 rounded-lg bg-primary-container flex items-center justify-center text-on-primary font-headline-sm font-bold">P</div><span class="font-headline-sm text-primary font-bold tracking-tight">Phoyev</span></div><div class="h-6 w-[1px] bg-border-subtle"></div><div class="flex items-center gap-space-xs bg-surface-container px-space-sm py-1.5 rounded-lg cursor-pointer hover:bg-surface-container-high transition-colors"><span class="material-symbols-outlined text-secondary text-[18px]">store</span><span class="font-label-md text-on-surface">Acme Nutrition Inc.</span><span class="material-symbols-outlined text-outline text-[16px]">unfold_more</span></div><div class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-surface-container-low"><span class="w-2 h-2 rounded-full bg-success-base"></span><span class="font-label-sm text-on-surface-variant uppercase tracking-wider">Production Live</span></div></div><div class="flex items-center gap-space-md flex-1 max-w-lg mx-space-md"><div class="relative w-full"><span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[18px]">search</span><input class="w-full h-9 pl-9 pr-14 bg-surface-container rounded-lg font-body-sm text-on-surface placeholder:text-text-subtle focus:bg-surface-card focus:outline-none focus:ring-1 focus:ring-focus-ring transition-all" placeholder="Search staff, periods, entities, or rules..." type="text"/><kbd class="absolute right-2.5 top-1/2 -translate-y-1/2 font-label-sm text-text-muted bg-surface-card px-1.5 py-0.5 rounded shadow-[0_1px_2px_rgba(0,0,0,0.06)] border border-border-subtle">⌘K</kbd></div></div><div class="flex items-center gap-space-md"><button class="w-8 h-8 rounded-lg flex items-center justify-center text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" title="Documentation &amp; Help" type="button"><span class="material-symbols-outlined text-[20px]">help_outline</span></button><button class="w-8 h-8 rounded-lg flex items-center justify-center text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors relative" title="Notifications" type="button"><span class="material-symbols-outlined text-[20px]">notifications</span><span class="absolute top-1.5 right-1.5 w-2 h-2 bg-error rounded-full"></span></button><div class="h-6 w-[1px] bg-border-subtle"></div><div class="flex items-center gap-space-sm pl-space-xs"><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div><div class="hidden xl:flex flex-col text-left"><span class="font-label-md text-on-surface leading-tight">Sarah Jenkins</span><span class="font-label-sm text-text-muted leading-tight">Senior Staff Admin</span></div><span class="material-symbols-outlined text-outline text-[16px]">expand_more</span></div></div></div></header><aside class="fixed left-0 top-16 bottom-0 w-64 bg-surface-container-lowest z-40 overflow-y-auto shadow-[0_1px_8px_rgba(15,40,78,0.04)] py-space-md"><nav class="px-space-sm space-y-space-md" data-active-classes="bg-primary-container text-on-primary-container font-semibold rounded-lg"><div class="space-y-1"><div class="px-3 py-1 font-eyebrow text-text-subtle uppercase text-[10px] tracking-wider">Periods &amp; Runs</div><a class="flex items-center gap-space-sm px-3 py-2 rounded-lg font-body-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="sc-01-pay-period-control" href="#"><span class="material-symbols-outlined text-[18px]">schedule</span><span>Period Control</span></a><a class="flex items-center gap-space-sm px-3 py-2 rounded-lg font-body-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="sc-02-run-execution-pipeline" href="#"><span class="material-symbols-outlined text-[18px]">play_circle</span><span>Run Pipeline</span></a><a class="flex items-center gap-space-sm px-3 py-2 rounded-lg font-body-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="sc-32-calculation-trace-inspector" href="#"><span class="material-symbols-outlined text-[18px]">troubleshoot</span><span>Calculation Trace</span></a></div><div class="space-y-1"><div class="px-3 py-1 font-eyebrow text-text-subtle uppercase text-[10px] tracking-wider">Payouts &amp; Finance</div><a class="flex items-center gap-space-sm px-3 py-2 rounded-lg font-body-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="sc-03-payout-ledger-review" href="#"><span class="material-symbols-outlined text-[18px]">receipt_long</span><span>Payout Ledger</span></a><a class="flex items-center gap-space-sm px-3 py-2 rounded-lg font-body-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="sc-33-disbursement-batches" href="#"><span class="material-symbols-outlined text-[18px]">payments</span><span>Disbursement Batches</span></a><a class="flex items-center gap-space-sm px-3 py-2 rounded-lg font-body-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="sc-34-clawback-retro-adjustments" href="#"><span class="material-symbols-outlined text-[18px]">history_toggle_off</span><span>Clawbacks &amp; Adjustments</span></a></div><div class="space-y-1"><div class="px-3 py-1 font-eyebrow text-text-subtle uppercase text-[10px] tracking-wider">Compensation Plans</div><a class="flex items-center gap-space-sm px-3 py-2 rounded-lg font-body-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="sc-04-plan-architecture-rules" href="#"><span class="material-symbols-outlined text-[18px]">account_tree</span><span>Plan Architecture</span></a><a class="flex items-center gap-space-sm px-3 py-2 rounded-lg font-body-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="sc-05-tier-rate-matrix" href="#"><span class="material-symbols-outlined text-[18px]">grid_view</span><span>Tier &amp; Rate Matrix</span></a><a aria-current="page" class="flex items-center gap-space-sm px-3 py-2 transition-colors bg-primary-container text-on-primary-container font-semibold rounded-lg" data-path="sc-42-bonus-accelerators" href="#"><span class="material-symbols-outlined text-[18px]">speed</span><span>Bonus Accelerators</span></a><a class="flex items-center gap-space-sm px-3 py-2 rounded-lg font-body-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="sc-44-quota-modeling-sandbox" href="#"><span class="material-symbols-outlined text-[18px]">science</span><span>Quota Sandbox</span></a></div><div class="space-y-1"><div class="px-3 py-1 font-eyebrow text-text-subtle uppercase text-[10px] tracking-wider">People &amp; Structure</div><a class="flex items-center gap-space-sm px-3 py-2 rounded-lg font-body-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="sc-07-sales-roster-directory" href="#"><span class="material-symbols-outlined text-[18px]">groups</span><span>Roster Directory</span></a><a class="flex items-center gap-space-sm px-3 py-2 rounded-lg font-body-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="sc-08-hierarchy-territory-map" href="#"><span class="material-symbols-outlined text-[18px]">schema</span><span>Hierarchy &amp; Terr.</span></a><a class="flex items-center gap-space-sm px-3 py-2 rounded-lg font-body-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="sc-09-plan-assignments" href="#"><span class="material-symbols-outlined text-[18px]">assignment_ind</span><span>Plan Assignments</span></a><a class="flex items-center gap-space-sm px-3 py-2 rounded-lg font-body-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="sc-43-crediting-splits-overrides" href="#"><span class="material-symbols-outlined text-[18px]">call_split</span><span>Splits &amp; Overrides</span></a></div><div class="space-y-1"><div class="px-3 py-1 font-eyebrow text-text-subtle uppercase text-[10px] tracking-wider">Compliance &amp; Audit</div><a class="flex items-center gap-space-sm px-3 py-2 rounded-lg font-body-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="sc-46-sox-compliance-dashboard" href="#"><span class="material-symbols-outlined text-[18px]">verified_user</span><span>SOX Compliance</span></a><a class="flex items-center gap-space-sm px-3 py-2 rounded-lg font-body-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="sc-10-audit-event-log" href="#"><span class="material-symbols-outlined text-[18px]">list_alt</span><span>Audit Event Log</span></a><a class="flex items-center gap-space-sm px-3 py-2 rounded-lg font-body-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="sc-26-dispute-resolution" href="#"><span class="material-symbols-outlined text-[18px]">gavel</span><span>Dispute Resolution</span></a><a class="flex items-center gap-space-sm px-3 py-2 rounded-lg font-body-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="sc-11-approval-workflows" href="#"><span class="material-symbols-outlined text-[18px]">fact_check</span><span>Approval Matrix</span></a><a class="flex items-center gap-space-sm px-3 py-2 rounded-lg font-body-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="sc-35-data-freeze-signoffs" href="#"><span class="material-symbols-outlined text-[18px]">lock_clock</span><span>Freeze Sign-offs</span></a></div><div class="space-y-1"><div class="px-3 py-1 font-eyebrow text-text-subtle uppercase text-[10px] tracking-wider">Settings &amp; Operations</div><a class="flex items-center gap-space-sm px-3 py-2 rounded-lg font-body-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="sc-24-integration-connectors" href="#"><span class="material-symbols-outlined text-[18px]">sync_alt</span><span>Data Connectors</span></a><a class="flex items-center gap-space-sm px-3 py-2 rounded-lg font-body-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="sc-25-tenant-configuration" href="#"><span class="material-symbols-outlined text-[18px]">tune</span><span>Tenant Config</span></a><a class="flex items-center gap-space-sm px-3 py-2 rounded-lg font-body-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="sc-13-staff-roles-permissions" href="#"><span class="material-symbols-outlined text-[18px]">shield_person</span><span>Roles &amp; Access</span></a><a class="flex items-center gap-space-sm px-3 py-2 rounded-lg font-body-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="sc-16-job-scheduler-health" href="#"><span class="material-symbols-outlined text-[18px]">monitor_heart</span><span>Scheduler Health</span></a><a class="flex items-center gap-space-sm px-3 py-2 rounded-lg font-body-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="sc-17-api-keys-webhooks" href="#"><span class="material-symbols-outlined text-[18px]">webhook</span><span>API &amp; Webhooks</span></a><a class="flex items-center gap-space-sm px-3 py-2 rounded-lg font-body-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="sc-28-export-reporting-center" href="#"><span class="material-symbols-outlined text-[18px]">download</span><span>Reporting Center</span></a><a class="flex items-center gap-space-sm px-3 py-2 rounded-lg font-body-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="sc-14-security-identity-sso" href="#"><span class="material-symbols-outlined text-[18px]">badge</span><span>SSO &amp; Security</span></a></div></nav></aside><div class="pl-64"><main class="relative w-full pt-16 bg-surface-canvas min-h-screen"><div class="flex flex-col w-full">
+<!-- Subtle Ambient Glow Element -->
+<div class="relative w-full overflow-hidden px-space-lg pb-space-2xl pt-space-md">
+<div class="absolute -top-32 left-1/2 -translate-x-1/2 w-[720px] h-64 bg-secondary-fixed/30 rounded-full blur-3xl pointer-events-none -z-10"></div>
+<!-- Header & Breadcrumbs / Plan Diff Context -->
+<div class="flex flex-col gap-space-sm mb-space-lg">
+<div class="flex flex-wrap items-center justify-between gap-space-md">
+<!-- Breadcrumb & Metadata -->
+<div class="flex flex-col gap-1">
+<nav class="flex items-center gap-space-xs font-label-sm text-text-muted">
+<span class="hover:text-primary transition-colors cursor-pointer">Compensation Plans</span>
+<span class="material-symbols-outlined text-[14px]">chevron_right</span>
+<span class="hover:text-primary transition-colors cursor-pointer">Simulation &amp; Golden</span>
+<span class="material-symbols-outlined text-[14px]">chevron_right</span>
+<span class="text-primary font-semibold">SIM-2026-NOV</span>
+</nav>
+<div class="flex items-center gap-space-sm mt-1">
+<h1 class="font-headline-lg text-primary font-bold tracking-tight">Plan Delta &amp; Regression Audit</h1>
+<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-surface-container-high text-primary font-label-sm font-semibold">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+              FR-PLN-005 Benchmark Verified
+            </span>
+</div>
+</div>
+<!-- Diff & Dataset Metadata Pills -->
+<div class="flex flex-wrap items-center gap-space-sm">
+<div class="flex items-center gap-2 bg-surface-card px-space-md py-2 rounded-xl shadow-sm">
+<span class="font-label-sm text-text-muted uppercase tracking-wider">Plan Diff</span>
+<div class="flex items-center gap-1.5">
+<span class="px-2 py-0.5 rounded bg-surface-container font-label-md text-on-surface">Active v2.3</span>
+<span class="material-symbols-outlined text-outline text-[16px]">trending_flat</span>
+<span class="px-2 py-0.5 rounded bg-tertiary-fixed text-on-tertiary-fixed-variant font-label-md font-bold">Draft v2.4</span>
+</div>
+</div>
+<div class="flex items-center gap-2 bg-surface-card px-space-md py-2 rounded-xl shadow-sm">
+<span class="material-symbols-outlined text-secondary text-[18px]">database</span>
+<div class="flex flex-col">
+<span class="font-label-sm text-text-muted leading-tight">Run Dataset</span>
+<span class="font-label-md text-primary font-semibold leading-tight">142,509 Orders <span class="text-text-muted font-normal">(Nov 2026 Actuals)</span></span>
+</div>
+</div>
+<button class="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-surface-card hover:bg-surface-container transition-all shadow-sm text-on-surface font-label-md" type="button">
+<span class="material-symbols-outlined text-[18px]">replay</span>
+<span>Re-run Diff</span>
+</button>
+</div>
+</div>
+</div>
+<!-- KPI Row (4 Cards) -->
+<div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-space-md mb-space-xl">
+<!-- Card 1: Total Payout Delta -->
+<div class="bg-surface-card p-space-lg rounded-xl shadow-sm flex flex-col justify-between relative overflow-hidden group hover:shadow-md transition-shadow">
+<div class="flex items-start justify-between">
+<span class="font-eyebrow text-text-muted uppercase">Total Payout Delta</span>
+<span class="p-1.5 rounded-lg bg-surface-container text-secondary flex items-center justify-center">
+<span class="material-symbols-outlined text-[18px]">monetization_on</span>
+</span>
+</div>
+<div class="mt-space-md">
+<div class="flex items-baseline gap-2">
+<span class="font-headline-xl text-primary font-bold">+$32,670.45</span>
+<span class="inline-flex items-center font-label-md text-success-base font-semibold">
+<span class="material-symbols-outlined text-[14px]">arrow_upward</span>+1.8%
+            </span>
+</div>
+<div class="mt-2 text-text-muted font-body-sm flex justify-between items-center">
+<span>$1,810,240.00 Active</span>
+<span class="material-symbols-outlined text-[14px] text-outline">arrow_forward</span>
+<span class="text-primary font-medium">$1,842,910.45 Draft</span>
+</div>
+</div>
+<div class="w-full bg-surface-container h-1 rounded-full mt-3 overflow-hidden">
+<div class="bg-secondary h-full rounded-full" style="width: 58%;"></div>
+</div>
+</div>
+<!-- Card 2: Payout Share of CV -->
+<div class="bg-surface-card p-space-lg rounded-xl shadow-sm flex flex-col justify-between relative overflow-hidden group hover:shadow-md transition-shadow">
+<div class="flex items-start justify-between">
+<span class="font-eyebrow text-text-muted uppercase">Payout Share of CV</span>
+<span class="p-1.5 rounded-lg bg-surface-container text-secondary flex items-center justify-center">
+<span class="material-symbols-outlined text-[18px]">pie_chart</span>
+</span>
+</div>
+<div class="mt-space-md">
+<div class="flex items-baseline gap-2">
+<span class="font-headline-xl text-primary font-bold">32.84%</span>
+<span class="inline-flex items-center font-label-md text-success-base font-semibold">
+<span class="material-symbols-outlined text-[14px]">arrow_downward</span>-0.12%
+            </span>
+</div>
+<div class="mt-2 text-text-muted font-body-sm flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-success-base"></span>
+<span>Under statutory ceiling of <strong>35.0% safe limit</strong></span>
+</div>
+</div>
+<div class="w-full bg-surface-container h-1 rounded-full mt-3 overflow-hidden">
+<div class="bg-success-base h-full rounded-full" style="width: 82%;"></div>
+</div>
+</div>
+<!-- Card 3: Golden Dataset Integrity -->
+<div class="bg-surface-card p-space-lg rounded-xl shadow-sm flex flex-col justify-between relative overflow-hidden group hover:shadow-md transition-shadow">
+<div class="flex items-start justify-between">
+<span class="font-eyebrow text-text-muted uppercase">Golden Integrity</span>
+<span class="p-1.5 rounded-lg bg-success-base/10 text-success-base flex items-center justify-center">
+<span class="material-symbols-outlined text-[18px]">verified</span>
+</span>
+</div>
+<div class="mt-space-md">
+<div class="flex items-baseline gap-2">
+<span class="font-headline-xl text-primary font-bold">24 / 24</span>
+<span class="font-label-md text-success-base font-semibold">100% Pass</span>
+</div>
+<div class="mt-2 text-text-muted font-body-sm flex items-center justify-between">
+<span class="flex items-center gap-1 text-on-surface">
+<span class="material-symbols-outlined text-success-base text-[16px]">check_circle</span>
+              Zero regression failures
+            </span>
+<span class="font-label-sm text-text-subtle">Suite 4.2</span>
+</div>
+</div>
+<div class="w-full bg-surface-container h-1 rounded-full mt-3 overflow-hidden">
+<div class="bg-success-base h-full rounded-full" style="width: 100%;"></div>
+</div>
+</div>
+<!-- Card 4: Payee Distribution Shift -->
+<div class="bg-surface-card p-space-lg rounded-xl shadow-sm flex flex-col justify-between relative overflow-hidden group hover:shadow-md transition-shadow">
+<div class="flex items-start justify-between">
+<span class="font-eyebrow text-text-muted uppercase">Payee Shift</span>
+<span class="p-1.5 rounded-lg bg-surface-container text-secondary flex items-center justify-center">
+<span class="material-symbols-outlined text-[18px]">alt_route</span>
+</span>
+</div>
+<div class="mt-space-md">
+<div class="flex items-baseline gap-2">
+<span class="font-headline-xl text-primary font-bold">1,634</span>
+<span class="font-label-md text-text-muted">Total Payees</span>
+</div>
+<div class="mt-2 font-body-sm flex items-center gap-1.5 text-text-muted">
+<span class="font-semibold text-success-base">1,240</span> Gain · 
+            <span class="font-semibold text-text-muted">310</span> Flat · 
+            <span class="font-semibold text-error-base">84</span> Trim
+          </div>
+</div>
+<!-- Triple micro segment progress bar -->
+<div class="w-full bg-surface-container h-1 rounded-full mt-3 flex overflow-hidden gap-0.5">
+<div class="bg-success-base h-full" style="width: 75%;"></div>
+<div class="bg-outline-variant h-full" style="width: 19%;"></div>
+<div class="bg-error-base h-full" style="width: 6%;"></div>
+</div>
+</div>
+</div>
+<!-- Main Content 2-Column Split: 60% Left, 40% Right -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-space-lg items-start">
+<!-- Left Column (60% / 7 cols on 12-col grid) -->
+<div class="lg:col-span-7 flex flex-col gap-space-lg">
+<!-- Payout Distribution Histogram / Variance Curve -->
+<div class="bg-surface-card rounded-xl p-space-lg shadow-sm flex flex-col gap-space-md">
+<div class="flex flex-wrap items-center justify-between gap-space-sm">
+<div>
+<h2 class="font-headline-sm text-primary font-bold">Distribution Variance Curve</h2>
+<p class="font-body-sm text-text-muted">Baseline v2.3 vs Simulated v2.4 across active distributor earnings brackets</p>
+</div>
+<div class="flex items-center gap-space-md">
+<div class="flex items-center gap-1.5 font-label-sm text-text-muted">
+<span class="w-3 h-3 rounded bg-outline-variant inline-block"></span>
+<span>v2.3 Active</span>
+</div>
+<div class="flex items-center gap-1.5 font-label-sm text-primary font-semibold">
+<span class="w-3 h-3 rounded bg-secondary inline-block"></span>
+<span>v2.4 Draft</span>
+</div>
+</div>
+</div>
+<!-- Inline SVG Visual Chart (Under 2KB, pure SVG) -->
+<div class="relative w-full h-64 bg-surface-container-low rounded-xl p-space-md flex flex-col justify-end">
+<!-- Grid Guidelines -->
+<div class="absolute inset-x-space-md top-4 bottom-10 flex flex-col justify-between pointer-events-none opacity-40">
+<div class="w-full h-[1px] bg-outline-variant border-dashed"></div>
+<div class="w-full h-[1px] bg-outline-variant border-dashed"></div>
+<div class="w-full h-[1px] bg-outline-variant border-dashed"></div>
+<div class="w-full h-[1px] bg-outline-variant border-dashed"></div>
+</div>
+<!-- SVG Curves and Bars -->
+<svg class="w-full h-44 overflow-visible" preserveaspectratio="none" viewbox="0 0 500 160">
+<defs>
+<lineargradient id="draftGradient" x1="0" x2="0" y1="0" y2="1">
+<stop offset="0%" stop-color="#385da2" stop-opacity="0.25"></stop>
+<stop offset="100%" stop-color="#385da2" stop-opacity="0.0"></stop>
+</lineargradient>
+</defs>
+<!-- Baseline curve (Gray dashed) -->
+<path d="M 10 145 C 70 85, 120 40, 190 35 C 260 30, 320 90, 390 120 C 430 135, 470 142, 490 144" fill="none" stroke="#94A3B8" stroke-dasharray="4 4" stroke-width="2"></path>
+<!-- Draft Fill Area -->
+<path d="M 10 145 C 70 65, 120 22, 190 18 C 260 14, 320 78, 390 115 C 430 132, 470 140, 490 143 L 490 155 L 10 155 Z" fill="url(#draftGradient)"></path>
+<!-- Draft Simulated curve (Primary theme color) -->
+<path d="M 10 145 C 70 65, 120 22, 190 18 C 260 14, 320 78, 390 115 C 430 132, 470 140, 490 143" fill="none" stroke="#385da2" stroke-linecap="round" stroke-width="3"></path>
+<!-- Key Data Anchor Points -->
+<circle cx="190" cy="18" fill="#0f284e" r="4.5" stroke="#ffffff" stroke-width="2"></circle>
+<circle cx="390" cy="115" fill="#0f284e" r="4.5" stroke="#ffffff" stroke-width="2"></circle>
+</svg>
+<!-- Bracket Labels X-Axis -->
+<div class="grid grid-cols-4 pt-2 text-center font-label-sm text-text-muted">
+<div>
+<span class="block text-primary font-semibold">$0 - $500</span>
+<span class="text-[10px]">842 Members (+3.4%)</span>
+</div>
+<div>
+<span class="block text-primary font-semibold">$500 - $2k</span>
+<span class="text-[10px]">512 Members (+4.1%)</span>
+</div>
+<div>
+<span class="block text-primary font-semibold">$2k - $10k</span>
+<span class="text-[10px]">218 Members (+1.2%)</span>
+</div>
+<div>
+<span class="block text-primary font-semibold">$10k+</span>
+<span class="text-[10px]">62 Members (-0.8%)</span>
+</div>
+</div>
+</div>
+<div class="bg-surface-container-low p-space-sm rounded-lg flex items-center justify-between text-body-sm text-text-muted">
+<span class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px] text-secondary">info</span>
+              Bracket migration reflects expansion of unilevel depths, uplifting mid-tier earners ($500-$2k).
+            </span>
+<span class="font-label-sm font-semibold text-secondary hover:underline cursor-pointer">Analyze Elasticity</span>
+</div>
+</div>
+<!-- Top Payee Movers Table -->
+<div class="bg-surface-card rounded-xl shadow-sm p-space-lg flex flex-col gap-space-md">
+<div class="flex items-center justify-between">
+<div>
+<h2 class="font-headline-sm text-primary font-bold">Top Payee Movers</h2>
+<p class="font-body-sm text-text-muted">Outlier analysis and triggering rules driving highest simulated compensation deltas</p>
+</div>
+<div class="flex items-center gap-2">
+<span class="font-label-sm text-text-subtle">Sort:</span>
+<button class="px-2.5 py-1 rounded-lg bg-surface-container font-label-sm text-on-surface flex items-center gap-1">
+<span>Absolute Delta</span>
+<span class="material-symbols-outlined text-[14px]">arrow_drop_down</span>
+</button>
+</div>
+</div>
+<!-- Table Container -->
+<div class="overflow-x-auto">
+<table class="w-full text-left">
+<thead>
+<tr class="bg-surface-container-low text-text-muted font-label-sm uppercase tracking-wider">
+<th class="py-2.5 px-3 rounded-l-lg">Payee / Representative</th>
+<th class="py-2.5 px-3 text-right">Active v2.3</th>
+<th class="py-2.5 px-3 text-right">Draft v2.4</th>
+<th class="py-2.5 px-3 text-right">Delta ($)</th>
+<th class="py-2.5 px-3">Primary Trigger Rule</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-transparent font-body-sm">
+<!-- Row 1 -->
+<tr class="hover:bg-surface-container-low transition-colors group">
+<td class="py-3 px-3">
+<div class="flex items-center gap-2.5">
+<div class="w-8 h-8 rounded-full bg-secondary-fixed flex items-center justify-center font-label-md text-primary font-bold">
+                        ML
+                      </div>
+<div>
+<span class="font-label-md text-primary block leading-snug">Maya R. Lin</span>
+<span class="font-label-sm text-text-subtle font-mono">#REP-88219 · Ruby Exec</span>
+</div>
+</div>
+</td>
+<td class="py-3 px-3 text-right font-mono text-text-muted">$8,340.00</td>
+<td class="py-3 px-3 text-right font-mono text-primary font-semibold">$10,820.00</td>
+<td class="py-3 px-3 text-right">
+<span class="font-label-md text-success-base font-semibold block">+$2,480.00</span>
+<span class="font-label-sm text-success-base">+29.7%</span>
+</td>
+<td class="py-3 px-3">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-tertiary-fixed text-on-tertiary-fixed font-label-sm">
+                      Ruby Rank Promo Match
+                    </span>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-surface-container-low transition-colors group">
+<td class="py-3 px-3">
+<div class="flex items-center gap-2.5">
+<div class="w-8 h-8 rounded-full bg-primary-fixed flex items-center justify-center font-label-md text-primary font-bold">
+                        VT
+                      </div>
+<div>
+<span class="font-label-md text-primary block leading-snug">Victor Thorne</span>
+<span class="font-label-sm text-text-subtle font-mono">#REP-41092 · Emerald Leader</span>
+</div>
+</div>
+</td>
+<td class="py-3 px-3 text-right font-mono text-text-muted">$12,410.00</td>
+<td class="py-3 px-3 text-right font-mono text-primary font-semibold">$14,300.00</td>
+<td class="py-3 px-3 text-right">
+<span class="font-label-md text-success-base font-semibold block">+$1,890.00</span>
+<span class="font-label-sm text-success-base">+15.2%</span>
+</td>
+<td class="py-3 px-3">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed-variant font-label-sm">
+                      L4 Unilevel Depth Unlock
+                    </span>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-surface-container-low transition-colors group">
+<td class="py-3 px-3">
+<div class="flex items-center gap-2.5">
+<div class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center font-label-md text-primary font-bold">
+                        ES
+                      </div>
+<div>
+<span class="font-label-md text-primary block leading-snug">Elena S. Rostova</span>
+<span class="font-label-sm text-text-subtle font-mono">#REP-19044 · Sapphire Partner</span>
+</div>
+</div>
+</td>
+<td class="py-3 px-3 text-right font-mono text-text-muted">$6,200.00</td>
+<td class="py-3 px-3 text-right font-mono text-primary font-semibold">$7,440.00</td>
+<td class="py-3 px-3 text-right">
+<span class="font-label-md text-success-base font-semibold block">+$1,240.00</span>
+<span class="font-label-sm text-success-base">+20.0%</span>
+</td>
+<td class="py-3 px-3">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-surface-container text-on-surface-variant font-label-sm">
+                      Dual-Team Binary Rebalance
+                    </span>
+</td>
+</tr>
+<!-- Row 4 (Trimmed Payee) -->
+<tr class="hover:bg-surface-container-low transition-colors group">
+<td class="py-3 px-3">
+<div class="flex items-center gap-2.5">
+<div class="w-8 h-8 rounded-full bg-error-container text-on-error-container flex items-center justify-center font-label-md font-bold">
+                        DC
+                      </div>
+<div>
+<span class="font-label-md text-primary block leading-snug">Derrick C. Vance</span>
+<span class="font-label-sm text-text-subtle font-mono">#REP-03881 · Diamond Ambassador</span>
+</div>
+</div>
+</td>
+<td class="py-3 px-3 text-right font-mono text-text-muted">$24,900.00</td>
+<td class="py-3 px-3 text-right font-mono text-primary font-semibold">$24,150.00</td>
+<td class="py-3 px-3 text-right">
+<span class="font-label-md text-error-base font-semibold block">-$750.00</span>
+<span class="font-label-sm text-error-base">-3.0%</span>
+</td>
+<td class="py-3 px-3">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-error-container text-on-error-container font-label-sm">
+                      Cross-leg Volume Dampener
+                    </span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="flex items-center justify-between pt-2">
+<span class="font-label-sm text-text-muted">Showing 4 of 84 significant shifts (&gt;2% threshold)</span>
+<button class="font-label-md text-secondary hover:text-primary transition-colors flex items-center gap-1">
+<span>View Full Shift Explorer</span>
+<span class="material-symbols-outlined text-[16px]">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Right Column (40% / 5 cols on 12-col grid) -->
+<div class="lg:col-span-5 flex flex-col gap-space-lg">
+<!-- Golden Datasets Test Harness -->
+<div class="bg-surface-card rounded-xl p-space-lg shadow-sm flex flex-col gap-space-md">
+<div class="flex items-start justify-between">
+<div>
+<div class="flex items-center gap-2">
+<span class="p-1 rounded-md bg-success-base/10 text-success-base flex items-center justify-center">
+<span class="material-symbols-outlined text-[16px]">task_alt</span>
+</span>
+<h2 class="font-headline-sm text-primary font-bold">Regression Test Harness</h2>
+</div>
+<p class="font-body-sm text-text-muted mt-1">Standard MLM Regulatory Golden Suite (24 Cases)</p>
+</div>
+<span class="font-label-sm bg-success-base text-on-primary px-2.5 py-0.5 rounded-full font-bold">
+              24/24 PASS
+            </span>
+</div>
+<!-- Benchmark Cases List -->
+<div class="flex flex-col gap-space-sm mt-1">
+<!-- Case 1 -->
+<div class="p-space-md rounded-xl bg-surface-container-low hover:bg-surface-container transition-colors flex flex-col gap-1.5">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-success-base text-[18px]">check_circle</span>
+<span class="font-label-md text-primary font-bold">G-01: Breakaway Diamond with 4 legs</span>
+</div>
+<span class="font-label-sm text-success-base font-semibold px-2 py-0.5 rounded bg-surface-card">
+                  PASSED
+                </span>
+</div>
+<div class="flex items-center justify-between text-body-sm pl-6 text-text-muted">
+<span>Calculated Baseline vs Mock Actual</span>
+<span class="font-mono text-primary font-medium">$14,250.00 exact match</span>
+</div>
+</div>
+<!-- Case 2 -->
+<div class="p-space-md rounded-xl bg-surface-container-low hover:bg-surface-container transition-colors flex flex-col gap-1.5">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-success-base text-[18px]">check_circle</span>
+<span class="font-label-md text-primary font-bold">G-02: Chargeback Clawback Cascade</span>
+</div>
+<span class="font-label-sm text-success-base font-semibold px-2 py-0.5 rounded bg-surface-card">
+                  PASSED
+                </span>
+</div>
+<div class="flex items-center justify-between text-body-sm pl-6 text-text-muted">
+<span>3 Upline Generations clawback allocation</span>
+<span class="font-mono text-primary font-medium">-$340.00 debit verified</span>
+</div>
+</div>
+<!-- Case 3 -->
+<div class="p-space-md rounded-xl bg-surface-container-low hover:bg-surface-container transition-colors flex flex-col gap-1.5">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-success-base text-[18px]">check_circle</span>
+<span class="font-label-md text-primary font-bold">G-03: Zero Recruitment Retail Only</span>
+</div>
+<span class="font-label-sm text-success-base font-semibold px-2 py-0.5 rounded bg-surface-card">
+                  PASSED
+                </span>
+</div>
+<div class="flex items-center justify-between text-body-sm pl-6 text-text-muted">
+<span>Retail sales customer margin validation</span>
+<span class="font-mono text-primary font-medium">30.0% clean margin</span>
+</div>
+</div>
+<!-- Case 4 -->
+<div class="p-space-md rounded-xl bg-surface-container-low hover:bg-surface-container transition-colors flex flex-col gap-1.5">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-success-base text-[18px]">check_circle</span>
+<span class="font-label-md text-primary font-bold">G-04: High Volume Cap Trigger</span>
+</div>
+<span class="font-label-sm text-success-base font-semibold px-2 py-0.5 rounded bg-surface-card">
+                  PASSED
+                </span>
+</div>
+<div class="flex items-center justify-between text-body-sm pl-6 text-text-muted">
+<span>Extreme single-cycle earnings (&gt;$50k)</span>
+<span class="font-mono text-primary font-medium">35% cap enforced</span>
+</div>
+</div>
+</div>
+<!-- Harness Meta stats -->
+<div class="flex items-center justify-between pt-2 text-label-sm text-text-muted border-t border-transparent">
+<span>Execution Duration: <strong>1.84s</strong></span>
+<span class="text-primary font-medium">PRD-02 FR-PLN-006 Verified</span>
+</div>
+</div>
+<!-- Action Cluster & Promotion Workflow Panel -->
+<div class="bg-surface-card rounded-xl p-space-lg shadow-sm flex flex-col gap-space-md">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-[20px]">bolt</span>
+<h2 class="font-headline-sm text-primary font-bold">Action Cluster</h2>
+</div>
+<p class="font-body-sm text-text-muted">
+            Execute operational artifacts or transition the validated v2.4 rule architecture to governance sign-offs.
+          </p>
+<div class="flex flex-col gap-space-sm pt-2">
+<!-- Action 1: Add Benchmark Case -->
+<button class="w-full h-11 px-space-md rounded-lg bg-surface-container hover:bg-surface-container-high text-primary font-button-text flex items-center justify-between transition-colors shadow-sm" type="button">
+<span class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">add_circle</span>
+<span>Add Golden Benchmark Case</span>
+</span>
+<span class="material-symbols-outlined text-[18px] text-text-muted">arrow_forward</span>
+</button>
+<!-- Action 2: Export CSV -->
+<button class="w-full h-11 px-space-md rounded-lg bg-surface-container hover:bg-surface-container-high text-primary font-button-text flex items-center justify-between transition-colors shadow-sm" type="button">
+<span class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">download</span>
+<span>Export Simulation Full CSV</span>
+</span>
+<span class="font-label-sm text-text-muted">142.5k rows</span>
+</button>
+<!-- Action 3: Primary Promote to Plan Change Workflow -->
+<button class="w-full h-12 px-space-md rounded-lg bg-primary-container hover:bg-tertiary-container text-on-primary font-button-text flex items-center justify-center gap-2 transition-all shadow-md mt-2 group" type="button">
+<span class="material-symbols-outlined text-[20px]">rocket_launch</span>
+<span>Promote to Plan Change Workflow (SC-44)</span>
+<span class="material-symbols-outlined text-[18px] group-hover:translate-x-0.5 transition-transform">arrow_forward</span>
+</button>
+</div>
+<div class="p-3 bg-surface-container-low rounded-lg mt-1 flex items-start gap-2">
+<span class="material-symbols-outlined text-secondary text-[16px] mt-0.5">verified_user</span>
+<span class="font-body-sm text-text-muted">
+              Promoting creates an immutable audit commit in SOX trace logs and locks SIM-2026-NOV for approval signers.
+            </span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div></main></div><div id="design-preview-pill" style="position:fixed;left:12px;bottom:12px;z-index:2147483647;display:flex;gap:8px;align-items:center;padding:8px 12px;border-radius:999px;background:#001332;color:#fff;font:600 12px/1.2 Inter,system-ui,sans-serif;box-shadow:0 4px 16px rgba(0,0,0,.25)"><a href="/portal-designs/" style="color:#fff;text-decoration:none">&larr; All designs</a><span style="opacity:.6">|</span><span style="font-weight:500">Design preview &middot; sample data, not the live app</span></div></body></html>

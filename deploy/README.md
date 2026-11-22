@@ -26,7 +26,7 @@ phoyev.com, www.phoyev.com {
 	reverse_proxy 172.16.1.1:6601
 }
 network.phoyev.com {
-	@landing path /
+	@landing path / /digital-products* /partner-plan* /success-stories* /academy* /faq* /join* /portal-designs* /assets/* /api/lead
 	handle @landing {
 		reverse_proxy 172.16.1.1:6601
 	}
@@ -35,6 +35,9 @@ network.phoyev.com {
 	}
 }
 ```
+`/portal-designs/` holds 42 static design previews (portal screens from the Stitch "Phoyev Website Redesign" project, noindex, sample data) generated from the Stitch zip export. A new static path must be added to `@landing`.
+
+**Caddyfile edit gotcha:** the shared Caddy bind-mounts the Caddyfile as a single file, read-only. `sed -i` (or any editor that replaces the file) gives the host path a new inode, the container keeps the old one, and `caddy reload --config /etc/caddy/Caddyfile` silently re-reads the OLD config. Check with `docker exec voltix-prod-caddy-1 grep -c <new text> /etc/caddy/Caddyfile`. Fix without a restart: `docker cp <host Caddyfile> voltix-prod-caddy-1:/tmp/Caddyfile.new`, then `caddy validate` and `caddy reload --config /tmp/Caddyfile.new --adapter caddyfile` inside the container.
 
 ## First sign-in
 No accounts exist. Create the first vendor operator (prints a one-time password-set link; mails are not sent anywhere):

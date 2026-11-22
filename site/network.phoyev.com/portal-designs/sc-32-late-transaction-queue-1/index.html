@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+
+<html lang="en"><head><title>SC-32 Late-transaction queue (variant 1) | PHOYEV portal design preview</title><meta name="robots" content="noindex,nofollow"><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_dashboard" name="shell-type"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Plus+Jakarta+Sans:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{colors:{"on-secondary-fixed-variant":"#1c4589","surface-container-lowest":"#ffffff","surface-card":"#FFFFFF","surface-dim":"#ddd9de","surface-container":"#f1ecf2","border-strong":"#CBD5E1","secondary-container":"#90b3fe","primary":"#001332","tertiary-container":"#002367","inverse-primary":"#b1c7f6","error":"#ba1a1a","surface":"#fdf8fd","surface-container-high":"#ebe7ec","tertiary-fixed-dim":"#b4c5ff","surface-container-highest":"#e5e1e7","sso-google-bg":"#F0F4FF","on-secondary":"#ffffff","outline-variant":"#c4c6cf","tertiary-fixed":"#dbe1ff","on-tertiary-fixed-variant":"#003ea8","on-primary":"#ffffff","tertiary":"#00113b","sso-google-border":"#D8E2FC","on-tertiary-container":"#5f8aff","primary-container":"#0f284e","error-container":"#ffdad6","on-tertiary":"#ffffff","on-error-container":"#93000a","secondary":"#385da2","on-error":"#ffffff","inverse-surface":"#313034","surface-tint":"#495e87","on-secondary-container":"#1a4387","secondary-fixed":"#d8e2ff","on-primary-fixed":"#001b3f","surface-canvas":"#F8F9FE","outline":"#74777f","on-background":"#1c1b1f","surface-variant":"#e5e1e7","background":"#fdf8fd","secondary-fixed-dim":"#aec6ff","on-primary-container":"#7a90bc","on-secondary-fixed":"#001a42","success-base":"#16A34A","primary-fixed-dim":"#b1c7f6","focus-ring":"#3B82F6","error-base":"#DC2626","primary-fixed":"#d7e2ff","inverse-on-surface":"#f4eff5","text-muted":"#64748B","border-subtle":"#E2E7F6","on-tertiary-fixed":"#00174b","on-surface":"#1c1b1f","surface-bright":"#fdf8fd","on-surface-variant":"#44474e","surface-container-low":"#f7f2f8","on-primary-fixed-variant":"#31476e","text-subtle":"#94A3B8","focus-ring-glow":"rgba(59, 130, 246, 0.2)"},borderRadius:{"DEFAULT":"0.25rem","lg":"0.5rem","xl":"0.75rem","full":"9999px"},spacing:{"space-md":"1rem","space-xs":"0.25rem","space-2xl":"2.5rem","space-lg":"1.5rem","space-xl":"2rem","margin-desktop":"3rem","space-sm":"0.5rem","gutter":"1.25rem","margin":"1.5rem"},fontFamily:{"label-md":["Inter"],"eyebrow":["Plus Jakarta Sans"],"body-sm":["Inter"],"body-md":["Inter"],"label-sm":["Inter"],"headline-xl-mobile":["Plus Jakarta Sans"],"headline-xl":["Plus Jakarta Sans"],"headline-sm":["Plus Jakarta Sans"],"button-text":["Plus Jakarta Sans"],"headline-lg":["Plus Jakarta Sans"],"body-lg":["Inter"]},fontSize:{"label-md":["13px",{lineHeight:"18px",letterSpacing:"0.02em",fontWeight:"600"}],"eyebrow":["12px",{lineHeight:"16px",letterSpacing:"0.08em",fontWeight:"700"}],"body-sm":["12px",{lineHeight:"18px",fontWeight:"400"}],"body-md":["14px",{lineHeight:"20px",fontWeight:"400"}],"label-sm":["11px",{lineHeight:"16px",letterSpacing:"0.04em",fontWeight:"600"}],"headline-xl-mobile":["26px",{lineHeight:"34px",letterSpacing:"-0.015em",fontWeight:"700"}],"headline-xl":["32px",{lineHeight:"40px",letterSpacing:"-0.02em",fontWeight:"700"}],"headline-sm":["18px",{lineHeight:"24px",fontWeight:"600"}],"button-text":["14px",{lineHeight:"20px",letterSpacing:"0.01em",fontWeight:"600"}],"headline-lg":["24px",{lineHeight:"32px",letterSpacing:"-0.01em",fontWeight:"600"}],"body-lg":["15px",{lineHeight:"22px",fontWeight:"400"}]}}}}</script></head><body class="bg-surface-canvas font-body-md text-on-surface antialiased"><header class="fixed top-0 left-0 right-0 h-16 bg-surface-container-lowest/90 backdrop-blur-xl z-50 shadow-[0_1px_8px_rgba(15,40,78,0.04)]"><div class="h-16 w-full px-space-lg flex items-center justify-between gap-space-md"><div class="flex items-center gap-space-lg"><div class="flex items-center gap-space-sm"><div class="w-8 h-8 rounded-lg bg-primary-container flex items-center justify-center text-on-primary font-headline-sm font-bold">P</div><span class="font-headline-sm text-primary font-bold tracking-tight">Phoyev</span></div><div class="h-6 w-[1px] bg-border-subtle"></div><div class="flex items-center gap-space-xs bg-surface-container px-space-sm py-1.5 rounded-lg cursor-pointer hover:bg-surface-container-high transition-colors"><span class="material-symbols-outlined text-secondary text-[18px]">store</span><span class="font-label-md text-on-surface">Acme Nutrition Inc.</span><span class="material-symbols-outlined text-outline text-[16px]">unfold_more</span></div><div class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-surface-container-low"><span class="w-2 h-2 rounded-full bg-success-base"></span><span class="font-label-sm text-on-surface-variant uppercase tracking-wider">Production Live</span></div></div><div class="flex items-center gap-space-md flex-1 max-w-lg mx-space-md"><div class="relative w-full"><span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[18px]">search</span><input class="w-full h-9 pl-9 pr-14 bg-surface-container rounded-lg font-body-sm text-on-surface placeholder:text-text-subtle focus:bg-surface-card focus:outline-none focus:ring-1 focus:ring-focus-ring transition-all" placeholder="Search staff, periods, entities, or rules..." type="text"/><kbd class="absolute right-2.5 top-1/2 -translate-y-1/2 font-label-sm text-text-muted bg-surface-card px-1.5 py-0.5 rounded shadow-[0_1px_2px_rgba(0,0,0,0.06)] border border-border-subtle">⌘K</kbd></div></div><div class="flex items-center gap-space-md"><button class="w-8 h-8 rounded-lg flex items-center justify-center text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" title="Documentation &amp; Help" type="button"><span class="material-symbols-outlined text-[20px]">help_outline</span></button><button class="w-8 h-8 rounded-lg flex items-center justify-center text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors relative" title="Notifications" type="button"><span class="material-symbols-outlined text-[20px]">notifications</span><span class="absolute top-1.5 right-1.5 w-2 h-2 bg-error rounded-full"></span></button><div class="h-6 w-[1px] bg-border-subtle"></div><div class="flex items-center gap-space-sm pl-space-xs"><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div><div class="hidden xl:flex flex-col text-left"><span class="font-label-md text-on-surface leading-tight">Sarah Jenkins</span><span class="font-label-sm text-text-muted leading-tight">Senior Staff Admin</span></div><span class="material-symbols-outlined text-outline text-[16px]">expand_more</span></div></div></div></header><aside class="fixed left-0 top-16 bottom-0 w-64 bg-surface-container-lowest z-40 overflow-y-auto shadow-[0_1px_8px_rgba(15,40,78,0.04)] py-space-md"><nav class="px-space-sm space-y-space-md" data-active-classes="bg-primary-container text-on-primary-container font-semibold rounded-lg"><div class="space-y-1"><div class="px-3 py-1 font-eyebrow text-text-subtle uppercase text-[10px] tracking-wider">Periods &amp; Runs</div><a class="flex items-center gap-space-sm px-3 py-2 rounded-lg font-body-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="sc-01-pay-period-control" href="#"><span class="material-symbols-outlined text-[18px]">schedule</span><span>Period Control</span></a><a class="flex items-center gap-space-sm px-3 py-2 rounded-lg font-body-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="sc-02-run-execution-pipeline" href="#"><span class="material-symbols-outlined text-[18px]">play_circle</span><span>Run Pipeline</span></a><a aria-current="page" class="flex items-center gap-space-sm px-3 py-2 transition-colors bg-primary-container text-on-primary-container font-semibold rounded-lg" data-path="sc-32-calculation-trace-inspector" href="#"><span class="material-symbols-outlined text-[18px]">troubleshoot</span><span>Calculation Trace</span></a></div><div class="space-y-1"><div class="px-3 py-1 font-eyebrow text-text-subtle uppercase text-[10px] tracking-wider">Payouts &amp; Finance</div><a class="flex items-center gap-space-sm px-3 py-2 rounded-lg font-body-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="sc-03-payout-ledger-review" href="#"><span class="material-symbols-outlined text-[18px]">receipt_long</span><span>Payout Ledger</span></a><a class="flex items-center gap-space-sm px-3 py-2 rounded-lg font-body-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="sc-33-disbursement-batches" href="#"><span class="material-symbols-outlined text-[18px]">payments</span><span>Disbursement Batches</span></a><a class="flex items-center gap-space-sm px-3 py-2 rounded-lg font-body-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="sc-34-clawback-retro-adjustments" href="#"><span class="material-symbols-outlined text-[18px]">history_toggle_off</span><span>Clawbacks &amp; Adjustments</span></a></div><div class="space-y-1"><div class="px-3 py-1 font-eyebrow text-text-subtle uppercase text-[10px] tracking-wider">Compensation Plans</div><a class="flex items-center gap-space-sm px-3 py-2 rounded-lg font-body-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="sc-04-plan-architecture-rules" href="#"><span class="material-symbols-outlined text-[18px]">account_tree</span><span>Plan Architecture</span></a><a class="flex items-center gap-space-sm px-3 py-2 rounded-lg font-body-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="sc-05-tier-rate-matrix" href="#"><span class="material-symbols-outlined text-[18px]">grid_view</span><span>Tier &amp; Rate Matrix</span></a><a class="flex items-center gap-space-sm px-3 py-2 rounded-lg font-body-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="sc-42-bonus-accelerators" href="#"><span class="material-symbols-outlined text-[18px]">speed</span><span>Bonus Accelerators</span></a><a class="flex items-center gap-space-sm px-3 py-2 rounded-lg font-body-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="sc-44-quota-modeling-sandbox" href="#"><span class="material-symbols-outlined text-[18px]">science</span><span>Quota Sandbox</span></a></div><div class="space-y-1"><div class="px-3 py-1 font-eyebrow text-text-subtle uppercase text-[10px] tracking-wider">People &amp; Structure</div><a class="flex items-center gap-space-sm px-3 py-2 rounded-lg font-body-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="sc-07-sales-roster-directory" href="#"><span class="material-symbols-outlined text-[18px]">groups</span><span>Roster Directory</span></a><a class="flex items-center gap-space-sm px-3 py-2 rounded-lg font-body-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="sc-08-hierarchy-territory-map" href="#"><span class="material-symbols-outlined text-[18px]">schema</span><span>Hierarchy &amp; Terr.</span></a><a class="flex items-center gap-space-sm px-3 py-2 rounded-lg font-body-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="sc-09-plan-assignments" href="#"><span class="material-symbols-outlined text-[18px]">assignment_ind</span><span>Plan Assignments</span></a><a class="flex items-center gap-space-sm px-3 py-2 rounded-lg font-body-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="sc-43-crediting-splits-overrides" href="#"><span class="material-symbols-outlined text-[18px]">call_split</span><span>Splits &amp; Overrides</span></a></div><div class="space-y-1"><div class="px-3 py-1 font-eyebrow text-text-subtle uppercase text-[10px] tracking-wider">Compliance &amp; Audit</div><a class="flex items-center gap-space-sm px-3 py-2 rounded-lg font-body-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="sc-46-sox-compliance-dashboard" href="#"><span class="material-symbols-outlined text-[18px]">verified_user</span><span>SOX Compliance</span></a><a class="flex items-center gap-space-sm px-3 py-2 rounded-lg font-body-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="sc-10-audit-event-log" href="#"><span class="material-symbols-outlined text-[18px]">list_alt</span><span>Audit Event Log</span></a><a class="flex items-center gap-space-sm px-3 py-2 rounded-lg font-body-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="sc-26-dispute-resolution" href="#"><span class="material-symbols-outlined text-[18px]">gavel</span><span>Dispute Resolution</span></a><a class="flex items-center gap-space-sm px-3 py-2 rounded-lg font-body-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="sc-11-approval-workflows" href="#"><span class="material-symbols-outlined text-[18px]">fact_check</span><span>Approval Matrix</span></a><a class="flex items-center gap-space-sm px-3 py-2 rounded-lg font-body-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="sc-35-data-freeze-signoffs" href="#"><span class="material-symbols-outlined text-[18px]">lock_clock</span><span>Freeze Sign-offs</span></a></div><div class="space-y-1"><div class="px-3 py-1 font-eyebrow text-text-subtle uppercase text-[10px] tracking-wider">Settings &amp; Operations</div><a class="flex items-center gap-space-sm px-3 py-2 rounded-lg font-body-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="sc-24-integration-connectors" href="#"><span class="material-symbols-outlined text-[18px]">sync_alt</span><span>Data Connectors</span></a><a class="flex items-center gap-space-sm px-3 py-2 rounded-lg font-body-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="sc-25-tenant-configuration" href="#"><span class="material-symbols-outlined text-[18px]">tune</span><span>Tenant Config</span></a><a class="flex items-center gap-space-sm px-3 py-2 rounded-lg font-body-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="sc-13-staff-roles-permissions" href="#"><span class="material-symbols-outlined text-[18px]">shield_person</span><span>Roles &amp; Access</span></a><a class="flex items-center gap-space-sm px-3 py-2 rounded-lg font-body-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="sc-16-job-scheduler-health" href="#"><span class="material-symbols-outlined text-[18px]">monitor_heart</span><span>Scheduler Health</span></a><a class="flex items-center gap-space-sm px-3 py-2 rounded-lg font-body-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="sc-17-api-keys-webhooks" href="#"><span class="material-symbols-outlined text-[18px]">webhook</span><span>API &amp; Webhooks</span></a><a class="flex items-center gap-space-sm px-3 py-2 rounded-lg font-body-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="sc-28-export-reporting-center" href="#"><span class="material-symbols-outlined text-[18px]">download</span><span>Reporting Center</span></a><a class="flex items-center gap-space-sm px-3 py-2 rounded-lg font-body-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="sc-14-security-identity-sso" href="#"><span class="material-symbols-outlined text-[18px]">badge</span><span>SSO &amp; Security</span></a></div></nav></aside><div class="pl-64"><main class="relative w-full pt-16 bg-surface-canvas min-h-screen"><div class="flex flex-col w-full">
+<!-- Atmospheric Glow & Ambient Gradient Container -->
+<div class="relative w-full px-space-lg lg:px-margin-desktop py-space-lg space-y-space-xl overflow-hidden">
+<div class="absolute -top-32 left-1/3 w-96 h-96 bg-secondary-fixed-dim/20 rounded-full blur-3xl pointer-events-none -z-10"></div>
+<div class="absolute top-1/2 right-10 w-80 h-80 bg-primary-fixed/25 rounded-full blur-3xl pointer-events-none -z-10"></div>
+<!-- Header & Scope Meta -->
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-space-md">
+<div class="space-y-space-xs">
+<!-- Breadcrumb & Authority Stamp -->
+<div class="flex items-center gap-space-xs font-eyebrow text-text-subtle uppercase tracking-wider text-eyebrow">
+<span>Periods &amp; Runs</span>
+<span class="material-symbols-outlined text-[14px]">chevron_right</span>
+<span class="text-secondary font-bold">Late Ingestion Gate</span>
+<span class="material-symbols-outlined text-[14px]">chevron_right</span>
+<span class="text-primary font-bold">SC-32 Exception Triage</span>
+</div>
+<div class="flex flex-wrap items-center gap-space-md">
+<h1 class="font-headline-xl text-primary text-headline-xl tracking-tight">Late Transaction Queue</h1>
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-error-container text-on-error-container font-label-sm">
+<span class="w-1.5 h-1.5 rounded-full bg-error animate-pulse"></span>
+            Cut-Off Breach Exception Window
+          </span>
+</div>
+<p class="font-body-md text-text-muted max-w-3xl">
+          Queue for Period <strong class="text-on-surface font-semibold">Nov 2026 Monthly</strong> · Locked Cut-off Timestamp: <code class="font-label-sm px-1.5 py-0.5 rounded bg-surface-container text-primary font-mono">Nov 30, 2026 23:59:59 UTC</code>. Late receipts require automated downstream roll-forward or formal restatement arbitration per FR-ORD-005.
+        </p>
+</div>
+<!-- Action Utilities -->
+<div class="flex items-center gap-space-sm shrink-0">
+<button class="h-11 px-space-md bg-surface-container-lowest hover:bg-surface-container text-primary rounded-xl font-button-text text-button-text shadow-sm flex items-center gap-2 transition-all" id="refreshBtn">
+<span class="material-symbols-outlined text-[18px]">sync</span>
+          Re-poll Webhook Buffers
+        </button>
+<button class="h-11 px-space-md bg-surface-container-lowest hover:bg-surface-container text-primary rounded-xl font-button-text text-button-text shadow-sm flex items-center gap-2 transition-all" id="exportTraceBtn">
+<span class="material-symbols-outlined text-[18px]">download</span>
+          Audit Ledger (.CSV)
+        </button>
+</div>
+</div>
+<!-- 4 KPI Tactical Cards -->
+<div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-space-md">
+<!-- Card 1: Total Queued -->
+<div class="relative bg-surface-card rounded-xl p-space-lg shadow-sm hover:shadow-md transition-shadow overflow-hidden">
+<div class="flex items-start justify-between">
+<div class="space-y-1">
+<span class="font-eyebrow text-text-subtle uppercase text-eyebrow tracking-wider">Late Items Queued</span>
+<div class="flex items-baseline gap-2">
+<span class="font-headline-xl text-primary text-headline-xl tracking-tight">14</span>
+<span class="font-label-md text-text-muted">records</span>
+</div>
+</div>
+<div class="w-10 h-10 rounded-xl bg-surface-container flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[22px]">inbox</span>
+</div>
+</div>
+<div class="mt-space-md pt-space-sm flex items-center justify-between text-body-sm font-body-sm">
+<span class="text-text-muted">Aggregate Gross Volume:</span>
+<span class="font-semibold text-primary font-mono">$16,420.50 GMV</span>
+</div>
+<div class="w-full bg-surface-container h-1 rounded-full mt-2 overflow-hidden">
+<div class="bg-secondary h-full rounded-full w-full"></div>
+</div>
+</div>
+<!-- Card 2: Financial Impact -->
+<div class="relative bg-surface-card rounded-xl p-space-lg shadow-sm hover:shadow-md transition-shadow overflow-hidden">
+<div class="flex items-start justify-between">
+<div class="space-y-1">
+<span class="font-eyebrow text-text-subtle uppercase text-eyebrow tracking-wider">Est. Payout Impact</span>
+<div class="flex items-baseline gap-2">
+<span class="font-headline-xl text-success-base text-headline-xl tracking-tight">+$2,140.80</span>
+</div>
+</div>
+<div class="w-10 h-10 rounded-xl bg-success-base/10 flex items-center justify-center text-success-base">
+<span class="material-symbols-outlined text-[22px]">trending_up</span>
+</div>
+</div>
+<div class="mt-space-md pt-space-sm flex items-center justify-between text-body-sm font-body-sm">
+<span class="text-text-muted">Attribution Exposure:</span>
+<span class="font-semibold text-primary">9 upline payees</span>
+</div>
+<div class="w-full bg-surface-container h-1 rounded-full mt-2 overflow-hidden">
+<div class="bg-success-base h-full rounded-full w-4/5"></div>
+</div>
+</div>
+<!-- Card 3: Default Ready -->
+<div class="relative bg-surface-card rounded-xl p-space-lg shadow-sm hover:shadow-md transition-shadow overflow-hidden">
+<div class="flex items-start justify-between">
+<div class="space-y-1">
+<span class="font-eyebrow text-text-subtle uppercase text-eyebrow tracking-wider">Default Action Ready</span>
+<div class="flex items-baseline gap-2">
+<span class="font-headline-xl text-primary text-headline-xl tracking-tight">12</span>
+<span class="font-label-md text-text-muted">items</span>
+</div>
+</div>
+<div class="w-10 h-10 rounded-xl bg-secondary-fixed/50 flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined text-[22px]">fast_forward</span>
+</div>
+</div>
+<div class="mt-space-md pt-space-sm flex items-center justify-between text-body-sm font-body-sm">
+<span class="text-text-muted">Rule Destination:</span>
+<span class="font-semibold text-secondary">Roll into Dec 2026</span>
+</div>
+<div class="w-full bg-surface-container h-1 rounded-full mt-2 overflow-hidden">
+<div class="bg-secondary-fixed-dim h-full rounded-full w-10/12"></div>
+</div>
+</div>
+<!-- Card 4: Restatement Recommended -->
+<div class="relative bg-surface-card rounded-xl p-space-lg shadow-sm hover:shadow-md transition-shadow overflow-hidden">
+<div class="flex items-start justify-between">
+<div class="space-y-1">
+<span class="font-eyebrow text-error uppercase text-eyebrow tracking-wider">Restatement Recommended</span>
+<div class="flex items-baseline gap-2">
+<span class="font-headline-xl text-error text-headline-xl tracking-tight">2</span>
+<span class="font-label-md text-error-base font-semibold">Critical High-Impact</span>
+</div>
+</div>
+<div class="w-10 h-10 rounded-xl bg-error-container/60 flex items-center justify-center text-error">
+<span class="material-symbols-outlined text-[22px]">priority_high</span>
+</div>
+</div>
+<div class="mt-space-md pt-space-sm flex items-center justify-between text-body-sm font-body-sm">
+<span class="text-text-muted">Threshold Check:</span>
+<span class="font-semibold text-error">Exceeds $5,000 GMV</span>
+</div>
+<div class="w-full bg-surface-container h-1 rounded-full mt-2 overflow-hidden">
+<div class="bg-error h-full rounded-full w-2/12"></div>
+</div>
+</div>
+</div>
+<!-- Interactive Impact Visualizer & Policy Guidance Strip -->
+<div class="bg-surface-card rounded-xl p-space-lg shadow-sm grid grid-cols-1 lg:grid-cols-12 gap-space-lg items-center">
+<div class="lg:col-span-8 flex flex-col sm:flex-row sm:items-center gap-space-md">
+<div class="w-12 h-12 rounded-xl bg-primary-container text-on-primary flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[24px]">policy</span>
+</div>
+<div class="space-y-1">
+<h2 class="font-headline-sm text-primary text-headline-sm">Automated Governance Protocol (PRD-02 FR-ORD-005)</h2>
+<p class="font-body-sm text-text-muted leading-relaxed">
+            Standard transactions logged within 72h post-cutoff are automatically bundled into the subsequent payroll period (<strong class="text-on-surface">Dec 2026</strong>) without restating historical tax slips. Major tier-altering orders (&gt;$5,000 GMV or tier upgrade trigger) mandate a <strong class="text-error font-semibold">SC-06 Period Restatement</strong> run to prevent dispute accruals.
+          </p>
+</div>
+</div>
+<div class="lg:col-span-4 flex items-center justify-end gap-space-sm">
+<div class="bg-surface-container-low px-space-md py-space-sm rounded-lg flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-secondary text-[20px]">timer</span>
+<div class="text-left font-body-sm">
+<div class="font-label-sm text-text-muted uppercase">Cut-off Elapsed</div>
+<div class="font-semibold text-primary font-mono">14h 22m 04s</div>
+</div>
+</div>
+<button class="h-10 px-space-md rounded-lg bg-surface-container hover:bg-surface-container-high text-primary font-button-text text-button-text flex items-center gap-1.5 transition-colors" id="viewPolicyModalBtn">
+<span class="material-symbols-outlined text-[16px]">visibility</span>
+          Policy Rules
+        </button>
+</div>
+</div>
+<!-- Filter Bar & Search Tooling -->
+<div class="bg-surface-card rounded-xl p-space-md shadow-sm space-y-space-sm">
+<div class="flex flex-col lg:flex-row lg:items-center justify-between gap-space-md">
+<!-- Quick Tab Presets -->
+<div class="flex items-center gap-1.5 overflow-x-auto pb-1 lg:pb-0" id="filterTabs">
+<button class="px-3.5 py-1.5 rounded-lg font-label-md text-label-md bg-primary text-on-primary shadow-sm transition-all whitespace-nowrap" data-filter="all">
+            All Items (14)
+          </button>
+<button class="px-3.5 py-1.5 rounded-lg font-label-md text-label-md bg-surface-container hover:bg-surface-container-high text-on-surface transition-all whitespace-nowrap" data-filter="pending">
+            Pending Review (2)
+          </button>
+<button class="px-3.5 py-1.5 rounded-lg font-label-md text-label-md bg-surface-container hover:bg-surface-container-high text-on-surface transition-all whitespace-nowrap" data-filter="auto-assigned">
+            Auto-Assigned Roll (12)
+          </button>
+<button class="px-3.5 py-1.5 rounded-lg font-label-md text-label-md bg-surface-container hover:bg-surface-container-high text-error transition-all whitespace-nowrap" data-filter="high-impact">
+            High Severity (&gt;$5k) (2)
+          </button>
+</div>
+<!-- Detailed Filtering Controls -->
+<div class="flex flex-wrap items-center gap-space-sm">
+<!-- Text Search Filter -->
+<div class="relative w-full sm:w-64">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-text-subtle text-[18px]">search</span>
+<input class="w-full h-9 pl-9 pr-3 bg-surface-container rounded-lg font-body-sm text-on-surface placeholder:text-text-subtle focus:bg-surface-card focus:outline-none transition-all" id="tableSearch" placeholder="Filter ID, Buyer, Payee..." type="text"/>
+</div>
+<!-- Source Filter -->
+<div class="relative">
+<select class="h-9 pl-3 pr-8 bg-surface-container rounded-lg font-body-sm text-on-surface appearance-none focus:outline-none cursor-pointer" id="sourceFilter">
+<option value="ALL">All Sources</option>
+<option value="Shopify">Shopify Ingestion</option>
+<option value="Stripe POS">Stripe POS Sync</option>
+<option value="EDI 850">EDI Batch</option>
+<option value="Manual API">Manual Restatement API</option>
+</select>
+<span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-text-subtle text-[18px]">expand_more</span>
+</div>
+<!-- Impact Severity Filter -->
+<div class="relative">
+<select class="h-9 pl-3 pr-8 bg-surface-container rounded-lg font-body-sm text-on-surface appearance-none focus:outline-none cursor-pointer" id="severityFilter">
+<option value="ALL">All Impact Severities</option>
+<option value="HIGH">High Severity (&gt;$5,000 GMV)</option>
+<option value="MEDIUM">Medium Severity ($1k - $5k)</option>
+<option value="LOW">Low Severity (&lt;$1,000)</option>
+</select>
+<span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-text-subtle text-[18px]">expand_more</span>
+</div>
+<button class="h-9 px-3 text-text-muted hover:text-primary font-body-sm text-body-sm flex items-center gap-1 transition-colors" id="resetFilters">
+<span class="material-symbols-outlined text-[16px]">restart_alt</span>
+            Reset
+          </button>
+</div>
+</div>
+</div>
+<!-- Late Transactions Ledger Table -->
+<div class="bg-surface-card rounded-xl shadow-sm overflow-hidden">
+<div class="overflow-x-auto">
+<table class="w-full text-left font-body-sm" id="ledgerTable">
+<thead class="bg-surface-container-low font-eyebrow text-text-subtle uppercase text-[11px] tracking-wider">
+<tr>
+<th class="py-3.5 pl-space-md pr-2 w-10 text-center" scope="col">
+<input class="w-4 h-4 rounded text-secondary focus:ring-0 cursor-pointer accent-secondary" id="selectAll" type="checkbox"/>
+</th>
+<th class="py-3.5 px-3" scope="col">Order ID &amp; Source</th>
+<th class="py-3.5 px-3" scope="col">Transaction Timestamp</th>
+<th class="py-3.5 px-3" scope="col">Buyer &amp; Attributed Payee</th>
+<th class="py-3.5 px-3 text-right" scope="col">Order Value (GMV / CV)</th>
+<th class="py-3.5 px-3 text-right" scope="col">Estimated Commission Δ</th>
+<th class="py-3.5 px-3" scope="col">Proposed Handling Strategy</th>
+<th class="py-3.5 px-3 text-center" scope="col">Triage Status</th>
+<th class="py-3.5 pr-space-md pl-3 text-right" scope="col">Actions</th>
+</tr>
+</thead>
+<tbody class="divide-none text-on-surface" id="tableBody">
+<!-- Row 1: High Severity Restatement Candidate -->
+<tr class="hover:bg-surface-container-low/70 transition-colors group" data-severity="HIGH" data-source="Shopify" data-status="pending">
+<td class="py-3.5 pl-space-md pr-2 text-center">
+<input class="row-checkbox w-4 h-4 rounded text-secondary cursor-pointer accent-secondary" type="checkbox" value="ORD-98412"/>
+</td>
+<td class="py-3.5 px-3">
+<div class="flex items-center gap-2">
+<div class="w-7 h-7 rounded-md bg-error-container text-error flex items-center justify-center font-bold text-label-sm">
+                    !
+                  </div>
+<div>
+<div class="font-label-md text-on-surface font-mono font-semibold">#ORD-98412</div>
+<div class="font-label-sm text-text-muted flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]">shopping_bag</span>
+                      Shopify Webhook
+                    </div>
+</div>
+</div>
+</td>
+<td class="py-3.5 px-3">
+<div class="font-mono text-label-md text-on-surface">Dec 01, 02:14:18 UTC</div>
+<div class="text-[11px] text-error font-semibold flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]">warning</span>
+                  +2h 14m post cut-off
+                </div>
+</td>
+<td class="py-3.5 px-3">
+<div class="font-label-md text-primary">Apex Dynamics Global Corp</div>
+<div class="font-body-sm text-text-muted flex items-center gap-1.5 mt-0.5">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+                  Payee: <strong class="text-on-surface">#P-10042 Marcus Sterling</strong>
+<span class="text-[10px] px-1 rounded bg-secondary-fixed text-on-secondary-fixed uppercase">Exec VP</span>
+</div>
+</td>
+<td class="py-3.5 px-3 text-right">
+<div class="font-mono font-bold text-primary text-label-md">$7,450.00</div>
+<div class="font-mono text-text-subtle text-label-sm">CV: $6,200.00</div>
+</td>
+<td class="py-3.5 px-3 text-right">
+<div class="font-mono font-bold text-success-base text-label-md">+$930.00</div>
+<div class="text-[11px] text-error font-medium">Triggers Tier 4 (15%)</div>
+</td>
+<td class="py-3.5 px-3">
+<div class="flex items-center gap-2">
+<select class="action-selector h-8 pl-2 pr-7 bg-error-container/40 text-error font-label-sm rounded-lg border-0 appearance-none focus:outline-none cursor-pointer">
+<option selected="" value="restatement">Initiate Period Restatement (SC-06)</option>
+<option value="roll">Roll into Dec 2026 Cycle</option>
+<option value="drop">Reject Ingestion to Dispute</option>
+</select>
+<span class="material-symbols-outlined -ml-6 pointer-events-none text-error text-[16px]">expand_more</span>
+</div>
+</td>
+<td class="py-3.5 px-3 text-center">
+<span class="inline-flex items-center px-2 py-0.5 rounded-full text-label-sm font-semibold bg-error-container text-on-error-container">
+                  Pending Review
+                </span>
+</td>
+<td class="py-3.5 pr-space-md pl-3 text-right">
+<button class="p-1 rounded hover:bg-surface-container text-text-muted hover:text-primary transition-colors" title="Inspect Calculation Trace">
+<span class="material-symbols-outlined text-[18px]">troubleshoot</span>
+</button>
+</td>
+</tr>
+<!-- Row 2: High Severity Restatement Candidate -->
+<tr class="hover:bg-surface-container-low/70 transition-colors group" data-severity="HIGH" data-source="EDI 850" data-status="pending">
+<td class="py-3.5 pl-space-md pr-2 text-center">
+<input class="row-checkbox w-4 h-4 rounded text-secondary cursor-pointer accent-secondary" type="checkbox" value="ORD-98418"/>
+</td>
+<td class="py-3.5 px-3">
+<div class="flex items-center gap-2">
+<div class="w-7 h-7 rounded-md bg-error-container text-error flex items-center justify-center font-bold text-label-sm">
+                    !
+                  </div>
+<div>
+<div class="font-label-md text-on-surface font-mono font-semibold">#ORD-98418</div>
+<div class="font-label-sm text-text-muted flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]">dataset</span>
+                      EDI 850 Enterprise
+                    </div>
+</div>
+</div>
+</td>
+<td class="py-3.5 px-3">
+<div class="font-mono text-label-md text-on-surface">Dec 01, 04:50:11 UTC</div>
+<div class="text-[11px] text-error font-semibold flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]">warning</span>
+                  +4h 50m post cut-off
+                </div>
+</td>
+<td class="py-3.5 px-3">
+<div class="font-label-md text-primary">BioHealth Distribution LLC</div>
+<div class="font-body-sm text-text-muted flex items-center gap-1.5 mt-0.5">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+                  Payee: <strong class="text-on-surface">#P-10043 Elena Rostova</strong>
+<span class="text-[10px] px-1 rounded bg-secondary-fixed text-on-secondary-fixed uppercase">Director</span>
+</div>
+</td>
+<td class="py-3.5 px-3 text-right">
+<div class="font-mono font-bold text-primary text-label-md">$5,200.00</div>
+<div class="font-mono text-text-subtle text-label-sm">CV: $4,800.00</div>
+</td>
+<td class="py-3.5 px-3 text-right">
+<div class="font-mono font-bold text-success-base text-label-md">+$624.00</div>
+<div class="text-[11px] text-text-muted">Quota Target Passed</div>
+</td>
+<td class="py-3.5 px-3">
+<div class="flex items-center gap-2">
+<select class="action-selector h-8 pl-2 pr-7 bg-error-container/40 text-error font-label-sm rounded-lg border-0 appearance-none focus:outline-none cursor-pointer">
+<option selected="" value="restatement">Initiate Period Restatement (SC-06)</option>
+<option value="roll">Roll into Dec 2026 Cycle</option>
+<option value="drop">Reject Ingestion to Dispute</option>
+</select>
+<span class="material-symbols-outlined -ml-6 pointer-events-none text-error text-[16px]">expand_more</span>
+</div>
+</td>
+<td class="py-3.5 px-3 text-center">
+<span class="inline-flex items-center px-2 py-0.5 rounded-full text-label-sm font-semibold bg-error-container text-on-error-container">
+                  Pending Review
+                </span>
+</td>
+<td class="py-3.5 pr-space-md pl-3 text-right">
+<button class="p-1 rounded hover:bg-surface-container text-text-muted hover:text-primary transition-colors" title="Inspect Calculation Trace">
+<span class="material-symbols-outlined text-[18px]">troubleshoot</span>
+</button>
+</td>
+</tr>
+<!-- Row 3: Auto-Assigned Roll Item -->
+<tr class="hover:bg-surface-container-low/70 transition-colors group" data-severity="LOW" data-source="Stripe POS" data-status="auto-assigned">
+<td class="py-3.5 pl-space-md pr-2 text-center">
+<input class="row-checkbox w-4 h-4 rounded text-secondary cursor-pointer accent-secondary" type="checkbox" value="ORD-98420"/>
+</td>
+<td class="py-3.5 px-3">
+<div class="flex items-center gap-2">
+<div class="w-7 h-7 rounded-md bg-surface-container text-secondary flex items-center justify-center text-label-sm">
+<span class="material-symbols-outlined text-[16px]">point_of_sale</span>
+</div>
+<div>
+<div class="font-label-md text-on-surface font-mono font-semibold">#ORD-98420</div>
+<div class="font-label-sm text-text-muted">Stripe POS Terminal</div>
+</div>
+</div>
+</td>
+<td class="py-3.5 px-3">
+<div class="font-mono text-label-md text-on-surface">Dec 01, 00:14:02 UTC</div>
+<div class="text-[11px] text-text-muted font-medium">+14m post cut-off</div>
+</td>
+<td class="py-3.5 px-3">
+<div class="font-label-md text-primary">Dr. Robert Chen (Walk-in)</div>
+<div class="font-body-sm text-text-muted flex items-center gap-1.5 mt-0.5">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+                  Payee: <strong class="text-on-surface">#P-10088 Liam Vance</strong>
+</div>
+</td>
+<td class="py-3.5 px-3 text-right">
+<div class="font-mono font-bold text-primary text-label-md">$420.00</div>
+<div class="font-mono text-text-subtle text-label-sm">CV: $350.00</div>
+</td>
+<td class="py-3.5 px-3 text-right">
+<div class="font-mono font-bold text-success-base text-label-md">+$42.00</div>
+<div class="text-[11px] text-text-muted">Standard 10% rate</div>
+</td>
+<td class="py-3.5 px-3">
+<div class="flex items-center gap-2">
+<select class="action-selector h-8 pl-2 pr-7 bg-surface-container text-on-surface-variant font-label-sm rounded-lg border-0 appearance-none focus:outline-none cursor-pointer">
+<option selected="" value="roll">Roll into Dec 2026 Cycle</option>
+<option value="restatement">Initiate Period Restatement (SC-06)</option>
+<option value="drop">Reject Ingestion to Dispute</option>
+</select>
+<span class="material-symbols-outlined -ml-6 pointer-events-none text-text-muted text-[16px]">expand_more</span>
+</div>
+</td>
+<td class="py-3.5 px-3 text-center">
+<span class="inline-flex items-center px-2 py-0.5 rounded-full text-label-sm font-semibold bg-secondary-fixed text-on-secondary-fixed">
+                  Auto-Assigned
+                </span>
+</td>
+<td class="py-3.5 pr-space-md pl-3 text-right">
+<button class="p-1 rounded hover:bg-surface-container text-text-muted hover:text-primary transition-colors" title="Inspect Calculation Trace">
+<span class="material-symbols-outlined text-[18px]">troubleshoot</span>
+</button>
+</td>
+</tr>
+<!-- Row 4: Auto-Assigned Roll Item -->
+<tr class="hover:bg-surface-container-low/70 transition-colors group" data-severity="LOW" data-source="Shopify" data-status="auto-assigned">
+<td class="py-3.5 pl-space-md pr-2 text-center">
+<input class="row-checkbox w-4 h-4 rounded text-secondary cursor-pointer accent-secondary" type="checkbox" value="ORD-98425"/>
+</td>
+<td class="py-3.5 px-3">
+<div class="flex items-center gap-2">
+<div class="w-7 h-7 rounded-md bg-surface-container text-secondary flex items-center justify-center text-label-sm">
+<span class="material-symbols-outlined text-[16px]">shopping_cart</span>
+</div>
+<div>
+<div class="font-label-md text-on-surface font-mono font-semibold">#ORD-98425</div>
+<div class="font-label-sm text-text-muted">Shopify Checkout</div>
+</div>
+</div>
+</td>
+<td class="py-3.5 px-3">
+<div class="font-mono text-label-md text-on-surface">Dec 01, 01:05:44 UTC</div>
+<div class="text-[11px] text-text-muted font-medium">+1h 05m post cut-off</div>
+</td>
+<td class="py-3.5 px-3">
+<div class="font-label-md text-primary">Kendra Wellness Collective</div>
+<div class="font-body-sm text-text-muted flex items-center gap-1.5 mt-0.5">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+                  Payee: <strong class="text-on-surface">#P-10114 Sarah Ortiz</strong>
+</div>
+</td>
+<td class="py-3.5 px-3 text-right">
+<div class="font-mono font-bold text-primary text-label-md">$890.50</div>
+<div class="font-mono text-text-subtle text-label-sm">CV: $810.00</div>
+</td>
+<td class="py-3.5 px-3 text-right">
+<div class="font-mono font-bold text-success-base text-label-md">+$97.20</div>
+<div class="text-[11px] text-text-muted">Tier 2 Override (12%)</div>
+</td>
+<td class="py-3.5 px-3">
+<div class="flex items-center gap-2">
+<select class="action-selector h-8 pl-2 pr-7 bg-surface-container text-on-surface-variant font-label-sm rounded-lg border-0 appearance-none focus:outline-none cursor-pointer">
+<option selected="" value="roll">Roll into Dec 2026 Cycle</option>
+<option value="restatement">Initiate Period Restatement (SC-06)</option>
+<option value="drop">Reject Ingestion to Dispute</option>
+</select>
+<span class="material-symbols-outlined -ml-6 pointer-events-none text-text-muted text-[16px]">expand_more</span>
+</div>
+</td>
+<td class="py-3.5 px-3 text-center">
+<span class="inline-flex items-center px-2 py-0.5 rounded-full text-label-sm font-semibold bg-secondary-fixed text-on-secondary-fixed">
+                  Auto-Assigned
+                </span>
+</td>
+<td class="py-3.5 pr-space-md pl-3 text-right">
+<button class="p-1 rounded hover:bg-surface-container text-text-muted hover:text-primary transition-colors" title="Inspect Calculation Trace">
+<span class="material-symbols-outlined text-[18px]">troubleshoot</span>
+</button>
+</td>
+</tr>
+<!-- Row 5: Return / Refund Late Adjustment -->
+<tr class="hover:bg-surface-container-low/70 transition-colors group" data-severity="MEDIUM" data-source="Manual API" data-status="auto-assigned">
+<td class="py-3.5 pl-space-md pr-2 text-center">
+<input class="row-checkbox w-4 h-4 rounded text-secondary cursor-pointer accent-secondary" type="checkbox" value="RET-98431"/>
+</td>
+<td class="py-3.5 px-3">
+<div class="flex items-center gap-2">
+<div class="w-7 h-7 rounded-md bg-surface-container text-secondary flex items-center justify-center text-label-sm">
+<span class="material-symbols-outlined text-[16px]">undo</span>
+</div>
+<div>
+<div class="font-label-md text-on-surface font-mono font-semibold">#RET-98431</div>
+<div class="font-label-sm text-text-muted">Return Adjustment</div>
+</div>
+</div>
+</td>
+<td class="py-3.5 px-3">
+<div class="font-mono text-label-md text-on-surface">Dec 01, 03:22:19 UTC</div>
+<div class="text-[11px] text-text-muted font-medium">+3h 22m post cut-off</div>
+</td>
+<td class="py-3.5 px-3">
+<div class="font-label-md text-primary">Summit Health Sciences</div>
+<div class="font-body-sm text-text-muted flex items-center gap-1.5 mt-0.5">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+                  Payee: <strong class="text-on-surface">#P-10042 Marcus Sterling</strong>
+</div>
+</td>
+<td class="py-3.5 px-3 text-right">
+<div class="font-mono font-bold text-error text-label-md">-$1,150.00</div>
+<div class="font-mono text-text-subtle text-label-sm">CV: -$1,000.00</div>
+</td>
+<td class="py-3.5 px-3 text-right">
+<div class="font-mono font-bold text-error text-label-md">-$143.75</div>
+<div class="text-[11px] text-text-muted">Direct Clawback</div>
+</td>
+<td class="py-3.5 px-3">
+<div class="flex items-center gap-2">
+<select class="action-selector h-8 pl-2 pr-7 bg-surface-container text-on-surface-variant font-label-sm rounded-lg border-0 appearance-none focus:outline-none cursor-pointer">
+<option selected="" value="roll">Roll into Dec 2026 Cycle</option>
+<option value="restatement">Initiate Period Restatement (SC-06)</option>
+<option value="drop">Reject Ingestion to Dispute</option>
+</select>
+<span class="material-symbols-outlined -ml-6 pointer-events-none text-text-muted text-[16px]">expand_more</span>
+</div>
+</td>
+<td class="py-3.5 px-3 text-center">
+<span class="inline-flex items-center px-2 py-0.5 rounded-full text-label-sm font-semibold bg-secondary-fixed text-on-secondary-fixed">
+                  Auto-Assigned
+                </span>
+</td>
+<td class="py-3.5 pr-space-md pl-3 text-right">
+<button class="p-1 rounded hover:bg-surface-container text-text-muted hover:text-primary transition-colors" title="Inspect Calculation Trace">
+<span class="material-symbols-outlined text-[18px]">troubleshoot</span>
+</button>
+</td>
+</tr>
+<!-- Row 6: Auto-Assigned Roll Item -->
+<tr class="hover:bg-surface-container-low/70 transition-colors group" data-severity="LOW" data-source="Shopify" data-status="auto-assigned">
+<td class="py-3.5 pl-space-md pr-2 text-center">
+<input class="row-checkbox w-4 h-4 rounded text-secondary cursor-pointer accent-secondary" type="checkbox" value="ORD-98436"/>
+</td>
+<td class="py-3.5 px-3">
+<div class="flex items-center gap-2">
+<div class="w-7 h-7 rounded-md bg-surface-container text-secondary flex items-center justify-center text-label-sm">
+<span class="material-symbols-outlined text-[16px]">shopping_cart</span>
+</div>
+<div>
+<div class="font-label-md text-on-surface font-mono font-semibold">#ORD-98436</div>
+<div class="font-label-sm text-text-muted">Shopify Checkout</div>
+</div>
+</div>
+</td>
+<td class="py-3.5 px-3">
+<div class="font-mono text-label-md text-on-surface">Dec 01, 05:11:00 UTC</div>
+<div class="text-[11px] text-text-muted font-medium">+5h 11m post cut-off</div>
+</td>
+<td class="py-3.5 px-3">
+<div class="font-label-md text-primary">Prism Organics LLC</div>
+<div class="font-body-sm text-text-muted flex items-center gap-1.5 mt-0.5">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+                  Payee: <strong class="text-on-surface">#P-10255 Danielle Meyer</strong>
+</div>
+</td>
+<td class="py-3.5 px-3 text-right">
+<div class="font-mono font-bold text-primary text-label-md">$1,310.00</div>
+<div class="font-mono text-text-subtle text-label-sm">CV: $1,200.00</div>
+</td>
+<td class="py-3.5 px-3 text-right">
+<div class="font-mono font-bold text-success-base text-label-md">+$131.00</div>
+<div class="text-[11px] text-text-muted">Standard 10% rate</div>
+</td>
+<td class="py-3.5 px-3">
+<div class="flex items-center gap-2">
+<select class="action-selector h-8 pl-2 pr-7 bg-surface-container text-on-surface-variant font-label-sm rounded-lg border-0 appearance-none focus:outline-none cursor-pointer">
+<option selected="" value="roll">Roll into Dec 2026 Cycle</option>
+<option value="restatement">Initiate Period Restatement (SC-06)</option>
+<option value="drop">Reject Ingestion to Dispute</option>
+</select>
+<span class="material-symbols-outlined -ml-6 pointer-events-none text-text-muted text-[16px]">expand_more</span>
+</div>
+</td>
+<td class="py-3.5 px-3 text-center">
+<span class="inline-flex items-center px-2 py-0.5 rounded-full text-label-sm font-semibold bg-secondary-fixed text-on-secondary-fixed">
+                  Auto-Assigned
+                </span>
+</td>
+<td class="py-3.5 pr-space-md pl-3 text-right">
+<button class="p-1 rounded hover:bg-surface-container text-text-muted hover:text-primary transition-colors" title="Inspect Calculation Trace">
+<span class="material-symbols-outlined text-[18px]">troubleshoot</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Ledger Table Footer / Quick Stats -->
+<div class="px-space-lg py-space-md bg-surface-container-low flex flex-col sm:flex-row items-center justify-between gap-space-sm text-body-sm text-text-muted">
+<div>
+          Showing <span class="font-semibold text-primary">6</span> of <span class="font-semibold text-primary">14</span> late records (8 collapsed auto-rolled items)
+        </div>
+<div class="flex items-center gap-space-md">
+<span class="flex items-center gap-1.5">
+<span class="w-2.5 h-2.5 rounded-full bg-error"></span>
+            Critical: 2 items
+          </span>
+<span class="flex items-center gap-1.5">
+<span class="w-2.5 h-2.5 rounded-full bg-secondary-fixed-dim"></span>
+            Automated Roll: 12 items
+          </span>
+</div>
+</div>
+</div>
+<!-- Restatement Impact Differential Drawer Preview Modal (Inline Collapsible) -->
+<div class="bg-surface-card rounded-xl p-space-lg shadow-md space-y-space-md transition-all" id="impactSimulationPanel">
+<div class="flex items-start justify-between">
+<div class="space-y-1">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-[22px]">analytics</span>
+<h2 class="font-headline-sm text-primary text-headline-sm">Restatement Impact Differential Simulation</h2>
+</div>
+<p class="font-body-sm text-text-muted">
+            Preview of balance variance if <strong>#ORD-98412</strong> and <strong>#ORD-98418</strong> are restated back into November 2026 rather than carried over to December 2026.
+          </p>
+</div>
+<span class="px-2.5 py-1 rounded bg-surface-container text-text-muted font-label-sm font-mono uppercase">Simulation Engine v4.2</span>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-space-md pt-2">
+<div class="bg-surface-container-low p-space-md rounded-xl space-y-2">
+<div class="font-eyebrow text-text-subtle uppercase text-eyebrow">November 2026 Recalculation</div>
+<div class="text-headline-sm font-headline-sm text-primary font-mono">$188,430.20 → $190,571.00</div>
+<div class="font-body-sm text-success-base flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">add_circle</span>
+            +$2,140.80 retro adjustment required
+          </div>
+</div>
+<div class="bg-surface-container-low p-space-md rounded-xl space-y-2">
+<div class="font-eyebrow text-text-subtle uppercase text-eyebrow">December 2026 Baseline Impact</div>
+<div class="text-headline-sm font-headline-sm text-primary font-mono">Zero Carry-Over</div>
+<div class="font-body-sm text-text-muted flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">info</span>
+            Prevents Dec quota skew / artificial boost
+          </div>
+</div>
+<div class="bg-surface-container-low p-space-md rounded-xl space-y-2">
+<div class="font-eyebrow text-text-subtle uppercase text-eyebrow">SOX Audit &amp; Sign-off Path</div>
+<div class="text-headline-sm font-headline-sm text-primary">SC-06 Trigger</div>
+<div class="font-body-sm text-error flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">fact_check</span>
+            Requires Dual Senior Admin Approval
+          </div>
+</div>
+</div>
+</div>
+<!-- Sticky Bottom Bulk Action Drawer -->
+<div class="sticky bottom-4 z-30 w-full">
+<div class="bg-primary text-on-primary rounded-xl p-space-md shadow-xl flex flex-col md:flex-row items-center justify-between gap-space-md">
+<div class="flex items-center gap-space-md">
+<div class="w-10 h-10 rounded-lg bg-primary-container text-on-primary-container flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[22px]">assignment_turned_in</span>
+</div>
+<div>
+<div class="font-headline-sm text-on-primary text-headline-sm flex items-center gap-2">
+<span id="selectedCount">0</span> Items Selected in Triage
+              <span class="font-label-sm text-text-subtle font-normal font-sans">(14 total pending resolutions)</span>
+</div>
+<div class="font-body-sm text-text-subtle">
+              Rule FR-ORD-005: 12 ready for automated roll, 2 flag high-value restatement triggers.
+            </div>
+</div>
+</div>
+<div class="flex flex-wrap items-center gap-space-sm w-full md:w-auto justify-end">
+<button class="h-11 px-space-md rounded-lg bg-primary-container hover:bg-secondary text-on-primary font-button-text text-button-text flex items-center gap-1.5 transition-colors" id="previewImpactBtn" type="button">
+<span class="material-symbols-outlined text-[18px]">difference</span>
+            Preview Restatement Impact
+          </button>
+<button class="h-11 px-space-md rounded-lg bg-error hover:bg-error-base text-on-error font-button-text text-button-text shadow-sm flex items-center gap-1.5 transition-all" id="raiseRestatementBtn" type="button">
+<span class="material-symbols-outlined text-[18px]">history_edu</span>
+            Raise Restatement Case (2 High Items)
+          </button>
+<button class="h-11 px-space-md rounded-lg bg-secondary hover:bg-on-secondary-fixed-variant text-on-secondary font-button-text text-button-text shadow-sm flex items-center gap-1.5 transition-all" id="acceptDefaultBtn" type="button">
+<span class="material-symbols-outlined text-[18px]">forward</span>
+            Accept Default for 12 Items (Roll to Dec)
+          </button>
+</div>
+</div>
+</div>
+</div>
+<!-- Interactive JavaScript Logic -->
+<script>
+    (function initLateTransactionQueue() {
+      const selectAll = document.getElementById('selectAll');
+      const rowCheckboxes = document.querySelectorAll('.row-checkbox');
+      const selectedCountEl = document.getElementById('selectedCount');
+      const filterTabs = document.querySelectorAll('#filterTabs button');
+      const tableRows = document.querySelectorAll('#tableBody tr');
+      const tableSearch = document.getElementById('tableSearch');
+      const severityFilter = document.getElementById('severityFilter');
+      const sourceFilter = document.getElementById('sourceFilter');
+      const resetFilters = document.getElementById('resetFilters');
+      const impactPanel = document.getElementById('impactSimulationPanel');
+      const previewImpactBtn = document.getElementById('previewImpactBtn');
+      const acceptDefaultBtn = document.getElementById('acceptDefaultBtn');
+      const raiseRestatementBtn = document.getElementById('raiseRestatementBtn');
+
+      // Update selected count
+      function updateSelectionState() {
+        const checked = document.querySelectorAll('.row-checkbox:checked');
+        selectedCountEl.textContent = checked.length;
+        if (checked.length === rowCheckboxes.length) {
+          selectAll.checked = true;
+          selectAll.indeterminate = false;
+        } else if (checked.length === 0) {
+          selectAll.checked = false;
+          selectAll.indeterminate = false;
+        } else {
+          selectAll.checked = false;
+          selectAll.indeterminate = true;
+        }
+      }
+
+      selectAll.addEventListener('change', (e) => {
+        rowCheckboxes.forEach(cb => {
+          // only select visible rows
+          if (cb.closest('tr').style.display !== 'none') {
+            cb.checked = e.target.checked;
+          }
+        });
+        updateSelectionState();
+      });
+
+      rowCheckboxes.forEach(cb => {
+        cb.addEventListener('change', updateSelectionState);
+      });
+
+      // Filter logic
+      function applyFilters() {
+        const searchTerm = (tableSearch.value || '').toLowerCase().trim();
+        const selectedSeverity = severityFilter.value;
+        const selectedSource = sourceFilter.value;
+        const activeTab = document.querySelector('#filterTabs button.bg-primary')?.getAttribute('data-filter') || 'all';
+
+        tableRows.forEach(row => {
+          const rowText = row.innerText.toLowerCase();
+          const matchesSearch = !searchTerm || rowText.includes(searchTerm);
+          
+          const rowSeverity = row.getAttribute('data-severity');
+          const matchesSeverity = selectedSeverity === 'ALL' || rowSeverity === selectedSeverity;
+
+          const rowSource = row.getAttribute('data-source');
+          const matchesSource = selectedSource === 'ALL' || rowSource === selectedSource;
+
+          let matchesTab = true;
+          const rowStatus = row.getAttribute('data-status');
+          if (activeTab === 'pending') {
+            matchesTab = (rowStatus === 'pending');
+          } else if (activeTab === 'auto-assigned') {
+            matchesTab = (rowStatus === 'auto-assigned');
+          } else if (activeTab === 'high-impact') {
+            matchesTab = (rowSeverity === 'HIGH');
+          }
+
+          if (matchesSearch && matchesSeverity && matchesSource && matchesTab) {
+            row.style.display = '';
+          } else {
+            row.style.display = 'none';
+          }
+        });
+        updateSelectionState();
+      }
+
+      tableSearch.addEventListener('input', applyFilters);
+      severityFilter.addEventListener('change', applyFilters);
+      sourceFilter.addEventListener('change', applyFilters);
+
+      filterTabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+          filterTabs.forEach(t => {
+            t.classList.remove('bg-primary', 'text-on-primary');
+            t.classList.add('bg-surface-container', 'text-on-surface');
+          });
+          tab.classList.remove('bg-surface-container', 'text-on-surface');
+          tab.classList.add('bg-primary', 'text-on-primary');
+          applyFilters();
+        });
+      });
+
+      resetFilters.addEventListener('click', () => {
+        tableSearch.value = '';
+        severityFilter.value = 'ALL';
+        sourceFilter.value = 'ALL';
+        filterTabs[0].click();
+      });
+
+      // Toggle Differential simulation view
+      previewImpactBtn.addEventListener('click', () => {
+        impactPanel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        impactPanel.classList.add('ring-2', 'ring-focus-ring');
+        setTimeout(() => {
+          impactPanel.classList.remove('ring-2', 'ring-focus-ring');
+        }, 1200);
+      });
+
+      // Action Handlers
+      acceptDefaultBtn.addEventListener('click', () => {
+        alert('Confirmed: 12 queued standard late orders successfully scheduled to roll forward into December 2026 Ingestion Cycle. Ledger entries generated.');
+      });
+
+      raiseRestatementBtn.addEventListener('click', () => {
+        alert('Initiated: Created formal period restatement request (SC-06 docket #RST-2026-11-B). Marcus Sterling and Elena Rostova uplines placed in provisional recalculation hold.');
+      });
+    })();
+  </script>
+</div></main></div><div id="design-preview-pill" style="position:fixed;left:12px;bottom:12px;z-index:2147483647;display:flex;gap:8px;align-items:center;padding:8px 12px;border-radius:999px;background:#001332;color:#fff;font:600 12px/1.2 Inter,system-ui,sans-serif;box-shadow:0 4px 16px rgba(0,0,0,.25)"><a href="/portal-designs/" style="color:#fff;text-decoration:none">&larr; All designs</a><span style="opacity:.6">|</span><span style="font-weight:500">Design preview &middot; sample data, not the live app</span></div></body></html>

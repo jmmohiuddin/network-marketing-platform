@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>SC-02 Run review (variant 1) | PHOYEV portal design preview</title><meta name="robots" content="noindex,nofollow"><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_dashboard" name="shell-type"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Plus+Jakarta+Sans:wght@500;600;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={"darkMode":"class","theme":{"extend":{"colors":{"sso-google-border":"#D8E2FC","on-primary":"#ffffff","on-secondary-fixed":"#001a42","on-tertiary-fixed":"#00174b","secondary-fixed-dim":"#aec6ff","outline-variant":"#c4c6cf","primary":"#001332","success-base":"#16A34A","surface-container":"#f1ecf2","on-primary-fixed-variant":"#31476e","border-strong":"#CBD5E1","error":"#ba1a1a","on-tertiary":"#ffffff","surface-card":"#FFFFFF","on-secondary-container":"#1a4387","error-container":"#ffdad6","inverse-surface":"#313034","on-primary-fixed":"#001b3f","tertiary-fixed":"#dbe1ff","surface-variant":"#e5e1e7","surface":"#fdf8fd","focus-ring":"#3B82F6","on-background":"#1c1b1f","outline":"#74777f","focus-ring-glow":"rgba(59, 130, 246, 0.2)","secondary-fixed":"#d8e2ff","tertiary-container":"#002367","on-surface":"#1c1b1f","tertiary-fixed-dim":"#b4c5ff","error-base":"#DC2626","tertiary":"#00113b","on-tertiary-fixed-variant":"#003ea8","on-secondary":"#ffffff","primary-container":"#0f284e","on-tertiary-container":"#5f8aff","border-subtle":"#E2E7F6","secondary":"#385da2","inverse-on-surface":"#f4eff5","primary-fixed":"#d7e2ff","on-surface-variant":"#44474e","surface-container-high":"#ebe7ec","surface-container-lowest":"#ffffff","on-secondary-fixed-variant":"#1c4589","text-subtle":"#94A3B8","surface-tint":"#495e87","surface-container-low":"#f7f2f8","background":"#fdf8fd","primary-fixed-dim":"#b1c7f6","surface-canvas":"#F8F9FE","on-error-container":"#93000a","secondary-container":"#90b3fe","surface-bright":"#fdf8fd","sso-google-bg":"#F0F4FF","on-error":"#ffffff","inverse-primary":"#b1c7f6","on-primary-container":"#7a90bc","text-muted":"#64748B","surface-dim":"#ddd9de","surface-container-highest":"#e5e1e7"},"borderRadius":{"DEFAULT":"0.25rem","lg":"0.5rem","xl":"0.75rem","full":"9999px"},"spacing":{"space-xl":"2rem","space-lg":"1.5rem","gutter":"1.25rem","margin-desktop":"3rem","margin":"1.5rem","space-2xl":"2.5rem","space-xs":"0.25rem","space-sm":"0.5rem","space-md":"1rem"},"fontFamily":{"headline-xl":["Plus Jakarta Sans"],"headline-xl-mobile":["Plus Jakarta Sans"],"headline-sm":["Plus Jakarta Sans"],"body-lg":["Inter"],"label-md":["Inter"],"button-text":["Plus Jakarta Sans"],"label-sm":["Inter"],"body-md":["Inter"],"body-sm":["Inter"],"headline-lg":["Plus Jakarta Sans"],"eyebrow":["Plus Jakarta Sans"]},"fontSize":{"headline-xl":["32px",{"lineHeight":"40px","letterSpacing":"-0.02em","fontWeight":"700"}],"headline-xl-mobile":["26px",{"lineHeight":"34px","letterSpacing":"-0.015em","fontWeight":"700"}],"headline-sm":["18px",{"lineHeight":"24px","fontWeight":"600"}],"body-lg":["15px",{"lineHeight":"22px","fontWeight":"400"}],"label-md":["13px",{"lineHeight":"18px","letterSpacing":"0.02em","fontWeight":"600"}],"button-text":["14px",{"lineHeight":"20px","letterSpacing":"0.01em","fontWeight":"600"}],"label-sm":["11px",{"lineHeight":"16px","letterSpacing":"0.04em","fontWeight":"600"}],"body-md":["14px",{"lineHeight":"20px","fontWeight":"400"}],"body-sm":["12px",{"lineHeight":"18px","fontWeight":"400"}],"headline-lg":["24px",{"lineHeight":"32px","letterSpacing":"-0.01em","fontWeight":"600"}],"eyebrow":["12px",{"lineHeight":"16px","letterSpacing":"0.08em","fontWeight":"700"}]}}}}</script></link><style>html,body{min-height:1024px}</style></head><body class="bg-surface-canvas font-body-md text-on-surface antialiased"><header class="fixed top-0 left-0 right-0 h-12 z-50 bg-surface-card border-b border-border-strong flex items-center justify-between px-space-md shadow-[0_1px_3px_0_rgba(15,40,78,0.04)]"><div class="flex items-center gap-space-sm"><div class="flex items-center gap-1.5 pr-2.5 border-r border-border-strong"><div class="w-6 h-6 rounded bg-primary flex items-center justify-center text-on-primary font-headline-sm text-label-sm font-bold">P</div><span class="font-headline-sm text-body-md font-bold tracking-tight text-primary">Phoyev Portal</span></div><div class="flex items-center gap-1 px-2 py-0.5 rounded bg-surface-container-high border border-border-strong text-on-surface font-label-sm"><span class="material-symbols-outlined text-[13px] text-text-muted">corporate_fare</span><span class="font-semibold">Acme Nutrition Inc.</span></div><button class="flex items-center gap-1 px-1.5 py-0.5 rounded hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface font-label-sm border border-transparent hover:border-border-strong transition-all"><span class="material-symbols-outlined text-[14px]">public</span><span>US — USD ($)</span><span class="material-symbols-outlined text-[14px]">arrow_drop_down</span></button></div><div class="flex-1 max-w-[460px] mx-space-md"><div class="relative flex items-center w-full"><span class="material-symbols-outlined absolute left-2.5 text-text-muted text-[16px]">search</span><input class="w-full h-8 pl-8 pr-12 rounded bg-surface-canvas border border-border-strong font-body-sm text-on-surface placeholder:text-text-muted cursor-pointer hover:border-text-muted focus:outline-none focus:border-focus-ring focus:ring-1 focus:ring-focus-ring" placeholder="Search participant, order, period, rule..." readonly="" type="text"/><div class="absolute right-2 flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-surface-card border border-border-strong font-label-sm text-[10px] text-text-muted">⌘K</div></div></div><div class="flex items-center gap-space-md"><div class="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-surface-card border border-border-strong font-label-sm text-body-sm text-on-surface-variant"><span class="w-2 h-2 rounded-full bg-success-base ring-2 ring-success-base/20 animate-pulse"></span><span>All Systems Operational</span></div><button class="relative p-1 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high rounded transition-all"><span class="material-symbols-outlined text-[18px]">notifications</span><span class="absolute top-0.5 right-0.5 w-2 h-2 bg-error rounded-full ring-2 ring-surface-card"></span></button><a class="flex items-center gap-1 font-label-sm text-body-sm text-on-surface-variant hover:text-primary" href="#"><span class="material-symbols-outlined text-[16px]">help_outline</span><span>Help &amp; Docs</span></a><div class="h-4 w-px bg-border-strong"></div><div class="flex items-center gap-2 pl-0.5"><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center shrink-0"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div><div class="flex flex-col text-left"><span class="font-label-md text-label-sm text-on-surface leading-tight">Sarah Jenkins</span><span class="font-label-sm text-[10px] text-text-muted leading-tight">Commission Analyst / Finance Approver</span></div></div></div></header><aside class="fixed left-0 top-12 bottom-0 w-[208px] bg-surface-card border-r border-border-strong z-40 overflow-y-auto flex flex-col justify-between py-space-sm"><nav class="flex flex-col gap-3 px-2" data-active-classes="bg-primary text-on-primary font-semibold"><div class="flex flex-col gap-0.5"><div class="px-2 py-1 font-eyebrow text-[10px] text-text-muted tracking-wider uppercase">Periods &amp; Runs</div><a class="flex items-center gap-2 px-2 py-1.5 rounded font-label-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="periods-and-runs" href="#"><span class="material-symbols-outlined text-[16px]">event_repeat</span><span>Periods &amp; Runs</span><span class="ml-auto text-[10px] text-text-muted font-mono">SC-01</span></a><a aria-current="page" class="flex items-center gap-2 px-2 py-1.5 rounded transition-all bg-primary text-on-primary font-semibold" data-path="run-review" href="#"><span class="material-symbols-outlined text-[16px]">fact_check</span><span>Run Review</span><span class="ml-auto text-[10px] text-text-muted font-mono">SC-02</span></a><a class="flex items-center gap-2 px-2 py-1.5 rounded font-label-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="late-transactions" href="#"><span class="material-symbols-outlined text-[16px]">history_toggle_off</span><span>Late Transactions</span><span class="ml-auto text-[10px] text-text-muted font-mono">SC-32</span></a></div><div class="flex flex-col gap-0.5"><div class="px-2 py-1 font-eyebrow text-[10px] text-text-muted tracking-wider uppercase">Payouts &amp; Finance</div><a class="flex items-center gap-2 px-2 py-1.5 rounded font-label-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="payout-batches" href="#"><span class="material-symbols-outlined text-[16px]">payments</span><span>Payout Batches</span><span class="ml-auto text-[10px] text-text-muted font-mono">SC-03</span></a><a class="flex items-center gap-2 px-2 py-1.5 rounded font-label-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="ledger-and-accounting" href="#"><span class="material-symbols-outlined text-[16px]">account_balance</span><span>Ledger &amp; Accounting</span><span class="ml-auto text-[10px] text-text-muted font-mono">SC-33</span></a><a class="flex items-center gap-2 px-2 py-1.5 rounded font-label-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="reconciliation" href="#"><span class="material-symbols-outlined text-[16px]">rule</span><span>Reconciliation</span><span class="ml-auto text-[10px] text-text-muted font-mono">SC-34</span></a></div><div class="flex flex-col gap-0.5"><div class="px-2 py-1 font-eyebrow text-[10px] text-text-muted tracking-wider uppercase">Compensation Plans</div><a class="flex items-center gap-2 px-2 py-1.5 rounded font-label-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="plan-versions" href="#"><span class="material-symbols-outlined text-[16px]">schema</span><span>Plan Versions</span><span class="ml-auto text-[10px] text-text-muted font-mono">SC-04</span></a><a class="flex items-center gap-2 px-2 py-1.5 rounded font-label-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="caps-and-pools" href="#"><span class="material-symbols-outlined text-[16px]">toll</span><span>Caps &amp; Pools</span><span class="ml-auto text-[10px] text-text-muted font-mono">SC-05</span></a><a class="flex items-center gap-2 px-2 py-1.5 rounded font-label-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="simulation-and-golden-datasets" href="#"><span class="material-symbols-outlined text-[16px]">science</span><span>Simulation &amp; Golden</span><span class="ml-auto text-[10px] text-text-muted font-mono">SC-42</span></a><a class="flex items-center gap-2 px-2 py-1.5 rounded font-label-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="plan-change-workflow" href="#"><span class="material-symbols-outlined text-[16px]">route</span><span>Plan Change WF</span><span class="ml-auto text-[10px] text-text-muted font-mono">SC-44</span></a></div><div class="flex flex-col gap-0.5"><div class="px-2 py-1 font-eyebrow text-[10px] text-text-muted tracking-wider uppercase">People &amp; Structure</div><a class="flex items-center gap-2 px-2 py-1.5 rounded font-label-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="genealogy-explorer" href="#"><span class="material-symbols-outlined text-[16px]">account_tree</span><span>Genealogy Explorer</span><span class="ml-auto text-[10px] text-text-muted font-mono">SC-07</span></a><a class="flex items-center gap-2 px-2 py-1.5 rounded font-label-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="structure-and-cases" href="#"><span class="material-symbols-outlined text-[16px]">cases</span><span>Structure &amp; Cases</span><span class="ml-auto text-[10px] text-text-muted font-mono">SC-08</span></a><a class="flex items-center gap-2 px-2 py-1.5 rounded font-label-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="participants-360" href="#"><span class="material-symbols-outlined text-[16px]">badge</span><span>Participants 360</span><span class="ml-auto text-[10px] text-text-muted font-mono">SC-09</span></a></div><div class="flex flex-col gap-0.5"><div class="px-2 py-1 font-eyebrow text-[10px] text-text-muted tracking-wider uppercase">Compliance &amp; Audit</div><a class="flex items-center gap-2 px-2 py-1.5 rounded font-label-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="compliance-overview" href="#"><span class="material-symbols-outlined text-[16px]">verified_user</span><span>Compliance Overview</span><span class="ml-auto text-[10px] text-text-muted font-mono">SC-46</span></a><a class="flex items-center gap-2 px-2 py-1.5 rounded font-label-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="reports-r1-r5" href="#"><span class="material-symbols-outlined text-[16px]">description</span><span>Reports R1-R5</span><span class="ml-auto text-[10px] text-text-muted font-mono">SC-10</span></a><a class="flex items-center gap-2 px-2 py-1.5 rounded font-label-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="guardrails-log" href="#"><span class="material-symbols-outlined text-[16px]">shield</span><span>Guardrails Log</span><span class="ml-auto text-[10px] text-text-muted font-mono">SC-11</span></a></div><div class="flex flex-col gap-0.5"><div class="px-2 py-1 font-eyebrow text-[10px] text-text-muted tracking-wider uppercase">Settings</div><a class="flex items-center gap-2 px-2 py-1.5 rounded font-label-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="integrations-and-health" href="#"><span class="material-symbols-outlined text-[16px]">sync_alt</span><span>Integrations &amp; Health</span><span class="ml-auto text-[10px] text-text-muted font-mono">SC-13</span></a><a class="flex items-center gap-2 px-2 py-1.5 rounded font-label-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="users-and-sod-roles" href="#"><span class="material-symbols-outlined text-[16px]">admin_panel_settings</span><span>Users &amp; SoD Roles</span><span class="ml-auto text-[10px] text-text-muted font-mono">SC-28</span></a><a class="flex items-center gap-2 px-2 py-1.5 rounded font-label-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="tenant-settings" href="#"><span class="material-symbols-outlined text-[16px]">tune</span><span>Tenant Settings</span><span class="ml-auto text-[10px] text-text-muted font-mono">SC-29</span></a></div></nav><div class="px-3 pt-3 border-t border-border-strong text-[11px] text-text-muted font-mono flex items-center justify-between"><span>v2.14.0-prod</span><span class="flex items-center gap-1 text-success-base"><span class="w-1.5 h-1.5 rounded-full bg-success-base"></span>SYNC</span></div></aside><div class="pl-[208px]"><main class="pt-12 bg-surface-canvas min-h-screen"><div class="max-w-[1440px] mx-auto px-6 py-6"><div class="flex flex-col w-full pb-28">
+<!-- Top Command & Action Bar -->
+<div class="flex flex-col lg:flex-row lg:items-center justify-between gap-space-md mb-6">
+<div class="flex flex-col gap-1 min-w-0">
+<div class="flex items-center gap-3 flex-wrap">
+<span class="font-headline-lg text-headline-lg text-primary tracking-tight">Run Review: November 2026 Monthly (Run #4)</span>
+<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed font-label-sm shadow-sm">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary animate-pulse"></span>
+          Calculated (Awaiting Review)
+        </span>
+<span class="px-2 py-0.5 rounded bg-surface-container-high text-text-muted font-label-sm font-mono text-[11px]">RUN-ID: 2026-11-M4</span>
+</div>
+<p class="font-body-md text-text-muted">Review gross-to-net variance, acknowledge exceptions, and inspect calculation traces before committing financial obligations.</p>
+</div>
+<!-- Secondary Action CTAs -->
+<div class="flex items-center gap-2 flex-wrap shrink-0">
+<button class="inline-flex items-center gap-1.5 px-3 py-2 rounded bg-surface-card hover:bg-surface-container-high text-primary font-button-text text-button-text shadow-sm transition-all hover:shadow">
+<span class="material-symbols-outlined text-[18px]">download</span>
+        Export Run (.CSV)
+      </button>
+<button class="inline-flex items-center gap-1.5 px-3 py-2 rounded bg-surface-card hover:bg-surface-container-high text-primary font-button-text text-button-text shadow-sm transition-all hover:shadow">
+<span class="material-symbols-outlined text-[18px]">difference</span>
+        Compare with Run #3
+      </button>
+<button class="inline-flex items-center gap-1.5 px-3 py-2 rounded bg-surface-card hover:bg-surface-container-high text-primary font-button-text text-button-text shadow-sm transition-all hover:shadow">
+<span class="material-symbols-outlined text-[18px]">refresh</span>
+        Re-run Calculation
+      </button>
+</div>
+</div>
+<!-- Mandatory Compliance Notice Banner -->
+<div class="relative overflow-hidden rounded-xl bg-gradient-to-r from-primary-container via-primary to-primary-container p-4 mb-6 shadow-md text-on-primary">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 relative z-10">
+<div class="flex items-center gap-3">
+<div class="w-9 h-9 rounded-lg bg-on-primary/10 flex items-center justify-center shrink-0 text-secondary-fixed">
+<span class="material-symbols-outlined text-[20px]">verified_user</span>
+</div>
+<div>
+<span class="font-label-md text-label-md tracking-wider uppercase text-secondary-fixed block text-[10px]">Separation of Duties (SoD) Protocol</span>
+<p class="font-body-sm text-body-sm text-on-primary/90 mt-0.5">Commit requires independent Finance Approver step-up authentication. <span class="font-semibold text-secondary-fixed">12 unacknowledged exceptions</span> must be cleared before committing run.</p>
+</div>
+</div>
+<div class="flex items-center gap-2 self-start sm:self-center shrink-0">
+<button class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-on-primary text-primary hover:bg-secondary-fixed font-button-text text-button-text shadow transition-colors" onclick="switchTab('exceptions-tab')">
+<span>Jump to Exceptions</span>
+<span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+</button>
+</div>
+</div>
+<div class="absolute -right-8 -bottom-8 w-36 h-36 bg-secondary/20 rounded-full blur-2xl pointer-events-none"></div>
+</div>
+<!-- KPI Variance Summary Cards -->
+<div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
+<!-- KPI 1 -->
+<div class="bg-surface-card rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden flex flex-col justify-between">
+<div class="flex items-start justify-between">
+<div>
+<span class="font-eyebrow text-eyebrow text-text-muted uppercase tracking-wider">Total Commission</span>
+<div class="mt-1 font-headline-lg text-headline-lg text-primary tracking-tight font-bold">$1,842,910.45</div>
+</div>
+<div class="w-8 h-8 rounded-lg bg-surface-container flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[20px]">payments</span>
+</div>
+</div>
+<div class="mt-4 pt-3 flex items-center justify-between text-body-sm bg-surface-canvas -mx-5 -mb-5 px-5 py-2.5">
+<span class="text-text-muted">vs Oct 2026 Run #6</span>
+<span class="font-label-md text-success-base font-semibold flex items-center gap-0.5">
+<span class="material-symbols-outlined text-[16px]">trending_up</span>
+          +$32,670.45 (+1.80%)
+        </span>
+</div>
+</div>
+<!-- KPI 2 -->
+<div class="bg-surface-card rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden flex flex-col justify-between">
+<div class="flex items-start justify-between">
+<div>
+<span class="font-eyebrow text-eyebrow text-text-muted uppercase tracking-wider">Payout Share of Net Sales</span>
+<div class="mt-1 font-headline-lg text-headline-lg text-primary tracking-tight font-bold">31.42%</div>
+</div>
+<div class="w-8 h-8 rounded-lg bg-surface-container flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined text-[20px]">pie_chart</span>
+</div>
+</div>
+<div class="mt-4 pt-3 flex items-center justify-between text-body-sm bg-surface-canvas -mx-5 -mb-5 px-5 py-2.5">
+<span class="text-text-muted">Policy Cap: 35.00%</span>
+<span class="inline-flex items-center gap-1 font-label-sm text-success-base bg-success-base/10 px-2 py-0.5 rounded-full">
+<span class="w-1.5 h-1.5 rounded-full bg-success-base"></span>
+          Guardrail Safe
+        </span>
+</div>
+</div>
+<!-- KPI 3 -->
+<div class="bg-surface-card rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden flex flex-col justify-between">
+<div class="flex items-start justify-between">
+<div>
+<span class="font-eyebrow text-eyebrow text-text-muted uppercase tracking-wider">Active Earners</span>
+<div class="mt-1 font-headline-lg text-headline-lg text-primary tracking-tight font-bold">14,820</div>
+</div>
+<div class="w-8 h-8 rounded-lg bg-surface-container flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[20px]">group</span>
+</div>
+</div>
+<div class="mt-4 pt-3 flex items-center justify-between text-body-sm bg-surface-canvas -mx-5 -mb-5 px-5 py-2.5">
+<span class="text-text-muted">Total Payees</span>
+<span class="font-label-md text-success-base font-semibold flex items-center gap-0.5">
+<span class="material-symbols-outlined text-[16px]">arrow_upward</span>
+          +462 vs prior
+        </span>
+</div>
+</div>
+<!-- KPI 4 -->
+<div class="bg-surface-card rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden flex flex-col justify-between">
+<div class="flex items-start justify-between">
+<div>
+<span class="font-eyebrow text-eyebrow text-text-muted uppercase tracking-wider">Exceptions To Acknowledge</span>
+<div class="mt-1 font-headline-lg text-headline-lg text-error-base tracking-tight font-bold">12</div>
+</div>
+<div class="w-8 h-8 rounded-lg bg-error-container/40 flex items-center justify-center text-error-base">
+<span class="material-symbols-outlined text-[20px]">warning</span>
+</div>
+</div>
+<div class="mt-4 pt-3 flex items-center justify-between text-body-sm bg-surface-canvas -mx-5 -mb-5 px-5 py-2.5">
+<span class="text-text-muted">Breakdown</span>
+<div class="flex items-center gap-1.5 font-label-sm">
+<span class="px-1.5 py-0.5 rounded bg-error-base text-on-primary text-[10px]">2 High</span>
+<span class="px-1.5 py-0.5 rounded bg-surface-container-high text-on-surface text-[10px]">10 Med</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Primary Tab Bar Navigation -->
+<div class="flex items-center gap-6 mb-6 overflow-x-auto pb-1">
+<button class="tab-btn group relative pb-3 font-button-text text-button-text text-primary font-bold flex items-center gap-2 shrink-0" id="tab-btn-variance" onclick="switchTab('variance-tab')">
+<span>Variance by Bonus</span>
+<span class="px-2 py-0.5 rounded-full bg-primary text-on-primary font-label-sm text-[11px]">Primary</span>
+<span class="indicator absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full"></span>
+</button>
+<button class="tab-btn group relative pb-3 font-button-text text-button-text text-text-muted hover:text-primary transition-colors flex items-center gap-2 shrink-0" id="tab-btn-movers" onclick="switchTab('movers-tab')">
+<span>Top Movers</span>
+<span class="indicator absolute bottom-0 left-0 right-0 h-0.5 bg-transparent rounded-full"></span>
+</button>
+<button class="tab-btn group relative pb-3 font-button-text text-button-text text-text-muted hover:text-primary transition-colors flex items-center gap-2 shrink-0" id="tab-btn-exceptions" onclick="switchTab('exceptions-tab')">
+<span>Exception Acknowledgment</span>
+<span class="px-2 py-0.5 rounded-full bg-error-container text-on-error-container font-label-sm text-[11px] font-bold">12</span>
+<span class="indicator absolute bottom-0 left-0 right-0 h-0.5 bg-transparent rounded-full"></span>
+</button>
+<button class="tab-btn group relative pb-3 font-button-text text-button-text text-text-muted hover:text-primary transition-colors flex items-center gap-2 shrink-0" id="tab-btn-trace" onclick="switchTab('trace-tab')">
+<span>Trace Inspector</span>
+<span class="px-1.5 py-0.5 rounded bg-surface-container-high text-text-muted font-mono text-[10px]">RL-908231</span>
+<span class="indicator absolute bottom-0 left-0 right-0 h-0.5 bg-transparent rounded-full"></span>
+</button>
+</div>
+<!-- Tab 1: Combined 60/40 Grid (Variance by Bonus & Top Movers / Trace Preview) -->
+<div class="tab-panel grid grid-cols-1 lg:grid-cols-12 gap-6 items-start" id="variance-tab">
+<!-- Left Column: Variance by Bonus Pass Hierarchy (7 Cols) -->
+<div class="lg:col-span-7 flex flex-col gap-4">
+<div class="bg-surface-card rounded-xl p-5 shadow-sm">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+<div>
+<h3 class="font-headline-sm text-headline-sm text-primary">Calculation Passes Breakdown</h3>
+<p class="font-body-sm text-text-muted">Gross additions, global pools, and systemic governance reductions</p>
+</div>
+<span class="font-mono text-label-sm text-text-muted bg-surface-canvas px-2.5 py-1 rounded">5 Passes Executed</span>
+</div>
+<!-- Table Container -->
+<div class="overflow-x-auto">
+<table class="w-full text-left text-body-sm">
+<thead>
+<tr class="bg-surface-canvas text-text-muted font-label-sm uppercase tracking-wider text-[11px]">
+<th class="py-2.5 px-3 rounded-l">Bonus / Pass Step</th>
+<th class="py-2.5 px-3">Pass</th>
+<th class="py-2.5 px-3 text-right">Prior (Oct '26)</th>
+<th class="py-2.5 px-3 text-right">Current (Nov '26)</th>
+<th class="py-2.5 px-3 text-right">Delta ($)</th>
+<th class="py-2.5 px-3 text-right rounded-r">Delta (%)</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-transparent">
+<!-- Pass 1 -->
+<tr class="hover:bg-surface-canvas transition-colors">
+<td class="py-3 px-3">
+<div class="font-semibold text-primary">Retail Customer Direct Commission</div>
+<span class="text-[11px] text-text-muted">Rule #RL-01 · 20% Direct Tier</span>
+</td>
+<td class="py-3 px-3">
+<span class="inline-flex px-1.5 py-0.5 rounded bg-surface-container font-mono text-[10px] text-on-surface">P1</span>
+</td>
+<td class="py-3 px-3 text-right font-mono text-text-muted">$412,800.00</td>
+<td class="py-3 px-3 text-right font-mono font-medium text-primary">$428,150.00</td>
+<td class="py-3 px-3 text-right font-mono text-success-base font-semibold">+$15,350.00</td>
+<td class="py-3 px-3 text-right font-mono text-success-base font-semibold">+3.72%</td>
+</tr>
+<!-- Pass 2 -->
+<tr class="hover:bg-surface-canvas transition-colors">
+<td class="py-3 px-3">
+<div class="font-semibold text-primary">Team Level Volume Override</div>
+<span class="text-[11px] text-text-muted">Rule #RL-04 · Unilevel Depth 1-7</span>
+</td>
+<td class="py-3 px-3">
+<span class="inline-flex px-1.5 py-0.5 rounded bg-surface-container font-mono text-[10px] text-on-surface">P2</span>
+</td>
+<td class="py-3 px-3 text-right font-mono text-text-muted">$840,210.00</td>
+<td class="py-3 px-3 text-right font-mono font-medium text-primary">$852,900.20</td>
+<td class="py-3 px-3 text-right font-mono text-success-base font-semibold">+$12,690.20</td>
+<td class="py-3 px-3 text-right font-mono text-success-base font-semibold">+1.51%</td>
+</tr>
+<!-- Pass 3 -->
+<tr class="hover:bg-surface-canvas transition-colors">
+<td class="py-3 px-3">
+<div class="font-semibold text-primary">Leadership Generation Bonus</div>
+<span class="text-[11px] text-text-muted">Rule #RL-08 · Breakaway Gen 1-3</span>
+</td>
+<td class="py-3 px-3">
+<span class="inline-flex px-1.5 py-0.5 rounded bg-surface-container font-mono text-[10px] text-on-surface">P3</span>
+</td>
+<td class="py-3 px-3 text-right font-mono text-text-muted">$390,110.00</td>
+<td class="py-3 px-3 text-right font-mono font-medium text-primary">$398,720.00</td>
+<td class="py-3 px-3 text-right font-mono text-success-base font-semibold">+$8,610.00</td>
+<td class="py-3 px-3 text-right font-mono text-success-base font-semibold">+2.21%</td>
+</tr>
+<!-- Pass 4 -->
+<tr class="hover:bg-surface-canvas transition-colors">
+<td class="py-3 px-3">
+<div class="font-semibold text-primary">Global Executive Pool</div>
+<span class="text-[11px] text-text-muted">Rule #RL-12 · Point Share System</span>
+</td>
+<td class="py-3 px-3">
+<span class="inline-flex px-1.5 py-0.5 rounded bg-surface-container font-mono text-[10px] text-on-surface">P4</span>
+</td>
+<td class="py-3 px-3 text-right font-mono text-text-muted">$210,000.00</td>
+<td class="py-3 px-3 text-right font-mono font-medium text-primary">$205,000.00</td>
+<td class="py-3 px-3 text-right font-mono text-text-muted font-semibold">-$5,000.00</td>
+<td class="py-3 px-3 text-right font-mono text-text-muted font-semibold">-2.38%</td>
+</tr>
+<!-- Pass 5 (Negative Reduction) -->
+<tr class="hover:bg-surface-canvas transition-colors bg-secondary-fixed/20">
+<td class="py-3 px-3">
+<div class="font-semibold text-primary flex items-center gap-1.5">
+<span>35% Systemic Cap Reduction</span>
+<span class="material-symbols-outlined text-[14px] text-secondary">shield</span>
+</div>
+<span class="text-[11px] text-text-muted">Rule #RL-99 · Automated Proration</span>
+</td>
+<td class="py-3 px-3">
+<span class="inline-flex px-1.5 py-0.5 rounded bg-secondary text-on-secondary font-mono text-[10px]">P5</span>
+</td>
+<td class="py-3 px-3 text-right font-mono text-text-muted">-$42,880.00</td>
+<td class="py-3 px-3 text-right font-mono font-medium text-error-base">-$41,859.75</td>
+<td class="py-3 px-3 text-right font-mono text-success-base font-semibold">+$1,020.25</td>
+<td class="py-3 px-3 text-right font-mono text-success-base font-semibold">-2.38%</td>
+</tr>
+</tbody>
+<tfoot>
+<tr class="bg-primary text-on-primary font-semibold">
+<td class="py-3.5 px-3 rounded-l font-headline-sm text-body-md" colspan="2">Net Payable Total</td>
+<td class="py-3.5 px-3 text-right font-mono text-on-primary/80">$1,810,240.00</td>
+<td class="py-3.5 px-3 text-right font-mono text-[15px]">$1,842,910.45</td>
+<td class="py-3.5 px-3 text-right font-mono text-secondary-fixed">+$32,670.45</td>
+<td class="py-3.5 px-3 text-right font-mono text-secondary-fixed rounded-r">+1.80%</td>
+</tr>
+</tfoot>
+</table>
+</div>
+</div>
+<!-- Variance Distribution Chart Mini-Widget -->
+<div class="bg-surface-card rounded-xl p-5 shadow-sm">
+<div class="flex items-center justify-between mb-3">
+<span class="font-eyebrow text-eyebrow text-text-muted uppercase tracking-wider">Gross Distribution Breakdown</span>
+<span class="font-label-sm text-text-muted">Total Net Sales: $5,865,405.63</span>
+</div>
+<!-- Proportional Stacked Bar -->
+<div class="w-full h-4 rounded-full bg-surface-canvas overflow-hidden flex gap-0.5 p-0.5">
+<div class="bg-primary rounded-l-full h-full" style="width: 23.2%" title="Retail (23.2%)"></div>
+<div class="bg-secondary h-full" style="width: 46.3%" title="Team Volume (46.3%)"></div>
+<div class="bg-secondary-fixed-dim h-full" style="width: 21.6%" title="Leadership Gen (21.6%)"></div>
+<div class="bg-primary-container h-full" style="width: 11.1%" title="Global Pool (11.1%)"></div>
+<div class="bg-error-base rounded-r-full h-full" style="width: 2.2%" title="Cap Reduction (-2.2%)"></div>
+</div>
+<div class="flex items-center justify-between flex-wrap gap-2 text-label-sm text-text-muted mt-3">
+<span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded bg-primary"></span> Retail (23%)</span>
+<span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded bg-secondary"></span> Team Vol (46%)</span>
+<span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded bg-secondary-fixed-dim"></span> Leadership (22%)</span>
+<span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded bg-primary-container"></span> Global Pool (11%)</span>
+<span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded bg-error-base"></span> Cap Adj (-2%)</span>
+</div>
+</div>
+</div>
+<!-- Right Column: Top Movers & Trace Drawer Preview (5 Cols) -->
+<div class="lg:col-span-5 flex flex-col gap-4">
+<!-- Top Movers Card -->
+<div class="bg-surface-card rounded-xl p-5 shadow-sm">
+<div class="flex items-center justify-between mb-3">
+<div>
+<h3 class="font-headline-sm text-headline-sm text-primary">Top Payee Movers</h3>
+<p class="font-body-sm text-text-muted text-[13px]">Largest period-over-period delta</p>
+</div>
+<span class="material-symbols-outlined text-text-muted text-[20px]">swap_vert</span>
+</div>
+<div class="flex flex-col gap-2.5">
+<!-- Mover 1: Upward Advancement -->
+<div class="p-3 rounded-lg bg-surface-canvas hover:bg-surface-container-high transition-colors flex items-center justify-between gap-3">
+<div class="flex items-center gap-2.5 min-w-0">
+<div class="w-8 h-8 rounded-full bg-success-base/10 text-success-base flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[18px]">trending_up</span>
+</div>
+<div class="min-w-0">
+<div class="flex items-center gap-1.5">
+<span class="font-semibold text-primary truncate text-body-md">Elena Rostova</span>
+<span class="font-mono text-label-sm text-text-muted">#P-88219</span>
+</div>
+<div class="text-[12px] text-text-muted truncate">Rank Advancement: Crown Director</div>
+</div>
+</div>
+<div class="text-right shrink-0">
+<span class="font-mono font-bold text-success-base text-body-md">+$3,420.00</span>
+<div class="text-[11px] text-text-muted">Nov: $8,940.00</div>
+</div>
+</div>
+<!-- Mover 2: Downward Clawback -->
+<div class="p-3 rounded-lg bg-surface-canvas hover:bg-surface-container-high transition-colors flex items-center justify-between gap-3">
+<div class="flex items-center gap-2.5 min-w-0">
+<div class="w-8 h-8 rounded-full bg-error-base/10 text-error-base flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[18px]">trending_down</span>
+</div>
+<div class="min-w-0">
+<div class="flex items-center gap-1.5">
+<span class="font-semibold text-primary truncate text-body-md">David Chen</span>
+<span class="font-mono text-label-sm text-text-muted">#P-12044</span>
+</div>
+<div class="text-[12px] text-text-muted truncate">Clawback applied: Return #RET-881</div>
+</div>
+</div>
+<div class="text-right shrink-0">
+<span class="font-mono font-bold text-error-base text-body-md">-$1,210.00</span>
+<div class="text-[11px] text-text-muted">Nov: $2,180.00</div>
+</div>
+</div>
+<!-- Mover 3: Leg Shift -->
+<div class="p-3 rounded-lg bg-surface-canvas hover:bg-surface-container-high transition-colors flex items-center justify-between gap-3">
+<div class="flex items-center gap-2.5 min-w-0">
+<div class="w-8 h-8 rounded-full bg-success-base/10 text-success-base flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[18px]">trending_up</span>
+</div>
+<div class="min-w-0">
+<div class="flex items-center gap-1.5">
+<span class="font-semibold text-primary truncate text-body-md">Sarah Al-Mansoor</span>
+<span class="font-mono text-label-sm text-text-muted">#P-40291</span>
+</div>
+<div class="text-[12px] text-text-muted truncate">Downline Volume Spike (+42%)</div>
+</div>
+</div>
+<div class="text-right shrink-0">
+<span class="font-mono font-bold text-success-base text-body-md">+$1,890.50</span>
+<div class="text-[11px] text-text-muted">Nov: $5,410.50</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Calculation Trace Preview Drawer Box -->
+<div class="bg-surface-card rounded-xl p-5 shadow-sm">
+<div class="flex items-center justify-between mb-3">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-[20px]">troubleshoot</span>
+<h3 class="font-headline-sm text-headline-sm text-primary">Calculation Trace</h3>
+</div>
+<span class="px-2 py-0.5 rounded bg-surface-container-high text-primary font-mono text-[11px] font-semibold">RL-908231</span>
+</div>
+<p class="font-body-sm text-text-muted mb-3 text-[13px]">Auditable formula execution DAG for payee line-item calculation</p>
+<!-- Step-by-Step Flow Pipeline -->
+<div class="bg-surface-canvas rounded-lg p-3.5 flex flex-col gap-2.5 text-body-sm">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-text-muted uppercase">Rule Engine</span>
+<span class="font-semibold text-primary">Leadership Bonus L2</span>
+</div>
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-text-muted uppercase">Base Volume</span>
+<span class="font-mono font-medium text-primary">$42,500.00 USD</span>
+</div>
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-text-muted uppercase">Configured Rate</span>
+<span class="font-mono font-medium text-secondary">4.000%</span>
+</div>
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-text-muted uppercase">Intermediate Value</span>
+<span class="font-mono font-medium text-text-muted">$1,700.0000</span>
+</div>
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-text-muted uppercase">Rounding Algorithm</span>
+<span class="px-1.5 py-0.5 rounded bg-surface-card text-text-muted text-[11px] font-mono">IEEE 754 Half-Even</span>
+</div>
+<div class="pt-2 mt-1 flex items-center justify-between bg-surface-card p-2 rounded">
+<span class="font-label-md text-primary font-bold">Final Payable Result</span>
+<span class="font-mono font-bold text-success-base text-body-md">$1,700.00 USD</span>
+</div>
+</div>
+<button class="w-full mt-3 py-2 px-3 rounded bg-surface-container hover:bg-surface-container-high text-primary font-button-text text-button-text text-center transition-colors flex items-center justify-center gap-1.5" onclick="switchTab('trace-tab')">
+<span>Open Full Interactive DAG Inspector</span>
+<span class="material-symbols-outlined text-[16px]">open_in_new</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Tab 2: Top Movers Tab (Full View) -->
+<div class="tab-panel hidden flex-col gap-4" id="movers-tab">
+<div class="bg-surface-card rounded-xl p-5 shadow-sm">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+<div>
+<h3 class="font-headline-sm text-headline-sm text-primary">All Major Variance Movers (Threshold: |Δ| &gt; $500)</h3>
+<p class="font-body-sm text-text-muted">Payees exhibiting exceptional divergence requiring governance audit</p>
+</div>
+<div class="flex items-center gap-2">
+<input class="px-3 py-1.5 rounded bg-surface-canvas text-body-sm text-on-surface placeholder:text-text-muted focus:outline-none" placeholder="Filter by Name, ID, or Team..." type="text"/>
+</div>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left text-body-sm">
+<thead>
+<tr class="bg-surface-canvas text-text-muted font-label-sm uppercase tracking-wider text-[11px]">
+<th class="py-2.5 px-3 rounded-l">Payee ID &amp; Name</th>
+<th class="py-2.5 px-3">Title &amp; Rank</th>
+<th class="py-2.5 px-3 text-right">Oct 2026</th>
+<th class="py-2.5 px-3 text-right">Nov 2026</th>
+<th class="py-2.5 px-3 text-right">Variance ($)</th>
+<th class="py-2.5 px-3">Root Cause Code</th>
+<th class="py-2.5 px-3 text-right rounded-r">Action</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-surface-canvas">
+<tr class="hover:bg-surface-canvas transition-colors">
+<td class="py-3 px-3 font-semibold text-primary">
+<div>Elena Rostova</div>
+<span class="text-[11px] font-mono text-text-muted">#P-88219</span>
+</td>
+<td class="py-3 px-3">
+<span class="px-2 py-0.5 rounded bg-surface-container font-label-sm">Crown Director</span>
+</td>
+<td class="py-3 px-3 text-right font-mono text-text-muted">$5,520.00</td>
+<td class="py-3 px-3 text-right font-mono font-medium text-primary">$8,940.00</td>
+<td class="py-3 px-3 text-right font-mono text-success-base font-bold">+$3,420.00</td>
+<td class="py-3 px-3 text-body-sm text-text-muted">RC-RANK-ADVANCE</td>
+<td class="py-3 px-3 text-right">
+<button class="px-2.5 py-1 rounded bg-surface-container hover:bg-surface-container-high text-primary font-label-sm">Inspect</button>
+</td>
+</tr>
+<tr class="hover:bg-surface-canvas transition-colors">
+<td class="py-3 px-3 font-semibold text-primary">
+<div>David Chen</div>
+<span class="text-[11px] font-mono text-text-muted">#P-12044</span>
+</td>
+<td class="py-3 px-3">
+<span class="px-2 py-0.5 rounded bg-surface-container font-label-sm">Executive Ruby</span>
+</td>
+<td class="py-3 px-3 text-right font-mono text-text-muted">$3,390.00</td>
+<td class="py-3 px-3 text-right font-mono font-medium text-primary">$2,180.00</td>
+<td class="py-3 px-3 text-right font-mono text-error-base font-bold">-$1,210.00</td>
+<td class="py-3 px-3 text-body-sm text-text-muted">RC-CLAWBACK-RET</td>
+<td class="py-3 px-3 text-right">
+<button class="px-2.5 py-1 rounded bg-surface-container hover:bg-surface-container-high text-primary font-label-sm">Inspect</button>
+</td>
+</tr>
+<tr class="hover:bg-surface-canvas transition-colors">
+<td class="py-3 px-3 font-semibold text-primary">
+<div>Sarah Al-Mansoor</div>
+<span class="text-[11px] font-mono text-text-muted">#P-40291</span>
+</td>
+<td class="py-3 px-3">
+<span class="px-2 py-0.5 rounded bg-surface-container font-label-sm">Diamond Ambassador</span>
+</td>
+<td class="py-3 px-3 text-right font-mono text-text-muted">$3,520.00</td>
+<td class="py-3 px-3 text-right font-mono font-medium text-primary">$5,410.50</td>
+<td class="py-3 px-3 text-right font-mono text-success-base font-bold">+$1,890.50</td>
+<td class="py-3 px-3 text-body-sm text-text-muted">RC-VOL-GROWTH</td>
+<td class="py-3 px-3 text-right">
+<button class="px-2.5 py-1 rounded bg-surface-container hover:bg-surface-container-high text-primary font-label-sm">Inspect</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<!-- Tab 3: Exception Acknowledgment (12 Items) -->
+<div class="tab-panel hidden flex-col gap-4" id="exceptions-tab">
+<div class="bg-surface-card rounded-xl p-5 shadow-sm">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+<div>
+<div class="flex items-center gap-2">
+<h3 class="font-headline-sm text-headline-sm text-primary">Pending Run Exceptions</h3>
+<span class="px-2 py-0.5 rounded-full bg-error-container text-on-error-container font-label-sm font-bold">12 Total</span>
+</div>
+<p class="font-body-sm text-text-muted">Each exception must be explicitly marked as Acknowledged or Mitigated prior to committing</p>
+</div>
+<button class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-primary font-button-text text-button-text transition-colors" onclick="acknowledgeAllExceptions()">
+<span class="material-symbols-outlined text-[16px]">done_all</span>
+          Bulk Acknowledge All (12)
+        </button>
+</div>
+<div class="flex flex-col gap-3" id="exception-items-container">
+<!-- High Priority Exception 1 -->
+<div class="p-4 rounded-xl bg-surface-canvas hover:shadow-sm transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+<div class="flex items-start gap-3">
+<div class="w-8 h-8 rounded-lg bg-error-base text-on-primary flex items-center justify-center shrink-0 mt-0.5">
+<span class="material-symbols-outlined text-[18px]">priority_high</span>
+</div>
+<div>
+<div class="flex items-center gap-2 flex-wrap">
+<span class="px-2 py-0.5 rounded bg-error-container text-on-error-container font-label-sm text-[10px] uppercase font-bold">High Severity</span>
+<span class="font-mono text-label-sm text-text-muted">EXC-2026-11-091</span>
+<span class="font-semibold text-primary">Payee #P-99120 Missing Tax TIN Identifier</span>
+</div>
+<p class="text-body-sm text-text-muted mt-1">Earnings accrued: $3,210.00. Automatic backup withholding rule applied (24%). Payout withheld pending W-9 submission.</p>
+</div>
+</div>
+<div class="flex items-center gap-2 shrink-0 self-end sm:self-center">
+<button class="px-3 py-1.5 rounded bg-surface-card hover:bg-surface-container-high text-primary font-label-sm transition-colors">Review W-9</button>
+<button class="px-3 py-1.5 rounded bg-primary text-on-primary font-label-sm hover:bg-primary-container transition-colors" onclick="acknowledgeSingle(this)">Acknowledge</button>
+</div>
+</div>
+<!-- High Priority Exception 2 -->
+<div class="p-4 rounded-xl bg-surface-canvas hover:shadow-sm transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+<div class="flex items-start gap-3">
+<div class="w-8 h-8 rounded-lg bg-error-base text-on-primary flex items-center justify-center shrink-0 mt-0.5">
+<span class="material-symbols-outlined text-[18px]">priority_high</span>
+</div>
+<div>
+<div class="flex items-center gap-2 flex-wrap">
+<span class="px-2 py-0.5 rounded bg-error-container text-on-error-container font-label-sm text-[10px] uppercase font-bold">High Severity</span>
+<span class="font-mono text-label-sm text-text-muted">EXC-2026-11-104</span>
+<span class="font-semibold text-primary">Cross-Branch Lineage Circular Loop Detected</span>
+</div>
+<p class="text-body-sm text-text-muted mt-1">Order #ORD-7712 node tree resolution halted at depth 6. Prorated override assigned to parent safe node.</p>
+</div>
+</div>
+<div class="flex items-center gap-2 shrink-0 self-end sm:self-center">
+<button class="px-3 py-1.5 rounded bg-surface-card hover:bg-surface-container-high text-primary font-label-sm transition-colors">View Tree</button>
+<button class="px-3 py-1.5 rounded bg-primary text-on-primary font-label-sm hover:bg-primary-container transition-colors" onclick="acknowledgeSingle(this)">Acknowledge</button>
+</div>
+</div>
+<!-- Medium Severity Group Summary Placeholder -->
+<div class="p-4 rounded-xl bg-surface-container/60 flex items-center justify-between gap-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-lg bg-surface-card text-secondary flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[18px]">info</span>
+</div>
+<div>
+<span class="font-semibold text-primary text-body-md">10 Medium Severity Guardrail Notices</span>
+<p class="text-body-sm text-text-muted">Minor currency rounding variances &lt;$0.05 across international multi-currency conversions.</p>
+</div>
+</div>
+<button class="px-3 py-1.5 rounded bg-surface-card hover:bg-surface-container text-primary font-label-sm shrink-0 transition-colors" onclick="acknowledgeSingle(this)">Acknowledge Batch</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Tab 4: Trace Inspector (Full View) -->
+<div class="tab-panel hidden flex-col gap-4" id="trace-tab">
+<div class="bg-surface-card rounded-xl p-5 shadow-sm">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+<div>
+<h3 class="font-headline-sm text-headline-sm text-primary">Deterministic Calculation Execution DAG</h3>
+<p class="font-body-sm text-text-muted">Lineage trace for Result Line #RL-908231 (Elena Rostova / Nov 2026)</p>
+</div>
+<div class="flex items-center gap-2">
+<button class="px-3 py-1.5 rounded bg-surface-canvas text-primary font-label-sm hover:bg-surface-container">Export Trace JSON</button>
+<button class="px-3 py-1.5 rounded bg-primary text-on-primary font-label-sm">Verify SHA-256 Hash</button>
+</div>
+</div>
+<!-- Interactive DAG Visualization Flow -->
+<div class="p-6 rounded-xl bg-surface-canvas overflow-x-auto">
+</div></div></div></div></div></main></div><div id="design-preview-pill" style="position:fixed;left:12px;bottom:12px;z-index:2147483647;display:flex;gap:8px;align-items:center;padding:8px 12px;border-radius:999px;background:#001332;color:#fff;font:600 12px/1.2 Inter,system-ui,sans-serif;box-shadow:0 4px 16px rgba(0,0,0,.25)"><a href="/portal-designs/" style="color:#fff;text-decoration:none">&larr; All designs</a><span style="opacity:.6">|</span><span style="font-weight:500">Design preview &middot; sample data, not the live app</span></div></body></html>
